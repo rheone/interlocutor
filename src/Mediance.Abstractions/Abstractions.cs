@@ -1,4 +1,4 @@
-using Mediance.CommonKernel;
+ng Mediance.CommonKernel;
 
 namespace Mediance.Abstractions;
 
