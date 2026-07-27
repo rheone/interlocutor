@@ -1,5 +1,6 @@
 using System.Reflection;
 using Mediance.Abstractions;
+using Mediance.Abstractions.Core;
 using NetArchTest.Rules;
 
 namespace Mediance.Architecture.Tests;

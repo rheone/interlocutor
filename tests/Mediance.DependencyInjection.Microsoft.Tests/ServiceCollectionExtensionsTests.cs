@@ -1,4 +1,8 @@
 using Mediance.Abstractions;
+using Mediance.Abstractions.Commands;
+using Mediance.Abstractions.Core;
+using Mediance.Abstractions.Notifications;
+using Mediance.Abstractions.Queries;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Mediance.DependencyInjection.Microsoft.Tests;

@@ -1,3 +1,5 @@
+using Mediance.Abstractions.Commands;
+using Mediance.Abstractions.Queries;
 using System.Reflection;
 
 namespace Mediance.Abstractions;

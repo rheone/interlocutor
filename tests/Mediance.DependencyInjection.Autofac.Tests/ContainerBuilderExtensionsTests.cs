@@ -1,4 +1,8 @@
 using Autofac;
+using Mediance.Abstractions.Commands;
+using Mediance.Abstractions.Core;
+using Mediance.Abstractions.Notifications;
+using Mediance.Abstractions.Queries;
 
 namespace Mediance.DependencyInjection.Autofac.Tests;
 

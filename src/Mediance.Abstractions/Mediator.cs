@@ -1,3 +1,8 @@
+using Mediance.Abstractions.Commands;
+using Mediance.Abstractions.Core;
+using Mediance.Abstractions.Notifications;
+using Mediance.Abstractions.Pipeline;
+using Mediance.Abstractions.Queries;
 using Mediance.CommonKernel;
 
 namespace Mediance.Abstractions;

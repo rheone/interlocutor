@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using FluentValidation;
 using Mediance.Abstractions;
+using Mediance.Abstractions.Commands;
+using Mediance.Abstractions.Pipeline;
 using Mediance.CommonKernel;
 
 namespace Mediance.FluentValidation.Tests;
