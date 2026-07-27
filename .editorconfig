@@ -31,6 +31,8 @@ charset = utf-8
 indent_size = 4
 insert_final_newline = true
 
+[*.{cs,vb,fs}]
+
 #### .NET Coding Conventions ####
 
 # Organize usings
@@ -479,7 +481,7 @@ dotnet_diagnostic.RS1022.severity = Warning
 # AnalyzerId= Microsoft.CodeAnalysis.CSharp.CodeStyle  RuleNamespace= Microsoft.CodeAnalysis.CSharp.CodeStyle
 dotnet_diagnostic.IDE0055.severity = None
 dotnet_diagnostic.IDE0079.severity = Warning
-dotnet_diagnostic.IDE1006.severity = Warning
+dotnet_diagnostic.IDE1006.severity = Suggestion
 
 # AnalyzerId= Microsoft.CodeAnalysis.CSharp.Features  RuleNamespace= Microsoft.CodeAnalysis.CSharp.Features
 dotnet_diagnostic.IDE0003.severity = None
@@ -513,9 +515,8 @@ dotnet_diagnostic.SA1309.severity = Suggestion   # Fields should not begin with 
 dotnet_diagnostic.SA1313.severity = Warning      # Parameter names should begin with a lowercase letter
 dotnet_diagnostic.SA1412.severity = None        # Store files as UTF-8 with BOM
 dotnet_diagnostic.SA1413.severity = Suggestion   # Use trailing commas in multi-line initializers
-dotnet_diagnostic.SA1500.severity = Error        # Braces should not be omitted
 dotnet_diagnostic.SA1501.severity = Suggestion   # Statements should not be on a single line
-dotnet_diagnostic.SA1502.severity = Suggestion   # Elements should not be on a single line
+
 dotnet_diagnostic.SA1504.severity = Suggestion   # Opening brace should not be followed by a blank line
 dotnet_diagnostic.SA1512.severity = Suggestion   # Single-line comments should be preceded by a blank line
 dotnet_diagnostic.SA1513.severity = Suggestion   # Closing brace should be followed by a blank line
