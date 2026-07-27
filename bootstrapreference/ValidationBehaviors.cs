@@ -50,7 +50,10 @@ public sealed class BulkItemValidationBehavior<TRequest, TItem, TResponseItem>(I
     where TRequest : IBulkCommand<TItem, TResponseItem>
 {
     public async Task<Result<IReadOnlyList<TResponseItem>>> Handle(
-        TRequest request, CancellationToken ct, Func<Task<Result<IReadOnlyList<TResponseItem>>>> next)
+        TRequest request,
+        CancellationToken ct,
+        Func<Task<Result<IReadOnlyList<TResponseItem>>>> next
+    )
     {
         var failures = new Dictionary<string, List<(string Code, string Message)>>();
 

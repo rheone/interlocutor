@@ -7,6 +7,7 @@
 # See https://pre-commit.com for more information.
 
 repos:
+  # ── Fast universal checks ──────────────────────────────────────
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
@@ -15,31 +16,61 @@ repos:
       - id: check-yaml
       - id: check-added-large-files
         args: [--maxkb=512]
+      - id: check-merge-conflict
+      - id: mixed-line-ending
+        args: [--fix=crlf]
 
+  # ── Spell check ────────────────────────────────────────────────
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.1
     hooks:
       - id: codespell
-        args: [--ignore-words-list=fo, --check-filenames]
-        types_or: [csharp, python, javascript, ts, markdown, shell, yaml, json]
+        args:
+          - --ignore-words-list=fo,ect
+          - --check-filenames
+        types_or: ['c#', python, javascript, ts, markdown, shell, yaml, json]
+        exclude: ^bootstrapreference/
 
+  # ── Markdown ───────────────────────────────────────────────────
   - repo: https://github.com/igorshubovych/markdownlint-cli
     rev: v0.44.0
     hooks:
       - id: markdownlint
         args: [--disable, MD013]
 
+  # ── Secret scanning ────────────────────────────────────────────
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.24.2
+    hooks:
+      - id: gitleaks
+
+  # ── .NET formatting & analyzers (staged files only) ────────────
   - repo: local
     hooks:
+      # csharpier: auto-format staged .cs files
       - id: csharpier
-        name: CSharpier
-        entry: dotnet csharpier
+        name: csharpier
+        entry: dotnet csharpier format
         language: system
-        types: [csharp]
-        pass_filenames: false
+        types: ['c#']
+        exclude: |
+          (?x)(
+            ^bootstrapreference/|
+            Results\.cs$
+          )
 
+      # dotnet format style: auto-fix staged .cs files
       - id: dotnet-format-style
         name: dotnet format style
-        entry: dotnet format style --verify-no-changes Mediance.slnx
+        entry: pwsh -NoProfile -File .githooks/format-style.ps1
         language: system
-        pass_filenames: false
+        types: ['c#']
+        exclude: ^bootstrapreference/
+
+      # dotnet format analyzers: verify-only — blocks commit on violations
+      - id: dotnet-format-analyzers
+        name: dotnet format analyzers
+        entry: pwsh -NoProfile -File .githooks/format-analyzers.ps1
+        language: system
+        types: ['c#']
+        exclude: ^bootstrapreference/

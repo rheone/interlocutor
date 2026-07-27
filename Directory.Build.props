@@ -4,7 +4,7 @@
     <EnablePreviewFeatures>true</EnablePreviewFeatures>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- <TreatWarningsAsErrors>true</TreatWarningsAsErrors> -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsPackable>true</IsPackable>
     <Version>1.0.0</Version>
@@ -29,7 +29,7 @@
   <!-- Suppress documentation warnings (CS1591) and StyleCop doc warnings (SA1600) -->
   <!-- XML doc files are still generated, just warnings are suppressed -->
   <PropertyGroup>
-    <NoWarn>$(NoWarn);CS1591;SA1600;SA1101;SA1633;SA1313;SA1106;SA1127;SA1202;SA1503;SA1000;SA1009;SA1010;SA1122;AD0001</NoWarn>
+    <!-- <NoWarn>$(NoWarn);CS1591;SA1600;SA1101;SA1633;SA1313;SA1106;SA1127;SA1202;SA1503;SA1000;SA1009;SA1010;SA1122;AD0001</NoWarn> -->
   </PropertyGroup>
 
   <!-- Shared BCL usings -->

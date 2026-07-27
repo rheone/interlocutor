@@ -17,7 +17,11 @@ public class ResourceCommandHandlerTests
     [Fact]
     public async Task Handle_WithExistingEntity_ReturnsHandlerResult()
     {
-        var handler = new StubHandler { LoadResult = new TestEntity { Id = 1, Name = "Test" }, HandleResult = new Result<string>("Processed") };
+        var handler = new StubHandler
+        {
+            LoadResult = new TestEntity { Id = 1, Name = "Test" },
+            HandleResult = new Result<string>("Processed"),
+        };
 
         var result = await handler.Handle(new TestCommand(1), CancellationToken.None);
 
@@ -81,11 +85,10 @@ public class StubHandler : ResourceCommandHandler<TestCommand, TestEntity, strin
     public Result<string> HandleResult { get; set; }
 
     protected override Task<TestEntity?> LoadAsync(TestCommand command, CancellationToken ct) =>
-        Task.FromResult(LoadResult);
+        Task.FromResult(this.LoadResult);
 
-    protected override Failure? Authorize(TestEntity entity, TestCommand command) =>
-        AuthorizeResult;
+    protected override Failure? Authorize(TestEntity entity, TestCommand command) => this.AuthorizeResult;
 
     protected override Task<Result<string>> HandleAsync(TestCommand command, TestEntity entity, CancellationToken ct) =>
-        Task.FromResult(HandleResult);
+        Task.FromResult(this.HandleResult);
 }

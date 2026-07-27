@@ -1,7 +1,7 @@
+using FluentValidation;
 using Mediance;
 using Mediance.Mediation;
 using Mediance.Mediation.FluentValidation;
-using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -30,7 +30,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<Order> Orders => Set<Order>();
 }
 
-public interface ICurrentUser { string UserId { get; } }
+public interface ICurrentUser
+{
+    string UserId { get; }
+}
 
 // ---------------------------------------------------------------------------
 // EXAMPLE 1 — a query
@@ -62,8 +65,7 @@ public sealed class GetOrderByIdQueryHandler(AppDbContext db) : IQueryHandler<Ge
 {
     public async Task<Result<OrderDto>> Handle(GetOrderByIdQuery query, CancellationToken ct)
     {
-        var order = await db.Orders.AsNoTracking()
-            .FirstOrDefaultAsync(o => o.Id == query.OrderId, ct);
+        var order = await db.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.Id == query.OrderId, ct);
 
         // <-- your logic: what counts as "not found" for this query
         if (order is null)
@@ -79,8 +81,7 @@ public sealed class GetOrderByIdQueryHandler(AppDbContext db) : IQueryHandler<Ge
 // ---------------------------------------------------------------------------
 
 /// <summary>The shape of the request, plus the marker interfaces YOU chose for it.</summary>
-public sealed record CancelOrderCommand(Guid OrderId)
-    : ICommand<OrderDto>, ITransactionalRequest, IAuditableRequest
+public sealed record CancelOrderCommand(Guid OrderId) : ICommand<OrderDto>, ITransactionalRequest, IAuditableRequest
 {
     public string ActionName => "Order.Cancel"; // <-- your label, used by AuditingBehavior
 }
@@ -111,9 +112,7 @@ public sealed class CancelOrderCommandHandler(AppDbContext db, ICurrentUser curr
 
     /// <summary>YOUR authorization rule. The library has no opinion on what "allowed" means for an order.</summary>
     protected override Failure? Authorize(Order entity, CancelOrderCommand command) =>
-        entity.CustomerUserId == currentUser.UserId
-            ? null
-            : new Forbidden($"User does not own order {entity.Id}.");
+        entity.CustomerUserId == currentUser.UserId ? null : new Forbidden($"User does not own order {entity.Id}.");
 
     /// <summary>YOUR business rule: an already-shipped order can't be cancelled — this is a RuleViolation, not a ValidationFailed, because it depends on state the handler just loaded.</summary>
     protected override Task<Result<OrderDto>> HandleAsync(CancelOrderCommand command, Order entity, CancellationToken ct)
@@ -121,7 +120,8 @@ public sealed class CancelOrderCommandHandler(AppDbContext db, ICurrentUser curr
         if (entity.Status == "Shipped")
         {
             return Task.FromResult<Result<OrderDto>>(
-                new RuleViolation("order.already_shipped", "A shipped order cannot be cancelled."));
+                new RuleViolation("order.already_shipped", "A shipped order cannot be cancelled.")
+            );
         }
 
         entity.Status = "Cancelled";

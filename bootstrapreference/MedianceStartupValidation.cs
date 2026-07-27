@@ -19,15 +19,15 @@ namespace Mediance.Mediation;
 public static class MedianceStartupValidation
 {
     public static IServiceProvider ValidateMedianceHandlerRegistrations(
-        this IServiceProvider provider, params Assembly[] assembliesToScan)
+        this IServiceProvider provider,
+        params Assembly[] assembliesToScan
+    )
     {
         using var scope = provider.CreateScope();
         var sp = scope.ServiceProvider;
         var missing = new List<string>();
 
-        var requestTypes = assembliesToScan
-            .SelectMany(a => a.GetTypes())
-            .Where(t => t is { IsClass: true, IsAbstract: false });
+        var requestTypes = assembliesToScan.SelectMany(a => a.GetTypes()).Where(t => t is { IsClass: true, IsAbstract: false });
 
         foreach (var requestType in requestTypes)
         {
@@ -35,10 +35,14 @@ public static class MedianceStartupValidation
             {
                 var handlerType = iface.GetGenericTypeDefinition() switch
                 {
-                    var def when def == typeof(IQuery<>) =>
-                        typeof(IQueryHandler<,>).MakeGenericType(requestType, iface.GetGenericArguments()[0]),
-                    var def when def == typeof(ICommand<>) =>
-                        typeof(ICommandHandler<,>).MakeGenericType(requestType, iface.GetGenericArguments()[0]),
+                    var def when def == typeof(IQuery<>) => typeof(IQueryHandler<,>).MakeGenericType(
+                        requestType,
+                        iface.GetGenericArguments()[0]
+                    ),
+                    var def when def == typeof(ICommand<>) => typeof(ICommandHandler<,>).MakeGenericType(
+                        requestType,
+                        iface.GetGenericArguments()[0]
+                    ),
                     _ => null,
                 };
 
@@ -57,8 +61,9 @@ public static class MedianceStartupValidation
         if (missing.Count > 0)
         {
             throw new InvalidOperationException(
-                "Mediance startup validation failed — missing handler registrations:\n" +
-                string.Join("\n", missing.Select(m => $"  - {m}")));
+                "Mediance startup validation failed — missing handler registrations:\n"
+                    + string.Join("\n", missing.Select(m => $"  - {m}"))
+            );
         }
 
         return provider;

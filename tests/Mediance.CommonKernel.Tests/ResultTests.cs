@@ -58,7 +58,8 @@ public class ResultTests
     public void Failure_Cases_HaveExpectedProperties()
     {
         var validationFailed = new ValidationFailed(
-            new Dictionary<string, IReadOnlyList<(string, string)>> { ["Name"] = [("NotEmpty", "Name is required")] });
+            new Dictionary<string, IReadOnlyList<(string, string)>> { ["Name"] = [("NotEmpty", "Name is required")] }
+        );
         Assert.Single(validationFailed.Errors);
 
         var ruleViolation = new RuleViolation("insufficient.balance", "Balance too low");

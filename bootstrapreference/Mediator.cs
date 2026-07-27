@@ -108,8 +108,15 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     /// <inheritdoc />
     public Task<Result<TResponse>> Send<TResponse>(IQuery<TResponse> query, CancellationToken ct = default)
     {
-        var wrapper = (HandlerWrapper<TResponse>)QueryWrappers.GetOrAdd(query.GetType(), requestType =>
-            Activator.CreateInstance(typeof(QueryHandlerWrapper<,>).MakeGenericType(requestType, typeof(TResponse)))!);
+        var wrapper =
+            (HandlerWrapper<TResponse>)
+                QueryWrappers.GetOrAdd(
+                    query.GetType(),
+                    requestType =>
+                        Activator.CreateInstance(
+                            typeof(QueryHandlerWrapper<,>).MakeGenericType(requestType, typeof(TResponse))
+                        )!
+                );
 
         return wrapper.Handle(query, services, ct);
     }
@@ -117,8 +124,15 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     /// <inheritdoc />
     public Task<Result<TResponse>> Send<TResponse>(ICommand<TResponse> command, CancellationToken ct = default)
     {
-        var wrapper = (HandlerWrapper<TResponse>)CommandWrappers.GetOrAdd(command.GetType(), requestType =>
-            Activator.CreateInstance(typeof(CommandHandlerWrapper<,>).MakeGenericType(requestType, typeof(TResponse)))!);
+        var wrapper =
+            (HandlerWrapper<TResponse>)
+                CommandWrappers.GetOrAdd(
+                    command.GetType(),
+                    requestType =>
+                        Activator.CreateInstance(
+                            typeof(CommandHandlerWrapper<,>).MakeGenericType(requestType, typeof(TResponse))
+                        )!
+                );
 
         return wrapper.Handle(command, services, ct);
     }

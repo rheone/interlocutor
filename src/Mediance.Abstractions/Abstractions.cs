@@ -1,4 +1,4 @@
-ng Mediance.CommonKernel;
+using Mediance.CommonKernel;
 
 namespace Mediance.Abstractions;
 
@@ -38,24 +38,27 @@ public interface IRequiresPolicy
     string PolicyName { get; }
 }
 
-public interface IQueryHandler<in TQuery, TResponse> where TQuery : IQuery<TResponse>
+public interface IQueryHandler<in TQuery, TResponse>
+    where TQuery : IQuery<TResponse>
 {
     Task<Result<TResponse>> Handle(TQuery query, CancellationToken ct);
 }
 
-public interface ICommandHandler<in TCommand, TResponse> where TCommand : ICommand<TResponse>
+public interface ICommandHandler<in TCommand, TResponse>
+    where TCommand : ICommand<TResponse>
 {
     Task<Result<TResponse>> Handle(TCommand command, CancellationToken ct);
 }
 
-public interface ICommandHandler<in TCommand> where TCommand : ICommand
+public interface ICommandHandler<in TCommand>
+    where TCommand : ICommand
 {
     Task<Result> Handle(TCommand command, CancellationToken ct);
 }
 
 public interface IPipelineBehavior<TRequest, TResponse>
 {
-    Task<Result<TResponse>> Handle(TRequest request, CancellationToken ct, Func<Task<Result<TResponse>>> next);
+    Task<Result<TResponse>> Handle(TRequest request, Func<Task<Result<TResponse>>> next, CancellationToken ct);
 }
 
 public interface IMediator
@@ -80,11 +83,16 @@ public abstract class ResourceCommandHandler<TCommand, TEntity, TResponse>
     {
         var entity = await LoadAsync(command, ct);
         if (entity is null)
+        {
             return new Result<TResponse>(new NotFound(typeof(TEntity).Name, DescribeKey(command)));
+        }
 
         var authorizationResult = Authorize(entity, command);
+
         if (authorizationResult is not null)
+        {
             return new Result<TResponse>(authorizationResult.Value);
+        }
 
         return await HandleAsync(command, entity, ct);
     }

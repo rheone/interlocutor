@@ -7,9 +7,7 @@ public static class MedianceServiceCollectionExtensions
 {
     public static IServiceCollection AddMediance(this IServiceCollection services, params Assembly[] assembliesToScan)
     {
-        var handlerTypes = assembliesToScan
-            .SelectMany(a => a.GetTypes())
-            .Where(t => t is { IsClass: true, IsAbstract: false });
+        var handlerTypes = assembliesToScan.SelectMany(a => a.GetTypes()).Where(t => t is { IsClass: true, IsAbstract: false });
 
         foreach (var type in handlerTypes)
         {
@@ -19,11 +17,15 @@ public static class MedianceServiceCollectionExtensions
                 {
                     var def = iface.GetGenericTypeDefinition();
                     if (def == typeof(IQueryHandler<,>) || def == typeof(ICommandHandler<,>))
+                    {
                         services.AddScoped(iface, type);
+                    }
                 }
 
                 if (iface == typeof(ICommandHandler<>))
+                {
                     services.AddScoped(iface, type);
+                }
             }
         }
 

@@ -4,13 +4,14 @@ using NHibernate;
 
 namespace Mediance.NHibernate;
 
-public class TransactionBehavior<TRequest, TResponse>(Lazy<ISession> session)
-    : IPipelineBehavior<TRequest, TResponse>
+public class TransactionBehavior<TRequest, TResponse>(Lazy<ISession> session) : IPipelineBehavior<TRequest, TResponse>
 {
-    public async Task<Result<TResponse>> Handle(TRequest request, CancellationToken ct, Func<Task<Result<TResponse>>> next)
+    public async Task<Result<TResponse>> Handle(TRequest request, Func<Task<Result<TResponse>>> next, CancellationToken ct)
     {
         if (request is not ITransactionalRequest)
+        {
             return await next();
+        }
 
         var s = session.Value;
         using var transaction = s.BeginTransaction();

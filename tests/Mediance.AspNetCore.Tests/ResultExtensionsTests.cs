@@ -47,10 +47,7 @@ public class ResultExtensionsTests
     [Fact]
     public void ToActionResult_WithValidationFailed_ReturnsBadRequest()
     {
-        var errors = new Dictionary<string, IReadOnlyList<(string, string)>>
-        {
-            ["Name"] = [("NotEmpty", "Name is required")],
-        };
+        var errors = new Dictionary<string, IReadOnlyList<(string, string)>> { ["Name"] = [("NotEmpty", "Name is required")] };
         Result<string> result = new(new ValidationFailed(errors));
         var actionResult = result.ToActionResult();
 

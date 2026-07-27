@@ -1,8 +1,8 @@
+using FluentValidation;
 using Mediance;
 using Mediance.Mediation;
 using Mediance.Mediation.EntityFrameworkCore;
 using Mediance.Mediation.FluentValidation;
-using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -36,19 +36,19 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 /// this query automatically — no <c>GetWidgetsQueryValidator</c> is
 /// required unless additional, application-specific rules are wanted.
 /// </summary>
-public sealed record GetWidgetsQuery(int Page, int PageSize, string? SearchTerm)
-    : IPagedQuery<WidgetDto>;
+public sealed record GetWidgetsQuery(int Page, int PageSize, string? SearchTerm) : IPagedQuery<WidgetDto>;
 
 public sealed class GetWidgetsQueryHandler(AppDbContext db) : IQueryHandler<GetWidgetsQuery, PagedResult<WidgetDto>>
 {
     public async Task<Result<PagedResult<WidgetDto>>> Handle(GetWidgetsQuery query, CancellationToken ct)
     {
-        var baseQuery = db.Widgets.AsNoTracking()
-            .Where(w => query.SearchTerm == null || w.Name.Contains(query.SearchTerm));
+        var baseQuery = db.Widgets.AsNoTracking().Where(w => query.SearchTerm == null || w.Name.Contains(query.SearchTerm));
 
         var total = await baseQuery.LongCountAsync(ct);
-        var items = await baseQuery.OrderBy(w => w.Name)
-            .Skip((query.Page - 1) * query.PageSize).Take(query.PageSize)
+        var items = await baseQuery
+            .OrderBy(w => w.Name)
+            .Skip((query.Page - 1) * query.PageSize)
+            .Take(query.PageSize)
             .Select(w => new WidgetDto(w.Id, w.Name, w.Quantity))
             .ToListAsync(ct);
 
@@ -66,7 +66,9 @@ public sealed record CreateWidgetItem(string Name, int Quantity);
 /// — no hand-written <c>RuleForEach</c> wrapper validator required.
 /// </summary>
 public sealed record BulkCreateWidgetsCommand(IReadOnlyList<CreateWidgetItem> Items)
-    : IBulkCommand<CreateWidgetItem, WidgetDto>, ITransactionalRequest, IAuditableRequest
+    : IBulkCommand<CreateWidgetItem, WidgetDto>,
+        ITransactionalRequest,
+        IAuditableRequest
 {
     public string ActionName => "Widget.BulkCreate";
 }
@@ -88,7 +90,13 @@ public sealed class BulkCreateWidgetsCommandHandler(AppDbContext db, ICurrentUse
         var created = new List<WidgetDto>(command.Items.Count);
         foreach (var item in command.Items)
         {
-            var widget = new Widget { Id = Guid.NewGuid(), Name = item.Name, Quantity = item.Quantity, OwnerUserId = currentUser.UserId };
+            var widget = new Widget
+            {
+                Id = Guid.NewGuid(),
+                Name = item.Name,
+                Quantity = item.Quantity,
+                OwnerUserId = currentUser.UserId,
+            };
             db.Widgets.Add(widget);
             created.Add(new WidgetDto(widget.Id, widget.Name, widget.Quantity));
         }
@@ -96,7 +104,10 @@ public sealed class BulkCreateWidgetsCommandHandler(AppDbContext db, ICurrentUse
     }
 }
 
-public interface ICurrentUser { string UserId { get; } }
+public interface ICurrentUser
+{
+    string UserId { get; }
+}
 
 /// <summary>
 /// Composition root. Registration order for the open-generic
@@ -113,7 +124,10 @@ public static class CompositionRoot
         services.AddScoped(sp => new Lazy<AppDbContext>(sp.GetRequiredService<AppDbContext>));
 
         services.AddScoped<IQueryHandler<GetWidgetsQuery, PagedResult<WidgetDto>>, GetWidgetsQueryHandler>();
-        services.AddScoped<ICommandHandler<BulkCreateWidgetsCommand, IReadOnlyList<WidgetDto>>, BulkCreateWidgetsCommandHandler>();
+        services.AddScoped<
+            ICommandHandler<BulkCreateWidgetsCommand, IReadOnlyList<WidgetDto>>,
+            BulkCreateWidgetsCommandHandler
+        >();
         services.AddScoped<IValidator<CreateWidgetItem>, CreateWidgetItemValidator>();
 
         // Pipeline order (outer -> inner). This list IS the "nesting doll"

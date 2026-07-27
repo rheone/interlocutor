@@ -20,7 +20,7 @@ internal sealed class QueryHandlerWrapper<TQuery, TResponse> : HandlerWrapper<TR
         foreach (var behavior in services.GetServices<IPipelineBehavior<TQuery, TResponse>>().Reverse())
         {
             var next = pipeline;
-            pipeline = () => behavior.Handle(typedRequest, ct, next);
+            pipeline = () => behavior.Handle(typedRequest, next, ct);
         }
 
         return await pipeline();
@@ -40,7 +40,7 @@ internal sealed class CommandHandlerWrapper<TCommand, TResponse> : HandlerWrappe
         foreach (var behavior in services.GetServices<IPipelineBehavior<TCommand, TResponse>>().Reverse())
         {
             var next = pipeline;
-            pipeline = () => behavior.Handle(typedRequest, ct, next);
+            pipeline = () => behavior.Handle(typedRequest, next, ct);
         }
 
         return await pipeline();
@@ -54,16 +54,30 @@ public sealed class Mediator(IServiceProvider services) : IMediator
 
     public Task<Result<TResponse>> Send<TResponse>(IQuery<TResponse> query, CancellationToken ct = default)
     {
-        var wrapper = (HandlerWrapper<TResponse>)QueryWrappers.GetOrAdd(query.GetType(), requestType =>
-            Activator.CreateInstance(typeof(QueryHandlerWrapper<,>).MakeGenericType(requestType, typeof(TResponse)))!);
+        var wrapper =
+            (HandlerWrapper<TResponse>)
+                QueryWrappers.GetOrAdd(
+                    query.GetType(),
+                    requestType =>
+                        Activator.CreateInstance(
+                            typeof(QueryHandlerWrapper<,>).MakeGenericType(requestType, typeof(TResponse))
+                        )!
+                );
 
         return wrapper.Handle(query, services, ct);
     }
 
     public Task<Result<TResponse>> Send<TResponse>(ICommand<TResponse> command, CancellationToken ct = default)
     {
-        var wrapper = (HandlerWrapper<TResponse>)CommandWrappers.GetOrAdd(command.GetType(), requestType =>
-            Activator.CreateInstance(typeof(CommandHandlerWrapper<,>).MakeGenericType(requestType, typeof(TResponse)))!);
+        var wrapper =
+            (HandlerWrapper<TResponse>)
+                CommandWrappers.GetOrAdd(
+                    command.GetType(),
+                    requestType =>
+                        Activator.CreateInstance(
+                            typeof(CommandHandlerWrapper<,>).MakeGenericType(requestType, typeof(TResponse))
+                        )!
+                );
 
         return wrapper.Handle(command, services, ct);
     }

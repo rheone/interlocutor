@@ -12,9 +12,16 @@ public class DependencyTests
     [Fact]
     public void CommonKernel_ShouldNotDependOnOtherMediancePackages()
     {
-        var result = Types.InAssembly(CommonKernelAssembly)
+        var result = Types
+            .InAssembly(CommonKernelAssembly)
             .ShouldNot()
-            .HaveDependencyOnAny(["Mediance.Abstractions", "Mediance.AspNetCore", "Mediance.EntityFrameworkCore", "Mediance.FluentValidation", "Mediance.NHibernate"])
+            .HaveDependencyOnAny([
+                "Mediance.Abstractions",
+                "Mediance.AspNetCore",
+                "Mediance.EntityFrameworkCore",
+                "Mediance.FluentValidation",
+                "Mediance.NHibernate",
+            ])
             .GetResult();
 
         Assert.True(result.IsSuccessful, string.Join(", ", result.FailingTypeNames ?? []));
@@ -23,9 +30,15 @@ public class DependencyTests
     [Fact]
     public void Abstractions_ShouldNotDependOnAspnetcoreOrExamplePackages()
     {
-        var result = Types.InAssembly(AbstractionsAssembly)
+        var result = Types
+            .InAssembly(AbstractionsAssembly)
             .ShouldNot()
-            .HaveDependencyOnAny(["Mediance.AspNetCore", "Mediance.EntityFrameworkCore", "Mediance.FluentValidation", "Mediance.NHibernate"])
+            .HaveDependencyOnAny([
+                "Mediance.AspNetCore",
+                "Mediance.EntityFrameworkCore",
+                "Mediance.FluentValidation",
+                "Mediance.NHibernate",
+            ])
             .GetResult();
 
         Assert.True(result.IsSuccessful, string.Join(", ", result.FailingTypeNames ?? []));
@@ -34,9 +47,15 @@ public class DependencyTests
     [Fact]
     public void AspNetCore_ShouldNotDependOnAbstractionsOrBehaviors()
     {
-        var result = Types.InAssembly(typeof(Mediance.AspNetCore.ResultExtensions).Assembly)
+        var result = Types
+            .InAssembly(typeof(Mediance.AspNetCore.ResultExtensions).Assembly)
             .ShouldNot()
-            .HaveDependencyOnAny(["Mediance.Abstractions", "Mediance.EntityFrameworkCore", "Mediance.FluentValidation", "Mediance.NHibernate"])
+            .HaveDependencyOnAny([
+                "Mediance.Abstractions",
+                "Mediance.EntityFrameworkCore",
+                "Mediance.FluentValidation",
+                "Mediance.NHibernate",
+            ])
             .GetResult();
 
         Assert.True(result.IsSuccessful, string.Join(", ", result.FailingTypeNames ?? []));
@@ -45,17 +64,20 @@ public class DependencyTests
     [Fact]
     public void ExampleImplementations_ShouldDependOnAbstractions()
     {
-        var efCoreResult = Types.InAssembly(typeof(Mediance.EntityFrameworkCore.TransactionBehavior<,,>).Assembly)
+        var efCoreResult = Types
+            .InAssembly(typeof(Mediance.EntityFrameworkCore.TransactionBehavior<,,>).Assembly)
             .Should()
             .HaveDependencyOn("Mediance.Abstractions")
             .GetResult();
 
-        var fluentResult = Types.InAssembly(typeof(Mediance.FluentValidation.ValidationBehavior<,>).Assembly)
+        var fluentResult = Types
+            .InAssembly(typeof(Mediance.FluentValidation.ValidationBehavior<,>).Assembly)
             .Should()
             .HaveDependencyOn("Mediance.Abstractions")
             .GetResult();
 
-        var nhibernateResult = Types.InAssembly(typeof(Mediance.NHibernate.TransactionBehavior<,>).Assembly)
+        var nhibernateResult = Types
+            .InAssembly(typeof(Mediance.NHibernate.TransactionBehavior<,>).Assembly)
             .Should()
             .HaveDependencyOn("Mediance.Abstractions")
             .GetResult();

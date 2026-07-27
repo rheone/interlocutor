@@ -11,8 +11,7 @@ namespace Mediance.Mediation.EntityFrameworkCore;
 /// evaluated inside the transactional branch.
 /// </summary>
 /// <typeparam name="TContext">The application's <see cref="DbContext"/> type.</typeparam>
-public class TransactionBehavior<TRequest, TResponse, TContext>(Lazy<TContext> db)
-    : IPipelineBehavior<TRequest, TResponse>
+public class TransactionBehavior<TRequest, TResponse, TContext>(Lazy<TContext> db) : IPipelineBehavior<TRequest, TResponse>
     where TContext : DbContext
 {
     public async Task<Result<TResponse>> Handle(TRequest request, CancellationToken ct, Func<Task<Result<TResponse>>> next)

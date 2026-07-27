@@ -11,7 +11,7 @@ public class TestRequestValidator : AbstractValidator<TestRequest>
 {
     public TestRequestValidator()
     {
-        RuleFor(x => x.Name).NotEmpty();
+        this.RuleFor(x => x.Name).NotEmpty();
     }
 }
 
@@ -25,12 +25,13 @@ public class ValidationBehaviorTests
 
         var result = await behavior.Handle(
             new TestRequest("test"),
-            CancellationToken.None,
             () =>
             {
                 handled = true;
                 return Task.FromResult<Result<string>>(new Result<string>("ok"));
-            });
+            },
+            CancellationToken.None
+        );
 
         Assert.True(handled);
         var value = result.Value switch
@@ -50,8 +51,9 @@ public class ValidationBehaviorTests
 
         var result = await behavior.Handle(
             new TestRequest(""),
-            CancellationToken.None,
-            () => Task.FromResult<Result<string>>(new Result<string>("should not reach")));
+            () => Task.FromResult<Result<string>>(new Result<string>("should not reach")),
+            CancellationToken.None
+        );
 
         var isFailure = result.Value switch
         {

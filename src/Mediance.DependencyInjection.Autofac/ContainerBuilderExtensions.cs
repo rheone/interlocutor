@@ -22,17 +22,19 @@ public static class MedianceAutofacExtensions
                 {
                     var def = iface.GetGenericTypeDefinition();
                     if (def == typeof(IQueryHandler<,>) || def == typeof(ICommandHandler<,>))
+                    {
                         builder.RegisterType(type).As(iface).InstancePerLifetimeScope();
+                    }
                 }
 
                 if (iface == typeof(ICommandHandler<>))
+                {
                     builder.RegisterType(type).As(iface).InstancePerLifetimeScope();
+                }
             }
         }
 
-        builder.Register(c => new AutofacServiceProvider(c.Resolve<ILifetimeScope>()))
-            .As<IServiceProvider>()
-            .ExternallyOwned();
+        builder.Register(c => new AutofacServiceProvider(c.Resolve<ILifetimeScope>())).As<IServiceProvider>().ExternallyOwned();
 
         builder.RegisterType<Mediator>().As<IMediator>().InstancePerLifetimeScope();
 

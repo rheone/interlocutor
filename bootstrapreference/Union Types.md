@@ -35,7 +35,7 @@ feedback_help_link_url: ''
 search.mshattr.devlang: csharp
 word_count: 2480
 asset_id: csharp/language-reference/builtin-types/union
-moniker_range_name: 
+moniker_range_name:
 monikers: []
 item_type: Content
 source_path: docs/csharp/language-reference/builtin-types/union.md

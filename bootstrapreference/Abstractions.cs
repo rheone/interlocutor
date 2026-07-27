@@ -94,19 +94,22 @@ public interface IRequiresPolicy
 }
 
 /// <summary>Handles a query and produces its result.</summary>
-public interface IQueryHandler<in TQuery, TResponse> where TQuery : IQuery<TResponse>
+public interface IQueryHandler<in TQuery, TResponse>
+    where TQuery : IQuery<TResponse>
 {
     Task<Result<TResponse>> Handle(TQuery query, CancellationToken ct);
 }
 
 /// <summary>Handles a command that returns a value.</summary>
-public interface ICommandHandler<in TCommand, TResponse> where TCommand : ICommand<TResponse>
+public interface ICommandHandler<in TCommand, TResponse>
+    where TCommand : ICommand<TResponse>
 {
     Task<Result<TResponse>> Handle(TCommand command, CancellationToken ct);
 }
 
 /// <summary>Handles a command with no return payload.</summary>
-public interface ICommandHandler<in TCommand> where TCommand : ICommand
+public interface ICommandHandler<in TCommand>
+    where TCommand : ICommand
 {
     Task<Result> Handle(TCommand command, CancellationToken ct);
 }
