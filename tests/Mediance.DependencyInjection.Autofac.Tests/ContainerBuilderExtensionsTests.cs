@@ -15,7 +15,7 @@ public class ContainerBuilderExtensionsTests
         builder.AddMediance(typeof(ContainerBuilderExtensionsTests).Assembly);
         var container = builder.Build();
 
-        var mediator = container.ResolveOptional<Abstractions.IMediator>();
+        var mediator = container.ResolveOptional<IMediator>();
         Assert.NotNull(mediator);
     }
 }

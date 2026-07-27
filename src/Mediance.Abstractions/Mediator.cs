@@ -94,4 +94,14 @@ public sealed class Mediator(IServiceProvider services) : IMediator
         var handleMethod = handlerType.GetMethod(nameof(ICommandHandler<ICommand>.Handle))!;
         return await (Task<Result>)handleMethod.Invoke(handler, [command, ct])!;
     }
+
+    public async Task Publish<TNotification>(TNotification notification, CancellationToken ct = default)
+        where TNotification : INotification
+    {
+        var handlers = services.GetServices<INotificationHandler<TNotification>>();
+        foreach (var handler in handlers)
+        {
+            await handler.Handle(notification, ct);
+        }
+    }
 }
