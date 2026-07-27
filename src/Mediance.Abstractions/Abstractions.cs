@@ -81,20 +81,20 @@ public abstract class ResourceCommandHandler<TCommand, TEntity, TResponse>
 
     public async Task<Result<TResponse>> Handle(TCommand command, CancellationToken ct)
     {
-        var entity = await LoadAsync(command, ct);
+        var entity = await this.LoadAsync(command, ct);
         if (entity is null)
         {
-            return new Result<TResponse>(new NotFound(typeof(TEntity).Name, DescribeKey(command)));
+            return new Result<TResponse>(new NotFound(typeof(TEntity).Name, this.DescribeKey(command)));
         }
 
-        var authorizationResult = Authorize(entity, command);
+        var authorizationResult = this.Authorize(entity, command);
 
         if (authorizationResult is not null)
         {
             return new Result<TResponse>(authorizationResult.Value);
         }
 
-        return await HandleAsync(command, entity, ct);
+        return await this.HandleAsync(command, entity, ct);
     }
 
     protected virtual object DescribeKey(TCommand command) => command!;

@@ -3,7 +3,7 @@ using Mediance.CommonKernel;
 
 namespace Mediance.Abstractions.Tests;
 
-public record TestCommand(int EntityId) : ICommand<string>;
+public record TestCommand(int entityId) : ICommand<string>;
 
 public class TestEntity
 {
@@ -72,7 +72,7 @@ public class ResourceCommandHandlerTests
             _ => throw new UnreachableException(),
         };
         Assert.NotNull(forbidden);
-        Assert.Equal("Access denied", forbidden!.Reason);
+        Assert.Equal("Access denied", forbidden!.reason);
     }
 }
 

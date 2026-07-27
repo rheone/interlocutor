@@ -56,14 +56,14 @@ public class PagedResultTests
     {
         var items = new List<int> { 1, 2, 3 };
         var result = new PagedResult<int>(items, 1, 10, 50);
-        Assert.Equal(items, result.Items);
+        Assert.Equal(items, result.items);
     }
 
     [Fact]
     public void Page_And_PageSize_Properties_StoredCorrectly()
     {
         var result = new PagedResult<int>([], 3, 25, 200);
-        Assert.Equal(3, result.Page);
-        Assert.Equal(25, result.PageSize);
+        Assert.Equal(3, result.page);
+        Assert.Equal(25, result.pageSize);
     }
 }

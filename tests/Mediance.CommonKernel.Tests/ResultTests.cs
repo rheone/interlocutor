@@ -60,26 +60,26 @@ public class ResultTests
         var validationFailed = new ValidationFailed(
             new Dictionary<string, IReadOnlyList<(string, string)>> { ["Name"] = [("NotEmpty", "Name is required")] }
         );
-        Assert.Single(validationFailed.Errors);
+        Assert.Single(validationFailed.errors);
 
         var ruleViolation = new RuleViolation("insufficient.balance", "Balance too low");
-        Assert.Equal("insufficient.balance", ruleViolation.Code);
+        Assert.Equal("insufficient.balance", ruleViolation.code);
 
         var notFound = new NotFound("Widget", 99);
-        Assert.Equal("Widget", notFound.EntityType);
+        Assert.Equal("Widget", notFound.entityType);
 
         var forbidden = new Forbidden("Not your resource");
-        Assert.Equal("Not your resource", forbidden.Reason);
+        Assert.Equal("Not your resource", forbidden.reason);
 
         var conflict = new Conflict("stale.data", "Data was modified");
-        Assert.Equal("stale.data", conflict.Code);
+        Assert.Equal("stale.data", conflict.code);
     }
 
     [Fact]
     public void Forbidden_WithDefaultReason_IsNull()
     {
         var forbidden = new Forbidden();
-        Assert.Null(forbidden.Reason);
+        Assert.Null(forbidden.reason);
     }
 
     private static Result<int> CreateSuccessResult(int value) => new(value);

@@ -28,15 +28,15 @@ public static class ResultExtensions
         {
             ValidationFailed v => new BadRequestObjectResult(
                 new ValidationProblemDetails(
-                    v.Errors.ToDictionary(kv => kv.Key, kv => kv.Value.Select(e => e.Message).ToArray())
+                    v.errors.ToDictionary(kv => kv.Key, kv => kv.Value.Select(e => e.Message).ToArray())
                 )
             ),
 
             RuleViolation r => new UnprocessableEntityObjectResult(
                 new ProblemDetails
                 {
-                    Title = r.Code,
-                    Detail = r.Message,
+                    Title = r.code,
+                    Detail = r.message,
                     Status = StatusCodes.Status422UnprocessableEntity,
                 }
             ),
@@ -48,8 +48,8 @@ public static class ResultExtensions
             Conflict c => new ConflictObjectResult(
                 new ProblemDetails
                 {
-                    Title = c.Code,
-                    Detail = c.Message,
+                    Title = c.code,
+                    Detail = c.message,
                     Status = StatusCodes.Status409Conflict,
                 }
             ),
