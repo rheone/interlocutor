@@ -10,7 +10,7 @@ public class TransactionBehavior<TRequest, TResponse>(Lazy<ISession> session) : 
 {
     public async Task<Result<TResponse>> Handle(TRequest request, Func<Task<Result<TResponse>>> next, CancellationToken ct)
     {
-        if (request is not ITransactionalRequest)
+        if (request is not ITransactionalRequest || request is IExternalStoreRequest)
         {
             return await next();
         }
