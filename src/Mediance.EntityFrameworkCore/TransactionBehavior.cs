@@ -9,7 +9,7 @@ public class TransactionBehavior<TRequest, TResponse, TContext>(Lazy<TContext> d
 {
     public async Task<Result<TResponse>> Handle(TRequest request, Func<Task<Result<TResponse>>> next, CancellationToken ct)
     {
-        if (request is not ITransactionalRequest)
+        if (request is not ITransactionalRequest || request is IExternalStoreRequest)
         {
             return await next();
         }
@@ -21,7 +21,16 @@ public class TransactionBehavior<TRequest, TResponse, TContext>(Lazy<TContext> d
 
         if (result.Value is not Failure)
         {
-            await context.SaveChangesAsync(ct);
+            try
+            {
+                await context.SaveChangesAsync(ct);
+            }
+            catch
+            {
+                await transaction.RollbackAsync(ct);
+                throw;
+            }
+
             await transaction.CommitAsync(ct);
         }
         else

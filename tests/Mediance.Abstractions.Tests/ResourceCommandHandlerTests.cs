@@ -72,7 +72,7 @@ public class ResourceCommandHandlerTests
             _ => throw new UnreachableException(),
         };
         Assert.NotNull(forbidden);
-        Assert.Equal("Access denied", forbidden!.reason);
+        Assert.Equal("Access denied", forbidden!.Reason);
     }
 }
 

@@ -21,13 +21,17 @@ public static class MedianceAutofacExtensions
                 if (iface.IsGenericType)
                 {
                     var def = iface.GetGenericTypeDefinition();
-                    if (def == typeof(IQueryHandler<,>) || def == typeof(ICommandHandler<,>))
+                    if (
+                        def == typeof(IQueryHandler<,>)
+                        || def == typeof(ICommandHandler<,>)
+                        || def == typeof(INotificationHandler<>)
+                    )
                     {
                         builder.RegisterType(type).As(iface).InstancePerLifetimeScope();
                     }
                 }
 
-                if (iface == typeof(ICommandHandler<>))
+                if (iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(ICommandHandler<>))
                 {
                     builder.RegisterType(type).As(iface).InstancePerLifetimeScope();
                 }
@@ -36,8 +40,14 @@ public static class MedianceAutofacExtensions
 
         builder.Register(c => new AutofacServiceProvider(c.Resolve<ILifetimeScope>())).As<IServiceProvider>().ExternallyOwned();
 
-        builder.RegisterType<Mediator>().As<IMediator>().InstancePerLifetimeScope();
+        builder.RegisterType<Mediator>().As<IMediator>().As<ISender>().As<IPublisher>().InstancePerLifetimeScope();
 
         return builder;
     }
+
+    public static ContainerBuilder AddMediance(this ContainerBuilder builder, Type markerType) =>
+        builder.AddMediance(markerType.Assembly);
+
+    public static ContainerBuilder AddMedianceFromEntryAssembly(this ContainerBuilder builder) =>
+        builder.AddMediance(Assembly.GetEntryAssembly()!);
 }

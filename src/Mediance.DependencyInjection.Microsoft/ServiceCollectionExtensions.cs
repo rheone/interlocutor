@@ -16,13 +16,17 @@ public static class MedianceServiceCollectionExtensions
                 if (iface.IsGenericType)
                 {
                     var def = iface.GetGenericTypeDefinition();
-                    if (def == typeof(IQueryHandler<,>) || def == typeof(ICommandHandler<,>))
+                    if (
+                        def == typeof(IQueryHandler<,>)
+                        || def == typeof(ICommandHandler<,>)
+                        || def == typeof(INotificationHandler<>)
+                    )
                     {
                         services.AddScoped(iface, type);
                     }
                 }
 
-                if (iface == typeof(ICommandHandler<>))
+                if (iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(ICommandHandler<>))
                 {
                     services.AddScoped(iface, type);
                 }
@@ -30,7 +34,15 @@ public static class MedianceServiceCollectionExtensions
         }
 
         services.AddScoped<IMediator, Mediator>();
+        services.AddScoped<ISender>(sp => sp.GetRequiredService<IMediator>());
+        services.AddScoped<IPublisher>(sp => sp.GetRequiredService<IMediator>());
 
         return services;
     }
+
+    public static IServiceCollection AddMediance(this IServiceCollection services, Type markerType) =>
+        services.AddMediance(markerType.Assembly);
+
+    public static IServiceCollection AddMedianceFromEntryAssembly(this IServiceCollection services) =>
+        services.AddMediance(Assembly.GetEntryAssembly()!);
 }
