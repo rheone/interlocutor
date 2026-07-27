@@ -1,0 +1,23 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Mediance.CommonKernel/Mediance.CommonKernel.csproj" />
+    <Project Path="src/Mediance.Abstractions/Mediance.Abstractions.csproj" />
+    <Project Path="src/Mediance.DependencyInjection.Microsoft/Mediance.DependencyInjection.Microsoft.csproj" />
+    <Project Path="src/Mediance.DependencyInjection.Autofac/Mediance.DependencyInjection.Autofac.csproj" />
+    <Project Path="src/Mediance.AspNetCore/Mediance.AspNetCore.csproj" />
+    <Project Path="src/Mediance.EntityFrameworkCore/Mediance.EntityFrameworkCore.csproj" />
+    <Project Path="src/Mediance.FluentValidation/Mediance.FluentValidation.csproj" />
+    <Project Path="src/Mediance.NHibernate/Mediance.NHibernate.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Mediance.CommonKernel.Tests/Mediance.CommonKernel.Tests.csproj" />
+    <Project Path="tests/Mediance.Abstractions.Tests/Mediance.Abstractions.Tests.csproj" />
+    <Project Path="tests/Mediance.DependencyInjection.Microsoft.Tests/Mediance.DependencyInjection.Microsoft.Tests.csproj" />
+    <Project Path="tests/Mediance.DependencyInjection.Autofac.Tests/Mediance.DependencyInjection.Autofac.Tests.csproj" />
+    <Project Path="tests/Mediance.AspNetCore.Tests/Mediance.AspNetCore.Tests.csproj" />
+    <Project Path="tests/Mediance.EntityFrameworkCore.Tests/Mediance.EntityFrameworkCore.Tests.csproj" />
+    <Project Path="tests/Mediance.FluentValidation.Tests/Mediance.FluentValidation.Tests.csproj" />
+    <Project Path="tests/Mediance.NHibernate.Tests/Mediance.NHibernate.Tests.csproj" />
+    <Project Path="tests/Mediance.Architecture.Tests/Mediance.Architecture.Tests.csproj" />
+  </Folder>
+</Solution>

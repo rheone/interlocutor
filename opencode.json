@@ -1,0 +1,20 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "small_model": "opencode-go/deepseek-v4-flash",
+  "lsp": true,
+  "agent": {
+    "reviewer": {
+      "description": "Code review agent (read-only). Reviews changes for quality, correctness, and adherence to standards.",
+      "mode": "subagent",
+      "model": "opencode-go/deepseek-v4-pro",
+      "permission": {
+        "edit": "deny"
+      }
+    },
+    "docs": {
+      "description": "Documentation agent. Creates and updates documentation files.",
+      "mode": "subagent",
+      "model": "opencode-go/deepseek-v4-flash"
+    }
+  }
+}

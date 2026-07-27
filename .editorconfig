@@ -1,0 +1,45 @@
+root = true
+
+[*]
+indent_style = space
+indent_size = 4
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.{cs,vb,fs}]
+indent_size = 4
+
+[*.{csproj,sln,slnx,xml,props,targets}]
+indent_size = 2
+
+[*.{json,yml,yaml}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.{cs,vb,fs}]
+# Suppress StyleCop layout analyzers that crash on union type syntax
+dotnet_diagnostic.SA1500.severity = none
+dotnet_diagnostic.SA1502.severity = none
+dotnet_diagnostic.SA1508.severity = none
+
+# Roslynator analyzers
+dotnet_diagnostic.RCS1036.severity = suggestion
+dotnet_diagnostic.RCS1037.severity = suggestion
+dotnet_diagnostic.RCS1041.severity = suggestion
+dotnet_diagnostic.RCS1061.severity = suggestion
+dotnet_diagnostic.RCS1075.severity = suggestion
+dotnet_diagnostic.RCS1085.severity = suggestion
+dotnet_diagnostic.RCS1090.severity = suggestion
+dotnet_diagnostic.RCS1146.severity = suggestion
+dotnet_diagnostic.RCS1163.severity = suggestion
+dotnet_diagnostic.RCS1208.severity = suggestion
+dotnet_diagnostic.RCS1213.severity = suggestion
+dotnet_diagnostic.RCS1227.severity = suggestion
+dotnet_diagnostic.RCS1234.severity = suggestion
+dotnet_diagnostic.RCS1248.severity = suggestion
+dotnet_diagnostic.RCS1253.severity = suggestion
+dotnet_diagnostic.RCS1155.severity = suggestion
+dotnet_diagnostic.RCS1261.severity = suggestion

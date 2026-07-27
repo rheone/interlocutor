@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <!-- All Mediance packages for architecture verification -->
+    <ProjectReference Include="..\..\src\Mediance.CommonKernel\Mediance.CommonKernel.csproj" />
+    <ProjectReference Include="..\..\src\Mediance.Abstractions\Mediance.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\Mediance.DependencyInjection.Microsoft\Mediance.DependencyInjection.Microsoft.csproj" />
+    <ProjectReference Include="..\..\src\Mediance.DependencyInjection.Autofac\Mediance.DependencyInjection.Autofac.csproj" />
+    <ProjectReference Include="..\..\src\Mediance.AspNetCore\Mediance.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\src\Mediance.EntityFrameworkCore\Mediance.EntityFrameworkCore.csproj" />
+    <ProjectReference Include="..\..\src\Mediance.FluentValidation\Mediance.FluentValidation.csproj" />
+    <ProjectReference Include="..\..\src\Mediance.NHibernate\Mediance.NHibernate.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Microsoft.Testing.Platform" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="NetArchTest.Rules" />
+  </ItemGroup>
+</Project>

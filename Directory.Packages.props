@@ -1,0 +1,72 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageFloatingVersionsEnabled>true</CentralPackageFloatingVersionsEnabled>
+  </PropertyGroup>
+
+  <!-- Roslynator -->
+  <ItemGroup>
+    <PackageVersion Include="Roslynator.Analyzers" Version="4.*" />
+    <PackageVersion Include="Roslynator.CodeAnalysis.Analyzers" Version="4.*" />
+    <PackageVersion Include="Roslynator.Formatting.Analyzers" Version="4.*" />
+  </ItemGroup>
+
+  <!-- StyleCop -->
+  <ItemGroup>
+    <PackageVersion Include="StyleCop.Analyzers" Version="1.*" />
+  </ItemGroup>
+
+  <!-- Microsoft extensions (ship with .NET 11) -->
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="11.0.0-*" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="11.0.0-*" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="11.0.0-*" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="11.0.0-*" />
+  </ItemGroup>
+
+  <!-- Entity Framework Core -->
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="11.0.0-*" />
+  </ItemGroup>
+
+  <!-- FluentValidation -->
+  <ItemGroup>
+    <PackageVersion Include="FluentValidation" Version="11.*" />
+  </ItemGroup>
+
+  <!-- NHibernate -->
+  <ItemGroup>
+    <PackageVersion Include="NHibernate" Version="5.*" />
+  </ItemGroup>
+
+  <!-- Autofac -->
+  <ItemGroup>
+    <PackageVersion Include="Autofac" Version="8.*" />
+    <PackageVersion Include="Autofac.Extensions.DependencyInjection" Version="9.*" />
+  </ItemGroup>
+
+  <!-- xUnit v3 + MTP test packages -->
+  <ItemGroup>
+    <PackageVersion Include="xunit.v3" Version="3.*" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.*" />
+    <PackageVersion Include="Microsoft.Testing.Platform" Version="1.*" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.*" />
+    <PackageVersion Include="coverlet.collector" Version="3.*" />
+  </ItemGroup>
+
+  <!-- NSubstitute -->
+  <ItemGroup>
+    <PackageVersion Include="NSubstitute" Version="5.*" />
+    <PackageVersion Include="NSubstitute.Analyzers.CSharp" Version="1.*" />
+  </ItemGroup>
+
+  <!-- Architecture tests -->
+  <ItemGroup>
+    <PackageVersion Include="NetArchTest.Rules" Version="1.*" />
+  </ItemGroup>
+
+  <!-- Source Link -->
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="1.*" />
+  </ItemGroup>
+</Project>

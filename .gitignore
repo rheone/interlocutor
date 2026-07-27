@@ -1,0 +1,134 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.sln.docstates
+*.userprefs
+
+# NuGet Packages
+*.nupkg
+**/[Pp]ackages/*
+!**/packages/build/
+*.nuget.props
+*.nuget.targets
+!**/[Pp]ackages/build/
+
+# Exclude .NET assemblies from source
+*.dll
+
+# VS Code (project config is tracked; user files stay ignored)
+.vscode/*
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/extensions.json
+!.vscode/settings.json
+.vs/
+
+*_i.c
+*_p.c
+*_i.h
+*.ilk
+*.meta
+*.obj
+*.pch
+*.pdb
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*.tmp
+*.tmp_proj
+*.log
+*.vspscc
+*.vssscc
+.builds
+*.pidb
+*.svclog
+*.scc
+
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# Visual Studio profiler
+*.psess
+*.vsp
+*.vspx
+*.sap
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+[Ll]ocal/
+[Qa]alty/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Nn]ative/
+[Bb]uild/
+Generated\ Files/
+
+# dotnet tools
+.config/dotnet-tools.json
+
+# docker volumes
+docker-data/
+
+# Husky
+.husky/_/
+
+.agents/
+.claude/
+
+# Local configuration overrides (git-ignored, developer-specific)
+appsettings.Local.json
+
+# Log files
+logs/
+
+# OpenObserve docker volume
+openobserve-data/
+
+# DotCover is a Code Coverage Tool
+*.dotCover
+
+# Visual Studio code coverage results
+*.coverage
+*.coveragexml
+coverage.xml
+
+# Visual Studio cache files
+# files ending in .cache can be ignored
+# but keep track of directories ending in .cache
+!?*.[Cc]ache/
+
+# Click-Once directory
+publish/
+
+# Windows Installer files
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+
+# Windows shortcuts
+*.lnk
+
+# Git worktrees
+.worktrees/
+.worktrees
+
+# Temporary files
+*.bak
+*.swp
+*.swo
+*.tmp

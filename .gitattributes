@@ -1,0 +1,55 @@
+﻿###############################################################################
+# Git Attributes
+#
+# Normalize text files to LF in the repository. Git will handle conversion
+# during checkout as needed, while .editorconfig controls the editor behavior.
+###############################################################################
+
+* text=auto eol=lf
+
+###############################################################################
+# Language-specific diff drivers
+###############################################################################
+
+*.cs diff=csharp
+
+###############################################################################
+# Merge behavior
+#
+# Prevent Git from inserting conflict markers into Visual Studio solution and
+# project files. These files require manual conflict resolution.
+###############################################################################
+
+*.sln     merge=binary
+*.csproj  merge=binary
+
+###############################################################################
+# Linux / Cross-platform files
+###############################################################################
+
+*.bash          text eol=lf
+*.editorconfig  text eol=lf
+*.sh            text eol=lf
+*.json          text eol=lf
+*.jsonc         text eol=lf
+*.md            text eol=lf
+*.xml           text eol=lf
+*.yaml          text eol=lf
+*.yml           text eol=lf
+Dockerfile      text eol=lf
+
+###############################################################################
+# Windows-native files
+###############################################################################
+
+*.bat           text eol=crlf
+*.cmd           text eol=crlf
+
+###############################################################################
+# PowerShell
+#
+# PowerShell fully supports LF, making it the preferred choice for
+# cross-platform repositories and devcontainers.
+###############################################################################
+
+*.ps1           text eol=lf
