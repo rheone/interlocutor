@@ -16,6 +16,10 @@
 | `build` | deepseek-v4-flash | primary | General implementation |
 | `docs` | deepseek-v4-flash | subagent | Documentation |
 
+## Conventions
+
+- Source files should contain only one top-level public type, and the file name should match the type name. The exception is simple record or struct types, which may include their custom member implementations (such as equality, formatting, or operator overrides) in the same file.
+
 ## Common Practices
 
 ### Workflow
