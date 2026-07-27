@@ -12,7 +12,7 @@ Use multiple agents; there is a lot of information available that will need to b
 
 Create a C# solution (slnx) for a library package
 
-Create appropriate projects and testing projects 
+Create appropriate projects and testing projects
 
 Use
   - Target .NET 11 preview

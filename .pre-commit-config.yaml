@@ -18,7 +18,7 @@ repos:
         args: [--maxkb=512]
       - id: check-merge-conflict
       - id: mixed-line-ending
-        args: [--fix=crlf]
+        args: [--fix=lf]
 
   # ── Spell check ────────────────────────────────────────────────
   - repo: https://github.com/codespell-project/codespell
