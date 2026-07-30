@@ -4,14 +4,13 @@
 # Normalize text files to LF in the repository. Git will handle conversion
 # during checkout as needed, while .editorconfig controls the editor behavior.
 ###############################################################################
-
 * text=auto eol=lf
 
 ###############################################################################
 # Language-specific diff drivers
 ###############################################################################
-
 *.cs diff=csharp
+
 
 ###############################################################################
 # Merge behavior
@@ -19,7 +18,6 @@
 # Prevent Git from inserting conflict markers into Visual Studio solution and
 # project files. These files require manual conflict resolution.
 ###############################################################################
-
 *.sln     merge=binary
 *.csproj  merge=binary
 
@@ -44,6 +42,7 @@ Dockerfile      text eol=lf
 
 *.bat           text eol=crlf
 *.cmd           text eol=crlf
+
 
 ###############################################################################
 # PowerShell

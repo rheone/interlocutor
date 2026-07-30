@@ -21,7 +21,12 @@ public class LoggingBehavior<TRequest, TResponse>(ILogger<LoggingBehavior<TReque
         catch (Exception ex)
         {
             var elapsed = Stopwatch.GetElapsedTime(start);
-            logger.LogError(ex, "Request {RequestType} failed with exception after {ElapsedMs}ms", requestType, elapsed.TotalMilliseconds);
+            logger.LogError(
+                ex,
+                "Request {RequestType} failed with exception after {ElapsedMs}ms",
+                requestType,
+                elapsed.TotalMilliseconds
+            );
             throw;
         }
 
@@ -37,7 +42,12 @@ public class LoggingBehavior<TRequest, TResponse>(ILogger<LoggingBehavior<TReque
             _ => "Unknown",
         };
 
-        logger.LogInformation("Request {RequestType} completed with {Outcome} in {ElapsedMs}ms", requestType, outcome, elapsedMs);
+        logger.LogInformation(
+            "Request {RequestType} completed with {Outcome} in {ElapsedMs}ms",
+            requestType,
+            outcome,
+            elapsedMs
+        );
         return result;
     }
 }

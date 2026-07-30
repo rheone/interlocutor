@@ -8,7 +8,10 @@ public class AuditingBehavior<TRequest, TResponse>(IAuditSink sink) : IPipelineB
 {
     public async Task<Result<TResponse>> Handle(TRequest request, Func<Task<Result<TResponse>>> next, CancellationToken ct)
     {
-        if (request is not IAuditableRequest auditable) return await next();
+        if (request is not IAuditableRequest auditable)
+        {
+            return await next();
+        }
 
         var result = await next();
         var outcome = result.Value switch

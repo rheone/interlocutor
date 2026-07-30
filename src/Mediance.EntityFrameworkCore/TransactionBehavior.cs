@@ -6,11 +6,53 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Mediance.EntityFrameworkCore;
 
+/// <summary>
+/// Wraps transactional request handler execution in an EF Core database transaction.
+/// </summary>
+/// <typeparam name="TRequest">The request type that this behavior processes.</typeparam>
+/// <typeparam name="TResponse">The response type returned after pipeline execution.</typeparam>
+/// <typeparam name="TContext">The EF Core <see cref="DbContext"/> type providing the database connection for the transaction scope.</typeparam>
+/// <param name="db">Lazy factory for the <typeparamref name="TContext"/> instance that provides database access.</param>
+/// <remarks>
+/// <para>
+/// This behavior opens an <see cref="Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction"/> before invoking
+/// the next handler in the pipeline. After the handler completes successfully, it persists pending changes
+/// via <see cref="DbContext.SaveChangesAsync(CancellationToken)"/> and commits the transaction. If the handler
+/// returns a <see cref="Failure"/> result, or if <c>SaveChangesAsync</c> throws, the transaction is rolled
+/// back and all accumulated changes are discarded.
+/// </para>
+/// <para>
+/// Requests are only wrapped in a transaction when they implement <see cref="ITransactionalRequest"/>.
+/// Requests implementing <see cref="IExternalStoreRequest"/> are explicitly excluded because they manage
+/// their own external transaction or outbox scope and should not participate in the local database transaction.
+/// </para>
+/// <para>
+/// This is the EF Core equivalent of <c>Mediance.NHibernate.TransactionBehavior{TRequest,TResponse}</c>.
+/// Unlike the NHibernate version, EF Core requires an explicit <c>SaveChangesAsync</c> call to persist tracked
+/// entities before the transaction can be committed.
+/// </para>
+/// </remarks>
 public class TransactionBehavior<TRequest, TResponse, TContext>(Lazy<TContext> db) : IPipelineBehavior<TRequest, TResponse>
     where TContext : DbContext
 {
+    /// <inheritdoc/>
+    /// <remarks>
+    /// <para>
+    /// If the request does not implement <see cref="ITransactionalRequest"/> or implements
+    /// <see cref="IExternalStoreRequest"/>, the handler is invoked without any transaction scope.
+    /// </para>
+    /// <para>
+    /// When a transaction is active, <see cref="DbContext.SaveChangesAsync(CancellationToken)"/> is called
+    /// after the handler succeeds to persist all tracked entity changes within the transaction. If
+    /// <c>SaveChangesAsync</c> throws, the transaction is rolled back before the exception re-propagates.
+    /// If the handler returns a <see cref="Failure"/> result, the transaction is rolled back without
+    /// attempting to persist changes.
+    /// </para>
+    /// </remarks>
     public async Task<Result<TResponse>> Handle(TRequest request, Func<Task<Result<TResponse>>> next, CancellationToken ct)
     {
+        // Skip transaction management for requests that do not participate in transactions
+        // or manage their own external transaction context (e.g., outbox, event bus).
         if (request is not ITransactionalRequest || request is IExternalStoreRequest)
         {
             return await next();
@@ -25,18 +67,22 @@ public class TransactionBehavior<TRequest, TResponse, TContext>(Lazy<TContext> d
         {
             try
             {
+                // Persist all tracked entity changes accumulated during handler execution.
                 await context.SaveChangesAsync(ct);
             }
             catch
             {
+                // Persistence failed — discard any partial changes by rolling back the transaction.
                 await transaction.RollbackAsync(ct);
                 throw;
             }
 
+            // All changes persisted successfully; commit the database transaction.
             await transaction.CommitAsync(ct);
         }
         else
         {
+            // Handler returned a failure result — discard any accumulated changes.
             await transaction.RollbackAsync(ct);
         }
 

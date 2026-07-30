@@ -5,5 +5,8 @@ namespace Mediance.Abstractions.Core;
 public interface IRequestContextAccessor
 {
     /// <summary>Gets or sets the current request context. May be null if not populated.</summary>
+    /// <value>
+    /// The current request context. May be null if not populated.
+    /// </value>
     RequestContext? Context { get; set; }
 }

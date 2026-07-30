@@ -8,7 +8,10 @@ public class PipelineStageBehavior<TRequest, TResponse>(IEnumerable<IPipelineSta
 {
     public async Task<Result<TResponse>> Handle(TRequest request, Func<Task<Result<TResponse>>> next, CancellationToken ct)
     {
-        foreach (var stage in stages) await stage.OnBeforeAsync(request, ct);
+        foreach (var stage in stages)
+        {
+            await stage.OnBeforeAsync(request, ct);
+        }
 
         Result<TResponse> result;
         try
@@ -17,11 +20,18 @@ public class PipelineStageBehavior<TRequest, TResponse>(IEnumerable<IPipelineSta
         }
         catch
         {
-            foreach (var stage in stages) await stage.OnAfterAsync(request, new Result<TResponse>(), ct);
+            foreach (var stage in stages)
+            {
+                await stage.OnAfterAsync(request, default(Result<TResponse>), ct);
+            }
+
             throw;
         }
 
-        foreach (var stage in stages) await stage.OnAfterAsync(request, result, ct);
+        foreach (var stage in stages)
+        {
+            await stage.OnAfterAsync(request, result, ct);
+        }
 
         return result;
     }

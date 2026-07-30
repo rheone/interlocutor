@@ -6,6 +6,7 @@ namespace Mediance.Abstractions.Core;
 public interface IPublisher
 {
     /// <summary>Publishes a notification to all registered <see cref="INotificationHandler{TNotification}"/> instances.</summary>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     Task Publish<TNotification>(TNotification notification, CancellationToken ct = default)
         where TNotification : INotification;
 }
