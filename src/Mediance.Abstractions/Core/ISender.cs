@@ -1,10 +1,10 @@
 using Mediance.Abstractions.Commands;
 using Mediance.Abstractions.Queries;
-using Mediance.CommonKernel;
+using Mediance.CommonKernel.ResultTypes;
 
 namespace Mediance.Abstractions.Core;
 
-/// <summary>Send-only interface for request/response operations. Exposes <see cref="""Send{TResponse}(IQuery{TResponse},CancellationToken)"""/> for queries and commands.</summary>
+/// <summary>Send-only interface for request/response operations. Exposes <see cref="Send{TResponse}(IQuery{TResponse},CancellationToken)"/> for queries and commands.</summary>
 public interface ISender
 {
     /// <summary>Dispatches a query to its registered handler, returning the result through all pipeline behaviors.</summary>

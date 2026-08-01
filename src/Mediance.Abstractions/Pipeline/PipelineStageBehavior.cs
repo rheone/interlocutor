@@ -1,5 +1,3 @@
-using Mediance.CommonKernel;
-
 namespace Mediance.Abstractions.Pipeline;
 
 /// <summary>Aggregates all registered <see cref="IPipelineStage{TRequest,TResponse}"/> instances and invokes them around the handler call.</summary>

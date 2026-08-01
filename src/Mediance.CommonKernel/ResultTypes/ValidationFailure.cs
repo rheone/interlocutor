@@ -1,4 +1,4 @@
-namespace Mediance.CommonKernel;
+namespace Mediance.CommonKernel.ResultTypes;
 
 /// <summary>
 /// Represents a violation of a business rule.
@@ -6,4 +6,6 @@ namespace Mediance.CommonKernel;
 /// </summary>
 /// <param name="code">A machine-readable error code identifying the violated rule.</param>
 /// <param name="message">A human-readable description of the violation.</param>
-public sealed record RuleViolation(string code, string message);
+public sealed record ValidationFailure(string message, string code);
+
+public sealed record ValidationFailures(IEnumerable<ValidationFailure> validationFailures);

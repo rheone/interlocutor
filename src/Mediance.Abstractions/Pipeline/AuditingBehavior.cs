@@ -1,5 +1,6 @@
 using Mediance.Abstractions.Markers;
 using Mediance.CommonKernel;
+using Mediance.CommonKernel.ResultTypes;
 
 namespace Mediance.Abstractions.Pipeline;
 
@@ -18,7 +19,7 @@ public class AuditingBehavior<TRequest, TResponse>(IAuditSink sink) : IPipelineB
         {
             TResponse => "Success",
             ValidationFailed => "ValidationFailed",
-            RuleViolation => "RuleViolation",
+            ValidationFailure => "RuleViolation",
             NotFound => "NotFound",
             Forbidden => "Forbidden",
             Conflict => "Conflict",

@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Mediance.CommonKernel;
+using Mediance.CommonKernel.ResultTypes;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,13 +10,13 @@ namespace Mediance.AspNetCore;
 public static class ResultExtensions
 {
     /// <summary>Converts a typed <see cref="Result{T}"/> to an <see cref="IActionResult"/> with the appropriate HTTP status code.</summary>
-    /// <typeparam name="T">The type of the success value.</typeparam>
+    /// <typeparam name="TResult">The type of the success value.</typeparam>
     /// <param name="result">The result to convert.</param>
     /// <returns>An <see cref="OkObjectResult"/> on success, or the mapped error result on failure.</returns>
-    public static IActionResult ToActionResult<T>(this Result<T> result) =>
+    public static IActionResult ToActionResult<TResult>(this Result<TResult> result) =>
         result.Value switch
         {
-            T ok => new OkObjectResult(ok),
+            TResult ok => new OkObjectResult(ok),
             Failure f => f.ToActionResult(),
             _ => throw new UnreachableException(),
         };
@@ -42,7 +43,7 @@ public static class ResultExtensions
                 )
             ),
 
-            RuleViolation r => new UnprocessableEntityObjectResult(
+            ValidationFailure r => new UnprocessableEntityObjectResult(
                 new ProblemDetails
                 {
                     Title = r.code,

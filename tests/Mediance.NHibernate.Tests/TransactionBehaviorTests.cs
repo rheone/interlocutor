@@ -1,6 +1,5 @@
 using Mediance.Abstractions;
 using Mediance.Abstractions.Commands;
-using Mediance.CommonKernel;
 using NHibernate;
 
 namespace Mediance.NHibernate.Tests;

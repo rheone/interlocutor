@@ -1,5 +1,3 @@
-using Mediance.CommonKernel;
-
 namespace Mediance.Abstractions.Pipeline;
 
 /// <summary>

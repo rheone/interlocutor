@@ -1,7 +1,7 @@
 using Mediance.Abstractions;
 using Mediance.Abstractions.Markers;
 using Mediance.Abstractions.Pipeline;
-using Mediance.CommonKernel;
+using Mediance.CommonKernel.ResultTypes;
 using Microsoft.EntityFrameworkCore;
 
 namespace Mediance.EntityFrameworkCore;

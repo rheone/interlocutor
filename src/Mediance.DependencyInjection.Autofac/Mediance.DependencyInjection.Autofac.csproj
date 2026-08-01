@@ -2,6 +2,11 @@
   <PropertyGroup>
     <Description>Autofac integration for Mediance. Registers the mediator, handlers, and pipeline behaviors via AddMediance().</Description>
   </PropertyGroup>
+  <ItemGroup>
+    <AdditionalFiles Remove="C:\Users\rheone\code\Mediance\.editorconfig" />
+    <AdditionalFiles Remove="C:\Users\rheone\code\Mediance\dictionary.dic" />
+    <AdditionalFiles Remove="C:\Users\rheone\code\Mediance\stylecop.json" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Mediance.Abstractions\Mediance.Abstractions.csproj" />
@@ -10,5 +15,9 @@
   <ItemGroup>
     <PackageReference Include="Autofac" />
     <PackageReference Include="Autofac.Extensions.DependencyInjection" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EditorConfigFiles Remove="C:\Users\rheone\code\Mediance\.editorconfig" />
   </ItemGroup>
 </Project>

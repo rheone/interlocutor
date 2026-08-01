@@ -1,13 +1,14 @@
 using System.Reflection;
 using Mediance.Abstractions;
 using Mediance.Abstractions.Core;
+using Mediance.CommonKernel.ResultTypes;
 using NetArchTest.Rules;
 
 namespace Mediance.Architecture.Tests;
 
 public class DependencyTests
 {
-    private static readonly Assembly CommonKernelAssembly = typeof(Mediance.CommonKernel.Result).Assembly;
+    private static readonly Assembly CommonKernelAssembly = typeof(Result).Assembly;
     private static readonly Assembly AbstractionsAssembly = typeof(IMediator).Assembly;
 
     [Fact]

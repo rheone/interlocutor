@@ -1,5 +1,3 @@
-using Mediance.CommonKernel;
-
 namespace Mediance.Abstractions.Pipeline;
 
 /// <summary>Lightweight pre/post hook interface without creating a full <see cref="IPipelineBehavior{TRequest,TResponse}"/>.</summary>

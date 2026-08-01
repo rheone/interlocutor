@@ -2,6 +2,11 @@
   <PropertyGroup>
     <Description>ASP.NET Core integration for Mediance. Provides ToActionResult() mapping from Result/Failure to HTTP ProblemDetails responses.</Description>
   </PropertyGroup>
+  <ItemGroup>
+    <AdditionalFiles Remove="C:\Users\rheone\code\Mediance\.editorconfig" />
+    <AdditionalFiles Remove="C:\Users\rheone\code\Mediance\dictionary.dic" />
+    <AdditionalFiles Remove="C:\Users\rheone\code\Mediance\stylecop.json" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Mediance.CommonKernel\Mediance.CommonKernel.csproj" />
@@ -9,5 +14,9 @@
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EditorConfigFiles Remove="C:\Users\rheone\code\Mediance\.editorconfig" />
   </ItemGroup>
 </Project>

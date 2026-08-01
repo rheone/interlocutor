@@ -2,6 +2,11 @@
   <PropertyGroup>
     <Description>Mediance mediator abstractions: IMediator, IPipelineBehavior, handler contracts, marker interfaces, and the concrete Mediator implementation.</Description>
   </PropertyGroup>
+  <ItemGroup>
+    <AdditionalFiles Remove="C:\Users\rheone\code\Mediance\.editorconfig" />
+    <AdditionalFiles Remove="C:\Users\rheone\code\Mediance\dictionary.dic" />
+    <AdditionalFiles Remove="C:\Users\rheone\code\Mediance\stylecop.json" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Mediance.CommonKernel\Mediance.CommonKernel.csproj" />
@@ -10,5 +15,8 @@
   <!-- DependencyInjection.Abstractions and Logging.Abstractions are auto-available in .NET 11 SDK -->
   <ItemGroup>
     <Using Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+  <ItemGroup>
+    <EditorConfigFiles Remove="C:\Users\rheone\code\Mediance\.editorconfig" />
   </ItemGroup>
 </Project>

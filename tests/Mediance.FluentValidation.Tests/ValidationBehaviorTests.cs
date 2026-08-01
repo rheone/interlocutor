@@ -3,7 +3,7 @@ using FluentValidation;
 using Mediance.Abstractions;
 using Mediance.Abstractions.Commands;
 using Mediance.Abstractions.Pipeline;
-using Mediance.CommonKernel;
+using Mediance.CommonKernel.ResultTypes;
 
 namespace Mediance.FluentValidation.Tests;
 

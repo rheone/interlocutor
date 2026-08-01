@@ -6,6 +6,7 @@ using Mediance.Abstractions.Notifications;
 using Mediance.Abstractions.Pipeline;
 using Mediance.Abstractions.Queries;
 using Mediance.CommonKernel;
+using Mediance.CommonKernel.ResultTypes;
 
 namespace Mediance.Abstractions;
 

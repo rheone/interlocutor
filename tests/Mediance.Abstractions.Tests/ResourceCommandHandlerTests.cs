@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using Mediance.Abstractions.Commands;
 using Mediance.Abstractions.Core;
-using Mediance.CommonKernel;
+using Mediance.CommonKernel.ResultTypes;
 
 namespace Mediance.Abstractions.Tests;
 
@@ -74,7 +74,7 @@ public class ResourceCommandHandlerTests
             _ => throw new UnreachableException(),
         };
         Assert.NotNull(forbidden);
-        Assert.Equal("Access denied", forbidden!.reason);
+        Assert.Equal("Access denied", forbidden!.Reason);
     }
 }
 

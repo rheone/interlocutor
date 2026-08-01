@@ -1,4 +1,4 @@
-namespace Mediance.CommonKernel;
+namespace Mediance.CommonKernel.ResultTypes;
 
 /// <summary>
 /// Represents a conflict error that occurred during command or query execution.
@@ -7,4 +7,4 @@ namespace Mediance.CommonKernel;
 /// </summary>
 /// <param name="code">A machine-readable error code identifying the conflict type.</param>
 /// <param name="message">A human-readable description of the conflict.</param>
-public sealed record Conflict(string code, string message);
+public sealed record Conflict(string message, string code);

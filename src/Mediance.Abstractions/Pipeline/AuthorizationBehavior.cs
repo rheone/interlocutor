@@ -1,5 +1,5 @@
 using Mediance.Abstractions.Markers;
-using Mediance.CommonKernel;
+using Mediance.CommonKernel.ResultTypes;
 
 namespace Mediance.Abstractions.Pipeline;
 

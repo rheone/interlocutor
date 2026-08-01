@@ -1,4 +1,5 @@
 # git push origin <branch-name> --no-verify
+# git commit --no-verify -m "commit"; git push --no-verify
 
 # Pre-commit hook configuration.
 # Install hooks:

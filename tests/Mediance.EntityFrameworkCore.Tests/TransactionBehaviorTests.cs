@@ -1,5 +1,4 @@
 using Mediance.Abstractions.Commands;
-using Mediance.CommonKernel;
 
 namespace Mediance.EntityFrameworkCore.Tests;
 

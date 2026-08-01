@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Mediance.CommonKernel;
+using Mediance.CommonKernel.ResultTypes;
 using Microsoft.Extensions.Logging;
 
 namespace Mediance.Abstractions.Pipeline;
@@ -35,7 +36,7 @@ public class LoggingBehavior<TRequest, TResponse>(ILogger<LoggingBehavior<TReque
         {
             TResponse => "Success",
             ValidationFailed => "ValidationFailed",
-            RuleViolation => "RuleViolation",
+            ValidationFailure => "RuleViolation",
             NotFound => "NotFound",
             Forbidden => "Forbidden",
             Conflict => "Conflict",
