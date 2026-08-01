@@ -1,6 +1,12 @@
-namespace Mediance.CommonKernel.ResultTypes;
+using Mediance.CommonKernel.ResultTypes;
 
-public readonly record struct Result<TResult>(TResult result);
+namespace Mediance.CommonKernel;
+
+public interface IResult
+{
+
+};
+
 
 /// <summary>
 /// Represents the outcome of an operation as one of two possible cases: a successful result or a failure result.
@@ -15,7 +21,7 @@ public readonly record struct Result<TResult>(TResult result);
 /// <para>Values of either case type convert implicitly to <see cref="Result{TSuccessResult, TFailureResult}"/>, and
 /// switch expressions over it are exhaustive without a discard arm. </para>
 /// </remarks>
-public readonly union Result<TSuccessResult, TFailureResult>(TSuccessResult, TFailureResult)
+public readonly union Result<TSuccessResult, TFailureResult>(TSuccessResult, TFailureResult) : IResult
 {
     /// <summary>
     /// Gets a value indicating whether this result holds a <typeparamref name="TSuccessResult"/>.
@@ -27,42 +33,69 @@ public readonly union Result<TSuccessResult, TFailureResult>(TSuccessResult, TFa
     };
 }
 
-public readonly union Result(Success, Failure)
-{
-    /// <summary>
-    /// Gets a value indicating whether this result is successful.
-    /// </summary>
-    public bool IsSuccess => this switch
-    {
-        Success => true,
-        _ => false,
-    };
-}
+//public readonly union Result(Success, Failure) : Result
+//{
+//    /// <summary>
+//    /// Gets a value indicating whether this result is successful.
+//    /// </summary>
+//    public bool IsSuccess => this switch
+//    {
+//        Success => true,
+//        _ => false,
+//    };
+//}
 
-public readonly union Result<TSuccessResult, T2, T3>(TSuccessResult, T2, T3)
+public readonly union Result<TSuccessResult, T2, T3>(TSuccessResult, T2, T3) : IResult
 {
     public bool IsSuccess => this switch
     {
         TSuccessResult => true,
         _ => false
     };
+
+    public object? GetValue() => this switch
+    {
+        TSuccessResult success => success,
+        T2 t2 => t2,
+        T3 t3 => t3,
+        _ => null
+    };
 }
 
-public readonly union Result<TSuccessResult, T2, T3, T4>(TSuccessResult, T2, T3, T4)
+public readonly union Result<TSuccessResult, T2, T3, T4>(TSuccessResult, T2, T3, T4) : IResult
 {
     public bool IsSuccess => this switch
     {
         TSuccessResult => true,
         _ => false
     };
+
+    public object? GetValue() => this switch
+    {
+        TSuccessResult success => success,
+        T2 t2 => t2,
+        T3 t3 => t3,
+        T4 t4 => t4,
+        _ => null
+    };
 }
 
-public readonly union Result<TSuccessResult, T2, T3, T4, T5>(TSuccessResult, T2, T3, T4, T5)
+public readonly union Result<TSuccessResult, T2, T3, T4, T5>(TSuccessResult, T2, T3, T4, T5) : IResult
 {
     public bool IsSuccess => this switch
     {
         TSuccessResult => true,
         _ => false
+    };
+
+    public object? GetValue() => this switch
+    {
+        TSuccessResult success => success,
+        T2 t2 => t2,
+        T3 t3 => t3,
+        T4 t4 => t4,
+        T5 t5 => t5,
+        _ => null
     };
 }
 

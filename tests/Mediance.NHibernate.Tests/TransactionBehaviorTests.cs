@@ -20,7 +20,7 @@ public class TransactionBehaviorTests
             () =>
             {
                 handled = true;
-                return Task.FromResult<Result<string>>(new Result<string>("done"));
+                return Task.FromResult("done");
             },
             CancellationToken.None
         );

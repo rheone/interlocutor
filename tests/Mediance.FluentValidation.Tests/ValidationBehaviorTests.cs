@@ -1,9 +1,6 @@
-using System.Diagnostics;
 using FluentValidation;
-using Mediance.Abstractions;
 using Mediance.Abstractions.Commands;
-using Mediance.Abstractions.Pipeline;
-using Mediance.CommonKernel.ResultTypes;
+using Mediance.CommonKernel;
 
 namespace Mediance.FluentValidation.Tests;
 
@@ -30,17 +27,16 @@ public class ValidationBehaviorTests
             () =>
             {
                 handled = true;
-                return Task.FromResult<Result<string>>(new Result<string>("ok"));
+                return Task.FromResult<Result<string, ValidationFailed>>("ok");
             },
             CancellationToken.None
         );
 
         Assert.True(handled);
-        var value = result.Value switch
+        var value = result switch
         {
             string s => s,
-            Failure => null,
-            _ => throw new UnreachableException(),
+            ValidationFailed => null,
         };
         Assert.Equal("ok", value);
     }
@@ -53,15 +49,14 @@ public class ValidationBehaviorTests
 
         var result = await behavior.Handle(
             new TestRequest(""),
-            () => Task.FromResult<Result<string>>(new Result<string>("should not reach")),
+            () => Task.FromResult<Result<string, ValidationFailed>>("should not reach"),
             CancellationToken.None
         );
 
-        var isFailure = result.Value switch
+        var isFailure = result switch
         {
-            Failure => true,
+            ValidationFailed => true,
             string => false,
-            _ => throw new UnreachableException(),
         };
         Assert.True(isFailure);
     }

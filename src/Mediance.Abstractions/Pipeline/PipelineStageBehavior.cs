@@ -4,14 +4,14 @@ namespace Mediance.Abstractions.Pipeline;
 public class PipelineStageBehavior<TRequest, TResponse>(IEnumerable<IPipelineStage<TRequest, TResponse>> stages)
     : IPipelineBehavior<TRequest, TResponse>
 {
-    public async Task<Result<TResponse>> Handle(TRequest request, Func<Task<Result<TResponse>>> next, CancellationToken ct)
+    public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         foreach (var stage in stages)
         {
             await stage.OnBeforeAsync(request, ct);
         }
 
-        Result<TResponse> result;
+        TResponse result;
         try
         {
             result = await next();
@@ -20,7 +20,7 @@ public class PipelineStageBehavior<TRequest, TResponse>(IEnumerable<IPipelineSta
         {
             foreach (var stage in stages)
             {
-                await stage.OnAfterAsync(request, default(Result<TResponse>), ct);
+                await stage.OnAfterAsync(request, default, ct);
             }
 
             throw;

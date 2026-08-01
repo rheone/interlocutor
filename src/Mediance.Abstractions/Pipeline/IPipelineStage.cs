@@ -9,5 +9,5 @@ public interface IPipelineStage<TRequest, TResponse>
 
     /// <summary>Invoked after the request has been handled and the result is available.</summary>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    Task OnAfterAsync(TRequest request, Result<TResponse> result, CancellationToken ct);
+    Task OnAfterAsync(TRequest request, TResponse? result, CancellationToken ct);
 }

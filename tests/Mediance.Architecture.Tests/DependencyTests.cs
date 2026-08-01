@@ -1,7 +1,7 @@
 using System.Reflection;
 using Mediance.Abstractions;
 using Mediance.Abstractions.Core;
-using Mediance.CommonKernel.ResultTypes;
+using Mediance.CommonKernel;
 using NetArchTest.Rules;
 
 namespace Mediance.Architecture.Tests;

@@ -14,15 +14,14 @@ public record TestQuery(int Value) : IQuery<int>;
 
 public class TestQueryHandler : IQueryHandler<TestQuery, int>
 {
-    public Task<Result<int>> Handle(TestQuery query, CancellationToken ct) => Task.FromResult(new Result<int>(query.Value * 2));
+    public Task<int> Handle(TestQuery query, CancellationToken ct) => Task.FromResult(query.Value * 2);
 }
 
 public record GreetCommand(string PersonName) : ICommand<string>;
 
 public class GreetCommandHandler : ICommandHandler<GreetCommand, string>
 {
-    public Task<Result<string>> Handle(GreetCommand command, CancellationToken ct) =>
-        Task.FromResult(new Result<string>($"Hello {command.PersonName}"));
+    public Task<string> Handle(GreetCommand command, CancellationToken ct) => Task.FromResult($"Hello {command.PersonName}");
 }
 
 public record TestVoidCommand(string Value) : ICommand;
@@ -36,7 +35,7 @@ public record TestNotification(string Message) : INotification;
 
 public class TrackingBehavior<TRequest, TResponse>(Action track) : IPipelineBehavior<TRequest, TResponse>
 {
-    public async Task<Result<TResponse>> Handle(TRequest request, Func<Task<Result<TResponse>>> next, CancellationToken ct)
+    public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         track();
         return await next();
@@ -51,12 +50,7 @@ public class MediatorTests
         var mediator = CreateMediator<TestQueryHandler>(services => { });
         var result = await mediator.Send(new TestQuery(21), CancellationToken.None);
 
-        var value = result.Value switch
-        {
-            int v => v,
-            _ => -1,
-        };
-        Assert.Equal(42, value);
+        Assert.Equal(42, result);
     }
 
     [Fact]

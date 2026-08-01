@@ -1,5 +1,4 @@
 using FluentValidation;
-using Mediance.Abstractions;
 using Mediance.Abstractions.Commands;
 using Mediance.Abstractions.Pipeline;
 using Mediance.CommonKernel;
@@ -22,12 +21,11 @@ namespace Mediance.FluentValidation;
 /// </para>
 /// <para>
 /// If all items pass validation, the request is forwarded to the next pipeline stage. If any item fails,
-/// a <see cref="Result{T}"/> containing a <see cref="ValidationFailed"/> failure is returned without
-/// invoking the inner handler.
+/// a <see cref="ValidationFailed"/> failure is returned without invoking the inner handler.
 /// </para>
 /// </remarks>
 public sealed class BulkItemValidationBehavior<TRequest, TItem, TResponseItem>(IValidator<TItem> itemValidator)
-    : IPipelineBehavior<TRequest, IReadOnlyList<TResponseItem>>
+    : IPipelineBehavior<TRequest, Result<IReadOnlyList<TResponseItem>, ValidationFailed>>
     where TRequest : IBulkCommand<TItem, TResponseItem>
 {
     /// <summary>
@@ -37,11 +35,11 @@ public sealed class BulkItemValidationBehavior<TRequest, TItem, TResponseItem>(I
     /// <param name="request">The bulk command whose items will be validated.</param>
     /// <param name="next">The next delegate in the pipeline, invoked if all items pass validation.</param>
     /// <param name="ct">A cancellation token to cancel validation or the inner handler.</param>
-    /// <returns>A <see cref="Result{T}"/> that is either a success result from the inner handler
-    /// or a <see cref="ValidationFailed"/> failure containing indexed validation errors per item.</returns>
-    public async Task<Result<IReadOnlyList<TResponseItem>>> Handle(
+    /// <returns>Either the success result from the inner handler, or a <see cref="ValidationFailed"/>
+    /// failure containing indexed validation errors per item.</returns>
+    public async Task<Result<IReadOnlyList<TResponseItem>, ValidationFailed>> Handle(
         TRequest request,
-        Func<Task<Result<IReadOnlyList<TResponseItem>>>> next,
+        Func<Task<Result<IReadOnlyList<TResponseItem>, ValidationFailed>>> next,
         CancellationToken ct
     )
     {
@@ -69,8 +67,6 @@ public sealed class BulkItemValidationBehavior<TRequest, TItem, TResponseItem>(I
             return await next();
         }
 
-        return new Result<IReadOnlyList<TResponseItem>>(
-            new ValidationFailed(failures.ToDictionary(kv => kv.Key, kv => (IReadOnlyList<(string, string)>)kv.Value))
-        );
+        return new ValidationFailed(failures.ToDictionary(kv => kv.Key, kv => (IReadOnlyList<(string, string)>)kv.Value));
     }
 }

@@ -1,12 +1,10 @@
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using Mediance.Abstractions.Commands;
 using Mediance.Abstractions.Core;
 using Mediance.Abstractions.Notifications;
 using Mediance.Abstractions.Pipeline;
 using Mediance.Abstractions.Queries;
 using Mediance.CommonKernel;
-using Mediance.CommonKernel.ResultTypes;
 
 namespace Mediance.Abstractions;
 
@@ -14,7 +12,7 @@ namespace Mediance.Abstractions;
 /// <typeparam name="TResponse">The type of the success value produced by the handler.</typeparam>
 internal abstract class HandlerWrapper<TResponse>
 {
-    public abstract Task<Result<TResponse>> Handle(object request, IServiceProvider services, CancellationToken ct);
+    public abstract Task<TResponse> Handle(object request, IServiceProvider services, CancellationToken ct);
 }
 
 /// <summary>Defines the base contract for handlers that produce a void (unit) result.</summary>
@@ -31,19 +29,7 @@ internal sealed class VoidCommandHandlerWrapper<TCommand> : VoidHandlerWrapper
         var typedRequest = (TCommand)request;
         var handler = services.GetRequiredService<ICommandHandler<TCommand>>();
 
-        // Wrap the void handler's Result into Result<Result> so the pipeline
-        // can treat it uniformly with value-returning command pipelines.
-        // The outer Result is unwrapped below after the pipeline completes.
-        Func<Task<Result<Result>>> pipeline = async () =>
-        {
-            var r = await handler.Handle(typedRequest, ct);
-            return r.Value switch
-            {
-                Success s => new Result<Result>(s),
-                Failure f => new Result<Result>(f),
-                _ => throw new UnreachableException(),
-            };
-        };
+        Func<Task<Result>> pipeline = () => handler.Handle(typedRequest, ct);
 
         foreach (var behavior in services.GetServices<IPipelineBehavior<TCommand, Result>>().Reverse())
         {
@@ -51,14 +37,7 @@ internal sealed class VoidCommandHandlerWrapper<TCommand> : VoidHandlerWrapper
             pipeline = () => behavior.Handle(typedRequest, next, ct);
         }
 
-        // Unwrap the pipeline's Result<Result> back to the original Result.
-        var pipelineResult = await pipeline();
-        return pipelineResult.Value switch
-        {
-            Result r => r,
-            Failure f => new Result(f),
-            _ => throw new UnreachableException(),
-        };
+        return await pipeline();
     }
 }
 
@@ -68,7 +47,7 @@ internal sealed class VoidCommandHandlerWrapper<TCommand> : VoidHandlerWrapper
 internal sealed class QueryHandlerWrapper<TQuery, TResponse> : HandlerWrapper<TResponse>
     where TQuery : IQuery<TResponse>
 {
-    public override async Task<Result<TResponse>> Handle(object request, IServiceProvider services, CancellationToken ct)
+    public override async Task<TResponse> Handle(object request, IServiceProvider services, CancellationToken ct)
     {
         var typedRequest = (TQuery)request;
         var handler = services.GetRequiredService<IQueryHandler<TQuery, TResponse>>();
@@ -91,12 +70,12 @@ internal sealed class QueryHandlerWrapper<TQuery, TResponse> : HandlerWrapper<TR
 internal sealed class CommandHandlerWrapper<TCommand, TResponse> : HandlerWrapper<TResponse>
     where TCommand : ICommand<TResponse>
 {
-    public override async Task<Result<TResponse>> Handle(object request, IServiceProvider services, CancellationToken ct)
+    public override async Task<TResponse> Handle(object request, IServiceProvider services, CancellationToken ct)
     {
         var typedRequest = (TCommand)request;
         var handler = services.GetRequiredService<ICommandHandler<TCommand, TResponse>>();
 
-        Func<Task<Result<TResponse>>> pipeline = () => handler.Handle(typedRequest, ct);
+        Func<Task<TResponse>> pipeline = () => handler.Handle(typedRequest, ct);
 
         foreach (var behavior in services.GetServices<IPipelineBehavior<TCommand, TResponse>>().Reverse())
         {
@@ -159,7 +138,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     private static readonly ConcurrentDictionary<Type, NotificationHandlerWrapper> ParallelNotificationWrappers = new();
 
     /// <inheritdoc/>
-    public Task<Result<TResponse>> Send<TResponse>(IQuery<TResponse> query, CancellationToken ct = default)
+    public Task<TResponse> Send<TResponse>(IQuery<TResponse> query, CancellationToken ct = default)
     {
         var wrapper =
             (HandlerWrapper<TResponse>)
@@ -175,7 +154,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     }
 
     /// <inheritdoc/>
-    public Task<Result<TResponse>> Send<TResponse>(ICommand<TResponse> command, CancellationToken ct = default)
+    public Task<TResponse> Send<TResponse>(ICommand<TResponse> command, CancellationToken ct = default)
     {
         var wrapper =
             (HandlerWrapper<TResponse>)

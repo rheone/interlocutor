@@ -1,3 +1,5 @@
+using Mediance.CommonKernel.ResultTypes;
+
 namespace Mediance.Abstractions.Pipeline;
 
 /// <summary>
@@ -28,5 +30,5 @@ public interface IPipelineBehavior<TRequest, TResponse>
     /// A task that represents the asynchronous operation. The task result contains
     /// the handler result or an error if the behavior short-circuits the pipeline.
     /// </returns>
-    Task<Result<TResponse>> Handle(TRequest request, Func<Task<Result<TResponse>>> next, CancellationToken ct);
+    Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct);
 }

@@ -1,3 +1,4 @@
+using Mediance.CommonKernel;
 using Mediance.CommonKernel.ResultTypes;
 
 namespace Mediance.Abstractions.Commands;
@@ -20,9 +21,9 @@ namespace Mediance.Abstractions.Commands;
 /// </remarks>
 /// <typeparam name="TCommand">The command type that this handler processes.</typeparam>
 /// <typeparam name="TEntity">The domain entity type loaded and used by this handler.</typeparam>
-/// <typeparam name="TResponse">The type of data returned when the command succeeds.</typeparam>
-public abstract class ResourceCommandHandler<TCommand, TEntity, TResponse>
-    where TCommand : ICommand<TResponse>
+/// <typeparam name="TSuccess">The type of data returned when the command succeeds.</typeparam>
+public abstract class ResourceCommandHandler<TCommand, TEntity, TSuccess>
+    where TCommand : ICommand<Result<TSuccess, NotFound, Failure>>
 {
     /// <summary>
     /// Loads the target entity for the given command.
@@ -46,23 +47,27 @@ public abstract class ResourceCommandHandler<TCommand, TEntity, TResponse>
     /// <param name="command">The command being handled.</param>
     /// <param name="entity">The loaded entity that passed authorization.</param>
     /// <param name="ct">Cancellation token to cancel the operation.</param>
-    /// <returns>A <see cref="Result{TResponse}"/> containing the response or a failure reason.</returns>
-    protected abstract Task<Result<TResponse>> HandleAsync(TCommand command, TEntity entity, CancellationToken ct);
+    /// <returns>The response, or a failure reason.</returns>
+    protected abstract Task<Result<TSuccess, NotFound, Failure>> HandleAsync(
+        TCommand command,
+        TEntity entity,
+        CancellationToken ct
+    );
 
     /// <summary>
     /// Executes the load-authorize-handle pipeline for the given command.
     /// </summary>
     /// <param name="command">The command to handle.</param>
     /// <param name="ct">Cancellation token to cancel the operation.</param>
-    /// <returns>A <see cref="Result{TResponse}"/> containing the response or a failure reason.</returns>
-    public async Task<Result<TResponse>> Handle(TCommand command, CancellationToken ct)
+    /// <returns>The response, or a failure reason.</returns>
+    public async Task<Result<TSuccess, NotFound, Failure>> Handle(TCommand command, CancellationToken ct)
     {
         var entity = await this.LoadAsync(command, ct);
 
         // Short-circuit if the entity does not exist — no need to authorize or process.
         if (entity is null)
         {
-            return new Result<TResponse>(new NotFound(typeof(TEntity).Name, this.DescribeKey(command)));
+            return new NotFound($"{typeof(TEntity).Name} '{this.DescribeKey(command)}' was not found.");
         }
 
         var authorizationResult = this.Authorize(entity, command);
@@ -70,7 +75,7 @@ public abstract class ResourceCommandHandler<TCommand, TEntity, TResponse>
         // Short-circuit if the caller is not authorized to act on this entity.
         if (authorizationResult is not null)
         {
-            return new Result<TResponse>(authorizationResult.Value);
+            return authorizationResult;
         }
 
         // Entity exists and caller is authorized — delegate to the subclass business logic.

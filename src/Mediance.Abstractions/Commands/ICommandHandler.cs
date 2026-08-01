@@ -1,4 +1,4 @@
-using Mediance.CommonKernel.ResultTypes;
+using Mediance.CommonKernel;
 
 namespace Mediance.Abstractions.Commands;
 
@@ -15,8 +15,8 @@ public interface ICommandHandler<in TCommand, TResponse>
     /// </summary>
     /// <param name="command">The command to handle.</param>
     /// <param name="ct">Cancellation token to cancel the operation.</param>
-    /// <returns>A <see cref="Result{T}"/> containing either the response data or a failure reason.</returns>
-    Task<Result<TResponse>> Handle(TCommand command, CancellationToken ct);
+    /// <returns>The response data, which may itself be a union type distinguishing success from failure.</returns>
+    Task<TResponse> Handle(TCommand command, CancellationToken ct);
 }
 
 /// <summary>

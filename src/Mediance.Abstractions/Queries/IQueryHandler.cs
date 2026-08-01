@@ -14,8 +14,8 @@ public interface IQueryHandler<in TQuery, TResponse>
     /// <param name="query">The query to handle.</param>
     /// <param name="ct">A cancellation token that can be used to cancel the operation.</param>
     /// <returns>
-    /// A task that represents the asynchronous operation. The task result contains a
-    /// <see cref="Result{TResponse}"/> indicating success or failure.
+    /// A task that represents the asynchronous operation. The task result contains the
+    /// query's response — which may itself be a union type distinguishing success from failure.
     /// </returns>
-    Task<Result<TResponse>> Handle(TQuery query, CancellationToken ct);
+    Task<TResponse> Handle(TQuery query, CancellationToken ct);
 }

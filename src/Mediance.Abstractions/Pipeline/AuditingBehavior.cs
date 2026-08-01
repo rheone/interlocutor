@@ -1,13 +1,14 @@
 using Mediance.Abstractions.Markers;
-using Mediance.CommonKernel;
-using Mediance.CommonKernel.ResultTypes;
 
 namespace Mediance.Abstractions.Pipeline;
 
 /// <summary>Pipeline behavior that records an audit trail for requests implementing <see cref="IAuditableRequest"/>.</summary>
-public class AuditingBehavior<TRequest, TResponse>(IAuditSink sink) : IPipelineBehavior<TRequest, TResponse>
+public class AuditingBehavior<TRequest, TResponse>(IAuditSink sink, IResponseOutcomeDescriber? describer = null)
+    : IPipelineBehavior<TRequest, TResponse>
 {
-    public async Task<Result<TResponse>> Handle(TRequest request, Func<Task<Result<TResponse>>> next, CancellationToken ct)
+    private readonly IResponseOutcomeDescriber describer = describer ?? DefaultResponseOutcomeDescriber.Instance;
+
+    public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         if (request is not IAuditableRequest auditable)
         {
@@ -15,16 +16,7 @@ public class AuditingBehavior<TRequest, TResponse>(IAuditSink sink) : IPipelineB
         }
 
         var result = await next();
-        var outcome = result.Value switch
-        {
-            TResponse => "Success",
-            ValidationFailed => "ValidationFailed",
-            ValidationFailure => "RuleViolation",
-            NotFound => "NotFound",
-            Forbidden => "Forbidden",
-            Conflict => "Conflict",
-            _ => "Unknown",
-        };
+        var outcome = this.describer.Describe(result);
 
         var entry = new AuditEntry(auditable.ActionName, typeof(TRequest).Name, outcome, DateTime.UtcNow);
         await sink.RecordAsync(entry, ct);

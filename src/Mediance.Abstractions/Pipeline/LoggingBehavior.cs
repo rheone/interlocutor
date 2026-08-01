@@ -1,20 +1,22 @@
 using System.Diagnostics;
-using Mediance.CommonKernel;
-using Mediance.CommonKernel.ResultTypes;
 using Microsoft.Extensions.Logging;
 
 namespace Mediance.Abstractions.Pipeline;
 
 /// <summary>Pipeline behavior that logs every mediator request passing through the pipeline.</summary>
-public class LoggingBehavior<TRequest, TResponse>(ILogger<LoggingBehavior<TRequest, TResponse>> logger)
-    : IPipelineBehavior<TRequest, TResponse>
+public class LoggingBehavior<TRequest, TResponse>(
+    ILogger<LoggingBehavior<TRequest, TResponse>> logger,
+    IResponseOutcomeDescriber? describer = null
+) : IPipelineBehavior<TRequest, TResponse>
 {
-    public async Task<Result<TResponse>> Handle(TRequest request, Func<Task<Result<TResponse>>> next, CancellationToken ct)
+    private readonly IResponseOutcomeDescriber describer = describer ?? DefaultResponseOutcomeDescriber.Instance;
+
+    public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         var start = Stopwatch.GetTimestamp();
         var requestType = typeof(TRequest).Name;
 
-        Result<TResponse> result;
+        TResponse result;
         try
         {
             result = await next();
@@ -32,16 +34,7 @@ public class LoggingBehavior<TRequest, TResponse>(ILogger<LoggingBehavior<TReque
         }
 
         var elapsedMs = Stopwatch.GetElapsedTime(start).TotalMilliseconds;
-        var outcome = result.Value switch
-        {
-            TResponse => "Success",
-            ValidationFailed => "ValidationFailed",
-            ValidationFailure => "RuleViolation",
-            NotFound => "NotFound",
-            Forbidden => "Forbidden",
-            Conflict => "Conflict",
-            _ => "Unknown",
-        };
+        var outcome = this.describer.Describe(result);
 
         logger.LogInformation(
             "Request {RequestType} completed with {Outcome} in {ElapsedMs}ms",

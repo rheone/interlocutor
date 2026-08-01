@@ -30,8 +30,11 @@ namespace Mediance.NHibernate;
 /// no explicit save or flush call is required before committing the transaction.
 /// </para>
 /// </remarks>
-public class TransactionBehavior<TRequest, TResponse>(Lazy<ISession> session) : IPipelineBehavior<TRequest, TResponse>
+public class TransactionBehavior<TRequest, TResponse>(Lazy<ISession> session, IResponseOutcomeDescriber? describer = null)
+    : IPipelineBehavior<TRequest, TResponse>
 {
+    private readonly IResponseOutcomeDescriber describer = describer ?? DefaultResponseOutcomeDescriber.Instance;
+
     /// <inheritdoc/>
     /// <remarks>
     /// <para>
@@ -45,7 +48,7 @@ public class TransactionBehavior<TRequest, TResponse>(Lazy<ISession> session) : 
     /// unflushed changes are discarded.
     /// </para>
     /// </remarks>
-    public async Task<Result<TResponse>> Handle(TRequest request, Func<Task<Result<TResponse>>> next, CancellationToken ct)
+    public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         // Skip transaction management for requests that do not participate in transactions
         // or manage their own external transaction context (e.g., outbox, event bus).
@@ -59,7 +62,7 @@ public class TransactionBehavior<TRequest, TResponse>(Lazy<ISession> session) : 
 
         var result = await next();
 
-        if (result.Value is not Failure)
+        if (!this.describer.IsFailure(result))
         {
             // Handler succeeded — commit flushes pending changes and completes the transaction.
             await transaction.CommitAsync(ct);
