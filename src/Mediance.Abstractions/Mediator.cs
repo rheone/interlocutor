@@ -73,7 +73,7 @@ internal sealed class QueryHandlerWrapper<TQuery, TResponse> : HandlerWrapper<TR
         var typedRequest = (TQuery)request;
         var handler = services.GetRequiredService<IQueryHandler<TQuery, TResponse>>();
 
-        Func<Task<Result<TResponse>>> pipeline = () => handler.Handle(typedRequest, ct);
+        var pipeline = () => handler.Handle(typedRequest, ct);
 
         foreach (var behavior in services.GetServices<IPipelineBehavior<TQuery, TResponse>>().Reverse())
         {
