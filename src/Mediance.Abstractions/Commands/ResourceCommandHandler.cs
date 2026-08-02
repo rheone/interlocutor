@@ -1,7 +1,7 @@
+namespace Mediance.Abstractions.Commands;
+
 using Mediance.CommonKernel;
 using Mediance.CommonKernel.ResultTypes;
-
-namespace Mediance.Abstractions.Commands;
 
 /// <summary>
 /// Provides a template method for command handlers that load, authorize, and then

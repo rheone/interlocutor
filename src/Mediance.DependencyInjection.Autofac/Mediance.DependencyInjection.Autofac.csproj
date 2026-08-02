@@ -3,7 +3,6 @@
     <Description>Autofac integration for Mediance. Registers the mediator, handlers, and pipeline behaviors via AddMediance().</Description>
   </PropertyGroup>
 
-
   <ItemGroup>
     <ProjectReference Include="..\Mediance.Abstractions\Mediance.Abstractions.csproj" />
   </ItemGroup>
@@ -12,6 +11,4 @@
     <PackageReference Include="Autofac" />
     <PackageReference Include="Autofac.Extensions.DependencyInjection" />
   </ItemGroup>
-
-
 </Project>

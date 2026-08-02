@@ -7,6 +7,7 @@ using Mediance.Abstractions.Commands;
 using Mediance.Abstractions.Core;
 using Mediance.Abstractions.Notifications;
 using Mediance.Abstractions.Pipeline;
+using Mediance.Abstractions.Pipeline.Classifiers;
 using Mediance.Abstractions.Queries;
 
 /// <summary>
@@ -123,15 +124,28 @@ public static class MedianceServiceCollectionExtensions
     public static IServiceCollection AddMediance(this IServiceCollection services, MedianceOptions options)
     {
         // Apply assembly filter if provided
-        var assembliesToScan = options.AssemblyFilter != null
-            ? options.AssembliesToScan.Where(options.AssemblyFilter).ToArray()
-            : options.AssembliesToScan;
+        var assembliesToScan =
+            options.AssemblyFilter != null
+                ? options.AssembliesToScan.Where(options.AssemblyFilter).ToArray()
+                : options.AssembliesToScan;
 
         // Register handlers first using the base method
         services.AddMediance(assembliesToScan);
 
-        // Register outcome describer (always)
-        services.AddSingleton(typeof(IResponseOutcomeDescriber), options.ResponseOutcomeDescriberType);
+        // Build and register the outcome classifier with custom types
+        var classifierBuilder = new OutcomeClassifierBuilder();
+        foreach (var customType in options.CustomOutcomeTypes)
+        {
+            // Attempt to register custom types as failures (conservative default)
+            classifierBuilder.RegisterFailureType(customType, customType.Name);
+        }
+
+        services.AddSingleton(classifierBuilder.Build());
+
+        // Register outcome describer with the classifier
+        services.AddSingleton<IResponseOutcomeDescriber>(sp =>
+            new DefaultResponseOutcomeDescriber(sp.GetRequiredService<IOutcomeClassifier>())
+        );
 
         // Register default implementations for pipeline dependencies (always)
         services.AddScoped<IAuditSink, LoggingAuditSink>();
@@ -166,8 +180,11 @@ public static class MedianceServiceCollectionExtensions
             // Validation before transaction
             (TryGetType("Mediance.FluentValidation.ValidationBehavior`2"), null),
             // Transaction innermost
-            (TryGetType("Mediance.EntityFrameworkCore.TransactionBehavior`3")
-                ?? TryGetType("Mediance.NHibernate.TransactionBehavior`3"), null),
+            (
+                TryGetType("Mediance.EntityFrameworkCore.TransactionBehavior`3")
+                    ?? TryGetType("Mediance.NHibernate.TransactionBehavior`3"),
+                null
+            ),
         };
 
         foreach (var (behaviorType, _) in behaviorTypes)

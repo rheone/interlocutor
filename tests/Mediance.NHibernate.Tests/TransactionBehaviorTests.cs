@@ -1,10 +1,10 @@
+namespace Mediance.NHibernate.Tests;
+
 using Mediance.Abstractions;
 using Mediance.Abstractions.Commands;
 using NHibernate;
 
-namespace Mediance.NHibernate.Tests;
-
-public record NonTransactionalTestRequest(int value) : ICommand<string>;
+public record NonTransactionalTestRequest(int Value) : ICommand<string>;
 
 public class TransactionBehaviorTests
 {

@@ -1,11 +1,11 @@
+namespace Mediance.Abstractions.Tests;
+
 using Mediance.Abstractions.Markers;
 using Mediance.Abstractions.Pipeline;
 using Mediance.Abstractions.Queries;
 using Mediance.CommonKernel;
 using Mediance.CommonKernel.ResultTypes;
 using NSubstitute;
-
-namespace Mediance.Abstractions.Tests;
 
 public class AuthorizationBehaviorTests
 {
@@ -98,7 +98,7 @@ public class AuthorizationBehaviorTests
 
         // Assert
         var forbidden = Assert.IsType<Forbidden>(result.Value);
-        Assert.Contains("CanRead", forbidden.Reason ?? "");
+        Assert.Contains("CanRead", forbidden.Reason ?? string.Empty);
     }
 
     [Fact]

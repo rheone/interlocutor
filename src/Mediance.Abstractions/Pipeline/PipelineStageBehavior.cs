@@ -23,7 +23,7 @@ public class PipelineStageBehavior<TRequest, TResponse>(IEnumerable<IPipelineSta
         // OnAfter hooks run in reverse order below, regardless of how the pipeline exits.
         try
         {
-            for (int i = 0; i < stagesList.Count; i++)
+            for (var i = 0; i < stagesList.Count; i++)
             {
                 await stagesList[i].OnBeforeAsync(request, ct);
                 completedStages.Add(i);
@@ -83,10 +83,11 @@ public class PipelineStageBehavior<TRequest, TResponse>(IEnumerable<IPipelineSta
         List<int> completedStages,
         TRequest request,
         TResponse response,
-        CancellationToken ct)
+        CancellationToken ct
+    )
     {
         // Run OnAfter hooks in reverse order of completion to unwind resource acquisition.
-        for (int i = completedStages.Count - 1; i >= 0; i--)
+        for (var i = completedStages.Count - 1; i >= 0; i--)
         {
             await stagesList[completedStages[i]].OnAfterAsync(request, response, ct);
         }

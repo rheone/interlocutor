@@ -22,6 +22,5 @@ public sealed class DefaultPolicyEvaluator : IPolicyEvaluator
     public static readonly DefaultPolicyEvaluator Instance = new();
 
     /// <inheritdoc/>
-    public Task<bool> EvaluateAsync(string policyName, object request, CancellationToken ct) =>
-        Task.FromResult(true);
+    public Task<bool> EvaluateAsync(string policyName, object request, CancellationToken ct) => Task.FromResult(true);
 }

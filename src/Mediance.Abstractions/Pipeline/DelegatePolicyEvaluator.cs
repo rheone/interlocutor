@@ -9,10 +9,11 @@ namespace Mediance.Abstractions.Pipeline;
 /// Useful for testing, prototyping, or integrating with custom authorization systems.
 /// </para>
 /// </remarks>
-public sealed class DelegatePolicyEvaluator(Func<string, object, CancellationToken, Task<bool>> evaluateAsync) : IPolicyEvaluator
+public sealed class DelegatePolicyEvaluator(Func<string, object, CancellationToken, Task<bool>> evaluateAsync)
+    : IPolicyEvaluator
 {
-    private readonly Func<string, object, CancellationToken, Task<bool>> _evaluateAsync = evaluateAsync
-        ?? throw new ArgumentNullException(nameof(evaluateAsync));
+    private readonly Func<string, object, CancellationToken, Task<bool>> _evaluateAsync =
+        evaluateAsync ?? throw new ArgumentNullException(nameof(evaluateAsync));
 
     /// <inheritdoc/>
     public Task<bool> EvaluateAsync(string policyName, object request, CancellationToken ct) =>

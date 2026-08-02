@@ -42,18 +42,21 @@ public readonly record struct Failure
     public bool HasErrorCode => this.ErrorCode is not null;
 
     /// <summary>
+    /// Initializes a new instance of the <see cref="Failure"/> struct.
     /// Initializes a new instance of the <see cref="Failure"/> class with the specified reason.
     /// </summary>
     /// <param name="reason">The human-readable reason for the failure.</param>
     public Failure(string reason) => this.Reason = reason;
 
     /// <summary>
+    /// Initializes a new instance of the <see cref="Failure"/> struct.
     /// Initializes a new instance of the <see cref="Failure"/> class with the specified error code.
     /// </summary>
     /// <param name="errorCode">The error code associated with the failure.</param>
     public Failure(long errorCode) => this.ErrorCode = errorCode;
 
     /// <summary>
+    /// Initializes a new instance of the <see cref="Failure"/> struct.
     /// Initializes a new instance of the <see cref="Failure"/> class with the specified reason and error code.
     /// </summary>
     /// <param name="reason">The human-readable reason for the failure.</param>

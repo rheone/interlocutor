@@ -1,3 +1,5 @@
+namespace Mediance.DependencyInjection.Microsoft.Tests;
+
 using Mediance.Abstractions;
 using Mediance.Abstractions.Commands;
 using Mediance.Abstractions.Core;
@@ -5,8 +7,6 @@ using Mediance.Abstractions.Notifications;
 using Mediance.Abstractions.Pipeline;
 using Mediance.Abstractions.Queries;
 using Microsoft.Extensions.DependencyInjection;
-
-namespace Mediance.DependencyInjection.Microsoft.Tests;
 
 public class ServiceCollectionExtensionsTests
 {
@@ -33,9 +33,7 @@ public class ServiceCollectionExtensionsTests
 
         services.AddMediance(options);
 
-        var behaviorDescriptors = services
-            .Where(s => s.ServiceType == typeof(IPipelineBehavior<,>))
-            .ToList();
+        var behaviorDescriptors = services.Where(s => s.ServiceType == typeof(IPipelineBehavior<,>)).ToList();
 
         // Should have at least LoggingBehavior, AuditingBehavior, AuthorizationBehavior
         Assert.NotEmpty(behaviorDescriptors);
@@ -45,10 +43,7 @@ public class ServiceCollectionExtensionsTests
     public void AddMediance_WithOptions_RegistersOutcomeDescriber()
     {
         var services = new ServiceCollection();
-        var options = new MedianceOptions
-        {
-            AssembliesToScan = [typeof(ServiceCollectionExtensionsTests).Assembly],
-        };
+        var options = new MedianceOptions { AssembliesToScan = [typeof(ServiceCollectionExtensionsTests).Assembly] };
 
         services.AddMediance(options);
 

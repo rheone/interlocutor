@@ -20,6 +20,7 @@ public readonly record struct Failures
     private readonly ImmutableArray<Failure> _failures;
 
     /// <summary>
+    /// Initializes a new instance of the <see cref="Failures"/> struct.
     /// Initializes a new instance of the <see cref="Failures"/> class.
     /// Initializes a new instance of the <see cref="Failures"/> struct from the specified failure values.
     /// </summary>
@@ -42,6 +43,7 @@ public readonly record struct Failures
     }
 
     /// <summary>
+    /// Initializes a new instance of the <see cref="Failures"/> struct.
     /// Initializes a new instance of the <see cref="Failures"/> class.
     /// Initializes a new instance of the <see cref="Failures"/> struct from a single failure.
     /// </summary>

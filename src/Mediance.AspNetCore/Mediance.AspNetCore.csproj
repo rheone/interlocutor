@@ -3,7 +3,6 @@
     <Description>ASP.NET Core integration for Mediance. Provides ToActionResult() mapping from OperationOutcome/Failure to HTTP ProblemDetails responses.</Description>
   </PropertyGroup>
 
-
   <ItemGroup>
     <ProjectReference Include="..\Mediance.CommonKernel\Mediance.CommonKernel.csproj" />
     <ProjectReference Include="..\Mediance.Abstractions\Mediance.Abstractions.csproj" />
@@ -12,6 +11,4 @@
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
-
-
 </Project>

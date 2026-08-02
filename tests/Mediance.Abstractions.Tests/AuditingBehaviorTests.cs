@@ -1,10 +1,10 @@
+namespace Mediance.Abstractions.Tests;
+
 using Mediance.Abstractions.Markers;
 using Mediance.Abstractions.Pipeline;
 using Mediance.Abstractions.Queries;
 using Mediance.CommonKernel.ResultTypes;
 using NSubstitute;
-
-namespace Mediance.Abstractions.Tests;
 
 public class AuditingBehaviorTests
 {

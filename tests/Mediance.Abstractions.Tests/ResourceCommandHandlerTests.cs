@@ -1,10 +1,10 @@
+namespace Mediance.Abstractions.Tests;
+
 using Mediance.Abstractions.Commands;
 using Mediance.CommonKernel;
 using Mediance.CommonKernel.ResultTypes;
 
-namespace Mediance.Abstractions.Tests;
-
-public record TestCommand(int entityId) : ICommand<OperationOutcome<string, NotFound, Failure>>;
+public record TestCommand(int EntityId) : ICommand<OperationOutcome<string, NotFound, Failure>>;
 
 public class TestEntity
 {
@@ -19,7 +19,11 @@ public class TestResourceCommandHandler : ResourceCommandHandler<TestCommand, Te
     private readonly Failure? _authorizationFailure;
     private readonly OperationOutcome<string, NotFound, Failure> _handleResult;
 
-    public TestResourceCommandHandler(TestEntity? loadedEntity, Failure? authorizationFailure, OperationOutcome<string, NotFound, Failure> handleResult)
+    public TestResourceCommandHandler(
+        TestEntity? loadedEntity,
+        Failure? authorizationFailure,
+        OperationOutcome<string, NotFound, Failure> handleResult
+    )
     {
         this._loadedEntity = loadedEntity;
         this._authorizationFailure = authorizationFailure;
@@ -29,15 +33,13 @@ public class TestResourceCommandHandler : ResourceCommandHandler<TestCommand, Te
     protected override Task<TestEntity?> LoadAsync(TestCommand command, CancellationToken ct) =>
         Task.FromResult(this._loadedEntity);
 
-    protected override Failure? Authorize(TestEntity entity, TestCommand command) =>
-        this._authorizationFailure;
+    protected override Failure? Authorize(TestEntity entity, TestCommand command) => this._authorizationFailure;
 
     protected override Task<OperationOutcome<string, NotFound, Failure>> HandleAsync(
         TestCommand command,
         TestEntity entity,
         CancellationToken ct
-    ) =>
-        Task.FromResult(this._handleResult);
+    ) => Task.FromResult(this._handleResult);
 }
 
 public class ResourceCommandHandlerTests
@@ -73,7 +75,11 @@ public class ResourceCommandHandlerTests
     {
         var entity = new TestEntity { Id = 1, Name = "Test" };
         var authFailure = new Failure("Access denied");
-        var handler = new TestResourceCommandHandler(entity, authFailure, new OperationOutcome<string, NotFound, Failure>("unused"));
+        var handler = new TestResourceCommandHandler(
+            entity,
+            authFailure,
+            new OperationOutcome<string, NotFound, Failure>("unused")
+        );
 
         var result = await handler.Handle(new TestCommand(1), CancellationToken.None);
 

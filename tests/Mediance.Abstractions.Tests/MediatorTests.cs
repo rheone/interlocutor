@@ -1,3 +1,5 @@
+namespace Mediance.Abstractions.Tests;
+
 using System.Diagnostics;
 using Mediance.Abstractions.Commands;
 using Mediance.Abstractions.Core;
@@ -8,23 +10,21 @@ using Mediance.CommonKernel;
 using Mediance.CommonKernel.ResultTypes;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Mediance.Abstractions.Tests;
-
-public record TestQuery(int value) : IQuery<int>;
+public record TestQuery(int Value) : IQuery<int>;
 
 public class TestQueryHandler : IQueryHandler<TestQuery, int>
 {
-    public Task<int> Handle(TestQuery query, CancellationToken ct) => Task.FromResult(query.value * 2);
+    public Task<int> Handle(TestQuery query, CancellationToken ct) => Task.FromResult(query.Value * 2);
 }
 
-public record GreetCommand(string personName) : ICommand<string>;
+public record GreetCommand(string PersonName) : ICommand<string>;
 
 public class GreetCommandHandler : ICommandHandler<GreetCommand, string>
 {
-    public Task<string> Handle(GreetCommand command, CancellationToken ct) => Task.FromResult($"Hello {command.personName}");
+    public Task<string> Handle(GreetCommand command, CancellationToken ct) => Task.FromResult($"Hello {command.PersonName}");
 }
 
-public record TestVoidCommand(string value) : ICommand;
+public record TestVoidCommand(string Value) : ICommand;
 
 public class TestVoidHandler : IVoidCommandHandler<TestVoidCommand, OperationOutcome>
 {
@@ -32,7 +32,7 @@ public class TestVoidHandler : IVoidCommandHandler<TestVoidCommand, OperationOut
         Task.FromResult(new OperationOutcome(default(Success)));
 }
 
-public record TestNotification(string message) : INotification;
+public record TestNotification(string Message) : INotification;
 
 public class TrackingBehavior<TRequest, TResponse>(Action track) : IPipelineBehavior<TRequest, TResponse>
 {

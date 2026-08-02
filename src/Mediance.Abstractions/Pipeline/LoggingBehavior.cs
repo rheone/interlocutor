@@ -1,6 +1,7 @@
 namespace Mediance.Abstractions.Pipeline;
 
 using System.Diagnostics;
+using Mediance.Abstractions.Pipeline.Classifiers;
 using Microsoft.Extensions.Logging;
 
 /// <summary>Pipeline behavior that logs every mediator request passing through the pipeline.</summary>
@@ -11,7 +12,7 @@ public class LoggingBehavior<TRequest, TResponse>(
     IResponseOutcomeDescriber? describer = null
 ) : IPipelineBehavior<TRequest, TResponse>
 {
-    private readonly IResponseOutcomeDescriber describer = describer ?? DefaultResponseOutcomeDescriber.Instance;
+    private readonly IResponseOutcomeDescriber describer = describer ?? new DefaultResponseOutcomeDescriber(Classifiers.OutcomeClassifierBuilder.DefaultClassifier);
 
     /// <summary>
     /// Handles the request, logging the outcome and elapsed time.

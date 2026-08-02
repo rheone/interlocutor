@@ -1,6 +1,7 @@
 namespace Mediance.Abstractions.Pipeline;
 
 using Mediance.Abstractions.Markers;
+using Mediance.Abstractions.Pipeline.Classifiers;
 
 /// <summary>Pipeline behavior that records an audit trail for requests implementing <see cref="IAuditableRequest"/>.</summary>
 /// <typeparam name="TRequest">The request type.</typeparam>
@@ -8,7 +9,7 @@ using Mediance.Abstractions.Markers;
 public class AuditingBehavior<TRequest, TResponse>(IAuditSink sink, IResponseOutcomeDescriber? describer = null)
     : IPipelineBehavior<TRequest, TResponse>
 {
-    private readonly IResponseOutcomeDescriber _describer = describer ?? DefaultResponseOutcomeDescriber.Instance;
+    private readonly IResponseOutcomeDescriber _describer = describer ?? new DefaultResponseOutcomeDescriber(OutcomeClassifierBuilder.DefaultClassifier);
 
     /// <summary>
     /// Handles the request, recording an audit entry if the request implements <see cref="IAuditableRequest"/>.

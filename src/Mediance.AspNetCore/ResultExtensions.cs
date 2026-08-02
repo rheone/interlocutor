@@ -102,12 +102,10 @@ public static class ResultExtensions
         );
 
     /// <summary>Maps a NotFound singular case to 404 Not Found.</summary>
-    private static IActionResult ToActionResult(this NotFound n) =>
-        new NotFoundObjectResult(n.Message);
+    private static IActionResult ToActionResult(this NotFound n) => new NotFoundObjectResult(n.Message);
 
     /// <summary>Maps a Forbidden case to 403 Forbidden.</summary>
-    private static IActionResult ToActionResult(this Forbidden f) =>
-        new StatusCodeResult(StatusCodes.Status403Forbidden);
+    private static IActionResult ToActionResult(this Forbidden f) => new StatusCodeResult(StatusCodes.Status403Forbidden);
 
     /// <summary>Maps a Conflict case to 409 Conflict with error details.</summary>
     private static IActionResult ToActionResult(this Conflict c) =>
@@ -137,11 +135,7 @@ public static class ResultExtensions
     /// <summary>Maps a Failure case to 500 Internal Server Error.</summary>
     private static IActionResult ToActionResult(this Failure f) =>
         new ObjectResult(
-            new ProblemDetails
-            {
-                Title = f.Reason ?? "Failure",
-                Status = StatusCodes.Status500InternalServerError,
-            }
+            new ProblemDetails { Title = f.Reason ?? "Failure", Status = StatusCodes.Status500InternalServerError }
         )
         {
             StatusCode = StatusCodes.Status500InternalServerError,
@@ -239,12 +233,10 @@ public static class ResultExtensions
         );
 
     /// <summary>Maps a NotFound singular case to 404 Not Found.</summary>
-    private static IResult ToMinimalApiResult(this NotFound n) =>
-        Results.NotFound(n.Message);
+    private static IResult ToMinimalApiResult(this NotFound n) => Results.NotFound(n.Message);
 
     /// <summary>Maps a Forbidden case to 403 Forbidden.</summary>
-    private static IResult ToMinimalApiResult(this Forbidden f) =>
-        Results.StatusCode(StatusCodes.Status403Forbidden);
+    private static IResult ToMinimalApiResult(this Forbidden f) => Results.StatusCode(StatusCodes.Status403Forbidden);
 
     /// <summary>Maps a Conflict case to 409 Conflict with error details.</summary>
     private static IResult ToMinimalApiResult(this Conflict c) =>
@@ -258,10 +250,8 @@ public static class ResultExtensions
         );
 
     /// <summary>Maps a Failures aggregate to 500 Internal Server Error with all failure reasons.</summary>
-    private static IResult ToMinimalApiResult(this Failures f) =>
-        Results.StatusCode(StatusCodes.Status500InternalServerError);
+    private static IResult ToMinimalApiResult(this Failures f) => Results.StatusCode(StatusCodes.Status500InternalServerError);
 
     /// <summary>Maps a Failure case to 500 Internal Server Error.</summary>
-    private static IResult ToMinimalApiResult(this Failure f) =>
-        Results.StatusCode(StatusCodes.Status500InternalServerError);
+    private static IResult ToMinimalApiResult(this Failure f) => Results.StatusCode(StatusCodes.Status500InternalServerError);
 }

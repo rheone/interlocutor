@@ -19,9 +19,11 @@ public class PipelineStageBehaviorTests
         var stage2 = new TrackingStage("S2", callOrder);
         var stage3 = new TrackingStage("S3", callOrder);
 
-        var behavior = new PipelineStageBehavior<TestRequest, OperationOutcome<TestResponse, Failure>>(
-            [stage1, stage2, stage3]
-        );
+        var behavior = new PipelineStageBehavior<TestRequest, OperationOutcome<TestResponse, Failure>>([
+            stage1,
+            stage2,
+            stage3,
+        ]);
 
         var request = new TestRequest();
         var expectedResult = new OperationOutcome<TestResponse, Failure>(new TestResponse());
@@ -51,15 +53,17 @@ public class PipelineStageBehaviorTests
         var stage2 = new FailingStage("S2", callOrder, failOn: "Before");
         var stage3 = new TrackingStage("S3", callOrder);
 
-        var behavior = new PipelineStageBehavior<TestRequest, OperationOutcome<TestResponse, Failure>>(
-            [stage1, stage2, stage3]
-        );
+        var behavior = new PipelineStageBehavior<TestRequest, OperationOutcome<TestResponse, Failure>>([
+            stage1,
+            stage2,
+            stage3,
+        ]);
 
         var request = new TestRequest();
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => behavior.Handle(
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            behavior.Handle(
                 request,
                 async () => throw new InvalidOperationException("Handler should not run"),
                 CancellationToken.None
@@ -82,20 +86,18 @@ public class PipelineStageBehaviorTests
         var stage2 = new TrackingStage("S2", callOrder);
         var stage3 = new TrackingStage("S3", callOrder);
 
-        var behavior = new PipelineStageBehavior<TestRequest, OperationOutcome<TestResponse, Failure>>(
-            [stage1, stage2, stage3]
-        );
+        var behavior = new PipelineStageBehavior<TestRequest, OperationOutcome<TestResponse, Failure>>([
+            stage1,
+            stage2,
+            stage3,
+        ]);
 
         var request = new TestRequest();
         var handlerException = new InvalidOperationException("Handler failed");
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => behavior.Handle(
-                request,
-                async () => throw handlerException,
-                CancellationToken.None
-            )
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            behavior.Handle(request, async () => throw handlerException, CancellationToken.None)
         );
 
         Assert.Same(handlerException, ex);
@@ -113,20 +115,18 @@ public class PipelineStageBehaviorTests
         var stage2 = new FailingStage("S2", callOrder, failOn: "After");
         var stage3 = new TrackingStage("S3", callOrder);
 
-        var behavior = new PipelineStageBehavior<TestRequest, OperationOutcome<TestResponse, Failure>>(
-            [stage1, stage2, stage3]
-        );
+        var behavior = new PipelineStageBehavior<TestRequest, OperationOutcome<TestResponse, Failure>>([
+            stage1,
+            stage2,
+            stage3,
+        ]);
 
         var request = new TestRequest();
         var handlerException = new InvalidOperationException("Handler failed");
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => behavior.Handle(
-                request,
-                async () => throw handlerException,
-                CancellationToken.None
-            )
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            behavior.Handle(request, async () => throw handlerException, CancellationToken.None)
         );
 
         // The original handler exception should propagate, not the After-hook exception.
@@ -148,15 +148,16 @@ public class PipelineStageBehaviorTests
         var failingAfterStage = new FailingStage("S1-FailAfter", callOrder, failOn: "After");
         var stage2 = new FailingStage("S2", callOrder, failOn: "Before");
 
-        var behavior = new PipelineStageBehavior<TestRequest, OperationOutcome<TestResponse, Failure>>(
-            [failingAfterStage, stage2]
-        );
+        var behavior = new PipelineStageBehavior<TestRequest, OperationOutcome<TestResponse, Failure>>([
+            failingAfterStage,
+            stage2,
+        ]);
 
         var request = new TestRequest();
 
         // Act & Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => behavior.Handle(
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            behavior.Handle(
                 request,
                 async () => throw new InvalidOperationException("Handler should not run"),
                 CancellationToken.None
@@ -181,11 +182,7 @@ public class PipelineStageBehaviorTests
         var expectedResult = new OperationOutcome<TestResponse, Failure>(new TestResponse());
 
         // Act
-        var result = await behavior.Handle(
-            request,
-            async () => expectedResult,
-            CancellationToken.None
-        );
+        var result = await behavior.Handle(request, async () => expectedResult, CancellationToken.None);
 
         // Assert
         Assert.Equal(expectedResult, result);
@@ -193,9 +190,11 @@ public class PipelineStageBehaviorTests
 
     // Minimal test types
     private class TestRequest { }
+
     private class TestResponse { }
 
-    private class TrackingStage(string name, List<string> callOrder) : IPipelineStage<TestRequest, OperationOutcome<TestResponse, Failure>>
+    private class TrackingStage(string name, List<string> callOrder)
+        : IPipelineStage<TestRequest, OperationOutcome<TestResponse, Failure>>
     {
         public async Task OnBeforeAsync(TestRequest request, CancellationToken ct)
         {
@@ -203,14 +202,19 @@ public class PipelineStageBehaviorTests
             await Task.CompletedTask;
         }
 
-        public async Task OnAfterAsync(TestRequest request, OperationOutcome<TestResponse, Failure> result, CancellationToken ct)
+        public async Task OnAfterAsync(
+            TestRequest request,
+            OperationOutcome<TestResponse, Failure> result,
+            CancellationToken ct
+        )
         {
             callOrder.Add($"{name}.After");
             await Task.CompletedTask;
         }
     }
 
-    private class FailingStage(string name, List<string> callOrder, string failOn) : IPipelineStage<TestRequest, OperationOutcome<TestResponse, Failure>>
+    private class FailingStage(string name, List<string> callOrder, string failOn)
+        : IPipelineStage<TestRequest, OperationOutcome<TestResponse, Failure>>
     {
         public async Task OnBeforeAsync(TestRequest request, CancellationToken ct)
         {
@@ -223,7 +227,11 @@ public class PipelineStageBehaviorTests
             await Task.CompletedTask;
         }
 
-        public async Task OnAfterAsync(TestRequest request, OperationOutcome<TestResponse, Failure> result, CancellationToken ct)
+        public async Task OnAfterAsync(
+            TestRequest request,
+            OperationOutcome<TestResponse, Failure> result,
+            CancellationToken ct
+        )
         {
             callOrder.Add($"{name}.After");
             if (failOn == "After")

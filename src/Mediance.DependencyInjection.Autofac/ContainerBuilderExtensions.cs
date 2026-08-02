@@ -8,6 +8,7 @@ using Mediance.Abstractions.Commands;
 using Mediance.Abstractions.Core;
 using Mediance.Abstractions.Notifications;
 using Mediance.Abstractions.Pipeline;
+using Mediance.Abstractions.Pipeline.Classifiers;
 using Mediance.Abstractions.Queries;
 
 /// <summary>
@@ -135,15 +136,27 @@ public static class MedianceAutofacExtensions
     public static ContainerBuilder AddMediance(this ContainerBuilder builder, MedianceOptions options)
     {
         // Apply assembly filter if provided
-        var assembliesToScan = options.AssemblyFilter != null
-            ? options.AssembliesToScan.Where(options.AssemblyFilter).ToArray()
-            : options.AssembliesToScan;
+        var assembliesToScan =
+            options.AssemblyFilter != null
+                ? options.AssembliesToScan.Where(options.AssemblyFilter).ToArray()
+                : options.AssembliesToScan;
 
         // Register handlers first using the base method
         builder.AddMediance(assembliesToScan);
 
-        // Register outcome describer (always)
-        builder.Register(c => (IResponseOutcomeDescriber)Activator.CreateInstance(options.ResponseOutcomeDescriberType)!)
+        // Build and register the outcome classifier with custom types
+        var classifierBuilder = new OutcomeClassifierBuilder();
+        foreach (var customType in options.CustomOutcomeTypes)
+        {
+            // Attempt to register custom types as failures (conservative default)
+            classifierBuilder.RegisterFailureType(customType, customType.Name);
+        }
+
+        builder.Register(c => classifierBuilder.Build()).As<IOutcomeClassifier>().SingleInstance();
+
+        // Register outcome describer with the classifier
+        builder
+            .Register(c => new DefaultResponseOutcomeDescriber(c.Resolve<IOutcomeClassifier>()))
             .As<IResponseOutcomeDescriber>()
             .SingleInstance();
 
@@ -180,8 +193,11 @@ public static class MedianceAutofacExtensions
             // Validation before transaction
             (TryGetType("Mediance.FluentValidation.ValidationBehavior`2"), null),
             // Transaction innermost
-            (TryGetType("Mediance.EntityFrameworkCore.TransactionBehavior`3")
-                ?? TryGetType("Mediance.NHibernate.TransactionBehavior`3"), null),
+            (
+                TryGetType("Mediance.EntityFrameworkCore.TransactionBehavior`3")
+                    ?? TryGetType("Mediance.NHibernate.TransactionBehavior`3"),
+                null
+            ),
         };
 
         foreach (var (behaviorType, _) in behaviorTypes)

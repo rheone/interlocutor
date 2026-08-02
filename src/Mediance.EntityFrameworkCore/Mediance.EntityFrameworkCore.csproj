@@ -3,7 +3,6 @@
     <Description>Entity Framework Core transaction behavior for Mediance. Provides TransactionBehavior bound to DbContext.</Description>
   </PropertyGroup>
 
-
   <ItemGroup>
     <ProjectReference Include="..\Mediance.Abstractions\Mediance.Abstractions.csproj" />
   </ItemGroup>
@@ -12,5 +11,4 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
   </ItemGroup>
-
 </Project>

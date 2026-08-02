@@ -1,48 +1,41 @@
 namespace Mediance.Abstractions.Pipeline;
 
-using System.Runtime.CompilerServices;
-using Mediance.CommonKernel.ResultTypes;
+using Mediance.Abstractions.Pipeline.Classifiers;
 
 /// <summary>
-/// Default <see cref="IResponseOutcomeDescriber"/>. Unwraps compiler-generated unions via
-/// <see cref="IUnion"/>, special-cases the <c>Mediance.CommonKernel.ResultTypes</c> sibling case
-/// types (<see cref="NotFound"/>, <see cref="Forbidden"/>, <see cref="Conflict"/>,
-/// <see cref="ValidationErrors"/>, <see cref="Failure"/>), and
-/// falls back to the runtime type name for anything else.
+/// Default <see cref="IResponseOutcomeDescriber"/>. Uses an <see cref="IOutcomeClassifier"/> to
+/// determine failure/success classification and labels. Unwraps compiler-generated unions via
+/// <see cref="IUnion"/> before classification.
 /// </summary>
 /// <remarks>
 /// <para>
-/// This is the default implementation used by logging and auditing behaviors if no custom describer is registered.
-/// It recognizes all common Mediance result types and unwraps compiler-generated unions. For domain-specific types,
-/// override by registering a custom <see cref="IResponseOutcomeDescriber"/> in DI.
+/// This implementation delegates classification to an injected <see cref="IOutcomeClassifier"/>,
+/// allowing outcomes to be classified consistently across logging, auditing, and transaction behaviors.
+/// The classifier is built by <see cref="OutcomeClassifierBuilder"/> and includes all kernel types
+/// plus any consumer-registered custom types and predicates.
+/// </para>
+/// <para>
+/// Register a custom <see cref="IResponseOutcomeDescriber"/> if you need outcome labeling
+/// behavior different from the classifier's (e.g., domain-specific formatting).
 /// </para>
 /// </remarks>
 public sealed class DefaultResponseOutcomeDescriber : IResponseOutcomeDescriber
 {
-    /// <summary>Gets the shared singleton instance.</summary>
-    public static readonly DefaultResponseOutcomeDescriber Instance = new();
+    private readonly IOutcomeClassifier _classifier;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DefaultResponseOutcomeDescriber"/> class.
+    /// Initializes a new instance with the given outcome classifier.
+    /// </summary>
+    /// <param name="classifier">The classifier used to determine success/failure and labels.</param>
+    public DefaultResponseOutcomeDescriber(IOutcomeClassifier classifier)
+    {
+        this._classifier = classifier ?? throw new ArgumentNullException(nameof(classifier));
+    }
 
     /// <inheritdoc/>
-    public string Describe(object? response) =>
-        Unwrap(response) switch
-        {
-            null => "None",
-            ValidationErrors => "ValidationError",
-            NotFound => "NotFound",
-            Forbidden => "Forbidden",
-            Conflict => "Conflict",
-            Failure => "Failure",
-            // Fallback for unrecognized types (domain-specific result types, custom shapes, etc.).
-            // Use the runtime type name so logging/auditing still captures something meaningful.
-            var value => value.GetType().Name,
-        };
+    public string Describe(object? response) => this._classifier.GetLabel(response);
 
     /// <inheritdoc/>
-    public bool IsFailure(object? response) =>
-        Unwrap(response) is ValidationErrors or NotFound or Forbidden or Conflict or Failure;
-
-    // Unwrap compiler-generated union types to access their underlying Value.
-    // This lets us introspect both union and non-union responses uniformly.
-    // Non-union types are returned as-is.
-    private static object? Unwrap(object? response) => response is IUnion union ? union.Value : response;
+    public bool IsFailure(object? response) => this._classifier.IsFailure(response);
 }

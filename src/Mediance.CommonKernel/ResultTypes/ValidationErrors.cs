@@ -134,6 +134,7 @@ public readonly record struct ValidationErrors<TErrorCode>
     private readonly ImmutableArray<TErrorCode> _uniqueErrorCodes;
 
     /// <summary>
+    /// Initializes a new instance of the <see cref="ValidationErrors{TErrorCode}"/> struct.
     /// Initializes a new instance of the <see cref="ValidationErrors{TErrorCode}"/> class from the specified
     /// validation errors.
     /// </summary>
@@ -161,6 +162,7 @@ public readonly record struct ValidationErrors<TErrorCode>
     }
 
     /// <summary>
+    /// Initializes a new instance of the <see cref="ValidationErrors{TErrorCode}"/> struct.
     /// Initializes a new instance of the <see cref="ValidationErrors{TErrorCode}"/> class from the specified
     /// message and error code tuples.
     /// </summary>
@@ -177,9 +179,11 @@ public readonly record struct ValidationErrors<TErrorCode>
                 e.Message,
                 e.ErrorCode
             ))
-        ) { }
+        )
+    { }
 
     /// <summary>
+    /// Initializes a new instance of the <see cref="ValidationErrors{TErrorCode}"/> struct.
     /// Initializes a new instance of the <see cref="ValidationErrors{TErrorCode}"/> class from a single
     /// message and error code pair.
     /// </summary>

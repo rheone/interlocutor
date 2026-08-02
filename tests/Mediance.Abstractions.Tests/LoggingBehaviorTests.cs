@@ -1,10 +1,10 @@
+namespace Mediance.Abstractions.Tests;
+
 using Mediance.Abstractions.Pipeline;
 using Mediance.Abstractions.Queries;
 using Mediance.CommonKernel.ResultTypes;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
-
-namespace Mediance.Abstractions.Tests;
 
 public class LoggingBehaviorTests
 {
@@ -44,7 +44,7 @@ public class LoggingBehaviorTests
         var logger = Substitute.For<ILogger<LoggingBehavior<LoggedQuery, Success>>>();
         var behavior = new LoggingBehavior<LoggedQuery, Success>(logger);
         var request = new LoggedQuery(1);
-        var response = new Success();
+        var response = default(Success);
         var next = () => Task.FromResult(response);
 
         // Act

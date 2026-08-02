@@ -3,7 +3,6 @@
     <Description>NHibernate transaction behavior for Mediance. Provides TransactionBehavior bound to NHibernate ISession.</Description>
   </PropertyGroup>
 
-
   <ItemGroup>
     <ProjectReference Include="..\Mediance.Abstractions\Mediance.Abstractions.csproj" />
   </ItemGroup>
@@ -12,5 +11,4 @@
   <ItemGroup>
     <PackageReference Include="NHibernate" />
   </ItemGroup>
-
 </Project>

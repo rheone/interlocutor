@@ -3,7 +3,6 @@
     <Description>Mediance mediator abstractions: IMediator, IPipelineBehavior, handler contracts, marker interfaces, and the concrete Mediator implementation.</Description>
   </PropertyGroup>
 
-
   <ItemGroup>
     <ProjectReference Include="..\Mediance.CommonKernel\Mediance.CommonKernel.csproj" />
   </ItemGroup>
@@ -12,5 +11,4 @@
   <ItemGroup>
     <Using Include="Microsoft.Extensions.DependencyInjection" />
   </ItemGroup>
-
 </Project>

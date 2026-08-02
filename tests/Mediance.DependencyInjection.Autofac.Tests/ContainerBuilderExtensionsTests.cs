@@ -1,3 +1,5 @@
+namespace Mediance.DependencyInjection.Autofac.Tests;
+
 using Autofac;
 using Mediance.Abstractions;
 using Mediance.Abstractions.Commands;
@@ -5,8 +7,6 @@ using Mediance.Abstractions.Core;
 using Mediance.Abstractions.Notifications;
 using Mediance.Abstractions.Pipeline;
 using Mediance.Abstractions.Queries;
-
-namespace Mediance.DependencyInjection.Autofac.Tests;
 
 public class ContainerBuilderExtensionsTests
 {
@@ -42,10 +42,7 @@ public class ContainerBuilderExtensionsTests
     public void AddMediance_WithOptions_RegistersOutcomeDescriber()
     {
         var builder = new ContainerBuilder();
-        var options = new MedianceOptions
-        {
-            AssembliesToScan = [typeof(ContainerBuilderExtensionsTests).Assembly],
-        };
+        var options = new MedianceOptions { AssembliesToScan = [typeof(ContainerBuilderExtensionsTests).Assembly] };
 
         builder.AddMediance(options);
         var container = builder.Build();

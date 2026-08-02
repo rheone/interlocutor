@@ -30,10 +30,10 @@ using Mediance.CommonKernel.ResultTypes;
 /// no explicit save or flush call is required before committing the transaction.
 /// </para>
 /// </remarks>
-public class TransactionBehavior<TRequest, TResponse>(Lazy<ISession> session, IResponseOutcomeDescriber? describer = null)
+public class TransactionBehavior<TRequest, TResponse>(Lazy<ISession> session, IResponseOutcomeDescriber describer)
     : IPipelineBehavior<TRequest, TResponse>
 {
-    private readonly IResponseOutcomeDescriber _describer = describer ?? DefaultResponseOutcomeDescriber.Instance;
+    private readonly IResponseOutcomeDescriber _describer = describer;
 
     /// <inheritdoc/>
     /// <remarks>

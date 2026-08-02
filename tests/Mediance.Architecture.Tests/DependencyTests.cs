@@ -51,11 +51,7 @@ public class DependencyTests
         var result = Types
             .InAssembly(typeof(Mediance.AspNetCore.ResultExtensions).Assembly)
             .ShouldNot()
-            .HaveDependencyOnAny([
-                "Mediance.EntityFrameworkCore",
-                "Mediance.FluentValidation",
-                "Mediance.NHibernate",
-            ])
+            .HaveDependencyOnAny(["Mediance.EntityFrameworkCore", "Mediance.FluentValidation", "Mediance.NHibernate"])
             .GetResult();
 
         Assert.True(result.IsSuccessful, string.Join(", ", result.FailingTypeNames ?? []));

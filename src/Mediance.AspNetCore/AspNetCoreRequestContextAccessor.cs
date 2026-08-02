@@ -23,8 +23,8 @@ using Microsoft.AspNetCore.Http;
 /// </remarks>
 public sealed class AspNetCoreRequestContextAccessor(IHttpContextAccessor httpContextAccessor) : IRequestContextAccessor
 {
-    private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor
-        ?? throw new ArgumentNullException(nameof(httpContextAccessor));
+    private readonly IHttpContextAccessor _httpContextAccessor =
+        httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
 
     /// <inheritdoc/>
     public RequestContext? Context
@@ -37,13 +37,12 @@ public sealed class AspNetCoreRequestContextAccessor(IHttpContextAccessor httpCo
                 return null;
             }
 
-            var correlationId = httpContext.Request.Headers["X-Correlation-ID"].ToString()
-                ?? httpContext.TraceIdentifier;
+            var correlationId = httpContext.Request.Headers["X-Correlation-ID"].ToString() ?? httpContext.TraceIdentifier;
 
             var userId = httpContext.User?.Identity?.Name;
 
-            var tenantId = httpContext.Request.Headers["X-Tenant-ID"].ToString()
-                ?? httpContext.User?.FindFirst("tenant_id")?.Value;
+            var tenantId =
+                httpContext.Request.Headers["X-Tenant-ID"].ToString() ?? httpContext.User?.FindFirst("tenant_id")?.Value;
 
             return new RequestContext
             {
@@ -52,7 +51,6 @@ public sealed class AspNetCoreRequestContextAccessor(IHttpContextAccessor httpCo
                 TenantId = tenantId,
             };
         }
-
         set => throw new NotSupportedException("Cannot set request context on web-backed accessor.");
     }
 }
