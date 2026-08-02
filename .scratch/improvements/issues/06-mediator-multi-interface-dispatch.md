@@ -1,3 +1,11 @@
+> **Status: folded in** — absorbed into
+> `.scratch/improvements/issues/23-collapse-dispatch-wrapper-hierarchy.md`, which rewrites the same
+> cache-lookup code this issue targets. Do not pick this up separately; pick up 23 instead.
+
+> **Status: folded in** — absorbed into
+> `.scratch/improvements/issues/23-collapse-dispatch-wrapper-hierarchy.md`, which rewrites the same
+> cache-lookup code this issue targets. Do not pick this up separately; pick up 23 instead.
+
 ## Labels
 
 ready-for-agent

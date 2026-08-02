@@ -1,3 +1,9 @@
+> **Status: superseded** — this issue predates the common-kernel migration.
+> Reason: its blocker (`07-ef-core-transaction-behavior`, old numbering) is superseded by
+> `.scratch/improvements/issues/07-ef-core-transaction-behavior.md` (new numbering) and
+> `.scratch/improvements/issues/04-classifier-drives-transactions.md`.
+> Superseded by the effort in `.scratch/remediation/`. Do not pick this up.
+
 ## Labels
 
 ready-for-agent

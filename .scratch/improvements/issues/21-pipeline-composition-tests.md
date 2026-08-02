@@ -1,3 +1,9 @@
+> **Status: superseded** — this issue predates the common-kernel migration.
+> Reason: its blocker (`20-mediator-unit-tests`) is itself superseded; the same ground is covered by
+> `.scratch/improvements/issues/16-integration-fixture-and-dispatch.md` and
+> `.scratch/improvements/issues/17-integration-ordering-and-short-circuit.md`.
+> Superseded by the effort in `.scratch/remediation/`. Do not pick this up.
+
 ## Labels
 
 ready-for-agent
