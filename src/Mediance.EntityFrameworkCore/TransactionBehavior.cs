@@ -13,13 +13,14 @@ using Microsoft.EntityFrameworkCore;
 /// <typeparam name="TResponse">The response type returned after pipeline execution.</typeparam>
 /// <typeparam name="TContext">The EF Core <see cref="DbContext"/> type providing the database connection for the transaction scope.</typeparam>
 /// <param name="db">Lazy factory for the <typeparamref name="TContext"/> instance that provides database access.</param>
+/// <param name="classifier">The outcome classifier used to determine success vs. failure for rollback decisions.</param>
 /// <param name="describer">Optional custom describer for converting response outcomes to human-readable strings for logging. Defaults to default classifier-based describer.</param>
 /// <remarks>
 /// <para>
 /// This behavior opens an <see cref="Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction"/> before invoking
 /// the next handler in the pipeline. After the handler completes successfully, it persists pending changes
 /// via <see cref="DbContext.SaveChangesAsync(CancellationToken)"/> and commits the transaction. If the handler
-/// returns a <see cref="Failure"/> result, or if <c>SaveChangesAsync</c> throws, the transaction is rolled
+/// returns a classified failure result, or if <c>SaveChangesAsync</c> throws, the transaction is rolled
 /// back and all accumulated changes are discarded.
 /// </para>
 /// <para>
@@ -33,11 +34,15 @@ using Microsoft.EntityFrameworkCore;
 /// entities before the transaction can be committed.
 /// </para>
 /// </remarks>
-public class TransactionBehavior<TRequest, TResponse, TContext>(Lazy<TContext> db, IResponseOutcomeDescriber? describer = null)
-    : IPipelineBehavior<TRequest, TResponse>
+public class TransactionBehavior<TRequest, TResponse, TContext>(
+    Lazy<TContext> db,
+    IOutcomeClassifier? classifier = null,
+    IResponseOutcomeDescriber? describer = null
+) : IPipelineBehavior<TRequest, TResponse>
     where TContext : DbContext
 {
-    private readonly IResponseOutcomeDescriber describer = describer ?? new DefaultResponseOutcomeDescriber(OutcomeClassifierBuilder.DefaultClassifier);
+    private readonly IOutcomeClassifier classifier = classifier ?? OutcomeClassifierBuilder.DefaultClassifier;
+    private readonly IResponseOutcomeDescriber describer = describer ?? new DefaultResponseOutcomeDescriber(classifier ?? OutcomeClassifierBuilder.DefaultClassifier);
 
     /// <inheritdoc/>
     /// <remarks>
@@ -67,7 +72,9 @@ public class TransactionBehavior<TRequest, TResponse, TContext>(Lazy<TContext> d
 
         var result = await next();
 
-        if (!this.describer.IsFailure(result))
+        // Use the injected classifier to determine commit vs. rollback.
+        // This ensures transaction disposition is consistent with logging/auditing behavior.
+        if (!this.classifier.IsFailure(result))
         {
             try
             {
@@ -90,7 +97,7 @@ public class TransactionBehavior<TRequest, TResponse, TContext>(Lazy<TContext> d
         }
         else
         {
-            // Handler returned a failure result (not an exception). This is an expected business outcome, not a bug,
+            // Outcome classified as failure (not an exception). This is an expected business outcome, not a bug,
             // so rollback any accumulated changes to keep the database consistent with the business decision.
             await transaction.RollbackAsync(ct);
         }
