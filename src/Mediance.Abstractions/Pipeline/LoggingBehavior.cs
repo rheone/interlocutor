@@ -13,6 +13,13 @@ public class LoggingBehavior<TRequest, TResponse>(
 {
     private readonly IResponseOutcomeDescriber describer = describer ?? DefaultResponseOutcomeDescriber.Instance;
 
+    /// <summary>
+    /// Handles the request, logging the outcome and elapsed time.
+    /// </summary>
+    /// <param name="request">The request to process.</param>
+    /// <param name="next">The next behavior in the pipeline.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>The result from the next behavior or handler.</returns>
     public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         // Capture the start time using Stopwatch for high-resolution timing. This is more accurate than

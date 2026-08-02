@@ -10,5 +10,12 @@ namespace Mediance.Abstractions.Notifications;
 /// </remarks>
 internal abstract class NotificationHandlerWrapper
 {
+    /// <summary>
+    /// Dispatches the notification to all registered handlers according to the strategy.
+    /// </summary>
+    /// <param name="notification">The notification to dispatch.</param>
+    /// <param name="services">The service provider for resolving handlers.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>A task representing the dispatch operation.</returns>
     public abstract Task Handle(object notification, IServiceProvider services, CancellationToken ct);
 }

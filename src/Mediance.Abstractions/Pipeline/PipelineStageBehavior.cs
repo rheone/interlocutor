@@ -6,6 +6,13 @@ namespace Mediance.Abstractions.Pipeline;
 public class PipelineStageBehavior<TRequest, TResponse>(IEnumerable<IPipelineStage<TRequest, TResponse>> stages)
     : IPipelineBehavior<TRequest, TResponse>
 {
+    /// <summary>
+    /// Handles the request, invoking registered pipeline stages around the handler call.
+    /// </summary>
+    /// <param name="request">The request to process.</param>
+    /// <param name="next">The next behavior in the pipeline.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>The result from the next behavior or handler.</returns>
     public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         // Invoke all pre-handler hooks. Stages run in registration order; if any hook throws, the exception

@@ -20,6 +20,13 @@ using Mediance.CommonKernel.ResultTypes;
 public class AuthorizationBehavior<TRequest, TSuccess>(IPolicyEvaluator policyEvaluator)
     : IPipelineBehavior<TRequest, OperationOutcome<TSuccess, Forbidden>>
 {
+    /// <summary>
+    /// Handles the request, evaluating the authorization policy if the request implements <see cref="IRequiresPolicy"/>.
+    /// </summary>
+    /// <param name="request">The request to process.</param>
+    /// <param name="next">The next behavior in the pipeline.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>A <see cref="Forbidden"/> outcome if authorization fails, otherwise the result from the next behavior or handler.</returns>
     public async Task<OperationOutcome<TSuccess, Forbidden>> Handle(
         TRequest request,
         Func<Task<OperationOutcome<TSuccess, Forbidden>>> next,

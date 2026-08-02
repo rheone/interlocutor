@@ -11,8 +11,8 @@ namespace Mediance.Abstractions.Markers;
 /// (EF Core, NHibernate).
 /// </para>
 /// <para>
-/// Transactional behavior is enforced by <see cref="EntityFrameworkCore.TransactionBehavior{TRequest, TResponse, TContext}"/>
-/// (EF Core) or <see cref="NHibernate.TransactionBehavior{TRequest, TResponse}"/> (NHibernate). Requests are
+/// Transactional behavior is enforced by the <c>TransactionBehavior</c> implementations in
+/// <c>Mediance.EntityFrameworkCore</c> (EF Core) or <c>Mediance.NHibernate</c> (NHibernate). Requests are
 /// only wrapped in transactions when they implement <see cref="ITransactionalRequest"/>. Requests implementing
 /// <see cref="IExternalStoreRequest"/> are explicitly excluded to prevent nesting with external transaction scopes.
 /// </para>

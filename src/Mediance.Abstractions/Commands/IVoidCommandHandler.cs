@@ -19,7 +19,7 @@ using Mediance.CommonKernel;
 /// </para>
 /// <para>
 /// Unlike <see cref="ICommandHandler{TCommand, TResponse}"/>, which returns domain data, void commands are often
-/// paired with transactions (via <see cref="ITransactionalRequest"/>) and auditing (via <see cref="IAuditableRequest"/>).
+/// paired with transactions (via <see cref="Markers.ITransactionalRequest"/>) and auditing (via <see cref="Markers.IAuditableRequest"/>).
 /// </para>
 /// <para>
 /// The <typeparamref name="TResult"/> type is chosen at the call site, not at handler registration time.

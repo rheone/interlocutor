@@ -12,6 +12,13 @@ namespace Mediance.Abstractions.Notifications;
 internal sealed class ParallelNotificationHandlerWrapper<TNotification> : NotificationHandlerWrapper
     where TNotification : INotification
 {
+    /// <summary>
+    /// Dispatches the notification to all handlers concurrently.
+    /// </summary>
+    /// <param name="notification">The notification to dispatch.</param>
+    /// <param name="services">The service provider for resolving handlers.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>A task that completes when all handlers complete or any handler throws.</returns>
     public override Task Handle(object notification, IServiceProvider services, CancellationToken ct)
     {
         var typedNotification = (TNotification)notification;

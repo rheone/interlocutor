@@ -16,6 +16,13 @@ using Mediance.Abstractions.Pipeline;
 internal sealed class CommandHandlerWrapper<TCommand, TResponse> : HandlerWrapper<TResponse>
     where TCommand : ICommand<TResponse>
 {
+    /// <summary>
+    /// Executes the command with its handler and pipeline behaviors.
+    /// </summary>
+    /// <param name="request">The command to handle.</param>
+    /// <param name="services">The service provider for resolving the handler and behaviors.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>The response from the handler.</returns>
     public override Task<TResponse> Handle(object request, IServiceProvider services, CancellationToken ct)
     {
         var typedRequest = (TCommand)request;

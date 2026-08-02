@@ -11,8 +11,7 @@ using Mediance.Abstractions.Notifications;
 /// processes.
 /// </para>
 /// <para>
-/// Handler execution strategy defaults to sequential (stops on first exception). Use the
-/// <see cref="Publish{TNotification}(TNotification, PublishStrategy, CancellationToken)"/> overload on
+/// Handler execution strategy defaults to sequential (stops on first exception). Use the overload on
 /// <see cref="IMediator"/> to switch to parallel execution.
 /// </para>
 /// </remarks>

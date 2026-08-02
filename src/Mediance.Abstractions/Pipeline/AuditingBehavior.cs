@@ -10,6 +10,13 @@ public class AuditingBehavior<TRequest, TResponse>(IAuditSink sink, IResponseOut
 {
     private readonly IResponseOutcomeDescriber _describer = describer ?? DefaultResponseOutcomeDescriber.Instance;
 
+    /// <summary>
+    /// Handles the request, recording an audit entry if the request implements <see cref="IAuditableRequest"/>.
+    /// </summary>
+    /// <param name="request">The request to process.</param>
+    /// <param name="next">The next behavior in the pipeline.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>The result from the next behavior or handler.</returns>
     public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         // If the request doesn't require auditing, skip this behavior entirely.

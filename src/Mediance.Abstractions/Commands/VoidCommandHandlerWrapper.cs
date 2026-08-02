@@ -18,6 +18,13 @@ internal sealed class VoidCommandHandlerWrapper<TCommand, TResult> : VoidHandler
     where TCommand : ICommand
     where TResult : IOperationOutcome
 {
+    /// <summary>
+    /// Executes the void command with its handler and pipeline behaviors.
+    /// </summary>
+    /// <param name="request">The command to handle.</param>
+    /// <param name="services">The service provider for resolving the handler and behaviors.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>The outcome from the handler.</returns>
     public override Task<TResult> Handle(object request, IServiceProvider services, CancellationToken ct)
     {
         var typedRequest = (TCommand)request;

@@ -6,8 +6,8 @@ namespace Mediance.Abstractions.Markers;
 /// <remarks>
 /// <para>
 /// Implement this marker interface on commands/queries when access should be gated by an authorization policy.
-/// The <see cref="AuthorizationBehavior{TRequest, TSuccess}"/> pipeline behavior intercepts these requests,
-/// evaluates the policy via <see cref="IPolicyEvaluator"/>, and short-circuits with <see cref="Forbidden"/> if
+/// The <see cref="Pipeline.AuthorizationBehavior{TRequest, TSuccess}"/> pipeline behavior intercepts these requests,
+/// evaluates the policy via <see cref="Pipeline.IPolicyEvaluator"/>, and short-circuits with <c>Forbidden</c> if
 /// the policy fails. This keeps authorization logic out of handlers and enables consistent policy enforcement
 /// across your application.
 /// </para>

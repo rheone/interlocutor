@@ -13,5 +13,12 @@ using Mediance.CommonKernel;
 internal abstract class VoidHandlerWrapper<TResult>
     where TResult : IOperationOutcome
 {
+    /// <summary>
+    /// Executes the handler with the given request, resolving behaviors and the handler from the service provider.
+    /// </summary>
+    /// <param name="request">The request to handle.</param>
+    /// <param name="services">The service provider for resolving handlers and behaviors.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>The outcome from the handler.</returns>
     public abstract Task<TResult> Handle(object request, IServiceProvider services, CancellationToken ct);
 }

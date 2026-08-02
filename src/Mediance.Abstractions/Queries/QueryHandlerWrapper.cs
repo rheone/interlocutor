@@ -16,6 +16,13 @@ using Mediance.Abstractions.Pipeline;
 internal sealed class QueryHandlerWrapper<TQuery, TResponse> : HandlerWrapper<TResponse>
     where TQuery : IQuery<TResponse>
 {
+    /// <summary>
+    /// Executes the query with its handler and pipeline behaviors.
+    /// </summary>
+    /// <param name="request">The query to handle.</param>
+    /// <param name="services">The service provider for resolving the handler and behaviors.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>The response from the handler.</returns>
     public override Task<TResponse> Handle(object request, IServiceProvider services, CancellationToken ct)
     {
         var typedRequest = (TQuery)request;

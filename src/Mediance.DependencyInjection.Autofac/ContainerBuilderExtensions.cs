@@ -14,7 +14,7 @@ using Mediance.Abstractions.Queries;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Use <see cref="AddMediance"/> in your Autofac module to register all Mediance handlers, behaviors, and the mediator.
+/// Use the <c>AddMediance</c> method in your Autofac module to register all Mediance handlers, behaviors, and the mediator.
 /// Assembly scanning discovers handler implementations without explicit registration for each handler type.
 /// </para>
 /// <para>

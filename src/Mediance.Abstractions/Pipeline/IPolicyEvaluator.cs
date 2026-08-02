@@ -4,7 +4,7 @@ namespace Mediance.Abstractions.Pipeline;
 /// <remarks>
 /// <para>
 /// Implement <see cref="IPolicyEvaluator"/> to provide authorization decisions for requests implementing
-/// <see cref="IRequiresPolicy"/>. Register your implementation in DI, and <see cref="AuthorizationBehavior{TRequest, TSuccess}"/>
+/// <see cref="Markers.IRequiresPolicy"/>. Register your implementation in DI, and <see cref="AuthorizationBehavior{TRequest, TSuccess}"/>
 /// will invoke it to check policies.
 /// </para>
 /// <para>

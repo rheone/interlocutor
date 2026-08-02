@@ -11,5 +11,12 @@ namespace Mediance.Abstractions.Core;
 /// </remarks>
 internal abstract class HandlerWrapper<TResponse>
 {
+    /// <summary>
+    /// Executes the handler with the given request, resolving behaviors and the handler from the service provider.
+    /// </summary>
+    /// <param name="request">The request to handle.</param>
+    /// <param name="services">The service provider for resolving handlers and behaviors.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>The response from the handler.</returns>
     public abstract Task<TResponse> Handle(object request, IServiceProvider services, CancellationToken ct);
 }
