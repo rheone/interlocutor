@@ -4,7 +4,7 @@ using NHibernate;
 
 namespace Mediance.NHibernate.Tests;
 
-public record NonTransactionalTestRequest(int Value) : ICommand<string>;
+public record NonTransactionalTestRequest(int value) : ICommand<string>;
 
 public class TransactionBehaviorTests
 {

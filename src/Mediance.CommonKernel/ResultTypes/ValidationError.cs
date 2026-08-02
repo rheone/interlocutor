@@ -5,7 +5,7 @@ using System.Collections.Immutable;
 /// <summary>
 /// Represents a single validation error consisting of a message only, with no associated error code.
 /// </summary>
-/// <param name="Message">The validation error message.</param>
+/// <param name="message">The validation error message.</param>
 /// <remarks>
 /// <para>
 /// Use <see cref="ValidationError"/> to represent a single validation failure. Messages typically describe what
@@ -16,7 +16,7 @@ using System.Collections.Immutable;
 /// <see cref="ValidationError"/> instances with <see cref="ValidationErrors"/>.
 /// </para>
 /// </remarks>
-public readonly record struct ValidationError(string Message);
+public readonly record struct ValidationError(string message);
 
 /// <summary>
 /// Represents a single validation error consisting of a message and an associated error code.
@@ -25,8 +25,8 @@ public readonly record struct ValidationError(string Message);
 /// The type used to represent the error code. Must support equality comparison so that error codes
 /// can be reliably distinguished as unique.
 /// </typeparam>
-/// <param name="Message">The validation error message.</param>
-/// <param name="ErrorCode">The error code associated with the validation error.</param>
+/// <param name="message">The validation error message.</param>
+/// <param name="errorCode">The error code associated with the validation error.</param>
 /// <remarks>
 /// <para>
 /// Use <see cref="ValidationError{TErrorCode}"/> when you need both a human-readable message and a programmatic
@@ -37,7 +37,7 @@ public readonly record struct ValidationError(string Message);
 /// Example: <c>ValidationError&lt;string&gt;("Email is invalid", "email_format")</c>.
 /// </para>
 /// </remarks>
-public readonly record struct ValidationError<TErrorCode>(string Message, TErrorCode ErrorCode)
+public readonly record struct ValidationError<TErrorCode>(string message, TErrorCode errorCode)
     where TErrorCode : notnull, IEquatable<TErrorCode>;
 
 /// <summary>
@@ -118,5 +118,5 @@ public readonly record struct ValidationErrors
     /// Gets the distinct set of validation error messages, in the order they were first encountered.
     /// </summary>
     /// <value>An unmodifiable collection of the distinct messages found in <see cref="Errors"/>.</value>
-    public IReadOnlyList<string> Messages => [.. _errors.Select(e => e.Message).Distinct()];
+    public IReadOnlyList<string> Messages => [.. _errors.Select(e => e.message).Distinct()];
 }

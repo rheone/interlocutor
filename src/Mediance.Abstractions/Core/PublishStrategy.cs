@@ -6,7 +6,7 @@ namespace Mediance.Abstractions.Core;
 /// Pass a <see cref="PublishStrategy"/> to the mediator's <c>Publish</c> overload to control notification handler execution:
 /// <list type="bullet">
 /// <item><description><see cref="Sequential"/> — handlers run in order, stopping on the first exception. Use for ordered/dependent logic.</description></item>
-/// <item><description><see cref="Parallel"/> — handlers run concurrently via <see cref="Task.WhenAll"/>; exceptions aggregate into <see cref="AggregateException"/>. Use when handlers are independent and you want throughput.</description></item>
+/// <item><description><see cref="Parallel"/> — handlers run concurrently; exceptions aggregate into <see cref="AggregateException"/>. Use when handlers are independent and you want throughput.</description></item>
 /// </list>
 /// </para>
 /// <para>

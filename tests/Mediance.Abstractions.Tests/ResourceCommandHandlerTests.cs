@@ -4,7 +4,7 @@ using Mediance.CommonKernel.ResultTypes;
 
 namespace Mediance.Abstractions.Tests;
 
-public record TestCommand(int EntityId) : ICommand<OperationOutcome<string, NotFound, Failure>>;
+public record TestCommand(int entityId) : ICommand<OperationOutcome<string, NotFound, Failure>>;
 
 public class TestEntity
 {

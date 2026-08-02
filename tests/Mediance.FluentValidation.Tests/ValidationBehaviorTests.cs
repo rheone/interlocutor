@@ -3,13 +3,13 @@ using Mediance.Abstractions.Commands;
 
 namespace Mediance.FluentValidation.Tests;
 
-public record TestRequest(string Name) : ICommand<string>;
+public record TestRequest(string name) : ICommand<string>;
 
 public class TestRequestValidator : AbstractValidator<TestRequest>
 {
     public TestRequestValidator()
     {
-        this.RuleFor(x => x.Name).NotEmpty();
+        this.RuleFor(x => x.name).NotEmpty();
     }
 }
 

@@ -10,28 +10,29 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Mediance.Abstractions.Tests;
 
-public record TestQuery(int Value) : IQuery<int>;
+public record TestQuery(int value) : IQuery<int>;
 
 public class TestQueryHandler : IQueryHandler<TestQuery, int>
 {
-    public Task<int> Handle(TestQuery query, CancellationToken ct) => Task.FromResult(query.Value * 2);
+    public Task<int> Handle(TestQuery query, CancellationToken ct) => Task.FromResult(query.value * 2);
 }
 
-public record GreetCommand(string PersonName) : ICommand<string>;
+public record GreetCommand(string personName) : ICommand<string>;
 
 public class GreetCommandHandler : ICommandHandler<GreetCommand, string>
 {
-    public Task<string> Handle(GreetCommand command, CancellationToken ct) => Task.FromResult($"Hello {command.PersonName}");
+    public Task<string> Handle(GreetCommand command, CancellationToken ct) => Task.FromResult($"Hello {command.personName}");
 }
 
-public record TestVoidCommand(string Value) : ICommand;
+public record TestVoidCommand(string value) : ICommand;
 
 public class TestVoidHandler : IVoidCommandHandler<TestVoidCommand, OperationOutcome>
 {
-    public Task<OperationOutcome> Handle(TestVoidCommand command, CancellationToken ct) => Task.FromResult(new OperationOutcome(default(Success)));
+    public Task<OperationOutcome> Handle(TestVoidCommand command, CancellationToken ct) =>
+        Task.FromResult(new OperationOutcome(default(Success)));
 }
 
-public record TestNotification(string Message) : INotification;
+public record TestNotification(string message) : INotification;
 
 public class TrackingBehavior<TRequest, TResponse>(Action track) : IPipelineBehavior<TRequest, TResponse>
 {

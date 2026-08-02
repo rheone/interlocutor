@@ -9,7 +9,7 @@ namespace Mediance.Abstractions.Commands;
 /// <para>
 /// Use this handler for commands that mutate state and return domain data (e.g., <c>CreateUserCommand → UserDto</c>).
 /// For commands that produce only success/failure outcomes (not domain data), use <see cref="IVoidCommandHandler{TCommand, TResult}"/>
-/// instead, which returns an <see cref="IOperationOutcome"/> union.
+/// instead, which returns an <see cref="Mediance.CommonKernel.IOperationOutcome"/> union.
 /// </para>
 /// <para>
 /// Handlers are registered and discovered by the mediator via DI assembly scanning. Register each handler in

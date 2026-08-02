@@ -1,6 +1,7 @@
-namespace Microsoft.Extensions.DependencyInjection;
+namespace Mediance.DependencyInjection.Microsoft;
 
 using System.Reflection;
+using global::Microsoft.Extensions.DependencyInjection;
 using Mediance.Abstractions;
 using Mediance.Abstractions.Commands;
 using Mediance.Abstractions.Core;
@@ -12,7 +13,7 @@ using Mediance.Abstractions.Queries;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Use <see cref="AddMediance"/> in your Startup/Program.cs to register all Mediance handlers, behaviors, and the mediator itself.
+/// Use <see cref="AddMediance(IServiceCollection, Assembly[])"/> in your Startup/Program.cs to register all Mediance handlers, behaviors, and the mediator itself.
 /// Assembly scanning discovers implementations of <see cref="IQueryHandler{TQuery, TResponse}"/>,
 /// <see cref="ICommandHandler{TCommand, TResponse}"/>, <see cref="IVoidCommandHandler{TCommand, TResult}"/>, and
 /// <see cref="INotificationHandler{TNotification}"/> without requiring explicit registrations for each handler.

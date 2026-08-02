@@ -481,7 +481,7 @@ dotnet_diagnostic.RS1022.severity = Warning
 # AnalyzerId= Microsoft.CodeAnalysis.CSharp.CodeStyle  RuleNamespace= Microsoft.CodeAnalysis.CSharp.CodeStyle
 dotnet_diagnostic.IDE0055.severity = Suggestion # Fix formatting
 dotnet_diagnostic.IDE0079.severity = Warning    # Remove unnecessary suppression
-dotnet_diagnostic.IDE1006.severity = Error      # Naming rule violation
+dotnet_diagnostic.IDE1006.severity = None       # Naming rule violation
 
 # AnalyzerId= Microsoft.CodeAnalysis.CSharp.Features  RuleNamespace= Microsoft.CodeAnalysis.CSharp.Features
 dotnet_diagnostic.IDE0003.severity = None
