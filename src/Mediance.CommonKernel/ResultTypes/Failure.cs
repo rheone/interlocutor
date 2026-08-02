@@ -3,6 +3,18 @@ namespace Mediance.CommonKernel.ResultTypes;
 /// <summary>
 /// Represents a generic failure outcome, optionally carrying a reason, an error code, or both.
 /// </summary>
+/// <remarks>
+/// <para>
+/// Use <see cref="Failure"/> when you need a generic, untyped failure result. It can carry either a human-readable
+/// reason, a machine-readable error code, or both. This is the most flexible failure type — when you don't want to
+/// construct a specific failure case like <see cref="NotFound"/> or <see cref="Forbidden"/>.
+/// </para>
+/// <para>
+/// For operation outcome unions, <see cref="Failure"/> is a common fallback case when operation-specific failures
+/// (like <see cref="ValidationErrors"/>) don't apply. It leaves room for unexpected errors without making callers
+/// handle a dozen specific failure types.
+/// </para>
+/// </remarks>
 public readonly record struct Failure
 {
     /// <summary>

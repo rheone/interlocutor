@@ -3,6 +3,19 @@ namespace Mediance.Abstractions.Core;
 using Mediance.Abstractions.Notifications;
 
 /// <summary>Publish-only interface for fire-and-forget notifications. Exposes <see cref="Publish{TNotification}(TNotification,CancellationToken)"/>.</summary>
+/// <remarks>
+/// <para>
+/// Use <see cref="IPublisher"/> to dispatch domain events and other side-effect-only notifications. Publishing
+/// returns immediately after dispatching to all registered handlers; the caller does not wait for handlers to
+/// complete. This pattern is ideal for decoupled workflows like sending emails, logging, or triggering downstream
+/// processes.
+/// </para>
+/// <para>
+/// Handler execution strategy defaults to sequential (stops on first exception). Use the
+/// <see cref="Publish{TNotification}(TNotification, PublishStrategy, CancellationToken)"/> overload on
+/// <see cref="IMediator"/> to switch to parallel execution.
+/// </para>
+/// </remarks>
 public interface IPublisher
 {
     /// <summary>Publishes a notification to all registered <see cref="INotificationHandler{TNotification}"/> instances.</summary>

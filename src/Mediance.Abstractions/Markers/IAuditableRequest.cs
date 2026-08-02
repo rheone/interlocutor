@@ -5,9 +5,14 @@ namespace Mediance.Abstractions.Markers;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Pipeline behaviors intercept implementations of <see cref="IAuditableRequest"/>
-/// and record the <see cref="ActionName"/> along with request metadata to the
-/// audit store before the request handler executes.
+/// Implement this marker interface on commands/queries when you want to record an audit trail of who did what and when.
+/// Pipeline behaviors detect this marker and record the action, outcome, and request type to the audit store after
+/// the handler completes (via <see cref="AuditingBehavior{TRequest, TResponse}"/>).
+/// </para>
+/// <para>
+/// Provide a human-readable <see cref="ActionName"/> like <c>"User.Create"</c> or <c>"Order.Cancel"</c>. Audit logs
+/// typically include the user ID (from request context), timestamp, outcome (success/failure), and request type.
+/// This enables compliance reporting and forensic analysis.
 /// </para>
 /// </remarks>
 public interface IAuditableRequest

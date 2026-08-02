@@ -6,6 +6,16 @@ using System.Collections.Immutable;
 /// Represents a single validation error consisting of a message only, with no associated error code.
 /// </summary>
 /// <param name="Message">The validation error message.</param>
+/// <remarks>
+/// <para>
+/// Use <see cref="ValidationError"/> to represent a single validation failure. Messages typically describe what
+/// constraint was violated (e.g., <c>"Email is required"</c>, <c>"Password must be at least 8 characters"</c>).
+/// </para>
+/// <para>
+/// For error codes, use <see cref="ValidationError{TErrorCode}"/> instead. Aggregate multiple
+/// <see cref="ValidationError"/> instances with <see cref="ValidationErrors"/>.
+/// </para>
+/// </remarks>
 public readonly record struct ValidationError(string Message);
 
 /// <summary>
@@ -17,6 +27,16 @@ public readonly record struct ValidationError(string Message);
 /// </typeparam>
 /// <param name="Message">The validation error message.</param>
 /// <param name="ErrorCode">The error code associated with the validation error.</param>
+/// <remarks>
+/// <para>
+/// Use <see cref="ValidationError{TErrorCode}"/> when you need both a human-readable message and a programmatic
+/// error code (e.g., for localization, retry logic, or form field binding). The error code type is generic, so
+/// you can use enums, strings, or composite types.
+/// </para>
+/// <para>
+/// Example: <c>ValidationError&lt;string&gt;("Email is invalid", "email_format")</c>.
+/// </para>
+/// </remarks>
 public readonly record struct ValidationError<TErrorCode>(string Message, TErrorCode ErrorCode)
     where TErrorCode : notnull, IEquatable<TErrorCode>;
 
@@ -24,6 +44,20 @@ public readonly record struct ValidationError<TErrorCode>(string Message, TError
 /// Represents an immutable failure consisting of one or more distinct validation error messages,
 /// with no associated error codes.
 /// </summary>
+/// <remarks>
+/// <para>
+/// Use <see cref="ValidationErrors"/> as a failure case in operation outcome unions when you need to return
+/// multiple validation failures from a request. It aggregates <see cref="ValidationError"/> instances, removes
+/// duplicates, and preserves order.
+/// </para>
+/// <para>
+/// Typically raised by the <c>ValidationBehavior</c> pipeline when a request implements FluentValidation validators
+/// and one or more validators report failures. Example outcome type: <c>OperationOutcome&lt;UserDto, ValidationErrors&gt;</c>.
+/// </para>
+/// <para>
+/// For validation errors with codes, use property-based collections instead (e.g., <c>Dictionary&lt;string, List&lt;(code, message)&gt;&gt;</c>).
+/// </para>
+/// </remarks>
 public readonly record struct ValidationErrors
 {
     private readonly ImmutableArray<ValidationError> _errors;

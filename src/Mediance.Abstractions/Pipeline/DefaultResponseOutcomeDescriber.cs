@@ -10,6 +10,13 @@ using Mediance.CommonKernel.ResultTypes;
 /// <see cref="ValidationErrors"/>, <see cref="Failure"/>), and
 /// falls back to the runtime type name for anything else.
 /// </summary>
+/// <remarks>
+/// <para>
+/// This is the default implementation used by logging and auditing behaviors if no custom describer is registered.
+/// It recognizes all common Mediance result types and unwraps compiler-generated unions. For domain-specific types,
+/// override by registering a custom <see cref="IResponseOutcomeDescriber"/> in DI.
+/// </para>
+/// </remarks>
 public sealed class DefaultResponseOutcomeDescriber : IResponseOutcomeDescriber
 {
     /// <summary>Gets the shared singleton instance.</summary>

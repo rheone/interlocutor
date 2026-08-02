@@ -5,6 +5,13 @@ using Mediance.Abstractions.Commands;
 using Mediance.Abstractions.Queries;
 
 /// <summary>Provides startup validation that all handler types are properly registered in the DI container.</summary>
+/// <remarks>
+/// <para>
+/// Call <see cref="ValidateHandlerRegistrations"/> in your Program.cs (after DI registration) to catch missing
+/// handler registrations at startup instead of at runtime. This is especially useful if you use manual handler
+/// registration instead of assembly scanning — it validates that every query/command type has a corresponding handler.
+/// </para>
+/// </remarks>
 public static class MedianceStartupValidation
 {
     /// <summary>Validates that all handler types referenced by query and command types in the specified assemblies are registered in the DI container.</summary>

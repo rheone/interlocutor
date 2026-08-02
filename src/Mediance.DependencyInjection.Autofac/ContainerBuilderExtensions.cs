@@ -12,6 +12,15 @@ using Mediance.Abstractions.Queries;
 /// <summary>
 /// Provides extension methods for registering Mediance services with an Autofac <see cref="ContainerBuilder"/>.
 /// </summary>
+/// <remarks>
+/// <para>
+/// Use <see cref="AddMediance"/> in your Autofac module to register all Mediance handlers, behaviors, and the mediator.
+/// Assembly scanning discovers handler implementations without explicit registration for each handler type.
+/// </para>
+/// <para>
+/// Unlike Microsoft DI (where handlers are scoped), Autofac handlers are registered as <c>InstancePerLifetimeScope</c>.
+/// </para>
+/// </remarks>
 public static class MedianceAutofacExtensions
 {
     /// <summary>

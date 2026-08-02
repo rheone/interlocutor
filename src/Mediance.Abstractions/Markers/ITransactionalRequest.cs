@@ -5,10 +5,16 @@ namespace Mediance.Abstractions.Markers;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Pipeline behaviors wrap <see cref="ITransactionalRequest"/> handler execution
-/// inside a transaction scope, committing changes on success or rolling back
-/// on failure. Multiple transactional requests within the same scope share a
-/// single transaction when supported by the underlying unit of work.
+/// Implement this marker interface on commands/queries when you need all database changes
+/// to be atomically committed or rolled back as a unit. Pipeline behaviors detect this
+/// marker and wrap handler execution in a transaction using the configured ORM
+/// (EF Core, NHibernate).
+/// </para>
+/// <para>
+/// Transactional behavior is enforced by <see cref="EntityFrameworkCore.TransactionBehavior{TRequest, TResponse, TContext}"/>
+/// (EF Core) or <see cref="NHibernate.TransactionBehavior{TRequest, TResponse}"/> (NHibernate). Requests are
+/// only wrapped in transactions when they implement <see cref="ITransactionalRequest"/>. Requests implementing
+/// <see cref="IExternalStoreRequest"/> are explicitly excluded to prevent nesting with external transaction scopes.
 /// </para>
 /// </remarks>
 public interface ITransactionalRequest;

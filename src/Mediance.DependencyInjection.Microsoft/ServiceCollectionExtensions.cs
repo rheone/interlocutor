@@ -10,6 +10,14 @@ using Mediance.Abstractions.Queries;
 /// <summary>
 /// Provides extension methods for registering Mediance services with a Microsoft DI <see cref="IServiceCollection"/>.
 /// </summary>
+/// <remarks>
+/// <para>
+/// Use <see cref="AddMediance"/> in your Startup/Program.cs to register all Mediance handlers, behaviors, and the mediator itself.
+/// Assembly scanning discovers implementations of <see cref="IQueryHandler{TQuery, TResponse}"/>,
+/// <see cref="ICommandHandler{TCommand, TResponse}"/>, <see cref="IVoidCommandHandler{TCommand, TResult}"/>, and
+/// <see cref="INotificationHandler{TNotification}"/> without requiring explicit registrations for each handler.
+/// </para>
+/// </remarks>
 public static class MedianceServiceCollectionExtensions
 {
     /// <summary>

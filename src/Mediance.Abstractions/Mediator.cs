@@ -9,6 +9,21 @@ using Mediance.CommonKernel;
 
 /// <summary>Default mediator that dispatches queries, commands, and notifications to their registered handlers
 /// through pipeline behaviors. Handler wrapper instances are cached by request type to avoid repeated reflection.</summary>
+/// <remarks>
+/// <para>
+/// Mediator acts as the central hub for CQRS request/response and publish/subscribe workflows. It resolves handlers
+/// and pipeline behaviors from DI, composes them into a behavior chain, and executes the chain with the request.
+/// </para>
+/// <para>
+/// Handler resolution is cached by request type to avoid expensive reflection on every dispatch. Five static caches
+/// hold wrapper instances: one for queries, one for value-returning commands, one for void commands (keyed by both
+/// command and result type), and two for notifications (one for sequential, one for parallel strategies).
+/// </para>
+/// <para>
+/// Use <see cref="ISender"/> to dispatch queries/commands with typed responses, or <see cref="IPublisher"/> to
+/// fire-and-forget notifications. <see cref="IMediator"/> combines both interfaces.
+/// </para>
+/// </remarks>
 public sealed class Mediator(IServiceProvider services) : IMediator
 {
     // Handler wrappers are cached by request type to avoid Activator.CreateInstance on every dispatch.

@@ -5,10 +5,15 @@ namespace Mediance.Abstractions.Markers;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Pipeline behaviors check <see cref="IRequiresPolicy"/> requests against the
-/// configured authorization system using the <see cref="PolicyName"/> value
-/// before delegating to the handler. If the policy is not satisfied, the
-/// behavior short-circuits the pipeline with a forbidden result.
+/// Implement this marker interface on commands/queries when access should be gated by an authorization policy.
+/// The <see cref="AuthorizationBehavior{TRequest, TSuccess}"/> pipeline behavior intercepts these requests,
+/// evaluates the policy via <see cref="IPolicyEvaluator"/>, and short-circuits with <see cref="Forbidden"/> if
+/// the policy fails. This keeps authorization logic out of handlers and enables consistent policy enforcement
+/// across your application.
+/// </para>
+/// <para>
+/// The <see cref="PolicyName"/> is a string key that your authorization infrastructure (e.g., ASP.NET Core
+/// Authorization) recognizes. Example: <c>"CanEditUsers"</c>, <c>"IsAdmin"</c>.
 /// </para>
 /// </remarks>
 public interface IRequiresPolicy

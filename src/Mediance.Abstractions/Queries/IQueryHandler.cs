@@ -5,6 +5,19 @@ namespace Mediance.Abstractions.Queries;
 /// </summary>
 /// <typeparam name="TQuery">The type of the query this handler can process.</typeparam>
 /// <typeparam name="TResponse">The type of data the query produces.</typeparam>
+/// <remarks>
+/// <para>
+/// Implement this interface to define the business logic for a specific query type. The mediator discovers and
+/// resolves implementations from DI, so register each handler in your DI container (typically via
+/// <c>AddMediance</c> assembly scanning). Multiple handlers for the same query type are not allowed — the
+/// mediator expects exactly one registered handler per <c>&lt;TQuery, TResponse&gt;</c> pair.
+/// </para>
+/// <para>
+/// Handlers run through the pipeline behavior chain, which means cross-cutting concerns (logging, validation,
+/// authorization, transactions) can intercept the query before or after your handler logic. Keep handler logic
+/// focused on the business operation; defer infrastructure concerns to behaviors.
+/// </para>
+/// </remarks>
 public interface IQueryHandler<in TQuery, TResponse>
     where TQuery : IQuery<TResponse>
 {

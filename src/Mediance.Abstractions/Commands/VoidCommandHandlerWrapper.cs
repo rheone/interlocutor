@@ -7,6 +7,13 @@ using Mediance.CommonKernel;
 /// <summary>Wraps a void command handler, constructing the pipeline chain around it at invocation time.</summary>
 /// <typeparam name="TCommand">The command type.</typeparam>
 /// <typeparam name="TResult">The <see cref="IOperationOutcome"/>-shaped outcome type produced by the handler.</typeparam>
+/// <remarks>
+/// <para>
+/// Resolves the void command handler and all applicable pipeline behaviors from DI, then composes them into a chain.
+/// This is the wrapper for commands that return only outcomes (not domain data). The outcome type is resolved at call
+/// time based on the caller's type argument, enabling flexible outcome handling without modifying the handler.
+/// </para>
+/// </remarks>
 internal sealed class VoidCommandHandlerWrapper<TCommand, TResult> : VoidHandlerWrapper<TResult>
     where TCommand : ICommand
     where TResult : IOperationOutcome

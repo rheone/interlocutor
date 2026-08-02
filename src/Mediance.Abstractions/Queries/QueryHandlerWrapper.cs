@@ -6,6 +6,13 @@ using Mediance.Abstractions.Pipeline;
 /// <summary>Wraps a query handler, constructing the pipeline chain around it at invocation time.</summary>
 /// <typeparam name="TQuery">The query type.</typeparam>
 /// <typeparam name="TResponse">The expected response type.</typeparam>
+/// <remarks>
+/// <para>
+/// Resolves the query handler and all applicable pipeline behaviors from DI, then composes them into a chain
+/// in reverse registration order (innermost-to-outermost). This wrapper is created once per query type and cached
+/// by the mediator to avoid repeated reflection.
+/// </para>
+/// </remarks>
 internal sealed class QueryHandlerWrapper<TQuery, TResponse> : HandlerWrapper<TResponse>
     where TQuery : IQuery<TResponse>
 {

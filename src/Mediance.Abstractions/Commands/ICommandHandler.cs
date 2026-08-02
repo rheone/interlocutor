@@ -5,6 +5,18 @@ namespace Mediance.Abstractions.Commands;
 /// </summary>
 /// <typeparam name="TCommand">The command type that this handler processes.</typeparam>
 /// <typeparam name="TResponse">The type of the response data produced by the handler.</typeparam>
+/// <remarks>
+/// <para>
+/// Use this handler for commands that mutate state and return domain data (e.g., <c>CreateUserCommand → UserDto</c>).
+/// For commands that produce only success/failure outcomes (not domain data), use <see cref="IVoidCommandHandler{TCommand, TResult}"/>
+/// instead, which returns an <see cref="IOperationOutcome"/> union.
+/// </para>
+/// <para>
+/// Handlers are registered and discovered by the mediator via DI assembly scanning. Register each handler in
+/// your DI container (typically via <c>AddMediance</c>). The mediator expects exactly one handler per
+/// <c>&lt;TCommand, TResponse&gt;</c> pair.
+/// </para>
+/// </remarks>
 public interface ICommandHandler<in TCommand, TResponse>
     where TCommand : ICommand<TResponse>
 {
