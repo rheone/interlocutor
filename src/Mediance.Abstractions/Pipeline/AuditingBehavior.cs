@@ -1,6 +1,6 @@
-using Mediance.Abstractions.Markers;
-
 namespace Mediance.Abstractions.Pipeline;
+
+using Mediance.Abstractions.Markers;
 
 /// <summary>Pipeline behavior that records an audit trail for requests implementing <see cref="IAuditableRequest"/>.</summary>
 public class AuditingBehavior<TRequest, TResponse>(IAuditSink sink, IResponseOutcomeDescriber? describer = null)

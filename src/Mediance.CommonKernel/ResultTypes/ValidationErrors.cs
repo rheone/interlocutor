@@ -65,7 +65,8 @@ namespace Mediance.CommonKernel.ResultTypes
                     e.Message,
                     e.ErrorCode
                 ))
-            ) { }
+            )
+        { }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ValidationErrors{TErrorCode}"/> class from a single

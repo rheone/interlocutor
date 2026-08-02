@@ -1,11 +1,11 @@
+namespace Microsoft.Extensions.DependencyInjection;
+
 using System.Reflection;
 using Mediance.Abstractions;
 using Mediance.Abstractions.Commands;
 using Mediance.Abstractions.Core;
 using Mediance.Abstractions.Notifications;
 using Mediance.Abstractions.Queries;
-
-namespace Microsoft.Extensions.DependencyInjection;
 
 /// <summary>
 /// Provides extension methods for registering Mediance services with a Microsoft DI <see cref="IServiceCollection"/>.

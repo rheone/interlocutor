@@ -1,6 +1,6 @@
-using Mediance.Abstractions.Notifications;
-
 namespace Mediance.Abstractions.Core;
+
+using Mediance.Abstractions.Notifications;
 
 /// <summary>Publish-only interface for fire-and-forget notifications. Exposes <see cref="Publish{TNotification}(TNotification,CancellationToken)"/>.</summary>
 public interface IPublisher

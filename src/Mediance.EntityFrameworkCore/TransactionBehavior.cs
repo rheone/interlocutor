@@ -1,10 +1,9 @@
-using Mediance.Abstractions;
+namespace Mediance.EntityFrameworkCore;
+
 using Mediance.Abstractions.Markers;
 using Mediance.Abstractions.Pipeline;
 using Mediance.CommonKernel.ResultTypes;
 using Microsoft.EntityFrameworkCore;
-
-namespace Mediance.EntityFrameworkCore;
 
 /// <summary>
 /// Wraps transactional request handler execution in an EF Core database transaction.

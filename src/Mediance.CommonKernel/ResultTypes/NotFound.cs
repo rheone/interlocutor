@@ -12,4 +12,5 @@ public readonly record struct NotFound(string? Message = null);
 /// <typeparam name="TId">The type of the resource identifier.</typeparam>
 /// <param name="EntityType">The type of entity that was not found.</param>
 /// <param name="Id">The identifier of the resource that was searched for.</param>
+/// <param name="Message"></param>
 public readonly record struct NotFound<TId>(Type EntityType, TId Id, string? Message = null);

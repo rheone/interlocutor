@@ -1,8 +1,8 @@
+namespace Mediance.Abstractions.Pipeline;
+
 using Mediance.Abstractions.Markers;
 using Mediance.CommonKernel;
 using Mediance.CommonKernel.ResultTypes;
-
-namespace Mediance.Abstractions.Pipeline;
 
 /// <summary>
 /// Pipeline behavior that enforces declarative authorization policies on requests implementing

@@ -1,7 +1,7 @@
+namespace Mediance.Abstractions.Pipeline;
+
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
-
-namespace Mediance.Abstractions.Pipeline;
 
 /// <summary>Pipeline behavior that logs every mediator request passing through the pipeline.</summary>
 public class LoggingBehavior<TRequest, TResponse>(

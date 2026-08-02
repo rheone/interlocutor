@@ -1,10 +1,9 @@
-using Mediance.Abstractions;
+namespace Mediance.NHibernate;
+
+using global::NHibernate;
 using Mediance.Abstractions.Markers;
 using Mediance.Abstractions.Pipeline;
 using Mediance.CommonKernel.ResultTypes;
-using NHibernate;
-
-namespace Mediance.NHibernate;
 
 /// <summary>
 /// Wraps transactional request handler execution in an NHibernate database transaction.
@@ -34,7 +33,7 @@ namespace Mediance.NHibernate;
 public class TransactionBehavior<TRequest, TResponse>(Lazy<ISession> session, IResponseOutcomeDescriber? describer = null)
     : IPipelineBehavior<TRequest, TResponse>
 {
-    private readonly IResponseOutcomeDescriber describer = describer ?? DefaultResponseOutcomeDescriber.Instance;
+    private readonly IResponseOutcomeDescriber _describer = describer ?? DefaultResponseOutcomeDescriber.Instance;
 
     /// <inheritdoc/>
     /// <remarks>
@@ -53,7 +52,7 @@ public class TransactionBehavior<TRequest, TResponse>(Lazy<ISession> session, IR
     {
         // Skip transaction management for requests that do not participate in transactions
         // or manage their own external transaction context (e.g., outbox, event bus).
-        if (request is not ITransactionalRequest || request is IExternalStoreRequest)
+        if (request is not ITransactionalRequest or IExternalStoreRequest)
         {
             return await next();
         }
@@ -63,7 +62,7 @@ public class TransactionBehavior<TRequest, TResponse>(Lazy<ISession> session, IR
 
         var result = await next();
 
-        if (!this.describer.IsFailure(result))
+        if (!this._describer.IsFailure(result))
         {
             // Handler succeeded — commit flushes pending changes and completes the transaction.
             await transaction.CommitAsync(ct);

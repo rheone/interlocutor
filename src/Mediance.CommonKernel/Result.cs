@@ -24,7 +24,7 @@ public readonly union Result(Success, Failure) : IResult
     /// <value>
     /// <see langword="true"/> if this result contains <see cref="Success"/>; otherwise, <see langword="false"/>.
     /// </value>
-    public bool IsSuccess => this is Success;
+    public bool IsSuccess => Value is Success;
 }
 
 /// <summary>
@@ -49,7 +49,7 @@ public readonly union Result<TSuccessResult, TFailureResult>(TSuccessResult, TFa
     /// <see langword="true"/> if this result contains <typeparam name="TSuccessResult"/>; otherwise,
     /// <see langword="false"/>.
     /// </value>
-    public bool IsSuccess => this is TSuccessResult;
+    public bool IsSuccess => Value is TSuccessResult;
 }
 
 /// <summary>
@@ -76,13 +76,13 @@ public readonly union Result<TSuccessResult, T2, T3>(TSuccessResult, T2, T3) : I
     /// <see langword="true"/> if this result contains <typeparam name="TSuccessResult"/>; otherwise,
     /// <see langword="false"/>.
     /// </value>
-    public bool IsSuccess => this is TSuccessResult;
+    public bool IsSuccess => Value is TSuccessResult;
 
     /// <summary>
     /// Extracts the underlying value from any case of this result, or <see langword="null"/> if extraction is not possible.
     /// </summary>
     /// <returns>The value held by this result, regardless of which case it is, or <see langword="null"/> on failure.</returns>
-    public object? GetValue() => this switch
+    public object? GetValue() => Value switch
     {
         TSuccessResult success => success,
         T2 t2 => t2,
@@ -117,13 +117,13 @@ public readonly union Result<TSuccessResult, T2, T3, T4>(TSuccessResult, T2, T3,
     /// <see langword="true"/> if this result contains <typeparam name="TSuccessResult"/>; otherwise,
     /// <see langword="false"/>.
     /// </value>
-    public bool IsSuccess => this is TSuccessResult;
+    public bool IsSuccess => Value is TSuccessResult;
 
     /// <summary>
     /// Extracts the underlying value from any case of this result, or <see langword="null"/> if extraction is not possible.
     /// </summary>
     /// <returns>The value held by this result, regardless of which case it is, or <see langword="null"/> on failure.</returns>
-    public object? GetValue() => this switch
+    public object? GetValue() => Value switch
     {
         TSuccessResult success => success,
         T2 t2 => t2,
@@ -161,13 +161,13 @@ public readonly union Result<TSuccessResult, T2, T3, T4, T5>(TSuccessResult, T2,
     /// <see langword="true"/> if this result contains <typeparam name="TSuccessResult"/>; otherwise,
     /// <see langword="false"/>.
     /// </value>
-    public bool IsSuccess => this is TSuccessResult;
+    public bool IsSuccess => Value is TSuccessResult;
 
     /// <summary>
     /// Extracts the underlying value from any case of this result, or <see langword="null"/> if extraction is not possible.
     /// </summary>
     /// <returns>The value held by this result, regardless of which case it is, or <see langword="null"/> on failure.</returns>
-    public object? GetValue() => this switch
+    public object? GetValue() => Value switch
     {
         TSuccessResult success => success,
         T2 t2 => t2,
@@ -211,13 +211,13 @@ public readonly union Result<TSuccessResult, T2, T3, T4, T5, T6>(TSuccessResult,
     /// <see langword="true"/> if this result contains <typeparam name="TSuccessResult"/>; otherwise,
     /// <see langword="false"/>.
     /// </value>
-    public bool IsSuccess => this is TSuccessResult;
+    public bool IsSuccess => Value is TSuccessResult;
 
     /// <summary>
     /// Extracts the underlying value from any case of this result, or <see langword="null"/> if extraction is not possible.
     /// </summary>
     /// <returns>The value held by this result, regardless of which case it is, or <see langword="null"/> on failure.</returns>
-    public object? GetValue() => this switch
+    public object? GetValue() => Value switch
     {
         TSuccessResult success => success,
         T2 t2 => t2,

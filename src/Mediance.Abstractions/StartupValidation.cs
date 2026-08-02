@@ -1,8 +1,8 @@
+namespace Mediance.Abstractions;
+
 using System.Reflection;
 using Mediance.Abstractions.Commands;
 using Mediance.Abstractions.Queries;
-
-namespace Mediance.Abstractions;
 
 /// <summary>Provides startup validation that all handler types are properly registered in the DI container.</summary>
 public static class MedianceStartupValidation

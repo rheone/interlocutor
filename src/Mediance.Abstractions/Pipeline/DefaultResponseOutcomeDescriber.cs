@@ -1,8 +1,7 @@
-using System.Runtime.CompilerServices;
-using Mediance.CommonKernel;
-using Mediance.CommonKernel.ResultTypes;
-
 namespace Mediance.Abstractions.Pipeline;
+
+using System.Runtime.CompilerServices;
+using Mediance.CommonKernel.ResultTypes;
 
 /// <summary>
 /// Default <see cref="IResponseOutcomeDescriber"/>. Unwraps compiler-generated unions via

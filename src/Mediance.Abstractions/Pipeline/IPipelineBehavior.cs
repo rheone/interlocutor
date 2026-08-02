@@ -1,5 +1,3 @@
-using Mediance.CommonKernel.ResultTypes;
-
 namespace Mediance.Abstractions.Pipeline;
 
 /// <summary>
