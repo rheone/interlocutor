@@ -5,28 +5,28 @@ using Mediance.CommonKernel.ResultTypes;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-/// <summary>Converts Mediance <c>Result</c> unions to ASP.NET Core <c>IActionResult</c> instances.</summary>
+/// <summary>Converts Mediance <c>OperationOutcome</c> unions to ASP.NET Core <c>IActionResult</c> instances.</summary>
 public static class ResultExtensions
 {
     ///// <summary>
-    ///// Converts a <see cref="Result{TSuccessResult, TFailureResult}"/> to an <see cref="IActionResult"/>
+    ///// Converts a <see cref="OperationOutcome{TSuccessResult, TFailureResult}"/> to an <see cref="IActionResult"/>
     ///// with the appropriate HTTP status code.
     ///// </summary>
     ///// <typeparam name="TSuccess">The type of the success value.</typeparam>
     ///// <typeparam name="TFailure">The failure case type.</typeparam>
     ///// <param name="result">The result to convert.</param>
     ///// <returns>An <see cref="OkObjectResult"/> on success, or the mapped error result on failure.</returns>
-    //public static IActionResult ToActionResult<TSuccess, TFailure>(this Result<TSuccess, TFailure> result) =>
+    //public static IActionResult ToActionResult<TSuccess, TFailure>(this OperationOutcome<TSuccess, TFailure> result) =>
     //    result switch
     //    {
     //        TSuccess ok => new OkObjectResult(ok),
     //        TFailure failure => failure.ToFailureActionResult(),
     //    };
 
-    ///// <summary>Converts a void <see cref="Result"/> to an <see cref="IActionResult"/> with the appropriate HTTP status code.</summary>
+    ///// <summary>Converts a void <see cref="OperationOutcome"/> to an <see cref="IActionResult"/> with the appropriate HTTP status code.</summary>
     ///// <param name="result">The result to convert.</param>
     ///// <returns>A <see cref="NoContentResult"/> on success, or the mapped error result on failure.</returns>
-    //public static IActionResult ToActionResult(this Result result) =>
+    //public static IActionResult ToActionResult(this OperationOutcome result) =>
     //    result switch
     //    {
     //        Success => new NoContentResult(),

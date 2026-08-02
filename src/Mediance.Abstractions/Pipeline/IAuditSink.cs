@@ -4,6 +4,8 @@ namespace Mediance.Abstractions.Pipeline;
 public interface IAuditSink
 {
     /// <summary>Writes an audit entry to the backing store.</summary>
+    /// <param name="entry">The audit entry to record.</param>
+    /// <param name="ct">The cancellation token.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     Task RecordAsync(AuditEntry entry, CancellationToken ct);
 }

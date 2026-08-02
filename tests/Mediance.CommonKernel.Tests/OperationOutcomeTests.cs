@@ -3,7 +3,7 @@
 
 //namespace Mediance.CommonKernel.Tests;
 
-//public class ResultTests
+//public class OperationOutcomeTests
 //{
 //    [Fact]
 //    public void Result_WithValue_CanMatchSuccess()
@@ -38,7 +38,7 @@
 //    [Fact]
 //    public void Result_NonGeneric_Success_MatchesAsSuccess()
 //    {
-//        var result = new Result(new Success());
+//        var result = new OperationOutcome(new Success());
 //        var outcome = result.Value switch
 //        {
 //            Success => true,
@@ -83,7 +83,7 @@
 //        Assert.Null(forbidden.Reason);
 //    }
 
-//    private static Result<int> CreateSuccessResult(int value) => new(value);
+//    private static OperationOutcome<int> CreateSuccessResult(int value) => new(value);
 
-//    private static Result<int> CreateFailureResult(Failure failure) => new(failure);
+//    private static OperationOutcome<int> CreateFailureResult(Failure failure) => new(failure);
 //}

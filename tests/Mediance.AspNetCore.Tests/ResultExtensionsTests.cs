@@ -10,7 +10,7 @@
 //    [Fact]
 //    public void ToActionResult_WithSuccessValue_ReturnsOkObjectResult()
 //    {
-//        Result<string> result = new("hello");
+//        OperationOutcome<string> result = new("hello");
 //        var actionResult = result.ToActionResult();
 
 //        var okResult = Assert.IsType<OkObjectResult>(actionResult);
@@ -20,7 +20,7 @@
 //    [Fact]
 //    public void ToActionResult_WithSuccessNoPayload_ReturnsNoContent()
 //    {
-//        Result result = new(new Success());
+//        OperationOutcome result = new(new Success());
 //        var actionResult = result.ToActionResult();
 
 //        Assert.IsType<NoContentResult>(actionResult);
@@ -29,7 +29,7 @@
 //    [Fact]
 //    public void ToActionResult_WithNotFound_ReturnsNotFoundResult()
 //    {
-//        Result<string> result = new(new NotFound("Widget", 42));
+//        OperationOutcome<string> result = new(new NotFound("Widget", 42));
 //        var actionResult = result.ToActionResult();
 
 //        Assert.IsType<NotFoundResult>(actionResult);
@@ -38,7 +38,7 @@
 //    [Fact]
 //    public void ToActionResult_WithForbidden_ReturnsStatusCode403()
 //    {
-//        Result<string> result = new(new Forbidden("No access"));
+//        OperationOutcome<string> result = new(new Forbidden("No access"));
 //        var actionResult = result.ToActionResult();
 
 //        var statusCodeResult = Assert.IsType<StatusCodeResult>(actionResult);
@@ -49,7 +49,7 @@
 //    public void ToActionResult_WithValidationFailed_ReturnsBadRequest()
 //    {
 //        var errors = new Dictionary<string, IReadOnlyList<(string, string)>> { ["Name"] = [("NotEmpty", "Name is required")] };
-//        Result<string> result = new(new ValidationFailed(errors));
+//        OperationOutcome<string> result = new(new ValidationFailed(errors));
 //        var actionResult = result.ToActionResult();
 
 //        var badRequest = Assert.IsType<BadRequestObjectResult>(actionResult);
@@ -60,7 +60,7 @@
 //    [Fact]
 //    public void ToActionResult_WithRuleViolation_Returns422()
 //    {
-//        Result<string> result = new(new ValidationFailure("insufficient.balance", "Not enough funds"));
+//        OperationOutcome<string> result = new(new ValidationFailure("insufficient.balance", "Not enough funds"));
 //        var actionResult = result.ToActionResult();
 
 //        var objectResult = Assert.IsType<UnprocessableEntityObjectResult>(actionResult);
@@ -71,7 +71,7 @@
 //    [Fact]
 //    public void ToActionResult_WithConflict_Returns409()
 //    {
-//        Result<string> result = new(new Conflict("stale.data", "Data changed"));
+//        OperationOutcome<string> result = new(new Conflict("stale.data", "Data changed"));
 //        var actionResult = result.ToActionResult();
 
 //        var conflictResult = Assert.IsType<ConflictObjectResult>(actionResult);

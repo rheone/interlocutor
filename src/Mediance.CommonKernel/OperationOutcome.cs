@@ -5,7 +5,7 @@ using Mediance.CommonKernel.ResultTypes;
 /// <summary>
 /// Marks a type as a result union representing an operation's outcome.
 /// </summary>
-public interface IResult;
+public interface IOperationOutcome;
 
 /// <summary>
 /// Represents the outcome of a void operation as one of two possible cases: success with no payload, or failure.
@@ -13,10 +13,10 @@ public interface IResult;
 /// <remarks>
 /// <para>This is a union declaration with two case types: <see cref="Success"/> — the operation completed
 /// successfully, or <see cref="Failure"/> — the operation failed.</para>
-/// <para>Values of either case type convert implicitly to <see cref="Result"/>, and switch expressions over it
-/// are exhaustive without a discard arm.</para>
+/// <para>Values of either case type convert implicitly to <see cref="OperationOutcome"/>, and switch expressions
+/// over it are exhaustive without a discard arm.</para>
 /// </remarks>
-public readonly union Result(Success, Failure) : IResult
+public readonly union OperationOutcome(Success, Failure) : IOperationOutcome
 {
     /// <summary>
     /// Gets a value indicating whether this result is successful.
@@ -37,16 +37,16 @@ public readonly union Result(Success, Failure) : IResult
 /// <list type="bullet"><item><description><typeparamref name="TSuccessResult"/> — the operation completed
 /// successfully.</description></item> <item><description><typeparamref name="TFailureResult"/> — the operation
 /// failed.</description></item> </list>
-/// <para>Values of either case type convert implicitly to <see cref="Result{TSuccessResult, TFailureResult}"/>, and
-/// switch expressions over it are exhaustive without a discard arm. </para>
+/// <para>Values of either case type convert implicitly to <see cref="OperationOutcome{TSuccessResult, TFailureResult}"/>,
+/// and switch expressions over it are exhaustive without a discard arm. </para>
 /// </remarks>
-public readonly union Result<TSuccessResult, TFailureResult>(TSuccessResult, TFailureResult) : IResult
+public readonly union OperationOutcome<TSuccessResult, TFailureResult>(TSuccessResult, TFailureResult) : IOperationOutcome
 {
     /// <summary>
     /// Gets a value indicating whether this result is successful.
     /// </summary>
     /// <value>
-    /// <see langword="true"/> if this result contains <typeparam name="TSuccessResult"/>; otherwise,
+    /// <see langword="true"/> if this result contains <typeparamref name="TSuccessResult"/>; otherwise,
     /// <see langword="false"/>.
     /// </value>
     public bool IsSuccess => Value is TSuccessResult;
@@ -56,24 +56,24 @@ public readonly union Result<TSuccessResult, TFailureResult>(TSuccessResult, TFa
 /// Represents the outcome of an operation as one of three possible cases: a successful result or one of two result cases.
 /// </summary>
 /// <typeparam name="TSuccessResult">The type produced when the operation succeeds.</typeparam>
-/// <typeparam name="T2">The type of the first alternative result case.</typeparam>
-/// <typeparam name="T3">The type of the second alternative result case.</typeparam>
+/// <typeparam name="TCase2">The type of the first alternative result case.</typeparam>
+/// <typeparam name="TCase3">The type of the second alternative result case.</typeparam>
 /// <remarks>
 /// <para>This is a union declaration with three case types: </para>
 /// <list type="bullet"><item><description><typeparamref name="TSuccessResult"/> — the operation completed
-/// successfully.</description></item> <item><description><typeparamref name="T2"/> — the operation
-/// failed with the first result case.</description></item> <item><description><typeparamref name="T3"/> — the operation
+/// successfully.</description></item> <item><description><typeparamref name="TCase2"/> — the operation
+/// failed with the first result case.</description></item> <item><description><typeparamref name="TCase3"/> — the operation
 /// failed with the second result case.</description></item> </list>
-/// <para>Values of any case type convert implicitly to <see cref="Result{TSuccessResult, T2, T3}"/>, and
+/// <para>Values of any case type convert implicitly to <see cref="OperationOutcome{TSuccessResult, TCase2, TCase3}"/>, and
 /// switch expressions over it are exhaustive without a discard arm. </para>
 /// </remarks>
-public readonly union Result<TSuccessResult, T2, T3>(TSuccessResult, T2, T3) : IResult
+public readonly union OperationOutcome<TSuccessResult, TCase2, TCase3>(TSuccessResult, TCase2, TCase3) : IOperationOutcome
 {
     /// <summary>
     /// Gets a value indicating whether this result is successful.
     /// </summary>
     /// <value>
-    /// <see langword="true"/> if this result contains <typeparam name="TSuccessResult"/>; otherwise,
+    /// <see langword="true"/> if this result contains <typeparamref name="TSuccessResult"/>; otherwise,
     /// <see langword="false"/>.
     /// </value>
     public bool IsSuccess => Value is TSuccessResult;
@@ -85,8 +85,8 @@ public readonly union Result<TSuccessResult, T2, T3>(TSuccessResult, T2, T3) : I
     public object? GetValue() => Value switch
     {
         TSuccessResult success => success,
-        T2 t2 => t2,
-        T3 t3 => t3,
+        TCase2 case2 => case2,
+        TCase3 case3 => case3,
         _ => null
     };
 }
@@ -95,26 +95,26 @@ public readonly union Result<TSuccessResult, T2, T3>(TSuccessResult, T2, T3) : I
 /// Represents the outcome of an operation as one of four possible cases: a successful result or one of three result cases.
 /// </summary>
 /// <typeparam name="TSuccessResult">The type produced when the operation succeeds.</typeparam>
-/// <typeparam name="T2">The type of the first alternative result case.</typeparam>
-/// <typeparam name="T3">The type of the second alternative result case.</typeparam>
-/// <typeparam name="T4">The type of the third alternative result case.</typeparam>
+/// <typeparam name="TCase2">The type of the first alternative result case.</typeparam>
+/// <typeparam name="TCase3">The type of the second alternative result case.</typeparam>
+/// <typeparam name="TCase4">The type of the third alternative result case.</typeparam>
 /// <remarks>
 /// <para>This is a union declaration with four case types: </para>
 /// <list type="bullet"><item><description><typeparamref name="TSuccessResult"/> — the operation completed
-/// successfully.</description></item> <item><description><typeparamref name="T2"/> — the operation
-/// failed with the first result case.</description></item> <item><description><typeparamref name="T3"/> — the operation
-/// failed with the second result case.</description></item> <item><description><typeparamref name="T4"/> — the operation
+/// successfully.</description></item> <item><description><typeparamref name="TCase2"/> — the operation
+/// failed with the first result case.</description></item> <item><description><typeparamref name="TCase3"/> — the operation
+/// failed with the second result case.</description></item> <item><description><typeparamref name="TCase4"/> — the operation
 /// failed with the third result case.</description></item> </list>
-/// <para>Values of any case type convert implicitly to <see cref="Result{TSuccessResult, T2, T3, T4}"/>, and
+/// <para>Values of any case type convert implicitly to <see cref="OperationOutcome{TSuccessResult, TCase2, TCase3, TCase4}"/>, and
 /// switch expressions over it are exhaustive without a discard arm. </para>
 /// </remarks>
-public readonly union Result<TSuccessResult, T2, T3, T4>(TSuccessResult, T2, T3, T4) : IResult
+public readonly union OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4>(TSuccessResult, TCase2, TCase3, TCase4) : IOperationOutcome
 {
     /// <summary>
     /// Gets a value indicating whether this result is successful.
     /// </summary>
     /// <value>
-    /// <see langword="true"/> if this result contains <typeparam name="TSuccessResult"/>; otherwise,
+    /// <see langword="true"/> if this result contains <typeparamref name="TSuccessResult"/>; otherwise,
     /// <see langword="false"/>.
     /// </value>
     public bool IsSuccess => Value is TSuccessResult;
@@ -126,9 +126,9 @@ public readonly union Result<TSuccessResult, T2, T3, T4>(TSuccessResult, T2, T3,
     public object? GetValue() => Value switch
     {
         TSuccessResult success => success,
-        T2 t2 => t2,
-        T3 t3 => t3,
-        T4 t4 => t4,
+        TCase2 case2 => case2,
+        TCase3 case3 => case3,
+        TCase4 case4 => case4,
         _ => null
     };
 }
@@ -137,28 +137,28 @@ public readonly union Result<TSuccessResult, T2, T3, T4>(TSuccessResult, T2, T3,
 /// Represents the outcome of an operation as one of five possible cases: a successful result or one of four result cases.
 /// </summary>
 /// <typeparam name="TSuccessResult">The type produced when the operation succeeds.</typeparam>
-/// <typeparam name="T2">The type of the first alternative result case.</typeparam>
-/// <typeparam name="T3">The type of the second alternative result case.</typeparam>
-/// <typeparam name="T4">The type of the third alternative result case.</typeparam>
-/// <typeparam name="T5">The type of the fourth alternative result case.</typeparam>
+/// <typeparam name="TCase2">The type of the first alternative result case.</typeparam>
+/// <typeparam name="TCase3">The type of the second alternative result case.</typeparam>
+/// <typeparam name="TCase4">The type of the third alternative result case.</typeparam>
+/// <typeparam name="TCase5">The type of the fourth alternative result case.</typeparam>
 /// <remarks>
 /// <para>This is a union declaration with five case types: </para>
 /// <list type="bullet"><item><description><typeparamref name="TSuccessResult"/> — the operation completed
-/// successfully.</description></item> <item><description><typeparamref name="T2"/> — the operation
-/// failed with the first result case.</description></item> <item><description><typeparamref name="T3"/> — the operation
-/// failed with the second result case.</description></item> <item><description><typeparamref name="T4"/> — the operation
-/// failed with the third result case.</description></item> <item><description><typeparamref name="T5"/> — the operation
+/// successfully.</description></item> <item><description><typeparamref name="TCase2"/> — the operation
+/// failed with the first result case.</description></item> <item><description><typeparamref name="TCase3"/> — the operation
+/// failed with the second result case.</description></item> <item><description><typeparamref name="TCase4"/> — the operation
+/// failed with the third result case.</description></item> <item><description><typeparamref name="TCase5"/> — the operation
 /// failed with the fourth result case.</description></item> </list>
-/// <para>Values of any case type convert implicitly to <see cref="Result{TSuccessResult, T2, T3, T4, T5}"/>, and
+/// <para>Values of any case type convert implicitly to <see cref="OperationOutcome{TSuccessResult, TCase2, TCase3, TCase4, TCase5}"/>, and
 /// switch expressions over it are exhaustive without a discard arm. </para>
 /// </remarks>
-public readonly union Result<TSuccessResult, T2, T3, T4, T5>(TSuccessResult, T2, T3, T4, T5) : IResult
+public readonly union OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>(TSuccessResult, TCase2, TCase3, TCase4, TCase5) : IOperationOutcome
 {
     /// <summary>
     /// Gets a value indicating whether this result is successful.
     /// </summary>
     /// <value>
-    /// <see langword="true"/> if this result contains <typeparam name="TSuccessResult"/>; otherwise,
+    /// <see langword="true"/> if this result contains <typeparamref name="TSuccessResult"/>; otherwise,
     /// <see langword="false"/>.
     /// </value>
     public bool IsSuccess => Value is TSuccessResult;
@@ -170,10 +170,10 @@ public readonly union Result<TSuccessResult, T2, T3, T4, T5>(TSuccessResult, T2,
     public object? GetValue() => Value switch
     {
         TSuccessResult success => success,
-        T2 t2 => t2,
-        T3 t3 => t3,
-        T4 t4 => t4,
-        T5 t5 => t5,
+        TCase2 case2 => case2,
+        TCase3 case3 => case3,
+        TCase4 case4 => case4,
+        TCase5 case5 => case5,
         _ => null
     };
 }
@@ -183,32 +183,32 @@ public readonly union Result<TSuccessResult, T2, T3, T4, T5>(TSuccessResult, T2,
 /// types.
 /// </summary>
 /// <typeparam name="TSuccessResult">The type produced when the operation succeeds.</typeparam>
-/// <typeparam name="T2">The type of the first alternative result case.</typeparam>
-/// <typeparam name="T3">The type of the second alternative result case.</typeparam>
-/// <typeparam name="T4">The type of the third alternative result case.</typeparam>
-/// <typeparam name="T5">The type of the fourth alternative result case.</typeparam>
-/// <typeparam name="T6">The type of the fourth alternative result case.</typeparam>
+/// <typeparam name="TCase2">The type of the first alternative result case.</typeparam>
+/// <typeparam name="TCase3">The type of the second alternative result case.</typeparam>
+/// <typeparam name="TCase4">The type of the third alternative result case.</typeparam>
+/// <typeparam name="TCase5">The type of the fourth alternative result case.</typeparam>
+/// <typeparam name="TCase6">The type of the fourth alternative result case.</typeparam>
 /// <remarks>
 ///
 /// <para>This is a union declaration with six case types: </para>
 ///
 /// <list type="bullet"><item><description><typeparamref name="TSuccessResult"/> — the operation completed
-/// successfully.</description></item> <item><description><typeparamref name="T2"/> — the operation failed with the
-/// first result case.</description></item> <item><description><typeparamref name="T3"/> — the operation failed with
-/// the second result case.</description></item> <item><description><typeparamref name="T4"/> — the operation failed
-/// with the third result case.</description></item> <item><description><typeparamref name="T5"/> — the operation
+/// successfully.</description></item> <item><description><typeparamref name="TCase2"/> — the operation failed with the
+/// first result case.</description></item> <item><description><typeparamref name="TCase3"/> — the operation failed with
+/// the second result case.</description></item> <item><description><typeparamref name="TCase4"/> — the operation failed
+/// with the third result case.</description></item> <item><description><typeparamref name="TCase5"/> — the operation
 /// failed with the fourth result case.</description></item> </list>
 ///
-/// <para>Values of any case type convert implicitly to <see cref="Result{TSuccessResult, T2, T3, T4, T5, T6}"/>, and
+/// <para>Values of any case type convert implicitly to <see cref="OperationOutcome{TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6}"/>, and
 /// switch expressions over it are exhaustive without a discard arm. </para>
 /// </remarks>
-public readonly union Result<TSuccessResult, T2, T3, T4, T5, T6>(TSuccessResult, T2, T3, T4, T5, T6) : IResult
+public readonly union OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>(TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6) : IOperationOutcome
 {
     /// <summary>
     /// Gets a value indicating whether this result is successful.
     /// </summary>
     /// <value>
-    /// <see langword="true"/> if this result contains <typeparam name="TSuccessResult"/>; otherwise,
+    /// <see langword="true"/> if this result contains <typeparamref name="TSuccessResult"/>; otherwise,
     /// <see langword="false"/>.
     /// </value>
     public bool IsSuccess => Value is TSuccessResult;
@@ -220,11 +220,11 @@ public readonly union Result<TSuccessResult, T2, T3, T4, T5, T6>(TSuccessResult,
     public object? GetValue() => Value switch
     {
         TSuccessResult success => success,
-        T2 t2 => t2,
-        T3 t3 => t3,
-        T4 t4 => t4,
-        T5 t5 => t5,
-        T6 t6 => t6,
+        TCase2 case2 => case2,
+        TCase3 case3 => case3,
+        TCase4 case4 => case4,
+        TCase5 case5 => case5,
+        TCase6 case6 => case6,
         _ => null
     };
 }
@@ -234,12 +234,12 @@ public readonly union Result<TSuccessResult, T2, T3, T4, T5, T6>(TSuccessResult,
 ///// Represents the result of an operation that produces a value of type <typeparamref name="TResult"/>.
 ///// </summary>
 ///// <typeparam name="TResult">The type of the success value.</typeparam>
-//public readonly union Result<TResult>(TResult, Failure);
+//public readonly union OperationOutcome<TResult>(TResult, Failure);
 
 ///// <summary>
 ///// Represents the result of a void operation that produces no return value.
 ///// </summary>
-//public readonly union Result(Success, Failure);
+//public readonly union OperationOutcome(Success, Failure);
 
 ///// <summary>
 ///// Represents a paginated subset of results from a query.

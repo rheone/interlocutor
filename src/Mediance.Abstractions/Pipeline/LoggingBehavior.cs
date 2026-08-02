@@ -4,6 +4,8 @@ using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 
 /// <summary>Pipeline behavior that logs every mediator request passing through the pipeline.</summary>
+/// <typeparam name="TRequest">The request type.</typeparam>
+/// <typeparam name="TResponse">The response type.</typeparam>
 public class LoggingBehavior<TRequest, TResponse>(
     ILogger<LoggingBehavior<TRequest, TResponse>> logger,
     IResponseOutcomeDescriber? describer = null

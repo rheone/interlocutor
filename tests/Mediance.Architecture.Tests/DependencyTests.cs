@@ -7,7 +7,7 @@ using NetArchTest.Rules;
 
 public class DependencyTests
 {
-    private static readonly Assembly CommonKernelAssembly = typeof(Result).Assembly;
+    private static readonly Assembly CommonKernelAssembly = typeof(OperationOutcome).Assembly;
     private static readonly Assembly AbstractionsAssembly = typeof(IMediator).Assembly;
 
     [Fact]

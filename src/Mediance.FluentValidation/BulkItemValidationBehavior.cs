@@ -25,7 +25,7 @@
 ///// </para>
 ///// </remarks>
 //public sealed class BulkItemValidationBehavior<TRequest, TItem, TResponseItem>(IValidator<TItem> itemValidator)
-//    : IPipelineBehavior<TRequest, Result<IReadOnlyList<TResponseItem>, ValidationFailed>>
+//    : IPipelineBehavior<TRequest, OperationOutcome<IReadOnlyList<TResponseItem>, ValidationFailed>>
 //    where TRequest : IBulkCommand<TItem, TResponseItem>
 //{
 //    /// <summary>
@@ -37,9 +37,9 @@
 //    /// <param name="ct">A cancellation token to cancel validation or the inner handler.</param>
 //    /// <returns>Either the success result from the inner handler, or a <see cref="ValidationFailed"/>
 //    /// failure containing indexed validation errors per item.</returns>
-//    public async Task<Result<IReadOnlyList<TResponseItem>, ValidationFailed>> Handle(
+//    public async Task<OperationOutcome<IReadOnlyList<TResponseItem>, ValidationFailed>> Handle(
 //        TRequest request,
-//        Func<Task<Result<IReadOnlyList<TResponseItem>, ValidationFailed>>> next,
+//        Func<Task<OperationOutcome<IReadOnlyList<TResponseItem>, ValidationFailed>>> next,
 //        CancellationToken ct
 //    )
 //    {

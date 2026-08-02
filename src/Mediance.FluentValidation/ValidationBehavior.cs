@@ -22,12 +22,12 @@
 ///// <para>
 ///// Like <see cref="AuthorizationBehavior{TRequest, TSuccess}"/>, this behavior must construct its own
 ///// failure case without knowing the handler's response shape in general, so it is constrained to
-///// responses of the concrete shape <see cref="Result{TSuccess, TFailureResult}"/> with
+///// responses of the concrete shape <see cref="OperationOutcome{TSuccess, TFailureResult}"/> with
 ///// <see cref="ValidationFailed"/> as the failure case.
 ///// </para>
 ///// </remarks>
 //public sealed class ValidationBehavior<TRequest, TSuccess>(IEnumerable<IValidator<TRequest>> validators)
-//    : IPipelineBehavior<TRequest, Result<TSuccess, ValidationFailure>>
+//    : IPipelineBehavior<TRequest, OperationOutcome<TSuccess, ValidationFailure>>
 //{
 //    /// <summary>
 //    /// Validates the request using all registered validators. If validation succeeds,
@@ -38,9 +38,9 @@
 //    /// <param name="ct">A cancellation token to cancel validation or the inner handler.</param>
 //    /// <returns>Either the success result from the inner handler, or a <see cref="ValidationFailed"/>
 //    /// failure containing all validation errors from all validators.</returns>
-//    public async Task<Result<TSuccess, ValidationFailure>> Handle(
+//    public async Task<OperationOutcome<TSuccess, ValidationFailure>> Handle(
 //        TRequest request,
-//        Func<Task<Result<TSuccess, ValidationFailure>>> next,
+//        Func<Task<OperationOutcome<TSuccess, ValidationFailure>>> next,
 //        CancellationToken ct
 //    )
 //    {

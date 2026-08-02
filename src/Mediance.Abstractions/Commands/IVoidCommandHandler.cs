@@ -7,13 +7,13 @@ using Mediance.CommonKernel;
 /// </summary>
 /// <typeparam name="TCommand">The command type that this handler processes.</typeparam>
 /// <typeparam name="TResult">
-/// The <see cref="IResult"/>-shaped union describing the outcome. Chosen by the handler/call site
-/// — may be any public union type in <c>Mediance.CommonKernel</c> (<see cref="Result"/>,
-/// <see cref="Result{TSuccessResult, TFailureResult}"/>, etc.).
+/// The <see cref="IOperationOutcome"/>-shaped union describing the outcome. Chosen by the handler/call site
+/// — may be any public union type in <c>Mediance.CommonKernel</c> (<see cref="OperationOutcome"/>,
+/// <see cref="OperationOutcome{TSuccessResult, TFailureResult}"/>, etc.).
 /// </typeparam>
 public interface IVoidCommandHandler<in TCommand, TResult>
     where TCommand : ICommand
-    where TResult : IResult
+    where TResult : IOperationOutcome
 {
     /// <summary>
     /// Handles the specified command and returns the outcome.

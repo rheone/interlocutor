@@ -16,16 +16,16 @@ internal abstract class HandlerWrapper<TResponse>
 }
 
 /// <summary>Defines the base contract for handlers that produce an outcome-only (no data payload) result.</summary>
-/// <typeparam name="TResult">The <see cref="IResult"/>-shaped outcome type produced by the handler.</typeparam>
+/// <typeparam name="TResult">The <see cref="IOperationOutcome"/>-shaped outcome type produced by the handler.</typeparam>
 internal abstract class VoidHandlerWrapper<TResult>
-    where TResult : IResult
+    where TResult : IOperationOutcome
 {
     public abstract Task<TResult> Handle(object request, IServiceProvider services, CancellationToken ct);
 }
 
 internal sealed class VoidCommandHandlerWrapper<TCommand, TResult> : VoidHandlerWrapper<TResult>
     where TCommand : ICommand
-    where TResult : IResult
+    where TResult : IOperationOutcome
 {
     public override async Task<TResult> Handle(object request, IServiceProvider services, CancellationToken ct)
     {
@@ -174,7 +174,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
 
     /// <inheritdoc/>
     public Task<TResult> Send<TResult>(ICommand command, CancellationToken ct = default)
-        where TResult : IResult
+        where TResult : IOperationOutcome
     {
         var wrapper =
             (VoidHandlerWrapper<TResult>)

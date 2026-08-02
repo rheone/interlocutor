@@ -1,6 +1,8 @@
 namespace Mediance.Abstractions.Pipeline;
 
 /// <summary>Aggregates all registered <see cref="IPipelineStage{TRequest,TResponse}"/> instances and invokes them around the handler call.</summary>
+/// <typeparam name="TRequest">The request type.</typeparam>
+/// <typeparam name="TResponse">The response type.</typeparam>
 public class PipelineStageBehavior<TRequest, TResponse>(IEnumerable<IPipelineStage<TRequest, TResponse>> stages)
     : IPipelineBehavior<TRequest, TResponse>
 {

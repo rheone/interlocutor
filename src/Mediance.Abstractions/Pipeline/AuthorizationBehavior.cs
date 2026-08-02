@@ -8,19 +8,21 @@ using Mediance.CommonKernel.ResultTypes;
 /// Pipeline behavior that enforces declarative authorization policies on requests implementing
 /// <see cref="IRequiresPolicy"/>.
 /// </summary>
+/// <typeparam name="TRequest">The request type.</typeparam>
+/// <typeparam name="TSuccess">The success case type of the result.</typeparam>
 /// <remarks>
 /// Short-circuiting behaviors must be able to construct their failure case without knowing the
 /// handler's response shape in general, so this behavior is constrained to responses of the
-/// concrete shape <see cref="Result{TSuccess, TFailureResult}"/> with <see cref="Forbidden"/> as
+/// concrete shape <see cref="OperationOutcome{TSuccess, TFailureResult}"/> with <see cref="Forbidden"/> as
 /// the failure case. Handlers using a different response shape need a bespoke authorization
 /// behavior instead.
 /// </remarks>
 public class AuthorizationBehavior<TRequest, TSuccess>(IPolicyEvaluator policyEvaluator)
-    : IPipelineBehavior<TRequest, Result<TSuccess, Forbidden>>
+    : IPipelineBehavior<TRequest, OperationOutcome<TSuccess, Forbidden>>
 {
-    public async Task<Result<TSuccess, Forbidden>> Handle(
+    public async Task<OperationOutcome<TSuccess, Forbidden>> Handle(
         TRequest request,
-        Func<Task<Result<TSuccess, Forbidden>>> next,
+        Func<Task<OperationOutcome<TSuccess, Forbidden>>> next,
         CancellationToken ct
     )
     {

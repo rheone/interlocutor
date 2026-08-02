@@ -8,7 +8,7 @@
 
 ## 1. Summary
 
-Mediance is a mediator/CQRS pipeline library for .NET built on C# 15 union types. Handlers return a closed, compiler-checked `Result<T>` or `Result` type instead of throwing exceptions for expected outcomes (not found, forbidden, validation failure, conflict). Cross-cutting concerns compose around handlers via `IPipelineBehavior<TRequest,TResponse>` in an onion/Russian-doll model. Exceptions remain reserved for bugs and infrastructure faults.
+Mediance is a mediator/CQRS pipeline library for .NET built on C# 15 union types. Handlers return a closed, compiler-checked `OperationOutcome<T>` or `OperationOutcome` type instead of throwing exceptions for expected outcomes (not found, forbidden, validation failure, conflict). Cross-cutting concerns compose around handlers via `IPipelineBehavior<TRequest,TResponse>` in an onion/Russian-doll model. Exceptions remain reserved for bugs and infrastructure faults.
 
 ## 2. Problem statement
 
@@ -26,13 +26,13 @@ Before this library, "what can go wrong" for a given handler was implicit — di
 
 - Replacing ASP.NET exception-handling middleware.
 - Infrastructure retries/circuit breakers in the mediator pipeline.
-- Serializing `Result`/`Failure` over the wire — API boundary always maps to a dedicated response shape.
+- Serializing `OperationOutcome`/`Failure` over the wire — API boundary always maps to a dedicated response shape.
 
 ## 5. Package structure
 
 | Package | Contents | Dependencies |
 |---------|----------|-------------|
-| `Mediance.CommonKernel` | `Result<T>`, `Result`, `Failure`, `Success`, `PagedResult<T>` — pure data types | .NET BCL only |
+| `Mediance.CommonKernel` | `OperationOutcome<T>`, `OperationOutcome`, `Failure`, `Success`, `PagedResult<T>` — pure data types | .NET BCL only |
 | `Mediance.Abstractions` | `IQuery<T>`, `ICommand<T>`, `ICommand`, marker interfaces, handler contracts, `IPipelineBehavior`, `IMediator`, `Mediator`, `ResourceCommandHandler`, `StartupValidation`, built-in pipeline behaviors (Logging, Auditing, Authorization, PipelineStage) | `Mediance.CommonKernel` |
 | `Mediance.AspNetCore` | `ToActionResult()` HTTP mapping | `Mediance.CommonKernel`, ASP.NET Core |
 | `Mediance.DependencyInjection.Microsoft` | Assembly-scanning `AddMediance()` for MS DI | `Mediance.Abstractions` |
@@ -52,16 +52,16 @@ Before this library, "what can go wrong" for a given handler was implicit — di
 | `Forbidden` | `record` | `record Forbidden(string? Reason = null);` | Authorization denied |
 | `Conflict` | `record` | `record Conflict(string Code, string Message);` | State conflict |
 | `Failure` | `union` | `readonly union Failure(ValidationFailed, RuleViolation, NotFound, Forbidden, Conflict);` | Closed set of all failures |
-| `Result<T>` | `union` | `readonly union Result<T>(T, Failure);` | Outcome of queries and value-returning commands |
-| `Result` | `union` | `readonly union Result(Success, Failure);` | Outcome of void commands |
+| `OperationOutcome<T>` | `union` | `readonly union OperationOutcome<T>(T, Failure);` | Outcome of queries and value-returning commands |
+| `OperationOutcome` | `union` | `readonly union OperationOutcome(Success, Failure);` | Outcome of void commands |
 
 ## 7. CQRS interfaces
 
 | Interface | Purpose |
 |-----------|---------|
-| `IQuery<TResponse>` | Marker for queries returning `Result<TResponse>` |
-| `ICommand<TResponse>` | Marker for commands returning `Result<TResponse>` |
-| `ICommand` | Marker for void commands returning `Result` |
+| `IQuery<TResponse>` | Marker for queries returning `OperationOutcome<TResponse>` |
+| `ICommand<TResponse>` | Marker for commands returning `OperationOutcome<TResponse>` |
+| `ICommand` | Marker for void commands returning `OperationOutcome` |
 | `IEnumerableQuery<TItem>` | Query returning `IReadOnlyList<TItem>` |
 | `IEnumerableCommand<TResponseItem>` | Command returning `IReadOnlyList<TResponseItem>` |
 | `IBulkCommand<TItem, TResponseItem>` | Bulk command with per-item validation |
@@ -107,7 +107,7 @@ This matches the intended order from the bootstrap PRD (see [bootstrap §7.1](..
 
 ### 9.3 Void command pipeline
 
-Void commands (`ICommand`) dispatch through the same pipeline mechanism as typed commands via `VoidCommandHandlerWrapper<TCommand>`, which wraps the void handler's `Task<Result>` return as `Task<Result<Result>>` for pipeline compatibility, then unwraps.
+Void commands (`ICommand`) dispatch through the same pipeline mechanism as typed commands via `VoidCommandHandlerWrapper<TCommand>`, which wraps the void handler's `Task<OperationOutcome>` return as `Task<OperationOutcome<OperationOutcome>>` for pipeline compatibility, then unwraps.
 
 ### 9.4 Marker interfaces for cross-cutting opt-in
 
@@ -196,6 +196,6 @@ All features listed as gaps in bootstrap §12 are now implemented.
 
 ## 17. Risks
 
-- C# 15 union syntax is preview until .NET 11 GA (~November 2026). Usage isolated to `Results.cs` in CommonKernel.
+- C# 15 union syntax is preview until .NET 11 GA (~November 2026). Usage isolated to `OperationOutcome.cs` in CommonKernel.
 - Marker interface opt-in has no compiler enforcement. Recommended: architecture tests (NetArchTest present in `Directory.Packages.props`) asserting all `ICommand` implementers also implement `ITransactionalRequest` or `IExternalStoreRequest`.
 - Struct-based unions box value-type `T`. Acceptable for mediator dispatch; flagged as optimization point.

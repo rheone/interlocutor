@@ -29,7 +29,7 @@ var user = await mediator.Send(new GetUser(1));
 
 | Package | Purpose |
 |---------|---------|
-| `Mediance.CommonKernel` | Ready-made result case types (`Failure`, `NotFound`, `Forbidden`, `Conflict`, `ValidationFailed`, `ValidationFailure`, `Success`) and the `Result<...>` union arities. Zero dependencies. |
+| `Mediance.CommonKernel` | Ready-made result case types (`Failure`, `NotFound`, `Forbidden`, `Conflict`, `ValidationFailed`, `ValidationFailure`, `Success`) and the `OperationOutcome<...>` union arities. Zero dependencies. |
 | `Mediance.Abstractions` | Core mediator contracts, handler interfaces, pipeline behaviors, Mediator implementation. |
 | `Mediance.AspNetCore` | `ToActionResult()` HTTP mapping for ASP.NET Core. |
 | `Mediance.DependencyInjection.Microsoft` | Assembly-scanning `AddMediance()` for Microsoft.Extensions.DependencyInjection. |
@@ -40,7 +40,7 @@ var user = await mediator.Send(new GetUser(1));
 
 ## Result Types Are Building Blocks, Not a Mandatory Wrapper
 
-Every handler interface (`IQueryHandler<,>`, `ICommandHandler<,>`) and `IPipelineBehavior<,>` is generic over a plain `TResponse` — there is no forced `Result<TResponse>` wrapper. `TResponse` can be:
+Every handler interface (`IQueryHandler<,>`, `ICommandHandler<,>`) and `IPipelineBehavior<,>` is generic over a plain `TResponse` — there is no forced `OperationOutcome<TResponse>` wrapper. `TResponse` can be:
 
 - a plain type (`UserResponse`, `int`, `string`) when the operation can't meaningfully fail,
 - a `Mediance.CommonKernel.ResultTypes` union, or
@@ -49,27 +49,27 @@ Every handler interface (`IQueryHandler<,>`, `ICommandHandler<,>`) and `IPipelin
 `Mediance.CommonKernel.ResultTypes` ships a two-case union and three wider arities:
 
 ```csharp
-public readonly union Result<TSuccess, TFailure>(TSuccess, TFailure);
-public readonly union Result(Success, Failure);
-public readonly union Result<TSuccess, T2, T3>(TSuccess, T2, T3);
-public readonly union Result<TSuccess, T2, T3, T4>(TSuccess, T2, T3, T4);
-public readonly union Result<TSuccess, T2, T3, T4, T5>(TSuccess, T2, T3, T4, T5);
+public readonly union OperationOutcome<TSuccess, TFailure>(TSuccess, TFailure);
+public readonly union OperationOutcome(Success, Failure);
+public readonly union OperationOutcome<TSuccess, TCase2, TCase3>(TSuccess, TCase2, TCase3);
+public readonly union OperationOutcome<TSuccess, TCase2, TCase3, TCase4>(TSuccess, TCase2, TCase3, TCase4);
+public readonly union OperationOutcome<TSuccess, TCase2, TCase3, TCase4, TCase5>(TSuccess, TCase2, TCase3, TCase4, TCase5);
 ```
 
-`Failure`, `NotFound`, `Forbidden`, `Conflict`, `ValidationFailed`, and `ValidationFailure` are independent, standalone case types — none of them is an aggregate of the others. Pick whichever combination a handler actually needs as type arguments to `Result<...>`; don't route every failure through a single generic `Failure` if the caller needs to distinguish cases.
+`Failure`, `NotFound`, `Forbidden`, `Conflict`, `ValidationFailed`, and `ValidationFailure` are independent, standalone case types — none of them is an aggregate of the others. Pick whichever combination a handler actually needs as type arguments to `OperationOutcome<...>`; don't route every failure through a single generic `Failure` if the caller needs to distinguish cases.
 
 ### Why compose it this way
 
-Picking your own failure cases per handler, rather than a single `Result<T>` funneling everything through one `Failure` type, means the compiler forces every call site to handle exactly the failure modes that operation can actually produce — no more, no less. A query that can only fail with "not found" shouldn't force callers to also handle "forbidden."
+Picking your own failure cases per handler, rather than a single `OperationOutcome<T>` funneling everything through one `Failure` type, means the compiler forces every call site to handle exactly the failure modes that operation can actually produce — no more, no less. A query that can only fail with "not found" shouldn't force callers to also handle "forbidden."
 
 ```csharp
 // Single generic failure — fine when the caller only needs "it didn't work, here's why."
-public record GetSetting(string Key) : IQuery<Result<string, Failure>>;
+public record GetSetting(string Key) : IQuery<OperationOutcome<string, Failure>>;
 
-public class GetSettingHandler : IQueryHandler<GetSetting, Result<string, Failure>>
+public class GetSettingHandler : IQueryHandler<GetSetting, OperationOutcome<string, Failure>>
 {
-    public Task<Result<string, Failure>> Handle(GetSetting query, CancellationToken ct) =>
-        Task.FromResult<Result<string, Failure>>(
+    public Task<OperationOutcome<string, Failure>> Handle(GetSetting query, CancellationToken ct) =>
+        Task.FromResult<OperationOutcome<string, Failure>>(
             settings.TryGetValue(query.Key, out var value)
                 ? value
                 : new Failure($"No setting named '{query.Key}'")
@@ -79,11 +79,11 @@ public class GetSettingHandler : IQueryHandler<GetSetting, Result<string, Failur
 // Multiple distinct failure modes — the switch below won't compile until every
 // arm is handled, so adding a new case type later surfaces every call site that
 // needs updating.
-public record DeleteOrder(int OrderId) : ICommand<Result<Success, NotFound, Forbidden>>;
+public record DeleteOrder(int OrderId) : ICommand<OperationOutcome<Success, NotFound, Forbidden>>;
 
-public class DeleteOrderHandler : ICommandHandler<DeleteOrder, Result<Success, NotFound, Forbidden>>
+public class DeleteOrderHandler : ICommandHandler<DeleteOrder, OperationOutcome<Success, NotFound, Forbidden>>
 {
-    public async Task<Result<Success, NotFound, Forbidden>> Handle(DeleteOrder command, CancellationToken ct)
+    public async Task<OperationOutcome<Success, NotFound, Forbidden>> Handle(DeleteOrder command, CancellationToken ct)
     {
         var order = await repository.FindAsync(command.OrderId, ct);
         if (order is null)
@@ -106,7 +106,7 @@ public union PaymentOutcome(Charged, InsufficientFunds, CardDeclined);
 public record ProcessPayment(decimal Amount) : ICommand<PaymentOutcome>;
 ```
 
-`ResourceCommandHandler<TCommand, TEntity, TSuccess>` is a template method for the common "load → authorize → act" shape, and is fixed to `Result<TSuccess, NotFound, Failure>` because it needs to construct those two specific failure cases itself:
+`ResourceCommandHandler<TCommand, TEntity, TSuccess>` is a template method for the common "load → authorize → act" shape, and is fixed to `OperationOutcome<TSuccess, NotFound, Failure>` because it needs to construct those two specific failure cases itself:
 
 ```csharp
 public class ArchiveDocumentHandler : ResourceCommandHandler<ArchiveDocument, Document, Success>
@@ -117,11 +117,11 @@ public class ArchiveDocumentHandler : ResourceCommandHandler<ArchiveDocument, Do
     protected override Failure? Authorize(Document entity, ArchiveDocument command) =>
         entity.OwnerId == command.RequestedBy ? null : new Failure("Not the document owner");
 
-    protected override Task<Result<Success, NotFound, Failure>> HandleAsync(
+    protected override Task<OperationOutcome<Success, NotFound, Failure>> HandleAsync(
         ArchiveDocument command, Document entity, CancellationToken ct)
     {
         entity.Archive();
-        return Task.FromResult<Result<Success, NotFound, Failure>>(new Success());
+        return Task.FromResult<OperationOutcome<Success, NotFound, Failure>>(new Success());
     }
 }
 ```
@@ -152,7 +152,7 @@ Why this order:
 services.AddSingleton<IResponseOutcomeDescriber, PaymentOutcomeDescriber>();
 ```
 
-`AuthorizationBehavior<TRequest, TSuccess>` and `ValidationBehavior<TRequest, TSuccess>` are constrained to the concrete shapes `Result<TSuccess, Forbidden>` and `Result<TSuccess, ValidationFailed>` respectively — a short-circuiting behavior has to construct its failure case without knowing the handler's response shape in general, so it's opt-in *and* only usable when the response shape matches. Handlers with a different response shape (a custom union, or a wider multi-arity `Result<...>`) need a bespoke behavior instead.
+`AuthorizationBehavior<TRequest, TSuccess>` and `ValidationBehavior<TRequest, TSuccess>` are constrained to the concrete shapes `OperationOutcome<TSuccess, Forbidden>` and `OperationOutcome<TSuccess, ValidationFailed>` respectively — a short-circuiting behavior has to construct its failure case without knowing the handler's response shape in general, so it's opt-in *and* only usable when the response shape matches. Handlers with a different response shape (a custom union, or a wider multi-arity `OperationOutcome<...>`) need a bespoke behavior instead.
 
 ## Interface Segregation
 
