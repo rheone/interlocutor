@@ -1,9 +1,9 @@
 namespace Mediance.CommonKernel.ResultTypes;
 
 /// <summary>
-/// Represents a failure outcome, optionally carrying a reason, an error code, or both.
+/// Represents a generic failure outcome, optionally carrying a reason, an error code, or both.
 /// </summary>
-public sealed record Failure
+public readonly record struct Failure
 {
     /// <summary>
     /// Gets the human-readable reason for the failure, or <see langword="null"/> if none was provided.
@@ -30,11 +30,6 @@ public sealed record Failure
     public bool HasErrorCode => ErrorCode is not null;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="Failure"/> class with no reason or error code.
-    /// </summary>
-    public Failure() { }
-
-    /// <summary>
     /// Initializes a new instance of the <see cref="Failure"/> class with the specified reason.
     /// </summary>
     /// <param name="reason">The human-readable reason for the failure.</param>
@@ -53,19 +48,19 @@ public sealed record Failure
     /// <param name="errorCode">The error code associated with the failure.</param>
     public Failure(string reason, long errorCode) => (Reason, ErrorCode) = (reason, errorCode);
 
-    /// <summary>
-    /// Returns a string representation of the failure, including the reason and/or error code when present.
-    /// </summary>
-    /// <returns>
-    /// <c>"Failure(ErrorCode): Reason"</c> if both are set; <c>"Failure: Reason"</c> if only <see cref="Reason"/>
-    /// is set; <c>"Failure(ErrorCode)"</c> if only <see cref="ErrorCode"/> is set; otherwise <c>"Failure"</c>.
-    /// </returns>
-    public override string ToString() =>
-        this switch
-        {
-            { Reason: not null, ErrorCode: not null } => $"Failure({ErrorCode}): {Reason}",
-            { Reason: not null } => $"Failure: {Reason}",
-            { ErrorCode: not null } => $"Failure({ErrorCode})",
-            _ => "Failure",
-        };
+    ///// <summary>
+    ///// Returns a string representation of the failure, including the reason and/or error code when present.
+    ///// </summary>
+    ///// <returns>
+    ///// <c>"Failure(ErrorCode): Reason"</c> if both are set; <c>"Failure: Reason"</c> if only <see cref="Reason"/>
+    ///// is set; <c>"Failure(ErrorCode)"</c> if only <see cref="ErrorCode"/> is set; otherwise <c>"Failure"</c>.
+    ///// </returns>
+    //public override string ToString() =>
+    //    this switch
+    //    {
+    //        { Reason: not null, ErrorCode: not null } => $"Failure({ErrorCode}): {Reason}",
+    //        { Reason: not null } => $"Failure: {Reason}",
+    //        { ErrorCode: not null } => $"Failure({ErrorCode})",
+    //        _ => "Failure",
+    //    };
 }

@@ -1,150 +1,149 @@
-# # git push origin <branch-name> --no-verify
-# # git commit --no-verify -m "commit"; git push --no-verify
+# git push origin <branch-name> --no-verify
+# git commit --no-verify -m "commit"; git push --no-verify
 
-# # Pre-commit hook configuration.
-# # Install hooks:
-# #   pre-commit install
-# #
-# # Run on staged files:
-# #   pre-commit run
-# #
-# # Run on all files:
-# #   pre-commit run --all-files
-# #
-# # Update hook versions:
-# #   pre-commit autoupdate
-# #
-# # Skip specific hooks:
-# #   SKIP=hook-id pre-commit run --all-files
-# #
-# # Documentation:
-# #   https://pre-commit.com
+# See https://pre-commit.com for more information.
 
-# minimum_pre_commit_version: "4.0.0"
-# default_stages: [pre-commit]
-# fail_fast: false
+# Pre-commit hook configuration.
+# Install hooks:
+#   pre-commit install
+#
+# Run on staged files:
+#   pre-commit run
+#
+# Run on all files:
+#   pre-commit run --all-files
+#
+# Update hook versions:
+#   pre-commit autoupdate
+#
+# Skip specific hooks:
+#   SKIP=hook-id pre-commit run --all-files
 
-# repos:
-#   # ── Universal file normalization ───────────────────────────────
-#   # These hooks modify files into a consistent format before
-#   # any language-specific tools execute.
-#   - repo: https://github.com/pre-commit/pre-commit-hooks
-#     rev: v5.0.0
-#     hooks:
-#       # Normalize all text files to LF line endings.
-#       # (Use .gitattributes to define repository policy.)
-#       - id: mixed-line-ending
-#         args: [--fix=lf]
+minimum_pre_commit_version: "4.0.0"
+default_stages: [pre-commit]
+fail_fast: true
 
-#       # Ensure every text file ends with exactly one newline.
-#       - id: end-of-file-fixer
+repos:
+  # ── Universal file normalization ───────────────────────────────
+  # These hooks modify files into a consistent format before
+  # any language-specific tools execute.
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      # Normalize all text files to LF line endings.
+      # (Use .gitattributes to define repository policy.)
+      - id: mixed-line-ending
+        args: [--fix=lf]
 
-#       # Remove trailing spaces.
-#       - id: trailing-whitespace
+      # Ensure every text file ends with exactly one newline.
+      - id: end-of-file-fixer
 
-#       # Validate YAML syntax.
-#       - id: check-yaml
+      # Remove trailing spaces.
+      - id: trailing-whitespace
 
-#       # Prevent accidental merge conflict markers.
-#       - id: check-merge-conflict
+      # Validate YAML syntax.
+      - id: check-yaml
 
-#       # Prevent accidentally committing very large files.
-#       - id: check-added-large-files
-#         args: [--maxkb=512]
+      # Prevent accidental merge conflict markers.
+      - id: check-merge-conflict
 
-#   # ── Markdown ───────────────────────────────────────────────────
-#   - repo: https://github.com/igorshubovych/markdownlint-cli
-#     rev: v0.44.0
-#     hooks:
-#       - id: markdownlint
-#         args:
-#           # Disable line length rule.
-#           - --disable
-#           - MD013
+      # Prevent accidentally committing very large files.
+      - id: check-added-large-files
+        args: [--maxkb=512]
 
-#   # ── Spell checking ──────────────────────────────────────────────
-#   # - repo: https://github.com/codespell-project/codespell
-#   #   rev: v2.4.1
-#   #   hooks:
-#   #     - id: codespell
-#   #       args:
-#   #         # Ignore common false positives.
-#   #         - --ignore-words-list=fo,ect
+  # ── Markdown ───────────────────────────────────────────────────
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.44.0
+    hooks:
+      - id: markdownlint
+        args:
+          # Disable line length rule.
+          - --disable
+          - MD013
 
-#   #         # Also check filenames.
-#   #         - --check-filenames
+  # ── Spell checking ──────────────────────────────────────────────
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.1
+    hooks:
+      - id: codespell
+        args:
+          # Ignore common false positives.
+          - --ignore-words-list=fo,ect
 
-#   #       # Only check source and documentation files.
-#   #       types_or:
-#   #         - c#
-#   #         - python
-#   #         - javascript
-#   #         - ts
-#   #         - markdown
-#   #         - shell
-#   #         - yaml
-#   #         - json
+          # Also check filenames.
+          - --check-filenames
 
-#   #       # Skip generated/vendor content.
-#   #       exclude: ^bootstrapreference/
+        # Only check source and documentation files.
+        types_or:
+          - c#
+          - python
+          - javascript
+          - ts
+          - markdown
+          - shell
+          - yaml
+          - json
 
-#   # ── .NET formatting & analyzers (staged files only) ────────────
-#   - repo: local
-#     hooks:
-#       # Fixes code-style violations (naming, modifiers, preferences)
-#       - id: dotnet-format-style
-#         name: dotnet format style
-#         entry: dotnet format style --include
-#         language: system
-#         types: [c#]
-#         pass_filenames: true
-#         exclude: ^bootstrapreference/
+        # Skip generated/vendor content.
+        exclude: ^bootstrapreference/
 
-#       # Checks for compiler warnings and code quality rules (Does not fix)
-#       - id: dotnet-format-analyzers
-#         name: dotnet format analyzers
-#         entry: dotnet format analyzers --verify-no-changes --severity warn --include
-#         language: system
-#         types: [c#]
-#         pass_filenames: true
-#         exclude: ^bootstrapreference/
+  # ── .NET formatting & analyzers (staged files only) ────────────
+  - repo: local
+    hooks:
+      # Fixes code-style violations (naming, modifiers, preferences)
+      - id: dotnet-format-style
+        name: dotnet format style
+        entry: dotnet format style --include
+        language: system
+        types: [c#]
+        pass_filenames: true
+        exclude: ^bootstrapreference/
 
-#       # Disabled due to usage of modern c# versions not handled yet by csharpier.
-#       #- repo: local
-#       #  hooks:
-#       #    # CSharpier owns whitespace and layout formatting.
-#       #    - id: csharpier
-#       #      name: csharpier
-#       #      entry: dotnet csharpier
-#       #      language: system
-#       #      types: [c#]
-#       #      exclude: |
-#       #        (?x)(
-#       #          ^bootstrapreference/|
-#       #          Results\.cs$
-#       #        )
+      # Checks for compiler warnings and code quality rules (Does not fix)
+      - id: dotnet-format-analyzers
+        name: dotnet format analyzers
+        entry: dotnet format analyzers --verify-no-changes --severity warn --include
+        language: system
+        types: [c#]
+        pass_filenames: true
+        exclude: ^bootstrapreference/
 
-#       # # Apply IDE/style fixes supported by dotnet format.
-#       # - id: dotnet-format-style
-#       #   name: dotnet format style
-#       #   entry: pwsh -NoProfile -File .githooks/format-style.ps1
-#       #   language: system
-#       #   types: [c#]
-#       #   exclude: ^bootstrapreference/
+      # Disabled due to usage of modern c# versions not handled yet by csharpier.
+      #- repo: local
+      #  hooks:
+      #    # CSharpier owns whitespace and layout formatting.
+      #    - id: csharpier
+      #      name: csharpier
+      #      entry: dotnet csharpier
+      #      language: system
+      #      types: [c#]
+      #      exclude: |
+      #        (?x)(
+      #          ^bootstrapreference/|
+      #          Results\.cs$
+      #        )
 
-#       # # Verify analyzer/code-quality rules.
-#       # # This hook should NOT modify files.
-#       # - id: dotnet-format-analyzers
-#       #   name: dotnet format analyzers
-#       #   entry: pwsh -NoProfile -File .githooks/format-analyzers.ps1
-#       #   language: system
-#       #   types: [c#]
-#       #   exclude: ^bootstrapreference/
+      # # Apply IDE/style fixes supported by dotnet format.
+      # - id: dotnet-format-style
+      #   name: dotnet format style
+      #   entry: pwsh -NoProfile -File .githooks/format-style.ps1
+      #   language: system
+      #   types: [c#]
+      #   exclude: ^bootstrapreference/
 
-#   # ── Secret scanning ────────────────────────────────────────────
-#   # Run last since it is one of the slower hooks and does not
-#   # modify files.
-#   - repo: https://github.com/gitleaks/gitleaks
-#     rev: v8.24.2
-#     hooks:
-#       - id: gitleaks
+      # # Verify analyzer/code-quality rules.
+      # # This hook should NOT modify files.
+      # - id: dotnet-format-analyzers
+      #   name: dotnet format analyzers
+      #   entry: pwsh -NoProfile -File .githooks/format-analyzers.ps1
+      #   language: system
+      #   types: [c#]
+      #   exclude: ^bootstrapreference/
+
+  # ── Secret scanning ────────────────────────────────────────────
+  # Run last since it is one of the slower hooks and does not
+  # modify files.
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.24.2
+    hooks:
+      - id: gitleaks

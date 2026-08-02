@@ -24,7 +24,7 @@ public static class MedianceAutofacExtensions
     /// <para>
     /// The following handler interfaces are discovered and registered as instance-per-lifetime-scope services:
     /// <see cref="IQueryHandler{TQuery,TResponse}"/>, <see cref="ICommandHandler{TCommand,TResponse}"/>,
-    /// <see cref="ICommandHandler{TCommand}"/>, and <see cref="INotificationHandler{TNotification}"/>.
+    /// <see cref="IVoidCommandHandler{TCommand,TResult}"/>, and <see cref="INotificationHandler{TNotification}"/>.
     /// </para>
     /// <para>
     /// Additionally, this method registers the <see cref="Mediator"/> as the implementation for
@@ -53,18 +53,12 @@ public static class MedianceAutofacExtensions
                     if (
                         def == typeof(IQueryHandler<,>)
                         || def == typeof(ICommandHandler<,>)
+                        || def == typeof(IVoidCommandHandler<,>)
                         || def == typeof(INotificationHandler<>)
                     )
                     {
                         builder.RegisterType(type).As(iface).InstancePerLifetimeScope();
                     }
-                }
-
-                // ICommandHandler<T> (void-returning) is a separate unary generic interface
-                // and is not matched by the binary-generic checks above.
-                if (iface.IsGenericType && iface.GetGenericTypeDefinition() == typeof(ICommandHandler<>))
-                {
-                    builder.RegisterType(type).As(iface).InstancePerLifetimeScope();
                 }
             }
         }

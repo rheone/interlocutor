@@ -47,16 +47,6 @@ public static class MedianceStartupValidation
                     missing.Add($"{requestType.Name} implements {iface.Name} but no {handlerType.Name} is registered.");
                 }
             }
-
-            // Also check void commands (ICommand without TResponse).
-            if (typeof(ICommand).IsAssignableFrom(requestType) && requestType.GetInterface(nameof(ICommand)) is not null)
-            {
-                var handlerType = typeof(ICommandHandler<>).MakeGenericType(requestType);
-                if (sp.GetService(handlerType) is null)
-                {
-                    missing.Add($"{requestType.Name} implements ICommand but no {handlerType.Name} is registered.");
-                }
-            }
         }
 
         if (missing.Count > 0)

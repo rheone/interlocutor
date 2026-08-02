@@ -26,9 +26,9 @@ public class GreetCommandHandler : ICommandHandler<GreetCommand, string>
 
 public record TestVoidCommand(string Value) : ICommand;
 
-public class TestVoidHandler : ICommandHandler<TestVoidCommand>
+public class TestVoidHandler : IVoidCommandHandler<TestVoidCommand, Result>
 {
-    public Task<Result> Handle(TestVoidCommand command, CancellationToken ct) => Task.FromResult(new Result(new Success()));
+    public Task<Result> Handle(TestVoidCommand command, CancellationToken ct) => Task.FromResult(new Result(default(Success)));
 }
 
 public record TestNotification(string Message) : INotification;
@@ -94,7 +94,7 @@ public class MediatorTests
             );
         });
 
-        await mediator.Send(new TestVoidCommand("test"), CancellationToken.None);
+        await mediator.Send<Result>(new TestVoidCommand("test"), CancellationToken.None);
         Assert.True(invoked);
     }
 
@@ -102,7 +102,7 @@ public class MediatorTests
     public async Task Send_VoidCommand_ReturnsSuccess()
     {
         var mediator = CreateMediator<TestVoidHandler>(services => { });
-        var result = await mediator.Send(new TestVoidCommand("test"), CancellationToken.None);
+        var result = await mediator.Send<Result>(new TestVoidCommand("test"), CancellationToken.None);
 
         var isSuccess = result.Value switch
         {
@@ -197,7 +197,7 @@ public class MediatorTests
         }
         else if (typeof(THandler) == typeof(TestVoidHandler))
         {
-            services.AddSingleton<ICommandHandler<TestVoidCommand>, TestVoidHandler>();
+            services.AddSingleton<IVoidCommandHandler<TestVoidCommand, Result>, TestVoidHandler>();
         }
 
         configure(services);

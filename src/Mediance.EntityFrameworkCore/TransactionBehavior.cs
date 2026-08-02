@@ -13,6 +13,7 @@ namespace Mediance.EntityFrameworkCore;
 /// <typeparam name="TResponse">The response type returned after pipeline execution.</typeparam>
 /// <typeparam name="TContext">The EF Core <see cref="DbContext"/> type providing the database connection for the transaction scope.</typeparam>
 /// <param name="db">Lazy factory for the <typeparamref name="TContext"/> instance that provides database access.</param>
+/// <param name="describer">Optional custom describer for converting response outcomes to human-readable strings for logging. Defaults to <see cref="DefaultResponseOutcomeDescriber.Instance"/>.</param>
 /// <remarks>
 /// <para>
 /// This behavior opens an <see cref="Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction"/> before invoking

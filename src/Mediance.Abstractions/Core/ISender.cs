@@ -1,8 +1,8 @@
+namespace Mediance.Abstractions.Core;
+
 using Mediance.Abstractions.Commands;
 using Mediance.Abstractions.Queries;
 using Mediance.CommonKernel;
-
-namespace Mediance.Abstractions.Core;
 
 /// <summary>Send-only interface for request/response operations. Exposes <see cref="Send{TResponse}(IQuery{TResponse},CancellationToken)"/> for queries and commands.</summary>
 public interface ISender
@@ -15,7 +15,9 @@ public interface ISender
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     Task<TResponse> Send<TResponse>(ICommand<TResponse> command, CancellationToken ct = default);
 
-    /// <summary>Dispatches a void command to its registered handler, returning the result through all pipeline behaviors.</summary>
+    /// <summary>Dispatches a void command to its registered handler, returning the outcome through all pipeline behaviors.</summary>
+    /// <typeparam name="TResult">The <see cref="IResult"/>-shaped outcome type to resolve a handler for.</typeparam>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    Task<Result> Send(ICommand command, CancellationToken ct = default);
+    Task<TResult> Send<TResult>(ICommand command, CancellationToken ct = default)
+        where TResult : IResult;
 }

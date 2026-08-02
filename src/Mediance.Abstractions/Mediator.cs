@@ -1,3 +1,5 @@
+namespace Mediance.Abstractions;
+
 using System.Collections.Concurrent;
 using Mediance.Abstractions.Commands;
 using Mediance.Abstractions.Core;
@@ -6,8 +8,6 @@ using Mediance.Abstractions.Pipeline;
 using Mediance.Abstractions.Queries;
 using Mediance.CommonKernel;
 
-namespace Mediance.Abstractions;
-
 /// <summary>Defines the base contract for handlers that produce a typed response.</summary>
 /// <typeparam name="TResponse">The type of the success value produced by the handler.</typeparam>
 internal abstract class HandlerWrapper<TResponse>
@@ -15,23 +15,26 @@ internal abstract class HandlerWrapper<TResponse>
     public abstract Task<TResponse> Handle(object request, IServiceProvider services, CancellationToken ct);
 }
 
-/// <summary>Defines the base contract for handlers that produce a void (unit) result.</summary>
-internal abstract class VoidHandlerWrapper
+/// <summary>Defines the base contract for handlers that produce an outcome-only (no data payload) result.</summary>
+/// <typeparam name="TResult">The <see cref="IResult"/>-shaped outcome type produced by the handler.</typeparam>
+internal abstract class VoidHandlerWrapper<TResult>
+    where TResult : IResult
 {
-    public abstract Task<Result> Handle(object request, IServiceProvider services, CancellationToken ct);
+    public abstract Task<TResult> Handle(object request, IServiceProvider services, CancellationToken ct);
 }
 
-internal sealed class VoidCommandHandlerWrapper<TCommand> : VoidHandlerWrapper
+internal sealed class VoidCommandHandlerWrapper<TCommand, TResult> : VoidHandlerWrapper<TResult>
     where TCommand : ICommand
+    where TResult : IResult
 {
-    public override async Task<Result> Handle(object request, IServiceProvider services, CancellationToken ct)
+    public override async Task<TResult> Handle(object request, IServiceProvider services, CancellationToken ct)
     {
         var typedRequest = (TCommand)request;
-        var handler = services.GetRequiredService<ICommandHandler<TCommand>>();
+        var handler = services.GetRequiredService<IVoidCommandHandler<TCommand, TResult>>();
 
-        Func<Task<Result>> pipeline = () => handler.Handle(typedRequest, ct);
+        Func<Task<TResult>> pipeline = () => handler.Handle(typedRequest, ct);
 
-        foreach (var behavior in services.GetServices<IPipelineBehavior<TCommand, Result>>().Reverse())
+        foreach (var behavior in services.GetServices<IPipelineBehavior<TCommand, TResult>>().Reverse())
         {
             var next = pipeline;
             pipeline = () => behavior.Handle(typedRequest, next, ct);
@@ -133,7 +136,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     // void commands, and notifications (sequential and parallel strategies).
     private static readonly ConcurrentDictionary<Type, object> QueryWrappers = new();
     private static readonly ConcurrentDictionary<Type, object> CommandWrappers = new();
-    private static readonly ConcurrentDictionary<Type, VoidHandlerWrapper> VoidCommandWrappers = new();
+    private static readonly ConcurrentDictionary<(Type CommandType, Type ResultType), object> VoidCommandWrappers = new();
     private static readonly ConcurrentDictionary<Type, NotificationHandlerWrapper> SequentialNotificationWrappers = new();
     private static readonly ConcurrentDictionary<Type, NotificationHandlerWrapper> ParallelNotificationWrappers = new();
 
@@ -170,13 +173,18 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     }
 
     /// <inheritdoc/>
-    public Task<Result> Send(ICommand command, CancellationToken ct = default)
+    public Task<TResult> Send<TResult>(ICommand command, CancellationToken ct = default)
+        where TResult : IResult
     {
-        var wrapper = VoidCommandWrappers.GetOrAdd(
-            command.GetType(),
-            requestType =>
-                (VoidHandlerWrapper)Activator.CreateInstance(typeof(VoidCommandHandlerWrapper<>).MakeGenericType(requestType))!
-        );
+        var wrapper =
+            (VoidHandlerWrapper<TResult>)
+                VoidCommandWrappers.GetOrAdd(
+                    (command.GetType(), typeof(TResult)),
+                    key =>
+                        Activator.CreateInstance(
+                            typeof(VoidCommandHandlerWrapper<,>).MakeGenericType(key.CommandType, key.ResultType)
+                        )!
+                );
 
         return wrapper.Handle(command, services, ct);
     }

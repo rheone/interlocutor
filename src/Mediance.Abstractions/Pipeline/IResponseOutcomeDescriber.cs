@@ -13,8 +13,10 @@ namespace Mediance.Abstractions.Pipeline;
 public interface IResponseOutcomeDescriber
 {
     /// <summary>Produces a short, human-readable label describing the response's outcome.</summary>
+    /// <returns></returns>
     string Describe(object? response);
 
     /// <summary>Determines whether the response represents a failure outcome.</summary>
+    /// <returns></returns>
     bool IsFailure(object? response);
 }

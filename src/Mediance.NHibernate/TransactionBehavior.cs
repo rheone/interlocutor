@@ -12,6 +12,7 @@ namespace Mediance.NHibernate;
 /// <typeparam name="TRequest">The request type that this behavior processes.</typeparam>
 /// <typeparam name="TResponse">The response type returned after pipeline execution.</typeparam>
 /// <param name="session">Lazy factory for the NHibernate <see cref="ISession"/> instance that provides the database transaction.</param>
+/// <param name="describer">Optional custom describer for converting response outcomes to human-readable strings for logging. Defaults to <see cref="DefaultResponseOutcomeDescriber.Instance"/>.</param>
 /// <remarks>
 /// <para>
 /// This behavior begins an <see cref="ITransaction"/> on the NHibernate <see cref="ISession"/> before invoking

@@ -12,8 +12,11 @@ public interface ICommand<TResponse>;
 /// <remarks>
 /// <para>
 /// Use the non-generic <see cref="ICommand"/> for fire-and-forget or side-effect-only
-/// operations. The handler returns a <c>Result</c> (success or failure) without carrying
-/// a payload.
+/// operations. The handler produces no data payload — only an outcome, expressed as any
+/// <c>Mediance.CommonKernel.IResult</c>-implementing union (<c>Result</c>,
+/// <c>Result&lt;TSuccess, TFailure&gt;</c>, etc.). The outcome type is chosen by the caller via
+/// <see cref="Core.ISender.Send{TResult}(ICommand, CancellationToken)"/>'s type argument, not
+/// declared on the command itself.
 /// </para>
 /// </remarks>
 public interface ICommand;

@@ -8,7 +8,7 @@ namespace Mediance.Abstractions.Pipeline;
 /// Default <see cref="IResponseOutcomeDescriber"/>. Unwraps compiler-generated unions via
 /// <see cref="IUnion"/>, special-cases the <c>Mediance.CommonKernel.ResultTypes</c> sibling case
 /// types (<see cref="NotFound"/>, <see cref="Forbidden"/>, <see cref="Conflict"/>,
-/// <see cref="ValidationFailed"/>, <see cref="ValidationFailure"/>, <see cref="Failure"/>), and
+/// <see cref="ValidationFailed"/>, <see cref="ValidationErrors"/>, <see cref="Failure"/>), and
 /// falls back to the runtime type name for anything else.
 /// </summary>
 public sealed class DefaultResponseOutcomeDescriber : IResponseOutcomeDescriber
@@ -21,7 +21,7 @@ public sealed class DefaultResponseOutcomeDescriber : IResponseOutcomeDescriber
         Unwrap(response) switch
         {
             null => "None",
-            ValidationFailure => "ValidationError",
+            ValidationErrors => "ValidationError",
             NotFound => "NotFound",
             Forbidden => "Forbidden",
             Conflict => "Conflict",
@@ -31,7 +31,7 @@ public sealed class DefaultResponseOutcomeDescriber : IResponseOutcomeDescriber
 
     /// <inheritdoc/>
     public bool IsFailure(object? response) =>
-        Unwrap(response) is ValidationFailure or ValidationFailure or NotFound or Forbidden or Conflict or Failure;
+        Unwrap(response) is ValidationErrors or ValidationErrors or NotFound or Forbidden or Conflict or Failure;
 
     private static object? Unwrap(object? response) => response is IUnion union ? union.Value : response;
 }
