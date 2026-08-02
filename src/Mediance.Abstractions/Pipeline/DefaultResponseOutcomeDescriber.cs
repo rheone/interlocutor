@@ -32,6 +32,8 @@ public sealed class DefaultResponseOutcomeDescriber : IResponseOutcomeDescriber
             Forbidden => "Forbidden",
             Conflict => "Conflict",
             Failure => "Failure",
+            // Fallback for unrecognized types (domain-specific result types, custom shapes, etc.).
+            // Use the runtime type name so logging/auditing still captures something meaningful.
             var value => value.GetType().Name,
         };
 
@@ -39,5 +41,8 @@ public sealed class DefaultResponseOutcomeDescriber : IResponseOutcomeDescriber
     public bool IsFailure(object? response) =>
         Unwrap(response) is ValidationErrors or NotFound or Forbidden or Conflict or Failure;
 
+    // Unwrap compiler-generated union types to access their underlying Value.
+    // This lets us introspect both union and non-union responses uniformly.
+    // Non-union types are returned as-is.
     private static object? Unwrap(object? response) => response is IUnion union ? union.Value : response;
 }

@@ -26,17 +26,21 @@ public class AuthorizationBehavior<TRequest, TSuccess>(IPolicyEvaluator policyEv
         CancellationToken ct
     )
     {
+        // If the request doesn't require authorization, skip this behavior entirely.
         if (request is not IRequiresPolicy requiresPolicy)
         {
             return await next();
         }
 
+        // Evaluate the authorization policy. If it fails, short-circuit immediately with Forbidden
+        // without invoking the handler or any downstream behaviors.
         var authorized = await policyEvaluator.EvaluateAsync(requiresPolicy.PolicyName, request, ct);
         if (!authorized)
         {
             return new Forbidden($"Policy '{requiresPolicy.PolicyName}' denied access to {typeof(TRequest).Name}");
         }
 
+        // Authorization passed — proceed to the handler.
         return await next();
     }
 }

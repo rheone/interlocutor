@@ -39,11 +39,14 @@ public static class MedianceServiceCollectionExtensions
     /// </remarks>
     public static IServiceCollection AddMediance(this IServiceCollection services, params Assembly[] assembliesToScan)
     {
+        // Scan assemblies for concrete, non-abstract types that might implement handler interfaces.
         var handlerTypes = assembliesToScan.SelectMany(a => a.GetTypes()).Where(t => t is { IsClass: true, IsAbstract: false });
 
         // Register each concrete handler against every matching Mediance handler interface.
         // The mediator resolves handlers by their closed generic contract at runtime, so each
-        // registration must map to the exact interface the mediator queries by closed type.
+        // registration must map to the exact interface (with specific type parameters) the mediator queries.
+        // For example, if MyQueryHandler implements IQueryHandler<GetUserQuery, UserDto>, we register
+        // exactly that generic form, not just the open generic.
         foreach (var type in handlerTypes)
         {
             foreach (var iface in type.GetInterfaces())
@@ -64,6 +67,9 @@ public static class MedianceServiceCollectionExtensions
             }
         }
 
+        // Register the mediator as the implementation for all three interfaces. ISender and IPublisher
+        // are factory-registered to return the same IMediator instance, allowing callers to inject
+        // any of the three interfaces and always get the same mediator.
         services.AddScoped<IMediator, Mediator>();
         services.AddScoped<ISender>(sp => sp.GetRequiredService<IMediator>());
         services.AddScoped<IPublisher>(sp => sp.GetRequiredService<IMediator>());

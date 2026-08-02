@@ -16,6 +16,11 @@ internal sealed class ParallelNotificationHandlerWrapper<TNotification> : Notifi
     {
         var typedNotification = (TNotification)notification;
         var handlers = services.GetServices<INotificationHandler<TNotification>>();
+
+        // Launch all handlers concurrently via Task.WhenAll. This maximizes throughput when handlers are
+        // independent. If any handler throws, all tasks are awaited and exceptions are aggregated into
+        // an AggregateException (all-or-nothing failure semantics). Use this for performance-critical
+        // notifications where order doesn't matter.
         var tasks = handlers.Select(h => h.Handle(typedNotification, ct));
         return Task.WhenAll(tasks);
     }

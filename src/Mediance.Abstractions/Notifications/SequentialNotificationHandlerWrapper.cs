@@ -17,6 +17,9 @@ internal sealed class SequentialNotificationHandlerWrapper<TNotification> : Noti
         var typedNotification = (TNotification)notification;
         var handlers = services.GetServices<INotificationHandler<TNotification>>();
 
+        // Execute handlers sequentially in registration order. If a handler throws, the exception propagates
+        // immediately and subsequent handlers are not invoked. This is useful when handler ordering matters
+        // or when one handler's failure should prevent dependent handlers from running.
         foreach (var handler in handlers)
         {
             await handler.Handle(typedNotification, ct);

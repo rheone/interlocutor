@@ -15,6 +15,8 @@ public class LoggingBehavior<TRequest, TResponse>(
 
     public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
+        // Capture the start time using Stopwatch for high-resolution timing. This is more accurate than
+        // DateTime.UtcNow for elapsed time calculations.
         var start = Stopwatch.GetTimestamp();
         var requestType = typeof(TRequest).Name;
 
@@ -25,6 +27,8 @@ public class LoggingBehavior<TRequest, TResponse>(
         }
         catch (Exception ex)
         {
+            // Handler threw an exception (bug or infrastructure failure, not an expected business outcome).
+            // Log it as an error with timing so operators know something went wrong.
             var elapsed = Stopwatch.GetElapsedTime(start);
             logger.LogError(
                 ex,
@@ -35,6 +39,8 @@ public class LoggingBehavior<TRequest, TResponse>(
             throw;
         }
 
+        // Handler completed (with or without a business failure outcome). Log the outcome and elapsed time
+        // for monitoring and debugging. The describer converts the response to a human-readable label.
         var elapsedMs = Stopwatch.GetElapsedTime(start).TotalMilliseconds;
         var outcome = this.describer.Describe(result);
 

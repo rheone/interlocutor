@@ -23,8 +23,12 @@ internal sealed class VoidCommandHandlerWrapper<TCommand, TResult> : VoidHandler
         var typedRequest = (TCommand)request;
         var handler = services.GetRequiredService<IVoidCommandHandler<TCommand, TResult>>();
 
+        // Start with the innermost pipeline delegate pointing to the handler itself.
         Func<Task<TResult>> pipeline = () => handler.Handle(typedRequest, ct);
 
+        // Wrap the handler with each behavior in reverse registration order so the first-registered behavior
+        // runs first (inbound) and last (outbound), creating an onion-like structure. Each behavior wraps
+        // the previous pipeline, capturing it in a closure.
         foreach (var behavior in services.GetServices<IPipelineBehavior<TCommand, TResult>>().Reverse())
         {
             var next = pipeline;

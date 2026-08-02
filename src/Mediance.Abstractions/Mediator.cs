@@ -38,6 +38,8 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     /// <inheritdoc/>
     public Task<TResponse> Send<TResponse>(IQuery<TResponse> query, CancellationToken ct = default)
     {
+        // Look up or create the handler wrapper for this query type. The wrapper composes the pipeline
+        // behavior chain at invocation time. Caching by query type avoids expensive reflection for every dispatch.
         var wrapper =
             (HandlerWrapper<TResponse>)
                 QueryWrappers.GetOrAdd(
@@ -54,6 +56,8 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     /// <inheritdoc/>
     public Task<TResponse> Send<TResponse>(ICommand<TResponse> command, CancellationToken ct = default)
     {
+        // Look up or create the handler wrapper for this command type. The wrapper composes the pipeline
+        // behavior chain at invocation time. Caching by command type avoids expensive reflection for every dispatch.
         var wrapper =
             (HandlerWrapper<TResponse>)
                 CommandWrappers.GetOrAdd(
@@ -71,6 +75,9 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     public Task<TResult> Send<TResult>(ICommand command, CancellationToken ct = default)
         where TResult : IOperationOutcome
     {
+        // For void commands, cache by both command type and result type because the same command can be
+        // handled with different outcome shapes depending on what the caller needs (e.g., caller may want
+        // just Success/Failure, or may need additional cases like NotFound).
         var wrapper =
             (VoidHandlerWrapper<TResult>)
                 VoidCommandWrappers.GetOrAdd(
@@ -111,8 +118,8 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     private Task PublishAsync<TNotification>(TNotification notification, PublishStrategy strategy, CancellationToken ct)
         where TNotification : INotification
     {
-        // Select the wrapper cache based on strategy. Falls back to sequential
-        // caching for unrecognized strategies rather than throwing.
+        // Select the appropriate wrapper cache based on the publish strategy. Each strategy (sequential vs parallel)
+        // has its own cache to avoid mixing handler execution modes. Falls back to sequential for unrecognized strategies.
         var cache = strategy switch
         {
             PublishStrategy.Sequential => SequentialNotificationWrappers,
@@ -120,6 +127,8 @@ public sealed class Mediator(IServiceProvider services) : IMediator
             _ => SequentialNotificationWrappers,
         };
 
+        // Get or create a notification wrapper (sequential or parallel) for this notification type.
+        // The wrapper resolves all handlers from DI and orchestrates their execution according to the strategy.
         var wrapper = cache.GetOrAdd(
             notification.GetType(),
             notificationType =>

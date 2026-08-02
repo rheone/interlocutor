@@ -21,8 +21,12 @@ internal sealed class QueryHandlerWrapper<TQuery, TResponse> : HandlerWrapper<TR
         var typedRequest = (TQuery)request;
         var handler = services.GetRequiredService<IQueryHandler<TQuery, TResponse>>();
 
+        // Start with the innermost pipeline delegate pointing to the handler itself.
         var pipeline = () => handler.Handle(typedRequest, ct);
 
+        // Wrap the handler with each behavior in reverse registration order so the first-registered behavior
+        // runs first (inbound) and last (outbound), creating an onion-like structure. Each behavior wraps
+        // the previous pipeline, capturing it in a closure.
         foreach (var behavior in services.GetServices<IPipelineBehavior<TQuery, TResponse>>().Reverse())
         {
             var next = pipeline;

@@ -44,6 +44,7 @@ public static class MedianceAutofacExtensions
     /// </remarks>
     public static ContainerBuilder AddMediance(this ContainerBuilder builder, params Assembly[] assembliesToScan)
     {
+        // Scan assemblies for concrete, non-abstract types that might implement handler interfaces.
         var handlerTypes = assembliesToScan
             .SelectMany(a => a.GetTypes())
             .Where(t => t is { IsClass: true, IsAbstract: false })
@@ -51,7 +52,8 @@ public static class MedianceAutofacExtensions
 
         // Register each concrete handler against every matching Mediance handler interface.
         // The mediator resolves handlers by their closed generic contract at runtime, so each
-        // registration must map to the exact interface the mediator queries by closed type.
+        // registration must map to the exact interface (with specific type parameters) the mediator queries.
+        // InstancePerLifetimeScope is the Autofac equivalent of Microsoft DI's Scoped.
         foreach (var type in handlerTypes)
         {
             foreach (var iface in type.GetInterfaces())
@@ -72,15 +74,17 @@ public static class MedianceAutofacExtensions
             }
         }
 
-        // Bridge Autofac's lifetime scope to IServiceProvider so that Mediance's internal
-        // mediator can resolve handlers through the standard DI abstraction.
+        // Bridge Autofac's lifetime scope to IServiceProvider. The Mediator uses IServiceProvider to resolve
+        // handlers, so we need to adapt Autofac's ILifetimeScope to the standard IServiceProvider abstraction.
+        // ExternallyOwned() tells Autofac not to manage the provider's lifetime since it's used transitively.
         builder
             .Register(c => new AutofacServiceProvider(c.Resolve<ILifetimeScope>()))
             .As<IServiceProvider>()
             .ExternallyOwned();
 
-        // Register the mediator in all three roles so callers can inject IMediator,
-        // ISender, or IPublisher interchangeably and receive the same instance.
+        // Register the Mediator as the implementation for all three interfaces (IMediator, ISender, IPublisher).
+        // All three references resolve to the same instance, allowing callers to inject any of them and get
+        // consistent behavior.
         builder.RegisterType<Mediator>().As<IMediator>().As<ISender>().As<IPublisher>().InstancePerLifetimeScope();
 
         return builder;

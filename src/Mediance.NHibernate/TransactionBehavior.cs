@@ -64,12 +64,15 @@ public class TransactionBehavior<TRequest, TResponse>(Lazy<ISession> session, IR
 
         if (!this._describer.IsFailure(result))
         {
-            // Handler succeeded — commit flushes pending changes and completes the transaction.
+            // Handler succeeded. CommitAsync flushes all pending entity changes tracked by the session to the database
+            // and then commits the transaction, making all changes durable and atomic. Unlike EF Core, NHibernate
+            // doesn't require an explicit SaveChanges call — flushing happens automatically on commit.
             await transaction.CommitAsync(ct);
         }
         else
         {
-            // Handler returned a failure result — discard any unflushed changes.
+            // Handler returned a failure result (not an exception). This is an expected business outcome, not a bug,
+            // so rollback any unflushed changes to keep the database consistent with the business decision.
             await transaction.RollbackAsync(ct);
         }
 

@@ -70,22 +70,27 @@ public class TransactionBehavior<TRequest, TResponse, TContext>(Lazy<TContext> d
         {
             try
             {
-                // Persist all tracked entity changes accumulated during handler execution.
+                // Persist all tracked entity changes accumulated during handler execution. In EF Core,
+                // entities are tracked by the DbContext but not written to the database until SaveChangesAsync
+                // is called, which must happen while the transaction is still open.
                 await context.SaveChangesAsync(ct);
             }
             catch
             {
-                // Persistence failed — discard any partial changes by rolling back the transaction.
+                // SaveChangesAsync threw, meaning the database operation failed or validation failed.
+                // Rollback discards any partial changes and closes the transaction in a failed state.
                 await transaction.RollbackAsync(ct);
                 throw;
             }
 
-            // All changes persisted successfully; commit the database transaction.
+            // All changes persisted successfully. Committing the transaction makes all the SaveChangesAsync
+            // changes durable and atomic.
             await transaction.CommitAsync(ct);
         }
         else
         {
-            // Handler returned a failure result — discard any accumulated changes.
+            // Handler returned a failure result (not an exception). This is an expected business outcome, not a bug,
+            // so rollback any accumulated changes to keep the database consistent with the business decision.
             await transaction.RollbackAsync(ct);
         }
 

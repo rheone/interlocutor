@@ -28,12 +28,13 @@ public static class MedianceStartupValidation
         var sp = scope.ServiceProvider;
         var missing = new List<string>();
 
+        // Scan for query and command types (those implementing IQuery<T> or ICommand<T>).
         var requestTypes = assembliesToScan.SelectMany(a => a.GetTypes()).Where(t => t is { IsClass: true, IsAbstract: false });
 
         foreach (var requestType in requestTypes)
         {
-            // Resolve IQuery<T> and ICommand<T> interfaces to their corresponding
-            // handler types and verify each handler is registered.
+            // For each query/command type, derive the expected handler interface and verify it's registered.
+            // For example, if MyQuery implements IQuery<UserDto>, we look for a registered IQueryHandler<MyQuery, UserDto>.
             foreach (var iface in requestType.GetInterfaces().Where(i => i.IsGenericType))
             {
                 var handlerType = iface.GetGenericTypeDefinition() switch
@@ -49,6 +50,7 @@ public static class MedianceStartupValidation
                     _ => null,
                 };
 
+                // Try to resolve the handler from the service provider. If it's not registered, track the missing registration.
                 if (handlerType is not null && sp.GetService(handlerType) is null)
                 {
                     missing.Add($"{requestType.Name} implements {iface.Name} but no {handlerType.Name} is registered.");
@@ -56,6 +58,8 @@ public static class MedianceStartupValidation
             }
         }
 
+        // If any handlers are missing, throw with a detailed list so the developer can fix registrations immediately,
+        // rather than discovering missing handlers at runtime when a request tries to execute.
         if (missing.Count > 0)
         {
             throw new InvalidOperationException(
