@@ -27,6 +27,15 @@ Glossary of domain vocabulary used throughout the Mediance project. Use these te
 | **Forbidden** | Authorization denied for a specific resource. Produced by `ResourceCommandHandler.Authorize()` or `AuthorizationBehavior`. Maps to HTTP 403 Forbidden (empty body — reason is logged server-side only). |
 | **Conflict** | State conflict: concurrency, uniqueness violation, or invalid transition. Produced by handler code. Maps to HTTP 409 Conflict with `ProblemDetails`. |
 
+## Result Type Aggregates
+
+| Term | Definition |
+|------|------------|
+| **ValidationErrors** | Immutable collection of one or more `ValidationError` instances. De-duplicates preserving first-occurrence order. Safe at default value (returns empty collection). Exposes unified accessor `.Items` (primary), with semantic projections `.Errors` and `.Messages`. |
+| **ValidationErrors\&lt;TErrorCode\&gt;** | Immutable collection of one or more `ValidationError<TErrorCode>` instances with associated error codes. De-duplicates preserving first-occurrence order. Safe at default value. Exposes unified accessor `.Items` (primary), with semantic projections `.Errors`, `.Messages`, and `.ErrorCodes`. |
+| **Failures** | Immutable collection of one or more `Failure` instances. De-duplicates preserving first-occurrence order. Safe at default value. Exposes unified accessor `.Items` (primary), with semantic projection `.Values` (legacy name). |
+| **Conflicts** | Immutable collection of one or more `Conflict` instances (state conflicts, concurrency, uniqueness violations). De-duplicates preserving first-occurrence order. Safe at default value. Exposes unified accessor `.Items` (primary), with semantic projection `.Messages`. |
+
 ## CQRS
 
 | Term | Definition |

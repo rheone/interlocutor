@@ -69,20 +69,51 @@ public readonly record struct ValidationErrors
     /// <summary>
     /// Gets the number of distinct validation error messages.
     /// </summary>
-    /// <value>The count of distinct validation error messages.</value>
-    public int Count => this._errors.Length;
+    /// <value>The count of distinct validation error messages, or zero if this instance is the default value.</value>
+    /// <remarks>
+    /// The default value of <see cref="ValidationErrors"/> (zero-initialized) is inert and reports a count of zero,
+    /// rather than throwing. This permits the pipeline to pass a default response value when a handler has not yet
+    /// produced one. Explicitly constructing this type with an empty sequence still throws.
+    /// </remarks>
+    public int Count => this._errors.IsDefault ? 0 : this._errors.Length;
 
     /// <summary>
     /// Gets the distinct set of validation errors, in the order they were first encountered.
     /// </summary>
-    /// <value>An unmodifiable collection of the distinct <see cref="ValidationError"/> values provided at creation.</value>
-    public IReadOnlyList<ValidationError> Errors => this._errors;
+    /// <value>
+    /// An unmodifiable collection of the distinct <see cref="ValidationError"/> values provided at creation,
+    /// or an empty collection if this instance is the default value.
+    /// </value>
+    /// <remarks>
+    /// The default value of <see cref="ValidationErrors"/> (zero-initialized) is inert and returns an empty collection,
+    /// rather than throwing. This permits the pipeline to pass a default response value when a handler has not yet
+    /// produced one. Explicitly constructing this type with an empty sequence still throws.
+    /// </remarks>
+    public IReadOnlyList<ValidationError> Items => this._errors.IsDefault ? [] : this._errors;
+
+    /// <summary>
+    /// Gets the distinct set of validation errors, in the order they were first encountered.
+    /// Semantic projection of <see cref="Items"/>.
+    /// </summary>
+    /// <value>
+    /// An unmodifiable collection of the distinct <see cref="ValidationError"/> values provided at creation,
+    /// or an empty collection if this instance is the default value.
+    /// </value>
+    public IReadOnlyList<ValidationError> Errors => this.Items;
 
     /// <summary>
     /// Gets the distinct set of validation error messages, in the order they were first encountered.
     /// </summary>
-    /// <value>An unmodifiable collection of the distinct messages found in <see cref="Errors"/>.</value>
-    public IReadOnlyList<string> Messages => [.. this._errors.Select(e => e.Message).Distinct()];
+    /// <value>
+    /// An unmodifiable collection of the distinct messages found in <see cref="Items"/>, or an empty collection
+    /// if this instance is the default value.
+    /// </value>
+    /// <remarks>
+    /// The default value of <see cref="ValidationErrors"/> (zero-initialized) is inert and returns an empty collection,
+    /// rather than throwing. This permits the pipeline to pass a default response value when a handler has not yet
+    /// produced one. Explicitly constructing this type with an empty sequence still throws.
+    /// </remarks>
+    public IReadOnlyList<string> Messages => this._errors.IsDefault ? [] : [.. this._errors.Select(e => e.Message).Distinct()];
 }
 
 /// <summary>
@@ -160,39 +191,89 @@ public readonly record struct ValidationErrors<TErrorCode>
     /// <summary>
     /// Gets the number of distinct validation errors (unique message and error code pairs).
     /// </summary>
-    /// <value>The count of distinct <see cref="ValidationError{TErrorCode}"/> values.</value>
-    public int Count => this._errors.Length;
+    /// <value>The count of distinct <see cref="ValidationError{TErrorCode}"/> values, or zero if this instance is the default value.</value>
+    /// <remarks>
+    /// The default value of <see cref="ValidationErrors{TErrorCode}"/> (zero-initialized) is inert and reports counts of zero,
+    /// rather than throwing. This permits the pipeline to pass a default response value when a handler has not yet
+    /// produced one. Explicitly constructing this type with an empty sequence still throws.
+    /// </remarks>
+    public int Count => this._errors.IsDefault ? 0 : this._errors.Length;
 
     /// <summary>
     /// Gets the number of distinct validation error messages, irrespective of error code.
     /// </summary>
-    /// <value>The count of distinct values in <see cref="Messages"/>.</value>
-    public int UniqueErrorCount => this._uniqueMessages.Length;
+    /// <value>The count of distinct values in <see cref="Messages"/>, or zero if this instance is the default value.</value>
+    /// <remarks>
+    /// The default value of <see cref="ValidationErrors{TErrorCode}"/> (zero-initialized) is inert and reports counts of zero,
+    /// rather than throwing. This permits the pipeline to pass a default response value when a handler has not yet
+    /// produced one. Explicitly constructing this type with an empty sequence still throws.
+    /// </remarks>
+    public int UniqueErrorCount => this._uniqueMessages.IsDefault ? 0 : this._uniqueMessages.Length;
 
     /// <summary>
     /// Gets the number of distinct error codes present in the original validation errors.
     /// </summary>
-    /// <value>The count of distinct values in <see cref="ErrorCodes"/>.</value>
-    public int UniqueErrorCodeCount => this._uniqueErrorCodes.Length;
+    /// <value>The count of distinct values in <see cref="ErrorCodes"/>, or zero if this instance is the default value.</value>
+    /// <remarks>
+    /// The default value of <see cref="ValidationErrors{TErrorCode}"/> (zero-initialized) is inert and reports counts of zero,
+    /// rather than throwing. This permits the pipeline to pass a default response value when a handler has not yet
+    /// produced one. Explicitly constructing this type with an empty sequence still throws.
+    /// </remarks>
+    public int UniqueErrorCodeCount => this._uniqueErrorCodes.IsDefault ? 0 : this._uniqueErrorCodes.Length;
 
     /// <summary>
     /// Gets the distinct set of validation errors, each with its message and error code, in the order
     /// they were first encountered.
     /// </summary>
-    /// <value>An unmodifiable collection of the distinct <see cref="ValidationError{TErrorCode}"/> values provided at creation.</value>
-    public IReadOnlyList<ValidationError<TErrorCode>> Errors => this._errors;
+    /// <value>
+    /// An unmodifiable collection of the distinct <see cref="ValidationError{TErrorCode}"/> values provided at creation,
+    /// or an empty collection if this instance is the default value.
+    /// </value>
+    /// <remarks>
+    /// The default value of <see cref="ValidationErrors{TErrorCode}"/> (zero-initialized) is inert and returns empty collections,
+    /// rather than throwing. This permits the pipeline to pass a default response value when a handler has not yet
+    /// produced one. Explicitly constructing this type with an empty sequence still throws.
+    /// </remarks>
+    public IReadOnlyList<ValidationError<TErrorCode>> Items => this._errors.IsDefault ? [] : this._errors;
+
+    /// <summary>
+    /// Gets the distinct set of validation errors, each with its message and error code, in the order
+    /// they were first encountered.
+    /// Semantic projection of <see cref="Items"/>.
+    /// </summary>
+    /// <value>
+    /// An unmodifiable collection of the distinct <see cref="ValidationError{TErrorCode}"/> values provided at creation,
+    /// or an empty collection if this instance is the default value.
+    /// </value>
+    public IReadOnlyList<ValidationError<TErrorCode>> Errors => this.Items;
 
     /// <summary>
     /// Gets the distinct set of validation error messages, without their error codes, in the order
     /// they were first encountered.
     /// </summary>
-    /// <value>An unmodifiable collection of the distinct messages found in <see cref="Errors"/>.</value>
-    public IReadOnlyList<string> Messages => this._uniqueMessages;
+    /// <value>
+    /// An unmodifiable collection of the distinct messages found in <see cref="Items"/>, or an empty collection
+    /// if this instance is the default value.
+    /// </value>
+    /// <remarks>
+    /// The default value of <see cref="ValidationErrors{TErrorCode}"/> (zero-initialized) is inert and returns empty collections,
+    /// rather than throwing. This permits the pipeline to pass a default response value when a handler has not yet
+    /// produced one. Explicitly constructing this type with an empty sequence still throws.
+    /// </remarks>
+    public IReadOnlyList<string> Messages => this._uniqueMessages.IsDefault ? [] : this._uniqueMessages;
 
     /// <summary>
     /// Gets the distinct set of error codes present in the original validation errors, in the order
     /// they were first encountered.
     /// </summary>
-    /// <value>An unmodifiable collection of the distinct error codes found in <see cref="Errors"/>.</value>
-    public IReadOnlyList<TErrorCode> ErrorCodes => this._uniqueErrorCodes;
+    /// <value>
+    /// An unmodifiable collection of the distinct error codes found in <see cref="Items"/>, or an empty collection
+    /// if this instance is the default value.
+    /// </value>
+    /// <remarks>
+    /// The default value of <see cref="ValidationErrors{TErrorCode}"/> (zero-initialized) is inert and returns empty collections,
+    /// rather than throwing. This permits the pipeline to pass a default response value when a handler has not yet
+    /// produced one. Explicitly constructing this type with an empty sequence still throws.
+    /// </remarks>
+    public IReadOnlyList<TErrorCode> ErrorCodes => this._uniqueErrorCodes.IsDefault ? [] : this._uniqueErrorCodes;
 }

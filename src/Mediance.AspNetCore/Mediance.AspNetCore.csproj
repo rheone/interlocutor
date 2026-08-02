@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Mediance.CommonKernel\Mediance.CommonKernel.csproj" />
+    <ProjectReference Include="..\Mediance.Abstractions\Mediance.Abstractions.csproj" />
   </ItemGroup>
 
   <ItemGroup>

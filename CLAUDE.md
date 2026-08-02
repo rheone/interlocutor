@@ -25,7 +25,7 @@ No solution-level build/test scripts exist beyond the `dotnet` CLI — there's n
 
 - `Mediance.CommonKernel` — zero-dependency result types (`OperationOutcome<...>` unions, `Failure`/`NotFound`/`Forbidden`/`Conflict`/`ValidationFailed`/`Success`, `PagedResult<T>`). Must never depend on any other Mediance package.
 - `Mediance.Abstractions` — mediator core (`IMediator`/`ISender`/`IPublisher`), handler contracts (`IQueryHandler`, `ICommandHandler`, `ResourceCommandHandler`), pipeline behaviors (`LoggingBehavior`, `AuthorizationBehavior`, `AuditingBehavior`, `PipelineStageBehavior`), marker interfaces (`ITransactionalRequest`, `IAuditableRequest`, `IRequiresPolicy`, `IExternalStoreRequest`). Depends only on CommonKernel + framework DI/Logging abstractions — must never depend on AspNetCore or the store-specific packages.
-- `Mediance.AspNetCore` — `ToActionResult()` HTTP mapping. Must never depend on Abstractions or the behavior packages.
+- `Mediance.AspNetCore` — HTTP mapping (`ToActionResult()`), web-framework integrations for Abstractions interfaces (e.g., `AspNetCoreRequestContextAccessor`). Depends on CommonKernel and Abstractions, but never on store-specific or validation packages.
 - `Mediance.DependencyInjection.Microsoft` / `.Autofac` — assembly-scanning `AddMediance()` registration per container.
 - `Mediance.EntityFrameworkCore` / `Mediance.NHibernate` — store-specific `TransactionBehavior`; each must depend on Abstractions.
 - `Mediance.FluentValidation` — `ValidationBehavior` / `BulkItemValidationBehavior` (currently mid-migration — see commented-out assertion in `DependencyTests.cs`).

@@ -52,12 +52,35 @@ public readonly record struct Failures
     /// <summary>
     /// Gets the number of distinct failures.
     /// </summary>
-    /// <value>The count of distinct failures.</value>
-    public int Count => this._failures.Length;
+    /// <value>The count of distinct failures, or zero if this instance is the default value.</value>
+    /// <remarks>
+    /// The default value of <see cref="Failures"/> (zero-initialized) is inert and reports a count of zero,
+    /// rather than throwing. This permits the pipeline to pass a default response value when a handler has not yet
+    /// produced one. Explicitly constructing this type with an empty sequence still throws.
+    /// </remarks>
+    public int Count => this._failures.IsDefault ? 0 : this._failures.Length;
 
     /// <summary>
     /// Gets the distinct set of failures, in the order they were first encountered.
     /// </summary>
-    /// <value>An unmodifiable collection of the distinct <see cref="Failure"/> values provided at creation.</value>
-    public IReadOnlyList<Failure> Values => this._failures;
+    /// <value>
+    /// An unmodifiable collection of the distinct <see cref="Failure"/> values provided at creation,
+    /// or an empty collection if this instance is the default value.
+    /// </value>
+    /// <remarks>
+    /// The default value of <see cref="Failures"/> (zero-initialized) is inert and returns an empty collection,
+    /// rather than throwing. This permits the pipeline to pass a default response value when a handler has not yet
+    /// produced one. Explicitly constructing this type with an empty sequence still throws.
+    /// </remarks>
+    public IReadOnlyList<Failure> Items => this._failures.IsDefault ? [] : this._failures;
+
+    /// <summary>
+    /// Gets the distinct set of failures, in the order they were first encountered.
+    /// Semantic projection of <see cref="Items"/>.
+    /// </summary>
+    /// <value>
+    /// An unmodifiable collection of the distinct <see cref="Failure"/> values provided at creation,
+    /// or an empty collection if this instance is the default value.
+    /// </value>
+    public IReadOnlyList<Failure> Values => this.Items;
 }

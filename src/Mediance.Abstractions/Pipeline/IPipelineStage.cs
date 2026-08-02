@@ -23,10 +23,10 @@ public interface IPipelineStage<TRequest, TResponse>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     Task OnBeforeAsync(TRequest request, CancellationToken ct);
 
-    /// <summary>Invoked after the request has been handled and the result is available.</summary>
+    /// <summary>Invoked after the request has been handled and the result is available, or after the handler threw an exception.</summary>
     /// <param name="request">The request that was processed.</param>
-    /// <param name="result">The result from handling the request. Null if the handler threw.</param>
+    /// <param name="result">The result from handling the request. If the handler or a prior stage threw an exception, this value is zero-initialized (not null).</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    Task OnAfterAsync(TRequest request, TResponse? result, CancellationToken ct);
+    Task OnAfterAsync(TRequest request, TResponse result, CancellationToken ct);
 }

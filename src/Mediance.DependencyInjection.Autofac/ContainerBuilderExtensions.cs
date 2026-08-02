@@ -7,6 +7,7 @@ using Mediance.Abstractions;
 using Mediance.Abstractions.Commands;
 using Mediance.Abstractions.Core;
 using Mediance.Abstractions.Notifications;
+using Mediance.Abstractions.Pipeline;
 using Mediance.Abstractions.Queries;
 
 /// <summary>
@@ -106,4 +107,104 @@ public static class MedianceAutofacExtensions
     /// <returns>The same <see cref="ContainerBuilder"/> instance for chaining.</returns>
     public static ContainerBuilder AddMedianceFromEntryAssembly(this ContainerBuilder builder) =>
         builder.AddMediance(Assembly.GetEntryAssembly()!);
+
+    /// <summary>
+    /// Configures Mediance with full pipeline behavior support via <see cref="MedianceOptions"/>.
+    /// </summary>
+    /// <param name="builder">The Autofac <see cref="ContainerBuilder"/> to register services into.</param>
+    /// <param name="options">Configuration options for behavior registration and assembly scanning.</param>
+    /// <returns>The same <see cref="ContainerBuilder"/> instance for chaining.</returns>
+    /// <remarks>
+    /// <para>
+    /// This overload registers handlers, the mediator, and the complete pipeline behavior chain
+    /// in the canonical documented order: Logging → Auditing → Authorization → Validation → Transaction.
+    /// It also registers the <see cref="IResponseOutcomeDescriber"/> for behavior introspection.
+    /// </para>
+    /// <para>
+    /// It automatically registers default implementations for behaviors' dependencies:
+    /// <see cref="LoggingAuditSink"/> for <see cref="IAuditSink"/>,
+    /// <see cref="DefaultPolicyEvaluator"/> for <see cref="IPolicyEvaluator"/>,
+    /// and <see cref="AmbientRequestContextAccessor"/> for <see cref="IRequestContextAccessor"/>.
+    /// </para>
+    /// <para>
+    /// If <see cref="MedianceOptions.EnableDefaultBehaviors"/> is true, the canonical behavior
+    /// chain is registered. If the required packages are not loaded, behavior registration is skipped
+    /// with a graceful fallback.
+    /// </para>
+    /// </remarks>
+    public static ContainerBuilder AddMediance(this ContainerBuilder builder, MedianceOptions options)
+    {
+        // Apply assembly filter if provided
+        var assembliesToScan = options.AssemblyFilter != null
+            ? options.AssembliesToScan.Where(options.AssemblyFilter).ToArray()
+            : options.AssembliesToScan;
+
+        // Register handlers first using the base method
+        builder.AddMediance(assembliesToScan);
+
+        // Register outcome describer (always)
+        builder.Register(c => (IResponseOutcomeDescriber)Activator.CreateInstance(options.ResponseOutcomeDescriberType)!)
+            .As<IResponseOutcomeDescriber>()
+            .SingleInstance();
+
+        // Register default implementations for pipeline dependencies (always)
+        builder.RegisterType<LoggingAuditSink>().As<IAuditSink>().InstancePerLifetimeScope();
+        builder.RegisterType<DefaultPolicyEvaluator>().As<IPolicyEvaluator>().InstancePerLifetimeScope();
+        builder.RegisterType<AmbientRequestContextAccessor>().As<IRequestContextAccessor>().InstancePerLifetimeScope();
+
+        // Register default behavior chain if enabled
+        if (options.EnableDefaultBehaviors)
+        {
+            RegisterDefaultBehaviors(builder, assembliesToScan);
+        }
+
+        return builder;
+    }
+
+    /// <summary>
+    /// Registers the canonical pipeline behavior chain in documented order.
+    /// </summary>
+    private static void RegisterDefaultBehaviors(ContainerBuilder builder, Assembly[] assembliesToScan)
+    {
+        // Try to load and register each behavior. If a type doesn't exist in loaded assemblies,
+        // that's ok — the consumer just won't have that behavior (e.g., if FluentValidation isn't referenced).
+
+        var behaviorTypes = new (Type BehaviorType, Assembly? SourceAssembly)[]
+        {
+            // Logging outermost
+            (typeof(LoggingBehavior<,>), typeof(LoggingBehavior<,>).Assembly),
+            // Auditing after logging
+            (typeof(AuditingBehavior<,>), typeof(AuditingBehavior<,>).Assembly),
+            // Authorization before validation
+            (typeof(AuthorizationBehavior<,>), typeof(AuthorizationBehavior<,>).Assembly),
+            // Validation before transaction
+            (TryGetType("Mediance.FluentValidation.ValidationBehavior`2"), null),
+            // Transaction innermost
+            (TryGetType("Mediance.EntityFrameworkCore.TransactionBehavior`3")
+                ?? TryGetType("Mediance.NHibernate.TransactionBehavior`3"), null),
+        };
+
+        foreach (var (behaviorType, _) in behaviorTypes)
+        {
+            if (behaviorType != null)
+            {
+                builder.RegisterGeneric(behaviorType).As(typeof(IPipelineBehavior<,>)).InstancePerLifetimeScope();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Attempts to resolve a behavior type by name, returning null if not found.
+    /// </summary>
+    private static Type? TryGetType(string typeName)
+    {
+        try
+        {
+            return Type.GetType(typeName, throwOnError: false);
+        }
+        catch
+        {
+            return null;
+        }
+    }
 }

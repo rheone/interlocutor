@@ -3,11 +3,6 @@ namespace Mediance.CommonKernel;
 using Mediance.CommonKernel.ResultTypes;
 
 /// <summary>
-/// Marks a type as a result union representing an operation's outcome.
-/// </summary>
-public interface IOperationOutcome;
-
-/// <summary>
 /// Represents the outcome of a void operation as one of two possible cases: success with no payload, or failure.
 /// </summary>
 /// <remarks>
@@ -229,44 +224,3 @@ public readonly union OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, T
         _ => null
     };
 }
-
-
-///// <summary>
-///// Represents the result of an operation that produces a value of type <typeparamref name="TResult"/>.
-///// </summary>
-///// <typeparam name="TResult">The type of the success value.</typeparam>
-//public readonly union OperationOutcome<TResult>(TResult, Failure);
-
-///// <summary>
-///// Represents the result of a void operation that produces no return value.
-///// </summary>
-//public readonly union OperationOutcome(Success, Failure);
-
-///// <summary>
-///// Represents a paginated subset of results from a query.
-///// </summary>
-///// <typeparam name="T">The type of items on the page.</typeparam>
-///// <param name="Items">The items on the current page.</param>
-///// <param name="Page">The one-based page index.</param>
-///// <param name="PageSize">The maximum number of items per page.</param>
-///// <param name="TotalCount">The total number of items matching the query across all pages.</param>
-//public sealed record PagedResult<T>(IReadOnlyList<T> Items, int Page, int PageSize, long TotalCount)
-//{
-//    /// <summary>
-//    /// Gets the total number of pages.
-//    /// </summary>
-//    /// <value>
-//    /// The total number of pages.
-//    /// </value>
-//    public int TotalPages => this.PageSize <= 0 ? 0 : (int)Math.Ceiling(this.TotalCount / (double)this.PageSize); // Guards against DivideByZeroException when pageSize is 0 and treats invalid values as empty.
-
-
-//    /// <summary>
-//    /// Gets a value indicating whether a subsequent page of results exists.
-//    /// </summary>
-//    /// <value>
-//    /// A value indicating whether a subsequent page of results exists.
-//    /// </value>
-//    public bool HasNextPage => (long)this.Page * this.PageSize < this.TotalCount;     // The explicit cast to long prevents overflow from the multiplication of two int values.
-
-// }

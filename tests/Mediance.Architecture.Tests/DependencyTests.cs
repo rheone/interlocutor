@@ -46,13 +46,12 @@ public class DependencyTests
     }
 
     [Fact]
-    public void AspNetCore_ShouldNotDependOnAbstractionsOrBehaviors()
+    public void AspNetCore_ShouldNotDependOnStoreOrValidationPackages()
     {
         var result = Types
             .InAssembly(typeof(Mediance.AspNetCore.ResultExtensions).Assembly)
             .ShouldNot()
             .HaveDependencyOnAny([
-                "Mediance.Abstractions",
                 "Mediance.EntityFrameworkCore",
                 "Mediance.FluentValidation",
                 "Mediance.NHibernate",
