@@ -30,14 +30,13 @@ public class AuditingBehaviorTests
 
         // Assert
         Assert.Equal("success", result);
-        await sink.Received(1).RecordAsync(
-            Arg.Is<AuditEntry>(e =>
-                e.ActionName == "Query.Read" &&
-                e.RequestType == typeof(AuditableQuery).Name &&
-                e.Outcome == "String"  // The response type name
-            ),
-            CancellationToken.None
-        );
+        await sink.Received(1)
+            .RecordAsync(
+                Arg.Is<AuditEntry>(e =>
+                    e.ActionName == "Query.Read" && e.RequestType == typeof(AuditableQuery).Name && e.Outcome == "String" // The response type name
+                ),
+                CancellationToken.None
+            );
     }
 
     [Fact]
@@ -72,10 +71,7 @@ public class AuditingBehaviorTests
         await behavior.Handle(request, next, CancellationToken.None);
 
         // Assert
-        await sink.Received(1).RecordAsync(
-            Arg.Is<AuditEntry>(e => e.ActionName == "Query.Read"),
-            CancellationToken.None
-        );
+        await sink.Received(1).RecordAsync(Arg.Is<AuditEntry>(e => e.ActionName == "Query.Read"), CancellationToken.None);
     }
 
     [Fact]
@@ -91,10 +87,7 @@ public class AuditingBehaviorTests
         await behavior.Handle(request, next, CancellationToken.None);
 
         // Assert
-        await sink.Received(1).RecordAsync(
-            Arg.Is<AuditEntry>(e => e.RequestType == "AuditableQuery"),
-            CancellationToken.None
-        );
+        await sink.Received(1).RecordAsync(Arg.Is<AuditEntry>(e => e.RequestType == "AuditableQuery"), CancellationToken.None);
     }
 
     [Fact]
@@ -111,10 +104,7 @@ public class AuditingBehaviorTests
         await behavior.Handle(request, next, CancellationToken.None);
 
         // Assert
-        await sink.Received(1).RecordAsync(
-            Arg.Is<AuditEntry>(e => e.Outcome == "Failure"),
-            CancellationToken.None
-        );
+        await sink.Received(1).RecordAsync(Arg.Is<AuditEntry>(e => e.Outcome == "Failure"), CancellationToken.None);
     }
 
     [Fact]
@@ -160,13 +150,11 @@ public class AuditingBehaviorTests
         var afterCall = DateTime.UtcNow;
 
         // Assert - Timestamp should be within expected range
-        await sink.Received(1).RecordAsync(
-            Arg.Is<AuditEntry>(e =>
-                e.Timestamp >= beforeCall &&
-                e.Timestamp <= afterCall
-            ),
-            CancellationToken.None
-        );
+        await sink.Received(1)
+            .RecordAsync(
+                Arg.Is<AuditEntry>(e => e.Timestamp >= beforeCall && e.Timestamp <= afterCall),
+                CancellationToken.None
+            );
     }
 
     [Fact]

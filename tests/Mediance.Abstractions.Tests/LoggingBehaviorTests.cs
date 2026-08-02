@@ -26,13 +26,15 @@ public class LoggingBehaviorTests
         // Assert
         Assert.Equal(84, result);
         // Verify that logging occurred (at least one call to LogInformation)
-        logger.Received(1).Log(
-            Arg.Is(LogLevel.Information),
-            Arg.Any<EventId>(),
-            Arg.Any<object>(),
-            Arg.Any<Exception>(),
-            Arg.Any<Func<object, Exception?, string>>()
-        );
+        logger
+            .Received(1)
+            .Log(
+                Arg.Is(LogLevel.Information),
+                Arg.Any<EventId>(),
+                Arg.Any<object>(),
+                Arg.Any<Exception>(),
+                Arg.Any<Func<object, Exception?, string>>()
+            );
     }
 
     [Fact]
@@ -49,13 +51,15 @@ public class LoggingBehaviorTests
         await behavior.Handle(request, next, CancellationToken.None);
 
         // Assert
-        logger.Received(1).Log(
-            Arg.Is(LogLevel.Information),
-            Arg.Any<EventId>(),
-            Arg.Any<object>(),
-            Arg.Any<Exception>(),
-            Arg.Any<Func<object, Exception?, string>>()
-        );
+        logger
+            .Received(1)
+            .Log(
+                Arg.Is(LogLevel.Information),
+                Arg.Any<EventId>(),
+                Arg.Any<object>(),
+                Arg.Any<Exception>(),
+                Arg.Any<Func<object, Exception?, string>>()
+            );
     }
 
     [Fact]
@@ -72,13 +76,15 @@ public class LoggingBehaviorTests
         await behavior.Handle(request, next, CancellationToken.None);
 
         // Assert
-        logger.Received(1).Log(
-            Arg.Is(LogLevel.Information),
-            Arg.Any<EventId>(),
-            Arg.Any<object>(),
-            Arg.Any<Exception>(),
-            Arg.Any<Func<object, Exception?, string>>()
-        );
+        logger
+            .Received(1)
+            .Log(
+                Arg.Is(LogLevel.Information),
+                Arg.Any<EventId>(),
+                Arg.Any<object>(),
+                Arg.Any<Exception>(),
+                Arg.Any<Func<object, Exception?, string>>()
+            );
     }
 
     [Fact]
@@ -92,18 +98,18 @@ public class LoggingBehaviorTests
         Task<int> Next() => throw nextException;
 
         // Act
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            behavior.Handle(request, Next, CancellationToken.None)
-        );
+        await Assert.ThrowsAsync<InvalidOperationException>(() => behavior.Handle(request, Next, CancellationToken.None));
 
         // Assert - Should log error
-        logger.Received(1).Log(
-            Arg.Is(LogLevel.Error),
-            Arg.Any<EventId>(),
-            Arg.Any<object>(),
-            Arg.Is(nextException),
-            Arg.Any<Func<object, Exception?, string>>()
-        );
+        logger
+            .Received(1)
+            .Log(
+                Arg.Is(LogLevel.Error),
+                Arg.Any<EventId>(),
+                Arg.Any<object>(),
+                Arg.Is(nextException),
+                Arg.Any<Func<object, Exception?, string>>()
+            );
     }
 
     [Fact]

@@ -21,12 +21,14 @@ public class AuthorizationBehaviorTests
     {
         // Arrange
         var policyEvaluator = Substitute.For<IPolicyEvaluator>();
-        policyEvaluator.EvaluateAsync(Arg.Any<string>(), Arg.Any<object>(), Arg.Any<CancellationToken>())
+        policyEvaluator
+            .EvaluateAsync(Arg.Any<string>(), Arg.Any<object>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(true));
 
         var behavior = new AuthorizationBehavior<ProtectedQuery, string>(policyEvaluator);
         var request = new ProtectedQuery("test");
-        Func<Task<OperationOutcome<string, Forbidden>>> next = () => Task.FromResult<OperationOutcome<string, Forbidden>>(new OperationOutcome<string, Forbidden>("success"));
+        Func<Task<OperationOutcome<string, Forbidden>>> next = () =>
+            Task.FromResult<OperationOutcome<string, Forbidden>>(new OperationOutcome<string, Forbidden>("success"));
 
         // Act
         var result = await behavior.Handle(request, next, CancellationToken.None);
@@ -41,12 +43,14 @@ public class AuthorizationBehaviorTests
     {
         // Arrange
         var policyEvaluator = Substitute.For<IPolicyEvaluator>();
-        policyEvaluator.EvaluateAsync(Arg.Any<string>(), Arg.Any<object>(), Arg.Any<CancellationToken>())
+        policyEvaluator
+            .EvaluateAsync(Arg.Any<string>(), Arg.Any<object>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(false));
 
         var behavior = new AuthorizationBehavior<ProtectedQuery, string>(policyEvaluator);
         var request = new ProtectedQuery("test");
-        Func<Task<OperationOutcome<string, Forbidden>>> next = () => throw new InvalidOperationException("Handler should not be called");
+        Func<Task<OperationOutcome<string, Forbidden>>> next = () =>
+            throw new InvalidOperationException("Handler should not be called");
 
         // Act
         var result = await behavior.Handle(request, next, CancellationToken.None);
@@ -63,7 +67,8 @@ public class AuthorizationBehaviorTests
         var policyEvaluator = Substitute.For<IPolicyEvaluator>();
         var behavior = new AuthorizationBehavior<UnprotectedQuery, string>(policyEvaluator);
         var request = new UnprotectedQuery("test");
-        Func<Task<OperationOutcome<string, Forbidden>>> next = () => Task.FromResult<OperationOutcome<string, Forbidden>>(new OperationOutcome<string, Forbidden>("success"));
+        Func<Task<OperationOutcome<string, Forbidden>>> next = () =>
+            Task.FromResult<OperationOutcome<string, Forbidden>>(new OperationOutcome<string, Forbidden>("success"));
 
         // Act
         var result = await behavior.Handle(request, next, CancellationToken.None);
@@ -79,12 +84,14 @@ public class AuthorizationBehaviorTests
     {
         // Arrange
         var policyEvaluator = Substitute.For<IPolicyEvaluator>();
-        policyEvaluator.EvaluateAsync(Arg.Any<string>(), Arg.Any<object>(), Arg.Any<CancellationToken>())
+        policyEvaluator
+            .EvaluateAsync(Arg.Any<string>(), Arg.Any<object>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(false));
 
         var behavior = new AuthorizationBehavior<ProtectedQuery, string>(policyEvaluator);
         var request = new ProtectedQuery("test");
-        Func<Task<OperationOutcome<string, Forbidden>>> next = () => throw new InvalidOperationException("Should not be called");
+        Func<Task<OperationOutcome<string, Forbidden>>> next = () =>
+            throw new InvalidOperationException("Should not be called");
 
         // Act
         var result = await behavior.Handle(request, next, CancellationToken.None);
@@ -99,7 +106,8 @@ public class AuthorizationBehaviorTests
     {
         // Arrange
         var policyEvaluator = Substitute.For<IPolicyEvaluator>();
-        policyEvaluator.EvaluateAsync(Arg.Any<string>(), Arg.Any<object>(), Arg.Any<CancellationToken>())
+        policyEvaluator
+            .EvaluateAsync(Arg.Any<string>(), Arg.Any<object>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(false));
 
         var behavior = new AuthorizationBehavior<ProtectedQuery, string>(policyEvaluator);
@@ -124,21 +132,19 @@ public class AuthorizationBehaviorTests
     {
         // Arrange
         var policyEvaluator = Substitute.For<IPolicyEvaluator>();
-        policyEvaluator.EvaluateAsync(Arg.Any<string>(), Arg.Any<object>(), Arg.Any<CancellationToken>())
+        policyEvaluator
+            .EvaluateAsync(Arg.Any<string>(), Arg.Any<object>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(true));
 
         var behavior = new AuthorizationBehavior<ProtectedQuery, string>(policyEvaluator);
         var request = new ProtectedQuery("test-value");
-        Func<Task<OperationOutcome<string, Forbidden>>> next = () => Task.FromResult<OperationOutcome<string, Forbidden>>(new OperationOutcome<string, Forbidden>("success"));
+        Func<Task<OperationOutcome<string, Forbidden>>> next = () =>
+            Task.FromResult<OperationOutcome<string, Forbidden>>(new OperationOutcome<string, Forbidden>("success"));
 
         // Act
         await behavior.Handle(request, next, CancellationToken.None);
 
         // Assert - Request should be passed to evaluator
-        await policyEvaluator.Received(1).EvaluateAsync(
-            "CanRead",
-            Arg.Is<object>(r => r == request),
-            CancellationToken.None
-        );
+        await policyEvaluator.Received(1).EvaluateAsync("CanRead", Arg.Is<object>(r => r == request), CancellationToken.None);
     }
 }
