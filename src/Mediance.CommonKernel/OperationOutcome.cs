@@ -24,7 +24,7 @@ public readonly union OperationOutcome(Success, Failure) : IOperationOutcome
     /// <value>
     /// <see langword="true"/> if this result contains <see cref="Success"/>; otherwise, <see langword="false"/>.
     /// </value>
-    public bool IsSuccess => Value is Success;
+    public bool IsSuccess => this.Value is Success;
 }
 
 /// <summary>
@@ -49,7 +49,7 @@ public readonly union OperationOutcome<TSuccessResult, TFailureResult>(TSuccessR
     /// <see langword="true"/> if this result contains <typeparamref name="TSuccessResult"/>; otherwise,
     /// <see langword="false"/>.
     /// </value>
-    public bool IsSuccess => Value is TSuccessResult;
+    public bool IsSuccess => this.Value is TSuccessResult;
 }
 
 /// <summary>
@@ -76,13 +76,13 @@ public readonly union OperationOutcome<TSuccessResult, TCase2, TCase3>(TSuccessR
     /// <see langword="true"/> if this result contains <typeparamref name="TSuccessResult"/>; otherwise,
     /// <see langword="false"/>.
     /// </value>
-    public bool IsSuccess => Value is TSuccessResult;
+    public bool IsSuccess => this.Value is TSuccessResult;
 
     /// <summary>
     /// Extracts the underlying value from any case of this result, or <see langword="null"/> if extraction is not possible.
     /// </summary>
     /// <returns>The value held by this result, regardless of which case it is, or <see langword="null"/> if the case is not <typeparamref name="TSuccessResult"/>.</returns>
-    public object? GetValue() => Value switch
+    public object? GetValue() => this.Value switch
     {
         TSuccessResult success => success,
         TCase2 case2 => case2,
@@ -117,13 +117,13 @@ public readonly union OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4>(T
     /// <see langword="true"/> if this result contains <typeparamref name="TSuccessResult"/>; otherwise,
     /// <see langword="false"/>.
     /// </value>
-    public bool IsSuccess => Value is TSuccessResult;
+    public bool IsSuccess => this.Value is TSuccessResult;
 
     /// <summary>
     /// Extracts the underlying value from any case of this result, or <see langword="null"/> if extraction is not possible.
     /// </summary>
     /// <returns>The value held by this result, regardless of which case it is, or <see langword="null"/> if the case is not <typeparamref name="TSuccessResult"/>.</returns>
-    public object? GetValue() => Value switch
+    public object? GetValue() => this.Value switch
     {
         TSuccessResult success => success,
         TCase2 case2 => case2,
@@ -161,13 +161,13 @@ public readonly union OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, T
     /// <see langword="true"/> if this result contains <typeparamref name="TSuccessResult"/>; otherwise,
     /// <see langword="false"/>.
     /// </value>
-    public bool IsSuccess => Value is TSuccessResult;
+    public bool IsSuccess => this.Value is TSuccessResult;
 
     /// <summary>
     /// Extracts the underlying value from any case of this result, or <see langword="null"/> if extraction is not possible.
     /// </summary>
     /// <returns>The value held by this result, regardless of which case it is, or <see langword="null"/> if the case is not <typeparamref name="TSuccessResult"/>.</returns>
-    public object? GetValue() => Value switch
+    public object? GetValue() => this.Value switch
     {
         TSuccessResult success => success,
         TCase2 case2 => case2,
@@ -212,13 +212,13 @@ public readonly union OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, T
     /// <see langword="true"/> if this result contains <typeparamref name="TSuccessResult"/>; otherwise,
     /// <see langword="false"/>.
     /// </value>
-    public bool IsSuccess => Value is TSuccessResult;
+    public bool IsSuccess => this.Value is TSuccessResult;
 
     /// <summary>
     /// Extracts the underlying value from any case of this result, or <see langword="null"/> if extraction is not possible.
     /// </summary>
     /// <returns>The value held by this result, regardless of which case it is, or <see langword="null"/> if the case is not <typeparamref name="TSuccessResult"/>.</returns>
-    public object? GetValue() => Value switch
+    public object? GetValue() => this.Value switch
     {
         TSuccessResult success => success,
         TCase2 case2 => case2,

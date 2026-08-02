@@ -35,17 +35,17 @@ public readonly record struct ValidationErrors<TErrorCode>
     {
         ArgumentNullException.ThrowIfNull(errors);
 
-        _errors = [.. errors.Distinct()];
+        this._errors = [.. errors.Distinct()];
 
-        if (_errors.IsEmpty)
+        if (this._errors.IsEmpty)
         {
             throw new ArgumentException("At least one validation error is required.", nameof(errors));
         }
 
         // Computed once here, rather than on every property access, and each preserves the order
         // in which the corresponding message/error code was first encountered in _errors.
-        _uniqueMessages = [.. _errors.Select(e => e.message).Distinct()];
-        _uniqueErrorCodes = [.. _errors.Select(e => e.errorCode).Distinct()];
+        this._uniqueMessages = [.. this._errors.Select(e => e.message).Distinct()];
+        this._uniqueErrorCodes = [.. this._errors.Select(e => e.errorCode).Distinct()];
     }
 
     /// <summary>
@@ -80,38 +80,38 @@ public readonly record struct ValidationErrors<TErrorCode>
     /// Gets the number of distinct validation errors (unique message and error code pairs).
     /// </summary>
     /// <value>The count of distinct <see cref="ValidationError{TErrorCode}"/> values.</value>
-    public int Count => _errors.Length;
+    public int Count => this._errors.Length;
 
     /// <summary>
     /// Gets the number of distinct validation error messages, irrespective of error code.
     /// </summary>
     /// <value>The count of distinct values in <see cref="Messages"/>.</value>
-    public int UniqueErrorCount => _uniqueMessages.Length;
+    public int UniqueErrorCount => this._uniqueMessages.Length;
 
     /// <summary>
     /// Gets the number of distinct error codes present in the original validation errors.
     /// </summary>
     /// <value>The count of distinct values in <see cref="ErrorCodes"/>.</value>
-    public int UniqueErrorCodeCount => _uniqueErrorCodes.Length;
+    public int UniqueErrorCodeCount => this._uniqueErrorCodes.Length;
 
     /// <summary>
     /// Gets the distinct set of validation errors, each with its message and error code, in the order
     /// they were first encountered.
     /// </summary>
     /// <value>An unmodifiable collection of the distinct <see cref="ValidationError{TErrorCode}"/> values provided at creation.</value>
-    public IReadOnlyList<ValidationError<TErrorCode>> Errors => _errors;
+    public IReadOnlyList<ValidationError<TErrorCode>> Errors => this._errors;
 
     /// <summary>
     /// Gets the distinct set of validation error messages, without their error codes, in the order
     /// they were first encountered.
     /// </summary>
     /// <value>An unmodifiable collection of the distinct messages found in <see cref="Errors"/>.</value>
-    public IReadOnlyList<string> Messages => _uniqueMessages;
+    public IReadOnlyList<string> Messages => this._uniqueMessages;
 
     /// <summary>
     /// Gets the distinct set of error codes present in the original validation errors, in the order
     /// they were first encountered.
     /// </summary>
     /// <value>An unmodifiable collection of the distinct error codes found in <see cref="Errors"/>.</value>
-    public IReadOnlyList<TErrorCode> ErrorCodes => _uniqueErrorCodes;
+    public IReadOnlyList<TErrorCode> ErrorCodes => this._uniqueErrorCodes;
 }

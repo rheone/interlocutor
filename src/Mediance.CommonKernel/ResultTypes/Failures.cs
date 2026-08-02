@@ -33,9 +33,9 @@ public readonly record struct Failures
     {
         ArgumentNullException.ThrowIfNull(failures);
 
-        _failures = [.. failures.Distinct()];
+        this._failures = [.. failures.Distinct()];
 
-        if (_failures.IsEmpty)
+        if (this._failures.IsEmpty)
         {
             throw new ArgumentException("At least one failure is required.", nameof(failures));
         }
@@ -53,11 +53,11 @@ public readonly record struct Failures
     /// Gets the number of distinct failures.
     /// </summary>
     /// <value>The count of distinct failures.</value>
-    public int Count => _failures.Length;
+    public int Count => this._failures.Length;
 
     /// <summary>
     /// Gets the distinct set of failures, in the order they were first encountered.
     /// </summary>
     /// <value>An unmodifiable collection of the distinct <see cref="Failure"/> values provided at creation.</value>
-    public IReadOnlyList<Failure> Values => _failures;
+    public IReadOnlyList<Failure> Values => this._failures;
 }

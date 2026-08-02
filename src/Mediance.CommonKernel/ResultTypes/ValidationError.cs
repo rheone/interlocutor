@@ -75,9 +75,9 @@ public readonly record struct ValidationErrors
     {
         ArgumentNullException.ThrowIfNull(errors);
 
-        _errors = [.. errors.Distinct()];
+        this._errors = [.. errors.Distinct()];
 
-        if (_errors.IsEmpty)
+        if (this._errors.IsEmpty)
         {
             throw new ArgumentException("At least one validation error is required.", nameof(errors));
         }
@@ -106,17 +106,17 @@ public readonly record struct ValidationErrors
     /// Gets the number of distinct validation error messages.
     /// </summary>
     /// <value>The count of distinct validation error messages.</value>
-    public int Count => _errors.Length;
+    public int Count => this._errors.Length;
 
     /// <summary>
     /// Gets the distinct set of validation errors, in the order they were first encountered.
     /// </summary>
     /// <value>An unmodifiable collection of the distinct <see cref="ValidationError"/> values provided at creation.</value>
-    public IReadOnlyList<ValidationError> Errors => _errors;
+    public IReadOnlyList<ValidationError> Errors => this._errors;
 
     /// <summary>
     /// Gets the distinct set of validation error messages, in the order they were first encountered.
     /// </summary>
     /// <value>An unmodifiable collection of the distinct messages found in <see cref="Errors"/>.</value>
-    public IReadOnlyList<string> Messages => [.. _errors.Select(e => e.message).Distinct()];
+    public IReadOnlyList<string> Messages => [.. this._errors.Select(e => e.message).Distinct()];
 }

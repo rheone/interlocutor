@@ -1,21 +1,14 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Description>Microsoft.Extensions.DependencyInjection integration for Mediance. Registers the mediator, handlers, and pipeline behaviors via AddMediance().</Description>
   </PropertyGroup>
-  <ItemGroup>
-    <AdditionalFiles Remove="..\C:\Users\rheone\codeMediance\.editorconfig" />
-    <AdditionalFiles Remove="C:\Users\rheone\code\Mediance\dictionary.dic" />
-    <AdditionalFiles Remove="C:\Users\rheone\code\Mediance\stylecop.json" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Mediance.Abstractions\Mediance.Abstractions.csproj" />
   </ItemGroup>
 
-  <!-- DependencyInjection.Abstractions is auto-available in .NET 11 SDK -->
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Logging" />
   </ItemGroup>
 </Project>

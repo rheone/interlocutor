@@ -100,7 +100,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     public Task Publish<TNotification>(TNotification notification, CancellationToken ct = default)
         where TNotification : INotification
     {
-        return PublishAsync(notification, PublishStrategy.Sequential, ct);
+        return this.PublishAsync(notification, PublishStrategy.Sequential, ct);
     }
 
     /// <summary>Publishes a notification using the specified <paramref name="strategy"/>.</summary>
@@ -112,7 +112,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     public Task Publish<TNotification>(TNotification notification, PublishStrategy strategy, CancellationToken ct = default)
         where TNotification : INotification
     {
-        return PublishAsync(notification, strategy, ct);
+        return this.PublishAsync(notification, strategy, ct);
     }
 
     private Task PublishAsync<TNotification>(TNotification notification, PublishStrategy strategy, CancellationToken ct)

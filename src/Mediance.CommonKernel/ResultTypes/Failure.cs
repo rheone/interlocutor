@@ -33,32 +33,32 @@ public readonly record struct Failure
     /// Gets a value indicating whether this failure has a <see cref="Reason"/>.
     /// </summary>
     /// <value><see langword="true"/> if <see cref="Reason"/> is not <see langword="null"/>; otherwise, <see langword="false"/>.</value>
-    public bool HasReason => Reason is not null;
+    public bool HasReason => this.Reason is not null;
 
     /// <summary>
     /// Gets a value indicating whether this failure has an <see cref="ErrorCode"/>.
     /// </summary>
     /// <value><see langword="true"/> if <see cref="ErrorCode"/> is not <see langword="null"/>; otherwise, <see langword="false"/>.</value>
-    public bool HasErrorCode => ErrorCode is not null;
+    public bool HasErrorCode => this.ErrorCode is not null;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Failure"/> class with the specified reason.
     /// </summary>
     /// <param name="reason">The human-readable reason for the failure.</param>
-    public Failure(string reason) => Reason = reason;
+    public Failure(string reason) => this.Reason = reason;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Failure"/> class with the specified error code.
     /// </summary>
     /// <param name="errorCode">The error code associated with the failure.</param>
-    public Failure(long errorCode) => ErrorCode = errorCode;
+    public Failure(long errorCode) => this.ErrorCode = errorCode;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Failure"/> class with the specified reason and error code.
     /// </summary>
     /// <param name="reason">The human-readable reason for the failure.</param>
     /// <param name="errorCode">The error code associated with the failure.</param>
-    public Failure(string reason, long errorCode) => (Reason, ErrorCode) = (reason, errorCode);
+    public Failure(string reason, long errorCode) => (this.Reason, this.ErrorCode) = (reason, errorCode);
 
     ///// <summary>
     ///// Returns a string representation of the failure, including the reason and/or error code when present.
