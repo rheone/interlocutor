@@ -6,23 +6,85 @@ Named after the legal term for how a case is resolved — handlers return outcom
 
 ## Quick Start
 
-```csharp
-// 1. Register Mediance
-services.AddMediance(typeof(GetUserHandler).Assembly);
+### Setup
 
-// 2. Define a query. TResponse can be a plain type or a union — the mediator
-//    doesn't force any particular shape onto it.
+Register Mediance with dependency injection and configure pipeline behaviors:
+
+```csharp
+// Startup.cs or Program.cs
+services.AddMediance(typeof(Program).Assembly);  // Auto-scan and register all handlers
+
+// Optional: add built-in pipeline behaviors (in recommended order)
+services.AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
+services.AddScoped(typeof(IPipelineBehavior<,>), typeof(AuditingBehavior<,>));
+services.AddScoped(typeof(IPipelineBehavior<,>), typeof(AuthorizationBehavior<,>));
+services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+services.AddScoped(typeof(IPipelineBehavior<,>), typeof(TransactionBehavior<,,>));
+
+// Optional: configure which DI container to use
+// For Autofac: services.AddMediance(config => config.UseAutofac(containerBuilder));
+```
+
+### Define and Send Requests
+
+Queries read data; commands mutate state:
+
+```csharp
+// 1. Define a query — TResponse can be any type
 public record GetUser(int UserId) : IQuery<UserResponse>;
 
-// 3. Implement the handler
+// 2. Implement a handler — dependency injection works normally
 public class GetUserHandler : IQueryHandler<GetUser, UserResponse>
 {
-    public Task<UserResponse> Handle(GetUser query, CancellationToken ct) =>
-        Task.FromResult(new UserResponse("Alice"));
+    private readonly IUserRepository repository;
+    
+    public GetUserHandler(IUserRepository repository) => this.repository = repository;
+    
+    public async Task<UserResponse> Handle(GetUser query, CancellationToken ct)
+    {
+        var user = await repository.FindAsync(query.UserId, ct);
+        return new UserResponse(user?.Name ?? "Unknown");
+    }
 }
 
-// 4. Send it
+// 3. Send it via ISender or IMediator
 var user = await mediator.Send(new GetUser(1));
+```
+
+### Handle Results
+
+Result types are unions — use pattern matching to handle each case:
+
+```csharp
+public record DeleteUser(int UserId) : ICommand<OperationOutcome<Success, NotFound, Forbidden>>;
+
+public class DeleteUserHandler : ICommandHandler<DeleteUser, OperationOutcome<Success, NotFound, Forbidden>>
+{
+    private readonly IUserRepository repository;
+    
+    public async Task<OperationOutcome<Success, NotFound, Forbidden>> Handle(
+        DeleteUser command, CancellationToken ct)
+    {
+        var user = await repository.FindAsync(command.UserId, ct);
+        if (user is null)
+            return new NotFound($"User {command.UserId} not found");
+        
+        if (!user.CanBeDeletedBy(CurrentUser))
+            return new Forbidden("Only admins can delete users");
+        
+        await repository.DeleteAsync(user, ct);
+        return new Success();
+    }
+}
+
+// Caller side — pattern match on the union
+var result = await mediator.Send(new DeleteUser(42));
+var message = result.Value switch
+{
+    Success => "User deleted successfully",
+    NotFound failure => $"Error: {failure.Message}",
+    Forbidden failure => $"Access denied: {failure.Message}",
+};
 ```
 
 ## Packages
@@ -106,22 +168,28 @@ public union PaymentOutcome(Charged, InsufficientFunds, CardDeclined);
 public record ProcessPayment(decimal Amount) : ICommand<PaymentOutcome>;
 ```
 
-`ResourceCommandHandler<TCommand, TEntity, TSuccess>` is a template method for the common "load → authorize → act" shape, and is fixed to `OperationOutcome<TSuccess, NotFound, Failure>` because it needs to construct those two specific failure cases itself:
+`ResourceCommandHandler<TCommand, TEntity, TSuccess>` is a template method for the common "load → authorize → act" shape. It always returns `OperationOutcome<TSuccess, NotFound, Failure>` because it needs to construct those two specific failure cases itself:
 
 ```csharp
-public class ArchiveDocumentHandler : ResourceCommandHandler<ArchiveDocument, Document, Success>
+public record ArchiveDocument(int DocumentId, int RequestedBy) : ICommand<OperationOutcome<bool, NotFound, Failure>>;
+
+public class ArchiveDocumentHandler : ResourceCommandHandler<ArchiveDocument, Document, bool>
 {
+    private readonly IDocumentRepository repository;
+
+    public ArchiveDocumentHandler(IDocumentRepository repository) => this.repository = repository;
+
     protected override Task<Document?> LoadAsync(ArchiveDocument command, CancellationToken ct) =>
         repository.FindAsync(command.DocumentId, ct);
 
     protected override Failure? Authorize(Document entity, ArchiveDocument command) =>
         entity.OwnerId == command.RequestedBy ? null : new Failure("Not the document owner");
 
-    protected override Task<OperationOutcome<Success, NotFound, Failure>> HandleAsync(
+    protected override Task<OperationOutcome<bool, NotFound, Failure>> HandleAsync(
         ArchiveDocument command, Document entity, CancellationToken ct)
     {
         entity.Archive();
-        return Task.FromResult<OperationOutcome<Success, NotFound, Failure>>(new Success());
+        return Task.FromResult<OperationOutcome<bool, NotFound, Failure>>(true);
     }
 }
 ```
@@ -154,11 +222,206 @@ services.AddSingleton<IResponseOutcomeDescriber, PaymentOutcomeDescriber>();
 
 `AuthorizationBehavior<TRequest, TSuccess>` and `ValidationBehavior<TRequest, TSuccess>` are constrained to the concrete shapes `OperationOutcome<TSuccess, Forbidden>` and `OperationOutcome<TSuccess, ValidationFailed>` respectively — a short-circuiting behavior has to construct its failure case without knowing the handler's response shape in general, so it's opt-in *and* only usable when the response shape matches. Handlers with a different response shape (a custom union, or a wider multi-arity `OperationOutcome<...>`) need a bespoke behavior instead.
 
+## Publishing Notifications
+
+Fire-and-forget notifications are handled separately from commands/queries:
+
+```csharp
+// Define a notification
+public record OrderShipped(int OrderId, string TrackingNumber) : INotification;
+
+// Implement one or more handlers — they run sequentially
+public class OrderShippedEmailHandler : INotificationHandler<OrderShipped>
+{
+    private readonly IEmailService emailService;
+    
+    public OrderShippedEmailHandler(IEmailService emailService) => this.emailService = emailService;
+    
+    public async Task Handle(OrderShipped notification, CancellationToken ct)
+    {
+        await emailService.SendAsync(
+            "order-shipped",
+            tracking: notification.TrackingNumber,
+            ct
+        );
+    }
+}
+
+// Publish — all handlers run sequentially
+await mediator.Publish(new OrderShipped(123, "TRACK-456"));
+```
+
+## Validation
+
+Add FluentValidation integration for automatic request validation:
+
+```csharp
+// Define a request with validators
+public record CreateUser(string Name, string Email) : ICommand<OperationOutcome<int, ValidationFailed>>;
+
+public class CreateUserValidator : AbstractValidator<CreateUser>
+{
+    public CreateUserValidator()
+    {
+        RuleFor(c => c.Name).NotEmpty().MaximumLength(100);
+        RuleFor(c => c.Email).EmailAddress();
+    }
+}
+
+// ValidationBehavior runs before your handler and returns ValidationFailed if invalid
+var result = await mediator.Send(new CreateUser("", "not-an-email"));
+// result.Value is ValidationFailed with collected errors
+```
+
+## Authorization
+
+Protect handlers with policy-based authorization:
+
+```csharp
+// Mark a request as requiring authorization
+public record DeleteAllUsers() : ICommand<Success>, IRequiresPolicy;
+
+// Implement authorization logic
+public class AdminOnlyPolicyEvaluator : IPolicyEvaluator
+{
+    private readonly ICurrentUser currentUser;
+    
+    public AdminOnlyPolicyEvaluator(ICurrentUser currentUser) => this.currentUser = currentUser;
+    
+    public Task<Forbidden?> EvaluateAsync(IRequiresPolicy request, CancellationToken ct) =>
+        Task.FromResult(
+            currentUser.IsAdmin ? null : new Forbidden("Admin access required")
+        );
+}
+
+// AuthorizationBehavior runs before validation and short-circuits if denied
+var result = await mediator.Send(new DeleteAllUsers());
+```
+
+## Auditing
+
+Track all business operations:
+
+```csharp
+// Mark requests for auditing
+public record TransferFunds(int FromAccountId, int ToAccountId, decimal Amount) 
+    : ICommand<Success>, IAuditableRequest;
+
+// Implement audit sink to store audit trails
+public class DatabaseAuditSink : IAuditSink
+{
+    private readonly IAuditLogRepository auditRepo;
+    
+    public async Task RecordAsync(AuditEntry entry, CancellationToken ct)
+    {
+        await auditRepo.AddAsync(new()
+        {
+            RequestType = entry.RequestType,
+            Timestamp = entry.Timestamp,
+            ElapsedMs = entry.ElapsedMilliseconds,
+            UserId = entry.UserId,
+            Outcome = entry.Outcome,
+            Details = entry.Details,
+        }, ct);
+    }
+}
+```
+
+## Database Transactions
+
+Automatically wrap handlers in transactions:
+
+```csharp
+// Mark a command for transactional handling
+public record CreateOrder(int CustomerId, List<OrderItem> Items) 
+    : ICommand<OperationOutcome<int, ValidationFailed>>, ITransactionalRequest;
+
+// TransactionBehavior (registered last) wraps the handler:
+// - Commits on Success
+// - Rolls back on any Failure case
+// - Never rolls back on authorization/validation short-circuit
+var result = await mediator.Send(new CreateOrder(1, items));
+```
+
+## Testing
+
+Handlers are just classes — test them in isolation:
+
+```csharp
+[Fact]
+public async Task DeleteUser_WithAdmin_Succeeds()
+{
+    var repository = new Mock<IUserRepository>();
+    repository.Setup(r => r.FindAsync(1, default))
+        .ReturnsAsync(new User { Id = 1, Name = "Alice" });
+    
+    var handler = new DeleteUserHandler(repository.Object);
+    var result = await handler.Handle(new DeleteUser(1), CancellationToken.None);
+    
+    Assert.True(result.IsSuccess);
+    repository.Verify(r => r.DeleteAsync(It.IsAny<User>(), default), Times.Once);
+}
+
+[Fact]
+public async Task DeleteUser_NotFound_ReturnsFalse()
+{
+    var repository = new Mock<IUserRepository>();
+    repository.Setup(r => r.FindAsync(999, default))
+        .ReturnsAsync((User?)null);
+    
+    var handler = new DeleteUserHandler(repository.Object);
+    var result = await handler.Handle(new DeleteUser(999), CancellationToken.None);
+    
+    var notFound = Assert.IsType<NotFound>(result.Value);
+    Assert.Contains("not found", notFound.Message);
+}
+```
+
+## ASP.NET Core Integration
+
+Map handler results to HTTP responses:
+
+```csharp
+[ApiController]
+[Route("api/[controller]")]
+public class UsersController : ControllerBase
+{
+    private readonly ISender mediator;
+    
+    public UsersController(ISender mediator) => this.mediator = mediator;
+    
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteUser(int id, CancellationToken ct)
+    {
+        var result = await mediator.Send(new DeleteUser(id), ct);
+        
+        // Built-in mapping: NotFound → 404, Forbidden → 403, etc.
+        return result.ToActionResult();
+    }
+}
+
+// For minimal APIs:
+app.MapDelete("/api/users/{id}", async (int id, ISender mediator, CancellationToken ct) =>
+{
+    var result = await mediator.Send(new DeleteUser(id), ct);
+    return result.ToActionResult();  // Same mapping logic
+});
+```
+
 ## Interface Segregation
+
+Inject only what you need:
 
 - `ISender` — Send-only (request/response)
 - `IPublisher` — Publish-only (fire-and-forget notifications)
 - `IMediator` — Combined convenience interface
+
+## Performance
+
+- Handlers are registered as singletons (stateless) when possible, otherwise as scoped/transient per your registration.
+- Pipeline behaviors are scoped to the request by default.
+- Use `AddMediance(Type)` for single-assembly registration or `AddMedianceFromEntryAssembly()` to scan from the entry point.
+- For large request volumes, consider disabling logging/auditing behaviors or implementing conditional registration.
 
 ## Links
 
