@@ -143,9 +143,9 @@ public static class MedianceServiceCollectionExtensions
         services.AddSingleton(classifierBuilder.Build());
 
         // Register outcome describer with the classifier
-        services.AddSingleton<IResponseOutcomeDescriber>(sp =>
-            new DefaultResponseOutcomeDescriber(sp.GetRequiredService<IOutcomeClassifier>())
-        );
+        services.AddSingleton<IResponseOutcomeDescriber>(sp => new DefaultResponseOutcomeDescriber(
+            sp.GetRequiredService<IOutcomeClassifier>()
+        ));
 
         // Register default implementations for pipeline dependencies (always)
         services.AddScoped<IAuditSink, LoggingAuditSink>();

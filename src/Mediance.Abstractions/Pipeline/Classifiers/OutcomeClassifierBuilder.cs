@@ -34,7 +34,7 @@ public sealed class OutcomeClassifierBuilder
     /// Gets the shared default classifier instance, pre-seeded with all kernel types.
     /// </summary>
     /// <value>
-    /// <placeholder>The shared default classifier instance, pre-seeded with all kernel types.</placeholder>
+    /// The shared default classifier instance, pre-seeded with all kernel types.
     /// </value>
     public static IOutcomeClassifier DefaultClassifier
     {
@@ -74,8 +74,7 @@ public sealed class OutcomeClassifierBuilder
         // This covers ValidationError<TErrorCode>, ValidationErrors<TErrorCode>, and
         // any future generic result types.
         RegisterPredicate(
-            response => response?.GetType().IsGenericType == true &&
-                       response.GetType().Name.StartsWith("ValidationError"),
+            response => response?.GetType().IsGenericType == true && response.GetType().Name.StartsWith("ValidationError"),
             "ValidationError",
             isFailure: true
         );
@@ -132,11 +131,7 @@ public sealed class OutcomeClassifierBuilder
     /// <param name="label">The human-readable label for matching outcomes.</param>
     /// <param name="isFailure">Whether matching outcomes are failures.</param>
     /// <returns>This builder for method chaining.</returns>
-    public OutcomeClassifierBuilder RegisterPredicate(
-        Func<object?, bool> predicate,
-        string label,
-        bool isFailure
-    )
+    public OutcomeClassifierBuilder RegisterPredicate(Func<object?, bool> predicate, string label, bool isFailure)
     {
         ArgumentNullException.ThrowIfNull(predicate);
         ArgumentNullException.ThrowIfNull(label);
@@ -149,10 +144,7 @@ public sealed class OutcomeClassifierBuilder
     /// </summary>
     /// <returns>An immutable classifier that applies all registered classifications.</returns>
     public IOutcomeClassifier Build() =>
-        new DefaultOutcomeClassifier(
-            this._classifications.ToImmutableDictionary(),
-            this._predicates.ToImmutableList()
-        );
+        new DefaultOutcomeClassifier(this._classifications.ToImmutableDictionary(), this._predicates.ToImmutableList());
 
     /// <summary>
     /// Internal immutable classifier implementation produced by the builder.
@@ -227,8 +219,7 @@ public sealed class OutcomeClassifierBuilder
         }
 
         // Unwrap compiler-generated union types to access their underlying Value.
-        private static object? Unwrap(object? response) =>
-            response is IUnion union ? union.Value : response;
+        private static object? Unwrap(object? response) => response is IUnion union ? union.Value : response;
     }
 }
 

@@ -42,7 +42,8 @@ public class TransactionBehavior<TRequest, TResponse, TContext>(
     where TContext : DbContext
 {
     private readonly IOutcomeClassifier classifier = classifier ?? OutcomeClassifierBuilder.DefaultClassifier;
-    private readonly IResponseOutcomeDescriber describer = describer ?? new DefaultResponseOutcomeDescriber(classifier ?? OutcomeClassifierBuilder.DefaultClassifier);
+    private readonly IResponseOutcomeDescriber describer =
+        describer ?? new DefaultResponseOutcomeDescriber(classifier ?? OutcomeClassifierBuilder.DefaultClassifier);
 
     /// <inheritdoc/>
     /// <remarks>

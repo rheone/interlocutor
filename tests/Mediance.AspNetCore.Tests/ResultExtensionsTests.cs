@@ -65,7 +65,8 @@ public class ResultExtensionsTests
         OperationOutcome<string, ValidationErrors> result = new(errors);
         var actionResult = result.ToActionResult();
 
-        var objectResult = Assert.IsType<UnprocessableEntityObjectResult>(actionResult);
+        var objectResult = Assert.IsType<ObjectResult>(actionResult);
+        Assert.Equal(StatusCodes.Status422UnprocessableEntity, objectResult.StatusCode);
         var problemDetails = Assert.IsType<ProblemDetails>(objectResult.Value);
         Assert.Equal(StatusCodes.Status422UnprocessableEntity, problemDetails.Status);
         Assert.Contains("Name is required", problemDetails.Detail);

@@ -1,5 +1,6 @@
 namespace Mediance.FluentValidation.Tests;
 
+using Mediance.Abstractions.Commands;
 using Mediance.Abstractions.Pipeline;
 
 /// <summary>Test command for validation behavior testing.</summary>

@@ -22,7 +22,8 @@ using Mediance.CommonKernel.ResultTypes;
 /// <see cref="ValidationErrors"/> as the failure case.
 /// </para>
 /// </remarks>
-public sealed class ValidationBehavior<TRequest, TSuccess> : IPipelineBehavior<TRequest, OperationOutcome<TSuccess, ValidationErrors>>
+public sealed class ValidationBehavior<TRequest, TSuccess>
+    : IPipelineBehavior<TRequest, OperationOutcome<TSuccess, ValidationErrors>>
 {
     private readonly IEnumerable<global::FluentValidation.IValidator<TRequest>> validators;
 

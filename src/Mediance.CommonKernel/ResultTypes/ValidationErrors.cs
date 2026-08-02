@@ -179,8 +179,7 @@ public readonly record struct ValidationErrors<TErrorCode>
                 e.Message,
                 e.ErrorCode
             ))
-        )
-    { }
+        ) { }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ValidationErrors{TErrorCode}"/> struct.

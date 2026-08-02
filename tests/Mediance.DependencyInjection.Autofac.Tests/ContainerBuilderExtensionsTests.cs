@@ -1,12 +1,13 @@
 namespace Mediance.DependencyInjection.Autofac.Tests;
 
-using Autofac;
+using global::Autofac;
 using Mediance.Abstractions;
 using Mediance.Abstractions.Commands;
 using Mediance.Abstractions.Core;
 using Mediance.Abstractions.Notifications;
 using Mediance.Abstractions.Pipeline;
 using Mediance.Abstractions.Queries;
+using Mediance.DependencyInjection.Autofac;
 
 public class ContainerBuilderExtensionsTests
 {

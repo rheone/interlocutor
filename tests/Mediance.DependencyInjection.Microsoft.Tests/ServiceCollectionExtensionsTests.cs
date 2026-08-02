@@ -1,12 +1,12 @@
 namespace Mediance.DependencyInjection.Microsoft.Tests;
 
+using global::Microsoft.Extensions.DependencyInjection;
 using Mediance.Abstractions;
 using Mediance.Abstractions.Commands;
 using Mediance.Abstractions.Core;
 using Mediance.Abstractions.Notifications;
 using Mediance.Abstractions.Pipeline;
 using Mediance.Abstractions.Queries;
-using Microsoft.Extensions.DependencyInjection;
 
 public class ServiceCollectionExtensionsTests
 {

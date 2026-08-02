@@ -20,8 +20,8 @@ public class MedianceOptions
     /// If not set, defaults to the entry assembly.
     /// </summary>
     /// <value>
-    /// <placeholder>The assemblies to scan for handler implementations.
-    /// If not set, defaults to the entry assembly.</placeholder>
+    /// The assemblies to scan for handler implementations.
+    /// If not set, defaults to the entry assembly.
     /// </value>
     public Assembly[] AssembliesToScan { get; set; } = [Assembly.GetEntryAssembly()!];
 
@@ -30,8 +30,8 @@ public class MedianceOptions
     /// If set, only assemblies for which this predicate returns true will be scanned.
     /// </summary>
     /// <value>
-    /// <placeholder>An optional predicate to filter which assemblies are scanned.
-    /// If set, only assemblies for which this predicate returns true will be scanned.</placeholder>
+    /// An optional predicate to filter which assemblies are scanned.
+    /// If set, only assemblies for which this predicate returns true will be scanned.
     /// </value>
     public Func<Assembly, bool>? AssemblyFilter { get; set; }
 
@@ -40,8 +40,8 @@ public class MedianceOptions
     /// Defaults to <see cref="PublishStrategy.Sequential"/>.
     /// </summary>
     /// <value>
-    /// <placeholder>The default notification publish strategy.
-    /// Defaults to <see cref="PublishStrategy.Sequential"/>.</placeholder>
+    /// The default notification publish strategy.
+    /// Defaults to <see cref="PublishStrategy.Sequential"/>.
     /// </value>
     public PublishStrategy DefaultPublishStrategy { get; set; } = PublishStrategy.Sequential;
 
@@ -52,10 +52,10 @@ public class MedianceOptions
     /// Defaults to true.
     /// </summary>
     /// <value>
-    /// <placeholder>Whether to enable the default behavior chain.
+    /// Whether to enable the default behavior chain.
     /// When true, registers LoggingBehavior, AuditingBehavior, AuthorizationBehavior,
     /// ValidationBehavior, and TransactionBehavior in canonical order.
-    /// Defaults to true.</placeholder>
+    /// Defaults to true.
     /// </value>
     public bool EnableDefaultBehaviors { get; set; } = true;
 
@@ -64,8 +64,8 @@ public class MedianceOptions
     /// Defaults to <see cref="DefaultResponseOutcomeDescriber"/>.
     /// </summary>
     /// <value>
-    /// <placeholder>The type of <see cref="IResponseOutcomeDescriber"/> to register.
-    /// Defaults to <see cref="DefaultResponseOutcomeDescriber"/>.</placeholder>
+    /// The type of <see cref="IResponseOutcomeDescriber"/> to register.
+    /// Defaults to <see cref="DefaultResponseOutcomeDescriber"/>.
     /// </value>
     public Type ResponseOutcomeDescriberType { get; set; } = typeof(DefaultResponseOutcomeDescriber);
 
@@ -74,8 +74,8 @@ public class MedianceOptions
     /// Each entry is a tuple of (outcome type, outcome case types).
     /// </summary>
     /// <value>
-    /// <placeholder>Custom outcome types that should be registered with the describer.
-    /// Each entry is a tuple of (outcome type, outcome case types).</placeholder>
+    /// Custom outcome types that should be registered with the describer.
+    /// Each entry is a tuple of (outcome type, outcome case types).
     /// </value>
     public List<Type> CustomOutcomeTypes { get; } = [];
 
@@ -84,8 +84,8 @@ public class MedianceOptions
     /// Defaults to true.
     /// </summary>
     /// <value>
-    /// <placeholder>Whether to run startup validation on registered handlers and behaviors.
-    /// Defaults to true.</placeholder>
+    /// Whether to run startup validation on registered handlers and behaviors.
+    /// Defaults to true.
     /// </value>
     public bool EnableStartupValidation { get; set; } = true;
 }

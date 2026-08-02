@@ -92,14 +92,17 @@ public static class ResultExtensions
 
     /// <summary>Maps a ValidationErrors aggregate to 422 Unprocessable Entity with all validation errors.</summary>
     private static IActionResult ToActionResult(this ValidationErrors v) =>
-        new UnprocessableEntityObjectResult(
+        new ObjectResult(
             new ProblemDetails
             {
                 Title = "Validation Failed",
                 Detail = string.Join("; ", v.Messages),
                 Status = StatusCodes.Status422UnprocessableEntity,
             }
-        );
+        )
+        {
+            StatusCode = StatusCodes.Status422UnprocessableEntity,
+        };
 
     /// <summary>Maps a NotFound singular case to 404 Not Found.</summary>
     private static IActionResult ToActionResult(this NotFound n) => new NotFoundObjectResult(n.Message);

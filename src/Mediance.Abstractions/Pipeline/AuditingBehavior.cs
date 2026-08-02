@@ -9,7 +9,8 @@ using Mediance.Abstractions.Pipeline.Classifiers;
 public class AuditingBehavior<TRequest, TResponse>(IAuditSink sink, IResponseOutcomeDescriber? describer = null)
     : IPipelineBehavior<TRequest, TResponse>
 {
-    private readonly IResponseOutcomeDescriber _describer = describer ?? new DefaultResponseOutcomeDescriber(OutcomeClassifierBuilder.DefaultClassifier);
+    private readonly IResponseOutcomeDescriber _describer =
+        describer ?? new DefaultResponseOutcomeDescriber(OutcomeClassifierBuilder.DefaultClassifier);
 
     /// <summary>
     /// Handles the request, recording an audit entry if the request implements <see cref="IAuditableRequest"/>.

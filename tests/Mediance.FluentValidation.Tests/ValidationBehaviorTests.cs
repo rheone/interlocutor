@@ -1,5 +1,6 @@
 namespace Mediance.FluentValidation.Tests;
 
+using global::FluentValidation;
 using Mediance.Abstractions.Pipeline;
 using Mediance.CommonKernel;
 using Mediance.CommonKernel.ResultTypes;
@@ -16,7 +17,9 @@ public class ValidationBehaviorTests
         var next = async () =>
         {
             handlerInvoked = true;
-            return await Task.FromResult<OperationOutcome<string, ValidationErrors>>(new OperationOutcome<string, ValidationErrors>("success"));
+            return await Task.FromResult<OperationOutcome<string, ValidationErrors>>(
+                new OperationOutcome<string, ValidationErrors>("success")
+            );
         };
 
         var result = await behavior.Handle(request, next, CancellationToken.None);
@@ -29,18 +32,16 @@ public class ValidationBehaviorTests
     public async Task PassingValidation_InvokesHandler()
     {
         var request = new TestRequest("Alice", 30);
-        var validators = new AbstractValidator<TestRequest>[]
-        {
-            new TestRequestNameValidator(),
-            new TestRequestAgeValidator(),
-        };
+        var validators = new AbstractValidator<TestRequest>[] { new TestRequestNameValidator(), new TestRequestAgeValidator() };
         var behavior = new ValidationBehavior<TestRequest, string>(validators);
 
         var handlerInvoked = false;
         var next = async () =>
         {
             handlerInvoked = true;
-            return await Task.FromResult<OperationOutcome<string, ValidationErrors>>(new OperationOutcome<string, ValidationErrors>("success"));
+            return await Task.FromResult<OperationOutcome<string, ValidationErrors>>(
+                new OperationOutcome<string, ValidationErrors>("success")
+            );
         };
 
         var result = await behavior.Handle(request, next, CancellationToken.None);
@@ -53,17 +54,16 @@ public class ValidationBehaviorTests
     public async Task FailingValidation_ShortCircuitsHandler()
     {
         var request = new TestRequest(string.Empty, 30);
-        var validators = new AbstractValidator<TestRequest>[]
-        {
-            new TestRequestNameValidator(),
-        };
+        var validators = new AbstractValidator<TestRequest>[] { new TestRequestNameValidator() };
         var behavior = new ValidationBehavior<TestRequest, string>(validators);
 
         var handlerInvoked = false;
         var next = async () =>
         {
             handlerInvoked = true;
-            return await Task.FromResult<OperationOutcome<string, ValidationErrors>>(new OperationOutcome<string, ValidationErrors>("success"));
+            return await Task.FromResult<OperationOutcome<string, ValidationErrors>>(
+                new OperationOutcome<string, ValidationErrors>("success")
+            );
         };
 
         var result = await behavior.Handle(request, next, CancellationToken.None);
@@ -76,16 +76,14 @@ public class ValidationBehaviorTests
     public async Task FailingValidation_ReturnsAllErrorMessages()
     {
         var request = new TestRequest("Al", -5);
-        var validators = new AbstractValidator<TestRequest>[]
-        {
-            new TestRequestNameValidator(),
-            new TestRequestAgeValidator(),
-        };
+        var validators = new AbstractValidator<TestRequest>[] { new TestRequestNameValidator(), new TestRequestAgeValidator() };
         var behavior = new ValidationBehavior<TestRequest, string>(validators);
 
         var next = async () =>
         {
-            return await Task.FromResult<OperationOutcome<string, ValidationErrors>>(new OperationOutcome<string, ValidationErrors>("success"));
+            return await Task.FromResult<OperationOutcome<string, ValidationErrors>>(
+                new OperationOutcome<string, ValidationErrors>("success")
+            );
         };
 
         var result = await behavior.Handle(request, next, CancellationToken.None);
@@ -110,7 +108,9 @@ public class ValidationBehaviorTests
 
         var next = async () =>
         {
-            return await Task.FromResult<OperationOutcome<string, ValidationErrors>>(new OperationOutcome<string, ValidationErrors>("success"));
+            return await Task.FromResult<OperationOutcome<string, ValidationErrors>>(
+                new OperationOutcome<string, ValidationErrors>("success")
+            );
         };
 
         var result = await behavior.Handle(request, next, CancellationToken.None);
@@ -122,28 +122,4 @@ public class ValidationBehaviorTests
         Assert.Single(messages, m => m == "Name is required");
     }
 
-    [Fact]
-    public async Task ValidationFailureMapsToCorrectionHTTPStatus()
-    {
-        var request = new TestRequest(string.Empty, 30);
-        var validators = new AbstractValidator<TestRequest>[]
-        {
-            new TestRequestNameValidator(),
-        };
-        var behavior = new ValidationBehavior<TestRequest, string>(validators);
-
-        var next = async () =>
-        {
-            return await Task.FromResult<OperationOutcome<string, ValidationErrors>>(new OperationOutcome<string, ValidationErrors>("success"));
-        };
-
-        var result = await behavior.Handle(request, next, CancellationToken.None);
-
-        // Verify the result maps to the correct HTTP status via ResultExtensions
-        var validationErrors = Assert.IsType<ValidationErrors>(result.Value);
-        var httpResult = validationErrors.ToActionResult();
-
-        var objectResult = Assert.IsType<UnprocessableEntityObjectResult>(httpResult);
-        Assert.Equal(StatusCodes.Status422UnprocessableEntity, objectResult.StatusCode);
-    }
 }

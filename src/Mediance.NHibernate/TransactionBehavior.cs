@@ -39,7 +39,8 @@ public class TransactionBehavior<TRequest, TResponse>(
 ) : IPipelineBehavior<TRequest, TResponse>
 {
     private readonly IOutcomeClassifier classifier = classifier ?? OutcomeClassifierBuilder.DefaultClassifier;
-    private readonly IResponseOutcomeDescriber _describer = describer ?? new DefaultResponseOutcomeDescriber(classifier ?? OutcomeClassifierBuilder.DefaultClassifier);
+    private readonly IResponseOutcomeDescriber _describer =
+        describer ?? new DefaultResponseOutcomeDescriber(classifier ?? OutcomeClassifierBuilder.DefaultClassifier);
 
     /// <inheritdoc/>
     /// <remarks>

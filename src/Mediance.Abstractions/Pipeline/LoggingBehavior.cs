@@ -12,7 +12,8 @@ public class LoggingBehavior<TRequest, TResponse>(
     IResponseOutcomeDescriber? describer = null
 ) : IPipelineBehavior<TRequest, TResponse>
 {
-    private readonly IResponseOutcomeDescriber describer = describer ?? new DefaultResponseOutcomeDescriber(Classifiers.OutcomeClassifierBuilder.DefaultClassifier);
+    private readonly IResponseOutcomeDescriber describer =
+        describer ?? new DefaultResponseOutcomeDescriber(Classifiers.OutcomeClassifierBuilder.DefaultClassifier);
 
     /// <summary>
     /// Handles the request, logging the outcome and elapsed time.

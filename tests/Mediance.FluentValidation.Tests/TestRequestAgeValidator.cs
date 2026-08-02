@@ -9,7 +9,9 @@ internal class TestRequestAgeValidator : AbstractValidator<TestRequest>
     public TestRequestAgeValidator()
     {
         this.RuleFor(x => x.Age)
-            .GreaterThanOrEqualTo(0).WithMessage("Age must be non-negative")
-            .LessThanOrEqualTo(150).WithMessage("Age must be realistic");
+            .GreaterThanOrEqualTo(0)
+            .WithMessage("Age must be non-negative")
+            .LessThanOrEqualTo(150)
+            .WithMessage("Age must be realistic");
     }
 }

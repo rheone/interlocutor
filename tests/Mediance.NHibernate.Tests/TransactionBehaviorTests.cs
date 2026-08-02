@@ -1,8 +1,9 @@
 namespace Mediance.NHibernate.Tests;
 
+using global::NHibernate;
 using Mediance.Abstractions;
 using Mediance.Abstractions.Commands;
-using NHibernate;
+using Mediance.NHibernate;
 
 public record NonTransactionalTestRequest(int Value) : ICommand<string>;
 
