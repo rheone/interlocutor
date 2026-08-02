@@ -66,12 +66,11 @@ public class DependencyTests
             .HaveDependencyOn("Mediance.Abstractions")
             .GetResult();
 
-        // ValidationBehavior has been commented out during code migration
-        // var fluentResult = Types
-        //     .InAssembly(typeof(Mediance.FluentValidation.ValidationBehavior<,>).Assembly)
-        //     .Should()
-        //     .HaveDependencyOn("Mediance.Abstractions")
-        //     .GetResult();
+        var fluentResult = Types
+            .InAssembly(typeof(Mediance.FluentValidation.ValidationBehavior<,>).Assembly)
+            .Should()
+            .HaveDependencyOn("Mediance.Abstractions")
+            .GetResult();
 
         var nhibernateResult = Types
             .InAssembly(typeof(Mediance.NHibernate.TransactionBehavior<,>).Assembly)
@@ -80,7 +79,7 @@ public class DependencyTests
             .GetResult();
 
         Assert.True(efCoreResult.IsSuccessful, "EF Core package should depend on Abstractions");
-        // Assert.True(fluentResult.IsSuccessful, "FluentValidation package should depend on Abstractions");
+        Assert.True(fluentResult.IsSuccessful, "FluentValidation package should depend on Abstractions");
         Assert.True(nhibernateResult.IsSuccessful, "NHibernate package should depend on Abstractions");
     }
 }
