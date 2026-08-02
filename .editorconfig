@@ -131,7 +131,7 @@ csharp_style_unused_value_assignment_preference = discard_variable:suggestion
 csharp_style_unused_value_expression_statement_preference = discard_variable:silent
 
 # 'using' directive preferences
-csharp_using_directive_placement = outside_namespace:silent
+csharp_using_directive_placement = inside_namespace:silent
 
 #### C# Formatting Rules ####
 
@@ -479,9 +479,9 @@ dotnet_diagnostic.CS8019.severity = Warning
 dotnet_diagnostic.RS1022.severity = Warning
 
 # AnalyzerId= Microsoft.CodeAnalysis.CSharp.CodeStyle  RuleNamespace= Microsoft.CodeAnalysis.CSharp.CodeStyle
-dotnet_diagnostic.IDE0055.severity = None
-dotnet_diagnostic.IDE0079.severity = Warning
-dotnet_diagnostic.IDE1006.severity = Suggestion
+dotnet_diagnostic.IDE0055.severity = Suggestion # Fix formatting
+dotnet_diagnostic.IDE0079.severity = Warning    # Remove unnecessary suppression
+dotnet_diagnostic.IDE1006.severity = None       # Naming rule violation
 
 # AnalyzerId= Microsoft.CodeAnalysis.CSharp.Features  RuleNamespace= Microsoft.CodeAnalysis.CSharp.Features
 dotnet_diagnostic.IDE0003.severity = None
@@ -498,6 +498,7 @@ dotnet_diagnostic.SA1012.severity = Suggestion   # Opening brace should be space
 dotnet_diagnostic.SA1013.severity = Suggestion   # Closing brace should be spaced correctly
 dotnet_diagnostic.SA1025.severity = Suggestion   # No multiple consecutive whitespace characters
 dotnet_diagnostic.SA1101.severity = Suggestion   # Prefix local calls with 'this.'
+
 dotnet_diagnostic.SA1108.severity = Suggestion   # Block statements should not contain embedded comments
 dotnet_diagnostic.SA1111.severity = Suggestion   # Closing parenthesis should be on same line as last parameter
 dotnet_diagnostic.SA1116.severity = Suggestion   # Split parameters should begin on line after declaration
@@ -507,76 +508,76 @@ dotnet_diagnostic.SA1124.severity = None         # Do not use #region directives
 dotnet_diagnostic.SA1127.severity = None         # Generic type constraints should be on separate lines
 dotnet_diagnostic.SA1128.severity = None         # Constructor initializers should be on separate lines
 dotnet_diagnostic.SA1137.severity = Warning      # Elements should have consistent indentation
+# Warning, not error, until tests/ is migrated: src/ puts usings inside the namespace (matching
+# stylecop.json insideNamespace), tests/ puts them outside. Restore to error once tests/ is unified.
+dotnet_diagnostic.SA1200.severity = Warning      # Using directives should be inside namespace
 dotnet_diagnostic.SA1201.severity = Warning      # Elements should appear in the prescribed order
 dotnet_diagnostic.SA1202.severity = None         # Elements should be ordered by access level
 dotnet_diagnostic.SA1203.severity = Suggestion   # Constants should appear before fields
 dotnet_diagnostic.SA1204.severity = None         # Static members should appear before instance members
-dotnet_diagnostic.SA1309.severity = Suggestion   # Fields should not begin with an underscore
+dotnet_diagnostic.SA1309.severity = None         # Fields should not begin with an underscore
 dotnet_diagnostic.SA1313.severity = Warning      # Parameter names should begin with a lowercase letter
-dotnet_diagnostic.SA1412.severity = None        # Store files as UTF-8 with BOM
+dotnet_diagnostic.SA1412.severity = None         # Store files as UTF-8 with BOM
 dotnet_diagnostic.SA1413.severity = Suggestion   # Use trailing commas in multi-line initializers
 dotnet_diagnostic.SA1501.severity = Suggestion   # Statements should not be on a single line
-
 dotnet_diagnostic.SA1504.severity = Suggestion   # Opening brace should not be followed by a blank line
 dotnet_diagnostic.SA1512.severity = Suggestion   # Single-line comments should be preceded by a blank line
 dotnet_diagnostic.SA1513.severity = Suggestion   # Closing brace should be followed by a blank line
 dotnet_diagnostic.SA1515.severity = Suggestion   # Single-line comments should be preceded by a blank line (element separation)
 dotnet_diagnostic.SA1516.severity = Suggestion   # Elements should be separated by a blank line
-
-# Documentation Rules (SA1600-) https://github.com/DotNetAnalyzers/StyleCopAnalyzers/blob/master/documentation/DocumentationRules.md
-dotnet_diagnostic.SA1600.severity = Warning	# A C# code element is missing a documentation header.
-dotnet_diagnostic.SA1601.severity = Warning	# A C# partial element is missing a documentation header.
-dotnet_diagnostic.SA1602.severity = Warning	# An item within a C# enumeration is missing an Xml documentation header.
-dotnet_diagnostic.SA1603.severity = Warning	# The Xml within a C# element's document header is badly formed.
-dotnet_diagnostic.SA1604.severity = Warning	# The Xml header documentation for a C# element is missing a <summary> tag.
-dotnet_diagnostic.SA1605.severity = Warning	# The <summary> or <content> tag within the documentation header for a C# code element is missing or empty.
-dotnet_diagnostic.SA1606.severity = Warning	# The <summary> tag within the documentation header for a C# code element is empty.
-dotnet_diagnostic.SA1607.severity = Warning	# The <summary> or <content> tag within the documentation header for a C# code element is empty.
-dotnet_diagnostic.SA1608.severity = Warning	# The <summary> tag within an element's Xml header documentation contains the default text generated by Visual Studio during the creation of the element.
-dotnet_diagnostic.SA1609.severity = Warning	# The Xml header documentation for a C# property does not contain a <value> tag.
-dotnet_diagnostic.SA1610.severity = Warning	# The Xml header documentation for a C# property contains an empty <value> tag.
-dotnet_diagnostic.SA1611.severity = Warning	# A C# method, constructor, delegate or indexer element is missing documentation for one or more of its parameters.
-dotnet_diagnostic.SA1612.severity = Warning	# The documentation describing the parameters to a C# method, constructor, delegate or indexer element does not match the actual parameters on the element.
-dotnet_diagnostic.SA1613.severity = Warning	# A <param> tag within a C# element's documentation header is missing a name attribute containing the name of the parameter.
-dotnet_diagnostic.SA1614.severity = Warning	# A <param> tag within a C# element's documentation header is empty.
-dotnet_diagnostic.SA1615.severity = Warning	# A C# element is missing documentation for its return value.
-dotnet_diagnostic.SA1616.severity = Warning	# The <returns> tag within a C# element's documentation header is empty.
-dotnet_diagnostic.SA1617.severity = Warning	# A C# code element does not contain a return value, or returns void, but the documentation header for the element contains a <returns> tag.
-dotnet_diagnostic.SA1618.severity = Warning	# A generic C# element is missing documentation for one or more of its generic type parameters.
-dotnet_diagnostic.SA1619.severity = Warning	# A generic, partial C# element is missing documentation for one or more of its generic type parameters, and the documentation for the element contains a <summary> tag.
-dotnet_diagnostic.SA1620.severity = Warning	# The <typeparam> tags within the Xml header documentation for a generic C# element do not match the generic type parameters on the element.
-dotnet_diagnostic.SA1621.severity = Warning	# A <typeparam> tag within the Xml header documentation for a generic C# element is missing a name attribute, or contains an empty name attribute.
-dotnet_diagnostic.SA1622.severity = Warning	# A <typeparam> tag within the Xml header documentation for a generic C# element is empty.
-dotnet_diagnostic.SA1623.severity = Warning	# The documentation text within a C# property's <summary> tag does not match the accessors within the property.
-dotnet_diagnostic.SA1624.severity = Warning	# The documentation text within a C# property's <summary> tag takes into account all of the accessors within the property, but one of the accessors has limited access.
-dotnet_diagnostic.SA1625.severity = Warning	# The Xml documentation for a C# element contains two or more identical entries, indicating that the documentation has been copied and pasted.
-dotnet_diagnostic.SA1626.severity = Warning	# The C# code contains a single-line comment which begins with three forward slashes in a row.
-dotnet_diagnostic.SA1627.severity = Warning	# The Xml header documentation for a C# code element contains an empty tag.
-dotnet_diagnostic.SA1628.severity = Warning	# A section of the Xml header documentation for a C# element does not begin with a capital letter.
-dotnet_diagnostic.SA1629.severity = None	# A section of the Xml header documentation for a C# element does not end with a period (also known as a full stop).
-dotnet_diagnostic.SA1630.severity = Warning	# A section of the Xml header documentation for a C# element does not contain any whitespace between words.
-dotnet_diagnostic.SA1631.severity = Warning	# A section of the Xml header documentation for a C# element does not contain enough alphabetic characters.
-dotnet_diagnostic.SA1632.severity = None	# From StyleCop 4.5 this rule is disabled by default.
-dotnet_diagnostic.SA1633.severity = None	# A C# code file is missing a standard file header.
-dotnet_diagnostic.SA1634.severity = Warning	# The file header at the top of a C# code file is missing a copyright tag.
-dotnet_diagnostic.SA1635.severity = Warning	# The file header at the top of a C# code file is missing copyright text.
-dotnet_diagnostic.SA1636.severity = Warning	# The file header at the top of a C# code file does not contain the appropriate copyright text.
-dotnet_diagnostic.SA1637.severity = Warning	# The file header at the top of a C# code file is missing the file name.
-dotnet_diagnostic.SA1638.severity = Warning	# The file tag within the file header at the top of a C# code file does not contain the name of the file.
-dotnet_diagnostic.SA1639.severity = Warning	# The file header at the top of a C# code file does not contain a filled-in summary tag.
-dotnet_diagnostic.SA1640.severity = Warning	# The file header at the top of a C# code file does not contain company name text.
-dotnet_diagnostic.SA1641.severity = Warning	# The file header at the top of a C# code file does not contain the appropriate company name text.
-dotnet_diagnostic.SA1642.severity = Warning	# The XML documentation header for a C# constructor does not contain the appropriate summary text.
-dotnet_diagnostic.SA1643.severity = Warning	# The Xml documentation header for a C# finalizer does not contain the appropriate summary text.
-dotnet_diagnostic.SA1644.severity = Warning	# A section within the Xml documentation header for a C# element contains blank lines.
-dotnet_diagnostic.SA1645.severity = Warning	# An included Xml documentation file does not exist.
-dotnet_diagnostic.SA1646.severity = Warning	# An included Xml documentation link contains an invalid path.
-dotnet_diagnostic.SA1647.severity = Warning	# An include tag within an Xml documentation header does not contain valid file and path attribute.
-dotnet_diagnostic.SA1648.severity = Warning	# <inheritdoc> has been used on an element that doesn't inherit from a base class or implement an interface.
-dotnet_diagnostic.SA1649.severity = Warning	# The file name of a C# code file does not match the first type declared in the file.
-dotnet_diagnostic.SA1650.severity = Warning	# The element documentation for the element contains one or more spelling mistakes or unrecognized words.
-dotnet_diagnostic.SA1651.severity = Warning	# The documentation for the element contains one or more <placeholder> elements.
-dotnet_diagnostic.SA1652.severity = None	# This rule was moved to SA0001
+dotnet_diagnostic.SA1600.severity = Warning	     # A C# code element is missing a documentation header.
+dotnet_diagnostic.SA1601.severity = Warning	     # A C# partial element is missing a documentation header.
+dotnet_diagnostic.SA1602.severity = Warning	     # An item within a C# enumeration is missing an Xml documentation header.
+dotnet_diagnostic.SA1603.severity = Warning	     # The Xml within a C# element's document header is badly formed.
+dotnet_diagnostic.SA1604.severity = Warning	     # The Xml header documentation for a C# element is missing a <summary> tag.
+dotnet_diagnostic.SA1605.severity = Warning	     # The <summary> or <content> tag within the documentation header for a C# code element is missing or empty.
+dotnet_diagnostic.SA1606.severity = Warning	     # The <summary> tag within the documentation header for a C# code element is empty.
+dotnet_diagnostic.SA1607.severity = Warning	     # The <summary> or <content> tag within the documentation header for a C# code element is empty.
+dotnet_diagnostic.SA1608.severity = Warning	     # The <summary> tag within an element's Xml header documentation contains the default text generated by Visual Studio during the creation of the element.
+dotnet_diagnostic.SA1609.severity = Warning	     # The Xml header documentation for a C# property does not contain a <value> tag.
+dotnet_diagnostic.SA1610.severity = Warning	     # The Xml header documentation for a C# property contains an empty <value> tag.
+dotnet_diagnostic.SA1611.severity = Warning	     # A C# method, constructor, delegate or indexer element is missing documentation for one or more of its parameters.
+dotnet_diagnostic.SA1612.severity = Warning	     # The documentation describing the parameters to a C# method, constructor, delegate or indexer element does not match the actual parameters on the element.
+dotnet_diagnostic.SA1613.severity = Warning	     # A <param> tag within a C# element's documentation header is missing a name attribute containing the name of the parameter.
+dotnet_diagnostic.SA1614.severity = Warning	     # A <param> tag within a C# element's documentation header is empty.
+dotnet_diagnostic.SA1615.severity = Warning	     # A C# element is missing documentation for its return value.
+dotnet_diagnostic.SA1616.severity = Warning	     # The <returns> tag within a C# element's documentation header is empty.
+dotnet_diagnostic.SA1617.severity = Warning	     # A C# code element does not contain a return value, or returns void, but the documentation header for the element contains a <returns> tag.
+dotnet_diagnostic.SA1618.severity = Warning	     # A generic C# element is missing documentation for one or more of its generic type parameters.
+dotnet_diagnostic.SA1619.severity = Warning	     # A generic, partial C# element is missing documentation for one or more of its generic type parameters, and the documentation for the element contains a <summary> tag.
+dotnet_diagnostic.SA1620.severity = Warning	     # The <typeparam> tags within the Xml header documentation for a generic C# element do not match the generic type parameters on the element.
+dotnet_diagnostic.SA1621.severity = Warning	     # A <typeparam> tag within the Xml header documentation for a generic C# element is missing a name attribute, or contains an empty name attribute.
+dotnet_diagnostic.SA1622.severity = Warning	     # A <typeparam> tag within the Xml header documentation for a generic C# element is empty.
+dotnet_diagnostic.SA1623.severity = Warning	     # The documentation text within a C# property's <summary> tag does not match the accessors within the property.
+dotnet_diagnostic.SA1624.severity = Warning	     # The documentation text within a C# property's <summary> tag takes into account all of the accessors within the property, but one of the accessors has limited access.
+dotnet_diagnostic.SA1625.severity = Warning	     # The Xml documentation for a C# element contains two or more identical entries, indicating that the documentation has been copied and pasted.
+dotnet_diagnostic.SA1626.severity = Warning	     # The C# code contains a single-line comment which begins with three forward slashes in a row.
+dotnet_diagnostic.SA1627.severity = Warning	     # The Xml header documentation for a C# code element contains an empty tag.
+dotnet_diagnostic.SA1628.severity = Warning	     # A section of the Xml header documentation for a C# element does not begin with a capital letter.
+dotnet_diagnostic.SA1629.severity = None	     # A section of the Xml header documentation for a C# element does not end with a period (also known as a full stop).
+dotnet_diagnostic.SA1630.severity = Warning	     # A section of the Xml header documentation for a C# element does not contain any whitespace between words.
+dotnet_diagnostic.SA1631.severity = Warning	     # A section of the Xml header documentation for a C# element does not contain enough alphabetic characters.
+dotnet_diagnostic.SA1632.severity = None	     # From StyleCop 4.5 this rule is disabled by default.
+dotnet_diagnostic.SA1633.severity = None	     # A C# code file is missing a standard file header.
+dotnet_diagnostic.SA1634.severity = Warning	     # The file header at the top of a C# code file is missing a copyright tag.
+dotnet_diagnostic.SA1635.severity = Warning	     # The file header at the top of a C# code file is missing copyright text.
+dotnet_diagnostic.SA1636.severity = Warning	     # The file header at the top of a C# code file does not contain the appropriate copyright text.
+dotnet_diagnostic.SA1637.severity = Warning	     # The file header at the top of a C# code file is missing the file name.
+dotnet_diagnostic.SA1638.severity = Warning	     # The file tag within the file header at the top of a C# code file does not contain the name of the file.
+dotnet_diagnostic.SA1639.severity = Warning	     # The file header at the top of a C# code file does not contain a filled-in summary tag.
+dotnet_diagnostic.SA1640.severity = Warning	     # The file header at the top of a C# code file does not contain company name text.
+dotnet_diagnostic.SA1641.severity = Warning	     # The file header at the top of a C# code file does not contain the appropriate company name text.
+dotnet_diagnostic.SA1642.severity = Warning	     # The XML documentation header for a C# constructor does not contain the appropriate summary text.
+dotnet_diagnostic.SA1643.severity = Warning	     # The Xml documentation header for a C# finalizer does not contain the appropriate summary text.
+dotnet_diagnostic.SA1644.severity = Warning	     # A section within the Xml documentation header for a C# element contains blank lines.
+dotnet_diagnostic.SA1645.severity = Warning	     # An included Xml documentation file does not exist.
+dotnet_diagnostic.SA1646.severity = Warning	     # An included Xml documentation link contains an invalid path.
+dotnet_diagnostic.SA1647.severity = Warning	     # An include tag within an Xml documentation header does not contain valid file and path attribute.
+dotnet_diagnostic.SA1648.severity = Warning	     # <inheritdoc> has been used on an element that doesn't inherit from a base class or implement an interface.
+dotnet_diagnostic.SA1649.severity = Warning	     # The file name of a C# code file does not match the first type declared in the file.
+dotnet_diagnostic.SA1650.severity = Warning	     # The element documentation for the element contains one or more spelling mistakes or unrecognized words.
+dotnet_diagnostic.SA1651.severity = Warning	     # The documentation for the element contains one or more <placeholder> elements.
+dotnet_diagnostic.SA1652.severity = None	     # This rule was moved to SA0001
 
 # Sonar
 dotnet_diagnostic.S107.severity = Suggestion  #  Methods should not have too many parameters

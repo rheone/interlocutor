@@ -1,12 +1,8 @@
-using Mediance.Abstractions;
-using Mediance.Abstractions.Commands;
-using Mediance.Abstractions.Markers;
-using Mediance.Abstractions.Pipeline;
-using Mediance.CommonKernel;
-
 namespace Mediance.EntityFrameworkCore.Tests;
 
-public record NonTransactionalTestRequest(int value) : ICommand<string>;
+using Mediance.Abstractions.Commands;
+
+public record NonTransactionalTestRequest(int Value) : ICommand<string>;
 
 public class TransactionBehaviorTests
 {
@@ -26,7 +22,7 @@ public class TransactionBehaviorTests
             () =>
             {
                 handled = true;
-                return Task.FromResult<Result<string>>(new Result<string>("done"));
+                return Task.FromResult("done");
             },
             CancellationToken.None
         );

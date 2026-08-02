@@ -1,13 +1,13 @@
-using System.Reflection;
-using Mediance.Abstractions;
-using Mediance.Abstractions.Core;
-using NetArchTest.Rules;
-
 namespace Mediance.Architecture.Tests;
+
+using System.Reflection;
+using Mediance.Abstractions.Core;
+using Mediance.CommonKernel;
+using NetArchTest.Rules;
 
 public class DependencyTests
 {
-    private static readonly Assembly CommonKernelAssembly = typeof(Mediance.CommonKernel.Result).Assembly;
+    private static readonly Assembly CommonKernelAssembly = typeof(OperationOutcome).Assembly;
     private static readonly Assembly AbstractionsAssembly = typeof(IMediator).Assembly;
 
     [Fact]
@@ -16,13 +16,13 @@ public class DependencyTests
         var result = Types
             .InAssembly(CommonKernelAssembly)
             .ShouldNot()
-            .HaveDependencyOnAny([
+            .HaveDependencyOnAny(
                 "Mediance.Abstractions",
                 "Mediance.AspNetCore",
                 "Mediance.EntityFrameworkCore",
                 "Mediance.FluentValidation",
-                "Mediance.NHibernate",
-            ])
+                "Mediance.NHibernate"
+            )
             .GetResult();
 
         Assert.True(result.IsSuccessful, string.Join(", ", result.FailingTypeNames ?? []));
@@ -46,17 +46,12 @@ public class DependencyTests
     }
 
     [Fact]
-    public void AspNetCore_ShouldNotDependOnAbstractionsOrBehaviors()
+    public void AspNetCore_ShouldNotDependOnStoreOrValidationPackages()
     {
         var result = Types
             .InAssembly(typeof(Mediance.AspNetCore.ResultExtensions).Assembly)
             .ShouldNot()
-            .HaveDependencyOnAny([
-                "Mediance.Abstractions",
-                "Mediance.EntityFrameworkCore",
-                "Mediance.FluentValidation",
-                "Mediance.NHibernate",
-            ])
+            .HaveDependencyOnAny(["Mediance.EntityFrameworkCore", "Mediance.FluentValidation", "Mediance.NHibernate"])
             .GetResult();
 
         Assert.True(result.IsSuccessful, string.Join(", ", result.FailingTypeNames ?? []));

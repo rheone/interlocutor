@@ -1,3 +1,5 @@
+namespace Mediance.Abstractions.Tests;
+
 using System.Diagnostics;
 using Mediance.Abstractions.Commands;
 using Mediance.Abstractions.Core;
@@ -5,37 +7,36 @@ using Mediance.Abstractions.Notifications;
 using Mediance.Abstractions.Pipeline;
 using Mediance.Abstractions.Queries;
 using Mediance.CommonKernel;
+using Mediance.CommonKernel.ResultTypes;
 using Microsoft.Extensions.DependencyInjection;
-
-namespace Mediance.Abstractions.Tests;
 
 public record TestQuery(int Value) : IQuery<int>;
 
 public class TestQueryHandler : IQueryHandler<TestQuery, int>
 {
-    public Task<Result<int>> Handle(TestQuery query, CancellationToken ct) => Task.FromResult(new Result<int>(query.Value * 2));
+    public Task<int> Handle(TestQuery query, CancellationToken ct) => Task.FromResult(query.Value * 2);
 }
 
 public record GreetCommand(string PersonName) : ICommand<string>;
 
 public class GreetCommandHandler : ICommandHandler<GreetCommand, string>
 {
-    public Task<Result<string>> Handle(GreetCommand command, CancellationToken ct) =>
-        Task.FromResult(new Result<string>($"Hello {command.PersonName}"));
+    public Task<string> Handle(GreetCommand command, CancellationToken ct) => Task.FromResult($"Hello {command.PersonName}");
 }
 
 public record TestVoidCommand(string Value) : ICommand;
 
-public class TestVoidHandler : ICommandHandler<TestVoidCommand>
+public class TestVoidHandler : IVoidCommandHandler<TestVoidCommand, OperationOutcome>
 {
-    public Task<Result> Handle(TestVoidCommand command, CancellationToken ct) => Task.FromResult(new Result(new Success()));
+    public Task<OperationOutcome> Handle(TestVoidCommand command, CancellationToken ct) =>
+        Task.FromResult(new OperationOutcome(default(Success)));
 }
 
 public record TestNotification(string Message) : INotification;
 
 public class TrackingBehavior<TRequest, TResponse>(Action track) : IPipelineBehavior<TRequest, TResponse>
 {
-    public async Task<Result<TResponse>> Handle(TRequest request, Func<Task<Result<TResponse>>> next, CancellationToken ct)
+    public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         track();
         return await next();
@@ -50,12 +51,7 @@ public class MediatorTests
         var mediator = CreateMediator<TestQueryHandler>(services => { });
         var result = await mediator.Send(new TestQuery(21), CancellationToken.None);
 
-        var value = result.Value switch
-        {
-            int v => v,
-            _ => -1,
-        };
-        Assert.Equal(42, value);
+        Assert.Equal(42, result);
     }
 
     [Fact]
@@ -94,12 +90,12 @@ public class MediatorTests
         var invoked = false;
         var mediator = CreateMediator<TestVoidHandler>(services =>
         {
-            services.AddSingleton<IPipelineBehavior<TestVoidCommand, Result>>(
-                new TrackingBehavior<TestVoidCommand, Result>(() => invoked = true)
+            services.AddSingleton<IPipelineBehavior<TestVoidCommand, OperationOutcome>>(
+                new TrackingBehavior<TestVoidCommand, OperationOutcome>(() => invoked = true)
             );
         });
 
-        await mediator.Send(new TestVoidCommand("test"), CancellationToken.None);
+        await mediator.Send<OperationOutcome>(new TestVoidCommand("test"), CancellationToken.None);
         Assert.True(invoked);
     }
 
@@ -107,7 +103,7 @@ public class MediatorTests
     public async Task Send_VoidCommand_ReturnsSuccess()
     {
         var mediator = CreateMediator<TestVoidHandler>(services => { });
-        var result = await mediator.Send(new TestVoidCommand("test"), CancellationToken.None);
+        var result = await mediator.Send<OperationOutcome>(new TestVoidCommand("test"), CancellationToken.None);
 
         var isSuccess = result.Value switch
         {
@@ -202,7 +198,7 @@ public class MediatorTests
         }
         else if (typeof(THandler) == typeof(TestVoidHandler))
         {
-            services.AddSingleton<ICommandHandler<TestVoidCommand>, TestVoidHandler>();
+            services.AddSingleton<IVoidCommandHandler<TestVoidCommand, OperationOutcome>, TestVoidHandler>();
         }
 
         configure(services);

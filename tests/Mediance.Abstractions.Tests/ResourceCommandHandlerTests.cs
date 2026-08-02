@@ -1,11 +1,10 @@
-using System.Diagnostics;
-using Mediance.Abstractions.Commands;
-using Mediance.Abstractions.Core;
-using Mediance.CommonKernel;
-
 namespace Mediance.Abstractions.Tests;
 
-public record TestCommand(int entityId) : ICommand<string>;
+using Mediance.Abstractions.Commands;
+using Mediance.CommonKernel;
+using Mediance.CommonKernel.ResultTypes;
+
+public record TestCommand(int EntityId) : ICommand<OperationOutcome<string, NotFound, Failure>>;
 
 public class TestEntity
 {
@@ -14,83 +13,78 @@ public class TestEntity
     public string? Name { get; init; }
 }
 
+public class TestResourceCommandHandler : ResourceCommandHandler<TestCommand, TestEntity, string>
+{
+    private readonly TestEntity? _loadedEntity;
+    private readonly Failure? _authorizationFailure;
+    private readonly OperationOutcome<string, NotFound, Failure> _handleResult;
+
+    public TestResourceCommandHandler(
+        TestEntity? loadedEntity,
+        Failure? authorizationFailure,
+        OperationOutcome<string, NotFound, Failure> handleResult
+    )
+    {
+        this._loadedEntity = loadedEntity;
+        this._authorizationFailure = authorizationFailure;
+        this._handleResult = handleResult;
+    }
+
+    protected override Task<TestEntity?> LoadAsync(TestCommand command, CancellationToken ct) =>
+        Task.FromResult(this._loadedEntity);
+
+    protected override Failure? Authorize(TestEntity entity, TestCommand command) => this._authorizationFailure;
+
+    protected override Task<OperationOutcome<string, NotFound, Failure>> HandleAsync(
+        TestCommand command,
+        TestEntity entity,
+        CancellationToken ct
+    ) => Task.FromResult(this._handleResult);
+}
+
 public class ResourceCommandHandlerTests
 {
     [Fact]
     public async Task Handle_WithExistingEntity_ReturnsHandlerResult()
     {
-        var handler = new StubHandler
-        {
-            LoadResult = new TestEntity { Id = 1, Name = "Test" },
-            HandleResult = new Result<string>("Processed"),
-        };
+        var entity = new TestEntity { Id = 1, Name = "Test" };
+        var expectedResult = new OperationOutcome<string, NotFound, Failure>("Success");
+        var handler = new TestResourceCommandHandler(entity, null, expectedResult);
 
         var result = await handler.Handle(new TestCommand(1), CancellationToken.None);
 
-        var value = result.Value switch
-        {
-            string s => s,
-            Failure => null,
-            _ => throw new UnreachableException(),
-        };
-        Assert.Equal("Processed", value);
+        Assert.True(result.IsSuccess);
+        Assert.Equal("Success", (string)result.Value);
     }
 
     [Fact]
     public async Task Handle_WithMissingEntity_ReturnsNotFound()
     {
-        var handler = new StubHandler { LoadResult = null };
+        var handler = new TestResourceCommandHandler(null, null, new OperationOutcome<string, NotFound, Failure>("unused"));
 
-        var result = await handler.Handle(new TestCommand(99), CancellationToken.None);
+        var result = await handler.Handle(new TestCommand(999), CancellationToken.None);
 
-        var isFailure = result.Value switch
-        {
-            Failure => true,
-            string => false,
-            _ => throw new UnreachableException(),
-        };
-        Assert.True(isFailure);
+        Assert.False(result.IsSuccess);
+        var notFound = Assert.IsType<NotFound>(result.Value);
+        Assert.Contains("TestEntity", notFound.Message);
+        Assert.Contains("not found", notFound.Message);
     }
 
     [Fact]
-    public async Task Handle_WithAuthorizationFailure_ReturnsForbidden()
+    public async Task Handle_WithAuthorizationFailure_ReturnsFailure()
     {
-        var handler = new StubHandler
-        {
-            LoadResult = new TestEntity { Id = 1 },
-            AuthorizeResult = new Forbidden("Access denied"),
-        };
+        var entity = new TestEntity { Id = 1, Name = "Test" };
+        var authFailure = new Failure("Access denied");
+        var handler = new TestResourceCommandHandler(
+            entity,
+            authFailure,
+            new OperationOutcome<string, NotFound, Failure>("unused")
+        );
 
         var result = await handler.Handle(new TestCommand(1), CancellationToken.None);
 
-        var forbidden = result.Value switch
-        {
-            Failure f => f switch
-            {
-                Forbidden fb => fb,
-                _ => null,
-            },
-            string => null,
-            _ => throw new UnreachableException(),
-        };
-        Assert.NotNull(forbidden);
-        Assert.Equal("Access denied", forbidden!.reason);
+        Assert.False(result.IsSuccess);
+        var failure = Assert.IsType<Failure>(result.Value);
+        Assert.Equal("Access denied", failure.Reason);
     }
-}
-
-public class StubHandler : ResourceCommandHandler<TestCommand, TestEntity, string>
-{
-    public TestEntity? LoadResult { get; set; }
-
-    public Failure? AuthorizeResult { get; set; }
-
-    public Result<string> HandleResult { get; set; }
-
-    protected override Task<TestEntity?> LoadAsync(TestCommand command, CancellationToken ct) =>
-        Task.FromResult(this.LoadResult);
-
-    protected override Failure? Authorize(TestEntity entity, TestCommand command) => this.AuthorizeResult;
-
-    protected override Task<Result<string>> HandleAsync(TestCommand command, TestEntity entity, CancellationToken ct) =>
-        Task.FromResult(this.HandleResult);
 }

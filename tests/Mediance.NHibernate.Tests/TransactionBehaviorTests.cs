@@ -1,13 +1,11 @@
-using Mediance.Abstractions;
-using Mediance.Abstractions.Commands;
-using Mediance.Abstractions.Markers;
-using Mediance.Abstractions.Pipeline;
-using Mediance.CommonKernel;
-using NHibernate;
-
 namespace Mediance.NHibernate.Tests;
 
-public record NonTransactionalTestRequest(int value) : ICommand<string>;
+using global::NHibernate;
+using Mediance.Abstractions;
+using Mediance.Abstractions.Commands;
+using Mediance.NHibernate;
+
+public record NonTransactionalTestRequest(int Value) : ICommand<string>;
 
 public class TransactionBehaviorTests
 {
@@ -23,7 +21,7 @@ public class TransactionBehaviorTests
             () =>
             {
                 handled = true;
-                return Task.FromResult<Result<string>>(new Result<string>("done"));
+                return Task.FromResult("done");
             },
             CancellationToken.None
         );

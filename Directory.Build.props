@@ -26,10 +26,10 @@
     <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
   </ItemGroup>
 
-  <!-- Suppress documentation warnings (CS1591) and StyleCop doc warnings (SA1600) -->
-  <!-- XML doc files are still generated, just warnings are suppressed -->
   <PropertyGroup>
-    <NoWarn>$(NoWarn);CS1591;SA1600;SA1101;SA1633;SA1313;SA1106;SA1127;SA1202;SA1503;SA1000;SA1009;SA1010;SA1122;AD0001</NoWarn>
+    <!-- AD0001: Roslyn analyzer failure (an analyzer threw an exception) -->
+    <!-- SA1633: File should have a header -->
+    <NoWarn>$(NoWarn)AD0001;SA1633</NoWarn>
   </PropertyGroup>
 
   <!-- Shared BCL usings -->

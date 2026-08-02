@@ -1,3 +1,7 @@
+> **Status: superseded** — this issue predates the common-kernel migration.
+> Reason: implemented; see remediation 07 for the remaining hook-pairing defect.
+> Superseded by the effort in `.scratch/remediation/`. Do not pick this up.
+
 ## Labels
 
 ready-for-agent

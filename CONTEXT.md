@@ -6,14 +6,14 @@ Glossary of domain vocabulary used throughout the Mediance project. Use these te
 
 | Term | Definition |
 |------|------------|
-| **Mediance** | A mediator/CQRS pipeline library for .NET built on C# 15 union types. Named after the legal term for how a case is resolved — maps to `Result<T>` outcomes (succeeded, not found, forbidden, etc.). Namespace: `Mediance.*`. |
+| **Mediance** | A mediator/CQRS pipeline library for .NET built on C# 15 union types. Named after the legal term for how a case is resolved — maps to `OperationOutcome<T>` outcomes (succeeded, not found, forbidden, etc.). Namespace: `Mediance.*`. |
 
 ## Result Types
 
 | Term | Definition |
 |------|------------|
-| **Result\&lt;T\&gt;** | C# 15 discriminated union: either success (`T`) or `Failure`. Used as the return type of all queries and value-returning commands. |
-| **Result** | Non-generic union: either `Success` or `Failure`. Used as the return type of void commands. |
+| **OperationOutcome\&lt;T\&gt;** | C# 15 discriminated union: either success (`T`) or `Failure`. Used as the return type of all queries and value-returning commands. |
+| **OperationOutcome** | Non-generic union: either `Success` or `Failure`. Used as the return type of void commands. |
 | **Failure** | Closed union of 5 expected failure outcomes: `ValidationFailed`, `RuleViolation`, `NotFound`, `Forbidden`, `Conflict`. Never represents an unexpected exception. |
 | **Success** | Marker record for void command success. Maps to HTTP 204 No Content. |
 
@@ -27,12 +27,21 @@ Glossary of domain vocabulary used throughout the Mediance project. Use these te
 | **Forbidden** | Authorization denied for a specific resource. Produced by `ResourceCommandHandler.Authorize()` or `AuthorizationBehavior`. Maps to HTTP 403 Forbidden (empty body — reason is logged server-side only). |
 | **Conflict** | State conflict: concurrency, uniqueness violation, or invalid transition. Produced by handler code. Maps to HTTP 409 Conflict with `ProblemDetails`. |
 
+## Result Type Aggregates
+
+| Term | Definition |
+|------|------------|
+| **ValidationErrors** | Immutable collection of one or more `ValidationError` instances. De-duplicates preserving first-occurrence order. Safe at default value (returns empty collection). Exposes unified accessor `.Items` (primary), with semantic projections `.Errors` and `.Messages`. |
+| **ValidationErrors\&lt;TErrorCode\&gt;** | Immutable collection of one or more `ValidationError<TErrorCode>` instances with associated error codes. De-duplicates preserving first-occurrence order. Safe at default value. Exposes unified accessor `.Items` (primary), with semantic projections `.Errors`, `.Messages`, and `.ErrorCodes`. |
+| **Failures** | Immutable collection of one or more `Failure` instances. De-duplicates preserving first-occurrence order. Safe at default value. Exposes unified accessor `.Items` (primary), with semantic projection `.Values` (legacy name). |
+| **Conflicts** | Immutable collection of one or more `Conflict` instances (state conflicts, concurrency, uniqueness violations). De-duplicates preserving first-occurrence order. Safe at default value. Exposes unified accessor `.Items` (primary), with semantic projection `.Messages`. |
+
 ## CQRS
 
 | Term | Definition |
 |------|------------|
-| **Query** | A read request implementing `IQuery<T>`. Always returns `Result<T>`. Never writes data. Never participates in transactions. |
-| **Command** | A write request implementing `ICommand<TResponse>` (returns value) or `ICommand` (void). Returns `Result`/`Result<T>`. May participate in transactions. |
+| **Query** | A read request implementing `IQuery<T>`. Always returns `OperationOutcome<T>`. Never writes data. Never participates in transactions. |
+| **Command** | A write request implementing `ICommand<TResponse>` (returns value) or `ICommand` (void). Returns `OperationOutcome`/`OperationOutcome<T>`. May participate in transactions. |
 | **Handler** | A class implementing `IQueryHandler<TQuery, TResponse>`, `ICommandHandler<TCommand, TResponse>`, or `ICommandHandler<TCommand>`. Contains the business logic for exactly one request type. |
 
 ## Pipeline
@@ -101,7 +110,7 @@ Glossary of domain vocabulary used throughout the Mediance project. Use these te
 
 | Term | Definition |
 |------|------------|
-| **PagedResult\&lt;T\&gt;** | Materialized page of results with paging metadata (`Items`, `Page`, `PageSize`, `TotalCount`). Used as `T` in `Result<PagedResult<T>>`. Always materialized — never returns `IQueryable`. |
+| **PagedResult\&lt;T\&gt;** | Materialized page of results with paging metadata (`Items`, `Page`, `PageSize`, `TotalCount`). Used as `T` in `OperationOutcome<PagedResult<T>>`. Always materialized — never returns `IQueryable`. |
 | **IPagedQuery\&lt;TItem\&gt;** | A query that returns `PagedResult<TItem>`. Carries `Page` and `PageSize` as contract members. |
 
 ## Resource Authorization
@@ -121,7 +130,7 @@ Glossary of domain vocabulary used throughout the Mediance project. Use these te
 
 | Term | Definition |
 |------|------------|
-| **Mediance.CommonKernel** | Pure data types (Result, Failure, PagedResult). Zero external dependencies. |
+| **Mediance.CommonKernel** | Pure data types (OperationOutcome, Failure, PagedResult). Zero external dependencies. |
 | **Mediance.Abstractions** | Mediator interfaces, handler contracts, marker interfaces, Mediator implementation, pipeline behaviors (Logging, Authorization, Auditing, PipelineStage). Depends on CommonKernel and framework-provided DI/Logging abstractions. |
 | **Mediance.AspNetCore** | `ToActionResult()` HTTP mapping. Depends on CommonKernel and ASP.NET Core. |
 | **Mediance.DependencyInjection.Microsoft** | Assembly-scanning `AddMediance()` for Microsoft.Extensions.DependencyInjection. |

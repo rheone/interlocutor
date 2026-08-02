@@ -1,0 +1,3 @@
+- injectable builder pattern for handling OperationOutcome options?
+- drop db session and use unit of work instead w/ session and transaction
+- pipeline builder pattern
