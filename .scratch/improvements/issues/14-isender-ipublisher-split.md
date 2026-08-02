@@ -1,3 +1,7 @@
+> **Status: superseded** — this issue predates the common-kernel migration.
+> Reason: references removed types; see remediation 14.
+> Superseded by the effort in `.scratch/remediation/`. Do not pick this up.
+
 ## Labels
 
 ready-for-agent

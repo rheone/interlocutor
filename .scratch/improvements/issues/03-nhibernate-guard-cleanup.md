@@ -1,3 +1,7 @@
+> **Status: superseded** — this issue predates the common-kernel migration.
+> Reason: the composite-condition pattern it describes no longer exists.
+> Superseded by the effort in `.scratch/remediation/`. Do not pick this up.
+
 ## Labels
 
 ready-for-agent

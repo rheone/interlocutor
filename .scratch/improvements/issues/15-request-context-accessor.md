@@ -1,3 +1,7 @@
+> **Status: superseded** — this issue predates the common-kernel migration.
+> Reason: interface and context record exist; remaining work is remediation 12.
+> Superseded by the effort in `.scratch/remediation/`. Do not pick this up.
+
 ## Labels
 
 ready-for-agent

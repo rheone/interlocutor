@@ -10,7 +10,7 @@
       "allowBuiltInTypeAliases": false
     },
     "orderingRules": {
-      "usingDirectivesPlacement": "outsideNamespace"
+      "usingDirectivesPlacement": "insideNamespace"
     },
     "maintainabilityRules": {
       "topLevelTypes": ["class", "interface", "struct", "enum", "delegate"]

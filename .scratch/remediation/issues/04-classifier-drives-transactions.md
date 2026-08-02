@@ -1,0 +1,24 @@
+## Labels
+
+ready-for-agent
+
+## What to build
+
+Wire the outcome classifier into the pipeline so that failure classification actually governs transactional outcome.
+
+Today a handler returning a generic or aggregate failure case is classified as success, and both store-specific transaction behaviors commit writes that should have rolled back. This is the most serious defect on the current branch.
+
+Both transaction behaviors, plus the logging and auditing behaviors, must obtain their classification from the injected describer rather than any local type test. The two transaction behaviors must agree with each other on every input.
+
+## Acceptance criteria
+
+- [ ] A handler returning any kernel failure case — non-generic, generic, or aggregate — rolls back in both store implementations
+- [ ] A consumer-registered custom failure type rolls back
+- [ ] An unregistered custom type follows the policy decided in the classifier slice, and that behavior is asserted
+- [ ] Both transaction behaviors produce identical commit and rollback decisions for identical inputs
+- [ ] Logging and auditing report the same classification the transaction behavior acted on
+- [ ] Tests are written at the behavior seam with a substituted continuation, red before green
+
+## Blocked by
+
+- 03-outcome-classifier-builder

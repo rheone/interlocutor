@@ -5,6 +5,87 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 
 /// <summary>
+/// Represents an immutable failure consisting of one or more distinct validation error messages,
+/// with no associated error codes.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Use <see cref="ValidationErrors"/> as a failure case in operation outcome unions when you need to return
+/// multiple validation failures from a request. It aggregates <see cref="ValidationError"/> instances, removes
+/// duplicates, and preserves order.
+/// </para>
+/// <para>
+/// Typically raised by the <c>ValidationBehavior</c> pipeline when a request implements FluentValidation validators
+/// and one or more validators report failures. Example outcome type: <c>OperationOutcome&lt;UserDto, ValidationErrors&gt;</c>.
+/// </para>
+/// <para>
+/// For validation errors that carry error codes, use <see cref="ValidationErrors{TErrorCode}"/>.
+/// </para>
+/// </remarks>
+public readonly record struct ValidationErrors
+{
+    private readonly ImmutableArray<ValidationError> _errors;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ValidationErrors"/> struct from the specified validation errors.
+    /// </summary>
+    /// <param name="errors">
+    /// The validation errors that describe why validation failed. Duplicate errors are removed, preserving
+    /// the order of first occurrence.
+    /// </param>
+    /// <exception cref="ArgumentNullException"><paramref name="errors"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="errors"/> contains no elements.</exception>
+    public ValidationErrors(IEnumerable<ValidationError> errors)
+    {
+        ArgumentNullException.ThrowIfNull(errors);
+
+        this._errors = [.. errors.Distinct()];
+
+        if (this._errors.IsEmpty)
+        {
+            throw new ArgumentException("At least one validation error is required.", nameof(errors));
+        }
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ValidationErrors"/> struct from the specified messages.
+    /// </summary>
+    /// <param name="messages">
+    /// The validation error messages that describe why validation failed. Duplicate messages are removed,
+    /// preserving the order of first occurrence.
+    /// </param>
+    /// <exception cref="ArgumentNullException"><paramref name="messages"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="messages"/> contains no elements.</exception>
+    public ValidationErrors(IEnumerable<string> messages)
+        : this((messages ?? throw new ArgumentNullException(nameof(messages))).Select(m => new ValidationError(m))) { }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ValidationErrors"/> struct from a single validation error message.
+    /// </summary>
+    /// <param name="message">The validation error message.</param>
+    public ValidationErrors(string message)
+        : this([new ValidationError(message)]) { }
+
+    /// <summary>
+    /// Gets the number of distinct validation error messages.
+    /// </summary>
+    /// <value>The count of distinct validation error messages.</value>
+    public int Count => this._errors.Length;
+
+    /// <summary>
+    /// Gets the distinct set of validation errors, in the order they were first encountered.
+    /// </summary>
+    /// <value>An unmodifiable collection of the distinct <see cref="ValidationError"/> values provided at creation.</value>
+    public IReadOnlyList<ValidationError> Errors => this._errors;
+
+    /// <summary>
+    /// Gets the distinct set of validation error messages, in the order they were first encountered.
+    /// </summary>
+    /// <value>An unmodifiable collection of the distinct messages found in <see cref="Errors"/>.</value>
+    public IReadOnlyList<string> Messages => [.. this._errors.Select(e => e.Message).Distinct()];
+}
+
+/// <summary>
 /// Represents an immutable failure consisting of one or more distinct validation errors, each carrying
 /// a message and an error code.
 /// </summary>
@@ -44,8 +125,8 @@ public readonly record struct ValidationErrors<TErrorCode>
 
         // Computed once here, rather than on every property access, and each preserves the order
         // in which the corresponding message/error code was first encountered in _errors.
-        this._uniqueMessages = [.. this._errors.Select(e => e.message).Distinct()];
-        this._uniqueErrorCodes = [.. this._errors.Select(e => e.errorCode).Distinct()];
+        this._uniqueMessages = [.. this._errors.Select(e => e.Message).Distinct()];
+        this._uniqueErrorCodes = [.. this._errors.Select(e => e.ErrorCode).Distinct()];
     }
 
     /// <summary>

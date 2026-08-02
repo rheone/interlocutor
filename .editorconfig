@@ -131,7 +131,7 @@ csharp_style_unused_value_assignment_preference = discard_variable:suggestion
 csharp_style_unused_value_expression_statement_preference = discard_variable:silent
 
 # 'using' directive preferences
-csharp_using_directive_placement = outside_namespace:silent
+csharp_using_directive_placement = inside_namespace:silent
 
 #### C# Formatting Rules ####
 
@@ -498,6 +498,7 @@ dotnet_diagnostic.SA1012.severity = Suggestion   # Opening brace should be space
 dotnet_diagnostic.SA1013.severity = Suggestion   # Closing brace should be spaced correctly
 dotnet_diagnostic.SA1025.severity = Suggestion   # No multiple consecutive whitespace characters
 dotnet_diagnostic.SA1101.severity = Suggestion   # Prefix local calls with 'this.'
+
 dotnet_diagnostic.SA1108.severity = Suggestion   # Block statements should not contain embedded comments
 dotnet_diagnostic.SA1111.severity = Suggestion   # Closing parenthesis should be on same line as last parameter
 dotnet_diagnostic.SA1116.severity = Suggestion   # Split parameters should begin on line after declaration
@@ -507,7 +508,9 @@ dotnet_diagnostic.SA1124.severity = None         # Do not use #region directives
 dotnet_diagnostic.SA1127.severity = None         # Generic type constraints should be on separate lines
 dotnet_diagnostic.SA1128.severity = None         # Constructor initializers should be on separate lines
 dotnet_diagnostic.SA1137.severity = Warning      # Elements should have consistent indentation
-dotnet_diagnostic.SA1200.severity = error        # Using directives should be inside namespace
+# Warning, not error, until tests/ is migrated: src/ puts usings inside the namespace (matching
+# stylecop.json insideNamespace), tests/ puts them outside. Restore to error once tests/ is unified.
+dotnet_diagnostic.SA1200.severity = Warning      # Using directives should be inside namespace
 dotnet_diagnostic.SA1201.severity = Warning      # Elements should appear in the prescribed order
 dotnet_diagnostic.SA1202.severity = None         # Elements should be ordered by access level
 dotnet_diagnostic.SA1203.severity = Suggestion   # Constants should appear before fields
