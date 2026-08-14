@@ -21,20 +21,22 @@ public static class ResultExtensions
     /// <param name="result">The result to convert.</param>
     /// <returns>An <see cref="OkObjectResult"/> on success, or the mapped error result on failure.</returns>
     public static IActionResult ToActionResult<TSuccess, TFailure>(this OperationOutcome<TSuccess, TFailure> result) =>
-        result switch
+        result.Value switch
         {
             TSuccess ok => new OkObjectResult(ok),
             TFailure failure => failure.ToFailureActionResult(),
+            _ => throw new NotImplementedException(),
         };
 
     /// <summary>Converts a void <see cref="OperationOutcome"/> to an <see cref="IActionResult"/> with the appropriate HTTP status code.</summary>
     /// <param name="result">The result to convert.</param>
     /// <returns>A <see cref="NoContentResult"/> on success, or the mapped error result on failure.</returns>
     public static IActionResult ToActionResult(this OperationOutcome result) =>
-        result switch
+        result.Value switch
         {
             Success => new NoContentResult(),
             Failure failure => failure.ToActionResult(),
+            _ => throw new NotImplementedException(),
         };
 
     /// <summary>
@@ -159,20 +161,22 @@ public static class ResultExtensions
     /// <param name="result">The result to convert.</param>
     /// <returns>An HTTP 200 with the success value on success, or the mapped error result on failure.</returns>
     public static IResult ToMinimalApiResult<TSuccess, TFailure>(this OperationOutcome<TSuccess, TFailure> result) =>
-        result switch
+        result.Value switch
         {
             TSuccess ok => Results.Ok(ok),
             TFailure failure => failure.ToFailureMinimalApiResult(),
+            _ => throw new NotImplementedException(),
         };
 
     /// <summary>Converts a void <see cref="OperationOutcome"/> to a minimal API result with the appropriate HTTP status code.</summary>
     /// <param name="result">The result to convert.</param>
     /// <returns>HTTP 204 No Content on success, or the mapped error result on failure.</returns>
     public static IResult ToMinimalApiResult(this OperationOutcome result) =>
-        result switch
+        result.Value switch
         {
             Success => Results.NoContent(),
             Failure failure => failure.ToFailureMinimalApiResult(),
+            _ => throw new NotImplementedException(),
         };
 
     /// <summary>

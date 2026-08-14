@@ -60,20 +60,20 @@ public sealed class OutcomeClassifierBuilder
     {
         // Seed with kernel types using open-generic matching where applicable.
         // This ensures new union arities cannot silently regress.
-        RegisterSuccessType<Success>("Success");
-        RegisterFailureType<NotFound>("NotFound");
-        RegisterFailureType<Forbidden>("Forbidden");
-        RegisterFailureType<Conflict>("Conflict");
-        RegisterFailureType<ValidationErrors>("ValidationError");
-        RegisterFailureType<Failures>("Failure");
-        RegisterFailureType<Conflict>("Conflict");
-        RegisterFailureType<Conflicts>("Conflict");
-        RegisterFailureType<Failure>("Failure");
+        this.RegisterSuccessType<Success>("Success");
+        this.RegisterFailureType<NotFound>("NotFound");
+        this.RegisterFailureType<Forbidden>("Forbidden");
+        this.RegisterFailureType<Conflict>("Conflict");
+        this.RegisterFailureType<ValidationErrors>("ValidationError");
+        this.RegisterFailureType<Failures>("Failure");
+        this.RegisterFailureType<Conflict>("Conflict");
+        this.RegisterFailureType<Conflicts>("Conflict");
+        this.RegisterFailureType<Failure>("Failure");
 
         // Register generic variants via predicate to handle open-ended shapes.
         // This covers ValidationError<TErrorCode>, ValidationErrors<TErrorCode>, and
         // any future generic result types.
-        RegisterPredicate(
+        this.RegisterPredicate(
             response => response?.GetType().IsGenericType == true && response.GetType().Name.StartsWith("ValidationError"),
             "ValidationError",
             isFailure: true
