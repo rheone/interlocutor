@@ -37,9 +37,9 @@ public record GetUser(int UserId) : IQuery<UserResponse>;
 public class GetUserHandler : IQueryHandler<GetUser, UserResponse>
 {
     private readonly IUserRepository repository;
-    
+
     public GetUserHandler(IUserRepository repository) => this.repository = repository;
-    
+
     public async Task<UserResponse> Handle(GetUser query, CancellationToken ct)
     {
         var user = await repository.FindAsync(query.UserId, ct);
@@ -61,17 +61,17 @@ public record DeleteUser(int UserId) : ICommand<OperationOutcome<Success, NotFou
 public class DeleteUserHandler : ICommandHandler<DeleteUser, OperationOutcome<Success, NotFound, Forbidden>>
 {
     private readonly IUserRepository repository;
-    
+
     public async Task<OperationOutcome<Success, NotFound, Forbidden>> Handle(
         DeleteUser command, CancellationToken ct)
     {
         var user = await repository.FindAsync(command.UserId, ct);
         if (user is null)
             return new NotFound($"User {command.UserId} not found");
-        
+
         if (!user.CanBeDeletedBy(CurrentUser))
             return new Forbidden("Only admins can delete users");
-        
+
         await repository.DeleteAsync(user, ct);
         return new Success();
     }
@@ -234,9 +234,9 @@ public record OrderShipped(int OrderId, string TrackingNumber) : INotification;
 public class OrderShippedEmailHandler : INotificationHandler<OrderShipped>
 {
     private readonly IEmailService emailService;
-    
+
     public OrderShippedEmailHandler(IEmailService emailService) => this.emailService = emailService;
-    
+
     public async Task Handle(OrderShipped notification, CancellationToken ct)
     {
         await emailService.SendAsync(
@@ -285,9 +285,9 @@ public record DeleteAllUsers() : ICommand<Success>, IRequiresPolicy;
 public class AdminOnlyPolicyEvaluator : IPolicyEvaluator
 {
     private readonly ICurrentUser currentUser;
-    
+
     public AdminOnlyPolicyEvaluator(ICurrentUser currentUser) => this.currentUser = currentUser;
-    
+
     public Task<Forbidden?> EvaluateAsync(IRequiresPolicy request, CancellationToken ct) =>
         Task.FromResult(
             currentUser.IsAdmin ? null : new Forbidden("Admin access required")
@@ -304,14 +304,14 @@ Track all business operations:
 
 ```csharp
 // Mark requests for auditing
-public record TransferFunds(int FromAccountId, int ToAccountId, decimal Amount) 
+public record TransferFunds(int FromAccountId, int ToAccountId, decimal Amount)
     : ICommand<Success>, IAuditableRequest;
 
 // Implement audit sink to store audit trails
 public class DatabaseAuditSink : IAuditSink
 {
     private readonly IAuditLogRepository auditRepo;
-    
+
     public async Task RecordAsync(AuditEntry entry, CancellationToken ct)
     {
         await auditRepo.AddAsync(new()
@@ -333,7 +333,7 @@ Automatically wrap handlers in transactions:
 
 ```csharp
 // Mark a command for transactional handling
-public record CreateOrder(int CustomerId, List<OrderItem> Items) 
+public record CreateOrder(int CustomerId, List<OrderItem> Items)
     : ICommand<OperationOutcome<int, ValidationFailed>>, ITransactionalRequest;
 
 // TransactionBehavior (registered last) wraps the handler:
@@ -354,10 +354,10 @@ public async Task DeleteUser_WithAdmin_Succeeds()
     var repository = new Mock<IUserRepository>();
     repository.Setup(r => r.FindAsync(1, default))
         .ReturnsAsync(new User { Id = 1, Name = "Alice" });
-    
+
     var handler = new DeleteUserHandler(repository.Object);
     var result = await handler.Handle(new DeleteUser(1), CancellationToken.None);
-    
+
     Assert.True(result.IsSuccess);
     repository.Verify(r => r.DeleteAsync(It.IsAny<User>(), default), Times.Once);
 }
@@ -368,10 +368,10 @@ public async Task DeleteUser_NotFound_ReturnsFalse()
     var repository = new Mock<IUserRepository>();
     repository.Setup(r => r.FindAsync(999, default))
         .ReturnsAsync((User?)null);
-    
+
     var handler = new DeleteUserHandler(repository.Object);
     var result = await handler.Handle(new DeleteUser(999), CancellationToken.None);
-    
+
     var notFound = Assert.IsType<NotFound>(result.Value);
     Assert.Contains("not found", notFound.Message);
 }
@@ -387,14 +387,14 @@ Map handler results to HTTP responses:
 public class UsersController : ControllerBase
 {
     private readonly ISender mediator;
-    
+
     public UsersController(ISender mediator) => this.mediator = mediator;
-    
+
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteUser(int id, CancellationToken ct)
     {
         var result = await mediator.Send(new DeleteUser(id), ct);
-        
+
         // Built-in mapping: NotFound → 404, Forbidden → 403, etc.
         return result.ToActionResult();
     }
