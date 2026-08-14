@@ -1,6 +1,6 @@
 # Composing commands, queries, and handlers around each `OperationOutcome` arity
 
-`Mediance.CommonKernel` declares a family of `IOperationOutcome`-implementing unions, distinguished purely
+`Interlocutor.CommonKernel` declares a family of `IOperationOutcome`-implementing unions, distinguished purely
 by how many outcome shapes ("arms") they carry:
 
 | Type | Arms | Declared as |
@@ -34,15 +34,15 @@ the same spectrum — same mechanics, just more or fewer arms.)
 Shared plumbing referenced by every example:
 
 ```csharp
-using Mediance.Abstractions;
-using Mediance.Abstractions.Commands;
-using Mediance.Abstractions.Core;
-using Mediance.Abstractions.Markers;
-using Mediance.Abstractions.Pipeline;
-using Mediance.Abstractions.Queries;
-using Mediance.CommonKernel;
-using Mediance.CommonKernel.ResultTypes;
-using Mediance.EntityFrameworkCore;
+using Interlocutor.Abstractions;
+using Interlocutor.Abstractions.Commands;
+using Interlocutor.Abstractions.Core;
+using Interlocutor.Abstractions.Markers;
+using Interlocutor.Abstractions.Pipeline;
+using Interlocutor.Abstractions.Queries;
+using Interlocutor.CommonKernel;
+using Interlocutor.CommonKernel.ResultTypes;
+using Interlocutor.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -309,7 +309,7 @@ public sealed class SubmitPaymentCommandHandler(AppDbContext db, ICurrentUser cu
         CancellationToken ct
     )
     {
-        // Step 1 — shape validation. (Mediance.FluentValidation's ValidationBehavior<,> could
+        // Step 1 — shape validation. (Interlocutor.FluentValidation's ValidationBehavior<,> could
         // take this step instead, the same way AuthorizationBehavior took Example 2's ownership
         // check — but it would need to report through this exact 5-arm shape, so it's inline
         // here for the same reason authorization is inline below.)

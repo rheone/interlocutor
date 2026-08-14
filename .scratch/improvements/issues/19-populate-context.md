@@ -8,12 +8,12 @@ ready-for-agent
 
 ## What to build
 
-Populate `CONTEXT.md` with domain vocabulary for the Mediance project. Currently it is a 5-line placeholder.
+Populate `CONTEXT.md` with domain vocabulary for the Interlocutor project. Currently it is a 5-line placeholder.
 
 The domain glossary should cover:
-- Mediance — what the name means and why it was chosen
-- Mediator pattern — how Mediance implements it
-- CQRS — query/command separation in Mediance
+- Interlocutor — what the name means and why it was chosen
+- Mediator pattern — how Interlocutor implements it
+- CQRS — query/command separation in Interlocutor
 - Pipeline behavior — onion-model middleware
 - Failure vocabulary — ValidationFailed, RuleViolation, NotFound, Forbidden, Conflict
 - Result type — discriminated union for success/failure

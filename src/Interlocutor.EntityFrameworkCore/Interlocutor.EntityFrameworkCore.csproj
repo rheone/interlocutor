@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Entity Framework Core transaction behavior for Interlocutor. Provides TransactionBehavior bound to DbContext.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Interlocutor.Abstractions\Interlocutor.Abstractions.csproj" />
+  </ItemGroup>
+
+  <!-- DependencyInjection.Abstractions is auto-available in .NET 11 SDK -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+  </ItemGroup>
+</Project>

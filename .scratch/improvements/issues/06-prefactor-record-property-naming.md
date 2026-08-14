@@ -8,7 +8,7 @@ ready-for-agent
 
 ## What to build
 
-Rename all positional record parameters in `Mediance.CommonKernel` from camelCase to PascalCase to match the project's `.editorconfig` conventions and produce clean public API properties.
+Rename all positional record parameters in `Interlocutor.CommonKernel` from camelCase to PascalCase to match the project's `.editorconfig` conventions and produce clean public API properties.
 
 Types affected:
 

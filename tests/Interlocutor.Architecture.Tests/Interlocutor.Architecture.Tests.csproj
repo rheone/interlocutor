@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <!-- All Interlocutor packages for architecture verification -->
+    <ProjectReference Include="..\..\src\Interlocutor.CommonKernel\Interlocutor.CommonKernel.csproj" />
+    <ProjectReference Include="..\..\src\Interlocutor.Abstractions\Interlocutor.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\Interlocutor.DependencyInjection.Microsoft\Interlocutor.DependencyInjection.Microsoft.csproj" />
+    <ProjectReference Include="..\..\src\Interlocutor.DependencyInjection.Autofac\Interlocutor.DependencyInjection.Autofac.csproj" />
+    <ProjectReference Include="..\..\src\Interlocutor.AspNetCore\Interlocutor.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\src\Interlocutor.EntityFrameworkCore\Interlocutor.EntityFrameworkCore.csproj" />
+    <ProjectReference Include="..\..\src\Interlocutor.FluentValidation\Interlocutor.FluentValidation.csproj" />
+    <ProjectReference Include="..\..\src\Interlocutor.NHibernate\Interlocutor.NHibernate.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Microsoft.Testing.Platform" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="NetArchTest.Rules" />
+  </ItemGroup>
+</Project>

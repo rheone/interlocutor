@@ -1,17 +1,17 @@
 using FluentValidation;
-using Mediance;
-using Mediance.Mediation;
-using Mediance.Mediation.FluentValidation;
+using Interlocutor;
+using Interlocutor.Mediation;
+using Interlocutor.Mediation.FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Mediance.Example.Orders;
+namespace Interlocutor.Example.Orders;
 
 // ---------------------------------------------------------------------------
 // Everything the LIBRARY provides is plumbing: Result<T>, the pipeline, the
 // marker interfaces, the mediator dispatch. Everything below is YOURS — the
 // query/command shape, the validation rules, and the handler body are all
-// application code you write and register. Nothing in Mediance.* ever
+// application code you write and register. Nothing in Interlocutor.* ever
 // guesses at business logic on your behalf; it only calls the pieces you
 // supplied, in the order you registered them.
 // ---------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace Mediance.Mediation.FluentValidation;
+namespace Interlocutor.Mediation.FluentValidation;
 
 /// <summary>
 /// Runs every registered <see cref="IValidator{T}"/> for

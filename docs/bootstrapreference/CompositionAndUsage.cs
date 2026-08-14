@@ -1,15 +1,15 @@
 using FluentValidation;
-using Mediance;
-using Mediance.Mediation;
-using Mediance.Mediation.EntityFrameworkCore;
-using Mediance.Mediation.FluentValidation;
+using Interlocutor;
+using Interlocutor.Mediation;
+using Interlocutor.Mediation.EntityFrameworkCore;
+using Interlocutor.Mediation.FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Mediance.Example;
+namespace Interlocutor.Example;
 
 // ---------------------------------------------------------------------------
-// Everything below is application code — NOT part of any Mediance
+// Everything below is application code — NOT part of any Interlocutor
 // package — showing how a consumer wires the library together and uses the
 // IPagedQuery<T> / IBulkCommand<TItem,TResponseItem> variants.
 // ---------------------------------------------------------------------------
@@ -117,7 +117,7 @@ public interface ICurrentUser
 /// </summary>
 public static class CompositionRoot
 {
-    public static IServiceCollection AddMedianceExample(this IServiceCollection services)
+    public static IServiceCollection AddInterlocutorExample(this IServiceCollection services)
     {
         services.AddScoped<IMediator, Mediator>();
         services.AddScoped<AppDbContext>();

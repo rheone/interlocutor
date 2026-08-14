@@ -4,7 +4,7 @@ ready-for-agent
 
 ## What to build
 
-Improve `TransactionBehavior` in `Mediance.EntityFrameworkCore` in two ways:
+Improve `TransactionBehavior` in `Interlocutor.EntityFrameworkCore` in two ways:
 
 **1. Explicit error handling around SaveChanges/Commit**
 Currently, if `SaveChangesAsync` throws, the exception propagates past `CommitAsync` and rolls back via `DisposeAsync`. Add an explicit `try`/`catch` that rolls back the transaction and re-throws, making the error path predictable and testable.

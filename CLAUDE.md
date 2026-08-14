@@ -4,14 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Mediance is a mediator/CQRS pipeline library for .NET, built on C# 15 discriminated union types (`.NET 11` preview, `EnablePreviewFeatures`). Handlers return outcomes (`Success`, `NotFound`, `Forbidden`, `Conflict`, `ValidationFailed`, ...) as compiler-checked unions rather than throwing for expected failures — exceptions are reserved for bugs/infra faults. See [README.md](README.md) for the full API walkthrough (result-type composition, pipeline behavior ordering rationale, interface segregation) and [CONTEXT.md](CONTEXT.md) for the domain glossary — read both before making result-type or pipeline-behavior changes, since the terminology and ordering rules there are load-bearing design decisions, not incidental.
+Interlocutor is a mediator/CQRS pipeline library for .NET, built on C# 15 discriminated union types (`.NET 11` preview, `EnablePreviewFeatures`). Handlers return outcomes (`Success`, `NotFound`, `Forbidden`, `Conflict`, `ValidationFailed`, ...) as compiler-checked unions rather than throwing for expected failures — exceptions are reserved for bugs/infra faults. See [README.md](README.md) for the full API walkthrough (result-type composition, pipeline behavior ordering rationale, interface segregation) and [CONTEXT.md](CONTEXT.md) for the domain glossary — read both before making result-type or pipeline-behavior changes, since the terminology and ordering rules there are load-bearing design decisions, not incidental.
 
 ## Commands
 
 ```bash
-dotnet build                          # build the whole solution (Mediance.slnx)
+dotnet build                          # build the whole solution (Interlocutor.slnx)
 dotnet test                           # run all tests (xunit.v3 + Microsoft.Testing.Platform)
-dotnet test tests/Mediance.CommonKernel.Tests/Mediance.CommonKernel.Tests.csproj   # single test project
+dotnet test tests/Interlocutor.CommonKernel.Tests/Interlocutor.CommonKernel.Tests.csproj   # single test project
 dotnet test --filter "FullyQualifiedName~DependencyTests"                          # single test/class
 dotnet csharpier .                    # format (csharpier is the pinned local tool, see dotnet-tools.json)
 dotnet tool restore                   # restore pinned local tools (csharpier, dotnet-outdated)
@@ -21,16 +21,16 @@ No solution-level build/test scripts exist beyond the `dotnet` CLI — there's n
 
 ## Architecture
 
-**Package layering** (`src/`), enforced by `tests/Mediance.Architecture.Tests/DependencyTests.cs` via NetArchTest — changes that violate these boundaries fail CI:
+**Package layering** (`src/`), enforced by `tests/Interlocutor.Architecture.Tests/DependencyTests.cs` via NetArchTest — changes that violate these boundaries fail CI:
 
-- `Mediance.CommonKernel` — zero-dependency result types (`OperationOutcome<...>` unions, `Failure`/`NotFound`/`Forbidden`/`Conflict`/`ValidationFailed`/`Success`, `PagedResult<T>`). Must never depend on any other Mediance package.
-- `Mediance.Abstractions` — mediator core (`IMediator`/`ISender`/`IPublisher`), handler contracts (`IQueryHandler`, `ICommandHandler`, `ResourceCommandHandler`), pipeline behaviors (`LoggingBehavior`, `AuthorizationBehavior`, `AuditingBehavior`, `PipelineStageBehavior`), marker interfaces (`ITransactionalRequest`, `IAuditableRequest`, `IRequiresPolicy`, `IExternalStoreRequest`). Depends only on CommonKernel + framework DI/Logging abstractions — must never depend on AspNetCore or the store-specific packages.
-- `Mediance.AspNetCore` — HTTP mapping (`ToActionResult()`), web-framework integrations for Abstractions interfaces (e.g., `AspNetCoreRequestContextAccessor`). Depends on CommonKernel and Abstractions, but never on store-specific or validation packages.
-- `Mediance.DependencyInjection.Microsoft` / `.Autofac` — assembly-scanning `AddMediance()` registration per container.
-- `Mediance.EntityFrameworkCore` / `Mediance.NHibernate` — store-specific `TransactionBehavior`; each must depend on Abstractions.
-- `Mediance.FluentValidation` — `ValidationBehavior` / `BulkItemValidationBehavior` (currently mid-migration — see commented-out assertion in `DependencyTests.cs`).
+- `Interlocutor.CommonKernel` — zero-dependency result types (`OperationOutcome<...>` unions, `Failure`/`NotFound`/`Forbidden`/`Conflict`/`ValidationFailed`/`Success`, `PagedResult<T>`). Must never depend on any other Interlocutor package.
+- `Interlocutor.Abstractions` — mediator core (`IMediator`/`ISender`/`IPublisher`), handler contracts (`IQueryHandler`, `ICommandHandler`, `ResourceCommandHandler`), pipeline behaviors (`LoggingBehavior`, `AuthorizationBehavior`, `AuditingBehavior`, `PipelineStageBehavior`), marker interfaces (`ITransactionalRequest`, `IAuditableRequest`, `IRequiresPolicy`, `IExternalStoreRequest`). Depends only on CommonKernel + framework DI/Logging abstractions — must never depend on AspNetCore or the store-specific packages.
+- `Interlocutor.AspNetCore` — HTTP mapping (`ToActionResult()`), web-framework integrations for Abstractions interfaces (e.g., `AspNetCoreRequestContextAccessor`). Depends on CommonKernel and Abstractions, but never on store-specific or validation packages.
+- `Interlocutor.DependencyInjection.Microsoft` / `.Autofac` — assembly-scanning `AddInterlocutor()` registration per container.
+- `Interlocutor.EntityFrameworkCore` / `Interlocutor.NHibernate` — store-specific `TransactionBehavior`; each must depend on Abstractions.
+- `Interlocutor.FluentValidation` — `ValidationBehavior` / `BulkItemValidationBehavior` (currently mid-migration — see commented-out assertion in `DependencyTests.cs`).
 
-Each `src/*` project has a matching `tests/*.Tests` project (xunit.v3, NSubstitute for mocking). `tests/Mediance.Architecture.Tests` is not per-package — it asserts the cross-package dependency rules above; add to it, not a per-package test project, when introducing a new package or changing what depends on what.
+Each `src/*` project has a matching `tests/*.Tests` project (xunit.v3, NSubstitute for mocking). `tests/Interlocutor.Architecture.Tests` is not per-package — it asserts the cross-package dependency rules above; add to it, not a per-package test project, when introducing a new package or changing what depends on what.
 
 **Pipeline behaviors execute onion-style**: first `services.AddScoped(typeof(IPipelineBehavior<,>), ...)` registered runs first inbound / last outbound. The canonical order (Logging → Auditing → Authorization → Validation → Transaction) and the reasoning behind it is documented in README.md — preserve that ordering rationale when adding a new behavior rather than re-deriving it.
 

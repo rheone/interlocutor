@@ -26,7 +26,7 @@ Current bootstrap ADRs to include (from `ADR-mediator-result-pipeline.md`):
 New ADRs needed based on decisions made during implementation:
 - 0012: TransactionBehavior 2-param (not 3-param) — simplifies DI registration
 - 0013: Forbidden returns StatusCodeResult(403) not ProblemDetails body — standard HTTP semantics
-- 0014: Namespace split — Mediance.CommonKernel / Mediance.Abstractions
+- 0014: Namespace split — Interlocutor.CommonKernel / Interlocutor.Abstractions
 
 Update each ADR to have:
 - Status: Accepted / Deprecated / Superseded

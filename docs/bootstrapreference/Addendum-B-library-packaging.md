@@ -30,26 +30,26 @@ dependency-free abstraction package, N adapter packages.
 
 | Package | Contains | Depends on |
 |---|---|---|
-| **`Mediance`** | `Result<T>`, `Result`, `Failure`, `Success`, `ValidationFailed`, `RuleViolation`, `NotFound`, `Forbidden`, `Conflict`, `PagedResult<T>` | .NET BCL only |
-| **`Mediance.Mediation`** | `IQuery<T>`, `ICommand<T>`, `ICommand`, `IPagedQuery<T>`, `IBulkCommand<TItem,TResponseItem>`, marker interfaces (`ITransactionalRequest`, `IExternalStoreRequest`, `IAuditableRequest`, `IRequiresPolicy`), `IPipelineBehavior<,>`, `IMediator`, the concrete `Mediator`, `ResourceCommandHandler<,,>`, and generic behaviors that need no *external* infrastructure (`LoggingBehavior`, `AuditingBehavior`, `AuthorizationBehavior`, `PagingValidationBehavior` — the last validates `IPagedQuery<T>.Page`/`PageSize` with plain bounds checks, no validation library needed) | `Mediance` |
-| **`Mediance.Mediation.EntityFrameworkCore`** | `TransactionBehavior<TRequest,TResponse>` bound to `DbContext` | `Mediance.Mediation`, `Microsoft.EntityFrameworkCore` |
-| **`Mediance.Mediation.FluentValidation`** | `ValidationBehavior<TRequest,TResponse>` bound to `IValidator<T>`, and `BulkItemValidationBehavior<TRequest,TItem,TResponseItem>` for `IBulkCommand<,>` (both need FluentValidation's `IValidator<T>`, so both live here rather than in the dependency-free mediation package) | `Mediance.Mediation`, `FluentValidation` |
-| **`Mediance.AspNetCore`** | `ResultExtensions.ToActionResult(...)`, `ProblemDetails` mapping, minimal-API `TypedResults` mapping | `Mediance`, `Microsoft.AspNetCore.*` |
+| **`Interlocutor`** | `Result<T>`, `Result`, `Failure`, `Success`, `ValidationFailed`, `RuleViolation`, `NotFound`, `Forbidden`, `Conflict`, `PagedResult<T>` | .NET BCL only |
+| **`Interlocutor.Mediation`** | `IQuery<T>`, `ICommand<T>`, `ICommand`, `IPagedQuery<T>`, `IBulkCommand<TItem,TResponseItem>`, marker interfaces (`ITransactionalRequest`, `IExternalStoreRequest`, `IAuditableRequest`, `IRequiresPolicy`), `IPipelineBehavior<,>`, `IMediator`, the concrete `Mediator`, `ResourceCommandHandler<,,>`, and generic behaviors that need no *external* infrastructure (`LoggingBehavior`, `AuditingBehavior`, `AuthorizationBehavior`, `PagingValidationBehavior` — the last validates `IPagedQuery<T>.Page`/`PageSize` with plain bounds checks, no validation library needed) | `Interlocutor` |
+| **`Interlocutor.Mediation.EntityFrameworkCore`** | `TransactionBehavior<TRequest,TResponse>` bound to `DbContext` | `Interlocutor.Mediation`, `Microsoft.EntityFrameworkCore` |
+| **`Interlocutor.Mediation.FluentValidation`** | `ValidationBehavior<TRequest,TResponse>` bound to `IValidator<T>`, and `BulkItemValidationBehavior<TRequest,TItem,TResponseItem>` for `IBulkCommand<,>` (both need FluentValidation's `IValidator<T>`, so both live here rather than in the dependency-free mediation package) | `Interlocutor.Mediation`, `FluentValidation` |
+| **`Interlocutor.AspNetCore`** | `ResultExtensions.ToActionResult(...)`, `ProblemDetails` mapping, minimal-API `TypedResults` mapping | `Interlocutor`, `Microsoft.AspNetCore.*` |
 
 Application code (the `Widget`/`Crm` examples from earlier) is **not** part
 of the library — it's the consumer, referencing whichever of the above
 packages it needs.
 
-## B.3 Naming: `Mediance`
+## B.3 Naming: `Interlocutor`
 
-**Proposed name: `Mediance`.**
+**Proposed name: `Interlocutor`.**
 
 Rationale:
-- "Mediance" is the established legal/procedural term for *how a case
+- "Interlocutor" is the established legal/procedural term for *how a case
   was resolved* — dismissed, upheld, remanded — which maps precisely onto
   "how this request was resolved: succeeded, not found, forbidden,
   conflicted, failed validation." It reads naturally in code:
-  `result.Mediance`, "the disposition of this command was `Forbidden`."
+  `result.Interlocutor`, "the disposition of this command was `Forbidden`."
 - It's unclaimed and unambiguous on NuGet, unlike heavily-used generic
   words (`Result`, `Outcome`) that collide with dozens of existing
   packages.
@@ -57,9 +57,9 @@ Rationale:
   everywhere (`Task.Result`, LINQ `.Result()`), reducing naming collisions
   and confusing search results for consumers.
 
-Namespace root: `Mediance`. Satellite packages append the integration
-target: `Mediance.Mediation`, `Mediance.Mediation.EntityFrameworkCore`,
-`Mediance.Mediation.FluentValidation`, `Mediance.AspNetCore`.
+Namespace root: `Interlocutor`. Satellite packages append the integration
+target: `Interlocutor.Mediation`, `Interlocutor.Mediation.EntityFrameworkCore`,
+`Interlocutor.Mediation.FluentValidation`, `Interlocutor.AspNetCore`.
 
 ## B.4 What's defining about it — how it differs from existing packages
 
@@ -117,7 +117,7 @@ copy-pasted between repos":
   for *every* paged query in *every* consuming application — no
   per-query validator required unless additional rules are needed.
 - **`IBulkCommand<TItem,TResponseItem> : ICommand<IReadOnlyList<TResponseItem>>`**
-  exposes `Items` as a contract member, so `Mediance.Mediation.FluentValidation`
+  exposes `Items` as a contract member, so `Interlocutor.Mediation.FluentValidation`
   can ship one generic `BulkItemValidationBehavior<TRequest,TItem,TResponseItem>`
   that resolves `IValidator<TItem>` and validates every item automatically —
   no hand-written `RuleForEach` wrapper validator required unless the

@@ -14,7 +14,7 @@ For each request, log:
 
 The behavior should be generic over `TRequest` and `TResponse` so it works with both queries and commands. It should use `Microsoft.Extensions.Logging.ILogger<T>`.
 
-Package placement: add to `Mediance.Abstractions` or create a new `Mediance.Logging` package — pick based on whether you want logging to be always-present vs opt-in. The default composition in the design docs shows it as one of several opt-in behaviors.
+Package placement: add to `Interlocutor.Abstractions` or create a new `Interlocutor.Logging` package — pick based on whether you want logging to be always-present vs opt-in. The default composition in the design docs shows it as one of several opt-in behaviors.
 
 ## Acceptance criteria
 

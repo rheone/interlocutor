@@ -15,11 +15,11 @@ This is the biggest structural gap in the current design. There is no way to rai
 The design should include:
 
 ```csharp
-// Mediance.CommonKernel
+// Interlocutor.CommonKernel
 public interface INotification;
 // or abstract record — decide based on whether notifications need payload structure
 
-// Mediance.Abstractions
+// Interlocutor.Abstractions
 public interface INotificationHandler<in TNotification>
     where TNotification : INotification
 {

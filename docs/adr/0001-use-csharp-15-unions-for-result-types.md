@@ -8,7 +8,7 @@ Handlers need to communicate a closed set of expected outcomes — a success val
 
 ## Decision
 
-Use the C# 15 `readonly union` keyword to declare `Result<T>`, `Result`, and `Failure` as closed unions of record case types. All union declarations are isolated to `Mediance.CommonKernel/Results.cs`.
+Use the C# 15 `readonly union` keyword to declare `Result<T>`, `Result`, and `Failure` as closed unions of record case types. All union declarations are isolated to `Interlocutor.CommonKernel/Results.cs`.
 
 ```csharp
 readonly union Failure(ValidationFailed, RuleViolation, NotFound, Forbidden, Conflict);

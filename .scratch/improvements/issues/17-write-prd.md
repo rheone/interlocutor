@@ -4,11 +4,11 @@ ready-for-agent
 
 ## What to build
 
-Write the Product Requirements Document (PRD) for Mediance. The source material is `bootstrapreference/PRD-mediator-result-pipeline.md` — a comprehensive design document that predates the implementation.
+Write the Product Requirements Document (PRD) for Interlocutor. The source material is `bootstrapreference/PRD-mediator-result-pipeline.md` — a comprehensive design document that predates the implementation.
 
 The PRD must be updated to reflect the actual implemented state of the project, not the original design. Key changes from the bootstrap PRD that must be reconciled:
 
-1. **Package names**: `Mediance`/`Mediance.Mediation` became `Mediance.CommonKernel`/`Mediance.Abstractions`
+1. **Package names**: `Interlocutor`/`Interlocutor.Mediation` became `Interlocutor.CommonKernel`/`Interlocutor.Abstractions`
 2. **TransactionBehavior**: 3 type params → 2 type params with `Lazy<TContext>`
 3. **Forbidden HTTP mapping**: `ObjectResult(ProblemDetails)` → `StatusCodeResult(403)` (empty body)
 4. **BulkItemValidationBehavior**: fits `IPipelineBehavior<,>` with constrained `TRequest` parameter

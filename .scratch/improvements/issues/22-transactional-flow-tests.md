@@ -10,7 +10,7 @@ ready-for-agent
 
 ## What to build
 
-Write tests for the transactional flow of `TransactionBehavior` in both `Mediance.EntityFrameworkCore` and `Mediance.NHibernate`.
+Write tests for the transactional flow of `TransactionBehavior` in both `Interlocutor.EntityFrameworkCore` and `Interlocutor.NHibernate`.
 
 Currently, both transaction behaviors only have a single test for the non-transactional skip path (request not implementing `ITransactionalRequest`). The actual transactional flow — commit on success, rollback on failure — is **untested**.
 

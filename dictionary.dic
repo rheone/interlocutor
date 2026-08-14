@@ -1,4 +1,4 @@
-AddMediance
+AddInterlocutor
 Autofac
 CommandHandlerWrapper
 CommonKernel
@@ -13,9 +13,9 @@ IPipeline
 IQuery
 IReadOnly
 IValidator
-Mediance
-MedianceAutofacExtensions
-MedianceServiceCollectionExtensions
+Interlocutor
+InterlocutorAutofacExtensions
+InterlocutorServiceCollectionExtensions
 namespace
 NetArchTest
 NHibernate

@@ -4,7 +4,7 @@ ready-for-agent
 
 ## What to build
 
-Collapse the triplicated dispatch wrapper hierarchy in `Mediance.Abstractions` into one deep module.
+Collapse the triplicated dispatch wrapper hierarchy in `Interlocutor.Abstractions` into one deep module.
 
 Today, `QueryHandlerWrapper<TQuery,TResponse>`, `CommandHandlerWrapper<TCommand,TResponse>`, and
 `VoidCommandHandlerWrapper<TCommand,TResult>` each carry a byte-for-byte identical `Handle()` body —
@@ -38,7 +38,7 @@ Target shape:
    rather than reintroducing the same bug in newly-written code and fixing it again later. All three
    caches end up with a uniform `(Type, Type)` key shape as a consequence — that's a side effect of the
    fix, not a goal in itself.
-6. Rewrite `tests/Mediance.Abstractions.Tests/MediatorTests.cs`'s `Send_Query_CachesWrapper`, which
+6. Rewrite `tests/Interlocutor.Abstractions.Tests/MediatorTests.cs`'s `Send_Query_CachesWrapper`, which
    currently ends in `Assert.True(true)` and verifies nothing. Replace with a real signal — e.g. object
    reference equality of the resolved wrapper across repeated dispatches of the same request type, or a
    call-count spy — since this refactor touches the exact caching mechanism that test claims to cover.

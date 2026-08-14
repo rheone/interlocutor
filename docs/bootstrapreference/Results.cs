@@ -1,10 +1,10 @@
-namespace Mediance;
+namespace Interlocutor;
 
 // ---------------------------------------------------------------------------
-// Package: Mediance
+// Package: Interlocutor
 // The shared kernel (Addendum B.1). Depends on nothing but the BCL, so any
 // consumer — console tool, worker, web API — can reference just this
-// package. Every other package in the family (Mediance.Mediation and its
+// package. Every other package in the family (Interlocutor.Mediation and its
 // satellites) depends on this one; this one depends on nothing in the family.
 // ---------------------------------------------------------------------------
 
@@ -46,7 +46,7 @@ public sealed record Conflict(string Code, string Message);
 /// <c>switch</c> over this type is compiler-checked for exhaustiveness.
 /// This is the single failure vocabulary shared by every
 /// <see cref="Result{T}"/> and <see cref="Result"/> in the family, which is
-/// what lets one mapping function (see <c>Mediance.AspNetCore</c>)
+/// what lets one mapping function (see <c>Interlocutor.AspNetCore</c>)
 /// serve every request type.
 /// </summary>
 public union Failure(ValidationFailed, RuleViolation, NotFound, Forbidden, Conflict);
@@ -60,7 +60,7 @@ public union Result<T>(T, Failure);
 /// <summary>The outcome of a no-payload command: either <see cref="Success"/>, or a <see cref="Failure"/>.</summary>
 public union Result(Success, Failure);
 
-/// <summary>A materialized page of results plus paging metadata. See <see cref="Mediance.Mediation"/>'s <c>IPagedQuery&lt;T&gt;</c> for the paired query contract.</summary>
+/// <summary>A materialized page of results plus paging metadata. See <see cref="Interlocutor.Mediation"/>'s <c>IPagedQuery&lt;T&gt;</c> for the paired query contract.</summary>
 public sealed record PagedResult<T>(IReadOnlyList<T> Items, int Page, int PageSize, long TotalCount)
 {
     public int TotalPages => PageSize <= 0 ? 0 : (int)Math.Ceiling(TotalCount / (double)PageSize);

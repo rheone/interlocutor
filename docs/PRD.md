@@ -1,4 +1,4 @@
-# PRD: Mediance — Mediator Result Pipeline for .NET
+# PRD: Interlocutor — Mediator Result Pipeline for .NET
 
 **Status:** Active
 **Target platform:** .NET 11 / C# 15 (union types)
@@ -8,7 +8,7 @@
 
 ## 1. Summary
 
-Mediance is a mediator/CQRS pipeline library for .NET built on C# 15 union types. Handlers return a closed, compiler-checked `OperationOutcome<T>` or `OperationOutcome` type instead of throwing exceptions for expected outcomes (not found, forbidden, validation failure, conflict). Cross-cutting concerns compose around handlers via `IPipelineBehavior<TRequest,TResponse>` in an onion/Russian-doll model. Exceptions remain reserved for bugs and infrastructure faults.
+Interlocutor is a mediator/CQRS pipeline library for .NET built on C# 15 union types. Handlers return a closed, compiler-checked `OperationOutcome<T>` or `OperationOutcome` type instead of throwing exceptions for expected outcomes (not found, forbidden, validation failure, conflict). Cross-cutting concerns compose around handlers via `IPipelineBehavior<TRequest,TResponse>` in an onion/Russian-doll model. Exceptions remain reserved for bugs and infrastructure faults.
 
 ## 2. Problem statement
 
@@ -32,14 +32,14 @@ Before this library, "what can go wrong" for a given handler was implicit — di
 
 | Package | Contents | Dependencies |
 |---------|----------|-------------|
-| `Mediance.CommonKernel` | `OperationOutcome<T>`, `OperationOutcome`, `Failure`, `Success`, `PagedResult<T>` — pure data types | .NET BCL only |
-| `Mediance.Abstractions` | `IQuery<T>`, `ICommand<T>`, `ICommand`, marker interfaces, handler contracts, `IPipelineBehavior`, `IMediator`, `Mediator`, `ResourceCommandHandler`, `StartupValidation`, built-in pipeline behaviors (Logging, Auditing, Authorization, PipelineStage) | `Mediance.CommonKernel` |
-| `Mediance.AspNetCore` | `ToActionResult()` HTTP mapping | `Mediance.CommonKernel`, ASP.NET Core |
-| `Mediance.DependencyInjection.Microsoft` | Assembly-scanning `AddMediance()` for MS DI | `Mediance.Abstractions` |
-| `Mediance.DependencyInjection.Autofac` | Assembly-scanning `AddMediance()` for Autofac | `Mediance.Abstractions` |
-| `Mediance.EntityFrameworkCore` | `TransactionBehavior<TRequest,TResponse,TContext>` for EF Core | `Mediance.Abstractions` |
-| `Mediance.NHibernate` | `TransactionBehavior<TRequest,TResponse>` for NHibernate | `Mediance.Abstractions` |
-| `Mediance.FluentValidation` | `ValidationBehavior` and `BulkItemValidationBehavior` | `Mediance.Abstractions` |
+| `Interlocutor.CommonKernel` | `OperationOutcome<T>`, `OperationOutcome`, `Failure`, `Success`, `PagedResult<T>` — pure data types | .NET BCL only |
+| `Interlocutor.Abstractions` | `IQuery<T>`, `ICommand<T>`, `ICommand`, marker interfaces, handler contracts, `IPipelineBehavior`, `IMediator`, `Mediator`, `ResourceCommandHandler`, `StartupValidation`, built-in pipeline behaviors (Logging, Auditing, Authorization, PipelineStage) | `Interlocutor.CommonKernel` |
+| `Interlocutor.AspNetCore` | `ToActionResult()` HTTP mapping | `Interlocutor.CommonKernel`, ASP.NET Core |
+| `Interlocutor.DependencyInjection.Microsoft` | Assembly-scanning `AddInterlocutor()` for MS DI | `Interlocutor.Abstractions` |
+| `Interlocutor.DependencyInjection.Autofac` | Assembly-scanning `AddInterlocutor()` for Autofac | `Interlocutor.Abstractions` |
+| `Interlocutor.EntityFrameworkCore` | `TransactionBehavior<TRequest,TResponse,TContext>` for EF Core | `Interlocutor.Abstractions` |
+| `Interlocutor.NHibernate` | `TransactionBehavior<TRequest,TResponse>` for NHibernate | `Interlocutor.Abstractions` |
+| `Interlocutor.FluentValidation` | `ValidationBehavior` and `BulkItemValidationBehavior` | `Interlocutor.Abstractions` |
 
 ## 6. Type catalog
 
@@ -83,14 +83,14 @@ All behaviors implement `IPipelineBehavior<TRequest,TResponse>` and compose via 
 
 | Behavior | Package | Produces | Notes |
 |----------|---------|----------|-------|
-| `LoggingBehavior` | `Mediance.Abstractions` | — | Logs request type, handler, duration, outcome |
-| `AuthorizationBehavior` | `Mediance.Abstractions` | `Forbidden` | Via `IRequiresPolicy` + `IPolicyEvaluator` |
-| `AuditingBehavior` | `Mediance.Abstractions` | — | Via `IAuditableRequest` + `IAuditSink` |
-| `PipelineStageBehavior` | `Mediance.Abstractions` | — | Aggregates `IPipelineStage` pre/post hooks |
-| `ValidationBehavior` | `Mediance.FluentValidation` | `ValidationFailed` | FluentValidation, short-circuits before handler |
-| `BulkItemValidationBehavior` | `Mediance.FluentValidation` | `ValidationFailed` | Per-item validation for `IBulkCommand` |
-| `TransactionBehavior` (EF Core) | `Mediance.EntityFrameworkCore` | — | Commit on success, rollback on Failure |
-| `TransactionBehavior` (NHibernate) | `Mediance.NHibernate` | — | Same semantics |
+| `LoggingBehavior` | `Interlocutor.Abstractions` | — | Logs request type, handler, duration, outcome |
+| `AuthorizationBehavior` | `Interlocutor.Abstractions` | `Forbidden` | Via `IRequiresPolicy` + `IPolicyEvaluator` |
+| `AuditingBehavior` | `Interlocutor.Abstractions` | — | Via `IAuditableRequest` + `IAuditSink` |
+| `PipelineStageBehavior` | `Interlocutor.Abstractions` | — | Aggregates `IPipelineStage` pre/post hooks |
+| `ValidationBehavior` | `Interlocutor.FluentValidation` | `ValidationFailed` | FluentValidation, short-circuits before handler |
+| `BulkItemValidationBehavior` | `Interlocutor.FluentValidation` | `ValidationFailed` | Per-item validation for `IBulkCommand` |
+| `TransactionBehavior` (EF Core) | `Interlocutor.EntityFrameworkCore` | — | Commit on success, rollback on Failure |
+| `TransactionBehavior` (NHibernate) | `Interlocutor.NHibernate` | — | Same semantics |
 
 ### 9.1 Execution order
 
@@ -133,15 +133,15 @@ The mediator resolves all handlers from DI — it has no internal handler regist
 
 ## 11. DI registration
 
-Both MS DI and Autofac support assembly-scanning `AddMediance()` that registers:
+Both MS DI and Autofac support assembly-scanning `AddInterlocutor()` that registers:
 - All `IQueryHandler<,>`, `ICommandHandler<,>`, `ICommandHandler<>`, `INotificationHandler<>` implementations as scoped
 - `IMediator`, `ISender`, `IPublisher` as scoped
 
-See `Mediance.DependencyInjection.Microsoft.ServiceCollectionExtensions` and `Mediance.DependencyInjection.Autofac.MedianceAutofacExtensions`.
+See `Interlocutor.DependencyInjection.Microsoft.ServiceCollectionExtensions` and `Interlocutor.DependencyInjection.Autofac.InterlocutorAutofacExtensions`.
 
 ### 11.1 Startup validation
 
-`MedianceStartupValidation.ValidateHandlerRegistrations()` scans assemblies at startup and throws `InvalidOperationException` if any `IQuery<T>`, `ICommand<T>`, or `ICommand` type lacks a registered handler.
+`InterlocutorStartupValidation.ValidateHandlerRegistrations()` scans assemblies at startup and throws `InvalidOperationException` if any `IQuery<T>`, `ICommand<T>`, or `ICommand` type lacks a registered handler.
 
 ## 12. HTTP mapping
 

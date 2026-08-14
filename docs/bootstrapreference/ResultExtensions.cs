@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace Mediance.AspNetCore;
+namespace Interlocutor.AspNetCore;
 
 /// <summary>
 /// The single, reusable mapping from domain outcomes to HTTP responses,

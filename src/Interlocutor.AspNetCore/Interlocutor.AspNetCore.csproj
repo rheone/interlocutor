@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>ASP.NET Core integration for Interlocutor. Provides ToActionResult() mapping from OperationOutcome/Failure to HTTP ProblemDetails responses.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Interlocutor.CommonKernel\Interlocutor.CommonKernel.csproj" />
+    <ProjectReference Include="..\Interlocutor.Abstractions\Interlocutor.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+</Project>

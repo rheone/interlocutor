@@ -1,5 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <Description>Mediance shared kernel: OperationOutcome types, Failure vocabulary, and PagedResult — pure data with no framework dependencies.</Description>
-  </PropertyGroup>
-</Project>

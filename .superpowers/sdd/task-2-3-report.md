@@ -10,7 +10,7 @@
 
 ## Directory structure created
 ```
-src/Mediance.Abstractions/
+src/Interlocutor.Abstractions/
 ├── Core/          (6 files: ISender, IPublisher, IMediator, PublishStrategy, IRequestContextAccessor, RequestContext)
 ├── Commands/      (5 files: ICommand, IEnumerableCommand, IBulkCommand, ICommandHandler, ResourceCommandHandler)
 ├── Queries/       (4 files: IQuery, IEnumerableQuery, IPagedQuery, IQueryHandler)

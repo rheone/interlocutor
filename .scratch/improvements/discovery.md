@@ -1,4 +1,4 @@
-# Mediance — Discovery & Expectations
+# Interlocutor — Discovery & Expectations
 
 **Date:** 2026-07-27
 
@@ -14,14 +14,14 @@ Bootstrap documents are **seed/design materials**, not specifications. Where sou
 
 | Package | Status | Notes |
 |---------|--------|-------|
-| `Mediance.CommonKernel` | Done | `Result<T>`, `Result`, `Failure`, `Success`, `PagedResult<T>` — C# 15 union types |
-| `Mediance.Abstractions` | Done | Marker interfaces, handler contracts, `IPipelineBehavior`, `IMediator`, `Mediator`, `ResourceCommandHandler`, `StartupValidation` |
-| `Mediance.AspNetCore` | Done | `ToActionResult()` mapping to `IActionResult` / ProblemDetails |
-| `Mediance.DependencyInjection.Microsoft` | Done | Assembly-scanning `AddMediance()` for MS DI |
-| `Mediance.DependencyInjection.Autofac` | Done | Assembly-scanning `AddMediance()` for Autofac |
-| `Mediance.EntityFrameworkCore` | Done | `TransactionBehavior<TRequest,TResponse>` wrapping DbContext |
-| `Mediance.NHibernate` | Done | `TransactionBehavior<TRequest,TResponse>` wrapping ISession |
-| `Mediance.FluentValidation` | Done | `ValidationBehavior<TRequest,TResponse>` + `BulkItemValidationBehavior<TRequest,TItem,TResponseItem>` |
+| `Interlocutor.CommonKernel` | Done | `Result<T>`, `Result`, `Failure`, `Success`, `PagedResult<T>` — C# 15 union types |
+| `Interlocutor.Abstractions` | Done | Marker interfaces, handler contracts, `IPipelineBehavior`, `IMediator`, `Mediator`, `ResourceCommandHandler`, `StartupValidation` |
+| `Interlocutor.AspNetCore` | Done | `ToActionResult()` mapping to `IActionResult` / ProblemDetails |
+| `Interlocutor.DependencyInjection.Microsoft` | Done | Assembly-scanning `AddInterlocutor()` for MS DI |
+| `Interlocutor.DependencyInjection.Autofac` | Done | Assembly-scanning `AddInterlocutor()` for Autofac |
+| `Interlocutor.EntityFrameworkCore` | Done | `TransactionBehavior<TRequest,TResponse>` wrapping DbContext |
+| `Interlocutor.NHibernate` | Done | `TransactionBehavior<TRequest,TResponse>` wrapping ISession |
+| `Interlocutor.FluentValidation` | Done | `ValidationBehavior<TRequest,TResponse>` + `BulkItemValidationBehavior<TRequest,TItem,TResponseItem>` |
 
 ### Tests Status
 
@@ -50,7 +50,7 @@ Bootstrap documents are **seed/design materials**, not specifications. Where sou
 | `TransactionBehavior<TRequest,TResponse,TContext>` (3 type params) | `TransactionBehavior<TRequest,TResponse>` (2 params, `Lazy<TContext>` via constructor) | Simpler DI registration — fits `IPipelineBehavior<,>` directly, no adapter class needed |
 | `Forbidden` → `ObjectResult(ProblemDetails)` with body | `StatusCodeResult(403)` with empty body | Standard 403 behavior; reason is logged not returned |
 | `BulkItemValidationBehavior<TRequest,TItem,TResponseItem>` doesn't fit `IPipelineBehavior<,>` | Actually fits: `IPipelineBehavior<TRequest, IReadOnlyList<TResponseItem>>` where `TRequest : IBulkCommand<TItem, TResponseItem>` | Compile-time constraint on TRequest ensures correct usage |
-| Namespace: `Mediance` / `Mediance.Mediation` | `Mediance.CommonKernel` / `Mediance.Abstractions` | Better clarity; "Abstractions" is conventional in .NET ecosystem |
+| Namespace: `Interlocutor` / `Interlocutor.Mediation` | `Interlocutor.CommonKernel` / `Interlocutor.Abstractions` | Better clarity; "Abstractions" is conventional in .NET ecosystem |
 | `IRequiresPolicy` with `PolicyName` property | Same interface, but issue #10 ticket incorrectly states `static abstract string Policy` | Issue ticket needs correction |
 | `Unauthorized` was dropped early in design | Confirmed absent in source | Authentication handled upstream (auth middleware) |
 
@@ -92,7 +92,7 @@ Bootstrap documents are **seed/design materials**, not specifications. Where sou
 | 7 | `INotification` / `Publish` — no event broadcasting mechanism | New |
 | 8 | `ISender` / `IPublisher` split — interface segregation violation; `IMediator` combines both concerns | New |
 | 9 | `IRequestContextAccessor` — no shared ambient context (correlation ID, current user, tenant) | New |
-| 10 | Assembly scanning registration helper — no `AddMedianceMediation(params Assembly[])` convenience overload | New |
+| 10 | Assembly scanning registration helper — no `AddInterlocutorMediation(params Assembly[])` convenience overload | New |
 | 11 | JSON serialization for C# 15 union types — `Failure`, `Result<T>`, `Result` need custom `JsonConverter` | 05 |
 
 ### Naming & Consistency
@@ -124,7 +124,7 @@ Bootstrap documents are **seed/design materials**, not specifications. Where sou
 
 | # | Gap | Ticket |
 |---|-----|--------|
-| 22 | `MedianceStartupValidation` doesn't check `ICommand` (void) handler registrations | 04 |
+| 22 | `InterlocutorStartupValidation` doesn't check `ICommand` (void) handler registrations | 04 |
 
 ## Bootstrap Document Quality Issues
 
@@ -136,7 +136,7 @@ These are issues within the bootstrap reference materials themselves that need f
 
 3. **Conversation.md turn 11:** Describes `PipelineStage<TRequest,TResponse>` as a generic ingress/egress hook. Not implemented in source. Should be noted as future feature or removed if superseded by `LoggingBehavior`.
 
-4. **Addendum-B-library-packaging.md:** Lists package names `Mediance`, `Mediance.Mediation`, `Mediance.Mediation.EntityFrameworkCore` — actual names are `Mediance.CommonKernel`, `Mediance.Abstractions`, `Mediance.EntityFrameworkCore`. Also lists `Mediance.AspNetCore` which became `ResultExtensions` mapping only.
+4. **Addendum-B-library-packaging.md:** Lists package names `Interlocutor`, `Interlocutor.Mediation`, `Interlocutor.Mediation.EntityFrameworkCore` — actual names are `Interlocutor.CommonKernel`, `Interlocutor.Abstractions`, `Interlocutor.EntityFrameworkCore`. Also lists `Interlocutor.AspNetCore` which became `ResultExtensions` mapping only.
 
 5. **Union Types.md:** This is a verbatim Microsoft Learn reference copy. Valid but may become stale as C# 15 union type syntax evolves toward GA.
 

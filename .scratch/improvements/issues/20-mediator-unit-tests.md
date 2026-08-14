@@ -8,7 +8,7 @@ ready-for-agent
 
 ## What to build
 
-Write unit tests for the `Mediator` class in `Mediance.Abstractions`. The mediator is the core dispatch mechanism — it resolves handlers from DI, chains pipeline behaviors, caches wrapper types, and routes requests. It currently has **zero unit tests**.
+Write unit tests for the `Mediator` class in `Interlocutor.Abstractions`. The mediator is the core dispatch mechanism — it resolves handlers from DI, chains pipeline behaviors, caches wrapper types, and routes requests. It currently has **zero unit tests**.
 
 Test scenarios needed:
 

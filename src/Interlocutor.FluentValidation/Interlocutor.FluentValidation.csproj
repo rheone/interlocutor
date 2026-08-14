@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>FluentValidation integration for Interlocutor. Provides ValidationBehavior and BulkItemValidationBehavior using FluentValidation's IValidator resolution.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Interlocutor.Abstractions\Interlocutor.Abstractions.csproj" />
+  </ItemGroup>
+
+  <!-- DependencyInjection.Abstractions is auto-available in .NET 11 SDK -->
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" />
+  </ItemGroup>
+</Project>

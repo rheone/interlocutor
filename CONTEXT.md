@@ -1,12 +1,12 @@
 # Context
 
-Glossary of domain vocabulary used throughout the Mediance project. Use these terms consistently in issues, tests, and documentation.
+Glossary of domain vocabulary used throughout the Interlocutor project. Use these terms consistently in issues, tests, and documentation.
 
 ## Project
 
 | Term         | Definition                                                                                                                                                                                                                             |
 | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Mediance** | A mediator/CQRS pipeline library for .NET built on C# 15 union types. Named after the legal term for how a case is resolved — maps to `OperationOutcome<T>` outcomes (succeeded, not found, forbidden, etc.). Namespace: `Mediance.*`. |
+| **Interlocutor** | A mediator/CQRS pipeline library for .NET built on C# 15 union types. Named after the participant who conducts a dialogue — it mediates requests between code and handlers, which communicate via typed `OperationOutcome<T>` unions (succeeded, not found, forbidden, etc.). Namespace: `Interlocutor.*`. |
 
 ## Result Types
 
@@ -130,11 +130,11 @@ Glossary of domain vocabulary used throughout the Mediance project. Use these te
 
 | Term                                       | Definition                                                                                                                                                                                                                        |
 | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Mediance.CommonKernel**                  | Pure data types (OperationOutcome, Failure, PagedResult). Zero external dependencies.                                                                                                                                             |
-| **Mediance.Abstractions**                  | Mediator interfaces, handler contracts, marker interfaces, Mediator implementation, pipeline behaviors (Logging, Authorization, Auditing, PipelineStage). Depends on CommonKernel and framework-provided DI/Logging abstractions. |
-| **Mediance.AspNetCore**                    | `ToActionResult()` HTTP mapping. Depends on CommonKernel and ASP.NET Core.                                                                                                                                                        |
-| **Mediance.DependencyInjection.Microsoft** | Assembly-scanning `AddMediance()` for Microsoft.Extensions.DependencyInjection.                                                                                                                                                   |
-| **Mediance.DependencyInjection.Autofac**   | Assembly-scanning `AddMediance()` for Autofac.                                                                                                                                                                                    |
-| **Mediance.EntityFrameworkCore**           | `TransactionBehavior` for EF Core `DbContext`.                                                                                                                                                                                    |
-| **Mediance.NHibernate**                    | `TransactionBehavior` for NHibernate `ISession`.                                                                                                                                                                                  |
-| **Mediance.FluentValidation**              | `ValidationBehavior` and `BulkItemValidationBehavior` for FluentValidation.                                                                                                                                                       |
+| **Interlocutor.CommonKernel**                  | Pure data types (OperationOutcome, Failure, PagedResult). Zero external dependencies.                                                                                                                                             |
+| **Interlocutor.Abstractions**                  | Mediator interfaces, handler contracts, marker interfaces, Mediator implementation, pipeline behaviors (Logging, Authorization, Auditing, PipelineStage). Depends on CommonKernel and framework-provided DI/Logging abstractions. |
+| **Interlocutor.AspNetCore**                    | `ToActionResult()` HTTP mapping. Depends on CommonKernel and ASP.NET Core.                                                                                                                                                        |
+| **Interlocutor.DependencyInjection.Microsoft** | Assembly-scanning `AddInterlocutor()` for Microsoft.Extensions.DependencyInjection.                                                                                                                                                   |
+| **Interlocutor.DependencyInjection.Autofac**   | Assembly-scanning `AddInterlocutor()` for Autofac.                                                                                                                                                                                    |
+| **Interlocutor.EntityFrameworkCore**           | `TransactionBehavior` for EF Core `DbContext`.                                                                                                                                                                                    |
+| **Interlocutor.NHibernate**                    | `TransactionBehavior` for NHibernate `ISession`.                                                                                                                                                                                  |
+| **Interlocutor.FluentValidation**              | `ValidationBehavior` and `BulkItemValidationBehavior` for FluentValidation.                                                                                                                                                       |

@@ -1,10 +1,10 @@
-using Mediance;
+using Interlocutor;
 
-namespace Mediance.Mediation;
+namespace Interlocutor.Mediation;
 
 // ---------------------------------------------------------------------------
-// Package: Mediance.Mediation
-// Depends only on Mediance (the kernel). Everything here is storage- and
+// Package: Interlocutor.Mediation
+// Depends only on Interlocutor (the kernel). Everything here is storage- and
 // framework-agnostic — no EF Core, no ASP.NET, no FluentValidation. Those
 // bindings live in the satellite packages that reference this one.
 // ---------------------------------------------------------------------------
@@ -67,7 +67,7 @@ public interface IBulkCommand<TItem, TResponseItem> : ICommand<IReadOnlyList<TRe
 
 /// <summary>
 /// Opts a command into the unit-of-work provided by a persistence satellite
-/// package (e.g. <c>Mediance.Mediation.EntityFrameworkCore</c>'s
+/// package (e.g. <c>Interlocutor.Mediation.EntityFrameworkCore</c>'s
 /// <c>TransactionBehavior</c>). Every concrete command should implement
 /// exactly one of this or <see cref="IExternalStoreRequest"/> — enforced by
 /// an architecture test, not the compiler.

@@ -8,7 +8,7 @@ ready-for-agent
 
 ## What to build
 
-Clean up the `TransactionBehavior` in `Mediance.NHibernate` by extracting the `Lazy<ISession>` resolution into an explicit guard clause, removing the nested `&&` side-effect pattern that evaluates in a single composite condition.
+Clean up the `TransactionBehavior` in `Interlocutor.NHibernate` by extracting the `Lazy<ISession>` resolution into an explicit guard clause, removing the nested `&&` side-effect pattern that evaluates in a single composite condition.
 
 Current pattern (nested in a single `if`):
 ```

@@ -1,0 +1,32 @@
+namespace Interlocutor.EntityFrameworkCore.Tests;
+
+using Interlocutor.Abstractions.Commands;
+
+public record NonTransactionalTestRequest(int Value) : ICommand<string>;
+
+public class TransactionBehaviorTests
+{
+    [Fact]
+    public async Task NonTransactionalRequest_SkipsTransaction()
+    {
+        var db = new Lazy<Microsoft.EntityFrameworkCore.DbContext>(() =>
+            throw new InvalidOperationException("Should not be resolved")
+        );
+        var behavior = new TransactionBehavior<NonTransactionalTestRequest, string, Microsoft.EntityFrameworkCore.DbContext>(
+            db
+        );
+        var handled = false;
+
+        var result = await behavior.Handle(
+            new NonTransactionalTestRequest(1),
+            () =>
+            {
+                handled = true;
+                return Task.FromResult("done");
+            },
+            CancellationToken.None
+        );
+
+        Assert.True(handled);
+    }
+}

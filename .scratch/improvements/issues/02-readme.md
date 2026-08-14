@@ -10,7 +10,7 @@ ready-for-agent
 
 Write the README (currently 0 bytes). This is the first thing a potential user sees. It should cover:
 
-- **What Mediance is**: a mediator/CQRS pipeline library built on C# 15 union types for explicit, compiler-checked error handling
+- **What Interlocutor is**: a mediator/CQRS pipeline library built on C# 15 union types for explicit, compiler-checked error handling
 - **Quick-start**: add the DI package, register handlers and mediator, define a query/command with handler, call `IMediator.Send`, handle `Result<T>` with pattern matching
 - **Package table**: list of NuGet packages and what each provides
 - **Links** to PRD and ADRs in `bootstrapreference/` for deeper reading

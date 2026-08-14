@@ -4,7 +4,7 @@ ready-for-agent
 
 ## What to build
 
-Rewrite `Mediator.Send(ICommand)` (the non-generic, void overload) in `Mediance.Abstractions` to use the same cached generic wrapper pattern as `ICommand<TResponse>`, instead of the current `GetMethod` + `Invoke` reflection.
+Rewrite `Mediator.Send(ICommand)` (the non-generic, void overload) in `Interlocutor.Abstractions` to use the same cached generic wrapper pattern as `ICommand<TResponse>`, instead of the current `GetMethod` + `Invoke` reflection.
 
 Current implementation at `Mediator.cs` around line 80—90:
 ```csharp

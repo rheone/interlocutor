@@ -18,7 +18,7 @@ The handler wrappers themselves are cached in `ConcurrentDictionary<Type, object
 
 ## Consequences
 
-- **Positive:** No separate handler registration API — `AddMediance()` assembly scanning handles everything uniformly. The DI container is the single source of truth for lifetimes.
+- **Positive:** No separate handler registration API — `AddInterlocutor()` assembly scanning handles everything uniformly. The DI container is the single source of truth for lifetimes.
 - **Positive:** Handler lifetimes are controlled by DI registration (scoped by default), not by the mediator.
 - **Negative:** Slight reflection overhead on first dispatch per request type — cached via `ConcurrentDictionary` so amortized to one cost per type.
 

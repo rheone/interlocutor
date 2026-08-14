@@ -36,13 +36,13 @@ Key design decisions:
 - **Thread-safe**: `RequestContext` is immutable (record), swap via `Context { get; set; }`
 
 Package placement:
-- Interfaces in `Mediance.Abstractions` (or a new `Mediance.Abstractions` file)
-- Default implementation in `Mediance.Abstractions`
-- ASP.NET Core middleware in `Mediance.AspNetCore`
+- Interfaces in `Interlocutor.Abstractions` (or a new `Interlocutor.Abstractions` file)
+- Default implementation in `Interlocutor.Abstractions`
+- ASP.NET Core middleware in `Interlocutor.AspNetCore`
 
 ## Acceptance criteria
 
-- [ ] `IRequestContextAccessor` defined in `Mediance.Abstractions`
+- [ ] `IRequestContextAccessor` defined in `Interlocutor.Abstractions`
 - [ ] Default scoped implementation provided
 - [ ] ASP.NET Core middleware populates from `HttpContext`
 - [ ] Tests cover: null context, populated context, middleware population

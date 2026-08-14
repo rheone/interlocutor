@@ -1,5 +1,5 @@
 $files = $args -join ','
 if (-not $files) { exit 0 }
 
-dotnet format style Mediance.slnx --include $files
+dotnet format style Interlocutor.slnx --include $files
 exit $LASTEXITCODE

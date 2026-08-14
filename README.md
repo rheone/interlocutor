@@ -1,18 +1,18 @@
-# Mediance
+# Interlocutor
 
 A mediator/CQRS pipeline library for .NET built on C# 15 union types.
 
-Named after the legal term for how a case is resolved — handlers return outcomes (succeeded, not found, forbidden, etc.) as compiler-checked unions instead of throwing for expected failures. Exceptions stay reserved for bugs and infrastructure faults.
+Named after the participant who conducts a dialogue — the library mediates requests between your code and its handlers, letting each side speak through typed, compiler-checked outcomes (succeeded, not found, forbidden, etc.) instead of throwing for expected failures. Exceptions stay reserved for bugs and infrastructure faults.
 
 ## Quick Start
 
 ### Setup
 
-Register Mediance with dependency injection and configure pipeline behaviors:
+Register Interlocutor with dependency injection and configure pipeline behaviors:
 
 ```csharp
 // Startup.cs or Program.cs
-services.AddMediance(typeof(Program).Assembly);  // Auto-scan and register all handlers
+services.AddInterlocutor(typeof(Program).Assembly);  // Auto-scan and register all handlers
 
 // Optional: add built-in pipeline behaviors (in recommended order)
 services.AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
@@ -22,7 +22,7 @@ services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 services.AddScoped(typeof(IPipelineBehavior<,>), typeof(TransactionBehavior<,,>));
 
 // Optional: configure which DI container to use
-// For Autofac: services.AddMediance(config => config.UseAutofac(containerBuilder));
+// For Autofac: services.AddInterlocutor(config => config.UseAutofac(containerBuilder));
 ```
 
 ### Define and Send Requests
@@ -91,24 +91,24 @@ var message = result.Value switch
 
 | Package | Purpose |
 |---------|---------|
-| `Mediance.CommonKernel` | Ready-made result case types (`Failure`, `NotFound`, `Forbidden`, `Conflict`, `ValidationFailed`, `ValidationFailure`, `Success`) and the `OperationOutcome<...>` union arities. Zero dependencies. |
-| `Mediance.Abstractions` | Core mediator contracts, handler interfaces, pipeline behaviors, Mediator implementation. |
-| `Mediance.AspNetCore` | `ToActionResult()` HTTP mapping for ASP.NET Core. |
-| `Mediance.DependencyInjection.Microsoft` | Assembly-scanning `AddMediance()` for Microsoft.Extensions.DependencyInjection. |
-| `Mediance.DependencyInjection.Autofac` | Assembly-scanning `AddMediance()` for Autofac. |
-| `Mediance.EntityFrameworkCore` | `TransactionBehavior` for EF Core `DbContext`. |
-| `Mediance.NHibernate` | `TransactionBehavior` for NHibernate `ISession`. |
-| `Mediance.FluentValidation` | `ValidationBehavior` and `BulkItemValidationBehavior`. |
+| `Interlocutor.CommonKernel` | Ready-made result case types (`Failure`, `NotFound`, `Forbidden`, `Conflict`, `ValidationFailed`, `ValidationFailure`, `Success`) and the `OperationOutcome<...>` union arities. Zero dependencies. |
+| `Interlocutor.Abstractions` | Core mediator contracts, handler interfaces, pipeline behaviors, Mediator implementation. |
+| `Interlocutor.AspNetCore` | `ToActionResult()` HTTP mapping for ASP.NET Core. |
+| `Interlocutor.DependencyInjection.Microsoft` | Assembly-scanning `AddInterlocutor()` for Microsoft.Extensions.DependencyInjection. |
+| `Interlocutor.DependencyInjection.Autofac` | Assembly-scanning `AddInterlocutor()` for Autofac. |
+| `Interlocutor.EntityFrameworkCore` | `TransactionBehavior` for EF Core `DbContext`. |
+| `Interlocutor.NHibernate` | `TransactionBehavior` for NHibernate `ISession`. |
+| `Interlocutor.FluentValidation` | `ValidationBehavior` and `BulkItemValidationBehavior`. |
 
 ## Result Types Are Building Blocks, Not a Mandatory Wrapper
 
 Every handler interface (`IQueryHandler<,>`, `ICommandHandler<,>`) and `IPipelineBehavior<,>` is generic over a plain `TResponse` — there is no forced `OperationOutcome<TResponse>` wrapper. `TResponse` can be:
 
 - a plain type (`UserResponse`, `int`, `string`) when the operation can't meaningfully fail,
-- a `Mediance.CommonKernel.ResultTypes` union, or
+- a `Interlocutor.CommonKernel.ResultTypes` union, or
 - a union type your own application defines.
 
-`Mediance.CommonKernel.ResultTypes` ships a two-case union and three wider arities:
+`Interlocutor.CommonKernel.ResultTypes` ships a two-case union and three wider arities:
 
 ```csharp
 public readonly union OperationOutcome<TSuccess, TFailure>(TSuccess, TFailure);
@@ -163,7 +163,7 @@ public class DeleteOrderHandler : ICommandHandler<DeleteOrder, OperationOutcome<
     }
 }
 
-// A custom union — Mediance doesn't require CommonKernel's shapes at all.
+// A custom union — Interlocutor doesn't require CommonKernel's shapes at all.
 public union PaymentOutcome(Charged, InsufficientFunds, CardDeclined);
 public record ProcessPayment(decimal Amount) : ICommand<PaymentOutcome>;
 ```
@@ -420,7 +420,7 @@ Inject only what you need:
 
 - Handlers are registered as singletons (stateless) when possible, otherwise as scoped/transient per your registration.
 - Pipeline behaviors are scoped to the request by default.
-- Use `AddMediance(Type)` for single-assembly registration or `AddMedianceFromEntryAssembly()` to scan from the entry point.
+- Use `AddInterlocutor(Type)` for single-assembly registration or `AddInterlocutorFromEntryAssembly()` to scan from the entry point.
 - For large request volumes, consider disabling logging/auditing behaviors or implementing conditional registration.
 
 ## Links

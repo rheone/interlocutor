@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
-namespace Mediance.Mediation.EntityFrameworkCore;
+namespace Interlocutor.Mediation.EntityFrameworkCore;
 
 /// <summary>
 /// Wraps <see cref="ITransactionalRequest"/> commands in a database

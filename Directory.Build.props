@@ -7,15 +7,15 @@
     <!-- <TreatWarningsAsErrors>true</TreatWarningsAsErrors> -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsPackable>true</IsPackable>
-    <Version>1.0.0</Version>
+    <Version>1.0.0-dev</Version>
     <Authors>Robert H. Engelhardt</Authors>
     <Company>TBD</Company>
     <Copyright>TBD</Copyright>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <RepositoryUrl>https://github.com/rheone/Mediance</RepositoryUrl>
+    <RepositoryUrl>https://github.com/rheone/interlocutor</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageProjectUrl>https://github.com/rheone/Mediance</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/rheone/interlocutor</PackageProjectUrl>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <PackageTags>mediator;cqrs;pipeline;result;union</PackageTags>

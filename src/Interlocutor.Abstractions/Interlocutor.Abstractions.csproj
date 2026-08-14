@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Interlocutor mediator abstractions: IMediator, IPipelineBehavior, handler contracts, marker interfaces, and the concrete Mediator implementation.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Interlocutor.CommonKernel\Interlocutor.CommonKernel.csproj" />
+  </ItemGroup>
+
+  <!-- DependencyInjection.Abstractions and Logging.Abstractions are auto-available in .NET 11 SDK -->
+  <ItemGroup>
+    <Using Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+</Project>

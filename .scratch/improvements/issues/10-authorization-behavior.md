@@ -6,7 +6,7 @@ ready-for-agent
 
 Implement `AuthorizationBehavior<TRequest, TResponse>` — a pipeline behavior that enforces declarative authorization policies on requests.
 
-The `IRequiresPolicy` marker interface exists in `Mediance.Abstractions`:
+The `IRequiresPolicy` marker interface exists in `Interlocutor.Abstractions`:
 ```csharp
 public interface IRequiresPolicy
 {

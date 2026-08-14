@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Mediance.Mediation;
+namespace Interlocutor.Mediation;
 
 /// <summary>
 /// Non-generic so it can be cached in a <see cref="ConcurrentDictionary{TKey,TValue}"/>

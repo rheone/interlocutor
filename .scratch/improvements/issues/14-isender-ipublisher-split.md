@@ -13,7 +13,7 @@ Split `IMediator` into `ISender` and `IPublisher` interfaces following the Inter
 Proposed split:
 
 ```csharp
-// Mediance.Abstractions
+// Interlocutor.Abstractions
 
 public interface ISender
 {

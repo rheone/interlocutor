@@ -1,19 +1,19 @@
 # Task 2+3: Split Abstractions.cs and Behaviors.cs into subdirectory files
 
-**Goal:** Create 30 new files in subdirectories under `src/Mediance.Abstractions/`, then delete `Abstractions.cs` and `Behaviors.cs`.
+**Goal:** Create 30 new files in subdirectories under `src/Interlocutor.Abstractions/`, then delete `Abstractions.cs` and `Behaviors.cs`.
 
 **Critical constraints — MUST follow exactly:**
 1. ONLY create the files listed below. Do NOT touch any other file.
 2. ONLY delete `Abstractions.cs` and `Behaviors.cs`. Do NOT delete anything else.
 3. Do NOT modify any existing file.
-4. Each file's namespace must match the subdirectory name (e.g. files in `Core/` → `namespace Mediance.Abstractions.Core;`)
+4. Each file's namespace must match the subdirectory name (e.g. files in `Core/` → `namespace Interlocutor.Abstractions.Core;`)
 5. Do NOT add, remove, or change any code logic — pure file extraction
 
 The build will NOT pass after this task (imports in other files won't resolve until later tasks). Do NOT try to build.
 
 ## Step 1: Create subdirectories
 
-Create these directories under `src/Mediance.Abstractions/`:
+Create these directories under `src/Interlocutor.Abstractions/`:
 - `Core/`
 - `Commands/`
 - `Queries/`
@@ -23,15 +23,15 @@ Create these directories under `src/Mediance.Abstractions/`:
 
 ## Step 2: Create 22 files from Abstractions.cs
 
-### Core/ (namespace `Mediance.Abstractions.Core`)
+### Core/ (namespace `Interlocutor.Abstractions.Core`)
 
 **Core/ISender.cs:**
 ```csharp
-using Mediance.Abstractions.Commands;
-using Mediance.Abstractions.Queries;
-using Mediance.CommonKernel;
+using Interlocutor.Abstractions.Commands;
+using Interlocutor.Abstractions.Queries;
+using Interlocutor.CommonKernel;
 
-namespace Mediance.Abstractions.Core;
+namespace Interlocutor.Abstractions.Core;
 
 /// <summary>Send-only interface for request/response operations. Exposes <see cref="Send{TResponse}(IQuery{TResponse},CancellationToken)"/> for queries and commands.</summary>
 public interface ISender
@@ -49,9 +49,9 @@ public interface ISender
 
 **Core/IPublisher.cs:**
 ```csharp
-using Mediance.Abstractions.Notifications;
+using Interlocutor.Abstractions.Notifications;
 
-namespace Mediance.Abstractions.Core;
+namespace Interlocutor.Abstractions.Core;
 
 /// <summary>Publish-only interface for fire-and-forget notifications. Exposes <see cref="Publish{TNotification}(TNotification,CancellationToken)"/>.</summary>
 public interface IPublisher
@@ -64,7 +64,7 @@ public interface IPublisher
 
 **Core/IMediator.cs:**
 ```csharp
-namespace Mediance.Abstractions.Core;
+namespace Interlocutor.Abstractions.Core;
 
 /// <summary>Combined send-and-publish interface. Exposes both <see cref="ISender"/> and <see cref="IPublisher"/>.</summary>
 public interface IMediator : ISender, IPublisher;
@@ -72,7 +72,7 @@ public interface IMediator : ISender, IPublisher;
 
 **Core/PublishStrategy.cs:**
 ```csharp
-namespace Mediance.Abstractions.Core;
+namespace Interlocutor.Abstractions.Core;
 
 /// <summary>Controls how notifications are dispatched to multiple handlers.</summary>
 public enum PublishStrategy
@@ -87,7 +87,7 @@ public enum PublishStrategy
 
 **Core/IRequestContextAccessor.cs:**
 ```csharp
-namespace Mediance.Abstractions.Core;
+namespace Interlocutor.Abstractions.Core;
 
 /// <summary>Scoped ambient context carrying correlation ID, user identity, and tenant information through the request pipeline.</summary>
 /// <remarks>Null-safe — if no middleware populates this, <see cref="Context"/> is null. Consumers must handle gracefully.</remarks>
@@ -100,7 +100,7 @@ public interface IRequestContextAccessor
 
 **Core/RequestContext.cs:**
 ```csharp
-namespace Mediance.Abstractions.Core;
+namespace Interlocutor.Abstractions.Core;
 
 /// <summary>Immutable snapshot of request-scoped ambient data.</summary>
 public sealed record RequestContext
@@ -119,11 +119,11 @@ public sealed record RequestContext
 }
 ```
 
-### Commands/ (namespace `Mediance.Abstractions.Commands`)
+### Commands/ (namespace `Interlocutor.Abstractions.Commands`)
 
 **Commands/ICommand.cs:**
 ```csharp
-namespace Mediance.Abstractions.Commands;
+namespace Interlocutor.Abstractions.Commands;
 
 public interface ICommand<TResponse>;
 
@@ -132,14 +132,14 @@ public interface ICommand;
 
 **Commands/IEnumerableCommand.cs:**
 ```csharp
-namespace Mediance.Abstractions.Commands;
+namespace Interlocutor.Abstractions.Commands;
 
 public interface IEnumerableCommand<TResponseItem> : ICommand<IReadOnlyList<TResponseItem>>;
 ```
 
 **Commands/IBulkCommand.cs:**
 ```csharp
-namespace Mediance.Abstractions.Commands;
+namespace Interlocutor.Abstractions.Commands;
 
 public interface IBulkCommand<TItem, TResponseItem> : ICommand<IReadOnlyList<TResponseItem>>
 {
@@ -149,9 +149,9 @@ public interface IBulkCommand<TItem, TResponseItem> : ICommand<IReadOnlyList<TRe
 
 **Commands/ICommandHandler.cs:**
 ```csharp
-using Mediance.CommonKernel;
+using Interlocutor.CommonKernel;
 
-namespace Mediance.Abstractions.Commands;
+namespace Interlocutor.Abstractions.Commands;
 
 public interface ICommandHandler<in TCommand, TResponse>
     where TCommand : ICommand<TResponse>
@@ -168,9 +168,9 @@ public interface ICommandHandler<in TCommand>
 
 **Commands/ResourceCommandHandler.cs:**
 ```csharp
-using Mediance.CommonKernel;
+using Interlocutor.CommonKernel;
 
-namespace Mediance.Abstractions.Commands;
+namespace Interlocutor.Abstractions.Commands;
 
 public abstract class ResourceCommandHandler<TCommand, TEntity, TResponse>
     where TCommand : ICommand<TResponse>
@@ -203,27 +203,27 @@ public abstract class ResourceCommandHandler<TCommand, TEntity, TResponse>
 }
 ```
 
-### Queries/ (namespace `Mediance.Abstractions.Queries`)
+### Queries/ (namespace `Interlocutor.Abstractions.Queries`)
 
 **Queries/IQuery.cs:**
 ```csharp
-namespace Mediance.Abstractions.Queries;
+namespace Interlocutor.Abstractions.Queries;
 
 public interface IQuery<TResponse>;
 ```
 
 **Queries/IEnumerableQuery.cs:**
 ```csharp
-namespace Mediance.Abstractions.Queries;
+namespace Interlocutor.Abstractions.Queries;
 
 public interface IEnumerableQuery<TItem> : IQuery<IReadOnlyList<TItem>>;
 ```
 
 **Queries/IPagedQuery.cs:**
 ```csharp
-using Mediance.CommonKernel;
+using Interlocutor.CommonKernel;
 
-namespace Mediance.Abstractions.Queries;
+namespace Interlocutor.Abstractions.Queries;
 
 public interface IPagedQuery<TItem> : IQuery<PagedResult<TItem>>
 {
@@ -235,9 +235,9 @@ public interface IPagedQuery<TItem> : IQuery<PagedResult<TItem>>
 
 **Queries/IQueryHandler.cs:**
 ```csharp
-using Mediance.CommonKernel;
+using Interlocutor.CommonKernel;
 
-namespace Mediance.Abstractions.Queries;
+namespace Interlocutor.Abstractions.Queries;
 
 public interface IQueryHandler<in TQuery, TResponse>
     where TQuery : IQuery<TResponse>
@@ -246,11 +246,11 @@ public interface IQueryHandler<in TQuery, TResponse>
 }
 ```
 
-### Notifications/ (namespace `Mediance.Abstractions.Notifications`)
+### Notifications/ (namespace `Interlocutor.Abstractions.Notifications`)
 
 **Notifications/INotification.cs:**
 ```csharp
-namespace Mediance.Abstractions.Notifications;
+namespace Interlocutor.Abstractions.Notifications;
 
 /// <summary>Marker interface for domain events or notifications. Has no return value — fire-and-forget.</summary>
 public interface INotification;
@@ -258,7 +258,7 @@ public interface INotification;
 
 **Notifications/INotificationHandler.cs:**
 ```csharp
-namespace Mediance.Abstractions.Notifications;
+namespace Interlocutor.Abstractions.Notifications;
 
 /// <summary>Handles a single notification type. Multiple handlers may register for the same <typeparamref name="TNotification"/>.</summary>
 /// <typeparam name="TNotification">The notification type this handler consumes.</typeparam>
@@ -270,13 +270,13 @@ public interface INotificationHandler<in TNotification>
 }
 ```
 
-### Pipeline/ (namespace `Mediance.Abstractions.Pipeline`)
+### Pipeline/ (namespace `Interlocutor.Abstractions.Pipeline`)
 
 **Pipeline/IPipelineBehavior.cs:**
 ```csharp
-using Mediance.CommonKernel;
+using Interlocutor.CommonKernel;
 
-namespace Mediance.Abstractions.Pipeline;
+namespace Interlocutor.Abstractions.Pipeline;
 
 public interface IPipelineBehavior<TRequest, TResponse>
 {
@@ -284,25 +284,25 @@ public interface IPipelineBehavior<TRequest, TResponse>
 }
 ```
 
-### Markers/ (namespace `Mediance.Abstractions.Markers`)
+### Markers/ (namespace `Interlocutor.Abstractions.Markers`)
 
 **Markers/ITransactionalRequest.cs:**
 ```csharp
-namespace Mediance.Abstractions.Markers;
+namespace Interlocutor.Abstractions.Markers;
 
 public interface ITransactionalRequest;
 ```
 
 **Markers/IExternalStoreRequest.cs:**
 ```csharp
-namespace Mediance.Abstractions.Markers;
+namespace Interlocutor.Abstractions.Markers;
 
 public interface IExternalStoreRequest;
 ```
 
 **Markers/IAuditableRequest.cs:**
 ```csharp
-namespace Mediance.Abstractions.Markers;
+namespace Interlocutor.Abstractions.Markers;
 
 public interface IAuditableRequest
 {
@@ -312,7 +312,7 @@ public interface IAuditableRequest
 
 **Markers/IRequiresPolicy.cs:**
 ```csharp
-namespace Mediance.Abstractions.Markers;
+namespace Interlocutor.Abstractions.Markers;
 
 public interface IRequiresPolicy
 {
@@ -322,15 +322,15 @@ public interface IRequiresPolicy
 
 ## Step 3: Create 8 files from Behaviors.cs (all in Pipeline/)
 
-All files use `namespace Mediance.Abstractions.Pipeline`.
+All files use `namespace Interlocutor.Abstractions.Pipeline`.
 
 **Pipeline/LoggingBehavior.cs:**
 ```csharp
 using System.Diagnostics;
-using Mediance.CommonKernel;
+using Interlocutor.CommonKernel;
 using Microsoft.Extensions.Logging;
 
-namespace Mediance.Abstractions.Pipeline;
+namespace Interlocutor.Abstractions.Pipeline;
 
 /// <summary>Pipeline behavior that logs every mediator request passing through the pipeline.</summary>
 public class LoggingBehavior<TRequest, TResponse>(ILogger<LoggingBehavior<TRequest, TResponse>> logger)
@@ -373,7 +373,7 @@ public class LoggingBehavior<TRequest, TResponse>(ILogger<LoggingBehavior<TReque
 
 **Pipeline/AuditEntry.cs:**
 ```csharp
-namespace Mediance.Abstractions.Pipeline;
+namespace Interlocutor.Abstractions.Pipeline;
 
 /// <summary>Represents a single audit record written by <see cref="AuditingBehavior{TRequest,TResponse}"/>.</summary>
 public record AuditEntry(string ActionName, string RequestType, string Outcome, DateTime Timestamp, string? UserId = null);
@@ -381,7 +381,7 @@ public record AuditEntry(string ActionName, string RequestType, string Outcome, 
 
 **Pipeline/IAuditSink.cs:**
 ```csharp
-namespace Mediance.Abstractions.Pipeline;
+namespace Interlocutor.Abstractions.Pipeline;
 
 /// <summary>Persists audit records produced by <see cref="AuditingBehavior{TRequest,TResponse}"/>.</summary>
 public interface IAuditSink
@@ -393,10 +393,10 @@ public interface IAuditSink
 
 **Pipeline/AuditingBehavior.cs:**
 ```csharp
-using Mediance.Abstractions.Markers;
-using Mediance.CommonKernel;
+using Interlocutor.Abstractions.Markers;
+using Interlocutor.CommonKernel;
 
-namespace Mediance.Abstractions.Pipeline;
+namespace Interlocutor.Abstractions.Pipeline;
 
 /// <summary>Pipeline behavior that records an audit trail for requests implementing <see cref="IAuditableRequest"/>.</summary>
 public class AuditingBehavior<TRequest, TResponse>(IAuditSink sink) : IPipelineBehavior<TRequest, TResponse>
@@ -426,7 +426,7 @@ public class AuditingBehavior<TRequest, TResponse>(IAuditSink sink) : IPipelineB
 
 **Pipeline/IPolicyEvaluator.cs:**
 ```csharp
-namespace Mediance.Abstractions.Pipeline;
+namespace Interlocutor.Abstractions.Pipeline;
 
 /// <summary>Minimal authorization abstraction that avoids coupling to ASP.NET Core's <c>IAuthorizationService</c>.</summary>
 public interface IPolicyEvaluator
@@ -438,10 +438,10 @@ public interface IPolicyEvaluator
 
 **Pipeline/AuthorizationBehavior.cs:**
 ```csharp
-using Mediance.Abstractions.Markers;
-using Mediance.CommonKernel;
+using Interlocutor.Abstractions.Markers;
+using Interlocutor.CommonKernel;
 
-namespace Mediance.Abstractions.Pipeline;
+namespace Interlocutor.Abstractions.Pipeline;
 
 /// <summary>Pipeline behavior that enforces declarative authorization policies on requests implementing <see cref="IRequiresPolicy"/>.</summary>
 public class AuthorizationBehavior<TRequest, TResponse>(IPolicyEvaluator policyEvaluator)
@@ -462,9 +462,9 @@ public class AuthorizationBehavior<TRequest, TResponse>(IPolicyEvaluator policyE
 
 **Pipeline/IPipelineStage.cs:**
 ```csharp
-using Mediance.CommonKernel;
+using Interlocutor.CommonKernel;
 
-namespace Mediance.Abstractions.Pipeline;
+namespace Interlocutor.Abstractions.Pipeline;
 
 /// <summary>Lightweight pre/post hook interface without creating a full <see cref="IPipelineBehavior{TRequest,TResponse}"/>.</summary>
 public interface IPipelineStage<TRequest, TResponse>
@@ -479,9 +479,9 @@ public interface IPipelineStage<TRequest, TResponse>
 
 **Pipeline/PipelineStageBehavior.cs:**
 ```csharp
-using Mediance.CommonKernel;
+using Interlocutor.CommonKernel;
 
-namespace Mediance.Abstractions.Pipeline;
+namespace Interlocutor.Abstractions.Pipeline;
 
 /// <summary>Aggregates all registered <see cref="IPipelineStage{TRequest,TResponse}"/> instances and invokes them around the handler call.</summary>
 public class PipelineStageBehavior<TRequest, TResponse>(IEnumerable<IPipelineStage<TRequest, TResponse>> stages)
@@ -512,5 +512,5 @@ public class PipelineStageBehavior<TRequest, TResponse>(IEnumerable<IPipelineSta
 ## Step 4: Delete old files
 
 Delete:
-- `src/Mediance.Abstractions/Abstractions.cs`
-- `src/Mediance.Abstractions/Behaviors.cs`
+- `src/Interlocutor.Abstractions/Abstractions.cs`
+- `src/Interlocutor.Abstractions/Behaviors.cs`

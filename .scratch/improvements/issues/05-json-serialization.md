@@ -8,14 +8,14 @@ ready-for-agent
 
 ## What to build
 
-Add JSON serialization support for the C# 15 union types in `Mediance.CommonKernel` (`Failure`, `Result<T>`, `Result`, `Success`). The C# `readonly union` types will not serialize or deserialize correctly with default `System.Text.Json` settings.
+Add JSON serialization support for the C# 15 union types in `Interlocutor.CommonKernel` (`Failure`, `Result<T>`, `Result`, `Success`). The C# `readonly union` types will not serialize or deserialize correctly with default `System.Text.Json` settings.
 
 The implementation approach:
 
 - Custom `JsonConverter<T>` for `Failure` that writes/reads the discriminant and its payload
 - Custom `JsonConverter<T>` for `Result<T>` and `Result` that delegates to the inner value or failure
-- Wire the converters into `Mediance.AspNetCore.ToActionResult()` pipeline so that serialized responses are correct
-- Consider a new package `Mediance.Text.Json` or add to `Mediance.AspNetCore` — pick whichever makes it easiest for consumers to opt in
+- Wire the converters into `Interlocutor.AspNetCore.ToActionResult()` pipeline so that serialized responses are correct
+- Consider a new package `Interlocutor.Text.Json` or add to `Interlocutor.AspNetCore` — pick whichever makes it easiest for consumers to opt in
 
 The union type serialization format should be self-describing — each failure variant includes its discriminator and payload:
 
