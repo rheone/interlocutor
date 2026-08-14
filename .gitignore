@@ -132,3 +132,6 @@ publish/
 *.swp
 *.swo
 *.tmp
+
+# Runfile-discovery cache
+dotnet/runfile-discovery/
