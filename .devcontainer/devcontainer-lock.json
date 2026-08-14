@@ -1,0 +1,75 @@
+{
+  "features": {
+    "ghcr.io/devcontainer-community/devcontainer-features/delta:1": {
+      "version": "1.0.3",
+      "resolved": "ghcr.io/devcontainer-community/devcontainer-features/delta@sha256:93b3b2732e1737d9e1e44ae777bfe8801f753a8a4acfe7647da80f9717908174",
+      "integrity": "sha256:93b3b2732e1737d9e1e44ae777bfe8801f753a8a4acfe7647da80f9717908174"
+    },
+    "ghcr.io/devcontainer-community/devcontainer-features/lazygit:1": {
+      "version": "1.0.2",
+      "resolved": "ghcr.io/devcontainer-community/devcontainer-features/lazygit@sha256:a9a4b920a615d869bd12149f0430957d496883415b3b436d8948c487e4eb3567",
+      "integrity": "sha256:a9a4b920a615d869bd12149f0430957d496883415b3b436d8948c487e4eb3567"
+    },
+    "ghcr.io/devcontainers-community/npm-features/prettier:1": {
+      "version": "1.1.0",
+      "resolved": "ghcr.io/devcontainers-community/npm-features/prettier@sha256:41aca434d43373d78b276d3cd89ecdce960e0b618ff0ee59f2ecee0810dbabe9",
+      "integrity": "sha256:41aca434d43373d78b276d3cd89ecdce960e0b618ff0ee59f2ecee0810dbabe9",
+      "dependsOn": [
+        "ghcr.io/devcontainers/features/node"
+      ]
+    },
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "version": "2.5.9",
+      "resolved": "ghcr.io/devcontainers/features/common-utils@sha256:cb0c4d3c276f157eed17935747e364178d75fee17f55c4e129966f64633deb3a",
+      "integrity": "sha256:cb0c4d3c276f157eed17935747e364178d75fee17f55c4e129966f64633deb3a"
+    },
+    "ghcr.io/devcontainers/features/dotnet:2": {
+      "version": "2.5.0",
+      "resolved": "ghcr.io/devcontainers/features/dotnet@sha256:0fc16547ed4db6d7ff2a9f5981d2b93eb314e568affb9958029ad794f1f9a093",
+      "integrity": "sha256:0fc16547ed4db6d7ff2a9f5981d2b93eb314e568affb9958029ad794f1f9a093"
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {
+      "version": "1.1.0",
+      "resolved": "ghcr.io/devcontainers/features/github-cli@sha256:d22f50b70ed75339b4eed1ba9ecde3a1791f90e88d37936517e3bace0bbad671",
+      "integrity": "sha256:d22f50b70ed75339b4eed1ba9ecde3a1791f90e88d37936517e3bace0bbad671"
+    },
+    "ghcr.io/devcontainers/features/node:2": {
+      "version": "2.1.0",
+      "resolved": "ghcr.io/devcontainers/features/node@sha256:586c9a6f7dd40bd3ba2cd41e7f2f88dcc31fbe5d1442afcbf07ffbc66b686857",
+      "integrity": "sha256:586c9a6f7dd40bd3ba2cd41e7f2f88dcc31fbe5d1442afcbf07ffbc66b686857"
+    },
+    "ghcr.io/devcontainers/features/powershell:2": {
+      "version": "2.0.2",
+      "resolved": "ghcr.io/devcontainers/features/powershell@sha256:82ea3880c5706ac3963f1b5e940a7f5871835393a5472f80008148b995d58d61",
+      "integrity": "sha256:82ea3880c5706ac3963f1b5e940a7f5871835393a5472f80008148b995d58d61"
+    },
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "1.8.0",
+      "resolved": "ghcr.io/devcontainers/features/python@sha256:fbcad6955caeecc5ad3f7886baf652e25cba5225a6c4c2287c536de2e5607511",
+      "integrity": "sha256:fbcad6955caeecc5ad3f7886baf652e25cba5225a6c4c2287c536de2e5607511"
+    },
+    "ghcr.io/jsburckhardt/devcontainer-features/zoxide:1": {
+      "version": "1.0.0",
+      "resolved": "ghcr.io/jsburckhardt/devcontainer-features/zoxide@sha256:3c6f1dce190622c5a53f33a04bb7c0bf5dfbdf2c55603e704661986a62672d2e",
+      "integrity": "sha256:3c6f1dce190622c5a53f33a04bb7c0bf5dfbdf2c55603e704661986a62672d2e"
+    },
+    "ghcr.io/nikiforovall/devcontainer-features/dotnet-csharpier:1": {
+      "version": "1.0.0",
+      "resolved": "ghcr.io/nikiforovall/devcontainer-features/dotnet-csharpier@sha256:e9938510ef18155c356480544dcb8b4fcb61e259099a917f09280dced3a756e4",
+      "integrity": "sha256:e9938510ef18155c356480544dcb8b4fcb61e259099a917f09280dced3a756e4",
+      "dependsOn": [
+        "ghcr.io/devcontainers/features/dotnet"
+      ]
+    },
+    "ghcr.io/nils-geistmann/devcontainers-features/zsh:0": {
+      "version": "0.0.8",
+      "resolved": "ghcr.io/nils-geistmann/devcontainers-features/zsh@sha256:fd57a61a5187480b5e73f8041be5b67005be48f06503736df6cfdd8d0f38f3c4",
+      "integrity": "sha256:fd57a61a5187480b5e73f8041be5b67005be48f06503736df6cfdd8d0f38f3c4"
+    },
+    "ghcr.io/rosstaco/devcontainer-features/ohmyposh:1": {
+      "version": "1.0.0",
+      "resolved": "ghcr.io/rosstaco/devcontainer-features/ohmyposh@sha256:ce53cc1a13eccd8c6a04d54b5b2f8d6a3833b6e588d0d74766283089e57469fb",
+      "integrity": "sha256:ce53cc1a13eccd8c6a04d54b5b2f8d6a3833b6e588d0d74766283089e57469fb"
+    }
+  }
+}

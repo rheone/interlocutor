@@ -82,7 +82,7 @@ public readonly union OperationOutcome<TSuccessResult, TCase2, TCase3>(TSuccessR
         TSuccessResult success => success,
         TCase2 case2 => case2,
         TCase3 case3 => case3,
-        _ => null
+        _ => null,
     };
 }
 
@@ -124,7 +124,7 @@ public readonly union OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4>(T
         TCase2 case2 => case2,
         TCase3 case3 => case3,
         TCase4 case4 => case4,
-        _ => null
+        _ => null,
     };
 }
 
@@ -169,7 +169,7 @@ public readonly union OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, T
         TCase3 case3 => case3,
         TCase4 case4 => case4,
         TCase5 case5 => case5,
-        _ => null
+        _ => null,
     };
 }
 
@@ -221,6 +221,6 @@ public readonly union OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, T
         TCase4 case4 => case4,
         TCase5 case5 => case5,
         TCase6 case6 => case6,
-        _ => null
+        _ => null,
     };
 }
