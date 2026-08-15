@@ -27,25 +27,27 @@ public class ResultExtensionsTests
     }
 
     [Fact]
-    public void ToActionResult_WithNotFoundSingular_ReturnsNotFoundResult()
+    public void ToActionResult_WithNotFoundSingular_Returns404()
     {
         OperationOutcome<string, NotFound> result = new(new NotFound("Widget not found"));
         var actionResult = result.ToActionResult();
 
-        var notFoundResult = Assert.IsType<NotFoundObjectResult>(actionResult);
-        Assert.Equal("Widget not found", notFoundResult.Value);
+        var objectResult = Assert.IsType<ObjectResult>(actionResult);
+        Assert.Equal(StatusCodes.Status404NotFound, objectResult.StatusCode);
+        Assert.Equal("Widget not found", objectResult.Value);
     }
 
     [Fact]
-    public void ToActionResult_WithNotFoundGeneric_ReturnsNotFoundResult()
+    public void ToActionResult_WithNotFoundGeneric_Returns404()
     {
         OperationOutcome<string, NotFound<int>> result = new(
             new NotFound<int>(typeof(string), 42, "Widget with ID 42 not found")
         );
         var actionResult = result.ToActionResult();
 
-        var notFoundResult = Assert.IsType<NotFoundObjectResult>(actionResult);
-        Assert.Equal("Widget with ID 42 not found", notFoundResult.Value);
+        var objectResult = Assert.IsType<ObjectResult>(actionResult);
+        Assert.Equal(StatusCodes.Status404NotFound, objectResult.StatusCode);
+        Assert.Equal("Widget with ID 42 not found", objectResult.Value);
     }
 
     [Fact]
@@ -79,36 +81,37 @@ public class ResultExtensionsTests
         OperationOutcome<string, Conflict> result = new(new Conflict("Data changed", "stale.data"));
         var actionResult = result.ToActionResult();
 
-        var conflictResult = Assert.IsType<ConflictObjectResult>(actionResult);
-        var problemDetails = Assert.IsType<ProblemDetails>(conflictResult.Value);
+        var objectResult = Assert.IsType<ObjectResult>(actionResult);
+        Assert.Equal(StatusCodes.Status409Conflict, objectResult.StatusCode);
+        var problemDetails = Assert.IsType<ProblemDetails>(objectResult.Value);
         Assert.Equal("stale.data", problemDetails.Title);
         Assert.Equal("Data changed", problemDetails.Detail);
         Assert.Equal(StatusCodes.Status409Conflict, problemDetails.Status);
     }
 
     [Fact]
-    public void ToActionResult_WithFailures_Returns500()
+    public void ToActionResult_WithFailures_Returns400()
     {
         var failures = new Failures([new Failure("First failure"), new Failure("Second failure")]);
         OperationOutcome<string, Failures> result = new(failures);
         var actionResult = result.ToActionResult();
 
         var objectResult = Assert.IsType<ObjectResult>(actionResult);
-        Assert.Equal(StatusCodes.Status500InternalServerError, objectResult.StatusCode);
+        Assert.Equal(StatusCodes.Status400BadRequest, objectResult.StatusCode);
         var problemDetails = Assert.IsType<ProblemDetails>(objectResult.Value);
-        Assert.Equal(StatusCodes.Status500InternalServerError, problemDetails.Status);
+        Assert.Equal(StatusCodes.Status400BadRequest, problemDetails.Status);
         Assert.Contains("First failure", problemDetails.Detail);
         Assert.Contains("Second failure", problemDetails.Detail);
     }
 
     [Fact]
-    public void ToActionResult_WithSingleFailure_Returns500()
+    public void ToActionResult_WithSingleFailure_Returns400()
     {
         OperationOutcome<string, Failure> result = new(new Failure("Operation failed"));
         var actionResult = result.ToActionResult();
 
         var objectResult = Assert.IsType<ObjectResult>(actionResult);
-        Assert.Equal(StatusCodes.Status500InternalServerError, objectResult.StatusCode);
+        Assert.Equal(StatusCodes.Status400BadRequest, objectResult.StatusCode);
         var problemDetails = Assert.IsType<ProblemDetails>(objectResult.Value);
         Assert.Equal("Operation failed", problemDetails.Title);
     }
@@ -122,5 +125,26 @@ public class ResultExtensionsTests
         var objectResult = Assert.IsType<ObjectResult>(actionResult);
         Assert.Equal(StatusCodes.Status500InternalServerError, objectResult.StatusCode);
         Assert.Equal(42, objectResult.Value);
+    }
+
+    [Fact]
+    public void ToActionResult_WithCustomMapper_UsesCustomMapping()
+    {
+        OperationOutcome<string, Forbidden> result = new(new Forbidden("No access"));
+        var actionResult = result.ToActionResult(new TeapotOutcomeStatusMapper());
+
+        var statusCodeResult = Assert.IsType<StatusCodeResult>(actionResult);
+        Assert.Equal(StatusCodes.Status418ImATeapot, statusCodeResult.StatusCode);
+    }
+
+    [Fact]
+    public void ToActionResult_WithCustomAggregateFailureType_IsMappable()
+    {
+        OperationOutcome<string, RateLimited> result = new(new RateLimited(TimeSpan.FromSeconds(30)));
+        var actionResult = result.ToActionResult(new TeapotOutcomeStatusMapper());
+
+        var objectResult = Assert.IsType<ObjectResult>(actionResult);
+        Assert.Equal(StatusCodes.Status429TooManyRequests, objectResult.StatusCode);
+        Assert.Equal(TimeSpan.FromSeconds(30), Assert.IsType<RateLimited>(objectResult.Value).RetryAfter);
     }
 }

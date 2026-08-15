@@ -51,7 +51,11 @@ public class DependencyTests
         var result = Types
             .InAssembly(typeof(Interlocutor.AspNetCore.ResultExtensions).Assembly)
             .ShouldNot()
-            .HaveDependencyOnAny(["Interlocutor.EntityFrameworkCore", "Interlocutor.FluentValidation", "Interlocutor.NHibernate"])
+            .HaveDependencyOnAny([
+                "Interlocutor.EntityFrameworkCore",
+                "Interlocutor.FluentValidation",
+                "Interlocutor.NHibernate",
+            ])
             .GetResult();
 
         Assert.True(result.IsSuccessful, string.Join(", ", result.FailingTypeNames ?? []));

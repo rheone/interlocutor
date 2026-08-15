@@ -121,5 +121,4 @@ public class ValidationBehaviorTests
         // "Name is required" should appear only once despite two validators producing it
         Assert.Single(messages, m => m == "Name is required");
     }
-
 }
