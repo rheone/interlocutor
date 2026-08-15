@@ -5,19 +5,6 @@ using Interlocutor.Abstractions.Markers;
 using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 
-public record TransactionalTestRequest(int Value) : ICommand<OperationOutcome<string, Failure>>, ITransactionalRequest;
-
-/// <summary>
-/// A request implementing both <see cref="ITransactionalRequest"/> and <see cref="IExternalStoreRequest"/> —
-/// the malformed-but-not-impossible case the compile-time <c>TRequest : ITransactionalRequest</c> constraint
-/// cannot rule out (a constraint can only require a marker's presence, never another marker's absence), so
-/// <see cref="TransactionBehavior{TRequest,TResponse,TContext}"/> retains a residual runtime check for it.
-/// </summary>
-public record RequestClaimingBothTransactionMarkers(int Value)
-    : ICommand<OperationOutcome<string, Failure>>,
-        ITransactionalRequest,
-        IExternalStoreRequest;
-
 public class TransactionBehaviorTests
 {
     [Fact]
@@ -71,4 +58,19 @@ public class TransactionBehaviorTests
     }
 
     private sealed record NonTransactionalRequest(int Value) : ICommand<OperationOutcome<string, Failure>>;
+
+    private sealed record TransactionalTestRequest(int Value)
+        : ICommand<OperationOutcome<string, Failure>>,
+            ITransactionalRequest;
+
+    /// <summary>
+    /// A request implementing both <see cref="ITransactionalRequest"/> and <see cref="IExternalStoreRequest"/> —
+    /// the malformed-but-not-impossible case the compile-time <c>TRequest : ITransactionalRequest</c> constraint
+    /// cannot rule out (a constraint can only require a marker's presence, never another marker's absence), so
+    /// <see cref="TransactionBehavior{TRequest,TResponse,TContext}"/> retains a residual runtime check for it.
+    /// </summary>
+    private sealed record RequestClaimingBothTransactionMarkers(int Value)
+        : ICommand<OperationOutcome<string, Failure>>,
+            ITransactionalRequest,
+            IExternalStoreRequest;
 }
