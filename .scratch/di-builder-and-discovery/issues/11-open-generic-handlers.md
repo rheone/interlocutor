@@ -1,0 +1,30 @@
+## Labels
+
+ready-for-agent
+
+## What to build
+
+Let a developer write one handler that serves a family of generic requests, so work done against an abstraction is written once — and make every ambiguity that creates a build error rather than an arbitrary runtime choice.
+
+A developer defines a generic request and a single generic handler for it. The generator discovers the concrete request types in use and closes the handler against each. The developer then special-cases one request type by writing a concrete handler for it; that concrete handler wins, and the generic handler continues serving everything else.
+
+**One selection rule, stated once:** a closed handler beats an open generic handler. Two open generic handlers matching the same request — including two that differ only by constraint — is a build error. There is no ranking by inheritance distance and no consideration of namespace or assembly location. Moving a file must never change which handler runs.
+
+The escape hatch for a genuine ambiguity is explicit: an attribute declaring that one handler overrides another. It lives in the mediator abstractions module so handler assemblies take no dependency on any container package. Naming a target that does not exist or is not a handler is itself a build error.
+
+This is deliberately *not* handler-serves-an-unrelated-base-class dispatch. Contravariant fan-out remains a notification feature only; queries and commands stay single-handler.
+
+## Acceptance criteria
+
+- [ ] A generic handler is closed against each concrete request type discovered and dispatches correctly
+- [ ] Constraints on the generic handler's type parameter are honoured; a request that fails them is not matched
+- [ ] A concrete handler takes precedence over a generic handler that also matches
+- [ ] Two generic handlers matching the same request produce a build error naming both
+- [ ] The override attribute resolves such an ambiguity
+- [ ] An override attribute naming a missing or non-handler target produces a build error
+- [ ] Closed generic handlers with constructor dependencies resolve from the container
+- [ ] Moving a handler between namespaces or projects does not change dispatch
+
+## Blocked by
+
+10 — Generator foundation
