@@ -22,8 +22,10 @@ using Interlocutor.Abstractions.Pipeline;
 /// behaviors — <see cref="Behaviors"/> starts empty and stays empty unless a builder call adds to it.
 /// <see cref="Defaults"/> starts seeded with exactly one entry, <see cref="IRequestContextAccessor"/>,
 /// because it is ambient infrastructure useful independent of which (if any) pipeline behaviors are
-/// configured; every other default (audit sink, policy evaluator, outcome describer) is added only
-/// alongside the specific behavior that consumes it, so a bare builder never carries an orphan dependency.
+/// configured; the audit sink and policy evaluator defaults are added only alongside the specific
+/// behavior that consumes them, so a bare builder never carries an orphan dependency. There is
+/// deliberately no automatic <see cref="IResponseOutcomeDescriber"/> default — see
+/// <see cref="AddLoggingBehavior"/> for why.
 /// </para>
 /// <para>
 /// <b>Order and duplicates.</b> <see cref="Behaviors"/> is a flat list in builder-call order. Adding the
@@ -42,6 +44,31 @@ using Interlocutor.Abstractions.Pipeline;
 /// <c>Add*Behavior</c> call in the same chain — there is no scenario where call order within the builder
 /// changes which implementation is registered.
 /// </para>
+/// <para>
+/// <b>The three previously-dead <c>InterlocutorOptions</c> properties.</b> Of the legacy options never
+/// actually read (default publish strategy, outcome describer type, startup validation), only the outcome
+/// describer became a real builder member: <see cref="OverrideOutcomeDescriber{TDescriber}"/> genuinely
+/// changes what <see cref="LoggingBehavior{TRequest,TResponse}"/> and <see cref="AuditingBehavior{TRequest,TResponse}"/>
+/// resolve. The other two are deliberately absent from this builder rather than wired to look busy:
+/// </para>
+/// <list type="bullet">
+/// <item><description>
+/// <b>Default publish strategy.</b> <c>Mediator.Publish</c>'s parameterless overload hard-codes
+/// <c>PublishStrategy.Sequential</c>; making that configurable is a change to dispatch behavior in
+/// <c>Interlocutor.Abstractions</c>, not a registration concern this container-neutral builder owns. The
+/// existing <c>Publish(notification, strategy, ct)</c> overload already gives every call site an explicit
+/// choice, which is more legible than a single ambient default a reader would have to go find.
+/// </description></item>
+/// <item><description>
+/// <b>Startup validation.</b> Validating handler registrations needs a fully built provider/container,
+/// which is deliberately outside this builder's job — the builder only ever accumulates registrations
+/// for a container to apply, it never controls when the consumer finishes building it. Autofac exposes a
+/// build-callback hook that could fire this automatically; Microsoft.Extensions.DependencyInjection has no
+/// equivalent without taking a Hosting dependency this package otherwise doesn't need, so a builder flag
+/// here could not behave identically on both containers. <c>InterlocutorStartupValidation.ValidateHandlerRegistrations</c>
+/// remains available as an explicit, already container-neutral call a consumer makes once their provider exists.
+/// </description></item>
+/// </list>
 /// </remarks>
 public sealed class InterlocutorBuilder
 {
@@ -136,11 +163,19 @@ public sealed class InterlocutorBuilder
     /// </param>
     /// <param name="lifetime">The service lifetime to register the behavior with. Defaults to scoped.</param>
     /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder AddBehavior(Type behaviorImplementationType, RegistrationLifetime lifetime = RegistrationLifetime.Scoped)
+    public InterlocutorBuilder AddBehavior(
+        Type behaviorImplementationType,
+        RegistrationLifetime lifetime = RegistrationLifetime.Scoped
+    )
     {
         ArgumentNullException.ThrowIfNull(behaviorImplementationType);
         this._behaviors.Add(
-            new InterlocutorRegistration(typeof(IPipelineBehavior<,>), behaviorImplementationType, lifetime, RegistrationKind.Behavior)
+            new InterlocutorRegistration(
+                typeof(IPipelineBehavior<,>),
+                behaviorImplementationType,
+                lifetime,
+                RegistrationKind.Behavior
+            )
         );
         return this;
     }
@@ -215,7 +250,8 @@ public sealed class InterlocutorBuilder
     public InterlocutorBuilder AddTransactionBehavior()
     {
         var transactionBehaviorType =
-            TryGetType("Interlocutor.EntityFrameworkCore.TransactionBehavior`3") ?? TryGetType("Interlocutor.NHibernate.TransactionBehavior`3");
+            TryGetType("Interlocutor.EntityFrameworkCore.TransactionBehavior`3")
+            ?? TryGetType("Interlocutor.NHibernate.TransactionBehavior`3");
         if (transactionBehaviorType is not null)
         {
             this.AddBehavior(transactionBehaviorType);
@@ -244,7 +280,11 @@ public sealed class InterlocutorBuilder
     /// </remarks>
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorBuilder UseRecommendedChain() =>
-        this.AddLoggingBehavior().AddAuditingBehavior().AddAuthorizationBehavior().AddValidationBehavior().AddTransactionBehavior();
+        this.AddLoggingBehavior()
+            .AddAuditingBehavior()
+            .AddAuthorizationBehavior()
+            .AddValidationBehavior()
+            .AddTransactionBehavior();
 
     /// <summary>
     /// Replaces the default <see cref="IAuditSink"/> implementation <see cref="AuditingBehavior{TRequest,TResponse}"/>
@@ -283,7 +323,9 @@ public sealed class InterlocutorBuilder
     /// <typeparam name="TAccessor">The replacement <see cref="IRequestContextAccessor"/> implementation.</typeparam>
     /// <param name="lifetime">The service lifetime to register the replacement with. Defaults to scoped.</param>
     /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder OverrideRequestContextAccessor<TAccessor>(RegistrationLifetime lifetime = RegistrationLifetime.Scoped)
+    public InterlocutorBuilder OverrideRequestContextAccessor<TAccessor>(
+        RegistrationLifetime lifetime = RegistrationLifetime.Scoped
+    )
         where TAccessor : class, IRequestContextAccessor
     {
         this.SetDefault(typeof(IRequestContextAccessor), typeof(TAccessor), lifetime);
@@ -300,7 +342,9 @@ public sealed class InterlocutorBuilder
     /// <typeparam name="TDescriber">The replacement <see cref="IResponseOutcomeDescriber"/> implementation.</typeparam>
     /// <param name="lifetime">The service lifetime to register the replacement with. Defaults to singleton.</param>
     /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder OverrideOutcomeDescriber<TDescriber>(RegistrationLifetime lifetime = RegistrationLifetime.Singleton)
+    public InterlocutorBuilder OverrideOutcomeDescriber<TDescriber>(
+        RegistrationLifetime lifetime = RegistrationLifetime.Singleton
+    )
         where TDescriber : class, IResponseOutcomeDescriber
     {
         this.SetDefault(typeof(IResponseOutcomeDescriber), typeof(TDescriber), lifetime);
@@ -316,7 +360,10 @@ public sealed class InterlocutorBuilder
     /// <param name="stageImplementationType">The concrete stage implementation type.</param>
     /// <param name="lifetime">The service lifetime to register the stage with. Defaults to scoped.</param>
     /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder AddStage(Type stageImplementationType, RegistrationLifetime lifetime = RegistrationLifetime.Scoped)
+    public InterlocutorBuilder AddStage(
+        Type stageImplementationType,
+        RegistrationLifetime lifetime = RegistrationLifetime.Scoped
+    )
     {
         ArgumentNullException.ThrowIfNull(stageImplementationType);
 
@@ -360,7 +407,12 @@ public sealed class InterlocutorBuilder
     /// regardless of call order relative to the corresponding <c>Add*Behavior</c> call.
     /// </summary>
     private void SetDefault(Type serviceType, Type implementationType, RegistrationLifetime lifetime) =>
-        this._defaults[serviceType] = new InterlocutorRegistration(serviceType, implementationType, lifetime, RegistrationKind.Default);
+        this._defaults[serviceType] = new InterlocutorRegistration(
+            serviceType,
+            implementationType,
+            lifetime,
+            RegistrationKind.Default
+        );
 
     /// <summary>
     /// Sets the builder's own internal default entry for <paramref name="serviceType"/> only if no entry

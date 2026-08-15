@@ -218,9 +218,18 @@ public static class InterlocutorServiceCollectionExtensions
         {
             var descriptor = registration.Lifetime switch
             {
-                RegistrationLifetime.Singleton => ServiceDescriptor.Singleton(registration.ServiceType, registration.ImplementationType),
-                RegistrationLifetime.Transient => ServiceDescriptor.Transient(registration.ServiceType, registration.ImplementationType),
-                RegistrationLifetime.Scoped or _ => ServiceDescriptor.Scoped(registration.ServiceType, registration.ImplementationType),
+                RegistrationLifetime.Singleton => ServiceDescriptor.Singleton(
+                    registration.ServiceType,
+                    registration.ImplementationType
+                ),
+                RegistrationLifetime.Transient => ServiceDescriptor.Transient(
+                    registration.ServiceType,
+                    registration.ImplementationType
+                ),
+                RegistrationLifetime.Scoped or _ => ServiceDescriptor.Scoped(
+                    registration.ServiceType,
+                    registration.ImplementationType
+                ),
             };
 
             services.TryAdd(descriptor);

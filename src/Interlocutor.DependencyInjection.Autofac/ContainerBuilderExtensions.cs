@@ -184,10 +184,7 @@ public static class InterlocutorAutofacExtensions
         Apply(builder, interlocutorBuilder.Behaviors);
         TryApplyDefaults(builder, interlocutorBuilder.Defaults);
 
-        builder
-            .Register(c => new AutofacServiceProvider(c.Resolve<ILifetimeScope>()))
-            .As<IServiceProvider>()
-            .ExternallyOwned();
+        builder.Register(c => new AutofacServiceProvider(c.Resolve<ILifetimeScope>())).As<IServiceProvider>().ExternallyOwned();
 
         builder.RegisterType<Mediator>().As<IMediator>().As<ISender>().As<IPublisher>().InstancePerLifetimeScope();
 

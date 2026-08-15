@@ -134,7 +134,8 @@ public class InterlocutorBuilderIntegrationTests
 
     private sealed class SampleQueryHandler : IQueryHandler<SampleQuery, OperationOutcome>
     {
-        public Task<OperationOutcome> Handle(SampleQuery query, CancellationToken ct) => Task.FromResult(default(OperationOutcome));
+        public Task<OperationOutcome> Handle(SampleQuery query, CancellationToken ct) =>
+            Task.FromResult(default(OperationOutcome));
     }
 
     private sealed class RecordingAuditSink : IAuditSink

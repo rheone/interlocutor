@@ -65,7 +65,10 @@ public class InterlocutorBuilderTests
 
         builder.AddBehavior(typeof(FirstBehavior<,>)).AddBehavior(typeof(SecondBehavior<,>));
 
-        Assert.Equal([typeof(FirstBehavior<,>), typeof(SecondBehavior<,>)], builder.Behaviors.Select(r => r.ImplementationType));
+        Assert.Equal(
+            [typeof(FirstBehavior<,>), typeof(SecondBehavior<,>)],
+            builder.Behaviors.Select(r => r.ImplementationType)
+        );
     }
 
     [Fact]
@@ -194,7 +197,9 @@ public class InterlocutorBuilderTests
 
         var order = builder
             .Behaviors.Select(r => r.ImplementationType)
-            .Where(t => t == typeof(LoggingBehavior<,>) || t == typeof(AuditingBehavior<,>) || t == typeof(AuthorizationBehavior<,>))
+            .Where(t =>
+                t == typeof(LoggingBehavior<,>) || t == typeof(AuditingBehavior<,>) || t == typeof(AuthorizationBehavior<,>)
+            )
             .ToList();
 
         Assert.Equal([typeof(LoggingBehavior<,>), typeof(AuditingBehavior<,>), typeof(AuthorizationBehavior<,>)], order);

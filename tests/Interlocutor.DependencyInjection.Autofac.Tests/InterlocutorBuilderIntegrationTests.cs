@@ -126,7 +126,10 @@ public class InterlocutorBuilderIntegrationTests
         );
 
         var container = containerBuilder.Build();
-        var behaviors = container.Resolve<IEnumerable<IPipelineBehavior<SampleQuery, OperationOutcome>>>().Select(b => b.GetType()).ToList();
+        var behaviors = container
+            .Resolve<IEnumerable<IPipelineBehavior<SampleQuery, OperationOutcome>>>()
+            .Select(b => b.GetType())
+            .ToList();
 
         Assert.Contains(behaviors, t => t.Name.StartsWith("LoggingBehavior"));
         Assert.Contains(behaviors, t => t.Name.StartsWith("AuditingBehavior"));
@@ -136,7 +139,8 @@ public class InterlocutorBuilderIntegrationTests
 
     private sealed class SampleQueryHandler : IQueryHandler<SampleQuery, OperationOutcome>
     {
-        public Task<OperationOutcome> Handle(SampleQuery query, CancellationToken ct) => Task.FromResult(default(OperationOutcome));
+        public Task<OperationOutcome> Handle(SampleQuery query, CancellationToken ct) =>
+            Task.FromResult(default(OperationOutcome));
     }
 
     private sealed class RecordingAuditSink : IAuditSink
