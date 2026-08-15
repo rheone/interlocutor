@@ -72,6 +72,20 @@ public class DefaultOutcomeStatusMapperTests
         Assert.Equal(StatusCodes.Status429TooManyRequests, mapping.StatusCode);
     }
 
+    [Fact]
+    public void Map_WithNotFoundGeneric_ViaDerivedMapper_IsOverridable()
+    {
+        // NotFound<TId> can't be pattern-matched directly (it's an open generic case type), so it needs its own
+        // override point — MapNotFoundGeneric — distinct from MapUnrecognized. This proves a consumer can change
+        // just that case without reimplementing the reflection that detects it.
+        var entityAwareMapper = new EntityNameIncludingOutcomeStatusMapper();
+
+        var mapping = entityAwareMapper.Map(new NotFound<int>(typeof(string), 42, "missing"));
+
+        Assert.Equal(StatusCodes.Status404NotFound, mapping.StatusCode);
+        Assert.Equal("String/42", mapping.Body);
+    }
+
     /// <summary>
     /// Proves the "overridable default" contract: derive from <see cref="DefaultOutcomeStatusMapper"/> and
     /// override just the one case that needs to change, inheriting every other mapping unchanged.
@@ -82,5 +96,12 @@ public class DefaultOutcomeStatusMapperTests
             failure is RateLimited rateLimited
                 ? new OutcomeHttpMapping(StatusCodes.Status429TooManyRequests, rateLimited)
                 : base.MapUnrecognized(failure);
+    }
+
+    /// <summary>Proves <see cref="DefaultOutcomeStatusMapper.MapNotFoundGeneric"/> is independently overridable.</summary>
+    private sealed class EntityNameIncludingOutcomeStatusMapper : DefaultOutcomeStatusMapper
+    {
+        protected override OutcomeHttpMapping MapNotFoundGeneric(Type entityType, object? id, string? message) =>
+            new(StatusCodes.Status404NotFound, $"{entityType.Name}/{id}");
     }
 }

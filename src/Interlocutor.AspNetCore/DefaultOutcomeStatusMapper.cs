@@ -114,17 +114,29 @@ public class DefaultOutcomeStatusMapper : IOutcomeStatusMapper
             new ProblemDetails { Title = failure.Reason ?? "Failure", Status = StatusCodes.Status400BadRequest }
         );
 
+    /// <summary>Maps the generic <c>NotFound&lt;TId&gt;</c> case to 404 Not Found.</summary>
+    /// <param name="entityType">The <see cref="Type"/> of entity that was not found.</param>
+    /// <param name="id">The identifier that was searched for, boxed — its static type varies per closed <c>NotFound&lt;TId&gt;</c>.</param>
+    /// <param name="message">The optional human-readable message carried by the <c>NotFound&lt;TId&gt;</c> instance.</param>
+    /// <returns>The mapped status code and message body.</returns>
+    /// <remarks>
+    /// A separate override point from <see cref="MapNotFound"/> because pattern matching can't target the open
+    /// generic <c>NotFound&lt;&gt;</c> case type directly — <see cref="MapNotFoundGenericOrUnrecognized{TFailure}"/>
+    /// reflects the closed instance's fields and forwards them here, so a consumer who wants to change only this
+    /// case's mapping still overrides a plain virtual method rather than reimplementing the reflection.
+    /// </remarks>
+    protected virtual OutcomeHttpMapping MapNotFoundGeneric(Type entityType, object? id, string? message) =>
+        new(StatusCodes.Status404NotFound, message);
+
     /// <summary>
-    /// Maps an unrecognized failure case, including the generic <c>NotFound&lt;TId&gt;</c> variant and any
-    /// consumer-defined custom failure type.
+    /// Maps a failure case this mapper was never taught, including any consumer-defined custom failure type.
     /// </summary>
     /// <typeparam name="TFailure">The static failure case type.</typeparam>
     /// <param name="failure">The failure value to map.</param>
     /// <returns>
-    /// For <c>NotFound&lt;TId&gt;</c>, the same mapping as <see cref="MapNotFound"/>. For anything else,
-    /// 500 Internal Server Error with the failure value itself as the body — this mapper was never taught what
-    /// the failure means, so it cannot claim a more specific status; a consumer with a custom failure type should
-    /// override this method (or supply their own <see cref="IOutcomeStatusMapper"/>) to map it precisely.
+    /// 500 Internal Server Error with the failure value itself as the body — this mapper cannot claim a more
+    /// specific status for a type it doesn't recognize; a consumer with a custom failure type should override
+    /// this method (or supply their own <see cref="IOutcomeStatusMapper"/>) to map it precisely.
     /// </returns>
     protected virtual OutcomeHttpMapping MapUnrecognized<TFailure>(TFailure failure) =>
         new(StatusCodes.Status500InternalServerError, failure);
@@ -132,13 +144,15 @@ public class DefaultOutcomeStatusMapper : IOutcomeStatusMapper
     private OutcomeHttpMapping MapNotFoundGenericOrUnrecognized<TFailure>(TFailure failure)
     {
         // Pattern matching doesn't work against the open generic NotFound<> case type, so fall back to
-        // reflection: check whether TFailure closes NotFound<TId> for any TId, then read its Message.
+        // reflection: check whether TFailure closes NotFound<TId> for any TId, then read its fields and
+        // forward to the overridable MapNotFoundGeneric rather than building the mapping here directly.
         var failureType = typeof(TFailure);
         if (failureType.IsGenericType && failureType.GetGenericTypeDefinition() == typeof(NotFound<>))
         {
-            var messageProperty = failureType.GetProperty("Message");
-            var message = (string?)messageProperty?.GetValue(failure);
-            return new OutcomeHttpMapping(StatusCodes.Status404NotFound, message);
+            var entityType = (Type)failureType.GetProperty("EntityType")!.GetValue(failure)!;
+            var id = failureType.GetProperty("Id")?.GetValue(failure);
+            var message = (string?)failureType.GetProperty("Message")?.GetValue(failure);
+            return this.MapNotFoundGeneric(entityType, id, message);
         }
 
         return this.MapUnrecognized(failure);
