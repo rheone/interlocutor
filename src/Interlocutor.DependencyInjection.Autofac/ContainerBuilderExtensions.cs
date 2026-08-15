@@ -234,9 +234,7 @@ public static class InterlocutorAutofacExtensions
         foreach (var registration in registrations)
         {
             ApplyLifetime(
-                builder
-                    .Register(c => registration.Factory(c.Resolve<IServiceProvider>()))
-                    .As(registration.ServiceType),
+                builder.Register(c => registration.Factory(c.Resolve<IServiceProvider>())).As(registration.ServiceType),
                 registration.Lifetime
             );
         }

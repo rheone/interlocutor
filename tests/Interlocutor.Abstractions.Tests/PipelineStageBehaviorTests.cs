@@ -173,10 +173,7 @@ public class PipelineStageBehaviorTests
 
         // Assert: every stage's After still ran, despite S2's After throwing.
         Assert.Equal(expectedResult, result);
-        Assert.Equal(
-            ["S1.Before", "S2.Before", "S3.Before", "S3.After", "S2.After", "S1.After"],
-            callOrder
-        );
+        Assert.Equal(["S1.Before", "S2.Before", "S3.Before", "S3.After", "S2.After", "S1.After"], callOrder);
 
         logger
             .Received(1)
@@ -223,10 +220,7 @@ public class PipelineStageBehaviorTests
     public async Task Handle_WithNoStages_CallsHandlerDirectly()
     {
         // Arrange
-        var behavior = new PipelineStageBehavior<TestRequest, OperationOutcome<TestResponse, Failure>>(
-            [],
-            NewLogger()
-        );
+        var behavior = new PipelineStageBehavior<TestRequest, OperationOutcome<TestResponse, Failure>>([], NewLogger());
         var request = new TestRequest();
         var expectedResult = new OperationOutcome<TestResponse, Failure>(new TestResponse());
 
@@ -281,10 +275,7 @@ public class PipelineStageBehaviorTests
         var handlerRan = false;
         var stage = new ShortCircuitingStage("S1", [], default);
 
-        var behavior = new PipelineStageBehavior<TestRequest, OperationOutcome<TestResponse, Failure>>(
-            [stage],
-            NewLogger()
-        );
+        var behavior = new PipelineStageBehavior<TestRequest, OperationOutcome<TestResponse, Failure>>([stage], NewLogger());
 
         // Act
         var result = await behavior.Handle(
@@ -410,7 +401,11 @@ public class PipelineStageBehaviorTests
             return StageResult<OperationOutcome<TestResponse, Failure>>.Continue;
         }
 
-        public override Task OnAfterAsync(TestRequest request, OperationOutcome<TestResponse, Failure> result, CancellationToken ct)
+        public override Task OnAfterAsync(
+            TestRequest request,
+            OperationOutcome<TestResponse, Failure> result,
+            CancellationToken ct
+        )
         {
             callOrder.Add($"{name}.After");
             throw new InvalidOperationException($"Stage {name} failed during After");

@@ -139,10 +139,7 @@ public class InterlocutorBuilderIntegrationTests
         services.AddLogging();
 
         services.AddInterlocutor(builder =>
-            builder
-                .ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly)
-                .AddStage<RecordingStage>()
-                .AddStageHost()
+            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).AddStage<RecordingStage>().AddStageHost()
         );
 
         var provider = services.BuildServiceProvider();

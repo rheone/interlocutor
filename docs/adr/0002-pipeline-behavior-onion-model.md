@@ -32,7 +32,7 @@ Behaviors are composed by the `Mediator` by walking `IEnumerable<IPipelineBehavi
 
 ## Amendment (pipeline stages)
 
-> **Note:** this amendment records the target design for `IPipelineStage<TRequest,TResponse>`, not the code as currently shipped. The short-circuit contract below (`StageResult<TResponse>`, paired before/after unwind) has not landed yet — the shipped `IPipelineStage`'s `OnBeforeAsync` returns a plain `Task` with no short-circuit path. See the stage-and-short-circuit ticket in the DI-builder-and-discovery effort for the implementation.
+> **Note:** this amendment is implemented as shipped. `IPipelineStage<TRequest,TResponse>`'s `OnBeforeAsync` returns `StageResult<TResponse>` and supports the short-circuit contract described below.
 
 The original decision rejected pre/post-processors *as a replacement for* behaviors. That rejection stands: a stage is not a second pipeline mechanism competing with `IPipelineBehavior<TRequest,TResponse>`, it is an ergonomic layer that composes *into* the one described above.
 
