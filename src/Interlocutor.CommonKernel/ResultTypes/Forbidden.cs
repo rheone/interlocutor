@@ -7,8 +7,8 @@ namespace Interlocutor.CommonKernel.ResultTypes;
 /// <remarks>
 /// <para>
 /// Use <see cref="Forbidden"/> when a request is syntactically valid but the caller lacks permission to execute it.
-/// In HTTP, this maps to a 403 status code. This is typically raised by the authorization pipeline behavior
-/// when a request requires authorization and the policy check fails.
+/// This is typically raised by the authorization pipeline behavior when a request requires authorization and
+/// the policy check fails.
 /// </para>
 /// <para>
 /// Provide a <paramref name="Reason"/> for logging/debugging, but avoid exposing policy details to callers for security.

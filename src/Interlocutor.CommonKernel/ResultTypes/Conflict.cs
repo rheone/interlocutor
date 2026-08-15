@@ -9,7 +9,7 @@ namespace Interlocutor.CommonKernel.ResultTypes;
 /// <para>
 /// Use <see cref="Conflict"/> when an operation cannot proceed because of a conflicting state in the domain.
 /// Examples: attempting to delete an entity that's already deleted, or updating a record that's been modified
-/// by another request (optimistic locking). In HTTP, this maps to a 409 status code.
+/// by another request (optimistic locking).
 /// </para>
 /// <para>
 /// Provide both a <paramref name="Code"/> (for programmatic handling/retry logic) and a <paramref name="Message"/>
