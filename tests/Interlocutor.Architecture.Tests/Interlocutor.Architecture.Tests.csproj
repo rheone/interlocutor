@@ -3,6 +3,7 @@
     <!-- All Interlocutor packages for architecture verification -->
     <ProjectReference Include="..\..\src\Interlocutor.CommonKernel\Interlocutor.CommonKernel.csproj" />
     <ProjectReference Include="..\..\src\Interlocutor.Abstractions\Interlocutor.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\Interlocutor.DependencyInjection.Abstractions\Interlocutor.DependencyInjection.Abstractions.csproj" />
     <ProjectReference Include="..\..\src\Interlocutor.DependencyInjection.Microsoft\Interlocutor.DependencyInjection.Microsoft.csproj" />
     <ProjectReference Include="..\..\src\Interlocutor.DependencyInjection.Autofac\Interlocutor.DependencyInjection.Autofac.csproj" />
     <ProjectReference Include="..\..\src\Interlocutor.AspNetCore\Interlocutor.AspNetCore.csproj" />

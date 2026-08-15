@@ -9,6 +9,7 @@ using Interlocutor.Abstractions.Notifications;
 using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Pipeline.Classifiers;
 using Interlocutor.Abstractions.Queries;
+using Interlocutor.DependencyInjection.Abstractions;
 
 /// <summary>
 /// Provides extension methods for registering Interlocutor services with a Microsoft DI <see cref="IServiceCollection"/>.
@@ -42,33 +43,9 @@ public static class InterlocutorServiceCollectionExtensions
     /// </remarks>
     public static IServiceCollection AddInterlocutor(this IServiceCollection services, params Assembly[] assembliesToScan)
     {
-        // Scan assemblies for concrete, non-abstract types that might implement handler interfaces.
-        var handlerTypes = assembliesToScan.SelectMany(a => a.GetTypes()).Where(t => t is { IsClass: true, IsAbstract: false });
-
-        // Register each concrete handler against every matching Interlocutor handler interface.
-        // The mediator resolves handlers by their closed generic contract at runtime, so each
-        // registration must map to the exact interface (with specific type parameters) the mediator queries.
-        // For example, if MyQueryHandler implements IQueryHandler<GetUserQuery, UserDto>, we register
-        // exactly that generic form, not just the open generic.
-        foreach (var type in handlerTypes)
-        {
-            foreach (var iface in type.GetInterfaces())
-            {
-                if (iface.IsGenericType)
-                {
-                    var def = iface.GetGenericTypeDefinition();
-                    if (
-                        def == typeof(IQueryHandler<,>)
-                        || def == typeof(ICommandHandler<,>)
-                        || def == typeof(IVoidCommandHandler<,>)
-                        || def == typeof(INotificationHandler<>)
-                    )
-                    {
-                        services.AddScoped(iface, type);
-                    }
-                }
-            }
-        }
+        // Delegate discovery to the container-neutral scanner and translate each resulting
+        // registration into Microsoft DI's own primitives.
+        Apply(services, HandlerDiscovery.Discover(assembliesToScan));
 
         // Register the mediator as the implementation for all three interfaces. ISender and IPublisher
         // are factory-registered to return the same IMediator instance, allowing callers to inject
@@ -148,66 +125,40 @@ public static class InterlocutorServiceCollectionExtensions
         ));
 
         // Register default implementations for pipeline dependencies (always)
-        services.AddScoped<IAuditSink, LoggingAuditSink>();
-        services.AddScoped<IPolicyEvaluator, DefaultPolicyEvaluator>();
-        services.AddScoped<IRequestContextAccessor, AmbientRequestContextAccessor>();
+        Apply(services, DefaultPipelineRegistrations.Dependencies());
 
         // Register default behavior chain if enabled
         if (options.EnableDefaultBehaviors)
         {
-            RegisterDefaultBehaviors(services, assembliesToScan);
+            Apply(services, DefaultPipelineRegistrations.Behaviors());
         }
 
         return services;
     }
 
     /// <summary>
-    /// Registers the canonical pipeline behavior chain in documented order.
+    /// Translates a sequence of container-neutral <see cref="InterlocutorRegistration"/> records into
+    /// Microsoft DI service descriptors.
     /// </summary>
-    private static void RegisterDefaultBehaviors(IServiceCollection services, Assembly[] assembliesToScan)
+    /// <param name="services">The <see cref="IServiceCollection"/> to register services into.</param>
+    /// <param name="registrations">The container-neutral registrations to translate.</param>
+    private static void Apply(IServiceCollection services, IEnumerable<InterlocutorRegistration> registrations)
     {
-        // Try to load and register each behavior. If a type doesn't exist in loaded assemblies,
-        // that's ok — the consumer just won't have that behavior (e.g., if FluentValidation isn't referenced).
-
-        var behaviorTypes = new (Type BehaviorType, Assembly? SourceAssembly)[]
+        foreach (var registration in registrations)
         {
-            // Logging outermost
-            (typeof(LoggingBehavior<,>), typeof(LoggingBehavior<,>).Assembly),
-            // Auditing after logging
-            (typeof(AuditingBehavior<,>), typeof(AuditingBehavior<,>).Assembly),
-            // Authorization before validation
-            (typeof(AuthorizationBehavior<,>), typeof(AuthorizationBehavior<,>).Assembly),
-            // Validation before transaction
-            (TryGetType("Interlocutor.FluentValidation.ValidationBehavior`2"), null),
-            // Transaction innermost
-            (
-                TryGetType("Interlocutor.EntityFrameworkCore.TransactionBehavior`3")
-                    ?? TryGetType("Interlocutor.NHibernate.TransactionBehavior`3"),
-                null
-            ),
-        };
-
-        foreach (var (behaviorType, _) in behaviorTypes)
-        {
-            if (behaviorType != null)
+            switch (registration.Lifetime)
             {
-                services.AddScoped(typeof(IPipelineBehavior<,>), behaviorType);
+                case RegistrationLifetime.Singleton:
+                    services.AddSingleton(registration.ServiceType, registration.ImplementationType);
+                    break;
+                case RegistrationLifetime.Transient:
+                    services.AddTransient(registration.ServiceType, registration.ImplementationType);
+                    break;
+                case RegistrationLifetime.Scoped:
+                default:
+                    services.AddScoped(registration.ServiceType, registration.ImplementationType);
+                    break;
             }
-        }
-    }
-
-    /// <summary>
-    /// Attempts to resolve a behavior type by name, returning null if not found.
-    /// </summary>
-    private static Type? TryGetType(string typeName)
-    {
-        try
-        {
-            return Type.GetType(typeName, throwOnError: false);
-        }
-        catch
-        {
-            return null;
         }
     }
 }

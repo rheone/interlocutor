@@ -2,6 +2,7 @@ namespace Interlocutor.DependencyInjection.Autofac;
 
 using System.Reflection;
 using global::Autofac;
+using global::Autofac.Builder;
 using global::Autofac.Extensions.DependencyInjection;
 using Interlocutor.Abstractions;
 using Interlocutor.Abstractions.Commands;
@@ -10,6 +11,7 @@ using Interlocutor.Abstractions.Notifications;
 using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Pipeline.Classifiers;
 using Interlocutor.Abstractions.Queries;
+using Interlocutor.DependencyInjection.Abstractions;
 
 /// <summary>
 /// Provides extension methods for registering Interlocutor services with an Autofac <see cref="ContainerBuilder"/>.
@@ -46,35 +48,9 @@ public static class InterlocutorAutofacExtensions
     /// </remarks>
     public static ContainerBuilder AddInterlocutor(this ContainerBuilder builder, params Assembly[] assembliesToScan)
     {
-        // Scan assemblies for concrete, non-abstract types that might implement handler interfaces.
-        var handlerTypes = assembliesToScan
-            .SelectMany(a => a.GetTypes())
-            .Where(t => t is { IsClass: true, IsAbstract: false })
-            .ToList();
-
-        // Register each concrete handler against every matching Interlocutor handler interface.
-        // The mediator resolves handlers by their closed generic contract at runtime, so each
-        // registration must map to the exact interface (with specific type parameters) the mediator queries.
-        // InstancePerLifetimeScope is the Autofac equivalent of Microsoft DI's Scoped.
-        foreach (var type in handlerTypes)
-        {
-            foreach (var iface in type.GetInterfaces())
-            {
-                if (iface.IsGenericType)
-                {
-                    var def = iface.GetGenericTypeDefinition();
-                    if (
-                        def == typeof(IQueryHandler<,>)
-                        || def == typeof(ICommandHandler<,>)
-                        || def == typeof(IVoidCommandHandler<,>)
-                        || def == typeof(INotificationHandler<>)
-                    )
-                    {
-                        builder.RegisterType(type).As(iface).InstancePerLifetimeScope();
-                    }
-                }
-            }
-        }
+        // Delegate discovery to the container-neutral scanner and translate each resulting
+        // registration into Autofac's own primitives.
+        Apply(builder, HandlerDiscovery.Discover(assembliesToScan));
 
         // Bridge Autofac's lifetime scope to IServiceProvider. The Mediator uses IServiceProvider to resolve
         // handlers, so we need to adapt Autofac's ILifetimeScope to the standard IServiceProvider abstraction.
@@ -161,66 +137,69 @@ public static class InterlocutorAutofacExtensions
             .SingleInstance();
 
         // Register default implementations for pipeline dependencies (always)
-        builder.RegisterType<LoggingAuditSink>().As<IAuditSink>().InstancePerLifetimeScope();
-        builder.RegisterType<DefaultPolicyEvaluator>().As<IPolicyEvaluator>().InstancePerLifetimeScope();
-        builder.RegisterType<AmbientRequestContextAccessor>().As<IRequestContextAccessor>().InstancePerLifetimeScope();
+        Apply(builder, DefaultPipelineRegistrations.Dependencies());
 
         // Register default behavior chain if enabled
         if (options.EnableDefaultBehaviors)
         {
-            RegisterDefaultBehaviors(builder, assembliesToScan);
+            Apply(builder, DefaultPipelineRegistrations.Behaviors());
         }
 
         return builder;
     }
 
     /// <summary>
-    /// Registers the canonical pipeline behavior chain in documented order.
+    /// Translates a sequence of container-neutral <see cref="InterlocutorRegistration"/> records into
+    /// Autofac registrations, using <c>InstancePerLifetimeScope</c> as the Autofac equivalent of
+    /// <see cref="RegistrationLifetime.Scoped"/>.
     /// </summary>
-    private static void RegisterDefaultBehaviors(ContainerBuilder builder, Assembly[] assembliesToScan)
+    /// <param name="builder">The Autofac <see cref="ContainerBuilder"/> to register services into.</param>
+    /// <param name="registrations">The container-neutral registrations to translate.</param>
+    private static void Apply(ContainerBuilder builder, IEnumerable<InterlocutorRegistration> registrations)
     {
-        // Try to load and register each behavior. If a type doesn't exist in loaded assemblies,
-        // that's ok — the consumer just won't have that behavior (e.g., if FluentValidation isn't referenced).
-
-        var behaviorTypes = new (Type BehaviorType, Assembly? SourceAssembly)[]
+        foreach (var registration in registrations)
         {
-            // Logging outermost
-            (typeof(LoggingBehavior<,>), typeof(LoggingBehavior<,>).Assembly),
-            // Auditing after logging
-            (typeof(AuditingBehavior<,>), typeof(AuditingBehavior<,>).Assembly),
-            // Authorization before validation
-            (typeof(AuthorizationBehavior<,>), typeof(AuthorizationBehavior<,>).Assembly),
-            // Validation before transaction
-            (TryGetType("Interlocutor.FluentValidation.ValidationBehavior`2"), null),
-            // Transaction innermost
-            (
-                TryGetType("Interlocutor.EntityFrameworkCore.TransactionBehavior`3")
-                    ?? TryGetType("Interlocutor.NHibernate.TransactionBehavior`3"),
-                null
-            ),
-        };
-
-        foreach (var (behaviorType, _) in behaviorTypes)
-        {
-            if (behaviorType != null)
+            // Open generic implementation types (e.g. IPipelineBehavior<,> behaviors) require
+            // RegisterGeneric; closed types (e.g. discovered handlers) require RegisterType.
+            if (registration.ImplementationType.IsGenericTypeDefinition)
             {
-                builder.RegisterGeneric(behaviorType).As(typeof(IPipelineBehavior<,>)).InstancePerLifetimeScope();
+                ApplyLifetime(
+                    builder.RegisterGeneric(registration.ImplementationType).As(registration.ServiceType),
+                    registration.Lifetime
+                );
+            }
+            else
+            {
+                ApplyLifetime(
+                    builder.RegisterType(registration.ImplementationType).As(registration.ServiceType),
+                    registration.Lifetime
+                );
             }
         }
     }
 
     /// <summary>
-    /// Attempts to resolve a behavior type by name, returning null if not found.
+    /// Applies the Autofac scope method corresponding to a container-neutral <see cref="RegistrationLifetime"/>.
     /// </summary>
-    private static Type? TryGetType(string typeName)
+    /// <param name="registrationBuilder">The in-progress Autofac registration to configure.</param>
+    /// <param name="lifetime">The container-neutral lifetime to translate.</param>
+    private static void ApplyLifetime<TActivatorData, TRegistrationStyle>(
+        IRegistrationBuilder<object, TActivatorData, TRegistrationStyle> registrationBuilder,
+        RegistrationLifetime lifetime
+    )
     {
-        try
+        switch (lifetime)
         {
-            return Type.GetType(typeName, throwOnError: false);
-        }
-        catch
-        {
-            return null;
+            case RegistrationLifetime.Singleton:
+                registrationBuilder.SingleInstance();
+                break;
+            case RegistrationLifetime.Transient:
+                registrationBuilder.InstancePerDependency();
+                break;
+            case RegistrationLifetime.Scoped:
+            default:
+                registrationBuilder.InstancePerLifetimeScope();
+                break;
         }
     }
 }
