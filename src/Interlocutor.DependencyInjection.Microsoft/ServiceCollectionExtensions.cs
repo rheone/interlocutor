@@ -2,6 +2,7 @@ namespace Interlocutor.DependencyInjection.Microsoft;
 
 using System.Reflection;
 using global::Microsoft.Extensions.DependencyInjection;
+using global::Microsoft.Extensions.DependencyInjection.Extensions;
 using Interlocutor.Abstractions;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
@@ -137,6 +138,48 @@ public static class InterlocutorServiceCollectionExtensions
     }
 
     /// <summary>
+    /// Configures Interlocutor via the container-neutral <see cref="InterlocutorBuilder"/> — the single
+    /// fluent configuration surface identical across every supported container. Registers the mediator,
+    /// discovered handlers, and stages unconditionally; registers zero pipeline behaviors unless
+    /// <paramref name="configure"/> adds them (see ADR-0009, "No Default Pipeline").
+    /// </summary>
+    /// <param name="services">The <see cref="IServiceCollection"/> to register services into.</param>
+    /// <param name="configure">
+    /// A delegate that configures assembly scanning, behaviors, stages, and default overrides on a fresh
+    /// <see cref="InterlocutorBuilder"/>. The exact same delegate body works unchanged against
+    /// <c>Interlocutor.DependencyInjection.Autofac</c>'s entry point.
+    /// </param>
+    /// <returns>The same <see cref="IServiceCollection"/> instance for chaining.</returns>
+    /// <remarks>
+    /// <para>
+    /// This overload is additive alongside the legacy <see cref="AddInterlocutor(IServiceCollection, InterlocutorOptions)"/>
+    /// overload — both remain available. <see cref="InterlocutorBuilder.Defaults"/> entries are translated
+    /// with try-add semantics (see <see cref="TryApplyDefaults"/>), so a consumer's own registration of
+    /// <see cref="IAuditSink"/>, <see cref="IPolicyEvaluator"/>, <see cref="IRequestContextAccessor"/>, or
+    /// <see cref="IResponseOutcomeDescriber"/> — made before this call — always wins; the builder's own
+    /// <c>Override*</c> methods cover winning when that registration is made after.
+    /// </para>
+    /// </remarks>
+    public static IServiceCollection AddInterlocutor(this IServiceCollection services, Action<InterlocutorBuilder> configure)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+
+        var builder = new InterlocutorBuilder();
+        configure(builder);
+
+        Apply(services, HandlerDiscovery.Discover(builder.AssembliesToScan));
+        Apply(services, builder.Stages);
+        Apply(services, builder.Behaviors);
+        TryApplyDefaults(services, builder.Defaults);
+
+        services.AddScoped<IMediator, Mediator>();
+        services.AddScoped<ISender>(sp => sp.GetRequiredService<IMediator>());
+        services.AddScoped<IPublisher>(sp => sp.GetRequiredService<IMediator>());
+
+        return services;
+    }
+
+    /// <summary>
     /// Translates a sequence of container-neutral <see cref="InterlocutorRegistration"/> records into
     /// Microsoft DI service descriptors.
     /// </summary>
@@ -159,6 +202,28 @@ public static class InterlocutorServiceCollectionExtensions
                     services.AddScoped(registration.ServiceType, registration.ImplementationType);
                     break;
             }
+        }
+    }
+
+    /// <summary>
+    /// Translates <see cref="InterlocutorBuilder.Defaults"/> registrations into Microsoft DI's <c>TryAdd</c>
+    /// descriptors, so an application's own registration of the same service type — made before this call
+    /// runs — is left untouched rather than superseded.
+    /// </summary>
+    /// <param name="services">The <see cref="IServiceCollection"/> to register services into.</param>
+    /// <param name="defaults">The try-add-able default registrations to translate.</param>
+    private static void TryApplyDefaults(IServiceCollection services, IEnumerable<InterlocutorRegistration> defaults)
+    {
+        foreach (var registration in defaults)
+        {
+            var descriptor = registration.Lifetime switch
+            {
+                RegistrationLifetime.Singleton => ServiceDescriptor.Singleton(registration.ServiceType, registration.ImplementationType),
+                RegistrationLifetime.Transient => ServiceDescriptor.Transient(registration.ServiceType, registration.ImplementationType),
+                RegistrationLifetime.Scoped or _ => ServiceDescriptor.Scoped(registration.ServiceType, registration.ImplementationType),
+            };
+
+            services.TryAdd(descriptor);
         }
     }
 }
