@@ -146,31 +146,31 @@ public sealed class InterlocutorBuilder
     }
 
     /// <summary>
-    /// Adds <see cref="LoggingBehavior{TRequest,TResponse}"/> at the current position in the chain, and
-    /// try-adds the default <see cref="IResponseOutcomeDescriber"/> (<see cref="DefaultResponseOutcomeDescriber"/>)
-    /// it optionally consumes, unless a default has already been set (whether by this call, by
-    /// <see cref="AddAuditingBehavior"/>, or by <see cref="OverrideOutcomeDescriber{TDescriber}"/>).
+    /// Adds <see cref="LoggingBehavior{TRequest,TResponse}"/> at the current position in the chain.
     /// </summary>
+    /// <remarks>
+    /// No <see cref="IResponseOutcomeDescriber"/> default is registered here: <see cref="LoggingBehavior{TRequest,TResponse}"/>
+    /// takes it as an <em>optional</em> constructor dependency and already falls back to a describer
+    /// built from <see cref="Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder.DefaultClassifier"/>
+    /// when nothing is registered — registering a default here would additionally require a default
+    /// <c>IOutcomeClassifier</c> registration to keep it resolvable, which is exactly the kind of orphan
+    /// dependency ADR-0009 asks the builder not to introduce. Call <see cref="OverrideOutcomeDescriber{TDescriber}"/>
+    /// to opt into a specific implementation instead.
+    /// </remarks>
     /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder AddLoggingBehavior()
-    {
-        this.AddBehavior(typeof(LoggingBehavior<,>));
-        this.TryAddDefault(typeof(IResponseOutcomeDescriber), typeof(DefaultResponseOutcomeDescriber));
-        return this;
-    }
+    public InterlocutorBuilder AddLoggingBehavior() => this.AddBehavior(typeof(LoggingBehavior<,>));
 
     /// <summary>
     /// Adds <see cref="AuditingBehavior{TRequest,TResponse}"/> at the current position in the chain, and
-    /// try-adds its default dependencies — <see cref="IAuditSink"/> (<see cref="LoggingAuditSink"/>) and
-    /// <see cref="IResponseOutcomeDescriber"/> (<see cref="DefaultResponseOutcomeDescriber"/>) — unless
-    /// defaults for those service types have already been set.
+    /// try-adds its default dependency, <see cref="IAuditSink"/> (<see cref="LoggingAuditSink"/>), unless
+    /// a default has already been set. See <see cref="AddLoggingBehavior"/> for why no
+    /// <see cref="IResponseOutcomeDescriber"/> default is registered here either.
     /// </summary>
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorBuilder AddAuditingBehavior()
     {
         this.AddBehavior(typeof(AuditingBehavior<,>));
         this.TryAddDefault(typeof(IAuditSink), typeof(LoggingAuditSink));
-        this.TryAddDefault(typeof(IResponseOutcomeDescriber), typeof(DefaultResponseOutcomeDescriber));
         return this;
     }
 

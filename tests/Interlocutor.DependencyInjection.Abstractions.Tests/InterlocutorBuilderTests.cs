@@ -91,18 +91,18 @@ public class InterlocutorBuilderTests
     }
 
     [Fact]
-    public void AddLoggingBehavior_AddsLoggingBehaviorAndDescriberDefault()
+    public void AddLoggingBehavior_AddsLoggingBehavior_WithoutOrphaningAnyDefault()
     {
         var builder = new InterlocutorBuilder();
 
         builder.AddLoggingBehavior();
 
         Assert.Contains(builder.Behaviors, r => r.ImplementationType == typeof(LoggingBehavior<,>));
-        Assert.Contains(builder.Defaults, r => r.ServiceType == typeof(IResponseOutcomeDescriber));
+        Assert.DoesNotContain(builder.Defaults, r => r.ServiceType == typeof(IResponseOutcomeDescriber));
     }
 
     [Fact]
-    public void AddAuditingBehavior_AddsAuditingBehaviorAndAuditSinkDefault()
+    public void AddAuditingBehavior_AddsAuditingBehaviorAndAuditSinkDefault_ButNotDescriberDefault()
     {
         var builder = new InterlocutorBuilder();
 
@@ -113,6 +113,7 @@ public class InterlocutorBuilderTests
             builder.Defaults,
             r => r.ServiceType == typeof(IAuditSink) && r.ImplementationType == typeof(LoggingAuditSink)
         );
+        Assert.DoesNotContain(builder.Defaults, r => r.ServiceType == typeof(IResponseOutcomeDescriber));
     }
 
     [Fact]
