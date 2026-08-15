@@ -181,6 +181,7 @@ public static class InterlocutorAutofacExtensions
 
         Apply(builder, HandlerDiscovery.Discover(interlocutorBuilder.AssembliesToScan));
         Apply(builder, interlocutorBuilder.Stages);
+        ApplyFactories(builder, interlocutorBuilder.StageFactories);
         Apply(builder, interlocutorBuilder.Behaviors);
         TryApplyDefaults(builder, interlocutorBuilder.Defaults);
 
@@ -218,6 +219,26 @@ public static class InterlocutorAutofacExtensions
                     registration.Lifetime
                 );
             }
+        }
+    }
+
+    /// <summary>
+    /// Translates a sequence of container-neutral <see cref="InterlocutorFactoryRegistration"/> records —
+    /// delegate-backed registrations such as lambda-form pipeline stages — into Autofac factory
+    /// registrations, resolving the bridged <see cref="IServiceProvider"/> lazily at activation time.
+    /// </summary>
+    /// <param name="builder">The Autofac <see cref="ContainerBuilder"/> to register services into.</param>
+    /// <param name="registrations">The container-neutral factory registrations to translate.</param>
+    private static void ApplyFactories(ContainerBuilder builder, IEnumerable<InterlocutorFactoryRegistration> registrations)
+    {
+        foreach (var registration in registrations)
+        {
+            ApplyLifetime(
+                builder
+                    .Register(c => registration.Factory(c.Resolve<IServiceProvider>()))
+                    .As(registration.ServiceType),
+                registration.Lifetime
+            );
         }
     }
 

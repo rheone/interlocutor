@@ -169,6 +169,7 @@ public static class InterlocutorServiceCollectionExtensions
 
         Apply(services, HandlerDiscovery.Discover(builder.AssembliesToScan));
         Apply(services, builder.Stages);
+        ApplyFactories(services, builder.StageFactories);
         Apply(services, builder.Behaviors);
         TryApplyDefaults(services, builder.Defaults);
 
@@ -200,6 +201,33 @@ public static class InterlocutorServiceCollectionExtensions
                 case RegistrationLifetime.Scoped:
                 default:
                     services.AddScoped(registration.ServiceType, registration.ImplementationType);
+                    break;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Translates a sequence of container-neutral <see cref="InterlocutorFactoryRegistration"/> records —
+    /// delegate-backed registrations such as lambda-form pipeline stages — into Microsoft DI factory
+    /// service descriptors.
+    /// </summary>
+    /// <param name="services">The <see cref="IServiceCollection"/> to register services into.</param>
+    /// <param name="registrations">The container-neutral factory registrations to translate.</param>
+    private static void ApplyFactories(IServiceCollection services, IEnumerable<InterlocutorFactoryRegistration> registrations)
+    {
+        foreach (var registration in registrations)
+        {
+            switch (registration.Lifetime)
+            {
+                case RegistrationLifetime.Singleton:
+                    services.AddSingleton(registration.ServiceType, registration.Factory);
+                    break;
+                case RegistrationLifetime.Transient:
+                    services.AddTransient(registration.ServiceType, registration.Factory);
+                    break;
+                case RegistrationLifetime.Scoped:
+                default:
+                    services.AddScoped(registration.ServiceType, registration.Factory);
                     break;
             }
         }

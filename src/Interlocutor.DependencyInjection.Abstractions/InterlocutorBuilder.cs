@@ -76,6 +76,7 @@ public sealed class InterlocutorBuilder
     private readonly List<InterlocutorRegistration> _behaviors = [];
     private readonly Dictionary<Type, InterlocutorRegistration> _defaults;
     private readonly List<InterlocutorRegistration> _stages = [];
+    private readonly List<InterlocutorFactoryRegistration> _stageFactories = [];
 
     /// <summary>
     /// Initializes a new instance of the <see cref="InterlocutorBuilder"/> class, seeded with the
@@ -120,6 +121,13 @@ public sealed class InterlocutorBuilder
     /// </summary>
     /// <value>The pipeline stage registrations added via <see cref="AddStage(Type, RegistrationLifetime)"/>.</value>
     public IReadOnlyList<InterlocutorRegistration> Stages => this._stages;
+
+    /// <summary>
+    /// Gets the delegate-backed pipeline stage registrations added via the <c>AddStage</c> delegate
+    /// overloads — the lambda-form counterpart to <see cref="Stages"/>.
+    /// </summary>
+    /// <value>The delegate-backed pipeline stage registrations.</value>
+    public IReadOnlyList<InterlocutorFactoryRegistration> StageFactories => this._stageFactories;
 
     /// <summary>Adds an assembly to scan for handler implementations.</summary>
     /// <param name="assembly">The assembly to scan.</param>
@@ -393,6 +401,79 @@ public sealed class InterlocutorBuilder
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorBuilder AddStage<TStage>(RegistrationLifetime lifetime = RegistrationLifetime.Scoped)
         where TStage : class => this.AddStage(typeof(TStage), lifetime);
+
+    /// <summary>
+    /// Registers a pipeline stage as a pair of delegates instead of a dedicated implementation type —
+    /// sugar over <see cref="DelegatePipelineStage{TRequest,TResponse}"/> for stages simple enough not to
+    /// need one. Either delegate may be omitted for a no-op hook. Legal alongside
+    /// <see cref="AddStage(Type, RegistrationLifetime)"/>; both add entries the stage host aggregates.
+    /// </summary>
+    /// <typeparam name="TRequest">The request type the stage participates in.</typeparam>
+    /// <typeparam name="TResponse">The response type the stage participates in.</typeparam>
+    /// <param name="onBefore">
+    /// The before-hook delegate, or <see langword="null"/> for a no-op (always-continue) before-hook.
+    /// </param>
+    /// <param name="onAfter">The after-hook delegate, or <see langword="null"/> for a no-op after-hook.</param>
+    /// <param name="lifetime">The service lifetime to register the stage with. Defaults to singleton — the delegates already capture whatever state they need.</param>
+    /// <returns>This builder, for chaining.</returns>
+    public InterlocutorBuilder AddStage<TRequest, TResponse>(
+        Func<TRequest, CancellationToken, Task<StageResult<TResponse>>>? onBefore = null,
+        Func<TRequest, TResponse, CancellationToken, Task>? onAfter = null,
+        RegistrationLifetime lifetime = RegistrationLifetime.Singleton
+    )
+    {
+        this._stageFactories.Add(
+            new InterlocutorFactoryRegistration(
+                typeof(IPipelineStage<TRequest, TResponse>),
+                _ => new DelegatePipelineStage<TRequest, TResponse>(onBefore, onAfter),
+                lifetime,
+                RegistrationKind.Stage
+            )
+        );
+        return this;
+    }
+
+    /// <summary>
+    /// Registers a pipeline stage as a pair of delegates that receive the container's
+    /// <see cref="IServiceProvider"/> — the overload for lambda-form stages that need to resolve services
+    /// (for example, a scoped dependency) rather than capturing them at builder-configuration time. See
+    /// <see cref="AddStage{TRequest,TResponse}(Func{TRequest,CancellationToken,Task{StageResult{TResponse}}},Func{TRequest,TResponse,CancellationToken,Task},RegistrationLifetime)"/>
+    /// for the simpler, service-free overload.
+    /// </summary>
+    /// <typeparam name="TRequest">The request type the stage participates in.</typeparam>
+    /// <typeparam name="TResponse">The response type the stage participates in.</typeparam>
+    /// <param name="onBefore">
+    /// The before-hook delegate, receiving the resolving <see cref="IServiceProvider"/> first, or
+    /// <see langword="null"/> for a no-op (always-continue) before-hook.
+    /// </param>
+    /// <param name="onAfter">
+    /// The after-hook delegate, receiving the resolving <see cref="IServiceProvider"/> first, or
+    /// <see langword="null"/> for a no-op after-hook.
+    /// </param>
+    /// <param name="lifetime">
+    /// The service lifetime to register the stage with. Defaults to scoped, since a service-resolving
+    /// stage most often wants scoped dependencies resolved fresh per request.
+    /// </param>
+    /// <returns>This builder, for chaining.</returns>
+    public InterlocutorBuilder AddStage<TRequest, TResponse>(
+        Func<IServiceProvider, TRequest, CancellationToken, Task<StageResult<TResponse>>>? onBefore,
+        Func<IServiceProvider, TRequest, TResponse, CancellationToken, Task>? onAfter,
+        RegistrationLifetime lifetime = RegistrationLifetime.Scoped
+    )
+    {
+        this._stageFactories.Add(
+            new InterlocutorFactoryRegistration(
+                typeof(IPipelineStage<TRequest, TResponse>),
+                sp => new DelegatePipelineStage<TRequest, TResponse>(
+                    onBefore is null ? null : (request, ct) => onBefore(sp, request, ct),
+                    onAfter is null ? null : (request, response, ct) => onAfter(sp, request, response, ct)
+                ),
+                lifetime,
+                RegistrationKind.Stage
+            )
+        );
+        return this;
+    }
 
     /// <summary>
     /// Adds <see cref="PipelineStageBehavior{TRequest,TResponse}"/> — the single host behavior that

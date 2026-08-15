@@ -3,6 +3,7 @@ namespace Interlocutor.DependencyInjection.Abstractions.Tests;
 using System.Reflection;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Pipeline;
+using NSubstitute;
 
 public class InterlocutorBuilderTests
 {
@@ -269,6 +270,47 @@ public class InterlocutorBuilderTests
     }
 
     [Fact]
+    public void AddStage_WithDelegates_RegistersFactoryForClosedPipelineStageInterface()
+    {
+        var builder = new InterlocutorBuilder();
+
+        builder.AddStage<SampleRequest, SampleResponse>(
+            (request, ct) => Task.FromResult(StageResult<SampleResponse>.Continue),
+            (request, response, ct) => Task.CompletedTask
+        );
+
+        var registration = Assert.Single(builder.StageFactories);
+        Assert.Equal(typeof(IPipelineStage<SampleRequest, SampleResponse>), registration.ServiceType);
+        Assert.Equal(RegistrationKind.Stage, registration.Kind);
+        Assert.IsType<DelegatePipelineStage<SampleRequest, SampleResponse>>(
+            registration.Factory(Substitute.For<IServiceProvider>())
+        );
+    }
+
+    [Fact]
+    public async Task AddStage_WithServiceProviderDelegates_FactoryReceivesTheProvider()
+    {
+        var builder = new InterlocutorBuilder();
+        var sp = Substitute.For<IServiceProvider>();
+        IServiceProvider? observed = null;
+
+        builder.AddStage<SampleRequest, SampleResponse>(
+            (provider, request, ct) =>
+            {
+                observed = provider;
+                return Task.FromResult(StageResult<SampleResponse>.Continue);
+            },
+            null
+        );
+
+        var registration = Assert.Single(builder.StageFactories);
+        var stage = Assert.IsType<DelegatePipelineStage<SampleRequest, SampleResponse>>(registration.Factory(sp));
+        await stage.OnBeforeAsync(new SampleRequest(), CancellationToken.None);
+
+        Assert.Same(sp, observed);
+    }
+
+    [Fact]
     public void AddStageHost_AddsPipelineStageBehaviorAtCallPosition()
     {
         var builder = new InterlocutorBuilder();
@@ -322,7 +364,8 @@ public class InterlocutorBuilderTests
 
     private sealed class SampleStage : IPipelineStage<SampleRequest, SampleResponse>
     {
-        public Task OnBeforeAsync(SampleRequest request, CancellationToken ct) => Task.CompletedTask;
+        public Task<StageResult<SampleResponse>> OnBeforeAsync(SampleRequest request, CancellationToken ct) =>
+            Task.FromResult(StageResult<SampleResponse>.Continue);
 
         public Task OnAfterAsync(SampleRequest request, SampleResponse result, CancellationToken ct) => Task.CompletedTask;
     }

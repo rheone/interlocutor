@@ -143,6 +143,38 @@ public class InterlocutorBuilderIntegrationTests
         Assert.Contains(behaviors, t => t.Name.StartsWith("AuthorizationBehavior"));
     }
 
+    [Fact]
+    public async Task StageHost_WithShortCircuitingDelegateStage_SkipsHandlerAndReturnsShortCircuitResponseUnchanged()
+    {
+        var containerBuilder = new ContainerBuilder();
+        containerBuilder.RegisterGeneric(typeof(NullLogger<>)).As(typeof(ILogger<>));
+
+        var handlerRan = false;
+        containerBuilder.RegisterInstance(new HandlerRanFlag(() => handlerRan = true)).SingleInstance();
+
+        var declined = new OperationOutcome(new Failure("declined by stage"));
+
+        containerBuilder.AddInterlocutor(builder =>
+            builder
+                .ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly)
+                .AddStage<ShortCircuitQuery, OperationOutcome>(
+                    (request, ct) => Task.FromResult(StageResult<OperationOutcome>.ShortCircuit(declined)),
+                    null
+                )
+                .AddStageHost()
+        );
+
+        var container = containerBuilder.Build();
+        var mediator = container.Resolve<IMediator>();
+
+        // Act: the response flows out of the mediator exactly as a handled response would -- nothing
+        // observing it from outside the stage host can tell it was short-circuited.
+        var result = await mediator.Send(new ShortCircuitQuery(), TestContext.Current.CancellationToken);
+
+        Assert.Equal(declined, result);
+        Assert.False(handlerRan);
+    }
+
     private sealed record SampleQuery : IQuery<OperationOutcome>;
 
     private sealed class SampleQueryHandler : IQueryHandler<SampleQuery, OperationOutcome>
@@ -157,6 +189,22 @@ public class InterlocutorBuilderIntegrationTests
     {
         public Task<OperationOutcome<string, Forbidden>> Handle(AuthorizableQuery query, CancellationToken ct) =>
             Task.FromResult<OperationOutcome<string, Forbidden>>("ok");
+    }
+
+    private sealed record ShortCircuitQuery : IQuery<OperationOutcome>;
+
+    private sealed class HandlerRanFlag(Action onHandled)
+    {
+        public void MarkHandled() => onHandled();
+    }
+
+    private sealed class ShortCircuitQueryHandler(HandlerRanFlag flag) : IQueryHandler<ShortCircuitQuery, OperationOutcome>
+    {
+        public Task<OperationOutcome> Handle(ShortCircuitQuery query, CancellationToken ct)
+        {
+            flag.MarkHandled();
+            return Task.FromResult(default(OperationOutcome));
+        }
     }
 
     private sealed class RecordingAuditSink : IAuditSink

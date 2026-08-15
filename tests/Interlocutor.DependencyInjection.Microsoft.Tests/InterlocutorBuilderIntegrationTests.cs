@@ -130,12 +130,99 @@ public class InterlocutorBuilderIntegrationTests
         Assert.Contains(typeof(AuthorizationBehavior<,>), behaviorImplementationTypes);
     }
 
+    [Fact]
+    public async Task StageHost_WithTypeRegisteredStage_RunsBeforeAndAfterAroundTheHandler()
+    {
+        var services = new ServiceCollection();
+        var executionLog = new List<string>();
+        services.AddSingleton(executionLog);
+        services.AddLogging();
+
+        services.AddInterlocutor(builder =>
+            builder
+                .ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly)
+                .AddStage<RecordingStage>()
+                .AddStageHost()
+        );
+
+        var provider = services.BuildServiceProvider();
+        var mediator = provider.GetRequiredService<IMediator>();
+
+        var result = await mediator.Send(new SampleQuery(), TestContext.Current.CancellationToken);
+
+        Assert.Equal(default, result);
+        Assert.Equal(["stage-before", "stage-after"], executionLog);
+    }
+
+    [Fact]
+    public async Task StageHost_WithShortCircuitingDelegateStage_SkipsHandlerAndReturnsShortCircuitResponseUnchanged()
+    {
+        var services = new ServiceCollection();
+        var handlerRan = false;
+        services.AddSingleton(new HandlerRanFlag(() => handlerRan = true));
+        services.AddLogging();
+
+        var declined = new OperationOutcome(new Interlocutor.CommonKernel.ResultTypes.Failure("declined by stage"));
+
+        services.AddInterlocutor(builder =>
+            builder
+                .ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly)
+                .AddStage<ShortCircuitQuery, OperationOutcome>(
+                    (request, ct) => Task.FromResult(StageResult<OperationOutcome>.ShortCircuit(declined)),
+                    null
+                )
+                .AddStageHost()
+        );
+
+        var provider = services.BuildServiceProvider();
+        var mediator = provider.GetRequiredService<IMediator>();
+
+        // Act: the response flows out of the mediator exactly as a handled response would --
+        // nothing observing it from outside the stage host can tell it was short-circuited.
+        var result = await mediator.Send(new ShortCircuitQuery(), TestContext.Current.CancellationToken);
+
+        Assert.Equal(declined, result);
+        Assert.False(handlerRan);
+    }
+
     private sealed record SampleQuery : IQuery<OperationOutcome>;
 
     private sealed class SampleQueryHandler : IQueryHandler<SampleQuery, OperationOutcome>
     {
         public Task<OperationOutcome> Handle(SampleQuery query, CancellationToken ct) =>
             Task.FromResult(default(OperationOutcome));
+    }
+
+    private sealed class RecordingStage(List<string> log) : PipelineStageBase<SampleQuery, OperationOutcome>
+    {
+        public override async Task<StageResult<OperationOutcome>> OnBeforeAsync(SampleQuery request, CancellationToken ct)
+        {
+            log.Add("stage-before");
+            await Task.CompletedTask;
+            return StageResult<OperationOutcome>.Continue;
+        }
+
+        public override async Task OnAfterAsync(SampleQuery request, OperationOutcome result, CancellationToken ct)
+        {
+            log.Add("stage-after");
+            await Task.CompletedTask;
+        }
+    }
+
+    private sealed record ShortCircuitQuery : IQuery<OperationOutcome>;
+
+    private sealed class HandlerRanFlag(Action onHandled)
+    {
+        public void MarkHandled() => onHandled();
+    }
+
+    private sealed class ShortCircuitQueryHandler(HandlerRanFlag flag) : IQueryHandler<ShortCircuitQuery, OperationOutcome>
+    {
+        public Task<OperationOutcome> Handle(ShortCircuitQuery query, CancellationToken ct)
+        {
+            flag.MarkHandled();
+            return Task.FromResult(default(OperationOutcome));
+        }
     }
 
     private sealed class RecordingAuditSink : IAuditSink
