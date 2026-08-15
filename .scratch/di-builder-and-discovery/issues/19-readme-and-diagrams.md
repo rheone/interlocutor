@@ -4,7 +4,21 @@ ready-for-agent
 
 ## What to build
 
-Document what this effort changed, so a developer arriving at the library understands the composition model rather than discovering it by experiment.
+WHO, WHAT, WHERE, WHY, and HOW
+
+Briefly Explain:
+
+- The Meditator Pattern (what interlocutor is an implementation of)
+- CQRS -- how it is often used with the mediator pattern
+- Vertical Slice Architecture and how it relates to the above two
+
+Provide a Glossary of key words and replated topics, including the naming convention of our implementations and what they represent.
+
+Use the SKILL `.claude\mermaid-diagram-generator\SKILL.md` to provide value added diagrams.
+
+This library has not yet been released, document the current (and anticipated) state for a developer arriving at the library understands the composition model rather than discovering it by experiment.
+
+Remove old and invalid information
 
 Cover, from the developer's perspective:
 
@@ -19,7 +33,9 @@ Cover, from the developer's perspective:
 - **The deliberate absence of streaming**, with the reasoning, so it is a closed question.
 - **Variance.** State plainly that the response type parameter can never be variant: it sits inside a task on the handler interfaces, and in *both* an argument position and the return position on the behavior interface. Polymorphism is request-side only, permanently, in every interface in the library. This is the single most likely thing for a future contributor to attempt and fail at.
 
-Two diagrams via the diagram-generation skill, where they add something prose cannot: the behavior and stage composition showing short-circuit and reverse unwind, and generator module aggregation across assemblies. No diagram for anything a sentence already covers.
+Diagrams via the diagram-generation skill, where they add something prose cannot: the behavior and stage composition showing short-circuit and reverse unwind, and generator module aggregation across assemblies. No diagram for anything a sentence already covers.
+
+Minified examples of common use cases
 
 ## Acceptance criteria
 
@@ -27,10 +43,12 @@ Two diagrams via the diagram-generation skill, where they add something prose ca
 - [ ] The recommended chain appears with its rationale, clearly marked as opt-in rather than default
 - [ ] The variance explanation states that response-side variance is impossible and why
 - [ ] Code examples compile against the shipped API
-- [ ] Two diagrams render correctly in both light and dark themes
+- [ ] Mermaid diagrams render correctly
 - [ ] A migration note covers the removed registration API and the response-type constraint
 - [ ] No documentation outside the web package references an HTTP status code
 - [ ] Documentation matches the shipped behavior — no aspirational statements
+- [ ] Common Examples
+- [ ] Packages / Libraries that this project creates, and when to use them
 
 ## Blocked by
 

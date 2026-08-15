@@ -20,6 +20,11 @@ namespace Interlocutor.Abstractions.Core;
 /// specific, named exception identifying the request type instead.
 /// </para>
 /// </remarks>
+// RCS1194 wants the standard parameterless/message/message+innerException/serialization constructor set. This
+// exception's RequestType is load-bearing — the whole point of catching it is to read which type had no handler
+// — so a parameterless or message-only constructor would produce a useless exception missing the one thing
+// callers need. Suppressed here rather than adding constructors that would only confuse callers into using them.
+#pragma warning disable RCS1194
 public sealed class HandlerNotRegisteredException : Exception
 {
     /// <summary>Initializes a new instance of the <see cref="HandlerNotRegisteredException"/> class.</summary>
@@ -51,3 +56,4 @@ public sealed class HandlerNotRegisteredException : Exception
             ? $"No handler is registered for request type '{requestType.FullName}'. Expected an implementation of '{handlerType.FullName}' to be registered in the service provider."
             : $"No handler is registered for request type '{requestType.FullName}'.";
 }
+#pragma warning restore RCS1194

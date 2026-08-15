@@ -203,6 +203,11 @@ public sealed class Mediator(IServiceProvider services) : IMediator
         var closedMethod = openGenericSendMethod.MakeGenericMethod(responseType);
         var task = (Task)closedMethod.Invoke(instance, [request, ct])!;
         await task.ConfigureAwait(false);
+
+        // Reflectively read Task<TResponse>.Result rather than casting to a statically-typed Task<TResponse> —
+        // TResponse is only known at this point as a runtime Type, not a compile-time generic argument. Result
+        // is safe to read unconditionally here: the preceding await already completed (or faulted/threw out of)
+        // the task, so a completed Task<T> always has a non-null Result property to reflect.
         var resultProperty = task.GetType().GetProperty("Result")!;
         return (IOperationOutcome)resultProperty.GetValue(task)!;
     }
