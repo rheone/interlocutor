@@ -268,6 +268,47 @@ public class PipelineStageBehaviorTests
     }
 
     [Fact]
+    public async Task Handle_WhenBeforeHookShortCircuits_OuterBehaviorObservesAnOrdinaryResponse()
+    {
+        // A behavior wrapping the stage host from outside — the position every real chain actually puts a
+        // behavior like logging or auditing — must receive the short-circuit response exactly as it would
+        // any handler-produced response. It has no way to ask "was this short-circuited?"; it can only see
+        // the TResponse value that came back from calling next(), which is PipelineStageBehavior.Handle.
+        var callOrder = new List<string>();
+        var shortCircuitResponse = new OperationOutcome<TestResponse, Failure>(new Failure("declined"));
+        var stage = new ShortCircuitingStage("S1", callOrder, shortCircuitResponse);
+        var handlerRan = false;
+
+        var stageBehavior = new PipelineStageBehavior<TestRequest, OperationOutcome<TestResponse, Failure>>(
+            [stage],
+            NewLogger()
+        );
+        var outerBehavior = new RecordingOuterBehavior();
+
+        var request = new TestRequest();
+
+        var result = await outerBehavior.Handle(
+            request,
+            () =>
+                stageBehavior.Handle(
+                    request,
+                    async () =>
+                    {
+                        handlerRan = true;
+                        return new OperationOutcome<TestResponse, Failure>(new TestResponse());
+                    },
+                    CancellationToken.None
+                ),
+            CancellationToken.None
+        );
+
+        Assert.False(handlerRan);
+        Assert.Equal(shortCircuitResponse, result);
+        Assert.True(outerBehavior.ObservedResponse);
+        Assert.False(outerBehavior.ObservedShortCircuit);
+    }
+
+    [Fact]
     public async Task Handle_WhenBeforeHookShortCircuitsWithDefaultValuedResponse_IsDistinguishableFromContinue()
     {
         // Arrange: OperationOutcome<TestResponse, Failure> is a struct, so its default value is
@@ -366,6 +407,34 @@ public class PipelineStageBehaviorTests
         {
             callOrder.Add($"{name}.After");
             await Task.CompletedTask;
+        }
+    }
+
+    /// <summary>
+    /// A stand-in for an ordinary outer behavior (logging, auditing) wrapping the stage host from outside.
+    /// Records only what an outer behavior can actually observe — the <c>TResponse</c> value <c>next()</c>
+    /// returned — never anything about whether a stage short-circuited, because nothing in that value says so.
+    /// </summary>
+    private sealed class RecordingOuterBehavior : IPipelineBehavior<TestRequest, OperationOutcome<TestResponse, Failure>>
+    {
+        public bool ObservedResponse { get; private set; }
+
+        public bool ObservedShortCircuit { get; private set; }
+
+        public async Task<OperationOutcome<TestResponse, Failure>> Handle(
+            TestRequest request,
+            Func<Task<OperationOutcome<TestResponse, Failure>>> next,
+            CancellationToken ct
+        )
+        {
+            var result = await next();
+            this.ObservedResponse = true;
+
+            // There is no member on OperationOutcome<,> — or anything else visible here — that could ever
+            // set this true. It exists to make explicit, in the assertion, that "ordinary response" isn't
+            // merely unasserted; there is structurally nothing to distinguish here.
+            this.ObservedShortCircuit = false;
+            return result;
         }
     }
 

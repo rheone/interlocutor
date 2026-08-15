@@ -182,6 +182,35 @@ public class InterlocutorBuilderIntegrationTests
         Assert.False(handlerRan);
     }
 
+    [Fact]
+    public async Task StageHost_WithThrowingAfterHook_ExceptionIsSwallowedAndDispatchCompletes()
+    {
+        // Wrapper-level tests (PipelineStageBehaviorTests) cover the after-hook-exception unwind in detail;
+        // this proves the same default-swallow behavior holds end-to-end through the real container and
+        // mediator, not only against the behavior in isolation.
+        var services = new ServiceCollection();
+        services.AddLogging();
+
+        services.AddInterlocutor(builder =>
+            builder
+                .ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly)
+                .AddStage<SampleQuery, OperationOutcome>(
+                    null,
+                    (request, result, ct) => throw new InvalidOperationException("after-hook boom")
+                )
+                .AddStageHost()
+        );
+
+        var provider = services.BuildServiceProvider();
+        var mediator = provider.GetRequiredService<IMediator>();
+
+        // Act & Assert: dispatch completes normally — the after-hook's exception does not propagate out of
+        // Send, matching PipelineStageBehavior's default (non-rethrowing) after-hook exception handling.
+        var result = await mediator.Send(new SampleQuery(), TestContext.Current.CancellationToken);
+
+        Assert.Equal(default, result);
+    }
+
     private sealed record SampleQuery : IQuery<OperationOutcome>;
 
     private sealed class SampleQueryHandler : IQueryHandler<SampleQuery, OperationOutcome>

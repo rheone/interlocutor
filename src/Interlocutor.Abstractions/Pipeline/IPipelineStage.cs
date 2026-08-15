@@ -41,7 +41,17 @@ public interface IPipelineStage<in TRequest, TResponse>
     /// or the response a before-hook short-circuited with. Not invoked when the handler throws.
     /// </summary>
     /// <param name="request">The request that was processed.</param>
-    /// <param name="result">The response: the handler's result, or the short-circuit response if the request was declined.</param>
+    /// <param name="result">
+    /// The response: the handler's result, or the short-circuit response if the request was declined.
+    /// <b>Exception: if a <em>later</em> stage's <c>OnBeforeAsync</c> throws</b> — not this stage's own — the
+    /// exception propagates past every earlier stage's before-hook and the resulting unwind still calls each
+    /// of their <c>OnAfterAsync</c> hooks (so setup/teardown pairs still run), but with no real response to
+    /// hand them: <paramref name="result"/> is <see langword="default"/> in that case, not a genuine outcome.
+    /// A stage whose teardown logic reads <paramref name="result"/> should treat a plausible-looking default
+    /// value received here as suspect rather than trust it unconditionally — there is no in-band signal on
+    /// this parameter distinguishing "genuinely defaulted response" from "before-hook exception, no response
+    /// exists." See <see cref="PipelineStageBehavior{TRequest, TResponse}"/> for the full unwind contract.
+    /// </param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     Task OnAfterAsync(TRequest request, TResponse result, CancellationToken ct);
