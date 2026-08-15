@@ -154,10 +154,7 @@ public class InterlocutorBuilderIntegrationTests
             Task.FromResult(default(OperationOutcome));
     }
 
-    private sealed record AuthorizableQuery
-        : IQuery<OperationOutcome<string, Forbidden>>,
-            IAuditableRequest,
-            IRequiresPolicy
+    private sealed record AuthorizableQuery : IQuery<OperationOutcome<string, Forbidden>>, IAuditableRequest, IRequiresPolicy
     {
         public string ActionName => "Query.Authorizable";
 
