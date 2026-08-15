@@ -6,67 +6,71 @@ Glossary of domain vocabulary used throughout the Interlocutor project. Use thes
 
 | Term         | Definition                                                                                                                                                                                                                             |
 | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Interlocutor** | A mediator/CQRS pipeline library for .NET built on C# 15 union types. Named after the participant who conducts a dialogue — it mediates requests between code and handlers, which communicate via typed `OperationOutcome<T>` unions (succeeded, not found, forbidden, etc.). Namespace: `Interlocutor.*`. |
+| **Interlocutor** | A mediator/CQRS pipeline library for .NET built on C# 15 union types. Named after the participant who conducts a dialogue — it mediates requests between code and handlers, which communicate via typed `OperationOutcome<...>` unions (succeeded, not found, forbidden, etc.). Namespace: `Interlocutor.*`. |
 
 ## Result Types
 
-| Term                            | Definition                                                                                                                                                       |
-| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **OperationOutcome\&lt;T\&gt;** | C# 15 discriminated union: either success (`T`) or `Failure`. Used as the return type of all queries and value-returning commands.                               |
-| **OperationOutcome**            | Non-generic union: either `Success` or `Failure`. Used as the return type of void commands.                                                                      |
-| **Failure**                     | Closed union of 5 expected failure outcomes: `ValidationFailed`, `RuleViolation`, `NotFound`, `Forbidden`, `Conflict`. Never represents an unexpected exception. |
-| **Success**                     | Marker record for void command success. Maps to HTTP 204 No Content.                                                                                             |
+| Term                                        | Definition                                                                                                                                                                                                                                                                                                                                    |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **OperationOutcome\<TSuccess, ...\>**       | C# 15 discriminated union, generic in 2 to 6 case types: the first type parameter is the success case, every remaining type parameter is an independent failure case (`NotFound`, `Forbidden`, `Conflict`, `Failure`, or a domain-specific type). A handler is written against the specific arity and case types that operation can actually produce — see "Result Types Are Building Blocks" in the README — rather than routing every failure through one generic case. |
+| **OperationOutcome**                        | Non-generic union: either `Success` or `Failure`. Used as the return type of unit commands.                                                                                                                                                                                                                                                  |
+| **IOperationOutcome**                        | Marker interface every `OperationOutcome`/`OperationOutcome<...>` union implements. Constrains query and command response types at compile time and is what makes runtime-typed dispatch possible without the caller knowing the concrete outcome shape.                                                                                    |
+| **Failure**                                 | A simple `readonly record struct` carrying an optional human-readable `Reason`, an optional machine-readable `ErrorCode`, or both. Not a closed union of cases — it is the generic fallback failure case for when none of the more specific ones (`NotFound`, `Forbidden`, `Conflict`, `ValidationError`) apply. Never represents an unexpected exception; exceptions signal defects, not expected outcomes. |
+| **Success**                                 | Marker record struct for unit command success — carries no payload.                                                                                                                                                                                                                                                                          |
 
-## Failure Cases
+## Failure Case Types
 
-| Term                 | Definition                                                                                                                                                                                              |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **ValidationFailed** | Input validation failure. Contains a dictionary of field → errors. Produced only by `ValidationBehavior` (FluentValidation). Maps to HTTP 400 Bad Request with `ValidationProblemDetails`.              |
-| **RuleViolation**    | Business rule/logic violation. Produced by handler code after entity lookup. Maps to HTTP 422 Unprocessable Entity with `ProblemDetails`.                                                               |
-| **NotFound**         | Requested entity does not exist. Produced by `ResourceCommandHandler` (when `LoadAsync` returns null) or handler code. Maps to HTTP 404 Not Found (empty body).                                         |
-| **Forbidden**        | Authorization denied for a specific resource. Produced by `ResourceCommandHandler.Authorize()` or `AuthorizationBehavior`. Maps to HTTP 403 Forbidden (empty body — reason is logged server-side only). |
-| **Conflict**         | State conflict: concurrency, uniqueness violation, or invalid transition. Produced by handler code. Maps to HTTP 409 Conflict with `ProblemDetails`.                                                    |
+Independent record-struct types, each usable as one case type in an `OperationOutcome<...>` union — not sub-cases of a single closed `Failure` union.
+
+| Term               | Definition                                                                                                                                                                                              |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **ValidationError** | A single validation failure: a message, or a message paired with a generic `TErrorCode`. Aggregated via `ValidationErrors`/`ValidationErrors<TErrorCode>`. Produced by validation behaviors (e.g. `Interlocutor.FluentValidation`). |
+| **NotFound**         | Requested entity does not exist. Produced by `ResourceCommandHandler` (when `LoadAsync` returns null) or handler code. A generic `NotFound<TId>` variant carries the entity type and ID separately.  |
+| **Forbidden**        | Authorization denied for a specific resource. Produced by `ResourceCommandHandler.Authorize()` or `AuthorizationBehavior`.                                                                            |
+| **Conflict**         | State conflict: concurrency, uniqueness violation, or invalid transition. Carries a message and a machine-readable code. Produced by handler code.                                                    |
+| **Failure**          | The generic fallback case — see Result Types above.                                                                                                                                                    |
 
 ## Result Type Aggregates
 
 | Term                                     | Definition                                                                                                                                                                                                                                                                                         |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **ValidationErrors**                     | Immutable collection of one or more `ValidationError` instances. De-duplicates preserving first-occurrence order. Safe at default value (returns empty collection). Exposes unified accessor `.Items` (primary), with semantic projections `.Errors` and `.Messages`.                              |
-| **ValidationErrors\&lt;TErrorCode\&gt;** | Immutable collection of one or more `ValidationError<TErrorCode>` instances with associated error codes. De-duplicates preserving first-occurrence order. Safe at default value. Exposes unified accessor `.Items` (primary), with semantic projections `.Errors`, `.Messages`, and `.ErrorCodes`. |
+| **ValidationErrors\<TErrorCode\>**       | Immutable collection of one or more `ValidationError<TErrorCode>` instances with associated error codes. De-duplicates preserving first-occurrence order. Safe at default value. Exposes unified accessor `.Items` (primary), with semantic projections `.Errors`, `.Messages`, and `.ErrorCodes`. |
 | **Failures**                             | Immutable collection of one or more `Failure` instances. De-duplicates preserving first-occurrence order. Safe at default value. Exposes unified accessor `.Items` (primary), with semantic projection `.Values` (legacy name).                                                                    |
 | **Conflicts**                            | Immutable collection of one or more `Conflict` instances (state conflicts, concurrency, uniqueness violations). De-duplicates preserving first-occurrence order. Safe at default value. Exposes unified accessor `.Items` (primary), with semantic projection `.Messages`.                         |
 
 ## CQRS
 
-| Term        | Definition                                                                                                                                                                                 |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Query**   | A read request implementing `IQuery<T>`. Always returns `OperationOutcome<T>`. Never writes data. Never participates in transactions.                                                      |
-| **Command** | A write request implementing `ICommand<TResponse>` (returns value) or `ICommand` (void). Returns `OperationOutcome`/`OperationOutcome<T>`. May participate in transactions.                |
-| **Handler** | A class implementing `IQueryHandler<TQuery, TResponse>`, `ICommandHandler<TCommand, TResponse>`, or `ICommandHandler<TCommand>`. Contains the business logic for exactly one request type. |
+| Term        | Definition                                                                                                                                                                                        |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Query**   | A read request implementing `IQuery<T>`. Always returns `OperationOutcome<...>`. Never writes data. Never participates in transactions.                                                          |
+| **Command** | A write request implementing `ICommand<TResponse>` (returns a value) or `ICommand` (a unit command — no domain data, only an outcome). Returns `OperationOutcome`/`OperationOutcome<...>`. May participate in transactions. |
+| **Unit command** | A command whose handler produces no domain data payload, only success or failure — `ICommand`/`IVoidCommandHandler<TCommand, TResult>`. Always returns an outcome; "void" is a misnomer this project no longer uses in prose, since nothing about the return value is actually void. |
+| **Handler** | A class implementing `IQueryHandler<TQuery, TResponse>`, `ICommandHandler<TCommand, TResponse>`, or `IVoidCommandHandler<TCommand, TResult>`. Contains the business logic for exactly one request type (or, for an open generic handler, one request family — see the dispatch-scope ADR). |
 
 ## Pipeline
 
 | Term                  | Definition                                                                                                                                                                                                                          |
 | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Pipeline behavior** | A class implementing `IPipelineBehavior<TRequest, TResponse>`. Wraps handler execution in an onion/Russian-doll model using a `next()` delegate. Cross-cutting concerns (validation, transactions, logging) are pipeline behaviors. |
-| **Mediator**          | The `Mediator` class implementing `IMediator`. Resolves handlers from DI, chains pipeline behaviors in reverse registration order, and dispatches requests.                                                                         |
+| **Pipeline behavior** | A class implementing `IPipelineBehavior<TRequest, TResponse>`. Wraps handler execution in an onion/Russian-doll model using a `next()` delegate. Cross-cutting concerns (validation, transactions, logging) are pipeline behaviors. Nothing runs unless explicitly registered — see the no-default-pipeline ADR. |
+| **Mediator**          | The `Mediator` class implementing `IMediator`. Resolves handlers from DI, chains the behaviors that apply to the request in registration order, and dispatches.                                                                   |
 
 ## Marker Interfaces
 
 | Term                      | Definition                                                                                                                       |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | **ITransactionalRequest** | Opts a command into the SQL unit-of-work. `TransactionBehavior` begins a transaction, commits on success, rolls back on Failure. |
-| **IExternalStoreRequest** | Declares a command is backed by a non-SQL store/API. `TransactionBehavior` never resolves the SQL session for it.                |
-| **IAuditableRequest**     | Opts a request into auditing. Carries `ActionName` used by `AuditingBehavior`.                                                   |
-| **IRequiresPolicy**       | Opts a request into non-resource authorization. Carries `PolicyName` evaluated by `AuthorizationBehavior`.                       |
+| **IExternalStoreRequest** | Declares a command is backed by a non-SQL store/API. `TransactionBehavior` never resolves the SQL session for it.               |
+| **IAuditableRequest**     | Opts a request into auditing. Carries `ActionName` used by `AuditingBehavior`.                                                    |
+| **IRequiresPolicy**       | Opts a request into non-resource authorization. Carries `PolicyName` evaluated by `AuthorizationBehavior`.                        |
 
 ## Notifications
 
-| Term                          | Definition                                                                                                                    |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| **INotification**             | Marker interface for domain events/notifications. Has no return value — fire-and-forget.                                      |
-| **INotificationHandler\<T\>** | Handler for a notification type. Multiple handlers may register for the same notification. Return type is `Task` (no result). |
-| **PublishStrategy**           | Enum: `Sequential` (handlers run in order, stop on failure) or `Parallel` (handlers run concurrently, aggregate exceptions).  |
+| Term                          | Definition                                                                                                                                                                                          |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **INotification**             | Marker interface for domain events/notifications. Has no return value — fire-and-forget.                                                                                                            |
+| **INotificationHandler\<T\>** | Handler for a notification type. Contravariant fan-out: a handler registered against a base event type or interface receives every derived notification.                                          |
+| **PublishStrategy**           | Enum: `Sequential` (default — handlers run one by one, stop and propagate on the first exception, leaving partial execution reachable) or `Parallel` (every handler runs regardless of others failing, exceptions aggregated). Handler ordering is unspecified in general; a relative run-after/run-before attribute is the escape hatch for a genuine ordering need. |
 
 ## Interface Segregation
 
@@ -74,67 +78,71 @@ Glossary of domain vocabulary used throughout the Interlocutor project. Use thes
 | -------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | **ISender**    | Narrow interface for send-only (request/response). Exposes `Send()` for queries and commands.                                      |
 | **IPublisher** | Narrow interface for publish-only (fire-and-forget). Exposes `Publish()` for notifications.                                        |
-| **IMediator**  | Combined convenience interface inheriting both `ISender` and `IPublisher`. Used by root-level code (controllers, background jobs). |
+| **IMediator**  | Combined convenience interface inheriting both `ISender` and `IPublisher`. Used by root-level code (controllers, background jobs). Registered scoped and non-configurable; never create your own scope from it — see the mediator-lifetime ADR. |
 
 ## Ambient Context
 
 | Term                        | Definition                                                                                                       |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **IRequestContextAccessor** | Scoped ambient context carrying `CorrelationId`, `UserId`, `TenantId`, and `Items` through the request pipeline. |
 | **RequestContext**          | Immutable record (readonly, swap via `Context { get; set; }`). Null-safe — if unset, `Context` is null.          |
 
 ## Pipeline Behaviors (built-in)
 
 | Term                                     | Definition                                                                                                                           |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| **LoggingBehavior**                      | Logs request type, handler, duration, and outcome for every mediator request. Uses `ILogger<T>`.                                     |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| **LoggingBehavior**                      | Logs request type, handler, duration, and outcome for every request that opts it in. Uses `ILogger<T>`.                              |
 | **AuthorizationBehavior**                | Enforces declarative authorization via `IPolicyEvaluator`. Short-circuits with `Forbidden` when policy fails.                        |
 | **AuditingBehavior**                     | Records audit trail via `IAuditSink` for requests implementing `IAuditableRequest`.                                                  |
-| **PipelineStageBehavior**                | Generic ingress/egress hook aggregating all registered `IPipelineStage<TRequest,TResponse>` instances.                               |
-| **IPipelineStage\<TRequest,TResponse\>** | Lightweight pre/post hook interface. Consumers implement `OnBeforeAsync`/`OnAfterAsync` without creating a full `IPipelineBehavior`. |
+| **PipelineStageBehavior**                | Single host behavior aggregating all registered `IPipelineStage<TRequest, TResponse>` instances into the behavior chain — it is an ordinary entry in the list, never a second pipeline. |
+| **IPipelineStage\<TRequest, TResponse\>** | Lightweight pre/post hook interface. Consumers implement `OnBeforeAsync`/`OnAfterAsync` without creating a full `IPipelineBehavior`. **Target design, not yet shipped:** the before-hook is planned to short-circuit by returning a `StageResult<TResponse>` (see [ADR-0002](docs/adr/0002-pipeline-behavior-onion-model.md)'s amendment); as currently shipped, `OnBeforeAsync` returns a plain `Task` and stages cannot short-circuit. |
+
+None of these run by default — the pipeline is empty until a builder call adds a behavior. The library documents a recommended chain (logging, then auditing, then authorization, then validation, then transaction) as opt-in sugar with its rationale, never as a default.
 
 ## Auditing
 
 | Term           | Definition                                                                                                |
-| -------------- | --------------------------------------------------------------------------------------------------------- |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | **IAuditSink** | Minimal interface for writing audit records. Single method: `RecordAsync(AuditEntry, CancellationToken)`. |
 | **AuditEntry** | Record containing `ActionName`, `RequestType`, `Outcome`, `Timestamp`, and optional `UserId`.             |
 
 ## Authorization
 
 | Term                 | Definition                                                                                                                                                                                                                              |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **IPolicyEvaluator** | Minimal interface (no ASP.NET Core dependency) for evaluating authorization policies. Single method: `EvaluateAsync(policyName, request, ct)`. Bridges to ASP.NET Core's `IAuthorizationService` in consumer code via a simple adapter. |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **IPolicyEvaluator** | Minimal interface (no ASP.NET Core dependency) for evaluating authorization policies. Single method: `EvaluateAsync(policyName, request, ct)`. Bridged to ASP.NET Core's `IAuthorizationService` in consumer code via a simple adapter. |
 
 ## Pagination
 
-| Term                           | Definition                                                                                                                                                                                          |
-| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **PagedResult\&lt;T\&gt;**     | Materialized page of results with paging metadata (`Items`, `Page`, `PageSize`, `TotalCount`). Used as `T` in `OperationOutcome<PagedResult<T>>`. Always materialized — never returns `IQueryable`. |
-| **IPagedQuery\&lt;TItem\&gt;** | A query that returns `PagedResult<TItem>`. Carries `Page` and `PageSize` as contract members.                                                                                                       |
+Not a shipped type. Interlocutor's core has no opinion about pagination — these rows illustrate one way a consumer composes their own paged response as a union payload; they are documentation, not an API this library ships.
+
+| Term                          | Definition (illustration only — not shipped)                                                                                                                                |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **PagedResult\<T\>**          | A consumer-defined materialized page of results with paging metadata (`Items`, `Page`, `PageSize`, `TotalCount`), used as the success case type in a consumer's own `OperationOutcome<PagedResult<T>, ...>`. Interlocutor never returns `IQueryable` and has no streaming response — see the response-constraint ADR. |
+| **IPagedQuery\<TItem\>**      | A consumer-defined query contract carrying `Page` and `PageSize`, illustrating one shape a query returning `PagedResult<TItem>` might take.                                    |
 
 ## Resource Authorization
 
 | Term                       | Definition                                                                                                                                                                                                                                                |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **ResourceCommandHandler** | Abstract base class implementing the load → authorize → handle template method pattern. Used when authorization depends on the loaded entity (ownership, claims against resource state). Not a pipeline behavior — the pattern is built into the handler. |
 
 ## Transaction Model
 
 | Term                  | Definition                                                                                                                                                                                           |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Transaction scope** | One logical request = one DI scope = one scoped `DbContext`/`ISession`. `TransactionBehavior` and `ResourceCommandHandler` receive the same scoped session via constructor injection.                |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Transaction scope** | One logical request = one DI scope = one scoped `DbContext`/`ISession`. `TransactionBehavior` and `ResourceCommandHandler` receive the same scoped session via constructor injection. The mediator never opens its own scope — it borrows the ambient one. |
 | **Lazy resolution**   | `TransactionBehavior` uses `Lazy<TContext>` to defer session construction until it's confirmed the request implements `ITransactionalRequest`. Non-transactional requests never resolve the session. |
 
 ## Packages
 
 | Term                                       | Definition                                                                                                                                                                                                                        |
-| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Interlocutor.CommonKernel**                  | Pure data types (OperationOutcome, Failure, PagedResult). Zero external dependencies.                                                                                                                                             |
-| **Interlocutor.Abstractions**                  | Mediator interfaces, handler contracts, marker interfaces, Mediator implementation, pipeline behaviors (Logging, Authorization, Auditing, PipelineStage). Depends on CommonKernel and framework-provided DI/Logging abstractions. |
-| **Interlocutor.AspNetCore**                    | `ToActionResult()` HTTP mapping. Depends on CommonKernel and ASP.NET Core.                                                                                                                                                        |
-| **Interlocutor.DependencyInjection.Microsoft** | Assembly-scanning `AddInterlocutor()` for Microsoft.Extensions.DependencyInjection.                                                                                                                                                   |
-| **Interlocutor.DependencyInjection.Autofac**   | Assembly-scanning `AddInterlocutor()` for Autofac.                                                                                                                                                                                    |
-| **Interlocutor.EntityFrameworkCore**           | `TransactionBehavior` for EF Core `DbContext`.                                                                                                                                                                                    |
-| **Interlocutor.NHibernate**                    | `TransactionBehavior` for NHibernate `ISession`.                                                                                                                                                                                  |
-| **Interlocutor.FluentValidation**              | `ValidationBehavior` and `BulkItemValidationBehavior` for FluentValidation.                                                                                                                                                       |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Interlocutor.CommonKernel**              | Pure data types: `OperationOutcome<...>` and its failure case types (`Failure`, `NotFound`, `Forbidden`, `Conflict`, `ValidationError`/`ValidationErrors`). Zero external dependencies.                                          |
+| **Interlocutor.Abstractions**              | Mediator interfaces, handler contracts, marker interfaces, `Mediator` implementation, pipeline behaviors (Logging, Authorization, Auditing, PipelineStage). Depends on CommonKernel and framework-provided DI/Logging abstractions. |
+| **Interlocutor.AspNetCore**                | `ToActionResult()`-style HTTP mapping, delegating to a pluggable mapper. Depends on CommonKernel and ASP.NET Core. The only package in the solution permitted to know about HTTP.                                               |
+| **Interlocutor.DependencyInjection.Microsoft** | The builder-based registration entry point for Microsoft.Extensions.DependencyInjection.                                                                                                                                     |
+| **Interlocutor.DependencyInjection.Autofac**   | The builder-based registration entry point for Autofac.                                                                                                                                                                       |
+| **Interlocutor.EntityFrameworkCore**       | `TransactionBehavior` for EF Core `DbContext`.                                                                                                                                                                                    |
+| **Interlocutor.NHibernate**                | `TransactionBehavior` for NHibernate `ISession`.                                                                                                                                                                                  |
+| **Interlocutor.FluentValidation**          | `ValidationBehavior` and `BulkItemValidationBehavior` for FluentValidation.                                                                                                                                                       |

@@ -1,6 +1,8 @@
 # ADR-0003: Mediator as Service Locator — No Internal Handler Registry
 
-**Status:** Accepted
+**Status:** Superseded by [ADR-0008](0008-compile-time-handler-discovery.md)
+
+> **Superseded.** The container remains the handler registry — that half of this decision still holds. What changed is *how* the container learns which handlers exist: [ADR-0008](0008-compile-time-handler-discovery.md) replaces the runtime `IServiceProvider.GetRequiredService` resolution and assembly-scanning registration described below with source-generated registration modules and a generated dispatch switch, for build-time diagnostics and AOT compatibility rather than the startup-cost reason this ADR's alternatives section anticipated. "The container is the handler registry" and "handlers may locate services themselves" are different claims — this ADR's title has caused that conflation before. Only the first was ever true; the second was never true and is not what supersession changes.
 
 ## Context
 
