@@ -9,6 +9,8 @@ public class DependencyTests
 {
     private static readonly Assembly CommonKernelAssembly = typeof(OperationOutcome).Assembly;
     private static readonly Assembly AbstractionsAssembly = typeof(IMediator).Assembly;
+    private static readonly Assembly DependencyInjectionAbstractionsAssembly =
+        typeof(Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration).Assembly;
 
     [Fact]
     public void CommonKernel_ShouldNotDependOnOtherInterlocutorPackages()
@@ -59,6 +61,31 @@ public class DependencyTests
             .GetResult();
 
         Assert.True(result.IsSuccessful, string.Join(", ", result.FailingTypeNames ?? []));
+    }
+
+    [Fact]
+    public void DependencyInjectionAbstractions_ShouldDependOnlyOnAbstractions()
+    {
+        var result = Types
+            .InAssembly(DependencyInjectionAbstractionsAssembly)
+            .ShouldNot()
+            .HaveDependencyOnAny(
+                "Interlocutor.AspNetCore",
+                "Interlocutor.DependencyInjection.Microsoft",
+                "Interlocutor.DependencyInjection.Autofac",
+                "Interlocutor.EntityFrameworkCore",
+                "Interlocutor.FluentValidation",
+                "Interlocutor.NHibernate"
+            )
+            .GetResult();
+
+        Assert.True(result.IsSuccessful, string.Join(", ", result.FailingTypeNames ?? []));
+
+        // Assembly-level (rather than per-type) check: the module owns the neutral registration
+        // record alongside plain data types, so not every type references Abstractions directly —
+        // only that the module as a whole depends on it, per the mediator abstractions module.
+        var referencedAssemblyNames = DependencyInjectionAbstractionsAssembly.GetReferencedAssemblies().Select(a => a.Name);
+        Assert.Contains(AbstractionsAssembly.GetName().Name, referencedAssemblyNames);
     }
 
     [Fact]

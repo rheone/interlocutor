@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/Interlocutor.CommonKernel/Interlocutor.CommonKernel.csproj" />
     <Project Path="src/Interlocutor.Abstractions/Interlocutor.Abstractions.csproj" />
+    <Project Path="src/Interlocutor.DependencyInjection.Abstractions/Interlocutor.DependencyInjection.Abstractions.csproj" />
     <Project Path="src/Interlocutor.DependencyInjection.Microsoft/Interlocutor.DependencyInjection.Microsoft.csproj" />
     <Project Path="src/Interlocutor.DependencyInjection.Autofac/Interlocutor.DependencyInjection.Autofac.csproj" />
     <Project Path="src/Interlocutor.AspNetCore/Interlocutor.AspNetCore.csproj" />
@@ -12,6 +13,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/Interlocutor.CommonKernel.Tests/Interlocutor.CommonKernel.Tests.csproj" />
     <Project Path="tests/Interlocutor.Abstractions.Tests/Interlocutor.Abstractions.Tests.csproj" />
+    <Project Path="tests/Interlocutor.DependencyInjection.Abstractions.Tests/Interlocutor.DependencyInjection.Abstractions.Tests.csproj" />
     <Project Path="tests/Interlocutor.DependencyInjection.Microsoft.Tests/Interlocutor.DependencyInjection.Microsoft.Tests.csproj" />
     <Project Path="tests/Interlocutor.DependencyInjection.Autofac.Tests/Interlocutor.DependencyInjection.Autofac.Tests.csproj" />
     <Project Path="tests/Interlocutor.AspNetCore.Tests/Interlocutor.AspNetCore.Tests.csproj" />
