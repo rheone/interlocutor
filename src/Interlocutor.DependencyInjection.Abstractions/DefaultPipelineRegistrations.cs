@@ -40,10 +40,12 @@ public static class DefaultPipelineRegistrations
             // Authorization before validation
             typeof(AuthorizationBehavior<,>),
             // Validation before transaction
-            TryGetType("Interlocutor.FluentValidation.ValidationBehavior`2"),
-            // Transaction innermost
-            TryGetType("Interlocutor.EntityFrameworkCore.TransactionBehavior`3")
-                ?? TryGetType("Interlocutor.NHibernate.TransactionBehavior`3"),
+            TryGetType("Interlocutor.FluentValidation.ValidationBehavior`2, Interlocutor.FluentValidation"),
+            // Transaction innermost. EF Core's TransactionBehavior<TRequest,TResponse,TContext> is arity 3
+            // (it's generic over the DbContext type too); NHibernate's TransactionBehavior<TRequest,TResponse>
+            // is arity 2 (ISession isn't generic) — the arities genuinely differ, this isn't a typo to unify.
+            TryGetType("Interlocutor.EntityFrameworkCore.TransactionBehavior`3, Interlocutor.EntityFrameworkCore")
+                ?? TryGetType("Interlocutor.NHibernate.TransactionBehavior`2, Interlocutor.NHibernate"),
         ];
 
         return behaviorTypes

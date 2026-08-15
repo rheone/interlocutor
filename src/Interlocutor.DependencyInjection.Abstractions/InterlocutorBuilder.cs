@@ -231,7 +231,9 @@ public sealed class InterlocutorBuilder
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorBuilder AddValidationBehavior()
     {
-        var validationBehaviorType = TryGetType("Interlocutor.FluentValidation.ValidationBehavior`2");
+        var validationBehaviorType = TryGetType(
+            "Interlocutor.FluentValidation.ValidationBehavior`2, Interlocutor.FluentValidation"
+        );
         if (validationBehaviorType is not null)
         {
             this.AddBehavior(validationBehaviorType);
@@ -249,9 +251,11 @@ public sealed class InterlocutorBuilder
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorBuilder AddTransactionBehavior()
     {
+        // EF Core's TransactionBehavior<TRequest,TResponse,TContext> is arity 3 (generic over the DbContext
+        // type too); NHibernate's TransactionBehavior<TRequest,TResponse> is arity 2 (ISession isn't generic).
         var transactionBehaviorType =
-            TryGetType("Interlocutor.EntityFrameworkCore.TransactionBehavior`3")
-            ?? TryGetType("Interlocutor.NHibernate.TransactionBehavior`3");
+            TryGetType("Interlocutor.EntityFrameworkCore.TransactionBehavior`3, Interlocutor.EntityFrameworkCore")
+            ?? TryGetType("Interlocutor.NHibernate.TransactionBehavior`2, Interlocutor.NHibernate");
         if (transactionBehaviorType is not null)
         {
             this.AddBehavior(transactionBehaviorType);

@@ -8,6 +8,7 @@ using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Queries;
 using Interlocutor.CommonKernel;
+using Interlocutor.CommonKernel.ResultTypes;
 using Interlocutor.DependencyInjection.Abstractions;
 
 public class InterlocutorBuilderIntegrationTests
@@ -126,13 +127,20 @@ public class InterlocutorBuilderIntegrationTests
         );
 
         var container = containerBuilder.Build();
+
+        // AuthorizationBehavior<TRequest,TSuccess> : IPipelineBehavior<TRequest, OperationOutcome<TSuccess,
+        // Forbidden>> — it only ever closes for a response shaped OperationOutcome<TSuccess, Forbidden>, so
+        // it's resolved against AuthorizableQuery (not the plain-OperationOutcome SampleQuery every other test
+        // here uses) to genuinely exercise closed-generic resolution rather than only the open-generic
+        // registration list.
         var behaviors = container
-            .Resolve<IEnumerable<IPipelineBehavior<SampleQuery, OperationOutcome>>>()
+            .Resolve<IEnumerable<IPipelineBehavior<AuthorizableQuery, OperationOutcome<string, Forbidden>>>>()
             .Select(b => b.GetType())
             .ToList();
 
         Assert.Contains(behaviors, t => t.Name.StartsWith("LoggingBehavior"));
         Assert.Contains(behaviors, t => t.Name.StartsWith("AuditingBehavior"));
+        Assert.Contains(behaviors, t => t.Name.StartsWith("AuthorizationBehavior"));
     }
 
     private sealed record SampleQuery : IQuery<OperationOutcome>;
@@ -141,6 +149,14 @@ public class InterlocutorBuilderIntegrationTests
     {
         public Task<OperationOutcome> Handle(SampleQuery query, CancellationToken ct) =>
             Task.FromResult(default(OperationOutcome));
+    }
+
+    private sealed record AuthorizableQuery : IQuery<OperationOutcome<string, Forbidden>>;
+
+    private sealed class AuthorizableQueryHandler : IQueryHandler<AuthorizableQuery, OperationOutcome<string, Forbidden>>
+    {
+        public Task<OperationOutcome<string, Forbidden>> Handle(AuthorizableQuery query, CancellationToken ct) =>
+            Task.FromResult<OperationOutcome<string, Forbidden>>("ok");
     }
 
     private sealed class RecordingAuditSink : IAuditSink

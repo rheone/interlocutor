@@ -59,6 +59,16 @@ public class InterlocutorBuilderTests
     }
 
     [Fact]
+    public void ScanEntryAssembly_ScansTheProcessEntryAssembly()
+    {
+        var builder = new InterlocutorBuilder();
+
+        builder.ScanEntryAssembly();
+
+        Assert.Contains(Assembly.GetEntryAssembly(), builder.AssembliesToScan);
+    }
+
+    [Fact]
     public void AddBehavior_AppendsInCallOrder()
     {
         var builder = new InterlocutorBuilder();
@@ -189,20 +199,52 @@ public class InterlocutorBuilderTests
     }
 
     [Fact]
+    public void AddValidationBehavior_WithFluentValidationReferenced_AddsValidationBehavior()
+    {
+        var builder = new InterlocutorBuilder();
+
+        builder.AddValidationBehavior();
+
+        Assert.Contains(
+            builder.Behaviors,
+            r => r.ImplementationType == typeof(Interlocutor.FluentValidation.ValidationBehavior<,>)
+        );
+    }
+
+    [Fact]
+    public void AddTransactionBehavior_WithNHibernateReferenced_AddsNHibernateTransactionBehavior()
+    {
+        // This test project references NHibernate but not EntityFrameworkCore specifically so the NHibernate
+        // path is exercised for real through the public API — AddTransactionBehavior prefers EF Core via `??`
+        // when both are present, which would otherwise mask a regression in the NHibernate-specific lookup
+        // (NHibernate's TransactionBehavior<TRequest,TResponse> is arity 2, not EF Core's arity-3 shape).
+        var builder = new InterlocutorBuilder();
+
+        builder.AddTransactionBehavior();
+
+        Assert.Contains(builder.Behaviors, r => r.ImplementationType == typeof(Interlocutor.NHibernate.TransactionBehavior<,>));
+    }
+
+    [Fact]
     public void UseRecommendedChain_AddsBehaviorsInCanonicalOrder()
     {
         var builder = new InterlocutorBuilder();
 
         builder.UseRecommendedChain();
 
-        var order = builder
-            .Behaviors.Select(r => r.ImplementationType)
-            .Where(t =>
-                t == typeof(LoggingBehavior<,>) || t == typeof(AuditingBehavior<,>) || t == typeof(AuthorizationBehavior<,>)
-            )
-            .ToList();
-
-        Assert.Equal([typeof(LoggingBehavior<,>), typeof(AuditingBehavior<,>), typeof(AuthorizationBehavior<,>)], order);
+        // The full canonical order, including validation and transaction — proven here rather than only
+        // logging/auditing/authorization, since this test project references FluentValidation and NHibernate
+        // and can therefore observe where those two land relative to the rest of the chain.
+        Assert.Equal(
+            [
+                typeof(LoggingBehavior<,>),
+                typeof(AuditingBehavior<,>),
+                typeof(AuthorizationBehavior<,>),
+                typeof(Interlocutor.FluentValidation.ValidationBehavior<,>),
+                typeof(Interlocutor.NHibernate.TransactionBehavior<,>),
+            ],
+            builder.Behaviors.Select(r => r.ImplementationType)
+        );
     }
 
     [Fact]

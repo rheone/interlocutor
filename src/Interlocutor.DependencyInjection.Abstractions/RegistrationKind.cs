@@ -13,8 +13,11 @@ public enum RegistrationKind
     Handler,
 
     /// <summary>
-    /// A pipeline behavior from the library's recommended default chain (logging, auditing,
-    /// authorization, validation, transaction).
+    /// A pipeline behavior registered against the request/response pipeline — one of the library's
+    /// built-in behaviors (logging, auditing, authorization, validation, transaction) or a consumer's
+    /// own, added via the builder's general <c>AddBehavior</c> escape hatch. Like <see cref="Handler"/>
+    /// and <see cref="Stage"/>, a behavior carries no override precedence — it is translated with add,
+    /// not try-add, semantics, and the same behavior type may be added more than once.
     /// </summary>
     Behavior,
 
