@@ -7,14 +7,16 @@ using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 using NSubstitute;
 
+// AuditingBehavior<TRequest, TResponse> now constrains TRequest : IAuditableRequest, so a non-auditable
+// request cannot close this generic at all — there is no runtime "skip" branch left to unit test here. The
+// "a request without the marker never resolves the behavior" guarantee is proven at the container level
+// instead: see BehaviorSubsetConstraintTests in the DependencyInjection.Microsoft/Autofac test projects.
 public class AuditingBehaviorTests
 {
     public record AuditableQuery(string Name) : IQuery<OperationOutcome<string, Failure>>, IAuditableRequest
     {
         public string ActionName => "Query.Read";
     }
-
-    public record UnsauditableQuery(string Name) : IQuery<OperationOutcome<string, Failure>>;
 
     [Fact]
     public async Task Handle_RecordsAuditEntryForAuditableRequest()
@@ -38,25 +40,6 @@ public class AuditingBehaviorTests
                 ),
                 CancellationToken.None
             );
-    }
-
-    [Fact]
-    public async Task Handle_PassesThroughForNonAuditableRequest()
-    {
-        // Arrange
-        var sink = Substitute.For<IAuditSink>();
-        var behavior = new AuditingBehavior<UnsauditableQuery, string>(sink);
-        var request = new UnsauditableQuery("test");
-        var response = "success";
-        var next = () => Task.FromResult(response);
-
-        // Act
-        var result = await behavior.Handle(request, next, CancellationToken.None);
-
-        // Assert
-        Assert.Equal("success", result);
-        // Sink should not be called for non-auditable requests
-        await sink.DidNotReceive().RecordAsync(Arg.Any<AuditEntry>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

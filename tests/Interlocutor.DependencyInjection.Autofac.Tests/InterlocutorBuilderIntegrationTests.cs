@@ -5,6 +5,7 @@ using global::Microsoft.Extensions.Logging;
 using global::Microsoft.Extensions.Logging.Abstractions;
 using Interlocutor.Abstractions;
 using Interlocutor.Abstractions.Core;
+using Interlocutor.Abstractions.Markers;
 using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Queries;
 using Interlocutor.CommonKernel;
@@ -132,7 +133,9 @@ public class InterlocutorBuilderIntegrationTests
         // Forbidden>> — it only ever closes for a response shaped OperationOutcome<TSuccess, Forbidden>, so
         // it's resolved against AuthorizableQuery (not the plain-OperationOutcome SampleQuery every other test
         // here uses) to genuinely exercise closed-generic resolution rather than only the open-generic
-        // registration list.
+        // registration list. AuthorizableQuery also implements IAuditableRequest and IRequiresPolicy so that,
+        // now that AuditingBehavior/AuthorizationBehavior constrain TRequest to those markers, this query still
+        // draws all three behaviors from the recommended chain instead of being filtered down to just logging.
         var behaviors = container
             .Resolve<IEnumerable<IPipelineBehavior<AuthorizableQuery, OperationOutcome<string, Forbidden>>>>()
             .Select(b => b.GetType())
@@ -183,7 +186,12 @@ public class InterlocutorBuilderIntegrationTests
             Task.FromResult(default(OperationOutcome));
     }
 
-    private sealed record AuthorizableQuery : IQuery<OperationOutcome<string, Forbidden>>;
+    private sealed record AuthorizableQuery : IQuery<OperationOutcome<string, Forbidden>>, IAuditableRequest, IRequiresPolicy
+    {
+        public string ActionName => "Query.Authorizable";
+
+        public string PolicyName => "CanRead";
+    }
 
     private sealed class AuthorizableQueryHandler : IQueryHandler<AuthorizableQuery, OperationOutcome<string, Forbidden>>
     {
