@@ -7,14 +7,17 @@ using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 using NSubstitute;
 
+// AuthorizationBehavior<TRequest, TSuccess> now constrains TRequest : IRequiresPolicy, so a request that
+// doesn't require a policy cannot close this generic at all — there is no runtime "skip" branch left to unit
+// test here. The "a request without the marker never resolves the behavior" guarantee is proven at the
+// container level instead: see BehaviorSubsetConstraintTests in the DependencyInjection.Microsoft/Autofac
+// test projects.
 public class AuthorizationBehaviorTests
 {
     public record ProtectedQuery(string Name) : IQuery<OperationOutcome<string, Forbidden>>, IRequiresPolicy
     {
         public string PolicyName => "CanRead";
     }
-
-    public record UnprotectedQuery(string Name) : IQuery<OperationOutcome<string, Forbidden>>;
 
     [Fact]
     public async Task Handle_AllowsAccessWhenPolicyEvaluatesTrue()
@@ -58,25 +61,6 @@ public class AuthorizationBehaviorTests
         // Assert - Should return Forbidden instead of calling next
         Assert.IsType<Forbidden>(result.Value);
         await policyEvaluator.Received(1).EvaluateAsync("CanRead", Arg.Is(request), CancellationToken.None);
-    }
-
-    [Fact]
-    public async Task Handle_PassesThroughWhenRequestDoesNotRequirePolicy()
-    {
-        // Arrange
-        var policyEvaluator = Substitute.For<IPolicyEvaluator>();
-        var behavior = new AuthorizationBehavior<UnprotectedQuery, string>(policyEvaluator);
-        var request = new UnprotectedQuery("test");
-        Func<Task<OperationOutcome<string, Forbidden>>> next = () =>
-            Task.FromResult<OperationOutcome<string, Forbidden>>(new OperationOutcome<string, Forbidden>("success"));
-
-        // Act
-        var result = await behavior.Handle(request, next, CancellationToken.None);
-
-        // Assert - Should skip authorization and return success
-        Assert.Equal("success", result.Value);
-        // Policy evaluator should not be called
-        await policyEvaluator.DidNotReceive().EvaluateAsync(Arg.Any<string>(), Arg.Any<object>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
