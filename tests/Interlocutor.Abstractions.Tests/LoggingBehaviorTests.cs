@@ -2,13 +2,14 @@ namespace Interlocutor.Abstractions.Tests;
 
 using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Queries;
+using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 
 public class LoggingBehaviorTests
 {
-    public record LoggedQuery(int Value) : IQuery<int>;
+    public record LoggedQuery(int Value) : IQuery<OperationOutcome<int, Failure>>;
 
     [Fact]
     public async Task Handle_LogsRequestTypeAndOutcome()

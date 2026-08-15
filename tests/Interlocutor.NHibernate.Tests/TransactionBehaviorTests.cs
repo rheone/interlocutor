@@ -3,9 +3,11 @@ namespace Interlocutor.NHibernate.Tests;
 using global::NHibernate;
 using Interlocutor.Abstractions;
 using Interlocutor.Abstractions.Commands;
+using Interlocutor.CommonKernel;
+using Interlocutor.CommonKernel.ResultTypes;
 using Interlocutor.NHibernate;
 
-public record NonTransactionalTestRequest(int Value) : ICommand<string>;
+public record NonTransactionalTestRequest(int Value) : ICommand<OperationOutcome<string, Failure>>;
 
 public class TransactionBehaviorTests
 {

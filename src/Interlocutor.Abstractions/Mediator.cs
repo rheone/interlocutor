@@ -37,6 +37,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
 
     /// <inheritdoc/>
     public Task<TResponse> Send<TResponse>(IQuery<TResponse> query, CancellationToken ct = default)
+        where TResponse : IOperationOutcome
     {
         // Look up or create the handler wrapper for this query type. The wrapper composes the pipeline
         // behavior chain at invocation time. Caching by query type avoids expensive reflection for every dispatch.
@@ -55,6 +56,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
 
     /// <inheritdoc/>
     public Task<TResponse> Send<TResponse>(ICommand<TResponse> command, CancellationToken ct = default)
+        where TResponse : IOperationOutcome
     {
         // Look up or create the handler wrapper for this command type. The wrapper composes the pipeline
         // behavior chain at invocation time. Caching by command type avoids expensive reflection for every dispatch.

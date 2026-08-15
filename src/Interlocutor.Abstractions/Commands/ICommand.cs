@@ -1,10 +1,17 @@
 namespace Interlocutor.Abstractions.Commands;
 
+using Interlocutor.CommonKernel;
+
 /// <summary>
 /// Marks a command that produces a typed response of type <typeparamref name="TResponse"/>.
 /// </summary>
-/// <typeparam name="TResponse">The type of data returned when the command is handled.</typeparam>
-public interface ICommand<TResponse>;
+/// <typeparam name="TResponse">
+/// The <see cref="IOperationOutcome"/>-shaped union returned when the command is handled. Commands never
+/// return a bare DTO — the response must be (or be wrapped in) an outcome union so callers exhaustively
+/// handle every case.
+/// </typeparam>
+public interface ICommand<TResponse>
+    where TResponse : IOperationOutcome;
 
 /// <summary>
 /// Marks a command that produces no response data.

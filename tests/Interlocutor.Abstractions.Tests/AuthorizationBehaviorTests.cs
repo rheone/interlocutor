@@ -9,12 +9,12 @@ using NSubstitute;
 
 public class AuthorizationBehaviorTests
 {
-    public record ProtectedQuery(string Name) : IQuery<string>, IRequiresPolicy
+    public record ProtectedQuery(string Name) : IQuery<OperationOutcome<string, Forbidden>>, IRequiresPolicy
     {
         public string PolicyName => "CanRead";
     }
 
-    public record UnprotectedQuery(string Name) : IQuery<string>;
+    public record UnprotectedQuery(string Name) : IQuery<OperationOutcome<string, Forbidden>>;
 
     [Fact]
     public async Task Handle_AllowsAccessWhenPolicyEvaluatesTrue()

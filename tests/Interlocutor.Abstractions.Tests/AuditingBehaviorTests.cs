@@ -3,17 +3,18 @@ namespace Interlocutor.Abstractions.Tests;
 using Interlocutor.Abstractions.Markers;
 using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Queries;
+using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 using NSubstitute;
 
 public class AuditingBehaviorTests
 {
-    public record AuditableQuery(string Name) : IQuery<string>, IAuditableRequest
+    public record AuditableQuery(string Name) : IQuery<OperationOutcome<string, Failure>>, IAuditableRequest
     {
         public string ActionName => "Query.Read";
     }
 
-    public record UnsauditableQuery(string Name) : IQuery<string>;
+    public record UnsauditableQuery(string Name) : IQuery<OperationOutcome<string, Failure>>;
 
     [Fact]
     public async Task Handle_RecordsAuditEntryForAuditableRequest()

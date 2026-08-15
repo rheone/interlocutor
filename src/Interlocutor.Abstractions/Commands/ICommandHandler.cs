@@ -1,5 +1,7 @@
 namespace Interlocutor.Abstractions.Commands;
 
+using Interlocutor.CommonKernel;
+
 /// <summary>
 /// Handles a command that returns a typed response.
 /// </summary>
@@ -19,6 +21,7 @@ namespace Interlocutor.Abstractions.Commands;
 /// </remarks>
 public interface ICommandHandler<in TCommand, TResponse>
     where TCommand : ICommand<TResponse>
+    where TResponse : IOperationOutcome
 {
     /// <summary>
     /// Handles the specified command and returns a result containing the response or a failure.

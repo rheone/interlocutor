@@ -1,8 +1,10 @@
 namespace Interlocutor.EntityFrameworkCore.Tests;
 
 using Interlocutor.Abstractions.Commands;
+using Interlocutor.CommonKernel;
+using Interlocutor.CommonKernel.ResultTypes;
 
-public record NonTransactionalTestRequest(int Value) : ICommand<string>;
+public record NonTransactionalTestRequest(int Value) : ICommand<OperationOutcome<string, Failure>>;
 
 public class TransactionBehaviorTests
 {

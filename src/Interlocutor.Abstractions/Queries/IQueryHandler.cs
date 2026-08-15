@@ -1,5 +1,7 @@
 namespace Interlocutor.Abstractions.Queries;
 
+using Interlocutor.CommonKernel;
+
 /// <summary>
 /// Defines a handler that processes a CQRS query of a specified type and returns a result.
 /// </summary>
@@ -20,6 +22,7 @@ namespace Interlocutor.Abstractions.Queries;
 /// </remarks>
 public interface IQueryHandler<in TQuery, TResponse>
     where TQuery : IQuery<TResponse>
+    where TResponse : IOperationOutcome
 {
     /// <summary>
     /// Handles the specified query and returns a result that represents success or failure.

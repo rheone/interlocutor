@@ -22,14 +22,16 @@ public interface ISender
     /// <param name="query">The query to dispatch.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>A <see cref="Task{TResult}"/> representing the asynchronous operation.</returns>
-    Task<TResponse> Send<TResponse>(IQuery<TResponse> query, CancellationToken ct = default);
+    Task<TResponse> Send<TResponse>(IQuery<TResponse> query, CancellationToken ct = default)
+        where TResponse : IOperationOutcome;
 
     /// <summary>Dispatches a value-returning command to its registered handler, returning the result through all pipeline behaviors.</summary>
     /// <typeparam name="TResponse">The command response type.</typeparam>
     /// <param name="command">The command to dispatch.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>A <see cref="Task{TResult}"/> representing the asynchronous operation.</returns>
-    Task<TResponse> Send<TResponse>(ICommand<TResponse> command, CancellationToken ct = default);
+    Task<TResponse> Send<TResponse>(ICommand<TResponse> command, CancellationToken ct = default)
+        where TResponse : IOperationOutcome;
 
     /// <summary>Dispatches a void command to its registered handler, returning the outcome through all pipeline behaviors.</summary>
     /// <typeparam name="TResult">The <see cref="Interlocutor.CommonKernel.IOperationOutcome"/>-shaped outcome type to resolve a handler for.</typeparam>

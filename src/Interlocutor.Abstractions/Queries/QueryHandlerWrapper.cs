@@ -2,6 +2,7 @@ namespace Interlocutor.Abstractions.Queries;
 
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Pipeline;
+using Interlocutor.CommonKernel;
 
 /// <summary>Wraps a query handler, constructing the pipeline chain around it at invocation time.</summary>
 /// <typeparam name="TQuery">The query type.</typeparam>
@@ -15,6 +16,7 @@ using Interlocutor.Abstractions.Pipeline;
 /// </remarks>
 internal sealed class QueryHandlerWrapper<TQuery, TResponse> : HandlerWrapper<TResponse>
     where TQuery : IQuery<TResponse>
+    where TResponse : IOperationOutcome
 {
     /// <summary>
     /// Executes the query with its handler and pipeline behaviors.

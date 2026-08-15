@@ -2,6 +2,7 @@ namespace Interlocutor.Abstractions.Commands;
 
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Pipeline;
+using Interlocutor.CommonKernel;
 
 /// <summary>Wraps a value-returning command handler, constructing the pipeline chain around it at invocation time.</summary>
 /// <typeparam name="TCommand">The command type.</typeparam>
@@ -15,6 +16,7 @@ using Interlocutor.Abstractions.Pipeline;
 /// </remarks>
 internal sealed class CommandHandlerWrapper<TCommand, TResponse> : HandlerWrapper<TResponse>
     where TCommand : ICommand<TResponse>
+    where TResponse : IOperationOutcome
 {
     /// <summary>
     /// Executes the command with its handler and pipeline behaviors.
