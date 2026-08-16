@@ -1,3 +1,3 @@
-- injectable builder pattern for handling OperationOutcome options?
-- drop db session and use unit of work instead w/ session and transaction
-- pipeline builder pattern
+# TODO
+
+No open items right now. Previous entries were promoted to tickets 39 and 40 in `.scratch/di-builder-and-discovery/issues/`, or resolved as already satisfied by shipped code.
