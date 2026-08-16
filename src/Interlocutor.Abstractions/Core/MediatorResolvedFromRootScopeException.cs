@@ -43,6 +43,7 @@ public sealed class MediatorResolvedFromRootScopeException : Exception
     /// <summary>
     /// Gets the runtime type of the request or notification being dispatched when the root-scope guard fired.
     /// </summary>
+    /// <value>The runtime type of the request or notification being dispatched when the root-scope guard fired.</value>
     public Type RequestType { get; }
 
     private static string BuildMessage(Type requestType) =>
