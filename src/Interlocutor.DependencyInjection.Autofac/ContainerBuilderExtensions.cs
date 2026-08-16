@@ -7,6 +7,7 @@ using Interlocutor.Abstractions;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Notifications;
+using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Queries;
 using Interlocutor.DependencyInjection.Abstractions;
 

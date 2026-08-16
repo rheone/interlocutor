@@ -6,6 +6,7 @@ using Interlocutor.Abstractions;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Notifications;
+using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Queries;
 using Interlocutor.DependencyInjection.Abstractions;
 
@@ -23,7 +24,7 @@ using Interlocutor.DependencyInjection.Abstractions;
 /// </para>
 /// <para>
 /// Per ADR-0009 ("No Default Pipeline"), a bare builder configures zero pipeline behaviors — nothing
-/// cross-cutting runs unless the <paramref name="configure"/> delegate explicitly adds it.
+/// cross-cutting runs unless the <c>configure</c> delegate explicitly adds it.
 /// </para>
 /// </remarks>
 public static class InterlocutorServiceCollectionExtensions
