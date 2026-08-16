@@ -48,3 +48,19 @@ Default labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-huma
 ### Domain docs
 
 Single-context: one `CONTEXT.md` and one `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+## Documentation Maintenance (ticket 35)
+
+When a code change touches a `src/Interlocutor.*` package, consider whether the corresponding `documentation/` file needs updating:
+
+| Package | Documentation file(s) |
+|---------|------------------------|
+| `Interlocutor.CommonKernel` | [messages-and-result-types.md](documentation/messages-and-result-types.md) |
+| `Interlocutor.Abstractions` | [handler-selection-and-dispatch.md](documentation/handler-selection-and-dispatch.md), [pipeline-and-behaviors.md](documentation/pipeline-and-behaviors.md), [mediator-lifetimes-and-scope.md](documentation/mediator-lifetimes-and-scope.md) |
+| `Interlocutor.DependencyInjection.Microsoft` / `.Autofac` | [builder-and-registration.md](documentation/builder-and-registration.md) |
+| `Interlocutor.AspNetCore` | [aspnetcore-integration.md](documentation/aspnetcore-integration.md) |
+| `Interlocutor.EntityFrameworkCore` / `.NHibernate` | [transactions-and-store-integration.md](documentation/transactions-and-store-integration.md) |
+| `Interlocutor.FluentValidation` | [pipeline-and-behaviors.md](documentation/pipeline-and-behaviors.md) — ValidationBehavior section |
+| `Interlocutor.Generator` | [builder-and-registration.md](documentation/builder-and-registration.md) — compilation discovery section |
+
+**No CI enforcement** — this is advisory. If a code change might affect public API surface or developer-facing behavior, the person/agent making the change should review the mapped doc file(s) and update them if needed. Include doc updates in the same commit as code changes when they're part of a deliberate feature or API shift.

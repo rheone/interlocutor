@@ -5,19 +5,19 @@ This directory contains reference documentation for developers using Interlocuto
 ## Quick navigation
 
 - [Glossary](glossary.md) — domain vocabulary used throughout the project
-- **Reference docs** (coming as tickets 23–34 land):
-  - Pipeline & Behavior Composition
-  - Handler Selection & Dispatch
-  - Builder & Registration
-  - Mediator, Lifetimes, Scope & Ambient Context
-  - Messages, Result Types & Variance
-  - Notifications & Fan-out
-  - Runtime-Typed Dispatch
-  - Transactions & Store Integration
-  - ASP.NET Core Integration & HTTP Mapping
-  - Testing Handlers & Pipelines
-  - Trim & AOT support
-  - Sample app walkthrough
+- **Reference docs**:
+  - [Pipeline & Behavior Composition](pipeline-and-behaviors.md) — no-default-pipeline, flat ordered list, recommended chain with rationale, validation/authorization/auditing behaviors, pipeline stages & short-circuit
+  - [Handler Selection & Dispatch](handler-selection-and-dispatch.md) — compile-time discovery, closed beats open, ambiguity as build error, resource-based authorization, notifications (multiple handlers), runtime-typed dispatch
+  - [Builder & Registration](builder-and-registration.md) — `InterlocutorBuilder` as single entry point, assembly scanning, pipeline composition, dependency defaults, cross-assembly aggregation, startup validation
+  - [Mediator, Lifetimes, Scope & Ambient Context](mediator-lifetimes-and-scope.md) — `ISender`/`IPublisher`/`IMediator` interfaces, scoped lifetime (why it's non-configurable), root-scope exception, dispatching correctly in web/background contexts, `IRequestContextAccessor` and `RequestContext`
+  - [Messages, Result Types & Variance](messages-and-result-types.md) — `IQuery<T>`, `ICommand<T>`, `ICommand`, `IOperationOutcome` constraint, outcome unions and arities, pattern matching, choosing specific arities, marker interfaces, [!CAUTION] response-type variance is impossible
+  - [Notifications & Fan-out](notifications-and-fan-out.md) — `INotification` and multiple handlers (contravariant), execution order (unordered + relative ordering attributes), Sequential vs. Parallel publish strategies, failure semantics, notification+command pattern
+  - [Runtime-Typed Dispatch](runtime-typed-dispatch.md) — dispatching when request type is only known at runtime, outbox/inbox/queue patterns, `IOperationOutcome` base interface, error handling
+  - [Transactions & Store Integration](transactions-and-store-integration.md) — `Interlocutor.EntityFrameworkCore` and `Interlocutor.NHibernate`, `TransactionBehavior`, `ITransactionalRequest`/`IExternalStoreRequest` markers, lazy session resolution, commit/rollback semantics, nested dispatch, notifications after commit
+  - [ASP.NET Core Integration & HTTP Mapping](aspnetcore-integration.md) — `ToActionResult()` extension, status code mapping, `ValidationProblemDetails` and `ProblemDetails` (RFC 7807), custom mapping, minimal API, error handling
+  - [Testing Handlers & Pipelines](testing.md) — unit testing handlers (mock dependencies), integration testing pipeline composition, testing behaviors & stages, DI startup validation, in-memory databases, best practices
+  - [Trim & AOT support](trim-and-aot-support.md) — [!NOTE] **TBD** — blocked on ticket 17 (Trim and AOT hardening)
+  - [Sample app walkthrough](sample-app-walkthrough.md) — [!NOTE] **TBD** — blocked on ticket 18 (Sample application)
 
 - **Design rationale**: [Architecture Decision Records](../docs/adr/)
 - **Project PRD**: [docs/PRD.md](../docs/PRD.md)
