@@ -74,11 +74,14 @@ internal static class DispatchWrapperEmitter
         var responseType = handler.ResponseTypeName!;
         var behaviorType = $"global::Interlocutor.Abstractions.Pipeline.IPipelineBehavior<{requestType}, {responseType}>";
 
+        // Plain, XML-escaped <c> text, not <see cref="...">: these fully-qualified names carry generic
+        // arguments (angle brackets and commas), which is neither valid cref syntax nor valid raw XML
+        // element content without escaping.
         builder.AppendLine("    /// <summary>");
         builder.AppendLine(
-            $"    /// Closed dispatch wrapper for <see cref=\"{handler.ServiceInterfaceName}\"/>, generated for"
+            $"    /// Closed dispatch wrapper for <c>{XmlEscape(handler.ServiceInterfaceName)}</c>, generated for"
         );
-        builder.AppendLine($"    /// <see cref=\"{handler.HandlerTypeName}\"/>.");
+        builder.AppendLine($"    /// <c>{XmlEscape(handler.HandlerTypeName)}</c>.");
         builder.AppendLine("    /// </summary>");
         builder.AppendLine($"    internal static class {className}");
         builder.AppendLine("    {");
@@ -132,4 +135,7 @@ internal static class DispatchWrapperEmitter
         builder.AppendLine("    }");
         builder.AppendLine();
     }
+
+    /// <summary>Escapes the characters that are illegal as raw content inside an XML doc-comment element.</summary>
+    private static string XmlEscape(string value) => value.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
 }

@@ -1,6 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="..\..\src\Interlocutor.DependencyInjection.Autofac\Interlocutor.DependencyInjection.Autofac.csproj" />
+    <!-- Analyzer-only reference: runs Interlocutor.Generator over this project's own compilation so
+         GeneratedRegistrationIntegrationTests can dispatch through the real, compile-time discovered
+         Interlocutor.Generated.InterlocutorGeneratedRegistrations module instead of runtime scanning. -->
+    <ProjectReference
+      Include="..\..\src\Interlocutor.Generator\Interlocutor.Generator.csproj"
+      OutputItemType="Analyzer"
+      ReferenceOutputAssembly="false"
+    />
   </ItemGroup>
 
   <ItemGroup>

@@ -32,7 +32,11 @@ internal static class HandlerTypeAnalyzer
     /// </returns>
     public static TypeAnalysisResult Analyze(INamedTypeSymbol candidate, Location declarationLocation, Compilation compilation)
     {
-        if (candidate.IsAbstract || candidate.TypeKind is not (TypeKind.Class or TypeKind.Struct))
+        if (
+            candidate.IsAbstract
+            || candidate.TypeKind is not (TypeKind.Class or TypeKind.Struct)
+            || !IsAccessibleFromGeneratedCode(candidate)
+        )
         {
             return TypeAnalysisResult.Empty;
         }
@@ -143,4 +147,29 @@ internal static class HandlerTypeAnalyzer
 
     /// <summary>Formats a symbol as a fully-qualified, <c>global::</c>-prefixed source-safe type name.</summary>
     private static string Format(ITypeSymbol symbol) => symbol.ToDisplayString(QualifiedFormat);
+
+    /// <summary>
+    /// Whether <paramref name="symbol"/> — and every type it is nested inside — is visible from generated
+    /// code living in an unrelated type in the same assembly (the registration module and dispatch wrappers
+    /// this generator emits are never nested inside the handler's own containing type). A <see langword="private"/>,
+    /// <see langword="protected"/>, or <see langword="private protected"/> handler or request type at any
+    /// nesting level would compile in its own file but produce inaccessible-member errors in the generated
+    /// <c>typeof(...)</c> references, so such types are silently excluded from discovery rather than treated
+    /// as handlers or requests.
+    /// </summary>
+    private static bool IsAccessibleFromGeneratedCode(INamedTypeSymbol symbol)
+    {
+        for (var current = symbol; current is not null; current = current.ContainingType)
+        {
+            if (
+                current.DeclaredAccessibility
+                is not (Accessibility.Public or Accessibility.Internal or Accessibility.ProtectedOrInternal)
+            )
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }
