@@ -145,6 +145,21 @@ public class CreateOrderHandler : ICommandHandler<CreateOrder, OperationOutcome<
 - **Rollback on Failure**: transaction rolls back when the handler returns any `Failure` case (`NotFound`, `Forbidden`, `Conflict`, `ValidationError`, etc.).
 - **No rollback on pipeline short-circuit**: if `AuthorizationBehavior` or `ValidationBehavior` short-circuits a request before the handler runs, the transaction doesn't even start (lazy resolution). No transaction to roll back.
 
+The third rule is the one that's easy to misread as "any denied or failed request rolls back" — it doesn't, because a short-circuit means `TransactionBehavior` never ran in the first place:
+
+```mermaid
+flowchart TD
+    Start["Request dispatched"] --> ShortCircuit{"Short-circuited before<br/>TransactionBehavior runs?<br/>(e.g. AuthorizationBehavior denies)"}
+    ShortCircuit -->|"yes"| NoTx["No transaction was ever opened —<br/>nothing to roll back"]
+    ShortCircuit -->|"no"| Open["TransactionBehavior opens<br/>the transaction (lazy resolution)"]
+    Open --> Outcome{"Handler's outcome?"}
+    Outcome -->|"Success"| Commit["Commit"]
+    Outcome -->|"Failure case<br/>(NotFound, Forbidden, Conflict, ValidationError, ...)"| Rollback["Rollback"]
+
+    classDef callout fill:#fff3cd,color:#664d03,stroke:#997404,stroke-width:2px;
+    class NoTx callout
+```
+
 ```csharp
 public record UpdateProduct(int Id, string Name, int Version)
     : ICommand<OperationOutcome<Success, NotFound, Conflict>>,
