@@ -1,0 +1,54 @@
+{
+  "$schema": "https://claude.ai/claude-code/schema/settings.schema.json",
+  "project": {
+    "name": "Interlocutor",
+    "description": "A CQRS-style mediator pipeline library for .NET with result-type composition",
+    "language": "csharp",
+    "framework": ".NET 11 (preview)"
+  },
+  "skills": {
+    "searchPaths": [
+      "./.claude/skills",
+      "./.agents/skills"
+    ],
+    "autoDiscover": true
+  },
+  "environments": {
+    "development": {
+      "build": "dotnet build",
+      "test": "dotnet test",
+      "format": "dotnet csharpier .",
+      "lint": "dotnet build --no-restore"
+    }
+  },
+  "permissions": {
+    "auto": [
+      "Bash(dotnet *)",
+      "Bash(git *)",
+      "Bash(grep *)",
+      "Bash(find *)",
+      "Read",
+      "Edit",
+      "Write"
+    ]
+  },
+  "hooks": {
+    "beforeBuild": "dotnet tool restore",
+    "beforeTest": "dotnet tool restore",
+    "beforeFormat": "dotnet tool restore"
+  },
+  "codeStyle": {
+    "lineLength": 120,
+    "indentSize": 4,
+    "useTabs": false,
+    "enforceConventions": true
+  },
+  "documentation": {
+    "primaryFile": "CLAUDE.md",
+    "additionalContextFiles": [
+      "CONTEXT.md",
+      "AGENTS.md",
+      "README.md"
+    ]
+  }
+}

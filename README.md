@@ -12,17 +12,17 @@ Register Interlocutor with dependency injection and configure pipeline behaviors
 
 ```csharp
 // Startup.cs or Program.cs
-services.AddInterlocutor(typeof(Program).Assembly);  // Auto-scan and register all handlers
+services.AddInterlocutor(builder =>
+{
+    builder.ScanAssembly(typeof(Program).Assembly);   // Auto-scan and register all handlers
 
-// Optional: add built-in pipeline behaviors (in recommended order)
-services.AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
-services.AddScoped(typeof(IPipelineBehavior<,>), typeof(AuditingBehavior<,>));
-services.AddScoped(typeof(IPipelineBehavior<,>), typeof(AuthorizationBehavior<,>));
-services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
-services.AddScoped(typeof(IPipelineBehavior<,>), typeof(TransactionBehavior<,,>));
+    // The pipeline is empty by default (see ADR-0009) — add exactly the behaviors you want,
+    // in the order you want them to run, or opt into the library's documented recommended
+    // chain (Logging → Auditing → Authorization → Validation → Transaction) as a single call:
+    builder.UseRecommendedChain();
+});
 
-// Optional: configure which DI container to use
-// For Autofac: services.AddInterlocutor(config => config.UseAutofac(containerBuilder));
+// For Autofac: containerBuilder.AddInterlocutor(builder => builder.ScanAssembly(typeof(Program).Assembly));
 ```
 
 ### Define and Send Requests
@@ -220,7 +220,7 @@ Why this order:
 services.AddSingleton<IResponseOutcomeDescriber, PaymentOutcomeDescriber>();
 ```
 
-`AuthorizationBehavior<TRequest, TSuccess>` and `ValidationBehavior<TRequest, TSuccess>` are constrained to the concrete shapes `OperationOutcome<TSuccess, Forbidden>` and `OperationOutcome<TSuccess, ValidationFailed>` respectively — a short-circuiting behavior has to construct its failure case without knowing the handler's response shape in general, so it's opt-in *and* only usable when the response shape matches. Handlers with a different response shape (a custom union, or a wider multi-arity `OperationOutcome<...>`) need a bespoke behavior instead.
+`AuthorizationBehavior<TRequest, TResponse>` and `ValidationBehavior<TRequest, TResponse>` constrain `TResponse` only to `IOperationOutcome` — a short-circuiting behavior has to construct its failure case (`Forbidden` or `ValidationErrors`) without knowing the handler's response shape at compile time, so it does so reflectively, via the constructor the union feature generates for that case type. This makes both behaviors usable with any `OperationOutcome<...>` response, but only meaningfully: if `TResponse` has no `Forbidden`/`ValidationErrors` case at all, the behavior throws a named `InvalidOperationException` the first time it actually needs to short-circuit — a request declaring `IRequiresPolicy` (or one behind `ValidationBehavior`) still needs a response shape that can express the denial.
 
 ## Publishing Notifications
 
@@ -420,7 +420,7 @@ Inject only what you need:
 
 - Handlers are registered as singletons (stateless) when possible, otherwise as scoped/transient per your registration.
 - Pipeline behaviors are scoped to the request by default.
-- Use `AddInterlocutor(Type)` for single-assembly registration or `AddInterlocutorFromEntryAssembly()` to scan from the entry point.
+- Use `builder.ScanAssembly(...)` / `ScanAssemblyContaining<T>()` / `ScanEntryAssembly()` inside `AddInterlocutor(Action<InterlocutorBuilder>)` to control which assemblies are scanned.
 - For large request volumes, consider disabling logging/auditing behaviors or implementing conditional registration.
 
 ## Links

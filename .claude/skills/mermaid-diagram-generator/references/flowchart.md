@@ -1,0 +1,113 @@
+---
+diagram: Flowchart
+slug: flowchart
+status: stable
+mermaid_version_introduced: "long-standing (pre-v10)"
+mermaid_version_verified: "11.16.1"
+keyword: flowchart
+source: https://mermaid.js.org/syntax/flowchart.html
+last_verified: 2026-08-09
+plugin_required: false
+gitlab_compatible: true
+---
+
+# Flowchart
+
+> **Status:** Stable - introduced long-standing (pre-v10).
+
+## Overview
+A flowchart models a process, algorithm, or decision path as a directed graph of labeled nodes connected by edges. Node shape conveys semantic meaning (a diamond for a decision, a rectangle for a step, a cylinder for storage, etc.), and edges carry optional labels and line styles that describe the relationship or condition governing the move from one node to the next. The core mental model is simply "boxes and arrows: what happens, and what happens next."
+
+## Best-fit uses
+- Documenting a process, algorithm, or decision tree step by step
+- Visualizing branching logic with clear yes/no or multi-way decision points
+- Diagramming data or control flow between system components using labeled edges
+- Grouping related steps into logical clusters with subgraphs
+
+## When NOT to use this
+- Ordered messages exchanged between actors over time - see `sequence.md` instead.
+- An object's internal lifecycle and valid state transitions - see `state.md` instead.
+- Static class/type structure and relationships - see `class.md` instead.
+
+## Basic syntax
+- Start keyword: `flowchart` (preferred) or the legacy alias `graph`.
+- Direction (immediately after the keyword): `TB`/`TD` (top-down), `BT` (bottom-up), `LR` (left-right), `RL` (right-left).
+- Node shapes: `A[text]` rectangle, `A(text)` rounded, `A([text])` stadium, `A[[text]]` subroutine, `A[(text)]` cylinder, `A((text))` circle, `A(((text)))` double circle, `A{text}` diamond/decision, `A{{text}}` hexagon, `A>text]` flag/asymmetric, `A[/text/]` / `A[\text\]` parallelogram, `A[/text\]` / `A[\text/]` trapezoid.
+- Edges: `-->` arrow, `---` open line, `==>` thick arrow, `===` thick open line, `-.->` dotted arrow, `-.-` dotted open line, `--o` circle-tip, `--x` cross-tip, `<-->` bidirectional, `~~~` invisible link.
+- Edge label: `A -->|label| B` or `A -- label --> B`.
+- Subgraph: `subgraph id [title]` ... `end`.
+- Styling: `style nodeId fill:#f9f,stroke:#333`; reusable classes via `classDef name fill:#f9f`, applied with `class nodeId name` or the shorthand `nodeId:::name`.
+- Interactivity: `click nodeId "https://url" "tooltip"` or `click nodeId call fn() "tooltip"` (requires `securityLevel: loose`).
+- Comments: `%% comment text` on its own line.
+
+## Simple example
+```mermaid
+flowchart TD
+    A[Start] --> B{Is it valid?}
+    B -->|Yes| C[Process data]
+    B -->|No| D[Reject input]
+    C --> E[End]
+    D --> E
+```
+`B` is a decision diamond; the two labeled edges (`Yes`/`No`) branch to different nodes, and both branches converge back on `E`.
+
+## Complex example
+```mermaid
+flowchart LR
+    classDef warn fill:#ffefc2,stroke:#c98a00,stroke-width:2px;
+    classDef ok fill:#d8f5d0,stroke:#2f9e44,stroke-width:2px;
+
+    Start([Request received]) --> Validate{Valid payload?}
+    Validate -->|No| Reject[[Return 400]]:::warn
+    Validate -->|Yes| Auth
+
+    subgraph AuthFlow ["Authentication"]
+        direction TB
+        Auth{Has token?} -->|No| Login[Redirect to login]
+        Auth -->|Yes| Verify[(Check token store)]
+        Verify -->|Invalid| Login
+        Verify -->|Valid| Grant[Grant access]
+    end
+
+    Login --> End1([End: Unauthorized]):::warn
+    Grant --> Process[Process request]
+    Process --> Persist[(Write to DB)]
+    Persist --> Notify{{Notify subscribers}}
+    Notify --> Done([Done]):::ok
+
+    click Process "https://example.com/docs/process" "View process docs"
+
+    style Start fill:#e7f0ff,stroke:#2b6cb0
+    linkStyle 0 stroke:#888,stroke-width:2px
+```
+`classDef` declares reusable style classes applied via `:::`; `subgraph AuthFlow` groups related nodes and sets its own internal `direction`; `click` attaches interactivity (only rendered live under `securityLevel: loose`); `linkStyle 0` targets the first edge by declaration index.
+
+## Escaping & special characters
+- Wrap label text in double quotes when it contains characters Mermaid would otherwise parse as syntax, e.g. `A["Value (raw)"]`.
+- Use HTML entity codes for punctuation that collides with node/edge delimiters, e.g. `#35;` for `#`, `#quot;` for `"`.
+- Angle brackets `<` `>` inside labels should be quoted or entity-encoded (`&lt;` `&gt;`) so they aren't read as markup.
+- `|` is reserved as the edge-label delimiter - quote any label text that must contain a literal pipe.
+- `(` and `)` are node-shape delimiters - quote the whole label if it needs literal parentheses.
+- Never let a literal triple-backtick sequence appear inside label text; if a label must show one, quote the label and bump the *outer* fence wrapping this whole mermaid block to four backticks.
+
+## Common pitfalls
+- Using lowercase `end` as a bare node id/label - it's the reserved subgraph-closing token; capitalize as `End`/`END` or quote it.
+- A node id starting with `o` or `x` directly followed by an edge that also starts with `o`/`x` can be misparsed as an edge decorator - add a space or capitalize.
+- Mixing arrow lengths inconsistently, e.g. `--->` (three dashes) is not a valid arrow token.
+- Forgetting the closing `end` for every opened `subgraph`.
+- Unquoted labels containing `()`, `[]`, `{}`, or `|` that collide with shape/link delimiters.
+- Redeclaring the same node id with a different shape later in the file - the first-seen shape wins and later shape declarations are ignored.
+
+## Beta/experimental caveats
+N/A - stable diagram type, no known compatibility caveats. The newer unified `@{ shape: ... }` node syntax (v11.3.0+) is an additive alternative, not a breaking change to the classic shape tokens above.
+
+## Platform compatibility
+
+**GitLab:** Likely compatible - GitLab.com documents supporting Mermaid version 10 (checked 2026-08-15, [source](https://docs.gitlab.com/user/markdown/#diagrams-and-flowcharts)), and this type was introduced in a pre-v10 release, at or before that line. GitLab's pinned version moves independently of this skill - reconfirm against the source before depending on it for anything long-lived.
+
+**GitHub:** Unconfirmed either way - GitHub's own docs don't publish an exhaustive list of supported Mermaid diagram types (they name "flowcharts, sequence diagrams, pie charts and more" as examples, not a complete list), and community reports on which newer types render are inconsistent/contradictory. Don't promise this type renders on GitHub without testing it there directly (e.g. a scratch gist or PR comment).
+
+**VS Code / Obsidian / Notion / similar:** Depends entirely on that specific tool's own bundled or extension-provided Mermaid version, which updates independently of this skill's pin and of every other tool in this list - there is no single answer here. As a stable, long-established diagram type, editor/notes-app Mermaid bundles are more likely (but not guaranteed) to be current enough to support it. Confirm in the specific target tool before relying on this type there.
+
+## Further reading
+- https://mermaid.js.org/syntax/flowchart.html

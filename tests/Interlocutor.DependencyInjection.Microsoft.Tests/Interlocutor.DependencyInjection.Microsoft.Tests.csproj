@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="..\..\src\Interlocutor.DependencyInjection.Microsoft\Interlocutor.DependencyInjection.Microsoft.csproj" />
+    <!-- Referenced so a real ValidationBehavior resolution can be proven through a built ServiceProvider,
+         not only a registration-list check — see BehaviorSubsetConstraintTests. -->
+    <ProjectReference Include="..\..\src\Interlocutor.FluentValidation\Interlocutor.FluentValidation.csproj" />
   </ItemGroup>
 
   <ItemGroup>

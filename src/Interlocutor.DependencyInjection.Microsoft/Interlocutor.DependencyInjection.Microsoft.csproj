@@ -5,6 +5,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Interlocutor.Abstractions\Interlocutor.Abstractions.csproj" />
+    <ProjectReference Include="..\Interlocutor.DependencyInjection.Abstractions\Interlocutor.DependencyInjection.Abstractions.csproj" />
   </ItemGroup>
 
   <ItemGroup>

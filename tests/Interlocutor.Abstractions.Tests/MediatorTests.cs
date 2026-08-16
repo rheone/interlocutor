@@ -10,18 +10,20 @@ using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 using Microsoft.Extensions.DependencyInjection;
 
-public record TestQuery(int Value) : IQuery<int>;
+public record TestQuery(int Value) : IQuery<OperationOutcome<int, Failure>>;
 
-public class TestQueryHandler : IQueryHandler<TestQuery, int>
+public class TestQueryHandler : IQueryHandler<TestQuery, OperationOutcome<int, Failure>>
 {
-    public Task<int> Handle(TestQuery query, CancellationToken ct) => Task.FromResult(query.Value * 2);
+    public Task<OperationOutcome<int, Failure>> Handle(TestQuery query, CancellationToken ct) =>
+        Task.FromResult(new OperationOutcome<int, Failure>(query.Value * 2));
 }
 
-public record GreetCommand(string PersonName) : ICommand<string>;
+public record GreetCommand(string PersonName) : ICommand<OperationOutcome<string, Failure>>;
 
-public class GreetCommandHandler : ICommandHandler<GreetCommand, string>
+public class GreetCommandHandler : ICommandHandler<GreetCommand, OperationOutcome<string, Failure>>
 {
-    public Task<string> Handle(GreetCommand command, CancellationToken ct) => Task.FromResult($"Hello {command.PersonName}");
+    public Task<OperationOutcome<string, Failure>> Handle(GreetCommand command, CancellationToken ct) =>
+        Task.FromResult(new OperationOutcome<string, Failure>($"Hello {command.PersonName}"));
 }
 
 public record TestVoidCommand(string Value) : ICommand;
@@ -51,7 +53,7 @@ public class MediatorTests
         var mediator = CreateMediator<TestQueryHandler>(services => { });
         var result = await mediator.Send(new TestQuery(21), CancellationToken.None);
 
-        Assert.Equal(42, result);
+        Assert.Equal(42, result.Value);
     }
 
     [Fact]
@@ -60,8 +62,8 @@ public class MediatorTests
         var invoked = false;
         var mediator = CreateMediator<TestQueryHandler>(services =>
         {
-            services.AddSingleton<IPipelineBehavior<TestQuery, int>>(
-                new TrackingBehavior<TestQuery, int>(() => invoked = true)
+            services.AddSingleton<IPipelineBehavior<TestQuery, OperationOutcome<int, Failure>>>(
+                new TrackingBehavior<TestQuery, OperationOutcome<int, Failure>>(() => invoked = true)
             );
         });
 
@@ -75,8 +77,8 @@ public class MediatorTests
         var invoked = false;
         var mediator = CreateMediator<GreetCommandHandler>(services =>
         {
-            services.AddSingleton<IPipelineBehavior<GreetCommand, string>>(
-                new TrackingBehavior<GreetCommand, string>(() => invoked = true)
+            services.AddSingleton<IPipelineBehavior<GreetCommand, OperationOutcome<string, Failure>>>(
+                new TrackingBehavior<GreetCommand, OperationOutcome<string, Failure>>(() => invoked = true)
             );
         });
 
@@ -190,11 +192,11 @@ public class MediatorTests
 
         if (typeof(THandler) == typeof(TestQueryHandler))
         {
-            services.AddSingleton<IQueryHandler<TestQuery, int>, TestQueryHandler>();
+            services.AddSingleton<IQueryHandler<TestQuery, OperationOutcome<int, Failure>>, TestQueryHandler>();
         }
         else if (typeof(THandler) == typeof(GreetCommandHandler))
         {
-            services.AddSingleton<ICommandHandler<GreetCommand, string>, GreetCommandHandler>();
+            services.AddSingleton<ICommandHandler<GreetCommand, OperationOutcome<string, Failure>>, GreetCommandHandler>();
         }
         else if (typeof(THandler) == typeof(TestVoidHandler))
         {

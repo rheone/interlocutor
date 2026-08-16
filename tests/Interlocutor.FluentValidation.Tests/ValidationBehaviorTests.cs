@@ -11,7 +11,7 @@ public class ValidationBehaviorTests
     public async Task NoValidators_PassesThrough()
     {
         var request = new TestRequest("Alice", 30);
-        var behavior = new ValidationBehavior<TestRequest, string>([]);
+        var behavior = new ValidationBehavior<TestRequest, OperationOutcome<string, ValidationErrors>>([]);
 
         var handlerInvoked = false;
         var next = async () =>
@@ -33,7 +33,7 @@ public class ValidationBehaviorTests
     {
         var request = new TestRequest("Alice", 30);
         var validators = new AbstractValidator<TestRequest>[] { new TestRequestNameValidator(), new TestRequestAgeValidator() };
-        var behavior = new ValidationBehavior<TestRequest, string>(validators);
+        var behavior = new ValidationBehavior<TestRequest, OperationOutcome<string, ValidationErrors>>(validators);
 
         var handlerInvoked = false;
         var next = async () =>
@@ -55,7 +55,7 @@ public class ValidationBehaviorTests
     {
         var request = new TestRequest(string.Empty, 30);
         var validators = new AbstractValidator<TestRequest>[] { new TestRequestNameValidator() };
-        var behavior = new ValidationBehavior<TestRequest, string>(validators);
+        var behavior = new ValidationBehavior<TestRequest, OperationOutcome<string, ValidationErrors>>(validators);
 
         var handlerInvoked = false;
         var next = async () =>
@@ -77,7 +77,7 @@ public class ValidationBehaviorTests
     {
         var request = new TestRequest("Al", -5);
         var validators = new AbstractValidator<TestRequest>[] { new TestRequestNameValidator(), new TestRequestAgeValidator() };
-        var behavior = new ValidationBehavior<TestRequest, string>(validators);
+        var behavior = new ValidationBehavior<TestRequest, OperationOutcome<string, ValidationErrors>>(validators);
 
         var next = async () =>
         {
@@ -104,7 +104,7 @@ public class ValidationBehaviorTests
         var validator1 = new TestRequestNameValidator();
         var validator2 = new TestRequestNameValidator(); // Same validator twice
         var validators = new AbstractValidator<TestRequest>[] { validator1, validator2 };
-        var behavior = new ValidationBehavior<TestRequest, string>(validators);
+        var behavior = new ValidationBehavior<TestRequest, OperationOutcome<string, ValidationErrors>>(validators);
 
         var next = async () =>
         {
@@ -122,4 +122,24 @@ public class ValidationBehaviorTests
         Assert.Single(messages, m => m == "Name is required");
     }
 
+    [Fact]
+    public async Task FailingValidation_WithResponseTypeThatHasNoValidationErrorsCase_ThrowsNamedException()
+    {
+        // TResponse is no longer decomposed at compile time into a success-type parameter with
+        // ValidationErrors pinned as the failure case — it's an arbitrary IOperationOutcome the caller
+        // chose, constructed reflectively from a ValidationErrors case constructor when validation fails.
+        // A response shape with no such case can't express "failed validation" at all, so it must fail
+        // loudly and specifically rather than silently succeeding or crashing obscurely.
+        var request = new TestRequest(string.Empty, 30);
+        var validators = new AbstractValidator<TestRequest>[] { new TestRequestNameValidator() };
+        var behavior = new ValidationBehavior<TestRequest, OperationOutcome<string, Failure>>(validators);
+
+        var next = () => Task.FromResult<OperationOutcome<string, Failure>>("unreachable");
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            behavior.Handle(request, next, CancellationToken.None)
+        );
+
+        Assert.Contains("ValidationErrors", ex.Message);
+    }
 }

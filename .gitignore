@@ -85,8 +85,15 @@ docker-data/
 # Husky
 .husky/_/
 
-.agents/
-.claude/
+# Claude Code & Agents configuration (track config, ignore personal/runtime)
+# Personal settings overrides:
+.claude/settings.local.json
+# Development worktrees (auto-managed):
+.claude/worktrees/
+# Runtime caches:
+.claude/.claude-runtime/
+# Agent worktrees (auto-managed):
+.agents/worktrees/
 
 # Local configuration overrides (git-ignored, developer-specific)
 appsettings.Local.json

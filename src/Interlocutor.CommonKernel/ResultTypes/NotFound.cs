@@ -8,7 +8,6 @@ namespace Interlocutor.CommonKernel.ResultTypes;
 /// <para>
 /// Use <see cref="NotFound"/> as a result case when a handler's core operation depends on a resource that doesn't exist.
 /// This is the outcome case for queries/commands that try to load or modify an entity by ID that's not found.
-/// In HTTP, this maps to a 404 status code.
 /// </para>
 /// <para>
 /// Provide a message like <c>"User with ID 42 was not found"</c> for better debugging. If you need to track the

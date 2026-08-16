@@ -2,11 +2,9 @@ namespace Interlocutor.DependencyInjection.Autofac.Tests;
 
 using global::Autofac;
 using Interlocutor.Abstractions;
-using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
-using Interlocutor.Abstractions.Notifications;
 using Interlocutor.Abstractions.Pipeline;
-using Interlocutor.Abstractions.Queries;
+using Interlocutor.Abstractions.Pipeline.Classifiers;
 using Interlocutor.DependencyInjection.Autofac;
 
 public class ContainerBuilderExtensionsTests
@@ -15,7 +13,7 @@ public class ContainerBuilderExtensionsTests
     public void AddInterlocutor_RegistersMediator()
     {
         var builder = new ContainerBuilder();
-        builder.AddInterlocutor(typeof(ContainerBuilderExtensionsTests).Assembly);
+        builder.AddInterlocutor(cfg => cfg.ScanAssembly(typeof(ContainerBuilderExtensionsTests).Assembly));
         var container = builder.Build();
 
         var mediator = container.ResolveOptional<IMediator>();
@@ -23,16 +21,13 @@ public class ContainerBuilderExtensionsTests
     }
 
     [Fact]
-    public void AddInterlocutor_WithOptions_RegistersBehaviors()
+    public void UseRecommendedChain_RegistersBehaviors()
     {
         var builder = new ContainerBuilder();
-        var options = new InterlocutorOptions
-        {
-            AssembliesToScan = [typeof(ContainerBuilderExtensionsTests).Assembly],
-            EnableDefaultBehaviors = true,
-        };
 
-        builder.AddInterlocutor(options);
+        builder.AddInterlocutor(cfg =>
+            cfg.ScanAssembly(typeof(ContainerBuilderExtensionsTests).Assembly).UseRecommendedChain()
+        );
         var container = builder.Build();
 
         var mediator = container.ResolveOptional<IMediator>();
@@ -40,12 +35,15 @@ public class ContainerBuilderExtensionsTests
     }
 
     [Fact]
-    public void AddInterlocutor_WithOptions_RegistersOutcomeDescriber()
+    public void OverrideOutcomeDescriber_RegistersOutcomeDescriber()
     {
         var builder = new ContainerBuilder();
-        var options = new InterlocutorOptions { AssembliesToScan = [typeof(ContainerBuilderExtensionsTests).Assembly] };
+        builder.RegisterInstance(OutcomeClassifierBuilder.DefaultClassifier).As<IOutcomeClassifier>();
 
-        builder.AddInterlocutor(options);
+        builder.AddInterlocutor(cfg =>
+            cfg.ScanAssembly(typeof(ContainerBuilderExtensionsTests).Assembly)
+                .OverrideOutcomeDescriber<DefaultResponseOutcomeDescriber>()
+        );
         var container = builder.Build();
 
         var describer = container.ResolveOptional<IResponseOutcomeDescriber>();

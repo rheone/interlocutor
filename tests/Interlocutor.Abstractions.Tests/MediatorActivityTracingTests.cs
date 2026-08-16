@@ -1,0 +1,304 @@
+namespace Interlocutor.Abstractions.Tests;
+
+using System.Collections.Concurrent;
+using System.Diagnostics;
+using Interlocutor.Abstractions.Commands;
+using Interlocutor.Abstractions.Core;
+using Interlocutor.Abstractions.Diagnostics;
+using Interlocutor.Abstractions.Notifications;
+using Interlocutor.Abstractions.Pipeline;
+using Interlocutor.Abstractions.Queries;
+using Interlocutor.CommonKernel;
+using Interlocutor.CommonKernel.ResultTypes;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+/// <summary>Covers ticket 15's acceptance criteria for <see cref="Mediator"/>'s built-in activity tracing.</summary>
+/// <remarks>
+/// <c>MediatorActivitySource.Source</c> is a single process-wide <see cref="ActivitySource"/>, so an
+/// <see cref="ActivityListener"/> attached in one test observes every mediator dispatch happening anywhere in the
+/// process, including other tests running concurrently. Each test below therefore dispatches request types unique
+/// to itself and filters the captured activities down to the ones tagged with that exact request type, rather than
+/// assuming the listener saw only its own dispatch.
+/// </remarks>
+public class MediatorActivityTracingTests
+{
+    [Fact]
+    public async Task Send_Query_WithListener_StartsActivityTaggedWithRequestAndHandlerType()
+    {
+        var captured = new ConcurrentBag<Activity>();
+        using var listener = CreateListener(captured);
+        ActivitySource.AddActivityListener(listener);
+
+        var mediator = CreateMediator();
+        await mediator.Send(new TracingSuccessQuery(21), CancellationToken.None);
+
+        var activity = SingleFor<TracingSuccessQuery>(captured);
+        Assert.Equal(typeof(TracingSuccessQueryHandler).FullName, activity.GetTagItem(MediatorActivitySource.HandlerTypeTag));
+
+        // The classifier (the same one LoggingBehavior uses) labels an int-payload success by its runtime type,
+        // not literally "Success" — that label is reserved for the Success marker type itself (covered below).
+        Assert.Equal("Int32", activity.GetTagItem(MediatorActivitySource.OutcomeTag));
+        Assert.Equal(ActivityStatusCode.Unset, activity.Status);
+    }
+
+    [Fact]
+    public async Task Send_VoidCommand_WithSuccessOutcome_TagsOutcomeAsSuccess()
+    {
+        var captured = new ConcurrentBag<Activity>();
+        using var listener = CreateListener(captured);
+        ActivitySource.AddActivityListener(listener);
+
+        var services = new ServiceCollection();
+        services.AddSingleton<IVoidCommandHandler<TracingSuccessCommand, OperationOutcome>, TracingSuccessCommandHandler>();
+        services.AddSingleton<IMediator, Mediator>();
+        var provider = services.BuildServiceProvider();
+        var mediator = provider.GetRequiredService<IMediator>();
+
+        await mediator.Send<OperationOutcome>(new TracingSuccessCommand(), CancellationToken.None);
+
+        var activity = SingleFor<TracingSuccessCommand>(captured);
+        Assert.Equal(typeof(TracingSuccessCommandHandler).FullName, activity.GetTagItem(MediatorActivitySource.HandlerTypeTag));
+        Assert.Equal("Success", activity.GetTagItem(MediatorActivitySource.OutcomeTag));
+        Assert.Equal(ActivityStatusCode.Unset, activity.Status);
+    }
+
+    [Fact]
+    public async Task Send_Query_WithFailureOutcome_TagsOutcomeWithoutErrorStatus()
+    {
+        var captured = new ConcurrentBag<Activity>();
+        using var listener = CreateListener(captured);
+        ActivitySource.AddActivityListener(listener);
+
+        var mediator = CreateMediator();
+        await mediator.Send(new TracingFailingQuery(), CancellationToken.None);
+
+        var activity = SingleFor<TracingFailingQuery>(captured);
+        Assert.Equal("Failure", activity.GetTagItem(MediatorActivitySource.OutcomeTag));
+        Assert.NotEqual(ActivityStatusCode.Error, activity.Status);
+    }
+
+    [Fact]
+    public async Task Send_Query_WhenHandlerThrows_RecordsErrorStatusAndStillStopsActivity()
+    {
+        var captured = new ConcurrentBag<Activity>();
+        using var listener = CreateListener(captured);
+        ActivitySource.AddActivityListener(listener);
+
+        var mediator = CreateMediator();
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            mediator.Send(new TracingThrowingQuery(), CancellationToken.None)
+        );
+
+        var activity = SingleFor<TracingThrowingQuery>(captured);
+        Assert.Equal(ActivityStatusCode.Error, activity.Status);
+
+        // ActivityStopped only fires once the activity has been stopped/disposed, so its being observed here at
+        // all proves it was stopped even though the dispatch threw.
+        Assert.True(activity.Duration >= TimeSpan.Zero);
+    }
+
+    [Fact]
+    public async Task Send_NestedDispatch_ChildActivityParentsToOuterActivity()
+    {
+        var captured = new ConcurrentBag<Activity>();
+        using var listener = CreateListener(captured);
+        ActivitySource.AddActivityListener(listener);
+
+        var services = new ServiceCollection();
+        services.AddSingleton<IQueryHandler<TracingOuterQuery, OperationOutcome<int, Failure>>, TracingOuterQueryHandler>();
+        services.AddSingleton<IQueryHandler<TracingInnerQuery, OperationOutcome<int, Failure>>, TracingInnerQueryHandler>();
+        services.AddSingleton<IMediator, Mediator>();
+        var provider = services.BuildServiceProvider();
+        var mediator = provider.GetRequiredService<IMediator>();
+
+        await mediator.Send(new TracingOuterQuery(), CancellationToken.None);
+
+        var outer = SingleFor<TracingOuterQuery>(captured);
+        var inner = SingleFor<TracingInnerQuery>(captured);
+        Assert.Equal(outer.Id, inner.ParentId);
+    }
+
+    [Fact]
+    public async Task Publish_WithListener_StartsActivityTaggedWithRequestAndHandlerTypes()
+    {
+        var captured = new ConcurrentBag<Activity>();
+        using var listener = CreateListener(captured);
+        ActivitySource.AddActivityListener(listener);
+
+        var services = new ServiceCollection();
+        services.AddSingleton<INotificationHandler<TracingNotification>>(new TracingNotificationHandler(() => { }));
+        services.AddSingleton<IMediator, Mediator>();
+        var provider = services.BuildServiceProvider();
+        var mediator = provider.GetRequiredService<IMediator>();
+
+        await mediator.Publish(new TracingNotification("hi"), CancellationToken.None);
+
+        var activity = SingleFor<TracingNotification>(captured);
+        Assert.Contains(
+            typeof(TracingNotificationHandler).FullName!,
+            (string?)activity.GetTagItem(MediatorActivitySource.HandlerTypeTag)
+        );
+    }
+
+    [Fact]
+    public async Task Send_Query_WithNoListener_ActivityCurrentStaysNull()
+    {
+        // No ActivityListener attached to MediatorActivitySource.Name — the mechanism's built-in cheap path.
+        var mediator = CreateMediator();
+
+        await mediator.Send(new TracingSuccessQuery(21), CancellationToken.None);
+
+        Assert.Null(Activity.Current);
+    }
+
+    [Fact]
+    public async Task Send_Query_WithNoListener_HasListenersReturnsFalse()
+    {
+        var mediator = CreateMediator();
+
+        await mediator.Send(new TracingSuccessQuery(21), CancellationToken.None);
+
+        // Nothing in this test attached an ActivityListener to MediatorActivitySource.Name, so the source itself
+        // reports no listeners — the condition StartActivity checks internally to short-circuit before any
+        // allocation or string formatting happens.
+        using var probe = new ActivitySource(MediatorActivitySource.Name);
+        Assert.False(probe.HasListeners());
+    }
+
+    [Fact]
+    public async Task Send_Query_WithLoggingBehaviorAlsoRegistered_BothMechanismsObserveTheDispatchIndependently()
+    {
+        // MediatorActivitySource-based tracing lives in Mediator itself; LoggingBehavior is a separate, opt-in
+        // IPipelineBehavior with its own ILogger-based mechanism. Neither shares state with the other, so
+        // registering both must not suppress or alter either one's output for the same dispatch.
+        var captured = new ConcurrentBag<Activity>();
+        using var listener = CreateListener(captured);
+        ActivitySource.AddActivityListener(listener);
+
+        var logger = new RecordingLogger<LoggingBehavior<TracingSuccessQuery, OperationOutcome<int, Failure>>>();
+
+        var services = new ServiceCollection();
+        services.AddSingleton<IQueryHandler<TracingSuccessQuery, OperationOutcome<int, Failure>>, TracingSuccessQueryHandler>();
+        services.AddSingleton<ILogger<LoggingBehavior<TracingSuccessQuery, OperationOutcome<int, Failure>>>>(logger);
+        services.AddSingleton<
+            IPipelineBehavior<TracingSuccessQuery, OperationOutcome<int, Failure>>,
+            LoggingBehavior<TracingSuccessQuery, OperationOutcome<int, Failure>>
+        >();
+        services.AddSingleton<IMediator, Mediator>();
+        var provider = services.BuildServiceProvider();
+        var mediator = provider.GetRequiredService<IMediator>();
+
+        await mediator.Send(new TracingSuccessQuery(21), CancellationToken.None);
+
+        // The Activity-based tracing still fired, tagged as normal...
+        var activity = SingleFor<TracingSuccessQuery>(captured);
+        Assert.Equal(typeof(TracingSuccessQueryHandler).FullName, activity.GetTagItem(MediatorActivitySource.HandlerTypeTag));
+
+        // ...and LoggingBehavior independently logged the same dispatch, unaffected by the activity's presence.
+        Assert.True(logger.LoggedAnything);
+    }
+
+    private static Activity SingleFor<TRequest>(ConcurrentBag<Activity> captured) =>
+        Assert.Single(captured, a => (string?)a.GetTagItem(MediatorActivitySource.RequestTypeTag) == typeof(TRequest).FullName);
+
+    private static ActivityListener CreateListener(ConcurrentBag<Activity> captured) =>
+        new()
+        {
+            ShouldListenTo = source => source.Name == MediatorActivitySource.Name,
+            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+            ActivityStopped = activity => captured.Add(activity),
+        };
+
+    private static IMediator CreateMediator()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<IQueryHandler<TracingSuccessQuery, OperationOutcome<int, Failure>>, TracingSuccessQueryHandler>();
+        services.AddSingleton<IQueryHandler<TracingFailingQuery, OperationOutcome<int, Failure>>, TracingFailingQueryHandler>();
+        services.AddSingleton<
+            IQueryHandler<TracingThrowingQuery, OperationOutcome<int, Failure>>,
+            TracingThrowingQueryHandler
+        >();
+        services.AddSingleton<IMediator, Mediator>();
+        var provider = services.BuildServiceProvider();
+        return provider.GetRequiredService<IMediator>();
+    }
+}
+
+public record TracingSuccessQuery(int Value) : IQuery<OperationOutcome<int, Failure>>;
+
+public class TracingSuccessQueryHandler : IQueryHandler<TracingSuccessQuery, OperationOutcome<int, Failure>>
+{
+    public Task<OperationOutcome<int, Failure>> Handle(TracingSuccessQuery query, CancellationToken ct) =>
+        Task.FromResult(new OperationOutcome<int, Failure>(query.Value * 2));
+}
+
+public record TracingFailingQuery : IQuery<OperationOutcome<int, Failure>>;
+
+public class TracingFailingQueryHandler : IQueryHandler<TracingFailingQuery, OperationOutcome<int, Failure>>
+{
+    public Task<OperationOutcome<int, Failure>> Handle(TracingFailingQuery query, CancellationToken ct) =>
+        Task.FromResult(new OperationOutcome<int, Failure>(new Failure("boom")));
+}
+
+public record TracingThrowingQuery : IQuery<OperationOutcome<int, Failure>>;
+
+public class TracingThrowingQueryHandler : IQueryHandler<TracingThrowingQuery, OperationOutcome<int, Failure>>
+{
+    public Task<OperationOutcome<int, Failure>> Handle(TracingThrowingQuery query, CancellationToken ct) =>
+        throw new InvalidOperationException("handler bug");
+}
+
+public record TracingOuterQuery : IQuery<OperationOutcome<int, Failure>>;
+
+public class TracingOuterQueryHandler(IMediator mediator) : IQueryHandler<TracingOuterQuery, OperationOutcome<int, Failure>>
+{
+    public async Task<OperationOutcome<int, Failure>> Handle(TracingOuterQuery query, CancellationToken ct) =>
+        await mediator.Send(new TracingInnerQuery(), ct);
+}
+
+public record TracingInnerQuery : IQuery<OperationOutcome<int, Failure>>;
+
+public class TracingInnerQueryHandler : IQueryHandler<TracingInnerQuery, OperationOutcome<int, Failure>>
+{
+    public Task<OperationOutcome<int, Failure>> Handle(TracingInnerQuery query, CancellationToken ct) =>
+        Task.FromResult(new OperationOutcome<int, Failure>(1));
+}
+
+public record TracingSuccessCommand : ICommand;
+
+public class TracingSuccessCommandHandler : IVoidCommandHandler<TracingSuccessCommand, OperationOutcome>
+{
+    public Task<OperationOutcome> Handle(TracingSuccessCommand command, CancellationToken ct) =>
+        Task.FromResult(new OperationOutcome(default(Success)));
+}
+
+public record TracingNotification(string Message) : INotification;
+
+public class TracingNotificationHandler(Action action) : INotificationHandler<TracingNotification>
+{
+    public Task Handle(TracingNotification notification, CancellationToken ct)
+    {
+        action();
+        return Task.CompletedTask;
+    }
+}
+
+/// <summary>Minimal <see cref="ILogger{TCategoryName}"/> stub that only records whether it was ever called.</summary>
+public sealed class RecordingLogger<T> : ILogger<T>
+{
+    public bool LoggedAnything { get; private set; }
+
+    public IDisposable? BeginScope<TState>(TState state)
+        where TState : notnull => null;
+
+    public bool IsEnabled(LogLevel logLevel) => true;
+
+    public void Log<TState>(
+        LogLevel logLevel,
+        EventId eventId,
+        TState state,
+        Exception? exception,
+        Func<TState, Exception?, string> formatter
+    ) => this.LoggedAnything = true;
+}

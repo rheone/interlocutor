@@ -1,0 +1,152 @@
+---
+diagram: Swimlanes
+slug: swimlanes
+status: beta
+mermaid_version_introduced: "v11.16.0"
+mermaid_version_verified: "11.16.1"
+keyword: swimlane-beta
+source: https://mermaid.js.org/syntax/swimlanes.html
+last_verified: 2026-08-09
+plugin_required: false
+gitlab_compatible: false
+---
+
+# Swimlanes
+
+> **Status:** Beta - introduced v11.16.0. Syntax may evolve; treat generated diagrams of this type as more likely to need adjustment than stable types.
+
+## Overview
+A swimlane diagram is a process flow where each top-level lane is explicitly owned by an actor, team, system, or phase, and nodes/edges show work moving within and across those lanes. It reuses flowchart node-shape and edge syntax internally, so if you already know flowchart notation there's almost nothing new to learn - the only new concept is that top-level `subgraph` blocks are the lanes themselves, rendered side-by-side (or stacked) rather than as nested boxes.
+
+## Best-fit uses
+- Showing a process where "who owns this step" matters as much as "what happens next"
+- Approval flows, support/escalation processes, and delivery workflows that cross team or system boundaries
+- Highlighting cross-lane handoffs (e.g. labeling the arrow where a document or decision passes from one owner to another)
+
+## When NOT to use this
+- Ownership/lane grouping isn't the point and you only need sequence or branching - a plain `flowchart.md` (optionally with subgraphs for light grouping) is simpler and more mature
+- The focus is on timed messages passing between a fixed set of participants - use `sequence.md`
+- The focus is how a single entity changes state over time rather than who does the work - use `state.md`
+
+## Basic syntax
+A diagram starts with the `swimlane-beta` keyword, optionally followed by a direction:
+```
+swimlane-beta LR
+```
+Supported directions: `TB` (default if omitted), `TD` (alias for `TB`), `BT`, `LR`, `RL`.
+
+**Lanes** - declared with `subgraph`, closed with `end`. Every top-level `subgraph` becomes a rendered lane:
+```
+subgraph Sales
+  lead[Qualify lead]
+end
+```
+A lane can have a separate internal id and display label - useful when the label needs spaces or you want a stable id for styling/linking:
+```
+subgraph sales [Sales team]
+  lead[Qualify lead]
+end
+```
+
+**Nodes** - flowchart-style shape syntax, id first, label inside the shape delimiters:
+
+| Syntax | Shape | Common use |
+|---|---|---|
+| `id[Text]` | Rectangle | Task or activity |
+| `id(Text)` | Rounded rectangle | Step or event |
+| `id([Text])` | Stadium | Start or end |
+| `id{Text}` | Decision | Branching question |
+| `id((Text))` | Circle | Connector or marker |
+
+For the full shape catalog (icons, images, markdown strings, classes) see `flowchart.md`.
+
+**Edges** - also flowchart-style, and can connect nodes within one lane or across lanes:
+
+| Syntax | Meaning |
+|---|---|
+| `A --> B` | Arrow |
+| `A --- B` | Line, no arrowhead |
+| `A -->\|Label\| B` | Arrow with label |
+| `A -.-> B` | Dotted arrow |
+| `A ==> B` | Thick arrow |
+
+**Accessibility** - `accTitle:` and `accDescr:` lines set an accessible title/description, same as other Mermaid diagram types.
+
+`classDef`/`class` styling (flowchart-style) is also supported for highlighting individual nodes.
+
+## Simple example
+```mermaid
+swimlane-beta LR
+  subgraph Customer
+    request[Request service]
+    receive[Receive update]
+  end
+
+  subgraph Support
+    triage[Triage request]
+    answer[Send answer]
+  end
+
+  request --> triage
+  triage -->|Known issue| answer
+  answer --> receive
+```
+Two lanes, `Customer` and `Support`, with a labeled cross-lane arrow marking the handoff point where triage resolves the request.
+
+## Complex example
+```mermaid
+swimlane-beta LR
+  accTitle: Loan application flow
+  accDescr: An applicant submits a request, a reviewer screens and decides, and the system creates the account on approval.
+
+  subgraph Applicant
+    apply[Submit application]
+    sign[Sign agreement]
+  end
+
+  subgraph reviewer [Review team]
+    screen[Screen application]
+    decide{Approved?}
+  end
+
+  subgraph System
+    create[Create account]
+    notify[Send welcome email]
+  end
+
+  apply -->|Application received| screen
+  screen --> decide
+  decide -->|Approved| create --> notify --> sign
+  decide -->|Needs changes| apply
+
+  classDef attention fill:#fff2cc,stroke:#d6a500,color:#111;
+  class decide attention;
+```
+Three lanes - one lane (`reviewer`) uses a separate internal id and display label, a decision node routes to two different outcomes with labeled edges, one outcome loops back to an earlier lane, and `classDef`/`class` highlight the decision node.
+
+## Escaping & special characters
+- Node and edge label quoting follows flowchart rules: wrap a label in double quotes if it contains characters like `[`, `]`, `(`, `)`, or `#` that would otherwise be parsed as shape/annotation syntax, e.g. `id["Cost: $500"]`.
+- A lane's display label (the bracketed part of `subgraph id [Label]`) follows the same quoting needs as a flowchart node label when it contains reserved characters.
+- Inside a ```` ```mermaid ```` fence in Markdown, keep the `subgraph ... end` block's indentation consistent - it's cosmetic (unlike TreeView/mindmap, structure comes from `subgraph`/`end` keywords, not indentation) but inconsistent indentation makes the source harder to review.
+
+## Common pitfalls
+- [ ] Did you use `swimlane-beta` (singular "swimlane"), not "swimlanes-beta"?
+- [ ] Is every lane a *top-level* `subgraph` - a `subgraph` nested inside another `subgraph` won't render as its own lane?
+- [ ] Does every `subgraph` have a matching `end`?
+- [ ] If a lane needs a label with spaces, did you give it an internal id (`subgraph id [Label with spaces]`) rather than putting spaces in the id itself?
+- [ ] Are cross-lane handoff arrows labeled where the handoff depends on a decision, document, or condition - unlabeled arrows read as "just sequence"?
+- [ ] Is a direction (`LR`/`TB`/etc.) chosen deliberately rather than left to default `TB`, since lane orientation strongly affects readability for wide processes?
+
+## Beta/experimental caveats
+Swimlanes is new as of v11.16.0; the source documentation itself carries an explicit warning that its syntax may evolve in future versions. Confirm the target Mermaid runtime is v11.16.0 or later before delivering a swimlane diagram - on older pinned versions this diagram type does not exist and will fail to parse. The doc's rendered examples use the "Neo" look and "Redux" theme, but that is cosmetic-only: swimlanes render fine under whatever look/theme is otherwise configured.
+
+## Platform compatibility
+
+**GitLab:** Likely *not* yet supported - GitLab.com documents supporting Mermaid version 10 (checked 2026-08-15, [source](https://docs.gitlab.com/user/markdown/#diagrams-and-flowcharts)), and this type was introduced in v11.16.0, after that line. GitLab's pinned version moves independently of this skill and may have caught up since - reconfirm against the source before assuming this is still accurate.
+
+**GitHub:** Unconfirmed either way - GitHub's own docs don't publish an exhaustive list of supported Mermaid diagram types (they name "flowcharts, sequence diagrams, pie charts and more" as examples, not a complete list), and community reports on which newer types render are inconsistent/contradictory. Don't promise this type renders on GitHub without testing it there directly (e.g. a scratch gist or PR comment).
+
+**VS Code / Obsidian / Notion / similar:** Depends entirely on that specific tool's own bundled or extension-provided Mermaid version, which updates independently of this skill's pin and of every other tool in this list - there is no single answer here. As a beta diagram type, editor/notes-app Mermaid bundles need to be relatively recent to support it - more likely to be missing on tools that update infrequently. Confirm in the specific target tool before relying on this type there.
+
+## Further reading
+- https://mermaid.js.org/syntax/swimlanes.html

@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Container-neutral dependency-injection registration abstractions for Interlocutor. Owns the neutral registration record that the Microsoft DI and Autofac packages translate into their own primitives.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Interlocutor.Abstractions\Interlocutor.Abstractions.csproj" />
+  </ItemGroup>
+</Project>
