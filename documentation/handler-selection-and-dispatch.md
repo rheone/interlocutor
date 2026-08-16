@@ -35,6 +35,21 @@ services.AddInterlocutor(builder =>
 
 Given a request, which handler runs? The rules are:
 
+```mermaid
+flowchart TD
+    Start["Dispatching a query/command"] --> Closed{"Any closed handler<br/>matches the request type?"}
+    Closed -->|"yes, exactly one"| UseClosed["Use that closed handler"]
+    Closed -->|"yes, more than one"| Ambiguous{"Does one handler declare<br/>&#91;OverridesHandler&#93; naming the other?"}
+    Closed -->|"no"| Open{"Any open generic<br/>handler matches?"}
+
+    Open -->|"yes, exactly one"| UseOpen["Use that open generic handler"]
+    Open -->|"yes, more than one"| Ambiguous
+    Open -->|"no"| NoHandler["No handler found:<br/>build diagnostic"]
+
+    Ambiguous -->|"yes"| UseOverride["Use the handler declaring the override"]
+    Ambiguous -->|"no"| BuildError["Build error: ambiguous handler match<br/>(namespace/assembly never break the tie)"]
+```
+
 ### Single Handler for Queries & Commands
 
 A query or command dispatch always resolves to **exactly one handler**. If more than one handler could serve the request, it's a build error.
@@ -211,6 +226,59 @@ public class DeleteDocumentHandler : ResourceCommandHandler<DeleteDocument, Docu
 ```
 
 Use non-resource authorization for coarse gating (role checks, feature flags). Use resource authorization for fine-grained access (ownership, entity state).
+
+The two models don't just check different things — they short-circuit at different points relative to the handler:
+
+```mermaid
+sequenceDiagram
+    participant Caller
+    participant Authorization as AuthorizationBehavior
+    participant Handler
+
+    Caller->>Authorization: dispatch(DeleteDocument)
+    activate Authorization
+    Authorization->>Authorization: evaluate policy "DeleteDocument"
+
+    alt policy denied
+        Authorization-->>Caller: Forbidden (short-circuit before Handler ever activates)
+    else policy allowed
+        Authorization->>Handler: next()
+        activate Handler
+        Handler-->>Authorization: outcome
+        deactivate Handler
+        Authorization-->>Caller: outcome
+    end
+    deactivate Authorization
+```
+
+Non-resource authorization runs and can deny *before the handler is ever reached* — the handler's lifeline never activates on the denied path.
+
+```mermaid
+sequenceDiagram
+    participant Caller
+    participant Handler as ResourceCommandHandler
+    participant Repo as Repository
+
+    Caller->>Handler: dispatch(DeleteDocument)
+    activate Handler
+    Handler->>Repo: LoadAsync(DocumentId)
+    Repo-->>Handler: entity or null
+
+    alt entity not found
+        Handler-->>Caller: NotFound (short-circuit before Authorize runs)
+    else entity found
+        Handler->>Handler: Authorize(entity, command)
+        alt authorization denied
+            Handler-->>Caller: Failure (short-circuit before HandleAsync runs)
+        else authorization allowed
+            Handler->>Handler: HandleAsync(command, entity)
+            Handler-->>Caller: Success
+        end
+    end
+    deactivate Handler
+```
+
+Resource authorization's short-circuit happens *inside* the handler's own template method, after it has already started (and already loaded the entity) — there's no separate outer behavior to skip.
 
 ## Notifications (Multiple Handlers Allowed)
 
