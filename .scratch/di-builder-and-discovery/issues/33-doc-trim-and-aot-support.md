@@ -1,3 +1,5 @@
+> **Amendment** — this ticket instructed citing ADR-0008 directly in the shipped `documentation/trim-and-aot-support.md` `## Links` list. That instruction is superseded: `documentation/` files must state design rationale as fact and must never cite or link to `docs/adr/`, `docs/PRD.md`, or other `docs/` paths — see the house convention added in ticket 36. The shipped file has been corrected by ticket 36 (link redirected sideways to `handler-selection-and-dispatch.md`). No action needed here; historical context only.
+
 ## Labels
 
 ready-for-agent

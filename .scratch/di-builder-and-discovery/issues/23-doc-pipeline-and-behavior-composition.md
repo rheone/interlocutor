@@ -1,3 +1,5 @@
+> **Amendment** — this ticket instructed citing ADR-0002 and ADR-0009 directly in the shipped `documentation/pipeline-and-behaviors.md` prose. That instruction is superseded: `documentation/` files must state design rationale as fact and must never cite or link to `docs/adr/`, `docs/PRD.md`, or other `docs/` paths — see the house convention added in ticket 36. The shipped file has been corrected by ticket 36. No action needed here; historical context only.
+
 ## Labels
 
 ready-for-agent
