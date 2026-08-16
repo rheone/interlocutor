@@ -173,6 +173,37 @@ catch (AggregateException ex)
 > [!NOTE]
 > In Parallel mode, if one handler throws and the others succeed, the exception is still raised (inside an `AggregateException`) — but those other handlers still ran. You must decide whether to catch the aggregate exception or let it propagate.
 
+The two strategies aren't just a speed trade-off — they behave differently the moment one handler fails:
+
+```mermaid
+sequenceDiagram
+    participant Publisher
+    participant Handler1
+    participant Handler2
+    participant Handler3
+
+    Note over Publisher,Handler3: Sequential — Handler2 throws, Handler3 never runs
+    Publisher->>Handler1: Handle(notification)
+    Handler1-->>Publisher: done
+    Publisher->>Handler2: Handle(notification)
+    Handler2-->>Publisher: throws
+    Publisher--xHandler3: never invoked
+    Publisher->>Publisher: rethrow (subsequent handlers skipped)
+
+    Note over Publisher,Handler3: Parallel — Handler2 throws, Handler1 and Handler3 still run to completion
+    par
+        Publisher->>Handler1: Handle(notification)
+        Handler1-->>Publisher: done
+    and
+        Publisher->>Handler2: Handle(notification)
+        Handler2-->>Publisher: throws
+    and
+        Publisher->>Handler3: Handle(notification)
+        Handler3-->>Publisher: done
+    end
+    Publisher->>Publisher: throw AggregateException(Handler2's error)
+```
+
 ## Contravariant Fan-out (Base Event Types)
 
 A handler registered for a base event type receives all derived events:
