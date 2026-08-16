@@ -1,6 +1,6 @@
 # Interlocutor Documentation
 
-This directory contains reference documentation for developers using Interlocutor. For documentation about building *this repository*, see `docs/` (Architecture Decision Records, PRD, bootstrap reference material).
+This directory contains reference documentation for developers using Interlocutor. If you're building or maintaining *this repository* rather than consuming it as a library, see [docs/README.md](../docs/README.md) instead.
 
 ## Quick navigation
 
@@ -18,9 +18,6 @@ This directory contains reference documentation for developers using Interlocuto
   - [Testing Handlers & Pipelines](testing.md) — unit testing handlers (mock dependencies), integration testing pipeline composition, testing behaviors & stages, DI startup validation, in-memory databases, best practices
   - [Trim & AOT support](trim-and-aot-support.md) — [!NOTE] **TBD** — blocked on ticket 17 (Trim and AOT hardening)
   - [Sample app walkthrough](sample-app-walkthrough.md) — [!NOTE] **TBD** — blocked on ticket 18 (Sample application)
-
-- **Design rationale**: [Architecture Decision Records](../docs/adr/)
-- **Project PRD**: [docs/PRD.md](../docs/PRD.md)
 
 ## House style conventions
 
@@ -43,6 +40,7 @@ Use all five GitHub alert types purposefully:
 - **Diagrams**: inline `​```mermaid` fences only. No standalone `.mmd` files — we don't have reuse-across-docs at scale yet.
 - **HTTP status codes**: only `aspnetcore-integration.md` is permitted to reference HTTP status codes. All other docs link there instead.
 - **Truthfulness**: every code example compiles against the shipped API. Claims are verified against `src/` code, not carried forward from older docs if they've been superseded.
+- **No internal design-record citations**: never cite or link to `docs/adr/`, `docs/PRD.md`, `docs/TODO.md`, or any other `docs/` path to justify a design choice — e.g. don't write "See ADR-0009 for the no-default-pipeline design" or "`docs/PRD.md` §9.2 has the full design." State the rationale itself, as fact, in this doc — the *why* stays, the citation to an internal decision record doesn't. `docs/` is internal maintainer documentation (see [`docs/README.md`](../docs/README.md)); a consumer reading this tree has no reason to open it. If a claim needs a pointer, link sideways to the sibling `documentation/` file that already covers it, never to `docs/`.
 
 ## TBD sections
 

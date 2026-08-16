@@ -1,6 +1,6 @@
 # Transactions & Store Integration
 
-Managing transactions with `Interlocutor.EntityFrameworkCore` and `Interlocutor.NHibernate`. See [ADR-0011](../docs/adr/0011-mediator-scoped-lifetime-and-root-scope-guard.md) (scoped lifetime ensures one session per dispatch) and `docs/PRD.md` §9.2 for the full transaction design.
+Managing transactions with `Interlocutor.EntityFrameworkCore` and `Interlocutor.NHibernate`. Because the mediator is scoped, each dispatch gets exactly one store session — a lookup and a write inside the same command execute against the same session.
 
 ## TransactionBehavior
 

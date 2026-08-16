@@ -14,5 +14,5 @@
 
 ## Links
 
-- [ADR-0008](../docs/adr/0008-compile-time-handler-discovery.md) — compile-time discovery (which enables AOT/trim)
+- [Handler Selection & Dispatch](handler-selection-and-dispatch.md) — compile-time discovery (which enables AOT/trim)
 - Ticket 17 (Trim and AOT hardening) — implementation in progress

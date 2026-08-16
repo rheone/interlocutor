@@ -1,6 +1,6 @@
 # Testing Handlers & Pipelines
 
-Strategies for testing code built on Interlocutor. See `docs/PRD.md` §16 for the testing strategy overview.
+Strategies for testing code built on Interlocutor.
 
 ## Unit Testing Handlers
 

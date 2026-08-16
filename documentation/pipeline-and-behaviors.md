@@ -1,6 +1,6 @@
 # Pipeline & Behavior Composition
 
-The pipeline is the onion/Russian-doll model of cross-cutting concerns that wrap handler execution. See [ADR-0002](../docs/adr/0002-pipeline-behavior-onion-model.md) for the architectural decision and [ADR-0009](../docs/adr/0009-no-default-pipeline.md) for the design of the empty-by-default pipeline.
+The pipeline is the onion/Russian-doll model of cross-cutting concerns that wrap handler execution, and it's empty by default — nothing cross-cutting runs unless you explicitly compose it.
 
 ## No Default Pipeline
 
@@ -285,4 +285,4 @@ builder.AddBehavior(typeof(CustomLoggingBehavior<,>));
 ```
 
 > [!CAUTION]
-> **Exceptions are never converted to outcomes.** If a behavior throws, the exception propagates to the caller (or is handled by ASP.NET Core's exception middleware in a web context). Behaviors never catch an exception and convert it to a `Failure` outcome — that would blur the line between "expected failure" (an outcome) and "bug" (an exception). See [ADR-0009](../docs/adr/0009-no-default-pipeline.md) for the reasoning.
+> **Exceptions are never converted to outcomes.** If a behavior throws, the exception propagates to the caller (or is handled by ASP.NET Core's exception middleware in a web context). Behaviors never catch an exception and convert it to a `Failure` outcome — that would blur the line between "expected failure" (an outcome) and "bug" (an exception).

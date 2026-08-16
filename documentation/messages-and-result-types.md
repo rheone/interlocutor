@@ -1,6 +1,6 @@
 # Messages, Result Types & Variance
 
-Request types (queries and commands) and their response type constraints. See [ADR-0001](../docs/adr/0001-use-csharp-15-unions-for-result-types.md) (C# 15 unions) and [ADR-0013](../docs/adr/0013-response-constrained-to-outcome-no-streaming.md) (outcome constraint, no streaming) for the full design decisions.
+Request types (queries and commands) and their response type constraints. Result types are C# 15 discriminated unions, and every response is constrained to implement `IOperationOutcome` — a bare DTO response type fails to compile.
 
 ## Request Types (Messages)
 
@@ -327,7 +327,7 @@ Polymorphism is request-side only. Queries and commands can inherit from a base 
 
 ## Streaming: Deliberately Not Supported
 
-There is no `IAsyncEnumerable<T>` / streaming response type. See [ADR-0013](../docs/adr/0013-response-constrained-to-outcome-no-streaming.md) for the full reasoning.
+There is no `IAsyncEnumerable<T>` / streaming response type — streaming and "commit/rollback as one unit" don't compose, so it's deliberately kept out permanently, not a gap waiting to be filled.
 
 The constraint (all responses must be `IOperationOutcome`) ensures:
 

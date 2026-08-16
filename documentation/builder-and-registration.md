@@ -1,6 +1,6 @@
 # Builder & Registration
 
-How to register Interlocutor with dependency injection. See [ADR-0008](../docs/adr/0008-compile-time-handler-discovery.md) for the compile-time discovery mechanism and [ADR-0009](../docs/adr/0009-no-default-pipeline.md) for the no-default-pipeline design.
+How to register Interlocutor with dependency injection. Handlers are discovered at compile time by a source generator — there's no runtime reflection scan — and the pipeline is empty until you explicitly compose it; nothing runs by default.
 
 ## The Builder
 
@@ -146,6 +146,31 @@ The generator:
 
 1. **MyApp.Domain** emits a module registering `GetUserHandler` (and any other handlers in that assembly).
 2. **MyApp.Application** (the entry point) emits a module that discovers and aggregates the module from MyApp.Domain.
+
+Aggregation follows project references transitively, so scanning the entry assembly alone is sufficient regardless of how many referenced assemblies contain handlers:
+
+```mermaid
+graph TD
+    subgraph Domain["MyApp.Domain assembly"]
+        Handler["GetUserHandler<br/>IQueryHandler&lt;GetUser,...&gt;"]
+        DomainModule["Generated module:<br/>MyApp.Domain handlers"]
+        Handler --> DomainModule
+    end
+
+    subgraph App["MyApp.Application assembly (entry point)"]
+        Scan["builder.ScanEntryAssembly()"]
+        AppModule["Generated module:<br/>discovers + aggregates<br/>referenced assembly modules"]
+        Scan --> AppModule
+    end
+
+    DomainModule -.->|"project reference"| AppModule
+    AppModule --> Container["DI Container<br/>all handlers registered"]
+
+    style Scan fill:#ADD8E6
+    style DomainModule fill:#90EE90
+    style AppModule fill:#90EE90
+    style Container fill:#FFB6C6
+```
 
 You just need to scan the entry assembly:
 

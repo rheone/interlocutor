@@ -14,7 +14,7 @@ Domain vocabulary used throughout the Interlocutor project. Use these terms cons
 |------|------------|
 | **OperationOutcome<TSuccess, ...>** | C# 15 discriminated union, generic in 2 to 6 case types: the first type parameter is the success case, every remaining type parameter is an independent failure case (`NotFound`, `Forbidden`, `Conflict`, `Failure`, or a domain-specific type). A handler is written against the specific arity and case types that operation can actually produce rather than routing every failure through one generic case. |
 | **OperationOutcome** | Non-generic union: either `Success` or `Failure`. Used as the return type of unit commands. |
-| **IOperationOutcome** | Marker interface every `OperationOutcome`/`OperationOutcome<...>` union implements. `IQuery<TResponse>` and `ICommand<TResponse>` both carry a `where TResponse : IOperationOutcome` constraint, so a bare DTO response type fails to compile — every query and command response is compiler-guaranteed to be an outcome. This is what makes runtime-typed dispatch possible without the caller knowing the concrete outcome shape. Streaming (`IAsyncEnumerable<T>` or similar) is out of scope permanently — see [ADR-0013](../docs/adr/0013-response-constrained-to-outcome-no-streaming.md). |
+| **IOperationOutcome** | Marker interface every `OperationOutcome`/`OperationOutcome<...>` union implements. `IQuery<TResponse>` and `ICommand<TResponse>` both carry a `where TResponse : IOperationOutcome` constraint, so a bare DTO response type fails to compile — every query and command response is compiler-guaranteed to be an outcome. This is what makes runtime-typed dispatch possible without the caller knowing the concrete outcome shape. Streaming (`IAsyncEnumerable<T>` or similar) is out of scope permanently — see [Messages, Result Types & Variance](messages-and-result-types.md) for the full reasoning. |
 | **Failure** | A simple `readonly record struct` carrying an optional human-readable `Reason`, an optional machine-readable `ErrorCode`, or both. Not a closed union of cases — it is the generic fallback failure case for when none of the more specific ones (`NotFound`, `Forbidden`, `Conflict`, `ValidationError`) apply. Never represents an unexpected exception; exceptions signal defects, not expected outcomes. |
 | **Success** | Marker record struct for unit command success — carries no payload. |
 
@@ -78,7 +78,7 @@ Independent record-struct types, each usable as one case type in an `OperationOu
 |------|------------|
 | **ISender** | Narrow interface for send-only (request/response). Exposes `Send()` for queries and commands. |
 | **IPublisher** | Narrow interface for publish-only (fire-and-forget). Exposes `Publish()` for notifications. |
-| **IMediator** | Combined convenience interface inheriting both `ISender` and `IPublisher`. Used by root-level code (controllers, background jobs). Registered scoped and non-configurable; never create your own scope from it — see the mediator-lifetime ADR. |
+| **IMediator** | Combined convenience interface inheriting both `ISender` and `IPublisher`. Used by root-level code (controllers, background jobs). Registered scoped and non-configurable; never create your own scope from it — see [Mediator, Lifetimes, Scope & Ambient Context](mediator-lifetimes-and-scope.md). |
 
 ## Ambient Context
 

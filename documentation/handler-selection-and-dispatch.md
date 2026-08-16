@@ -1,6 +1,6 @@
 # Handler Selection & Dispatch
 
-How Interlocutor finds the handler for a request. See [ADR-0008](../docs/adr/0008-compile-time-handler-discovery.md) (compile-time discovery) and [ADR-0010](../docs/adr/0010-dispatch-scope-fan-out-open-generics-ambiguity.md) (dispatch rules and ambiguity) for the full architectural decisions.
+How Interlocutor finds the handler for a request. Handler discovery happens at compile time, and dispatch always resolves to a single unambiguous handler — an ambiguous match is a build error, not a runtime guess.
 
 ## Compile-Time Discovery
 

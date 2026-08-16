@@ -1,6 +1,6 @@
 # Mediator, Lifetimes, Scope & Ambient Context
 
-Core mediator interfaces, why scoped lifetime is non-configurable, and how to dispatch correctly in different contexts. See [ADR-0006](../docs/adr/0006-interface-segregation-mediator.md) (interface segregation) and [ADR-0011](../docs/adr/0011-mediator-scoped-lifetime-and-root-scope-guard.md) (scoped lifetime, non-configurable) for the architectural decisions.
+Core mediator interfaces, why scoped lifetime is non-configurable, and how to dispatch correctly in different contexts.
 
 ## Interfaces
 

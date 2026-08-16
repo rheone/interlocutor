@@ -1,6 +1,6 @@
 # Notifications & Fan-out
 
-Fire-and-forget domain events and their contravariant fan-out. See [ADR-0007](../docs/adr/0007-notification-publish-strategies.md) (publish strategies) and [ADR-0010](../docs/adr/0010-dispatch-scope-fan-out-open-generics-ambiguity.md) (fan-out dispatch) for the architectural decisions.
+Fire-and-forget domain events and their contravariant fan-out.
 
 ## INotification
 
