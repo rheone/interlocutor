@@ -77,10 +77,22 @@ public static class InterlocutorAutofacExtensions
             .As<IServiceProvider>()
             .ExternallyOwned();
 
-        // Register the Mediator as the implementation for all three interfaces (IMediator, ISender, IPublisher).
-        // All three references resolve to the same instance, allowing callers to inject any of them and get
-        // consistent behavior.
-        builder.RegisterType<Mediator>().As<IMediator>().As<ISender>().As<IPublisher>().InstancePerLifetimeScope();
+        // The real dispatcher is registered under its concrete type, not under IMediator directly, so the
+        // root-scope guard (RootScopeGuardedMediator) can wrap it — see ADR-0011. Both the detector and the
+        // guarded mediator are InstancePerLifetimeScope so a fresh answer/instance is produced per scope,
+        // matching the concrete Mediator's own lifetime.
+        builder.RegisterType<Mediator>().AsSelf().InstancePerLifetimeScope();
+        builder.RegisterType<AutofacRootScopeDetector>().As<IRootScopeDetector>().InstancePerLifetimeScope();
+
+        // Register RootScopeGuardedMediator as the implementation for all three interfaces (IMediator,
+        // ISender, IPublisher). All three references resolve to the same instance, allowing callers to
+        // inject any of them and get consistent behavior.
+        builder
+            .Register(c => new RootScopeGuardedMediator(c.Resolve<Mediator>(), c.Resolve<IRootScopeDetector>()))
+            .As<IMediator>()
+            .As<ISender>()
+            .As<IPublisher>()
+            .InstancePerLifetimeScope();
 
         return builder;
     }

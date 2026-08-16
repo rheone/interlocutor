@@ -67,7 +67,18 @@ public static class InterlocutorServiceCollectionExtensions
         Apply(services, builder.Behaviors);
         TryApplyDefaults(services, builder.Defaults);
 
-        services.AddScoped<IMediator, Mediator>();
+        // The real dispatcher is registered under its concrete type, not under IMediator directly, so the
+        // root-scope guard (RootScopeGuardedMediator) can wrap it — see ADR-0011. RootServiceProviderMarker
+        // is a singleton (see its own remarks for why that makes it a stable root reference); the detector
+        // and the guarded mediator are scoped, so both are recomputed per scope alongside everything else the
+        // dispatch chain resolves.
+        services.AddSingleton<RootServiceProviderMarker>();
+        services.AddScoped<IRootScopeDetector, MicrosoftRootScopeDetector>();
+        services.AddScoped<Mediator>();
+        services.AddScoped<IMediator>(sp => new RootScopeGuardedMediator(
+            sp.GetRequiredService<Mediator>(),
+            sp.GetRequiredService<IRootScopeDetector>()
+        ));
         services.AddScoped<ISender>(sp => sp.GetRequiredService<IMediator>());
         services.AddScoped<IPublisher>(sp => sp.GetRequiredService<IMediator>());
 

@@ -84,7 +84,9 @@ public class InterlocutorBuilderIntegrationTests
         );
 
         var provider = services.BuildServiceProvider();
-        var mediator = provider.GetRequiredService<IMediator>();
+        // Dispatch must happen from a real scope, never the root provider directly — see ADR-0011.
+        using var scope = provider.CreateScope();
+        var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         await mediator.Send(new SampleQuery(), TestContext.Current.CancellationToken);
 
@@ -106,7 +108,9 @@ public class InterlocutorBuilderIntegrationTests
         );
 
         var provider = services.BuildServiceProvider();
-        var mediator = provider.GetRequiredService<IMediator>();
+        // Dispatch must happen from a real scope, never the root provider directly — see ADR-0011.
+        using var scope = provider.CreateScope();
+        var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         await mediator.Send(new SampleQuery(), TestContext.Current.CancellationToken);
 
@@ -150,7 +154,9 @@ public class InterlocutorBuilderIntegrationTests
         );
 
         var provider = services.BuildServiceProvider();
-        var mediator = provider.GetRequiredService<IMediator>();
+        // Dispatch must happen from a real scope, never the root provider directly — see ADR-0011.
+        using var scope = provider.CreateScope();
+        var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         var result = await mediator.Send(new AuthorizableQuery(), TestContext.Current.CancellationToken);
 
@@ -170,7 +176,9 @@ public class InterlocutorBuilderIntegrationTests
         );
 
         var provider = services.BuildServiceProvider();
-        var mediator = provider.GetRequiredService<IMediator>();
+        // Dispatch must happen from a real scope, never the root provider directly — see ADR-0011.
+        using var scope = provider.CreateScope();
+        var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         var result = await mediator.Send(new SampleQuery(), TestContext.Current.CancellationToken);
 
@@ -199,7 +207,9 @@ public class InterlocutorBuilderIntegrationTests
         );
 
         var provider = services.BuildServiceProvider();
-        var mediator = provider.GetRequiredService<IMediator>();
+        // Dispatch must happen from a real scope, never the root provider directly — see ADR-0011.
+        using var scope = provider.CreateScope();
+        var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         // Act: the response flows out of the mediator exactly as a handled response would --
         // nothing observing it from outside the stage host can tell it was short-circuited.
@@ -229,7 +239,9 @@ public class InterlocutorBuilderIntegrationTests
         );
 
         var provider = services.BuildServiceProvider();
-        var mediator = provider.GetRequiredService<IMediator>();
+        // Dispatch must happen from a real scope, never the root provider directly — see ADR-0011.
+        using var scope = provider.CreateScope();
+        var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         // Act & Assert: dispatch completes normally — the after-hook's exception does not propagate out of
         // Send, matching PipelineStageBehavior's default (non-rethrowing) after-hook exception handling.
