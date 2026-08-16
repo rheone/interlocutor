@@ -133,7 +133,10 @@ public class MediatorActivityTracingTests
         await mediator.Publish(new TracingNotification("hi"), CancellationToken.None);
 
         var activity = SingleFor<TracingNotification>(captured);
-        Assert.Contains(typeof(TracingNotificationHandler).FullName!, (string?)activity.GetTagItem(MediatorActivitySource.HandlerTypeTag));
+        Assert.Contains(
+            typeof(TracingNotificationHandler).FullName!,
+            (string?)activity.GetTagItem(MediatorActivitySource.HandlerTypeTag)
+        );
     }
 
     [Fact]
@@ -177,7 +180,10 @@ public class MediatorActivityTracingTests
         var services = new ServiceCollection();
         services.AddSingleton<IQueryHandler<TracingSuccessQuery, OperationOutcome<int, Failure>>, TracingSuccessQueryHandler>();
         services.AddSingleton<IQueryHandler<TracingFailingQuery, OperationOutcome<int, Failure>>, TracingFailingQueryHandler>();
-        services.AddSingleton<IQueryHandler<TracingThrowingQuery, OperationOutcome<int, Failure>>, TracingThrowingQueryHandler>();
+        services.AddSingleton<
+            IQueryHandler<TracingThrowingQuery, OperationOutcome<int, Failure>>,
+            TracingThrowingQueryHandler
+        >();
         services.AddSingleton<IMediator, Mediator>();
         var provider = services.BuildServiceProvider();
         return provider.GetRequiredService<IMediator>();

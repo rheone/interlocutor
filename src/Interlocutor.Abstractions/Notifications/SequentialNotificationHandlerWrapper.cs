@@ -23,14 +23,22 @@ internal sealed class SequentialNotificationHandlerWrapper<TNotification> : Noti
     /// <param name="ct">The cancellation token.</param>
     /// <param name="activity">The activity to tag with the resolved handler types, or <see langword="null"/>.</param>
     /// <returns>A task that completes when all handlers complete or the first handler throws.</returns>
-    public override async Task Handle(object notification, IServiceProvider services, CancellationToken ct, Activity? activity = null)
+    public override async Task Handle(
+        object notification,
+        IServiceProvider services,
+        CancellationToken ct,
+        Activity? activity = null
+    )
     {
         var typedNotification = (TNotification)notification;
         var handlers = services.GetServices<INotificationHandler<TNotification>>().ToArray();
 
         if (activity is not null)
         {
-            activity.SetTag(MediatorActivitySource.HandlerTypeTag, string.Join(",", handlers.Select(h => h.GetType().FullName)));
+            activity.SetTag(
+                MediatorActivitySource.HandlerTypeTag,
+                string.Join(",", handlers.Select(h => h.GetType().FullName))
+            );
         }
 
         // Execute handlers sequentially in registration order. If a handler throws, the exception propagates

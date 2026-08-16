@@ -28,7 +28,12 @@ internal sealed class CommandHandlerWrapper<TCommand, TResponse> : HandlerWrappe
     /// <param name="ct">The cancellation token.</param>
     /// <param name="activity">The activity to tag with the resolved handler type, or <see langword="null"/>.</param>
     /// <returns>The response from the handler.</returns>
-    public override Task<TResponse> Handle(object request, IServiceProvider services, CancellationToken ct, Activity? activity = null)
+    public override Task<TResponse> Handle(
+        object request,
+        IServiceProvider services,
+        CancellationToken ct,
+        Activity? activity = null
+    )
     {
         var typedRequest = (TCommand)request;
         var handler = services.GetRequiredService<ICommandHandler<TCommand, TResponse>>();

@@ -151,7 +151,11 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     /// both <see cref="HandlerWrapper{TResponse}"/> and <see cref="VoidHandlerWrapper{TResult}"/> callers, which
     /// share no common base.
     /// </remarks>
-    private static async Task<TResponse> TraceSendAsync<TResponse>(Activity activity, object request, Func<object, Activity, Task<TResponse>> dispatch)
+    private static async Task<TResponse> TraceSendAsync<TResponse>(
+        Activity activity,
+        object request,
+        Func<object, Activity, Task<TResponse>> dispatch
+    )
         where TResponse : IOperationOutcome
     {
         using (activity)
@@ -193,7 +197,12 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     /// Wraps <see cref="DispatchAsync"/> with the same activity-tracing shape as <see cref="TraceSendAsync{TResponse}"/>,
     /// but for the runtime-typed overload's <see cref="IOperationOutcome"/> return type.
     /// </summary>
-    private static async Task<IOperationOutcome> TraceDispatchAsync(Activity activity, object request, Mediator instance, CancellationToken ct)
+    private static async Task<IOperationOutcome> TraceDispatchAsync(
+        Activity activity,
+        object request,
+        Mediator instance,
+        CancellationToken ct
+    )
     {
         using (activity)
         {
@@ -447,7 +456,9 @@ public sealed class Mediator(IServiceProvider services) : IMediator
         );
 
         var activity = MediatorActivitySource.Source.StartActivity();
-        return activity is null ? wrapper.Handle(notification, services, ct) : TracePublishAsync(activity, notification, wrapper, services, ct);
+        return activity is null
+            ? wrapper.Handle(notification, services, ct)
+            : TracePublishAsync(activity, notification, wrapper, services, ct);
     }
 
     /// <summary>
@@ -461,7 +472,13 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     /// outcome, and may fan out to several handlers, so unlike <see cref="TraceSendAsync{TResponse}"/> there is no
     /// single outcome case to record here.
     /// </remarks>
-    private static async Task TracePublishAsync(Activity activity, object notification, NotificationHandlerWrapper wrapper, IServiceProvider services, CancellationToken ct)
+    private static async Task TracePublishAsync(
+        Activity activity,
+        object notification,
+        NotificationHandlerWrapper wrapper,
+        IServiceProvider services,
+        CancellationToken ct
+    )
     {
         using (activity)
         {

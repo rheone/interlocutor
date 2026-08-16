@@ -25,5 +25,10 @@ internal abstract class HandlerWrapper<TResponse>
     /// must stay a no-op so the unlistened dispatch path performs no extra work.
     /// </param>
     /// <returns>The response from the handler.</returns>
-    public abstract Task<TResponse> Handle(object request, IServiceProvider services, CancellationToken ct, Activity? activity = null);
+    public abstract Task<TResponse> Handle(
+        object request,
+        IServiceProvider services,
+        CancellationToken ct,
+        Activity? activity = null
+    );
 }

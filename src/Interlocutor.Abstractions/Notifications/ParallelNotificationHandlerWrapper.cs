@@ -30,7 +30,10 @@ internal sealed class ParallelNotificationHandlerWrapper<TNotification> : Notifi
 
         if (activity is not null)
         {
-            activity.SetTag(MediatorActivitySource.HandlerTypeTag, string.Join(",", handlers.Select(h => h.GetType().FullName)));
+            activity.SetTag(
+                MediatorActivitySource.HandlerTypeTag,
+                string.Join(",", handlers.Select(h => h.GetType().FullName))
+            );
         }
 
         // Launch all handlers concurrently via Task.WhenAll. This maximizes throughput when handlers are

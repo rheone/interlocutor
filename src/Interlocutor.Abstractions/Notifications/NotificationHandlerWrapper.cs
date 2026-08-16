@@ -24,5 +24,10 @@ internal abstract class NotificationHandlerWrapper
     /// must stay a no-op so the unlistened dispatch path performs no extra work.
     /// </param>
     /// <returns>A task representing the dispatch operation.</returns>
-    public abstract Task Handle(object notification, IServiceProvider services, CancellationToken ct, Activity? activity = null);
+    public abstract Task Handle(
+        object notification,
+        IServiceProvider services,
+        CancellationToken ct,
+        Activity? activity = null
+    );
 }

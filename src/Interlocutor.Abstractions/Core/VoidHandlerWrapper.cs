@@ -26,5 +26,10 @@ internal abstract class VoidHandlerWrapper<TResult>
     /// must stay a no-op so the unlistened dispatch path performs no extra work.
     /// </param>
     /// <returns>The outcome from the handler.</returns>
-    public abstract Task<TResult> Handle(object request, IServiceProvider services, CancellationToken ct, Activity? activity = null);
+    public abstract Task<TResult> Handle(
+        object request,
+        IServiceProvider services,
+        CancellationToken ct,
+        Activity? activity = null
+    );
 }

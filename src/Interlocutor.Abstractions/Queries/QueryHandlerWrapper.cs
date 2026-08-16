@@ -28,7 +28,12 @@ internal sealed class QueryHandlerWrapper<TQuery, TResponse> : HandlerWrapper<TR
     /// <param name="ct">The cancellation token.</param>
     /// <param name="activity">The activity to tag with the resolved handler type, or <see langword="null"/>.</param>
     /// <returns>The response from the handler.</returns>
-    public override Task<TResponse> Handle(object request, IServiceProvider services, CancellationToken ct, Activity? activity = null)
+    public override Task<TResponse> Handle(
+        object request,
+        IServiceProvider services,
+        CancellationToken ct,
+        Activity? activity = null
+    )
     {
         var typedRequest = (TQuery)request;
         var handler = services.GetRequiredService<IQueryHandler<TQuery, TResponse>>();
