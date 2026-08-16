@@ -126,8 +126,10 @@ internal static class DispatchWrapperEmitter
         builder.AppendLine("            for (var i = behaviorList.Count - 1; i >= 0; i--)");
         builder.AppendLine("            {");
         builder.AppendLine("                var next = pipeline;");
-        builder.AppendLine("                var behavior = behaviorList[i];");
-        builder.AppendLine("                pipeline = () => behavior.Handle(request, next, ct);");
+        builder.AppendLine("                {");
+        builder.AppendLine("                    var behavior = behaviorList[i];");
+        builder.AppendLine("                    pipeline = () => behavior.Handle(request, next, ct);");
+        builder.AppendLine("                }");
         builder.AppendLine("            }");
         builder.AppendLine();
         builder.AppendLine("            return await pipeline().ConfigureAwait(false);");
