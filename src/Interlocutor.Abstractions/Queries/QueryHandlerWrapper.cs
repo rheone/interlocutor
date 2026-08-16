@@ -1,6 +1,8 @@
 namespace Interlocutor.Abstractions.Queries;
 
+using System.Diagnostics;
 using Interlocutor.Abstractions.Core;
+using Interlocutor.Abstractions.Diagnostics;
 using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.CommonKernel;
 
@@ -24,11 +26,13 @@ internal sealed class QueryHandlerWrapper<TQuery, TResponse> : HandlerWrapper<TR
     /// <param name="request">The query to handle.</param>
     /// <param name="services">The service provider for resolving the handler and behaviors.</param>
     /// <param name="ct">The cancellation token.</param>
+    /// <param name="activity">The activity to tag with the resolved handler type, or <see langword="null"/>.</param>
     /// <returns>The response from the handler.</returns>
-    public override Task<TResponse> Handle(object request, IServiceProvider services, CancellationToken ct)
+    public override Task<TResponse> Handle(object request, IServiceProvider services, CancellationToken ct, Activity? activity = null)
     {
         var typedRequest = (TQuery)request;
         var handler = services.GetRequiredService<IQueryHandler<TQuery, TResponse>>();
+        activity?.SetTag(MediatorActivitySource.HandlerTypeTag, handler.GetType().FullName);
 
         // Start with the innermost pipeline delegate pointing to the handler itself.
         var pipeline = () => handler.Handle(typedRequest, ct);
