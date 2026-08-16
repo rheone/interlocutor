@@ -1,6 +1,5 @@
 namespace Interlocutor.DependencyInjection.Autofac;
 
-using System.Reflection;
 using global::Autofac;
 using global::Autofac.Builder;
 using global::Autofac.Extensions.DependencyInjection;
@@ -8,146 +7,29 @@ using Interlocutor.Abstractions;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Notifications;
-using Interlocutor.Abstractions.Pipeline;
-using Interlocutor.Abstractions.Pipeline.Classifiers;
 using Interlocutor.Abstractions.Queries;
 using Interlocutor.DependencyInjection.Abstractions;
 
 /// <summary>
-/// Provides extension methods for registering Interlocutor services with an Autofac <see cref="ContainerBuilder"/>.
+/// Provides the extension method for registering Interlocutor services with an Autofac <see cref="ContainerBuilder"/>.
 /// </summary>
 /// <remarks>
 /// <para>
-/// Use the <c>AddInterlocutor</c> method in your Autofac module to register all Interlocutor handlers, behaviors, and the mediator.
-/// Assembly scanning discovers handler implementations without explicit registration for each handler type.
+/// Use <see cref="AddInterlocutor(ContainerBuilder, Action{InterlocutorBuilder})"/> in your Autofac module to
+/// register the mediator, discovered handlers, and stages, and to configure any pipeline behaviors via the
+/// container-neutral <see cref="InterlocutorBuilder"/>. Assembly scanning discovers handler implementations
+/// without explicit registration for each handler type.
 /// </para>
 /// <para>
 /// Unlike Microsoft DI (where handlers are scoped), Autofac handlers are registered as <c>InstancePerLifetimeScope</c>.
 /// </para>
+/// <para>
+/// Per ADR-0009 ("No Default Pipeline"), a bare builder configures zero pipeline behaviors — nothing
+/// cross-cutting runs unless the configuration delegate explicitly adds it.
+/// </para>
 /// </remarks>
 public static class InterlocutorAutofacExtensions
 {
-    /// <summary>
-    /// Scans the specified assemblies for Interlocutor handler implementations and registers them in the container.
-    /// </summary>
-    /// <param name="builder">The Autofac <see cref="ContainerBuilder"/> to register services into.</param>
-    /// <param name="assembliesToScan">The assemblies to scan for handler types.</param>
-    /// <returns>The same <see cref="ContainerBuilder"/> instance for chaining.</returns>
-    /// <remarks>
-    /// <para>
-    /// The following handler interfaces are discovered and registered as instance-per-lifetime-scope services:
-    /// <see cref="IQueryHandler{TQuery,TResponse}"/>, <see cref="ICommandHandler{TCommand,TResponse}"/>,
-    /// <see cref="IVoidCommandHandler{TCommand,TResult}"/>, and <see cref="INotificationHandler{TNotification}"/>.
-    /// </para>
-    /// <para>
-    /// Additionally, this method registers the <see cref="Mediator"/> as the implementation for
-    /// <see cref="IMediator"/>, <see cref="ISender"/>, and <see cref="IPublisher"/>, and configures
-    /// an <see cref="AutofacServiceProvider"/> adapter bridging Autofac's lifetime scope to
-    /// <see cref="IServiceProvider"/>.
-    /// </para>
-    /// </remarks>
-    public static ContainerBuilder AddInterlocutor(this ContainerBuilder builder, params Assembly[] assembliesToScan)
-    {
-        // Delegate discovery to the container-neutral scanner and translate each resulting
-        // registration into Autofac's own primitives.
-        Apply(builder, HandlerDiscovery.Discover(assembliesToScan));
-
-        // Bridge Autofac's lifetime scope to IServiceProvider. The Mediator uses IServiceProvider to resolve
-        // handlers, so we need to adapt Autofac's ILifetimeScope to the standard IServiceProvider abstraction.
-        // ExternallyOwned() tells Autofac not to manage the provider's lifetime since it's used transitively.
-        builder
-            .Register(c => new AutofacServiceProvider(c.Resolve<ILifetimeScope>()))
-            .As<IServiceProvider>()
-            .ExternallyOwned();
-
-        // Register the Mediator as the implementation for all three interfaces (IMediator, ISender, IPublisher).
-        // All three references resolve to the same instance, allowing callers to inject any of them and get
-        // consistent behavior.
-        builder.RegisterType<Mediator>().As<IMediator>().As<ISender>().As<IPublisher>().InstancePerLifetimeScope();
-
-        return builder;
-    }
-
-    /// <summary>
-    /// Scans the assembly containing the specified marker type for Interlocutor handlers.
-    /// </summary>
-    /// <param name="builder">The Autofac <see cref="ContainerBuilder"/> to register services into.</param>
-    /// <param name="markerType">A type whose containing assembly will be scanned for handler implementations.</param>
-    /// <returns>The same <see cref="ContainerBuilder"/> instance for chaining.</returns>
-    public static ContainerBuilder AddInterlocutor(this ContainerBuilder builder, Type markerType) =>
-        builder.AddInterlocutor(markerType.Assembly);
-
-    /// <summary>
-    /// Scans the entry assembly for Interlocutor handler implementations.
-    /// </summary>
-    /// <param name="builder">The Autofac <see cref="ContainerBuilder"/> to register services into.</param>
-    /// <returns>The same <see cref="ContainerBuilder"/> instance for chaining.</returns>
-    public static ContainerBuilder AddInterlocutorFromEntryAssembly(this ContainerBuilder builder) =>
-        builder.AddInterlocutor(Assembly.GetEntryAssembly()!);
-
-    /// <summary>
-    /// Configures Interlocutor with full pipeline behavior support via <see cref="InterlocutorOptions"/>.
-    /// </summary>
-    /// <param name="builder">The Autofac <see cref="ContainerBuilder"/> to register services into.</param>
-    /// <param name="options">Configuration options for behavior registration and assembly scanning.</param>
-    /// <returns>The same <see cref="ContainerBuilder"/> instance for chaining.</returns>
-    /// <remarks>
-    /// <para>
-    /// This overload registers handlers, the mediator, and the complete pipeline behavior chain
-    /// in the canonical documented order: Logging → Auditing → Authorization → Validation → Transaction.
-    /// It also registers the <see cref="IResponseOutcomeDescriber"/> for behavior introspection.
-    /// </para>
-    /// <para>
-    /// It automatically registers default implementations for behaviors' dependencies:
-    /// <see cref="LoggingAuditSink"/> for <see cref="IAuditSink"/>,
-    /// <see cref="DefaultPolicyEvaluator"/> for <see cref="IPolicyEvaluator"/>,
-    /// and <see cref="AmbientRequestContextAccessor"/> for <see cref="IRequestContextAccessor"/>.
-    /// </para>
-    /// <para>
-    /// If <see cref="InterlocutorOptions.EnableDefaultBehaviors"/> is true, the canonical behavior
-    /// chain is registered. If the required packages are not loaded, behavior registration is skipped
-    /// with a graceful fallback.
-    /// </para>
-    /// </remarks>
-    public static ContainerBuilder AddInterlocutor(this ContainerBuilder builder, InterlocutorOptions options)
-    {
-        // Apply assembly filter if provided
-        var assembliesToScan =
-            options.AssemblyFilter != null
-                ? options.AssembliesToScan.Where(options.AssemblyFilter).ToArray()
-                : options.AssembliesToScan;
-
-        // Register handlers first using the base method
-        builder.AddInterlocutor(assembliesToScan);
-
-        // Build and register the outcome classifier with custom types
-        var classifierBuilder = new OutcomeClassifierBuilder();
-        foreach (var customType in options.CustomOutcomeTypes)
-        {
-            // Attempt to register custom types as failures (conservative default)
-            classifierBuilder.RegisterFailureType(customType, customType.Name);
-        }
-
-        builder.Register(c => classifierBuilder.Build()).As<IOutcomeClassifier>().SingleInstance();
-
-        // Register outcome describer with the classifier
-        builder
-            .Register(c => new DefaultResponseOutcomeDescriber(c.Resolve<IOutcomeClassifier>()))
-            .As<IResponseOutcomeDescriber>()
-            .SingleInstance();
-
-        // Register default implementations for pipeline dependencies (always)
-        Apply(builder, DefaultPipelineRegistrations.Dependencies());
-
-        // Register default behavior chain if enabled
-        if (options.EnableDefaultBehaviors)
-        {
-            Apply(builder, DefaultPipelineRegistrations.Behaviors());
-        }
-
-        return builder;
-    }
-
     /// <summary>
     /// Configures Interlocutor via the container-neutral <see cref="InterlocutorBuilder"/> — the single
     /// fluent configuration surface identical across every supported container. Registers the mediator,
@@ -163,13 +45,14 @@ public static class InterlocutorAutofacExtensions
     /// <returns>The same <see cref="ContainerBuilder"/> instance for chaining.</returns>
     /// <remarks>
     /// <para>
-    /// This overload is additive alongside the legacy <see cref="AddInterlocutor(ContainerBuilder, InterlocutorOptions)"/>
-    /// overload — both remain available. <see cref="InterlocutorBuilder.Defaults"/> entries are translated
-    /// with Autofac's <c>IfNotRegistered</c> try-add equivalent (see <see cref="TryApplyDefaults"/>), so a
-    /// consumer's own registration of <see cref="IAuditSink"/>, <see cref="IPolicyEvaluator"/>,
-    /// <see cref="IRequestContextAccessor"/>, or <see cref="IResponseOutcomeDescriber"/> — made before this
-    /// call — always wins; the builder's own <c>Override*</c> methods cover winning when that registration
-    /// is made after.
+    /// This is the only <c>AddInterlocutor</c> entry point Autofac exposes — there is no legacy
+    /// options-based overload, no bare assembly-scanning overload, and no entry-assembly convenience
+    /// overload; all configuration flows through <paramref name="configure"/>.
+    /// <see cref="InterlocutorBuilder.Defaults"/> entries are translated with Autofac's <c>IfNotRegistered</c>
+    /// try-add equivalent (see <see cref="TryApplyDefaults"/>), so a consumer's own registration of
+    /// <see cref="IAuditSink"/>, <see cref="IPolicyEvaluator"/>, <see cref="IRequestContextAccessor"/>, or
+    /// <see cref="IResponseOutcomeDescriber"/> — made before this call — always wins; the builder's own
+    /// <c>Override*</c> methods cover winning when that registration is made after.
     /// </para>
     /// </remarks>
     public static ContainerBuilder AddInterlocutor(this ContainerBuilder builder, Action<InterlocutorBuilder> configure)
@@ -185,8 +68,17 @@ public static class InterlocutorAutofacExtensions
         Apply(builder, interlocutorBuilder.Behaviors);
         TryApplyDefaults(builder, interlocutorBuilder.Defaults);
 
-        builder.Register(c => new AutofacServiceProvider(c.Resolve<ILifetimeScope>())).As<IServiceProvider>().ExternallyOwned();
+        // Bridge Autofac's lifetime scope to IServiceProvider. The Mediator uses IServiceProvider to resolve
+        // handlers, so we need to adapt Autofac's ILifetimeScope to the standard IServiceProvider abstraction.
+        // ExternallyOwned() tells Autofac not to manage the provider's lifetime since it's used transitively.
+        builder
+            .Register(c => new AutofacServiceProvider(c.Resolve<ILifetimeScope>()))
+            .As<IServiceProvider>()
+            .ExternallyOwned();
 
+        // Register the Mediator as the implementation for all three interfaces (IMediator, ISender, IPublisher).
+        // All three references resolve to the same instance, allowing callers to inject any of them and get
+        // consistent behavior.
         builder.RegisterType<Mediator>().As<IMediator>().As<ISender>().As<IPublisher>().InstancePerLifetimeScope();
 
         return builder;
