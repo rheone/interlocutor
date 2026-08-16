@@ -10,7 +10,7 @@
     <Version>1.0.0-dev</Version>
     <Authors>Robert H. Engelhardt</Authors>
     <Company>TBD</Company>
-    <Copyright>TBD</Copyright>
+    <Copyright>Copyright 2024-2025 Robert H. Engelhardt</Copyright>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     <RepositoryUrl>https://github.com/rheone/interlocutor</RepositoryUrl>
