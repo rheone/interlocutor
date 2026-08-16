@@ -38,12 +38,12 @@ public sealed class GeneratedRegistrationIntegrationTests
         Assert.Equal("hi from Autofac", result.Value);
     }
 
-    public sealed record GeneratedQuery : IQuery<OperationOutcome<string, Failure>>;
-
     public interface IGreeter
     {
         string Greet();
     }
+
+    public sealed record GeneratedQuery : IQuery<OperationOutcome<string, Failure>>;
 
     public sealed class GeneratedQueryHandler(IGreeter greeter)
         : IQueryHandler<GeneratedQuery, OperationOutcome<string, Failure>>
