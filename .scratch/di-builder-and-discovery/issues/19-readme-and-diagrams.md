@@ -1,3 +1,7 @@
+> **Status: superseded** — this issue predates the `documentation/` restructure.
+> Reason: the single-ticket scope here doesn't fit a single context window, and blocking needs to be unbundled per topic rather than gated on tickets 17/18 as a whole.
+> Superseded by tickets 20–35 in this same directory. Do not pick this up.
+
 ## Labels
 
 ready-for-agent
