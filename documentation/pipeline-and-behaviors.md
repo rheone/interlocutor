@@ -223,29 +223,49 @@ When a stage short-circuits:
 
 ## Composition Diagram
 
+A sequence diagram, not a flowchart, is the right shape here: the pipeline isn't two independent passes through the behavior list, it's one call nesting all the way down to the handler and back out. Activation bars below show that nesting directly, and the `alt` block shows what a flowchart of "ingress then egress" can't: a short-circuit skips the remaining inner behaviors and the handler entirely.
+
 ```mermaid
-graph TD
-    Request["Incoming Request"]
-    
-    Request --> LBefore["LoggingBehavior<br/>OnIngress"]
-    LBefore --> ABefore["AuditingBehavior<br/>OnIngress"]
-    ABefore --> AutBefore["AuthorizationBehavior<br/>OnIngress"]
-    AutBefore --> VBefore["ValidationBehavior<br/>OnIngress"]
-    VBefore --> TBefore["TransactionBehavior<br/>OnIngress"]
-    
-    TBefore --> Handler["Handler executes"]
-    
-    Handler --> TAfter["TransactionBehavior<br/>OnEgress<br/>(commit/rollback)"]
-    TAfter --> VAfter["ValidationBehavior<br/>OnEgress"]
-    VAfter --> AutAfter["AuthorizationBehavior<br/>OnEgress"]
-    AutAfter --> AAfter["AuditingBehavior<br/>OnEgress<br/>(record outcome)"]
-    AAfter --> LAfter["LoggingBehavior<br/>OnEgress<br/>(log duration)"]
-    
-    LAfter --> Response["Response sent to caller"]
-    
-    style Handler fill:#90EE90
-    style Request fill:#ADD8E6
-    style Response fill:#FFB6C6
+sequenceDiagram
+    participant Caller
+    participant Logging as LoggingBehavior
+    participant Auditing as AuditingBehavior
+    participant Authorization as AuthorizationBehavior
+    participant Validation as ValidationBehavior
+    participant Transaction as TransactionBehavior
+    participant Handler
+
+    Caller->>Logging: dispatch(request)
+    activate Logging
+    Logging->>Auditing: next()
+    activate Auditing
+    Auditing->>Authorization: next()
+    activate Authorization
+
+    alt policy denied
+        Authorization-->>Auditing: Forbidden (short-circuit)
+        Note right of Authorization: Validation, Transaction and the<br/>Handler never activate
+    else policy allowed
+        Authorization->>Validation: next()
+        activate Validation
+        Validation->>Transaction: next()
+        activate Transaction
+        Transaction->>Handler: next()
+        activate Handler
+        Handler-->>Transaction: outcome
+        deactivate Handler
+        Transaction-->>Validation: outcome (commit/rollback)
+        deactivate Transaction
+        Validation-->>Authorization: outcome
+        deactivate Validation
+        Authorization-->>Auditing: outcome
+    end
+    deactivate Authorization
+
+    Auditing-->>Logging: outcome (record outcome)
+    deactivate Auditing
+    Logging-->>Caller: outcome (log duration)
+    deactivate Logging
 ```
 
 ## Registering Custom Behaviors
