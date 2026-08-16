@@ -75,6 +75,7 @@ public sealed class InterlocutorBuilder
     private readonly List<Assembly> _assembliesToScan = [];
     private readonly List<InterlocutorRegistration> _behaviors = [];
     private readonly Dictionary<Type, InterlocutorRegistration> _defaults;
+    private readonly List<InterlocutorRegistration> _generatedRegistrations = [];
     private readonly List<InterlocutorRegistration> _stages = [];
     private readonly List<InterlocutorFactoryRegistration> _stageFactories = [];
 
@@ -128,6 +129,46 @@ public sealed class InterlocutorBuilder
     /// </summary>
     /// <value>The delegate-backed pipeline stage registrations.</value>
     public IReadOnlyList<InterlocutorFactoryRegistration> StageFactories => this._stageFactories;
+
+    /// <summary>
+    /// Gets the compile-time generated handler registrations added via
+    /// <see cref="AddGeneratedRegistrations(IEnumerable{InterlocutorRegistration})"/>, in call order.
+    /// </summary>
+    /// <value>The compile-time generated handler registrations.</value>
+    public IReadOnlyList<InterlocutorRegistration> GeneratedRegistrations => this._generatedRegistrations;
+
+    /// <summary>
+    /// Adds handler registrations discovered at compile time by <c>Interlocutor.Generator</c> (ADR-0008),
+    /// alongside — never instead of — any registrations produced by <see cref="ScanAssembly"/>/<see cref="ScanAssemblies"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is the generator's integration point into the container-neutral core: pass the generated module's
+    /// own <c>Registrations</c> property straight through, for example
+    /// <c>builder.AddGeneratedRegistrations(Interlocutor.Generated.InterlocutorGeneratedRegistrations.Registrations)</c>.
+    /// Every entry is already a fully-formed <see cref="InterlocutorRegistration"/> built from compile-time
+    /// <c>typeof(...)</c> tokens — this call performs no reflection of its own, and both container translators
+    /// apply these entries with the same add semantics as a scanned <see cref="RegistrationKind.Handler"/>
+    /// registration (see <see cref="RegistrationKind.Handler"/>'s remarks).
+    /// </para>
+    /// <para>
+    /// Runtime assembly scanning (<see cref="ScanAssembly"/>/<see cref="ScanAssemblies"/>/<see cref="ScanAssemblyContaining{TMarker}"/>/<see cref="ScanEntryAssembly"/>)
+    /// remains fully independent and opt-in — calling this method does not disable scanning, and a bare builder
+    /// that calls neither registers no handlers at all. A consumer who wants generated registrations to be the
+    /// *only* source of handlers simply never calls a <c>Scan*</c> method, which was already true before this
+    /// method existed: <see cref="AssembliesToScan"/> starts empty on a fresh builder regardless.
+    /// </para>
+    /// </remarks>
+    /// <param name="registrations">
+    /// The generated handler registrations to add — typically a generated module's <c>Registrations</c> property.
+    /// </param>
+    /// <returns>This builder, for chaining.</returns>
+    public InterlocutorBuilder AddGeneratedRegistrations(IEnumerable<InterlocutorRegistration> registrations)
+    {
+        ArgumentNullException.ThrowIfNull(registrations);
+        this._generatedRegistrations.AddRange(registrations);
+        return this;
+    }
 
     /// <summary>Adds an assembly to scan for handler implementations.</summary>
     /// <param name="assembly">The assembly to scan.</param>

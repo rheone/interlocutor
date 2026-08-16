@@ -62,6 +62,7 @@ public static class InterlocutorServiceCollectionExtensions
         configure(builder);
 
         Apply(services, HandlerDiscovery.Discover(builder.AssembliesToScan));
+        Apply(services, builder.GeneratedRegistrations);
         Apply(services, builder.Stages);
         ApplyFactories(services, builder.StageFactories);
         Apply(services, builder.Behaviors);
