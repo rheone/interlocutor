@@ -77,6 +77,36 @@ else
 
 ## Outbox Pattern Example
 
+The outbox row is written by the originating handler, in the *same* transaction as its other writes (see [Transactions & Store Integration](transactions-and-store-integration.md)); a separate background processor reads it back later, in its own transaction, and dispatches at runtime using the pattern above:
+
+```mermaid
+sequenceDiagram
+    participant Handler
+    participant OutboxTable as Outbox table
+    participant Processor as OutboxProcessor
+    participant Mediator
+
+    Note over Handler,OutboxTable: Producer — inside the command's own transaction
+    Handler->>Handler: perform the command's domain writes
+    Handler->>OutboxTable: write outbox row (same transaction, same commit)
+
+    Note over Processor,Mediator: Consumer — separate transaction, polls independently
+    loop every poll interval
+        Processor->>OutboxTable: GetPendingAsync()
+        OutboxTable-->>Processor: pending messages
+        loop for each message
+            Processor->>Processor: deserialize Payload as RequestType
+            Processor->>Mediator: Send(request) — runtime-typed
+            Mediator-->>Processor: IOperationOutcome
+            alt outcome succeeded
+                Processor->>OutboxTable: MarkProcessedAsync
+            else outcome failed
+                Processor->>OutboxTable: MarkFailedAsync
+            end
+        end
+    end
+```
+
 ```csharp
 public class OutboxProcessor : BackgroundService
 {
@@ -127,6 +157,26 @@ public class OutboxProcessor : BackgroundService
 ```
 
 ## Inbox Pattern Example
+
+`GetUnprocessedAsync` is where the dedupe happens — it excludes events already recorded as processed, so a redelivered message doesn't get published twice:
+
+```mermaid
+sequenceDiagram
+    participant InboxTable as Inbox table
+    participant Processor as InboxProcessor
+    participant Mediator
+
+    loop every poll interval
+        Processor->>InboxTable: GetUnprocessedAsync()
+        InboxTable-->>Processor: unprocessed events (already-processed events excluded)
+        loop for each event
+            Processor->>Processor: deserialize Payload as NotificationType
+            Processor->>Mediator: Publish(notification) — runtime-typed
+            Mediator-->>Processor: done
+            Processor->>InboxTable: MarkProcessedAsync
+        end
+    end
+```
 
 ```csharp
 public class InboxProcessor : BackgroundService
