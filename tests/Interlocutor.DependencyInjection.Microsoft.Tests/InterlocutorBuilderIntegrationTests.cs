@@ -3,9 +3,11 @@ namespace Interlocutor.DependencyInjection.Microsoft.Tests;
 using global::Microsoft.Extensions.DependencyInjection;
 using Interlocutor.Abstractions;
 using Interlocutor.Abstractions.Core;
+using Interlocutor.Abstractions.Markers;
 using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Queries;
 using Interlocutor.CommonKernel;
+using Interlocutor.CommonKernel.ResultTypes;
 using Interlocutor.DependencyInjection.Abstractions;
 
 public class InterlocutorBuilderIntegrationTests
@@ -131,6 +133,31 @@ public class InterlocutorBuilderIntegrationTests
     }
 
     [Fact]
+    public async Task UseRecommendedChain_DispatchesSuccessfully_ThroughARealMediator()
+    {
+        // The decisive end-to-end proof: AuthorizationBehavior and ValidationBehavior both had a structural
+        // shape that made Microsoft DI throw ArgumentException on every single dispatch the instant either
+        // was registered (see both types' XML remarks) — a registration-list check, like the test above,
+        // could never have caught that; only an actual dispatch through a built container can. This request
+        // satisfies every marker in the recommended chain (IAuditableRequest, IRequiresPolicy) and carries no
+        // FluentValidation validators, so it exercises every fixed behavior on the real send path and must
+        // complete without throwing.
+        var services = new ServiceCollection();
+        services.AddLogging();
+
+        services.AddInterlocutor(builder =>
+            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).UseRecommendedChain()
+        );
+
+        var provider = services.BuildServiceProvider();
+        var mediator = provider.GetRequiredService<IMediator>();
+
+        var result = await mediator.Send(new AuthorizableQuery(), TestContext.Current.CancellationToken);
+
+        Assert.Equal("ok", result.Value);
+    }
+
+    [Fact]
     public async Task StageHost_WithTypeRegisteredStage_RunsBeforeAndAfterAroundTheHandler()
     {
         var services = new ServiceCollection();
@@ -209,6 +236,19 @@ public class InterlocutorBuilderIntegrationTests
         var result = await mediator.Send(new SampleQuery(), TestContext.Current.CancellationToken);
 
         Assert.Equal(default, result);
+    }
+
+    private sealed record AuthorizableQuery : IQuery<OperationOutcome<string, Forbidden>>, IAuditableRequest, IRequiresPolicy
+    {
+        public string ActionName => "Test.Audit";
+
+        public string PolicyName => "Test.Policy";
+    }
+
+    private sealed class AuthorizableQueryHandler : IQueryHandler<AuthorizableQuery, OperationOutcome<string, Forbidden>>
+    {
+        public Task<OperationOutcome<string, Forbidden>> Handle(AuthorizableQuery query, CancellationToken ct) =>
+            Task.FromResult<OperationOutcome<string, Forbidden>>("ok");
     }
 
     private sealed record SampleQuery : IQuery<OperationOutcome>;

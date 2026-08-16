@@ -12,13 +12,11 @@ using Interlocutor.DependencyInjection.Abstractions;
 
 /// <summary>
 /// Proves ticket 06's behavior-subset-constraints outcome against Autofac: a marker-constrained behavior
-/// (<see cref="AuditingBehavior{TRequest,TResponse}"/>, <see cref="AuthorizationBehavior{TRequest,TSuccess}"/>)
+/// (<see cref="AuditingBehavior{TRequest,TResponse}"/>, <see cref="AuthorizationBehavior{TRequest,TResponse}"/>)
 /// is filtered purely by Autofac's own open-generic constraint handling when the container resolves
 /// <see cref="IPipelineBehavior{TRequest,TResponse}"/> — no custom filtering code in this library decides
-/// whether a behavior applies to a request. Unlike the Microsoft DI counterpart of this test class, Autofac's
-/// <c>RegisterGeneric</c> resolves <see cref="AuthorizationBehavior{TRequest,TSuccess}"/> via structural
-/// unification, so this class additionally proves the full three-behavior (logging, auditing, authorization)
-/// subset split that Microsoft DI's open-generic path cannot resolve for that particular behavior shape.
+/// whether a behavior applies to a request. The Microsoft DI counterpart of this test class proves the
+/// identical three-behavior (logging, auditing, authorization) subset split.
 /// </summary>
 public class BehaviorSubsetConstraintTests
 {
@@ -79,7 +77,7 @@ public class BehaviorSubsetConstraintTests
             .Resolve<IEnumerable<IPipelineBehavior<PolicyCommand, OperationOutcome<string, Forbidden>>>>()
             .ToList();
         Assert.Single(resolved);
-        Assert.IsType<AuthorizationBehavior<PolicyCommand, string>>(resolved[0]);
+        Assert.IsType<AuthorizationBehavior<PolicyCommand, OperationOutcome<string, Forbidden>>>(resolved[0]);
     }
 
     [Fact]

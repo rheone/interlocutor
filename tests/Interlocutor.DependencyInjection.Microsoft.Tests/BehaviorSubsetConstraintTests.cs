@@ -12,7 +12,7 @@ using Interlocutor.DependencyInjection.Abstractions;
 
 /// <summary>
 /// Proves ticket 06's behavior-subset-constraints outcome against Microsoft DI: a marker-constrained behavior
-/// (<see cref="AuditingBehavior{TRequest,TResponse}"/>, <see cref="AuthorizationBehavior{TRequest,TSuccess}"/>)
+/// (<see cref="AuditingBehavior{TRequest,TResponse}"/>, <see cref="AuthorizationBehavior{TRequest,TResponse}"/>)
 /// is filtered purely by Microsoft DI's own open-generic constraint handling when the container resolves
 /// <see cref="IPipelineBehavior{TRequest,TResponse}"/> — no custom filtering code in this library decides
 /// whether a behavior applies to a request.
@@ -63,22 +63,22 @@ public class BehaviorSubsetConstraintTests
     }
 
     [Fact]
-    public void AuthorizationBehavior_TRequestConstraint_AcceptsMarkedRequest_ViaTheSameMechanismTheContainerUses()
+    public void AuthorizationBehavior_Resolves_ForRequestWithMarker()
     {
-        // AuthorizationBehavior<TRequest,TSuccess> implements IPipelineBehavior<TRequest, OperationOutcome<TSuccess,
-        // Forbidden>> — a different second type parameter than the one it closes over — which Microsoft DI's
-        // AddScoped(Type,Type) open-generic path cannot resolve regardless of the marker constraint (a
-        // pre-existing structural limitation unrelated to ticket 06; Autofac's RegisterGeneric handles this
-        // shape correctly via structural unification — see BehaviorSubsetConstraintTests in the Autofac test
-        // project for the equivalent full-container "resolves" proof). The marker constraint itself is proven
-        // here the same way both containers evaluate it internally: MakeGenericType either succeeds (the
-        // request satisfies IRequiresPolicy) or throws ArgumentException (it doesn't).
-        var openGeneric = typeof(AuthorizationBehavior<,>);
+        // AuthorizationBehavior<TRequest,TResponse> maps its type parameters 1:1 onto
+        // IPipelineBehavior<TRequest,TResponse> (see its own XML remarks for why that shape is load-bearing
+        // for Microsoft DI specifically) — a real resolution through a built ServiceProvider, not merely a
+        // registration-list check or a MakeGenericType probe.
+        var services = NewServices();
+        services.AddInterlocutor(builder =>
+            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).AddAuthorizationBehavior()
+        );
 
-        var closed = openGeneric.MakeGenericType(typeof(PolicyCommand), typeof(string));
-        Assert.NotNull(closed);
+        var provider = services.BuildServiceProvider();
 
-        Assert.Throws<ArgumentException>(() => openGeneric.MakeGenericType(typeof(PlainCommand), typeof(string)));
+        var resolved = provider.GetServices<IPipelineBehavior<PolicyCommand, OperationOutcome<string, Forbidden>>>().ToList();
+        Assert.Single(resolved);
+        Assert.IsType<AuthorizationBehavior<PolicyCommand, OperationOutcome<string, Forbidden>>>(resolved[0]);
     }
 
     [Fact]
@@ -108,33 +108,40 @@ public class BehaviorSubsetConstraintTests
     }
 
     [Fact]
-    public void TwoRequestTypes_DrawDifferentSubsetsFromSameRegistrationList()
+    public void ThreeRequestTypes_DrawDifferentSubsetsFromSameRegistrationList()
     {
-        // The fuller three-behavior version of this proof (logging + auditing + authorization, drawing three
-        // distinct chains) lives in Interlocutor.DependencyInjection.Autofac.Tests.BehaviorSubsetConstraintTests
-        // — see the AuthorizationBehavior test above for why the authorization half doesn't fully resolve
-        // through Microsoft DI's open-generic path.
         var services = NewServices();
         services.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).AddLoggingBehavior().AddAuditingBehavior()
+            builder
+                .ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly)
+                .AddLoggingBehavior()
+                .AddAuditingBehavior()
+                .AddAuthorizationBehavior()
         );
 
         var provider = services.BuildServiceProvider();
 
-        // AuditableCommand satisfies IAuditableRequest -> draws both entries from the registration list.
+        // AuditableCommand: satisfies IAuditableRequest but not IRequiresPolicy -> logging + auditing only.
         var auditableChain = provider
             .GetServices<IPipelineBehavior<AuditableCommand, OperationOutcome<string, Forbidden>>>()
             .Select(b => b.GetType().Name)
             .ToList();
         Assert.Equal(["LoggingBehavior`2", "AuditingBehavior`2"], auditableChain);
 
-        // PolicyCommand does not satisfy IAuditableRequest -> draws only the unconstrained logging entry from
-        // the exact same registration list.
+        // PolicyCommand: satisfies IRequiresPolicy (and the Forbidden response shape) but not IAuditableRequest
+        // -> logging + authorization only. Drawn from the exact same registration list as the other two chains.
         var policyChain = provider
             .GetServices<IPipelineBehavior<PolicyCommand, OperationOutcome<string, Forbidden>>>()
             .Select(b => b.GetType().Name)
             .ToList();
-        Assert.Equal(["LoggingBehavior`2"], policyChain);
+        Assert.Equal(["LoggingBehavior`2", "AuthorizationBehavior`2"], policyChain);
+
+        // PlainCommand: satisfies neither marker -> logging only.
+        var plainChain = provider
+            .GetServices<IPipelineBehavior<PlainCommand, OperationOutcome<string, Forbidden>>>()
+            .Select(b => b.GetType().Name)
+            .ToList();
+        Assert.Equal(["LoggingBehavior`2"], plainChain);
     }
 
     [Fact]
@@ -152,6 +159,30 @@ public class BehaviorSubsetConstraintTests
             provider.GetServices<IPipelineBehavior<AuditableCommand, OperationOutcome<string, Forbidden>>>().Count()
         );
         Assert.Empty(provider.GetServices<IPipelineBehavior<PlainCommand, OperationOutcome<string, Forbidden>>>());
+    }
+
+    [Fact]
+    public void ValidationBehavior_Resolves_ThroughARealContainer()
+    {
+        // ValidationBehavior<TRequest,TResponse> has the identical structural shape as
+        // AuthorizationBehavior<TRequest,TResponse> and was fixed for the same reason at the same time (see
+        // both types' XML remarks) — proven here the same way, via a real ServiceProvider resolution rather
+        // than a registration-list check.
+        var services = NewServices();
+        services.AddInterlocutor(builder =>
+            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).AddValidationBehavior()
+        );
+
+        var provider = services.BuildServiceProvider();
+
+        var resolved = provider
+            .GetServices<IPipelineBehavior<PlainCommand, OperationOutcome<string, ValidationErrors>>>()
+            .ToList();
+        Assert.Single(resolved);
+        Assert.IsType<Interlocutor.FluentValidation.ValidationBehavior<
+            PlainCommand,
+            OperationOutcome<string, ValidationErrors>
+        >>(resolved[0]);
     }
 
     /// <summary>

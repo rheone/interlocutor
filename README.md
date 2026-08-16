@@ -220,7 +220,7 @@ Why this order:
 services.AddSingleton<IResponseOutcomeDescriber, PaymentOutcomeDescriber>();
 ```
 
-`AuthorizationBehavior<TRequest, TSuccess>` and `ValidationBehavior<TRequest, TSuccess>` are constrained to the concrete shapes `OperationOutcome<TSuccess, Forbidden>` and `OperationOutcome<TSuccess, ValidationFailed>` respectively — a short-circuiting behavior has to construct its failure case without knowing the handler's response shape in general, so it's opt-in *and* only usable when the response shape matches. Handlers with a different response shape (a custom union, or a wider multi-arity `OperationOutcome<...>`) need a bespoke behavior instead.
+`AuthorizationBehavior<TRequest, TResponse>` and `ValidationBehavior<TRequest, TResponse>` constrain `TResponse` only to `IOperationOutcome` — a short-circuiting behavior has to construct its failure case (`Forbidden` or `ValidationErrors`) without knowing the handler's response shape at compile time, so it does so reflectively, via the constructor the union feature generates for that case type. This makes both behaviors usable with any `OperationOutcome<...>` response, but only meaningfully: if `TResponse` has no `Forbidden`/`ValidationErrors` case at all, the behavior throws a named `InvalidOperationException` the first time it actually needs to short-circuit — a request declaring `IRequiresPolicy` (or one behind `ValidationBehavior`) still needs a response shape that can express the denial.
 
 ## Publishing Notifications
 

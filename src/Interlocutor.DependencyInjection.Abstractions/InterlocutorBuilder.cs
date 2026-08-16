@@ -218,7 +218,7 @@ public sealed class InterlocutorBuilder
     }
 
     /// <summary>
-    /// Adds <see cref="AuthorizationBehavior{TRequest,TSuccess}"/> at the current position in the chain,
+    /// Adds <see cref="AuthorizationBehavior{TRequest,TResponse}"/> at the current position in the chain,
     /// and try-adds its default dependency, <see cref="IPolicyEvaluator"/> (<see cref="DefaultPolicyEvaluator"/>),
     /// unless a default has already been set.
     /// </summary>
@@ -314,7 +314,7 @@ public sealed class InterlocutorBuilder
     }
 
     /// <summary>
-    /// Replaces the default <see cref="IPolicyEvaluator"/> implementation <see cref="AuthorizationBehavior{TRequest,TSuccess}"/>
+    /// Replaces the default <see cref="IPolicyEvaluator"/> implementation <see cref="AuthorizationBehavior{TRequest,TResponse}"/>
     /// receives when no application-level registration is present. Wins regardless of whether it is
     /// called before or after <see cref="AddAuthorizationBehavior"/> in the same chain.
     /// </summary>

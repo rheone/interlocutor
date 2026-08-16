@@ -129,8 +129,8 @@ public class InterlocutorBuilderIntegrationTests
 
         var container = containerBuilder.Build();
 
-        // AuthorizationBehavior<TRequest,TSuccess> : IPipelineBehavior<TRequest, OperationOutcome<TSuccess,
-        // Forbidden>> — it only ever closes for a response shaped OperationOutcome<TSuccess, Forbidden>, so
+        // AuthorizationBehavior<TRequest,TResponse> only ever short-circuits meaningfully for a response
+        // shaped OperationOutcome<TSuccess, Forbidden> (it needs a Forbidden case to construct on denial), so
         // it's resolved against AuthorizableQuery (not the plain-OperationOutcome SampleQuery every other test
         // here uses) to genuinely exercise closed-generic resolution rather than only the open-generic
         // registration list. AuthorizableQuery also implements IAuditableRequest and IRequiresPolicy so that,
