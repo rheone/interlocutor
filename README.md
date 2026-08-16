@@ -101,7 +101,7 @@ var message = result switch
 
 For people using Interlocutor as a library in their own application:
 
-- **[Full documentation index](documentation/)** — detailed guides on handlers, pipelines, result types, notifications, testing, and more.
+- **[Full documentation index](documentation/index.md)** — detailed guides on handlers, pipelines, result types, notifications, testing, and more.
 
 ### Developer documentation
 
