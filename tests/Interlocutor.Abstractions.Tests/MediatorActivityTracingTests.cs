@@ -6,10 +6,12 @@ using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Diagnostics;
 using Interlocutor.Abstractions.Notifications;
+using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Queries;
 using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 /// <summary>Covers ticket 15's acceptance criteria for <see cref="Mediator"/>'s built-in activity tracing.</summary>
 /// <remarks>
@@ -164,6 +166,39 @@ public class MediatorActivityTracingTests
         Assert.False(probe.HasListeners());
     }
 
+    [Fact]
+    public async Task Send_Query_WithLoggingBehaviorAlsoRegistered_BothMechanismsObserveTheDispatchIndependently()
+    {
+        // MediatorActivitySource-based tracing lives in Mediator itself; LoggingBehavior is a separate, opt-in
+        // IPipelineBehavior with its own ILogger-based mechanism. Neither shares state with the other, so
+        // registering both must not suppress or alter either one's output for the same dispatch.
+        var captured = new ConcurrentBag<Activity>();
+        using var listener = CreateListener(captured);
+        ActivitySource.AddActivityListener(listener);
+
+        var logger = new RecordingLogger<LoggingBehavior<TracingSuccessQuery, OperationOutcome<int, Failure>>>();
+
+        var services = new ServiceCollection();
+        services.AddSingleton<IQueryHandler<TracingSuccessQuery, OperationOutcome<int, Failure>>, TracingSuccessQueryHandler>();
+        services.AddSingleton<ILogger<LoggingBehavior<TracingSuccessQuery, OperationOutcome<int, Failure>>>>(logger);
+        services.AddSingleton<
+            IPipelineBehavior<TracingSuccessQuery, OperationOutcome<int, Failure>>,
+            LoggingBehavior<TracingSuccessQuery, OperationOutcome<int, Failure>>
+        >();
+        services.AddSingleton<IMediator, Mediator>();
+        var provider = services.BuildServiceProvider();
+        var mediator = provider.GetRequiredService<IMediator>();
+
+        await mediator.Send(new TracingSuccessQuery(21), CancellationToken.None);
+
+        // The Activity-based tracing still fired, tagged as normal...
+        var activity = SingleFor<TracingSuccessQuery>(captured);
+        Assert.Equal(typeof(TracingSuccessQueryHandler).FullName, activity.GetTagItem(MediatorActivitySource.HandlerTypeTag));
+
+        // ...and LoggingBehavior independently logged the same dispatch, unaffected by the activity's presence.
+        Assert.True(logger.LoggedAnything);
+    }
+
     private static Activity SingleFor<TRequest>(ConcurrentBag<Activity> captured) =>
         Assert.Single(captured, a => (string?)a.GetTagItem(MediatorActivitySource.RequestTypeTag) == typeof(TRequest).FullName);
 
@@ -247,4 +282,23 @@ public class TracingNotificationHandler(Action action) : INotificationHandler<Tr
         action();
         return Task.CompletedTask;
     }
+}
+
+/// <summary>Minimal <see cref="ILogger{TCategoryName}"/> stub that only records whether it was ever called.</summary>
+public sealed class RecordingLogger<T> : ILogger<T>
+{
+    public bool LoggedAnything { get; private set; }
+
+    public IDisposable? BeginScope<TState>(TState state)
+        where TState : notnull => null;
+
+    public bool IsEnabled(LogLevel logLevel) => true;
+
+    public void Log<TState>(
+        LogLevel logLevel,
+        EventId eventId,
+        TState state,
+        Exception? exception,
+        Func<TState, Exception?, string> formatter
+    ) => this.LoggedAnything = true;
 }

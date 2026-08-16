@@ -33,13 +33,7 @@ internal sealed class SequentialNotificationHandlerWrapper<TNotification> : Noti
         var typedNotification = (TNotification)notification;
         var handlers = services.GetServices<INotificationHandler<TNotification>>().ToArray();
 
-        if (activity is not null)
-        {
-            activity.SetTag(
-                MediatorActivitySource.HandlerTypeTag,
-                string.Join(",", handlers.Select(h => h.GetType().FullName))
-            );
-        }
+        activity?.SetTag(MediatorActivitySource.HandlerTypeTag, string.Join(",", handlers.Select(h => h.GetType().FullName)));
 
         // Execute handlers sequentially in registration order. If a handler throws, the exception propagates
         // immediately and subsequent handlers are not invoked. This is useful when handler ordering matters

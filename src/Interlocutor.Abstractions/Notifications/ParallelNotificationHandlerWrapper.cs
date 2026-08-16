@@ -28,13 +28,7 @@ internal sealed class ParallelNotificationHandlerWrapper<TNotification> : Notifi
         var typedNotification = (TNotification)notification;
         var handlers = services.GetServices<INotificationHandler<TNotification>>().ToArray();
 
-        if (activity is not null)
-        {
-            activity.SetTag(
-                MediatorActivitySource.HandlerTypeTag,
-                string.Join(",", handlers.Select(h => h.GetType().FullName))
-            );
-        }
+        activity?.SetTag(MediatorActivitySource.HandlerTypeTag, string.Join(",", handlers.Select(h => h.GetType().FullName)));
 
         // Launch all handlers concurrently via Task.WhenAll. This maximizes throughput when handlers are
         // independent. If any handler throws, all tasks are awaited and exceptions are aggregated into

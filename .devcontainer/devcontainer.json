@@ -1,5 +1,5 @@
 {
-  "name": "Interlocutor Dev Container",
+  "name": "${localWorkspaceFolderBasename}",=,
   "image": "mcr.microsoft.com/devcontainers/dotnet:2-11.0-preview",
   "workspaceFolder": "/workspace",
   "features": {
@@ -15,7 +15,8 @@
     "ghcr.io/jsburckhardt/devcontainer-features/zoxide:1": {},
     "ghcr.io/nikiforovall/devcontainer-features/dotnet-csharpier:1": {},
     "ghcr.io/nils-geistmann/devcontainers-features/zsh:0": {},
-    "ghcr.io/rosstaco/devcontainer-features/ohmyposh:1": {}
+    "ghcr.io/rosstaco/devcontainer-features/ohmyposh:1": {},
+    "ghcr.io/jsburckhardt/devcontainer-features/opencode:1": {}
   },
   "containerEnv": {
     "CLAUDE_RUNTIME_DIR": "/home/vscode/.claude-runtime",
