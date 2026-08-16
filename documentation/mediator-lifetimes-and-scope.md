@@ -122,6 +122,24 @@ The root-scope guard catches this mistake at dispatch time, not silently at the 
 
 The framework creates a scope per HTTP request automatically:
 
+```mermaid
+sequenceDiagram
+    participant Framework as ASP.NET Core
+    participant Scope as DI Scope
+    participant Controller
+    participant Mediator
+
+    Framework->>Scope: create (one per HTTP request)
+    activate Scope
+    Scope->>Controller: construct(ISender mediator)
+    Controller->>Mediator: Send(request)
+    activate Mediator
+    Mediator-->>Controller: outcome
+    deactivate Mediator
+    Framework->>Scope: dispose (end of request)
+    deactivate Scope
+```
+
 ```csharp
 [ApiController]
 [Route("api/[controller]")]
@@ -143,7 +161,26 @@ public class UsersController : ControllerBase
 
 ### Background Service / Hosted Service
 
-You must create a scope explicitly:
+You must create a scope explicitly — there's no framework request to hang it off of:
+
+```mermaid
+sequenceDiagram
+    participant Worker as BackgroundService
+    participant Scope as DI Scope
+    participant Mediator
+
+    loop every poll interval
+        Worker->>Scope: CreateScope() (explicit)
+        activate Scope
+        Scope->>Mediator: resolve IMediator
+        Worker->>Mediator: Send(request) (repeatable, same scope)
+        activate Mediator
+        Mediator-->>Worker: outcome
+        deactivate Mediator
+        Worker->>Scope: Dispose() (end of using block)
+        deactivate Scope
+    end
+```
 
 ```csharp
 public class OutboxProcessor : BackgroundService
@@ -177,7 +214,7 @@ public class OutboxProcessor : BackgroundService
 
 ### Minimal API
 
-No explicit scope creation needed — ASP.NET Core handles it:
+No explicit scope creation needed — ASP.NET Core handles it. Same framework-owned scope lifecycle as the [Web Context diagram above](#web-context-aspnet-core), just with a route delegate instead of a controller action:
 
 ```csharp
 app.MapPost("/api/orders", async (CreateOrder command, ISender mediator, CancellationToken ct) =>
