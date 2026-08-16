@@ -151,6 +151,10 @@ Aggregation follows project references transitively, so scanning the entry assem
 
 ```mermaid
 graph TD
+    classDef scan fill:#ADD8E6,color:#0b2530,stroke:#4a90a4,stroke-width:1px;
+    classDef generated fill:#90EE90,color:#0b2e0b,stroke:#2f9e44,stroke-width:1px;
+    classDef sink fill:#FFB6C6,color:#3a0b17,stroke:#c2185b,stroke-width:1px;
+
     subgraph Domain["MyApp.Domain assembly"]
         Handler["GetUserHandler<br/>IQueryHandler&lt;GetUser,...&gt;"]
         DomainModule["Generated module:<br/>MyApp.Domain handlers"]
@@ -166,10 +170,9 @@ graph TD
     DomainModule -.->|"project reference"| AppModule
     AppModule --> Container["DI Container<br/>all handlers registered"]
 
-    style Scan fill:#ADD8E6
-    style DomainModule fill:#90EE90
-    style AppModule fill:#90EE90
-    style Container fill:#FFB6C6
+    class Scan scan
+    class DomainModule,AppModule generated
+    class Container sink
 ```
 
 You just need to scan the entry assembly:
