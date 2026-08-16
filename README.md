@@ -95,6 +95,19 @@ var message = result switch
 | `Interlocutor.NHibernate` | `TransactionBehavior` for NHibernate `ISession`. |
 | `Interlocutor.FluentValidation` | `ValidationBehavior` — automatic request validation via FluentValidation. |
 
+`Interlocutor.CommonKernel` has zero dependencies; every other package builds on `Interlocutor.Abstractions`, directly or transitively:
+
+```mermaid
+flowchart TD
+    CommonKernel["Interlocutor.CommonKernel<br/>(zero dependencies)"] --> Abstractions["Interlocutor.Abstractions"]
+    Abstractions --> AspNetCore["Interlocutor.AspNetCore"]
+    Abstractions --> DIMicrosoft["Interlocutor.DependencyInjection.Microsoft"]
+    Abstractions --> DIAutofac["Interlocutor.DependencyInjection.Autofac"]
+    Abstractions --> EFCore["Interlocutor.EntityFrameworkCore"]
+    Abstractions --> NHibernate["Interlocutor.NHibernate"]
+    Abstractions --> FluentValidation["Interlocutor.FluentValidation"]
+```
+
 ## Deeper dive
 
 ### User documentation
