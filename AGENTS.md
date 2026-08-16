@@ -22,6 +22,10 @@ When reporting information to me, be extremely concise and sacrifice grammar for
 - Rich XML documentation on all members public and private
 - Documentation: minimal but useful — README covers what/install/use
 
+### Attribution
+
+- The user is the author of all work. Never claim authorship or credit in commits, docs, or code.
+
 ### Git
 
 - Conventional commits (`feat:`, `fix:`, `chore:`, ...), imperative mood, <72 char subject

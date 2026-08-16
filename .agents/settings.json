@@ -1,0 +1,112 @@
+{
+  "$schema": "https://claude.ai/claude-code/schema/agents.schema.json",
+  "agents": {
+    "searchPaths": [
+      "./skills"
+    ],
+    "defaultAgent": "claude",
+    "autoDiscovery": true
+  },
+  "skills": {
+    "codeReview": {
+      "scoped": true,
+      "name": "interlocutor:code-review",
+      "description": "Review changes against Standards (coding standards) and Spec (issue/spec compliance)",
+      "triggers": [
+        "review",
+        "standards",
+        "spec"
+      ]
+    },
+    "codebaseDesign": {
+      "scoped": true,
+      "name": "codebase-design",
+      "description": "Deep module design vocabulary for architecture decisions",
+      "triggers": [
+        "design",
+        "architecture",
+        "module",
+        "interface"
+      ]
+    },
+    "docsAndComments": {
+      "scoped": true,
+      "name": "csharp-docs-and-comments",
+      "description": "XML documentation and code comments for C#",
+      "triggers": [
+        "document",
+        "docs",
+        "comments",
+        "xml"
+      ]
+    },
+    "grilling": {
+      "scoped": true,
+      "name": "grilling",
+      "description": "Stress-test ideas and decisions",
+      "triggers": [
+        "grill",
+        "stress-test",
+        "challenge"
+      ]
+    },
+    "mermaidDiagrams": {
+      "scoped": true,
+      "name": "mermaid-diagram-generator",
+      "description": "Generate Mermaid diagrams (flowcharts, sequences, ERD, etc.)",
+      "triggers": [
+        "diagram",
+        "visualize",
+        "mermaid",
+        "flowchart"
+      ]
+    },
+    "research": {
+      "scoped": true,
+      "name": "research",
+      "description": "Research topics against primary sources",
+      "triggers": [
+        "research",
+        "investigate",
+        "facts"
+      ]
+    },
+    "resolvingConflicts": {
+      "scoped": true,
+      "name": "resolving-merge-conflicts",
+      "description": "Resolve merge/rebase conflicts",
+      "triggers": [
+        "conflicts",
+        "merge",
+        "rebase"
+      ]
+    },
+    "tdd": {
+      "scoped": true,
+      "name": "tdd",
+      "description": "Test-driven development and integration tests",
+      "triggers": [
+        "tdd",
+        "test",
+        "red-green-refactor",
+        "integration"
+      ]
+    },
+    "writingForAgents": {
+      "scoped": true,
+      "name": "writing-for-agents",
+      "description": "Writing skills and documentation for agents",
+      "triggers": [
+        "skill",
+        "agent",
+        "documentation"
+      ]
+    }
+  },
+  "environment": {
+    "workspaceFolder": "/workspaces/interlocutor",
+    "dotnetSdkVersion": "11.0-preview",
+    "buildCommand": "dotnet build",
+    "testCommand": "dotnet test"
+  }
+}
