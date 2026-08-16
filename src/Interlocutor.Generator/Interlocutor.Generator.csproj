@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Roslyn incremental source generator that discovers Interlocutor handlers at compile time and emits a container-neutral registration module and closed dispatch wrappers (ADR-0008).</Description>
+
+    <!-- Source generators must target netstandard2.0 and run inside Roslyn's analyzer load context, which
+         does not support C# 15 preview features or the net11 preview TargetFramework the rest of the solution
+         uses — override both here rather than inheriting Directory.Build.props' settings. -->
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <EnablePreviewFeatures>false</EnablePreviewFeatures>
+    <LangVersion>12.0</LangVersion>
+
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <IsRoslynComponent>true</IsRoslynComponent>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
+    <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+  </ItemGroup>
+
+  <!-- Ship the generator DLL itself in the analyzers folder of the NuGet package it will eventually be
+       packed into, so a consumer referencing Interlocutor.Generator gets it wired up as an analyzer/generator
+       automatically rather than as an ordinary compile-time reference. -->
+  <ItemGroup>
+    <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+  </ItemGroup>
+</Project>

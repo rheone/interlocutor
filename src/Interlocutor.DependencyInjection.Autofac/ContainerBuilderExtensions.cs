@@ -64,6 +64,7 @@ public static class InterlocutorAutofacExtensions
         configure(interlocutorBuilder);
 
         Apply(builder, HandlerDiscovery.Discover(interlocutorBuilder.AssembliesToScan));
+        Apply(builder, interlocutorBuilder.GeneratedRegistrations);
         Apply(builder, interlocutorBuilder.Stages);
         ApplyFactories(builder, interlocutorBuilder.StageFactories);
         Apply(builder, interlocutorBuilder.Behaviors);
