@@ -97,9 +97,17 @@ var message = result switch
 
 ## Deeper dive
 
+### User documentation
+
+For people using Interlocutor as a library in their own application:
+
 - **[Full documentation index](documentation/)** — detailed guides on handlers, pipelines, result types, notifications, testing, and more.
-- **[Architecture Decision Records](docs/adr/)** — design rationale for the patterns and constraints baked into the library.
-- **[Project PRD](docs/PRD.md)** — complete specification including type catalog, packaging, and testing strategy.
+
+### Developer documentation
+
+For contributors and maintainers working on *this repository* — not needed to use the library:
+
+- **[Developer documentation index](docs/README.md)** — Architecture Decision Records, the project PRD, contributor guides, and agent process docs.
 
 ## License
 
