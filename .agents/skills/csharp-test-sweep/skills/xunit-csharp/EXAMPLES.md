@@ -13,7 +13,7 @@ metadata:
 
 ---
 
-## Example 1 — Complete Test Class with TheoryData
+## Example 1 - Complete Test Class with TheoryData
 
 ```csharp
 using System.Numerics;
@@ -70,7 +70,7 @@ public sealed class SubnetTests
 
 ---
 
-## Example 2 — Assert.Multiple
+## Example 2 - Assert.Multiple
 
 ```csharp
 [Fact]
@@ -82,7 +82,7 @@ public void Split_ValidCidr_ReturnsHeadAndTail_Test()
     // Act
     var (head, tail) = subnet.Split();
 
-    // Assert — all properties are independent; report every failure at once
+    // Assert - all properties are independent; report every failure at once
     Assert.Multiple(
         () => Assert.Equal(IPAddress.Parse("192.168.0.0"), head.NetworkAddress),
         () => Assert.Equal(IPAddress.Parse("192.168.1.255"), tail.BroadcastAddress),
@@ -93,7 +93,7 @@ public void Split_ValidCidr_ReturnsHeadAndTail_Test()
 
 ---
 
-## Example 3 — Assert.Equivalent
+## Example 3 - Assert.Equivalent
 
 ```csharp
 public sealed record Route(string Prefix, int Metric);
@@ -107,14 +107,14 @@ public void ParseRoute_ReturnsExpectedRoute_Test()
     // Act
     var result = RouteParser.Parse(input);
 
-    // Assert — Route does not override Equals, use structural comparison
+    // Assert - Route does not override Equals, use structural comparison
     Assert.Equivalent(new Route("192.168.0.0/24", 42), result);
 }
 ```
 
 ---
 
-## Example 4 — CancellationToken Test
+## Example 4 - CancellationToken Test
 
 ```csharp
 [Fact]
@@ -132,10 +132,10 @@ public async Task ProcessAsync_CancelledToken_ThrowsOperationCanceledException_T
 
 ---
 
-## Example 5 — IClassFixture Wiring
+## Example 5 - IClassFixture Wiring
 
 ```csharp
-// Fixture — created once per test class
+// Fixture - created once per test class
 public sealed class DatabaseFixture : IDisposable
 {
     public MyDatabase Database { get; }
@@ -149,7 +149,7 @@ public sealed class DatabaseFixture : IDisposable
     public void Dispose() => Database.Dispose();
 }
 
-// Test class — receives the shared fixture via constructor
+// Test class - receives the shared fixture via constructor
 public sealed class RepositoryTests : IClassFixture<DatabaseFixture>
 {
     private readonly MyDatabase _db;
@@ -180,7 +180,7 @@ See [references/Fixtures.md](references/Fixtures.md) for `ICollectionFixture`, `
 
 ---
 
-## Example 6 — Object Mother Usage
+## Example 6 - Object Mother Usage
 
 ```csharp
 // TestData/SubnetMother.cs
@@ -218,6 +218,6 @@ See [references/ObjectMother.md](references/ObjectMother.md) for placement rules
 
 ## Related
 
-- [SKILL.md](SKILL.md) — rules and guidance.
-- [REFERENCE.md](REFERENCE.md) — API lookup tables.
-- [ANTI-PATTERNS.md](ANTI-PATTERNS.md) — framework-specific pitfalls.
+- [SKILL.md](SKILL.md) - rules and guidance.
+- [REFERENCE.md](REFERENCE.md) - API lookup tables.
+- [ANTI-PATTERNS.md](ANTI-PATTERNS.md) - framework-specific pitfalls.

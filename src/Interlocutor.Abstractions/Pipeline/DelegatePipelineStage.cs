@@ -2,7 +2,7 @@ namespace Interlocutor.Abstractions.Pipeline;
 
 /// <summary>
 /// An <see cref="IPipelineStage{TRequest, TResponse}"/> implementation that wraps caller-supplied
-/// delegates instead of requiring a dedicated class — the type backing lambda-form stage registration
+/// delegates instead of requiring a dedicated class - the type backing lambda-form stage registration
 /// (for example, <c>InterlocutorBuilder.AddStage</c>'s delegate overloads).
 /// </summary>
 /// <typeparam name="TRequest">The request type.</typeparam>

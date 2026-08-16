@@ -10,7 +10,7 @@ Two problems today. First, the core carries HTTP knowledge it should not: result
 
 Introduce a mapper abstraction in the web package that the conversion helpers delegate to, with the current mapping preserved as an overridable default so nothing changes for a developer who does not care. A developer who does care registers their own mapper and both the controller-based and minimal-API conversions follow it, so the two cannot drift.
 
-The conversion helpers themselves stay — a separate, opt-in web package is exactly the right place for a transport conversion. What changes is that its opinion becomes replaceable.
+The conversion helpers themselves stay - a separate, opt-in web package is exactly the right place for a transport conversion. What changes is that its opinion becomes replaceable.
 
 Note that one current mapping deserves scrutiny while implementing: a plain failure maps to a server error status, meaning an ordinary expected failure surfaces as though the server malfunctioned.
 
@@ -26,4 +26,4 @@ Note that one current mapping deserves scrutiny while implementing: a plain fail
 
 ## Blocked by
 
-01 — Reconcile ADRs and glossary
+01 - Reconcile ADRs and glossary

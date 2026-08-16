@@ -2,7 +2,7 @@ namespace Interlocutor.Generator;
 
 /// <summary>
 /// Fully-qualified metadata names for the Interlocutor types the generator reasons about via Roslyn's
-/// semantic model — never by string-matching source text, only by resolving these names to real symbols
+/// semantic model - never by string-matching source text, only by resolving these names to real symbols
 /// through <see cref="Microsoft.CodeAnalysis.Compilation.GetTypeByMetadataName(string)"/>.
 /// </summary>
 internal static class WellKnownTypeNames

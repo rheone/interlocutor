@@ -29,7 +29,7 @@ Use the expression-bodied property form when all rows are static literals. The t
 
 ### Rows that require local computation
 
-When rows depend on objects constructed at runtime, use a `get` block with explicit `data.Add(...)` calls. **Never use collection initializer syntax with locally-declared variables — it produces CS1525 compiler errors on all target frameworks.**
+When rows depend on objects constructed at runtime, use a `get` block with explicit `data.Add(...)` calls. **Never use collection initializer syntax with locally-declared variables - it produces CS1525 compiler errors on all target frameworks.**
 
 **Before:**
 ```csharp
@@ -41,7 +41,7 @@ public static IEnumerable<object[]> Ctor_IPAddress_Int_Test_Values()
 }
 ```
 
-**After — `get` block with `data.Add()`:**
+**After - `get` block with `data.Add()`:**
 ```csharp
 public static TheoryData<IPAddress, int, Subnet> Ctor_IPAddress_Int_Test_Values
 {
@@ -64,22 +64,22 @@ The `get` block is required whenever any row value is a locally-declared variabl
 
 ## Deduplicating Loop-Generated Theory Data
 
-When a loop feeds values through a **normalizing constructor**, multiple source inputs can produce the same output. xUnit identifies theory rows by their serialized display name — rows that serialize identically are silently skipped.
+When a loop feeds values through a **normalizing constructor**, multiple source inputs can produce the same output. xUnit identifies theory rows by their serialized display name - rows that serialize identically are silently skipped.
 
 ### Preferred fix: source reduction
 
 Choose one canonical input per equivalence class instead of iterating over inputs that normalize to the same output. This is the clearest fix because it makes the data set's intent explicit.
 
-**Problematic — multiple IPs normalize to the same subnet at low prefix lengths:**
+**Problematic - multiple IPs normalize to the same subnet at low prefix lengths:**
 ```csharp
 // IPAddress.Any (0.0.0.0) and IPAddress.Loopback (127.0.0.1) both produce 0.0.0.0/0
-// at prefix 0, 0.0.0.0/1 at prefix 1, etc. — duplicates at every shared prefix.
+// at prefix 0, 0.0.0.0/1 at prefix 1, etc. - duplicates at every shared prefix.
 foreach (var ip in new[] { IPAddress.Any, IPAddress.Loopback, IPAddress.Parse("192.168.1.1") })
     for (var prefix = 0; prefix <= 32; prefix++)
         data.Add(new Subnet(ip, prefix));
 ```
 
-**Fixed — one canonical IP per address family:**
+**Fixed - one canonical IP per address family:**
 ```csharp
 // One IPv4 representative covers all prefix lengths without duplication.
 foreach (var prefix in Enumerable.Range(0, 33))
@@ -105,7 +105,7 @@ public static TheoryData<Subnet> AllPrefixLengths_Test_Values
             for (var prefix = 0; prefix <= 32; prefix++)
             {
                 var subnet = new Subnet(ip, prefix);
-                // Key on the registered serializer's output — same key xUnit uses for display names.
+                // Key on the registered serializer's output - same key xUnit uses for display names.
                 if (seen.Add(subnet.ToString("f", null)))
                     data.Add(subnet);
             }
@@ -136,20 +136,20 @@ The key format must match how xUnit serializes the type. For types with a regist
 
 When theory rows provide inputs to a **parse method**, the inputs must use the same normalized form the expected value uses. Using a raw pre-normalization source breaks the round-trip.
 
-**Broken — raw IP doesn't match the normalized subnet head:**
+**Broken - raw IP doesn't match the normalized subnet head:**
 ```csharp
 var subnet = new Subnet(IPAddress.Parse("192.168.1.1"), 8);
 // subnet.Head = "192.0.0.0", but low = "192.168.1.1"
 // Subnet.Parse("192.168.1.1", "192.255.255.255") builds 192.128.0.0/9, not 192.0.0.0/8
-var low  = ipAddress.ToString();   // "192.168.1.1" — wrong
+var low  = ipAddress.ToString();   // "192.168.1.1" - wrong
 var high = subnet.Tail.ToString(); // "192.255.255.255"
 data.Add(subnet, low, high);
 ```
 
-**Fixed — derive inputs from the normalized expected value:**
+**Fixed - derive inputs from the normalized expected value:**
 ```csharp
 var subnet = new Subnet(IPAddress.Parse("192.168.1.1"), 8);
-var low  = subnet.Head.ToString(); // "192.0.0.0" — matches what Parse expects
+var low  = subnet.Head.ToString(); // "192.0.0.0" - matches what Parse expects
 var high = subnet.Tail.ToString(); // "192.255.255.255"
 data.Add(subnet, low, high);
 ```

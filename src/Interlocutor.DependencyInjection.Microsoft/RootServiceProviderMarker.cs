@@ -8,7 +8,7 @@ namespace Interlocutor.DependencyInjection.Microsoft;
 /// <para>
 /// Microsoft.Extensions.DependencyInjection resolves a singleton service's constructor dependencies against
 /// its own internally-tracked root scope regardless of which scope's resolution first triggered the
-/// singleton's construction — so an <see cref="IServiceProvider"/> injected here is always the true root,
+/// singleton's construction - so an <see cref="IServiceProvider"/> injected here is always the true root,
 /// even if this marker happens to be constructed lazily from within a request scope rather than at startup.
 /// This is what makes it a safe, stable point of comparison: a service resolved directly from the root
 /// provider (the misuse case, see ADR-0011) receives that exact same <see cref="IServiceProvider"/> instance

@@ -17,8 +17,8 @@ using Interlocutor.Abstractions.Pipeline;
 public static class DefaultPipelineRegistrations
 {
     /// <summary>
-    /// Returns the canonical pipeline behavior chain — logging, then auditing, then authorization,
-    /// then validation, then transaction — as <see cref="RegistrationKind.Behavior"/> registrations
+    /// Returns the canonical pipeline behavior chain - logging, then auditing, then authorization,
+    /// then validation, then transaction - as <see cref="RegistrationKind.Behavior"/> registrations
     /// in that order.
     /// </summary>
     /// <returns>
@@ -30,7 +30,7 @@ public static class DefaultPipelineRegistrations
     public static IReadOnlyList<InterlocutorRegistration> Behaviors()
     {
         // Try to load and register each behavior. If a type doesn't exist in loaded assemblies,
-        // that's ok — the consumer just won't have that behavior (e.g., if FluentValidation isn't referenced).
+        // that's ok - the consumer just won't have that behavior (e.g., if FluentValidation isn't referenced).
         Type?[] behaviorTypes =
         [
             // Logging outermost
@@ -43,7 +43,7 @@ public static class DefaultPipelineRegistrations
             TryGetType("Interlocutor.FluentValidation.ValidationBehavior`2, Interlocutor.FluentValidation"),
             // Transaction innermost. EF Core's TransactionBehavior<TRequest,TResponse,TContext> is arity 3
             // (it's generic over the DbContext type too); NHibernate's TransactionBehavior<TRequest,TResponse>
-            // is arity 2 (ISession isn't generic) — the arities genuinely differ, this isn't a typo to unify.
+            // is arity 2 (ISession isn't generic) - the arities genuinely differ, this isn't a typo to unify.
             TryGetType("Interlocutor.EntityFrameworkCore.TransactionBehavior`3, Interlocutor.EntityFrameworkCore")
                 ?? TryGetType("Interlocutor.NHibernate.TransactionBehavior`2, Interlocutor.NHibernate"),
         ];
@@ -60,8 +60,8 @@ public static class DefaultPipelineRegistrations
     }
 
     /// <summary>
-    /// Returns the default implementations that the built-in behaviors depend on — <see cref="IAuditSink"/>,
-    /// <see cref="IPolicyEvaluator"/>, and <see cref="IRequestContextAccessor"/> — as
+    /// Returns the default implementations that the built-in behaviors depend on - <see cref="IAuditSink"/>,
+    /// <see cref="IPolicyEvaluator"/>, and <see cref="IRequestContextAccessor"/> - as
     /// <see cref="RegistrationKind.Default"/> registrations a consumer's own registration may override.
     /// </summary>
     /// <returns>The default dependency registrations.</returns>

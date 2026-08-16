@@ -6,7 +6,7 @@ namespace Interlocutor.CommonKernel.ResultTypes;
 /// <remarks>
 /// <para>
 /// Use <see cref="Failure"/> when you need a generic, untyped failure result. It can carry either a human-readable
-/// reason, a machine-readable error code, or both. This is the most flexible failure type — when you don't want to
+/// reason, a machine-readable error code, or both. This is the most flexible failure type - when you don't want to
 /// construct a specific failure case like <see cref="NotFound"/> or <see cref="Forbidden"/>.
 /// </para>
 /// <para>

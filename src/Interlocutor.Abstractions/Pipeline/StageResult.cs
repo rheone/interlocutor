@@ -16,7 +16,7 @@ namespace Interlocutor.Abstractions.Pipeline;
 /// </para>
 /// <para>
 /// <see langword="default"/>(<see cref="StageResult{TResponse}"/>) has <see cref="ShortCircuited"/> equal
-/// to <see langword="false"/> — i.e. "continue" — consistent with the library's convention that default
+/// to <see langword="false"/> - i.e. "continue" - consistent with the library's convention that default
 /// values are safe/inert. <see cref="Response"/> is meaningful only when <see cref="ShortCircuited"/> is
 /// <see langword="true"/>; a stage that continues should not read it.
 /// </para>

@@ -13,10 +13,10 @@ public enum RegistrationKind
     Handler,
 
     /// <summary>
-    /// A pipeline behavior registered against the request/response pipeline — one of the library's
+    /// A pipeline behavior registered against the request/response pipeline - one of the library's
     /// built-in behaviors (logging, auditing, authorization, validation, transaction) or a consumer's
     /// own, added via the builder's general <c>AddBehavior</c> escape hatch. Like <see cref="Handler"/>
-    /// and <see cref="Stage"/>, a behavior carries no override precedence — it is translated with add,
+    /// and <see cref="Stage"/>, a behavior carries no override precedence - it is translated with add,
     /// not try-add, semantics, and the same behavior type may be added more than once.
     /// </summary>
     Behavior,
@@ -27,7 +27,7 @@ public enum RegistrationKind
     /// </summary>
     /// <remarks>
     /// Translated with try-add semantics by both container translators: a consumer's own registration
-    /// of the same service type — made either before or after the builder configures the container —
+    /// of the same service type - made either before or after the builder configures the container -
     /// always wins. See <see cref="Handler"/> and <see cref="Stage"/> for the contrasting always-add kinds.
     /// </remarks>
     Default,
@@ -35,7 +35,7 @@ public enum RegistrationKind
     /// <summary>
     /// An <c>IPipelineStage&lt;,&gt;</c> implementation registered directly (not discovered by
     /// assembly scanning) via the builder's stage-registration methods. Like <see cref="Handler"/>,
-    /// a stage carries no override precedence — it is translated with add, not try-add, semantics.
+    /// a stage carries no override precedence - it is translated with add, not try-add, semantics.
     /// </summary>
     Stage,
 }

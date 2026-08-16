@@ -8,13 +8,13 @@ using Interlocutor.Abstractions.Pipeline.Classifiers;
 /// </summary>
 /// <typeparam name="TRequest">
 /// The request type. Constrained to <see cref="IAuditableRequest"/> so only requests that opt into auditing
-/// close this generic — a container-neutral, compile-time-checked replacement for a runtime <c>is</c> check.
+/// close this generic - a container-neutral, compile-time-checked replacement for a runtime <c>is</c> check.
 /// </typeparam>
 /// <typeparam name="TResponse">The response type.</typeparam>
 /// <remarks>
 /// Because <typeparamref name="TRequest"/> is constrained to <see cref="IAuditableRequest"/>, both Microsoft
 /// DI and Autofac skip this open generic registration entirely for a request type that does not implement the
-/// marker — the container never even attempts to construct this behavior for it, so a non-auditable request
+/// marker - the container never even attempts to construct this behavior for it, so a non-auditable request
 /// pays nothing for auditing being registered elsewhere in the chain.
 /// </remarks>
 public class AuditingBehavior<TRequest, TResponse>(IAuditSink sink, IResponseOutcomeDescriber? describer = null)

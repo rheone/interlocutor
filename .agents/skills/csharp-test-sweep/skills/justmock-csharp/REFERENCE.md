@@ -21,7 +21,7 @@ metadata:
 | Strict mode | `var mock = Mock.Create<IFoo>(Behavior.Strict);` | Free + Elevated |
 | Auto-stub properties | `var mock = Mock.CreateLike<IFoo>();` | Free + Elevated |
 
-## Arrange — Return Values
+## Arrange - Return Values
 
 ```csharp
 Mock.Arrange(() => mock.Method("arg")).Returns("result");
@@ -29,14 +29,14 @@ Mock.Arrange(() => mock.Method(Arg.IsAny<string>())).Returns("default");
 Mock.Arrange(() => mock.Property).Returns("value");
 ```
 
-## Arrange — Exceptions
+## Arrange - Exceptions
 
 ```csharp
 Mock.Arrange(() => mock.Method("bad")).Throws<InvalidOperationException>();
 Mock.Arrange(() => mock.Method("bad")).Throws(new InvalidOperationException("msg"));
 ```
 
-## Arrange — Async (TaskResult)
+## Arrange - Async (TaskResult)
 
 ```csharp
 // Free mode: async methods must be virtual
@@ -44,7 +44,7 @@ Mock.Arrange(() => mock.FetchAsync(Arg.IsAny<int>()))
     .TaskResult(new User { Id = 1 });
 ```
 
-## Arrange — Callbacks
+## Arrange - Callbacks
 
 ```csharp
 Mock.Arrange(() => mock.Method(Arg.IsAny<string>()))
@@ -54,7 +54,7 @@ Mock.Arrange(() => mock.Method())
     .DoInstead(() => callCount++);
 ```
 
-## Arrange — Sequences
+## Arrange - Sequences
 
 ```csharp
 Mock.Arrange(() => mock.GetStatus())
@@ -63,7 +63,7 @@ Mock.Arrange(() => mock.GetStatus())
     .ReturnsOnce("Completed");
 ```
 
-## Verify — Mock.Assert
+## Verify - Mock.Assert
 
 ```csharp
 Mock.Assert(() => mock.Method("arg"), Occurs.Once());
@@ -98,8 +98,8 @@ Mock.Assert(() => mock.Method("arg"), Occurs.AtMost(5));
 
 | Mode | Behavior | Use |
 |------|----------|-----|
-| `Behavior.Loose` (default) | Returns type defaults for unarranged members | Most tests — arrange only what matters |
-| `Behavior.Strict` | Throws `MockException` on unarranged calls | Interaction testing — every call must be intentional |
+| `Behavior.Loose` (default) | Returns type defaults for unarranged members | Most tests - arrange only what matters |
+| `Behavior.Strict` | Throws `MockException` on unarranged calls | Interaction testing - every call must be intentional |
 
 ## Mock.CreateLike
 
@@ -112,7 +112,7 @@ var mock = Mock.CreateLike<IFoo>();
 
 ## Mock.AssertMultiple
 
-Batch multiple assertions — reports all failures together:
+Batch multiple assertions - reports all failures together:
 
 ```csharp
 Mock.AssertMultiple(() =>
@@ -135,7 +135,7 @@ These compile in Free mode but **throw at runtime**:
 | Intercept non-virtual method | `Mock.Arrange(() => mock.NonVirtualMethod()).Returns(x);` |
 | Mock private method | `Mock.NonPublic.Arrange<ReturnType>(mock, "PrivateMethod", args).Returns(x);` |
 | Mock constructor | `Mock.Arrange(() => new Foo(Arg.IsAny<int>())).IgnoreInstance();` |
-| SetupAllProperties | `Mock.SetupAllProperties(mock);` — auto-implements property setter tracking |
+| SetupAllProperties | `Mock.SetupAllProperties(mock);` - auto-implements property setter tracking |
 
 ## Analyzer
 

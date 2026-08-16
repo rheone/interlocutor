@@ -1,0 +1,28 @@
+> **Amendment** - this ticket instructed citing ADR-0008 directly in the shipped `documentation/trim-and-aot-support.md` `## Links` list. That instruction is superseded: `documentation/` files must state design rationale as fact and must never cite or link to `docs/adr/`, `docs/PRD.md`, or other `docs/` paths - see the house convention added in ticket 36. The shipped file has been corrected by ticket 36 (link redirected sideways to `handler-selection-and-dispatch.md`). No action needed here; historical context only.
+
+## Labels
+
+ready-for-agent
+
+## What to build
+
+A `documentation/trim-and-aot-support.md` covering trim and ahead-of-time compilation support. This ticket stays blocked until ticket 17 (Trim and AOT hardening) ships - writing this now would describe unimplemented behavior, which violates the "no aspirational statements" rule the rest of this batch follows. Do not start this from prose speculation; write it from the actual behavior ticket 17 delivers.
+
+Cover, once unblocked:
+
+- What trim-safety guarantees the library makes.
+- What AOT compatibility looks like for a consumer - any attributes or opt-ins required.
+- The cost of the runtime-scanning fallback when full AOT/trim isn't used (what's lost, what still works).
+
+## Acceptance criteria
+
+- [ ] Every claim in this doc reflects ticket 17's shipped behavior, verified against `src/` after it lands - no speculative content
+- [ ] Trim-safety guarantees are documented
+- [ ] AOT compatibility requirements/opt-ins are documented
+- [ ] The runtime-scanning fallback's cost is documented
+- [ ] Follows house conventions from ticket 21
+
+## Blocked by
+
+21 - Establish documentation/ directory; retire CONTEXT.md
+17 - Trim and AOT hardening

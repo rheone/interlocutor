@@ -10,7 +10,7 @@ metadata:
 
 ## Missing [TestClass]
 
-Bad — silently ignored by the runner:
+Bad - silently ignored by the runner:
 
 ```csharp
 public class CalculatorTests
@@ -58,7 +58,7 @@ Internal test methods are skipped unless the assembly opts in.
 Bad:
 
 ```csharp
-// No [DiscoverInternals] — test never runs
+// No [DiscoverInternals] - test never runs
 [TestClass]
 internal class ParserTests
 {
@@ -67,7 +67,7 @@ internal class ParserTests
 }
 ```
 
-Good — add `[assembly: DiscoverInternals]` to any file in the project:
+Good - add `[assembly: DiscoverInternals]` to any file in the project:
 
 ```csharp
 [assembly: DiscoverInternals]
@@ -85,10 +85,10 @@ Bad:
 public void FlakyTest_AlwaysPassesEventually_Test() { }
 ```
 
-Good — comment explains why:
+Good - comment explains why:
 
 ```csharp
-[Ignore] // https://github.com/org/repo/issues/42 — fix pending
+[Ignore] // https://github.com/org/repo/issues/42 - fix pending
 [TestMethod]
 public void FlakyTest_AlwaysPassesEventually_Test() { }
 ```
@@ -106,12 +106,12 @@ Assert.Inconclusive("Not implemented yet");
 Good:
 
 ```csharp
-Assert.Inconclusive("Not implemented yet — tracked by #42");
+Assert.Inconclusive("Not implemented yet - tracked by #42");
 ```
 
 ## Swapped Expected/Actual
 
-`AreEqual(expected, actual)` — expected is the first argument, actual is the second. Swapping them produces misleading failure messages.
+`AreEqual(expected, actual)` - expected is the first argument, actual is the second. Swapping them produces misleading failure messages.
 
 Bad:
 

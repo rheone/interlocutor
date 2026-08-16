@@ -44,8 +44,8 @@ public interface ISender
         where TResult : IOperationOutcome;
 
     /// <summary>
-    /// Dispatches a request whose static type is not known at the call site — a query, a value-returning
-    /// command, or a unit command deserialized off a message — to its registered handler, returning the
+    /// Dispatches a request whose static type is not known at the call site - a query, a value-returning
+    /// command, or a unit command deserialized off a message - to its registered handler, returning the
     /// result through all pipeline behaviors as the library's base outcome interface.
     /// </summary>
     /// <param name="request">
@@ -62,13 +62,13 @@ public interface ISender
     /// </returns>
     /// <remarks>
     /// <para>
-    /// Intended for infrastructure callers — an outbox, an inbox, or a queue consumer — that deserialize a
+    /// Intended for infrastructure callers - an outbox, an inbox, or a queue consumer - that deserialize a
     /// message into an <see cref="object"/> with no static request type. The generic <c>Send</c> overloads
     /// infer their response type from the argument's static type, which a deserialized message doesn't have;
     /// this overload determines the response type reflectively from the request's runtime type instead.
     /// </para>
     /// <para>
-    /// This overload is implemented reflectively for now — it locates the closed <c>IQuery{TResponse}</c> or
+    /// This overload is implemented reflectively for now - it locates the closed <c>IQuery{TResponse}</c> or
     /// <c>ICommand{TResponse}</c> interface (or, for a unit command, the registered
     /// <c>IVoidCommandHandler{TCommand, TResult}</c>) on the request's runtime type and invokes the matching
     /// generic <c>Send</c> overload via reflection, so pipeline composition is not duplicated. A future
@@ -79,7 +79,7 @@ public interface ISender
     /// <exception cref="ArgumentNullException"><paramref name="request"/> is <see langword="null"/>.</exception>
     /// <exception cref="Interlocutor.Abstractions.Core.UnsupportedRequestTypeException">
     /// <paramref name="request"/>'s runtime type does not implement <c>IQuery&lt;TResponse&gt;</c>,
-    /// <c>ICommand&lt;TResponse&gt;</c>, or <c>ICommand</c> — it is not a request at all.
+    /// <c>ICommand&lt;TResponse&gt;</c>, or <c>ICommand</c> - it is not a request at all.
     /// </exception>
     /// <exception cref="Interlocutor.Abstractions.Core.HandlerNotRegisteredException">
     /// <paramref name="request"/>'s runtime type is a recognized request shape, but no handler for it is

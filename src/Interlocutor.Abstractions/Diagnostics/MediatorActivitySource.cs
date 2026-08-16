@@ -13,13 +13,13 @@ using System.Diagnostics;
 /// attached exporter), <see cref="ActivitySource.StartActivity(string, ActivityKind)"/> returns <see langword="null"/>,
 /// and every subsequent tagging call in the mediator is guarded on that null reference, so the dispatch path performs
 /// no allocation and no string formatting when unobserved. That short-circuit is the standard
-/// <see cref="System.Diagnostics.Activity"/> mechanism's built-in behavior — Interlocutor relies on it rather than
+/// <see cref="System.Diagnostics.Activity"/> mechanism's built-in behavior - Interlocutor relies on it rather than
 /// re-implementing it.
 /// </para>
 /// <para>
 /// This mechanism is independent of <see cref="Pipeline.LoggingBehavior{TRequest,TResponse}"/>: that behavior is an
 /// opt-in pipeline stage writing to <c>ILogger</c>, while this one is built into <see cref="Mediator"/> itself and
-/// emits <see cref="Activity"/> spans. Neither shares state with, nor depends on, the other — both may be active,
+/// emits <see cref="Activity"/> spans. Neither shares state with, nor depends on, the other - both may be active,
 /// neither, or either alone, with no conflict.
 /// </para>
 /// <para>
@@ -47,7 +47,7 @@ public static class MediatorActivitySource
     public const string OutcomeTag = "interlocutor.outcome";
 
     /// <summary>
-    /// The single <see cref="ActivitySource"/> instance every mediator dispatch starts activities from. Internal —
+    /// The single <see cref="ActivitySource"/> instance every mediator dispatch starts activities from. Internal -
     /// external code observes it through a listener registered against <see cref="Name"/>, not through this field.
     /// </summary>
     internal static readonly ActivitySource Source = new(Name);

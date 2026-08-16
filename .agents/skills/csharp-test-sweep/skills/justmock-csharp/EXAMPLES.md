@@ -10,7 +10,7 @@ metadata:
 
 All examples below work in **Free mode** unless explicitly marked `[Elevated]`.
 
-## Interface Dependency — Returns
+## Interface Dependency - Returns
 
 ```csharp
 public interface IUserRepository
@@ -35,7 +35,7 @@ public void GetUser_ExistingId_ReturnsUser()
 }
 ```
 
-## Arrange — Throws
+## Arrange - Throws
 
 ```csharp
 [TestMethod]
@@ -51,7 +51,7 @@ public void GetUser_MissingId_ThrowsNotFound()
 }
 ```
 
-## Verify — Occurs.Once
+## Verify - Occurs.Once
 
 ```csharp
 [TestMethod]
@@ -59,7 +59,7 @@ public void SaveUser_CallsRepository_Once()
 {
     var repo = Mock.Create<IUserRepository>();
     Mock.Arrange(() => repo.Save(Arg.IsAny<User>()))
-        .DoInstead(() => { /* side effect only — arrange returns void */ });
+        .DoInstead(() => { /* side effect only - arrange returns void */ });
 
     var service = new UserService(repo);
     service.CreateUser("Bob");
@@ -68,7 +68,7 @@ public void SaveUser_CallsRepository_Once()
 }
 ```
 
-## Verify — Occurs.Never
+## Verify - Occurs.Never
 
 ```csharp
 [TestMethod]
@@ -113,10 +113,10 @@ public void StrictMode_UnarrangedCall_Throws()
     var mock = Mock.Create<IUserRepository>(Behavior.Strict);
     Mock.Arrange(() => mock.GetById(It.IsAny<int>())).Returns(new User());
 
-    // This works — GetById is arranged
+    // This works - GetById is arranged
     mock.GetById(1);
 
-    // This throws — Save was never arranged
+    // This throws - Save was never arranged
     Assert.ThrowsException<MockException>(() => mock.Save(new User()));
 }
 ```

@@ -7,7 +7,7 @@ namespace Interlocutor.Mediation.EntityFrameworkCore;
 /// transaction, committing once on success or rolling back on any
 /// <see cref="Failure"/>. Depends on <c>Lazy&lt;TContext&gt;</c>
 /// specifically so requests marked <see cref="IExternalStoreRequest"/>
-/// never cause a session to be constructed — <c>db.Value</c> is only
+/// never cause a session to be constructed - <c>db.Value</c> is only
 /// evaluated inside the transactional branch.
 /// </summary>
 /// <typeparam name="TContext">The application's <see cref="DbContext"/> type.</typeparam>

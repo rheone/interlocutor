@@ -82,7 +82,7 @@ public class DependencyTests
         Assert.True(result.IsSuccessful, string.Join(", ", result.FailingTypeNames ?? []));
 
         // Assembly-level (rather than per-type) check: the module owns the neutral registration
-        // record alongside plain data types, so not every type references Abstractions directly —
+        // record alongside plain data types, so not every type references Abstractions directly -
         // only that the module as a whole depends on it, per the mediator abstractions module.
         var referencedAssemblyNames = DependencyInjectionAbstractionsAssembly.GetReferencedAssemblies().Select(a => a.Name);
         Assert.Contains(AbstractionsAssembly.GetName().Name, referencedAssemblyNames);

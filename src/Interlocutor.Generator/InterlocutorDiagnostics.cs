@@ -12,14 +12,14 @@ internal static class InterlocutorDiagnostics
     /// <c>ICommand</c> but the compiling project defines no matching handler for it.
     /// </summary>
     /// <remarks>
-    /// Default severity is <see cref="DiagnosticSeverity.Warning"/> — per ADR-0008 and this ticket's acceptance
+    /// Default severity is <see cref="DiagnosticSeverity.Warning"/> - per ADR-0008 and this ticket's acceptance
     /// criteria, a consumer escalates it to an error via the standard <c>.editorconfig</c> mechanism every other
     /// diagnostic in this repository uses:
     /// <code>
     /// dotnet_diagnostic.INTERLOC001.severity = error
     /// </code>
     /// Cross-assembly discovery (a handler for this request living in a different, referenced assembly) is out
-    /// of scope for this generator — see ticket 12 — so this diagnostic only ever considers handlers declared in
+    /// of scope for this generator - see ticket 12 - so this diagnostic only ever considers handlers declared in
     /// the current compilation.
     /// </remarks>
     public static readonly DiagnosticDescriptor MissingHandler = new(

@@ -10,7 +10,7 @@ Ticket 09 delivered dispatch of an untyped request using reflection, which unblo
 
 The reflection implementation is retained only under the explicitly opted-in runtime scanning fallback, where the set of request types is not known at build time.
 
-A request type the generator did not see — reachable when runtime scanning is off and a type arrives from an unreferenced assembly — must still fail with the same clear, named exception rather than falling through the switch silently.
+A request type the generator did not see - reachable when runtime scanning is off and a type arrives from an unreferenced assembly - must still fail with the same clear, named exception rather than falling through the switch silently.
 
 ## Acceptance criteria
 
@@ -23,5 +23,5 @@ A request type the generator did not see — reachable when runtime scanning is 
 
 ## Blocked by
 
-09 — Runtime-typed dispatch
-10 — Generator foundation
+09 - Runtime-typed dispatch
+10 - Generator foundation

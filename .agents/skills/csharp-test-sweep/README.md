@@ -23,9 +23,9 @@ Each sub-skill follows a consistent layout:
 
 | File | Purpose |
 |------|---------|
-| `SKILL.md` | Rules and decisions — what to do |
-| `REFERENCE.md` | API lookup tables — what's available |
-| `EXAMPLES.md` | Worked examples — what it looks like |
+| `SKILL.md` | Rules and decisions - what to do |
+| `REFERENCE.md` | API lookup tables - what's available |
+| `EXAMPLES.md` | Worked examples - what it looks like |
 | `ANTI-PATTERNS.md` | Framework-specific pitfalls to avoid |
 
 Framework-agnostic rules (naming, AAA structure, no shared state) live in [`references/quality-checklist.md`](references/quality-checklist.md), applied at every class regardless of framework.

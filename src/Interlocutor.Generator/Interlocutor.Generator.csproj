@@ -4,7 +4,7 @@
 
     <!-- Source generators must target netstandard2.0 and run inside Roslyn's analyzer load context, which
          does not support C# 15 preview features or the net11 preview TargetFramework the rest of the solution
-         uses — override both here rather than inheriting Directory.Build.props' settings. -->
+         uses - override both here rather than inheriting Directory.Build.props' settings. -->
     <TargetFramework>netstandard2.0</TargetFramework>
     <EnablePreviewFeatures>false</EnablePreviewFeatures>
     <LangVersion>12.0</LangVersion>

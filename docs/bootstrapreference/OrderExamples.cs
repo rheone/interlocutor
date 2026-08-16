@@ -9,7 +9,7 @@ namespace Interlocutor.Example.Orders;
 
 // ---------------------------------------------------------------------------
 // Everything the LIBRARY provides is plumbing: Result<T>, the pipeline, the
-// marker interfaces, the mediator dispatch. Everything below is YOURS — the
+// marker interfaces, the mediator dispatch. Everything below is YOURS - the
 // query/command shape, the validation rules, and the handler body are all
 // application code you write and register. Nothing in Interlocutor.* ever
 // guesses at business logic on your behalf; it only calls the pieces you
@@ -36,7 +36,7 @@ public interface ICurrentUser
 }
 
 // ---------------------------------------------------------------------------
-// EXAMPLE 1 — a query
+// EXAMPLE 1 - a query
 // ---------------------------------------------------------------------------
 
 /// <summary>The shape of the request. You choose the fields.</summary>
@@ -45,7 +45,7 @@ public sealed record GetOrderByIdQuery(Guid OrderId) : IQuery<OrderDto>;
 /// <summary>
 /// YOUR validation rule. ValidationBehavior (library) discovers and runs
 /// this automatically because it's registered as IValidator&lt;GetOrderByIdQuery&gt;
-/// — the library never invents the rule itself.
+/// - the library never invents the rule itself.
 /// </summary>
 public sealed class GetOrderByIdQueryValidator : AbstractValidator<GetOrderByIdQuery>
 {
@@ -57,7 +57,7 @@ public sealed class GetOrderByIdQueryValidator : AbstractValidator<GetOrderByIdQ
 
 /// <summary>
 /// YOUR query logic. The library calls this exactly once, after validation
-/// has already passed — everything inside the method body is entirely your
+/// has already passed - everything inside the method body is entirely your
 /// decision: which store to query, what NotFound means for this query,
 /// what shape to project into.
 /// </summary>
@@ -77,7 +77,7 @@ public sealed class GetOrderByIdQueryHandler(AppDbContext db) : IQueryHandler<Ge
 }
 
 // ---------------------------------------------------------------------------
-// EXAMPLE 2 — a command
+// EXAMPLE 2 - a command
 // ---------------------------------------------------------------------------
 
 /// <summary>The shape of the request, plus the marker interfaces YOU chose for it.</summary>
@@ -86,7 +86,7 @@ public sealed record CancelOrderCommand(Guid OrderId) : ICommand<OrderDto>, ITra
     public string ActionName => "Order.Cancel"; // <-- your label, used by AuditingBehavior
 }
 
-/// <summary>YOUR shape validation — trivial here, but this is where field-level rules for this command live.</summary>
+/// <summary>YOUR shape validation - trivial here, but this is where field-level rules for this command live.</summary>
 public sealed class CancelOrderCommandValidator : AbstractValidator<CancelOrderCommand>
 {
     public CancelOrderCommandValidator()
@@ -96,7 +96,7 @@ public sealed class CancelOrderCommandValidator : AbstractValidator<CancelOrderC
 }
 
 /// <summary>
-/// YOUR resource lookup, ownership check, and business rule — the three
+/// YOUR resource lookup, ownership check, and business rule - the three
 /// abstract methods below are the entirety of what you write.
 /// ResourceCommandHandler.Handle (library, not shown here) just calls them
 /// in sequence: LoadAsync -&gt; Authorize -&gt; HandleAsync.
@@ -104,7 +104,7 @@ public sealed class CancelOrderCommandValidator : AbstractValidator<CancelOrderC
 public sealed class CancelOrderCommandHandler(AppDbContext db, ICurrentUser currentUser)
     : ResourceCommandHandler<CancelOrderCommand, Order, OrderDto>
 {
-    /// <summary>YOUR lookup. Returning null here is what turns into NotFound — you decide the query.</summary>
+    /// <summary>YOUR lookup. Returning null here is what turns into NotFound - you decide the query.</summary>
     protected override Task<Order?> LoadAsync(CancelOrderCommand command, CancellationToken ct) =>
         db.Orders.FirstOrDefaultAsync(o => o.Id == command.OrderId, ct);
 
@@ -114,7 +114,7 @@ public sealed class CancelOrderCommandHandler(AppDbContext db, ICurrentUser curr
     protected override Failure? Authorize(Order entity, CancelOrderCommand command) =>
         entity.CustomerUserId == currentUser.UserId ? null : new Forbidden($"User does not own order {entity.Id}.");
 
-    /// <summary>YOUR business rule: an already-shipped order can't be cancelled — this is a RuleViolation, not a ValidationFailed, because it depends on state the handler just loaded.</summary>
+    /// <summary>YOUR business rule: an already-shipped order can't be cancelled - this is a RuleViolation, not a ValidationFailed, because it depends on state the handler just loaded.</summary>
     protected override Task<Result<OrderDto>> HandleAsync(CancelOrderCommand command, Order entity, CancellationToken ct)
     {
         if (entity.Status == "Shipped")
@@ -125,7 +125,7 @@ public sealed class CancelOrderCommandHandler(AppDbContext db, ICurrentUser curr
         }
 
         entity.Status = "Cancelled";
-        // No SaveChangesAsync here — TransactionBehavior (library) commits
+        // No SaveChangesAsync here - TransactionBehavior (library) commits
         // once the whole pipeline returns a non-Failure Result, because this
         // command implements ITransactionalRequest.
         return Task.FromResult<Result<OrderDto>>(new OrderDto(entity.Id, entity.Status));
@@ -133,7 +133,7 @@ public sealed class CancelOrderCommandHandler(AppDbContext db, ICurrentUser curr
 }
 
 // ---------------------------------------------------------------------------
-// Registration — this is the only place you tell the container which
+// Registration - this is the only place you tell the container which
 // classes implement which contracts. Everything above this line is your
 // logic; everything below is wiring it into the library's pipeline.
 // ---------------------------------------------------------------------------
@@ -151,7 +151,7 @@ public static class OrderCompositionRoot
         return services;
         // Pipeline behaviors (Logging, Validation, Transaction, ...) are
         // registered once, application-wide, per the earlier composition
-        // root — nothing query/command-specific is needed there. Adding a
+        // root - nothing query/command-specific is needed there. Adding a
         // new query or command never touches pipeline registration at all.
     }
 }

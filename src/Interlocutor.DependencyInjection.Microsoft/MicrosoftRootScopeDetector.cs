@@ -7,11 +7,11 @@ using Interlocutor.DependencyInjection.Abstractions;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Registered scoped, alongside the mediator itself, so it is reconstructed fresh — and its ambient
-/// <see cref="IServiceProvider"/> re-captured — for every scope. Compares the ambient
+/// Registered scoped, alongside the mediator itself, so it is reconstructed fresh - and its ambient
+/// <see cref="IServiceProvider"/> re-captured - for every scope. Compares the ambient
 /// <see cref="IServiceProvider"/> this instance was constructed with (the current resolving scope, or the
 /// root provider itself when there is no scope) against <see cref="RootServiceProviderMarker.RootProvider"/>
-/// (always the true root — see that type's remarks for why). Reference equality between the two means this
+/// (always the true root - see that type's remarks for why). Reference equality between the two means this
 /// instance was resolved directly from the root provider, with no intervening
 /// <c>IServiceScopeFactory.CreateScope()</c> call.
 /// </para>

@@ -23,14 +23,14 @@ using Interlocutor.DependencyInjection.Abstractions;
 /// without requiring explicit registrations for each handler.
 /// </para>
 /// <para>
-/// Per ADR-0009 ("No Default Pipeline"), a bare builder configures zero pipeline behaviors — nothing
+/// Per ADR-0009 ("No Default Pipeline"), a bare builder configures zero pipeline behaviors - nothing
 /// cross-cutting runs unless the <c>configure</c> delegate explicitly adds it.
 /// </para>
 /// </remarks>
 public static class InterlocutorServiceCollectionExtensions
 {
     /// <summary>
-    /// Configures Interlocutor via the container-neutral <see cref="InterlocutorBuilder"/> — the single
+    /// Configures Interlocutor via the container-neutral <see cref="InterlocutorBuilder"/> - the single
     /// fluent configuration surface identical across every supported container. Registers the mediator,
     /// discovered handlers, and stages unconditionally; registers zero pipeline behaviors unless
     /// <paramref name="configure"/> adds them (see ADR-0009, "No Default Pipeline").
@@ -44,13 +44,13 @@ public static class InterlocutorServiceCollectionExtensions
     /// <returns>The same <see cref="IServiceCollection"/> instance for chaining.</returns>
     /// <remarks>
     /// <para>
-    /// This is the only <c>AddInterlocutor</c> entry point Microsoft DI exposes — there is no legacy
+    /// This is the only <c>AddInterlocutor</c> entry point Microsoft DI exposes - there is no legacy
     /// options-based overload, no bare assembly-scanning overload, and no entry-assembly convenience
     /// overload; all configuration flows through <paramref name="configure"/>.
     /// <see cref="InterlocutorBuilder.Defaults"/> entries are translated with try-add semantics (see
     /// <see cref="TryApplyDefaults"/>), so a consumer's own registration of <see cref="IAuditSink"/>,
     /// <see cref="IPolicyEvaluator"/>, <see cref="IRequestContextAccessor"/>, or
-    /// <see cref="IResponseOutcomeDescriber"/> — made before this call — always wins; the builder's own
+    /// <see cref="IResponseOutcomeDescriber"/> - made before this call - always wins; the builder's own
     /// <c>Override*</c> methods cover winning when that registration is made after.
     /// </para>
     /// </remarks>
@@ -69,7 +69,7 @@ public static class InterlocutorServiceCollectionExtensions
         TryApplyDefaults(services, builder.Defaults);
 
         // The real dispatcher is registered under its concrete type, not under IMediator directly, so the
-        // root-scope guard (RootScopeGuardedMediator) can wrap it — see ADR-0011. RootServiceProviderMarker
+        // root-scope guard (RootScopeGuardedMediator) can wrap it - see ADR-0011. RootServiceProviderMarker
         // is a singleton (see its own remarks for why that makes it a stable root reference); the detector
         // and the guarded mediator are scoped, so both are recomputed per scope alongside everything else the
         // dispatch chain resolves.
@@ -113,8 +113,8 @@ public static class InterlocutorServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Translates a sequence of container-neutral <see cref="InterlocutorFactoryRegistration"/> records —
-    /// delegate-backed registrations such as lambda-form pipeline stages — into Microsoft DI factory
+    /// Translates a sequence of container-neutral <see cref="InterlocutorFactoryRegistration"/> records -
+    /// delegate-backed registrations such as lambda-form pipeline stages - into Microsoft DI factory
     /// service descriptors.
     /// </summary>
     /// <param name="services">The <see cref="IServiceCollection"/> to register services into.</param>
@@ -141,8 +141,8 @@ public static class InterlocutorServiceCollectionExtensions
 
     /// <summary>
     /// Translates <see cref="InterlocutorBuilder.Defaults"/> registrations into Microsoft DI's <c>TryAdd</c>
-    /// descriptors, so an application's own registration of the same service type — made before this call
-    /// runs — is left untouched rather than superseded.
+    /// descriptors, so an application's own registration of the same service type - made before this call
+    /// runs - is left untouched rather than superseded.
     /// </summary>
     /// <param name="services">The <see cref="IServiceCollection"/> to register services into.</param>
     /// <param name="defaults">The try-add-able default registrations to translate.</param>

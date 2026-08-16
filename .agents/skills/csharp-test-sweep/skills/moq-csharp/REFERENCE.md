@@ -1,6 +1,6 @@
 ---
 name: moq-csharp
-description: Moq 4.x API lookup tables — mock creation, setup patterns, argument matchers, verification, callbacks, and property mocking.
+description: Moq 4.x API lookup tables - mock creation, setup patterns, argument matchers, verification, callbacks, and property mocking.
 license: Apache-2.0
 metadata:
   author: Robert Engelhardt <rheone@gmail.com>
@@ -105,7 +105,7 @@ Framework-agnostic rules (static state, test isolation) are in [`csharp-test-swe
 
 | Pattern | Effect |
 |---------|--------|
-| `.SetupProperty(x => x.Prop)` | Get/set stub — acts like auto-property |
+| `.SetupProperty(x => x.Prop)` | Get/set stub - acts like auto-property |
 | `.SetupProperty(x => x.Prop, "initial")` | Get/set with initial value |
 | `.SetupGet(x => x.Prop).Returns(v)` | Read-only property stub |
 

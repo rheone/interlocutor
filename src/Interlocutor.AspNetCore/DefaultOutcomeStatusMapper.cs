@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 /// <summary>
 /// The <see cref="IOutcomeStatusMapper"/> applied by <see cref="ResultExtensions"/> when a consumer registers
 /// none of their own. Recognizes the built-in <c>Interlocutor.CommonKernel.ResultTypes</c> failure cases and
-/// their aggregate forms; anything else — including a consumer's own custom failure type — falls back to
+/// their aggregate forms; anything else - including a consumer's own custom failure type - falls back to
 /// <see cref="MapUnrecognized{TFailure}"/>.
 /// </summary>
 /// <remarks>
@@ -75,7 +75,7 @@ public class DefaultOutcomeStatusMapper : IOutcomeStatusMapper
     /// <returns>The mapped status code and <see cref="ProblemDetails"/> body.</returns>
     /// <remarks>
     /// <para>
-    /// <see cref="Failures"/> aggregates ordinary <see cref="Failure"/> instances — expected outcomes, never
+    /// <see cref="Failures"/> aggregates ordinary <see cref="Failure"/> instances - expected outcomes, never
     /// unhandled exceptions (see <see cref="MapFailure"/> for the same reasoning applied to the singular case).
     /// </para>
     /// </remarks>
@@ -98,13 +98,13 @@ public class DefaultOutcomeStatusMapper : IOutcomeStatusMapper
     /// <remarks>
     /// <para>
     /// <b>Deliberately not 500.</b> <see cref="Failure"/> is the library's generic fallback for an ordinary
-    /// <em>expected</em> outcome a handler chose to report — CONTEXT.md is explicit that it "never represents an
+    /// <em>expected</em> outcome a handler chose to report - CONTEXT.md is explicit that it "never represents an
     /// unexpected exception; exceptions signal defects, not expected outcomes." A prior version of this mapper
     /// mapped it to 500 Internal Server Error, which tells the caller (and any alerting built on status codes)
     /// that the server malfunctioned, when in fact the handler completed normally and reported a domain failure.
     /// 400 Bad Request reflects that the request could not be satisfied for a reason the caller can act on,
     /// without implying a server fault. Unhandled exceptions still surface as 500 through ASP.NET Core's normal
-    /// exception-handling middleware — this mapper is only ever invoked for outcomes a handler returned on
+    /// exception-handling middleware - this mapper is only ever invoked for outcomes a handler returned on
     /// purpose.
     /// </para>
     /// </remarks>
@@ -116,12 +116,12 @@ public class DefaultOutcomeStatusMapper : IOutcomeStatusMapper
 
     /// <summary>Maps the generic <c>NotFound&lt;TId&gt;</c> case to 404 Not Found.</summary>
     /// <param name="entityType">The <see cref="Type"/> of entity that was not found.</param>
-    /// <param name="id">The identifier that was searched for, boxed — its static type varies per closed <c>NotFound&lt;TId&gt;</c>.</param>
+    /// <param name="id">The identifier that was searched for, boxed - its static type varies per closed <c>NotFound&lt;TId&gt;</c>.</param>
     /// <param name="message">The optional human-readable message carried by the <c>NotFound&lt;TId&gt;</c> instance.</param>
     /// <returns>The mapped status code and message body.</returns>
     /// <remarks>
     /// A separate override point from <see cref="MapNotFound"/> because pattern matching can't target the open
-    /// generic <c>NotFound&lt;&gt;</c> case type directly — <see cref="MapNotFoundGenericOrUnrecognized{TFailure}"/>
+    /// generic <c>NotFound&lt;&gt;</c> case type directly - <see cref="MapNotFoundGenericOrUnrecognized{TFailure}"/>
     /// reflects the closed instance's fields and forwards them here, so a consumer who wants to change only this
     /// case's mapping still overrides a plain virtual method rather than reimplementing the reflection.
     /// </remarks>
@@ -134,7 +134,7 @@ public class DefaultOutcomeStatusMapper : IOutcomeStatusMapper
     /// <typeparam name="TFailure">The static failure case type.</typeparam>
     /// <param name="failure">The failure value to map.</param>
     /// <returns>
-    /// 500 Internal Server Error with the failure value itself as the body — this mapper cannot claim a more
+    /// 500 Internal Server Error with the failure value itself as the body - this mapper cannot claim a more
     /// specific status for a type it doesn't recognize; a consumer with a custom failure type should override
     /// this method (or supply their own <see cref="IOutcomeStatusMapper"/>) to map it precisely.
     /// </returns>

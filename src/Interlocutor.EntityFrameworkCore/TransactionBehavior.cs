@@ -11,9 +11,9 @@ using Microsoft.EntityFrameworkCore;
 /// </summary>
 /// <typeparam name="TRequest">
 /// The request type that this behavior processes. Constrained to <see cref="ITransactionalRequest"/> so only
-/// requests that opt into a transaction close this generic — a container-neutral, compile-time-checked
+/// requests that opt into a transaction close this generic - a container-neutral, compile-time-checked
 /// replacement for the request-shape half of the runtime check this behavior used to perform. This does not
-/// replace the <see cref="IExternalStoreRequest"/> opt-out check — see the remarks on <see cref="Handle"/>.
+/// replace the <see cref="IExternalStoreRequest"/> opt-out check - see the remarks on <see cref="Handle"/>.
 /// </typeparam>
 /// <typeparam name="TResponse">The response type returned after pipeline execution.</typeparam>
 /// <typeparam name="TContext">The EF Core <see cref="DbContext"/> type providing the database connection for the transaction scope.</typeparam>
@@ -29,12 +29,12 @@ using Microsoft.EntityFrameworkCore;
 /// back and all accumulated changes are discarded.
 /// </para>
 /// <para>
-/// Requests are only wrapped in a transaction when they implement <see cref="ITransactionalRequest"/> — enforced
+/// Requests are only wrapped in a transaction when they implement <see cref="ITransactionalRequest"/> - enforced
 /// at compile time by the <typeparamref name="TRequest"/> constraint, so both Microsoft DI and Autofac skip this
 /// open generic registration entirely for a request type that does not implement the marker. Requests implementing
 /// <see cref="IExternalStoreRequest"/> are additionally excluded via a residual runtime check in <see cref="Handle"/>
 /// because they manage their own external transaction or outbox scope and should not participate in the local
-/// database transaction — see that method's remarks for why this check cannot be replaced by a second generic
+/// database transaction - see that method's remarks for why this check cannot be replaced by a second generic
 /// constraint.
 /// </para>
 /// <para>
@@ -61,7 +61,7 @@ public class TransactionBehavior<TRequest, TResponse, TContext>(
     /// If the request implements <see cref="IExternalStoreRequest"/>, the handler is invoked without any
     /// transaction scope. This is a residual runtime check, not covered by the <typeparamref name="TRequest"/>
     /// constraint: <see cref="ITransactionalRequest"/> and <see cref="IExternalStoreRequest"/> are meant to be
-    /// mutually exclusive (a request should implement exactly one — see ADR-0004), but nothing at the type
+    /// mutually exclusive (a request should implement exactly one - see ADR-0004), but nothing at the type
     /// level prevents a request from implementing both. A generic constraint can only require a marker's
     /// presence, not its absence, so it cannot express "and does not also implement this other interface." If
     /// a request implementing both slips through, treating <see cref="IExternalStoreRequest"/> as the
@@ -79,7 +79,7 @@ public class TransactionBehavior<TRequest, TResponse, TContext>(
     public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         // Residual opt-out: ITransactionalRequest is already guaranteed by the TRequest constraint, so the
-        // only thing left to check at runtime is the IExternalStoreRequest override — see the remarks above.
+        // only thing left to check at runtime is the IExternalStoreRequest override - see the remarks above.
         if (request is IExternalStoreRequest)
         {
             return await next();

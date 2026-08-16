@@ -11,7 +11,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </summary>
 /// <typeparam name="TRequest">The type of the request being validated.</typeparam>
 /// <typeparam name="TResponse">
-/// The response type, constrained only to <see cref="IOperationOutcome"/> — deliberately unconstrained
+/// The response type, constrained only to <see cref="IOperationOutcome"/> - deliberately unconstrained
 /// beyond that. See the Remarks for why, and for the same reasoning applied to <see cref="AuthorizationBehavior{TRequest, TResponse}"/>.
 /// </typeparam>
 /// <remarks>
@@ -21,7 +21,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </para>
 /// <para>
 /// <typeparamref name="TResponse"/> is constrained only to <see cref="IOperationOutcome"/>, not decomposed
-/// into a success-type parameter with <see cref="ValidationErrors"/> pinned as the failure case — for exactly
+/// into a success-type parameter with <see cref="ValidationErrors"/> pinned as the failure case - for exactly
 /// the reason, and via exactly the same <see cref="UnionCaseFactory"/> mechanism,
 /// <see cref="AuthorizationBehavior{TRequest, TResponse}"/>'s remarks describe in full: the decomposed shape
 /// broke Microsoft.Extensions.DependencyInjection's open-generic resolution outright.
@@ -30,7 +30,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TResponse : IOperationOutcome
 {
-    // Resolved once per closed TResponse — see AuthorizationBehavior's identical field for the full
+    // Resolved once per closed TResponse - see AuthorizationBehavior's identical field for the full
     // rationale. Null when TResponse has no constructor accepting a single ValidationErrors argument.
     private static readonly ConstructorInfo? ValidationErrorsConstructor = UnionCaseFactory.FindCaseConstructor<
         TResponse,
@@ -61,11 +61,11 @@ public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<
     /// failure containing all validation error messages from all validators, de-duplicated.</returns>
     /// <exception cref="InvalidOperationException">
     /// Validation failed, but <typeparamref name="TResponse"/> has no <see cref="ValidationErrors"/> case to
-    /// construct — use a response type that has one.
+    /// construct - use a response type that has one.
     /// </exception>
     public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
-        // Short-circuit when no validators are registered — the pipeline proceeds without validation.
+        // Short-circuit when no validators are registered - the pipeline proceeds without validation.
         if (!this.validators.Any())
         {
             return await next();
@@ -83,13 +83,13 @@ public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<
             }
         }
 
-        // Short-circuit if validation passed — forward to handler unchanged.
+        // Short-circuit if validation passed - forward to handler unchanged.
         if (errorMessages.Count == 0)
         {
             return await next();
         }
 
-        // Validation failed — create ValidationErrors aggregate with all messages (de-duplicated)
+        // Validation failed - create ValidationErrors aggregate with all messages (de-duplicated)
         // and return immediately without invoking the handler.
         return ConstructValidationErrorsResponse(new ValidationErrors(errorMessages));
     }

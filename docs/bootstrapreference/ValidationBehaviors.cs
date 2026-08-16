@@ -39,7 +39,7 @@ public sealed class ValidationBehavior<TRequest, TResponse>(IEnumerable<IValidat
 /// automatically, using <see cref="IValidator{TItem}"/> resolved from DI.
 /// This is the payoff of <see cref="IBulkCommand{TItem,TResponseItem}"/>
 /// exposing <c>Items</c> as a real contract member: a consuming application
-/// only needs to register <c>IValidator&lt;TItem&gt;</c> for its item type —
+/// only needs to register <c>IValidator&lt;TItem&gt;</c> for its item type -
 /// no hand-written parent validator or <c>RuleForEach</c> wrapper is
 /// required unless cross-item rules are also needed, in which case a normal
 /// <c>AbstractValidator&lt;TRequest&gt;</c> can be registered alongside

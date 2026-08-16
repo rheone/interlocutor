@@ -8,7 +8,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 using NSubstitute;
 
 // AuditingBehavior<TRequest, TResponse> now constrains TRequest : IAuditableRequest, so a non-auditable
-// request cannot close this generic at all — there is no runtime "skip" branch left to unit test here. The
+// request cannot close this generic at all - there is no runtime "skip" branch left to unit test here. The
 // "a request without the marker never resolves the behavior" guarantee is proven at the container level
 // instead: see BehaviorSubsetConstraintTests in the DependencyInjection.Microsoft/Autofac test projects.
 public class AuditingBehaviorTests

@@ -10,14 +10,14 @@ A developer configures assembly scanning, defaults, overrides, behaviors, and st
 
 Behavior this establishes:
 
-- **Nothing runs unless asked for.** A bare configuration call registers the mediator, discovered handlers, and stages — and zero pipeline behaviors. A developer who wants logging asks for logging.
+- **Nothing runs unless asked for.** A bare configuration call registers the mediator, discovered handlers, and stages - and zero pipeline behaviors. A developer who wants logging asks for logging.
 - **A behavior's dependencies are registered only when that behavior is.** No orphan audit sink, policy evaluator, or context accessor for a pipeline that does not use them.
 - **A consumer's own registration of any library default wins regardless of call order.** Defaults use try-add semantics, so registering before the library call wins; explicit override methods on the builder cover registering after it.
 - **Behaviors form a flat ordered list in builder-call order.** A given request's chain is that list filtered to the entries that apply, preserving position. No profiles, no numeric ordering, no merge rules.
 - **Registering the same behavior more than once is legal** and runs it more than once, at each position it was added.
-- **An opt-in method applies the recommended chain** — logging, auditing, authorization, validation, transaction — for developers who want a sensible pipeline without composing it. It is sugar, never a default.
+- **An opt-in method applies the recommended chain** - logging, auditing, authorization, validation, transaction - for developers who want a sensible pipeline without composing it. It is sugar, never a default.
 
-The three configuration properties that are currently declared but never read — default publish strategy, outcome describer type, and startup validation — must either take effect through the builder or not exist on it.
+The three configuration properties that are currently declared but never read - default publish strategy, outcome describer type, and startup validation - must either take effect through the builder or not exist on it.
 
 ## Acceptance criteria
 
@@ -34,4 +34,4 @@ The three configuration properties that are currently declared but never read �
 
 ## Blocked by
 
-02 — Container-neutral registration core
+02 - Container-neutral registration core

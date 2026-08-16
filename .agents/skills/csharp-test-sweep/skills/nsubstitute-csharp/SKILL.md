@@ -4,8 +4,8 @@ description: Write, update, and improve NSubstitute mock setups in C# test proje
 license: Apache-2.0
 user-invocable: true
 metadata:
-  author: Robert Engelhardt <rheone@gmail.com>
-  version: 2.0.0
+    author: Robert Engelhardt <rheone@gmail.com>
+    version: 2.0.0
 ---
 
 # NSubstitute C# Mocking Skill
@@ -17,7 +17,7 @@ Apply these NSubstitute-specific checks during every sweep, after the [General Q
 - [ ] `Substitute.For<T>()` used only for dependencies, not the class under test
 - [ ] Concrete subclass used instead of substitute when testing abstract class methods
 - [ ] `Received` / `DidNotReceive` verification placed in Assert section
-- [ ] `Arg.Any<T>` used sparingly — `CancellationToken` or irrelevant args only
+- [ ] `Arg.Any<T>` used sparingly - `CancellationToken` or irrelevant args only
 - [ ] `Arg.Is<T>(predicate)` used when argument value matters for correctness
 - [ ] `Substitute.ForPartsOf<T>` used sparingly (indicates design should be improved)
 - [ ] NSubstitute.Analyzers NuGet package added to the test project
@@ -25,14 +25,14 @@ Apply these NSubstitute-specific checks during every sweep, after the [General Q
 ## Core Rules
 
 - `Substitute.For<T>()` is for **dependencies**, not the **subject under test**.
-- **Never substitute the class under test** — if the method under test is virtual, NSubstitute intercepts it and returns the type default instead of running the real implementation.
+- **Never substitute the class under test** - if the method under test is virtual, NSubstitute intercepts it and returns the type default instead of running the real implementation.
 - If the method under test lives on an abstract base class, instantiate a **concrete subclass** that inherits the implementation without overriding it.
 - `Arg.Any<T>()` is permitted only for: `CancellationToken` when cancellation is not the subject; complex objects verified by a separate assertion; call-count/ordering tests where argument values are irrelevant.
 - Mock verification (`Received`, `DidNotReceive`) belongs in the Assert section.
 
 ## Anti-Pattern: Substituting the Class Under Test
 
-**Never use `Substitute.For<T>()` when `T` is the class whose behavior you are testing.** NSubstitute intercepts all virtual methods and returns the type default — the real implementation never runs, producing vacuously passing tests.
+**Never use `Substitute.For<T>()` when `T` is the class whose behavior you are testing.** NSubstitute intercepts all virtual methods and returns the type default - the real implementation never runs, producing vacuously passing tests.
 
 ```csharp
 // BROKEN: NSubstitute intercepts virtual ToString → returns ""; test passes vacuously
@@ -54,7 +54,7 @@ Substituting an abstract class is appropriate when:
 
 - The abstract class is a **dependency** being injected into the class under test
 - You are testing **interactions** (verifying the subject calls a method on the dependency), not the dependency's behavior
-- The method you care about is **abstract** (not virtual with a body) — NSubstitute cannot intercept abstract methods that have no implementation, so a substitute is the only option
+- The method you care about is **abstract** (not virtual with a body) - NSubstitute cannot intercept abstract methods that have no implementation, so a substitute is the only option
 
 ```csharp
 // Correct: substituting a dependency, not the subject under test
@@ -78,21 +78,20 @@ partial.When(x => x.VirtualMethod()).DoNotCallBase(); // suppress only this call
 // All other virtual methods call through to the real implementation
 ```
 
-Use partial substitutes sparingly — they indicate the design may benefit from extracting the dependency rather than partially mocking the subject.
+Use partial substitutes sparingly - they indicate the design may benefit from extracting the dependency rather than partially mocking the subject.
 
 ## NSubstitute API Landmarks
 
-| Concern | NSubstitute API |
-|---------|-----------------|
-| Create substitute | `Substitute.For<IFoo>()` |
-| Stub return value | `substitute.Method(arg).Returns(value);` |
+| Concern            | NSubstitute API                                             |
+| ------------------ | ----------------------------------------------------------- |
+| Create substitute  | `Substitute.For<IFoo>()`                                    |
+| Stub return value  | `substitute.Method(arg).Returns(value);`                    |
 | Stub with callback | `substitute.Method(arg).Returns(x => compute(x.Arg<T>()));` |
-| Verify call | `substitute.Received(1).Method(arg);` |
-| Verify no call | `substitute.DidNotReceive().Method(Arg.Any<T>());` |
-| Argument matcher | `Arg.Any<T>()`, `Arg.Is<T>(v => ...)` |
-| Partial substitute | `Substitute.ForPartsOf<ConcreteClass>()` |
-| Suppress base call | `.When(x => x.Method()).DoNotCallBase();` |
-
+| Verify call        | `substitute.Received(1).Method(arg);`                       |
+| Verify no call     | `substitute.DidNotReceive().Method(Arg.Any<T>());`          |
+| Argument matcher   | `Arg.Any<T>()`, `Arg.Is<T>(v => ...)`                       |
+| Partial substitute | `Substitute.ForPartsOf<ConcreteClass>()`                    |
+| Suppress base call | `.When(x => x.Method()).DoNotCallBase();`                   |
 
 ## Related Skills
 

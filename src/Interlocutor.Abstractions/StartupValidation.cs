@@ -9,7 +9,7 @@ using Interlocutor.Abstractions.Queries;
 /// <para>
 /// Call <see cref="ValidateHandlerRegistrations"/> in your Program.cs (after DI registration) to catch missing
 /// handler registrations at startup instead of at runtime. This is especially useful if you use manual handler
-/// registration instead of assembly scanning — it validates that every query/command type has a corresponding handler.
+/// registration instead of assembly scanning - it validates that every query/command type has a corresponding handler.
 /// </para>
 /// </remarks>
 public static class InterlocutorStartupValidation
@@ -63,7 +63,7 @@ public static class InterlocutorStartupValidation
         if (missing.Count > 0)
         {
             throw new InvalidOperationException(
-                "Interlocutor startup validation failed — missing handler registrations:\n"
+                "Interlocutor startup validation failed - missing handler registrations:\n"
                     + string.Join("\n", missing.Select(m => $"  - {m}"))
             );
         }

@@ -10,8 +10,8 @@ using Interlocutor.CommonKernel;
 /// <summary>
 /// Decorates the library's real <see cref="Mediator"/> with the root-scope guard from ADR-0011: every
 /// dispatch method (<c>Send</c>, <c>Publish</c>) checks <see cref="IRootScopeDetector.IsRootScope"/> first,
-/// throwing <see cref="MediatorResolvedFromRootScopeException"/> — naming the request/notification type being
-/// dispatched — instead of silently running the request against services resolved from the root
+/// throwing <see cref="MediatorResolvedFromRootScopeException"/> - naming the request/notification type being
+/// dispatched - instead of silently running the request against services resolved from the root
 /// provider/container.
 /// </summary>
 /// <remarks>
@@ -20,8 +20,8 @@ using Interlocutor.CommonKernel;
 /// <c>Interlocutor.DependencyInjection.Autofac</c>) register this type as the implementation behind
 /// <see cref="IMediator"/>/<see cref="ISender"/>/<see cref="IPublisher"/>, wrapping a separately-registered
 /// <see cref="Mediator"/> instance and their own <see cref="IRootScopeDetector"/> implementation. This keeps
-/// <see cref="Mediator"/> itself free of any DI-specific root-detection logic — the guard is purely a
-/// registration-time concern, applied here rather than inside dispatch itself — and keeps the guard
+/// <see cref="Mediator"/> itself free of any DI-specific root-detection logic - the guard is purely a
+/// registration-time concern, applied here rather than inside dispatch itself - and keeps the guard
 /// container-neutral, since it depends only on the <see cref="IRootScopeDetector"/> abstraction, not on
 /// either concrete container.
 /// </para>

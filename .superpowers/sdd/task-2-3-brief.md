@@ -2,12 +2,12 @@
 
 **Goal:** Create 30 new files in subdirectories under `src/Interlocutor.Abstractions/`, then delete `Abstractions.cs` and `Behaviors.cs`.
 
-**Critical constraints — MUST follow exactly:**
+**Critical constraints - MUST follow exactly:**
 1. ONLY create the files listed below. Do NOT touch any other file.
 2. ONLY delete `Abstractions.cs` and `Behaviors.cs`. Do NOT delete anything else.
 3. Do NOT modify any existing file.
 4. Each file's namespace must match the subdirectory name (e.g. files in `Core/` → `namespace Interlocutor.Abstractions.Core;`)
-5. Do NOT add, remove, or change any code logic — pure file extraction
+5. Do NOT add, remove, or change any code logic - pure file extraction
 
 The build will NOT pass after this task (imports in other files won't resolve until later tasks). Do NOT try to build.
 
@@ -90,7 +90,7 @@ public enum PublishStrategy
 namespace Interlocutor.Abstractions.Core;
 
 /// <summary>Scoped ambient context carrying correlation ID, user identity, and tenant information through the request pipeline.</summary>
-/// <remarks>Null-safe — if no middleware populates this, <see cref="Context"/> is null. Consumers must handle gracefully.</remarks>
+/// <remarks>Null-safe - if no middleware populates this, <see cref="Context"/> is null. Consumers must handle gracefully.</remarks>
 public interface IRequestContextAccessor
 {
     /// <summary>Gets or sets the current request context. May be null if not populated.</summary>
@@ -252,7 +252,7 @@ public interface IQueryHandler<in TQuery, TResponse>
 ```csharp
 namespace Interlocutor.Abstractions.Notifications;
 
-/// <summary>Marker interface for domain events or notifications. Has no return value — fire-and-forget.</summary>
+/// <summary>Marker interface for domain events or notifications. Has no return value - fire-and-forget.</summary>
 public interface INotification;
 ```
 

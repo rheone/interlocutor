@@ -3,12 +3,12 @@ namespace Interlocutor.Abstractions.Commands;
 using Interlocutor.CommonKernel;
 
 /// <summary>
-/// Handles a command that produces no data payload — only an outcome.
+/// Handles a command that produces no data payload - only an outcome.
 /// </summary>
 /// <typeparam name="TCommand">The command type that this handler processes.</typeparam>
 /// <typeparam name="TResult">
 /// The <see cref="IOperationOutcome"/>-shaped union describing the outcome. Chosen by the handler/call site
-/// — may be any public union type in <c>Interlocutor.CommonKernel</c> (<see cref="OperationOutcome"/>,
+/// - may be any public union type in <c>Interlocutor.CommonKernel</c> (<see cref="OperationOutcome"/>,
 /// <see cref="OperationOutcome{TSuccessResult, TFailureResult}"/>, etc.).
 /// </typeparam>
 /// <remarks>

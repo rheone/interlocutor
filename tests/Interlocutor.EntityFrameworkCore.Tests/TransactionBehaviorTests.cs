@@ -38,7 +38,7 @@ public class TransactionBehaviorTests
     public void TRequest_Constraint_RejectsNonTransactionalRequestAtCompileTime()
     {
         // A request that implements neither marker cannot close TransactionBehavior<,,>'s TRequest parameter
-        // at all — proven here via reflection (the same MakeGenericType mechanism both Microsoft DI and
+        // at all - proven here via reflection (the same MakeGenericType mechanism both Microsoft DI and
         // Autofac use internally to decide whether an open generic registration applies), since the compiler
         // itself already rejects this at every other call site in this file and would reject a source-level
         // attempt to write TransactionBehavior<NonTransactionalRequest, OperationOutcome<string, Failure>, DbContext> outright.
@@ -64,7 +64,7 @@ public class TransactionBehaviorTests
             ITransactionalRequest;
 
     /// <summary>
-    /// A request implementing both <see cref="ITransactionalRequest"/> and <see cref="IExternalStoreRequest"/> —
+    /// A request implementing both <see cref="ITransactionalRequest"/> and <see cref="IExternalStoreRequest"/> -
     /// the malformed-but-not-impossible case the compile-time <c>TRequest : ITransactionalRequest</c> constraint
     /// cannot rule out (a constraint can only require a marker's presence, never another marker's absence), so
     /// <see cref="TransactionBehavior{TRequest,TResponse,TContext}"/> retains a residual runtime check for it.

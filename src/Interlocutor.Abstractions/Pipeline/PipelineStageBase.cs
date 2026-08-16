@@ -10,7 +10,7 @@ public abstract class PipelineStageBase<TRequest, TResponse> : IPipelineStage<TR
 {
     /// <summary>
     /// Invoked before the request enters the inner pipeline. The default implementation is a no-op that
-    /// always continues — override to inspect, short-circuit, or set up state for <see cref="OnAfterAsync"/>.
+    /// always continues - override to inspect, short-circuit, or set up state for <see cref="OnAfterAsync"/>.
     /// </summary>
     /// <param name="request">The request being processed.</param>
     /// <param name="ct">The cancellation token.</param>
@@ -22,7 +22,7 @@ public abstract class PipelineStageBase<TRequest, TResponse> : IPipelineStage<TR
 
     /// <summary>
     /// Invoked after the request has been handled (or short-circuited). The default implementation is a
-    /// no-op — override to tear down state set up in <see cref="OnBeforeAsync"/>.
+    /// no-op - override to tear down state set up in <see cref="OnBeforeAsync"/>.
     /// </summary>
     /// <param name="request">The request that was processed.</param>
     /// <param name="result">The response: the handler's result, or the short-circuit response if the request was declined.</param>

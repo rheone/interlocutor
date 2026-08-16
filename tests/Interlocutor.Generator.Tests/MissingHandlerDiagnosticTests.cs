@@ -139,7 +139,7 @@ public sealed class MissingHandlerDiagnosticTests
         );
 
         // The escalation mechanism this ticket's acceptance criteria describe is the same one every other
-        // diagnostic in this repository uses (see .editorconfig's `dotnet_diagnostic.<ID>.severity` entries) —
+        // diagnostic in this repository uses (see .editorconfig's `dotnet_diagnostic.<ID>.severity` entries) -
         // exercised here via CSharpCompilationOptions.SpecificDiagnosticOptions, the API-level equivalent of an
         // .editorconfig `dotnet_diagnostic.INTERLOC001.severity = error` entry.
         var escalated = compilation.WithOptions(

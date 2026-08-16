@@ -8,7 +8,7 @@ namespace Interlocutor.DependencyInjection.Abstractions;
 /// This is the sole unit of exchange between the assembly-scanning and default-catalog logic in
 /// this module and the container-specific translators in <c>Interlocutor.DependencyInjection.Microsoft</c>
 /// and <c>Interlocutor.DependencyInjection.Autofac</c>. Neither container package retains its own
-/// scanning loop — both translate a sequence of these records into their own registration primitives.
+/// scanning loop - both translate a sequence of these records into their own registration primitives.
 /// </remarks>
 /// <param name="ServiceType">
 /// The service (contract) type the registration satisfies. May be an open generic type definition

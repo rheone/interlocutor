@@ -4,8 +4,8 @@ description: Write, update, and improve RhinoMocks mock setups in legacy C# test
 license: Apache-2.0
 user-invocable: true
 metadata:
-  author: Robert Engelhardt <rheone@gmail.com>
-  version: 2.0.0
+    author: Robert Engelhardt <rheone@gmail.com>
+    version: 2.0.0
 ---
 
 # RhinoMocks C# Mocking Skill
@@ -43,14 +43,16 @@ mock.AssertWasCalled(x => x.GetValue());
 
 ### 2. Never Mock the Class Under Test
 
-`GenerateMock<T>()` and `GenerateStub<T>()` intercept **all virtual methods** on `T`. If `T` is the class under test, the method under test never executes — the mock returns the type default instead.
+`GenerateMock<T>()` and `GenerateStub<T>()` intercept **all virtual methods** on `T`. If `T` is the class under test, the method under test never executes - the mock returns the type default instead.
 
 **Bad:**
+
 ```csharp
 var sut = MockRepository.GenerateMock<AbstractProcessor>();
 ```
 
-**Good — concrete subclass:**
+**Good - concrete subclass:**
+
 ```csharp
 private class TestableProcessor : AbstractProcessor
 {
@@ -85,19 +87,19 @@ When the class under test inherits from an abstract base, create a minimal concr
 
 When touching a RhinoMocks test file, consider migrating to NSubstitute or Moq:
 
-| RhinoMocks                        | NSubstitute                     | Moq                                  |
-| --------------------------------- | ------------------------------- | ------------------------------------ |
-| `GenerateMock<T>()`               | `Substitute.For<T>()`           | `new Mock<T>()`                      |
-| `stub.Stub(x => x.M()).Ret(v)`    | `sub.Method().Returns(v)`       | `mock.Setup(x => x.M()).Returns(v)`  |
-| `mock.AssertWasCalled(x => x.M())`| `sub.Received().Method()`       | `mock.Verify(x => x.M())`            |
-| `Arg<T>.Is.Equal(v)`              | `Arg.Is<T>(x => x == v)`        | `It.Is<T>(x => x == v)`              |
+| RhinoMocks                         | NSubstitute               | Moq                                 |
+| ---------------------------------- | ------------------------- | ----------------------------------- |
+| `GenerateMock<T>()`                | `Substitute.For<T>()`     | `new Mock<T>()`                     |
+| `stub.Stub(x => x.M()).Ret(v)`     | `sub.Method().Returns(v)` | `mock.Setup(x => x.M()).Returns(v)` |
+| `mock.AssertWasCalled(x => x.M())` | `sub.Received().Method()` | `mock.Verify(x => x.M())`           |
+| `Arg<T>.Is.Equal(v)`               | `Arg.Is<T>(x => x == v)`  | `It.Is<T>(x => x == v)`             |
 
 ## Related Skills
 
-| Skill | Purpose |
-|-------|---------|
-| [`csharp-test-sweep`](../../SKILL.md) | Orchestrates the full test sweep; invokes this skill |
+| Skill                                                                                        | Purpose                                                 |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| [`csharp-test-sweep`](../../SKILL.md)                                                        | Orchestrates the full test sweep; invokes this skill    |
 | [`csharp-test-sweep/references/quality-checklist.md`](../../references/quality-checklist.md) | Framework-agnostic quality rules applied at every class |
-| [`REFERENCE.md`](REFERENCE.md) | RhinoMocks API lookup tables |
-| [`EXAMPLES.md`](EXAMPLES.md) | Full worked examples |
-| [`ANTI-PATTERNS.md`](ANTI-PATTERNS.md) | Framework-specific pitfalls |
+| [`REFERENCE.md`](REFERENCE.md)                                                               | RhinoMocks API lookup tables                            |
+| [`EXAMPLES.md`](EXAMPLES.md)                                                                 | Full worked examples                                    |
+| [`ANTI-PATTERNS.md`](ANTI-PATTERNS.md)                                                       | Framework-specific pitfalls                             |

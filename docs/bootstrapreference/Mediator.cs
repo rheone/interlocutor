@@ -7,14 +7,14 @@ namespace Interlocutor.Mediation;
 /// Non-generic so it can be cached in a <see cref="ConcurrentDictionary{TKey,TValue}"/>
 /// keyed by the request's runtime <see cref="Type"/>. The reflection needed
 /// to bridge "runtime type" to "closed generic type" happens exactly once
-/// per distinct request type — see <see cref="Mediator"/> — not once per
+/// per distinct request type - see <see cref="Mediator"/> - not once per
 /// call. Every method inside a concrete wrapper below is ordinary,
 /// compiler-checked C#; no <c>dynamic</c> is used anywhere in dispatch.
 ///
 /// <para>
 /// The <c>Handle</c> implementations below are also where the "nesting
 /// doll" (Russian-doll / onion) pipeline is assembled: start with the
-/// innermost function — a call straight to the handler — then fold each
+/// innermost function - a call straight to the handler - then fold each
 /// registered <c>IPipelineBehavior</c> around it. Folding in <em>reverse</em>
 /// registration order means the FIRST-registered behavior ends up as the
 /// OUTERMOST call. For behaviors registered as
@@ -38,7 +38,7 @@ internal abstract class HandlerWrapper<TResponse>
 /// <summary>
 /// Statically typed dispatch for one concrete query type. Constructed once
 /// (via <see cref="Activator.CreateInstance(Type)"/>) and cached by
-/// <see cref="Mediator"/>; every call after construction is fully typed —
+/// <see cref="Mediator"/>; every call after construction is fully typed -
 /// <c>services.GetRequiredService&lt;IQueryHandler&lt;TQuery,TResponse&gt;&gt;()</c>
 /// and <c>services.GetServices&lt;IPipelineBehavior&lt;TQuery,TResponse&gt;&gt;()</c>
 /// are compiler-verified against the real handler/behavior contracts.
@@ -87,13 +87,13 @@ internal sealed class CommandHandlerWrapper<TCommand, TResponse> : HandlerWrappe
 /// <summary>
 /// The default <see cref="IMediator"/> implementation. This is the only
 /// class in the whole family of packages that holds an
-/// <see cref="IServiceProvider"/> directly — every handler and behavior
+/// <see cref="IServiceProvider"/> directly - every handler and behavior
 /// downstream of it uses ordinary constructor injection. The provider is
 /// used for exactly two lookups per request: which handler and which
 /// ordered behaviors correspond to the request's runtime type. Nothing
 /// else in this class, or anywhere else in the library, calls
 /// <see cref="IServiceProvider"/> to fetch arbitrary application resources
-/// — see the library README §"Service locator usage" for why that
+/// - see the library README §"Service locator usage" for why that
 /// distinction matters.
 /// </summary>
 public sealed class Mediator(IServiceProvider services) : IMediator
@@ -140,7 +140,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     /// <inheritdoc />
     public async Task<Result> Send(ICommand command, CancellationToken ct = default)
     {
-        // Simplified for the no-payload case — a full implementation mirrors
+        // Simplified for the no-payload case - a full implementation mirrors
         // the wrapper pattern above with a Result-returning (not Result<T>)
         // HandlerWrapper hierarchy. Omitted here since the technique is
         // identical; the point of this file is the dynamic -> typed change.

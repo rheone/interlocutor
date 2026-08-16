@@ -60,7 +60,7 @@ internal static class GeneratorTestHarness
 
     /// <summary>
     /// Compiles <paramref name="source"/>, runs <see cref="InterlocutorSourceGenerator"/> over it, and returns
-    /// the resulting compilation with the generated sources merged in — for asserting that the emitted code
+    /// the resulting compilation with the generated sources merged in - for asserting that the emitted code
     /// itself compiles cleanly alongside the source it was generated from.
     /// </summary>
     /// <param name="source">The C# source to compile and analyze.</param>

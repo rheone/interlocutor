@@ -25,10 +25,10 @@ The development container automatically configures Claude Code when it starts. I
 
 Claude Code searches for custom skills in this order:
 
-1. `./.claude/skills` — Project-specific skills (this repo)
-2. `./.agents/skills` — Scoped agent skills (this repo)
-3. `~/.claude/skills` — User-level skills (synced from Windows host)
-4. Built-in skills — Anthropic's global skill library
+1. `./.claude/skills` - Project-specific skills (this repo)
+2. `./.agents/skills` - Scoped agent skills (this repo)
+3. `~/.claude/skills` - User-level skills (synced from Windows host)
+4. Built-in skills - Anthropic's global skill library
 
 To reload skills after adding new ones:
 ```bash
@@ -72,15 +72,15 @@ These are set in the devcontainer and available to Claude Code:
 
 Custom skills for Interlocutor development:
 
-- **`interlocutor:code-review`** — Standards + Spec review (Standards enforcement, PR compliance)
-- **`codebase-design`** — Deep module design patterns
-- **`csharp-docs-and-comments`** — XML doc and comment improvements
-- **`grilling`** — Stress-test ideas and decisions
-- **`mermaid-diagram-generator`** — Generate diagrams (flowcharts, sequences, ERD, etc.)
-- **`research`** — Topic research against primary sources
-- **`resolving-merge-conflicts`** — Merge/rebase conflict resolution
-- **`tdd`** — Test-driven development workflows
-- **`writing-for-agents`** — Agent skill and documentation writing
+- **`interlocutor:code-review`** - Standards + Spec review (Standards enforcement, PR compliance)
+- **`codebase-design`** - Deep module design patterns
+- **`csharp-docs-and-comments`** - XML doc and comment improvements
+- **`grilling`** - Stress-test ideas and decisions
+- **`mermaid-diagram-generator`** - Generate diagrams (flowcharts, sequences, ERD, etc.)
+- **`research`** - Topic research against primary sources
+- **`resolving-merge-conflicts`** - Merge/rebase conflict resolution
+- **`tdd`** - Test-driven development workflows
+- **`writing-for-agents`** - Agent skill and documentation writing
 
 Use them with `/skillname` or by naming them in requests.
 
@@ -127,8 +127,8 @@ export CLAUDE_TRACE=1
 
 ## References
 
-- [CLAUDE.md](../CLAUDE.md) — Project documentation for Claude Code
-- [AGENTS.md](../AGENTS.md) — Agent and skill writing conventions
-- [CONTEXT.md](../CONTEXT.md) — Domain vocabulary and design decisions
+- [CLAUDE.md](../CLAUDE.md) - Project documentation for Claude Code
+- [AGENTS.md](../AGENTS.md) - Agent and skill writing conventions
+- [CONTEXT.md](../CONTEXT.md) - Domain vocabulary and design decisions
 - [Claude Code CLI Reference](https://claude.ai/code/docs)
 - [Skill Writing Guide](../AGENTS.md)

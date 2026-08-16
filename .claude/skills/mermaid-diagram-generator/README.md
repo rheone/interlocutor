@@ -56,7 +56,7 @@ see the ZenUML note below for the one type where that distinction currently matt
 
 **Use for:** Documenting a process, algorithm, or decision tree step by step. See [`references/flowchart.md`](references/flowchart.md) for full syntax, pitfalls, and a more complex example.
 
-**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion — unconfirmed, verify in your target tool (see [`references/flowchart.md`](references/flowchart.md#platform-compatibility))
+**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion - unconfirmed, verify in your target tool (see [`references/flowchart.md`](references/flowchart.md#platform-compatibility))
 
 ```mermaid
 flowchart TD
@@ -71,7 +71,7 @@ flowchart TD
 
 **Use for:** Documenting the order of calls or messages between services or actors. See [`references/sequence.md`](references/sequence.md) for full syntax, pitfalls, and a more complex example.
 
-**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion — unconfirmed, verify in your target tool (see [`references/sequence.md`](references/sequence.md#platform-compatibility))
+**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion - unconfirmed, verify in your target tool (see [`references/sequence.md`](references/sequence.md#platform-compatibility))
 
 ```mermaid
 sequenceDiagram
@@ -87,7 +87,7 @@ sequenceDiagram
 
 **Use for:** Documenting object-oriented type hierarchies and relationships between classes. See [`references/class.md`](references/class.md) for full syntax, pitfalls, and a more complex example.
 
-**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion — unconfirmed, verify in your target tool (see [`references/class.md`](references/class.md#platform-compatibility))
+**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion - unconfirmed, verify in your target tool (see [`references/class.md`](references/class.md#platform-compatibility))
 
 ```mermaid
 classDiagram
@@ -105,7 +105,7 @@ classDiagram
 
 **Use for:** Modeling a finite state machine's states and valid transitions. See [`references/state.md`](references/state.md) for full syntax, pitfalls, and a more complex example.
 
-**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion — unconfirmed, verify in your target tool (see [`references/state.md`](references/state.md#platform-compatibility))
+**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion - unconfirmed, verify in your target tool (see [`references/state.md`](references/state.md#platform-compatibility))
 
 ```mermaid
 stateDiagram-v2
@@ -119,7 +119,7 @@ stateDiagram-v2
 
 **Use for:** Visualizing a repository's branching, merge, and commit history. See [`references/gitgraph.md`](references/gitgraph.md) for full syntax, pitfalls, and a more complex example.
 
-**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion — unconfirmed, verify in your target tool (see [`references/gitgraph.md`](references/gitgraph.md#platform-compatibility))
+**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion - unconfirmed, verify in your target tool (see [`references/gitgraph.md`](references/gitgraph.md#platform-compatibility))
 
 ```mermaid
 gitGraph
@@ -136,7 +136,7 @@ gitGraph
 
 **Use for:** Visualizing satisfaction highs and lows across a user's path through a product. See [`references/user-journey.md`](references/user-journey.md) for full syntax, pitfalls, and a more complex example.
 
-**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion — unconfirmed, verify in your target tool (see [`references/user-journey.md`](references/user-journey.md#platform-compatibility))
+**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion - unconfirmed, verify in your target tool (see [`references/user-journey.md`](references/user-journey.md#platform-compatibility))
 
 ```mermaid
 journey
@@ -154,7 +154,7 @@ journey
 
 **Use for:** Project schedules where tasks have real dates/durations and dependencies. See [`references/gantt.md`](references/gantt.md) for full syntax, pitfalls, and a more complex example.
 
-**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion — unconfirmed, verify in your target tool (see [`references/gantt.md`](references/gantt.md#platform-compatibility))
+**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion - unconfirmed, verify in your target tool (see [`references/gantt.md`](references/gantt.md#platform-compatibility))
 
 ```mermaid
 gantt
@@ -169,7 +169,7 @@ gantt
 
 **Use for:** Showing relative share of a single total across a handful of categories. See [`references/pie.md`](references/pie.md) for full syntax, pitfalls, and a more complex example.
 
-**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion — unconfirmed, verify in your target tool (see [`references/pie.md`](references/pie.md#platform-compatibility))
+**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion - unconfirmed, verify in your target tool (see [`references/pie.md`](references/pie.md#platform-compatibility))
 
 ```mermaid
 pie title Pets adopted by volunteers
@@ -182,7 +182,7 @@ pie title Pets adopted by volunteers
 
 **Use for:** Prioritization matrices (Eisenhower grid, effort-vs-impact). See [`references/quadrant.md`](references/quadrant.md) for full syntax, pitfalls, and a more complex example.
 
-**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion — unconfirmed, verify in your target tool (see [`references/quadrant.md`](references/quadrant.md#platform-compatibility))
+**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion - unconfirmed, verify in your target tool (see [`references/quadrant.md`](references/quadrant.md#platform-compatibility))
 
 ```mermaid
 quadrantChart
@@ -201,7 +201,7 @@ quadrantChart
 
 **Use for:** Tracing formal requirements to elements that satisfy or verify them. See [`references/requirement.md`](references/requirement.md) for full syntax, pitfalls, and a more complex example.
 
-**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion — unconfirmed, verify in your target tool (see [`references/requirement.md`](references/requirement.md#platform-compatibility))
+**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion - unconfirmed, verify in your target tool (see [`references/requirement.md`](references/requirement.md#platform-compatibility))
 
 ```mermaid
 requirementDiagram
@@ -223,7 +223,7 @@ requirementDiagram
 
 **Use for:** Brainstorming or outlining ideas radiating from one central topic. See [`references/mindmap.md`](references/mindmap.md) for full syntax, pitfalls, and a more complex example.
 
-**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion — unconfirmed, verify in your target tool (see [`references/mindmap.md`](references/mindmap.md#platform-compatibility))
+**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion - unconfirmed, verify in your target tool (see [`references/mindmap.md`](references/mindmap.md#platform-compatibility))
 
 ```mermaid
 mindmap
@@ -241,7 +241,7 @@ mindmap
 
 **Use for:** Telling a chronological story - history, milestones, eras. See [`references/timeline.md`](references/timeline.md) for full syntax, pitfalls, and a more complex example.
 
-**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion — unconfirmed, verify in your target tool (see [`references/timeline.md`](references/timeline.md#platform-compatibility))
+**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion - unconfirmed, verify in your target tool (see [`references/timeline.md`](references/timeline.md#platform-compatibility))
 
 ```mermaid
 timeline
@@ -257,7 +257,7 @@ timeline
 
 **Use for:** Sequence diagrams where nested calls read like code (requires plugin). See [`references/zenuml.md`](references/zenuml.md) for full syntax, pitfalls, and a more complex example.
 
-**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion — unconfirmed, verify in your target tool (see [`references/zenuml.md`](references/zenuml.md#platform-compatibility))
+**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion - unconfirmed, verify in your target tool (see [`references/zenuml.md`](references/zenuml.md#platform-compatibility))
 
 ```mermaid
 zenuml
@@ -275,7 +275,7 @@ zenuml
 
 **Use for:** How a quantity splits, merges, or drains across stages (funnels, budgets, energy). See [`references/sankey.md`](references/sankey.md) for full syntax, pitfalls, and a more complex example.
 
-**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion — unconfirmed, verify in your target tool (see [`references/sankey.md`](references/sankey.md#platform-compatibility))
+**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion - unconfirmed, verify in your target tool (see [`references/sankey.md`](references/sankey.md#platform-compatibility))
 
 ```mermaid
 sankey
@@ -291,7 +291,7 @@ Activated,Paying Customer,180
 
 **Use for:** Part-to-whole proportions across a hierarchy. See [`references/treemap.md`](references/treemap.md) for full syntax, pitfalls, and a more complex example.
 
-**Platforms:** GitLab ⚠️ not yet (introduced after GitLab.com's documented Mermaid v10 pin) · GitHub / VS Code / Obsidian / Notion — unconfirmed, verify in your target tool (see [`references/treemap.md`](references/treemap.md#platform-compatibility))
+**Platforms:** GitLab ⚠️ not yet (introduced after GitLab.com's documented Mermaid v10 pin) · GitHub / VS Code / Obsidian / Notion - unconfirmed, verify in your target tool (see [`references/treemap.md`](references/treemap.md#platform-compatibility))
 
 ```mermaid
 treemap-beta
@@ -307,7 +307,7 @@ treemap-beta
 
 **Use for:** Trends over time/ordered categories, line/bar/combo. See [`references/xy-chart.md`](references/xy-chart.md) for full syntax, pitfalls, and a more complex example.
 
-**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion — unconfirmed, verify in your target tool (see [`references/xy-chart.md`](references/xy-chart.md#platform-compatibility))
+**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion - unconfirmed, verify in your target tool (see [`references/xy-chart.md`](references/xy-chart.md#platform-compatibility))
 
 ```mermaid
 xychart
@@ -321,7 +321,7 @@ xychart
 
 **Use for:** High-level architecture sketch where box position/grouping is intentional. See [`references/block.md`](references/block.md) for full syntax, pitfalls, and a more complex example.
 
-**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion — unconfirmed, verify in your target tool (see [`references/block.md`](references/block.md#platform-compatibility))
+**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion - unconfirmed, verify in your target tool (see [`references/block.md`](references/block.md#platform-compatibility))
 
 ```mermaid
 block
@@ -335,7 +335,7 @@ block
 
 **Use for:** Network protocol header layout, field-by-field, bit-accurate. See [`references/packet.md`](references/packet.md) for full syntax, pitfalls, and a more complex example.
 
-**Platforms:** GitLab ⚠️ not yet (introduced after GitLab.com's documented Mermaid v10 pin) · GitHub / VS Code / Obsidian / Notion — unconfirmed, verify in your target tool (see [`references/packet.md`](references/packet.md#platform-compatibility))
+**Platforms:** GitLab ⚠️ not yet (introduced after GitLab.com's documented Mermaid v10 pin) · GitHub / VS Code / Obsidian / Notion - unconfirmed, verify in your target tool (see [`references/packet.md`](references/packet.md#platform-compatibility))
 
 ```mermaid
 ---
@@ -353,7 +353,7 @@ packet
 
 **Use for:** Snapshotting a team's current workflow state (Todo/In Progress/Done). See [`references/kanban.md`](references/kanban.md) for full syntax, pitfalls, and a more complex example.
 
-**Platforms:** GitLab ⚠️ not yet (introduced after GitLab.com's documented Mermaid v10 pin) · GitHub / VS Code / Obsidian / Notion — unconfirmed, verify in your target tool (see [`references/kanban.md`](references/kanban.md#platform-compatibility))
+**Platforms:** GitLab ⚠️ not yet (introduced after GitLab.com's documented Mermaid v10 pin) · GitHub / VS Code / Obsidian / Notion - unconfirmed, verify in your target tool (see [`references/kanban.md`](references/kanban.md#platform-compatibility))
 
 ```mermaid
 kanban
@@ -370,7 +370,7 @@ kanban
 
 **Use for:** Cloud/CI-CD deployment topology - services, storage, connections. See [`references/architecture.md`](references/architecture.md) for full syntax, pitfalls, and a more complex example.
 
-**Platforms:** GitLab ⚠️ not yet (introduced after GitLab.com's documented Mermaid v10 pin) · GitHub / VS Code / Obsidian / Notion — unconfirmed, verify in your target tool (see [`references/architecture.md`](references/architecture.md#platform-compatibility))
+**Platforms:** GitLab ⚠️ not yet (introduced after GitLab.com's documented Mermaid v10 pin) · GitHub / VS Code / Obsidian / Notion - unconfirmed, verify in your target tool (see [`references/architecture.md`](references/architecture.md#platform-compatibility))
 
 ```mermaid
 architecture-beta
@@ -386,7 +386,7 @@ architecture-beta
 
 **Use for:** Comparing multiple items across 3+ shared criteria. See [`references/radar.md`](references/radar.md) for full syntax, pitfalls, and a more complex example.
 
-**Platforms:** GitLab ⚠️ not yet (introduced after GitLab.com's documented Mermaid v10 pin) · GitHub / VS Code / Obsidian / Notion — unconfirmed, verify in your target tool (see [`references/radar.md`](references/radar.md#platform-compatibility))
+**Platforms:** GitLab ⚠️ not yet (introduced after GitLab.com's documented Mermaid v10 pin) · GitHub / VS Code / Obsidian / Notion - unconfirmed, verify in your target tool (see [`references/radar.md`](references/radar.md#platform-compatibility))
 
 ```mermaid
 radar-beta
@@ -404,7 +404,7 @@ radar-beta
 
 **Use for:** Showing which categories/groups share members. See [`references/venn.md`](references/venn.md) for full syntax, pitfalls, and a more complex example.
 
-**Platforms:** GitLab ⚠️ not yet (introduced after GitLab.com's documented Mermaid v10 pin) · GitHub / VS Code / Obsidian / Notion — unconfirmed, verify in your target tool (see [`references/venn.md`](references/venn.md#platform-compatibility))
+**Platforms:** GitLab ⚠️ not yet (introduced after GitLab.com's documented Mermaid v10 pin) · GitHub / VS Code / Obsidian / Notion - unconfirmed, verify in your target tool (see [`references/venn.md`](references/venn.md#platform-compatibility))
 
 ```mermaid
 venn-beta
@@ -418,7 +418,7 @@ venn-beta
 
 **Use for:** Root-cause analysis of a single defined problem or incident. See [`references/ishikawa.md`](references/ishikawa.md) for full syntax, pitfalls, and a more complex example.
 
-**Platforms:** GitLab ⚠️ not yet (introduced after GitLab.com's documented Mermaid v10 pin) · GitHub / VS Code / Obsidian / Notion — unconfirmed, verify in your target tool (see [`references/ishikawa.md`](references/ishikawa.md#platform-compatibility))
+**Platforms:** GitLab ⚠️ not yet (introduced after GitLab.com's documented Mermaid v10 pin) · GitHub / VS Code / Obsidian / Notion - unconfirmed, verify in your target tool (see [`references/ishikawa.md`](references/ishikawa.md#platform-compatibility))
 
 ```mermaid
 ishikawa-beta
@@ -434,7 +434,7 @@ ishikawa-beta
 
 **Use for:** Strategic value-chain mapping for build/buy/outsource reasoning. See [`references/wardley.md`](references/wardley.md) for full syntax, pitfalls, and a more complex example.
 
-**Platforms:** GitLab ⚠️ not yet (introduced after GitLab.com's documented Mermaid v10 pin) · GitHub / VS Code / Obsidian / Notion — unconfirmed, verify in your target tool (see [`references/wardley.md`](references/wardley.md#platform-compatibility))
+**Platforms:** GitLab ⚠️ not yet (introduced after GitLab.com's documented Mermaid v10 pin) · GitHub / VS Code / Obsidian / Notion - unconfirmed, verify in your target tool (see [`references/wardley.md`](references/wardley.md#platform-compatibility))
 
 ```mermaid
 wardley-beta
@@ -454,7 +454,7 @@ Beans -> Roaster
 
 **Use for:** Classifying problems by how well-understood their cause-and-effect is. See [`references/cynefin.md`](references/cynefin.md) for full syntax, pitfalls, and a more complex example.
 
-**Platforms:** GitLab ⚠️ not yet (introduced after GitLab.com's documented Mermaid v10 pin) · GitHub / VS Code / Obsidian / Notion — unconfirmed, verify in your target tool (see [`references/cynefin.md`](references/cynefin.md#platform-compatibility))
+**Platforms:** GitLab ⚠️ not yet (introduced after GitLab.com's documented Mermaid v10 pin) · GitHub / VS Code / Obsidian / Notion - unconfirmed, verify in your target tool (see [`references/cynefin.md`](references/cynefin.md#platform-compatibility))
 
 ```mermaid
 cynefin-beta
@@ -478,7 +478,7 @@ cynefin-beta
 
 **Use for:** Rendering a file/folder structure or codebase layout. See [`references/treeview.md`](references/treeview.md) for full syntax, pitfalls, and a more complex example.
 
-**Platforms:** GitLab ⚠️ not yet (introduced after GitLab.com's documented Mermaid v10 pin) · GitHub / VS Code / Obsidian / Notion — unconfirmed, verify in your target tool (see [`references/treeview.md`](references/treeview.md#platform-compatibility))
+**Platforms:** GitLab ⚠️ not yet (introduced after GitLab.com's documented Mermaid v10 pin) · GitHub / VS Code / Obsidian / Notion - unconfirmed, verify in your target tool (see [`references/treeview.md`](references/treeview.md#platform-compatibility))
 
 ```mermaid
 treeView-beta
@@ -494,7 +494,7 @@ treeView-beta
 
 **Use for:** A process where step ownership matters as much as sequence. See [`references/swimlanes.md`](references/swimlanes.md) for full syntax, pitfalls, and a more complex example.
 
-**Platforms:** GitLab ⚠️ not yet (introduced after GitLab.com's documented Mermaid v10 pin) · GitHub / VS Code / Obsidian / Notion — unconfirmed, verify in your target tool (see [`references/swimlanes.md`](references/swimlanes.md#platform-compatibility))
+**Platforms:** GitLab ⚠️ not yet (introduced after GitLab.com's documented Mermaid v10 pin) · GitHub / VS Code / Obsidian / Notion - unconfirmed, verify in your target tool (see [`references/swimlanes.md`](references/swimlanes.md#platform-compatibility))
 
 ```mermaid
 swimlane-beta LR
@@ -519,7 +519,7 @@ swimlane-beta LR
 
 **Use for:** Sketching a database schema with tables and cardinalities. See [`references/entity-relationship.md`](references/entity-relationship.md) for full syntax, pitfalls, and a more complex example.
 
-**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion — unconfirmed, verify in your target tool (see [`references/entity-relationship.md`](references/entity-relationship.md#platform-compatibility))
+**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion - unconfirmed, verify in your target tool (see [`references/entity-relationship.md`](references/entity-relationship.md#platform-compatibility))
 
 ```mermaid
 erDiagram
@@ -531,7 +531,7 @@ erDiagram
 
 **Use for:** System architecture at context/container/component zoom using C4 vocabulary. See [`references/c4.md`](references/c4.md) for full syntax, pitfalls, and a more complex example.
 
-**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion — unconfirmed, verify in your target tool (see [`references/c4.md`](references/c4.md#platform-compatibility))
+**Platforms:** GitLab ✅ · GitHub / VS Code / Obsidian / Notion - unconfirmed, verify in your target tool (see [`references/c4.md`](references/c4.md#platform-compatibility))
 
 ```mermaid
 C4Context
@@ -549,7 +549,7 @@ C4Context
 
 **Use for:** Narrating a use case: user action → command → event(s) → read model. See [`references/event-modeling.md`](references/event-modeling.md) for full syntax, pitfalls, and a more complex example.
 
-**Platforms:** GitLab ⚠️ not yet (introduced after GitLab.com's documented Mermaid v10 pin) · GitHub / VS Code / Obsidian / Notion — unconfirmed, verify in your target tool (see [`references/event-modeling.md`](references/event-modeling.md#platform-compatibility))
+**Platforms:** GitLab ⚠️ not yet (introduced after GitLab.com's documented Mermaid v10 pin) · GitHub / VS Code / Obsidian / Notion - unconfirmed, verify in your target tool (see [`references/event-modeling.md`](references/event-modeling.md#platform-compatibility))
 
 ```mermaid
 eventmodeling

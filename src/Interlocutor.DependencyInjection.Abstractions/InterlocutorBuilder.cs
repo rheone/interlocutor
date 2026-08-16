@@ -5,7 +5,7 @@ using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Pipeline;
 
 /// <summary>
-/// Container-neutral fluent builder that is the single configuration surface for Interlocutor —
+/// Container-neutral fluent builder that is the single configuration surface for Interlocutor -
 /// assembly scanning, pipeline behaviors, pipeline stages, and the try-add/override-able defaults
 /// a subset of the built-in behaviors depend on.
 /// </summary>
@@ -15,22 +15,22 @@ using Interlocutor.Abstractions.Pipeline;
 /// each expose an entry-point extension method that hands the consumer this exact type, so the chained
 /// configuration calls a consumer writes are identical regardless of container. Each container package owns
 /// only the translation from the accumulated <see cref="InterlocutorRegistration"/> lists to its own
-/// registration primitives — no scanning, ordering, or override logic is duplicated per container.
+/// registration primitives - no scanning, ordering, or override logic is duplicated per container.
 /// </para>
 /// <para>
 /// Per <c>ADR-0009</c> ("No Default Pipeline"), a builder with no behavior calls produces zero pipeline
-/// behaviors — <see cref="Behaviors"/> starts empty and stays empty unless a builder call adds to it.
+/// behaviors - <see cref="Behaviors"/> starts empty and stays empty unless a builder call adds to it.
 /// <see cref="Defaults"/> starts seeded with exactly one entry, <see cref="IRequestContextAccessor"/>,
 /// because it is ambient infrastructure useful independent of which (if any) pipeline behaviors are
 /// configured; the audit sink and policy evaluator defaults are added only alongside the specific
 /// behavior that consumes them, so a bare builder never carries an orphan dependency. There is
-/// deliberately no automatic <see cref="IResponseOutcomeDescriber"/> default — see
+/// deliberately no automatic <see cref="IResponseOutcomeDescriber"/> default - see
 /// <see cref="AddLoggingBehavior"/> for why.
 /// </para>
 /// <para>
 /// <b>Order and duplicates.</b> <see cref="Behaviors"/> is a flat list in builder-call order. Adding the
 /// same behavior type more than once is legal and both container translators register it at both
-/// positions — neither de-duplicates. A request's actual chain is this same list filtered, at dispatch
+/// positions - neither de-duplicates. A request's actual chain is this same list filtered, at dispatch
 /// time by each container's open-generic resolution, to the entries whose generic constraints the
 /// request satisfies, with relative order preserved.
 /// </para>
@@ -41,7 +41,7 @@ using Interlocutor.Abstractions.Pipeline;
 /// <see cref="OverridePolicyEvaluator{TEvaluator}"/>, <see cref="OverrideRequestContextAccessor{TAccessor}"/>,
 /// <see cref="OverrideOutcomeDescriber{TDescriber}"/>) replace the builder's own internal default entry
 /// directly, so they win regardless of whether they are called before or after the corresponding
-/// <c>Add*Behavior</c> call in the same chain — there is no scenario where call order within the builder
+/// <c>Add*Behavior</c> call in the same chain - there is no scenario where call order within the builder
 /// changes which implementation is registered.
 /// </para>
 /// <para>
@@ -61,7 +61,7 @@ using Interlocutor.Abstractions.Pipeline;
 /// </description></item>
 /// <item><description>
 /// <b>Startup validation.</b> Validating handler registrations needs a fully built provider/container,
-/// which is deliberately outside this builder's job — the builder only ever accumulates registrations
+/// which is deliberately outside this builder's job - the builder only ever accumulates registrations
 /// for a container to apply, it never controls when the consumer finishes building it. Autofac exposes a
 /// build-callback hook that could fire this automatically; Microsoft.Extensions.DependencyInjection has no
 /// equivalent without taking a Hosting dependency this package otherwise doesn't need, so a builder flag
@@ -110,7 +110,7 @@ public sealed class InterlocutorBuilder
 
     /// <summary>
     /// Gets the try-add-able default registrations, one per service type. Always contains exactly one
-    /// entry per distinct service type — the most recently set entry for that type, whether set by an
+    /// entry per distinct service type - the most recently set entry for that type, whether set by an
     /// <c>Add*Behavior</c> convenience method or by the corresponding <c>Override*</c> method.
     /// </summary>
     /// <value>The try-add-able default registrations, one per service type.</value>
@@ -125,7 +125,7 @@ public sealed class InterlocutorBuilder
 
     /// <summary>
     /// Gets the delegate-backed pipeline stage registrations added via the <c>AddStage</c> delegate
-    /// overloads — the lambda-form counterpart to <see cref="Stages"/>.
+    /// overloads - the lambda-form counterpart to <see cref="Stages"/>.
     /// </summary>
     /// <value>The delegate-backed pipeline stage registrations.</value>
     public IReadOnlyList<InterlocutorFactoryRegistration> StageFactories => this._stageFactories;
@@ -139,7 +139,7 @@ public sealed class InterlocutorBuilder
 
     /// <summary>
     /// Adds handler registrations discovered at compile time by <c>Interlocutor.Generator</c> (ADR-0008),
-    /// alongside — never instead of — any registrations produced by <see cref="ScanAssembly"/>/<see cref="ScanAssemblies"/>.
+    /// alongside - never instead of - any registrations produced by <see cref="ScanAssembly"/>/<see cref="ScanAssemblies"/>.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -147,20 +147,20 @@ public sealed class InterlocutorBuilder
     /// own <c>Registrations</c> property straight through, for example
     /// <c>builder.AddGeneratedRegistrations(Interlocutor.Generated.InterlocutorGeneratedRegistrations.Registrations)</c>.
     /// Every entry is already a fully-formed <see cref="InterlocutorRegistration"/> built from compile-time
-    /// <c>typeof(...)</c> tokens — this call performs no reflection of its own, and both container translators
+    /// <c>typeof(...)</c> tokens - this call performs no reflection of its own, and both container translators
     /// apply these entries with the same add semantics as a scanned <see cref="RegistrationKind.Handler"/>
     /// registration (see <see cref="RegistrationKind.Handler"/>'s remarks).
     /// </para>
     /// <para>
     /// Runtime assembly scanning (<see cref="ScanAssembly"/>/<see cref="ScanAssemblies"/>/<see cref="ScanAssemblyContaining{TMarker}"/>/<see cref="ScanEntryAssembly"/>)
-    /// remains fully independent and opt-in — calling this method does not disable scanning, and a bare builder
+    /// remains fully independent and opt-in - calling this method does not disable scanning, and a bare builder
     /// that calls neither registers no handlers at all. A consumer who wants generated registrations to be the
     /// *only* source of handlers simply never calls a <c>Scan*</c> method, which was already true before this
     /// method existed: <see cref="AssembliesToScan"/> starts empty on a fresh builder regardless.
     /// </para>
     /// </remarks>
     /// <param name="registrations">
-    /// The generated handler registrations to add — typically a generated module's <c>Registrations</c> property.
+    /// The generated handler registrations to add - typically a generated module's <c>Registrations</c> property.
     /// </param>
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorBuilder AddGeneratedRegistrations(IEnumerable<InterlocutorRegistration> registrations)
@@ -201,12 +201,12 @@ public sealed class InterlocutorBuilder
 
     /// <summary>
     /// Adds a pipeline behavior implementation at the current position in the chain. This is the
-    /// general escape hatch every named <c>Add*Behavior</c> convenience method is sugar over — use it
+    /// general escape hatch every named <c>Add*Behavior</c> convenience method is sugar over - use it
     /// directly for a custom or third-party <see cref="IPipelineBehavior{TRequest,TResponse}"/>
     /// implementation the builder has no dedicated method for.
     /// </summary>
     /// <param name="behaviorImplementationType">
-    /// The behavior's implementation type — typically an open generic type definition (for example
+    /// The behavior's implementation type - typically an open generic type definition (for example
     /// <c>typeof(MyBehavior&lt;,&gt;)</c>) so it applies across request/response shapes, registered
     /// against the open <see cref="IPipelineBehavior{TRequest,TResponse}"/> contract.
     /// </param>
@@ -236,7 +236,7 @@ public sealed class InterlocutorBuilder
     /// No <see cref="IResponseOutcomeDescriber"/> default is registered here: <see cref="LoggingBehavior{TRequest,TResponse}"/>
     /// takes it as an <em>optional</em> constructor dependency and already falls back to a describer
     /// built from <see cref="Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder.DefaultClassifier"/>
-    /// when nothing is registered — registering a default here would additionally require a default
+    /// when nothing is registered - registering a default here would additionally require a default
     /// <c>IOutcomeClassifier</c> registration to keep it resolvable, which is exactly the kind of orphan
     /// dependency ADR-0009 asks the builder not to introduce. Call <see cref="OverrideOutcomeDescriber{TDescriber}"/>
     /// to opt into a specific implementation instead.
@@ -314,8 +314,8 @@ public sealed class InterlocutorBuilder
     }
 
     /// <summary>
-    /// Applies the library's documented recommended pipeline chain — logging, then auditing, then
-    /// authorization, then validation, then transaction — in that order, as sugar over the individual
+    /// Applies the library's documented recommended pipeline chain - logging, then auditing, then
+    /// authorization, then validation, then transaction - in that order, as sugar over the individual
     /// <c>Add*Behavior</c> calls. Never applied automatically; a consumer opts in explicitly.
     /// </summary>
     /// <remarks>
@@ -325,10 +325,10 @@ public sealed class InterlocutorBuilder
     /// </para>
     /// <list type="bullet">
     /// <item><description>Logging outermost so every request's timing and outcome is captured regardless of what happens inside.</description></item>
-    /// <item><description>Auditing outside authorization so a request that gets denied is still recorded — a rejected attempt is itself an auditable event.</description></item>
+    /// <item><description>Auditing outside authorization so a request that gets denied is still recorded - a rejected attempt is itself an auditable event.</description></item>
     /// <item><description>Authorization before validation so an unauthorized caller never learns validation details about a request they cannot perform.</description></item>
     /// <item><description>Validation before transaction so malformed input never opens a transaction that would only be rolled back.</description></item>
-    /// <item><description>Transaction innermost so only the handler's own work — not cross-cutting concerns — participates in the unit of work.</description></item>
+    /// <item><description>Transaction innermost so only the handler's own work - not cross-cutting concerns - participates in the unit of work.</description></item>
     /// </list>
     /// </remarks>
     /// <returns>This builder, for chaining.</returns>
@@ -407,7 +407,7 @@ public sealed class InterlocutorBuilder
     /// <summary>
     /// Registers a pipeline stage implementation directly, without assembly scanning. Reflects over the
     /// type's implemented interfaces and registers one <see cref="RegistrationKind.Stage"/> entry per
-    /// closed <see cref="IPipelineStage{TRequest,TResponse}"/> interface it implements — mirroring how
+    /// closed <see cref="IPipelineStage{TRequest,TResponse}"/> interface it implements - mirroring how
     /// <see cref="HandlerDiscovery"/> registers a handler per closed contract interface.
     /// </summary>
     /// <param name="stageImplementationType">The concrete stage implementation type.</param>
@@ -444,7 +444,7 @@ public sealed class InterlocutorBuilder
         where TStage : class => this.AddStage(typeof(TStage), lifetime);
 
     /// <summary>
-    /// Registers a pipeline stage as a pair of delegates instead of a dedicated implementation type —
+    /// Registers a pipeline stage as a pair of delegates instead of a dedicated implementation type -
     /// sugar over <see cref="DelegatePipelineStage{TRequest,TResponse}"/> for stages simple enough not to
     /// need one. Either delegate may be omitted for a no-op hook. Legal alongside
     /// <see cref="AddStage(Type, RegistrationLifetime)"/>; both add entries the stage host aggregates.
@@ -455,7 +455,7 @@ public sealed class InterlocutorBuilder
     /// The before-hook delegate, or <see langword="null"/> for a no-op (always-continue) before-hook.
     /// </param>
     /// <param name="onAfter">The after-hook delegate, or <see langword="null"/> for a no-op after-hook.</param>
-    /// <param name="lifetime">The service lifetime to register the stage with. Defaults to singleton — the delegates already capture whatever state they need.</param>
+    /// <param name="lifetime">The service lifetime to register the stage with. Defaults to singleton - the delegates already capture whatever state they need.</param>
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorBuilder AddStage<TRequest, TResponse>(
         Func<TRequest, CancellationToken, Task<StageResult<TResponse>>>? onBefore = null,
@@ -476,7 +476,7 @@ public sealed class InterlocutorBuilder
 
     /// <summary>
     /// Registers a pipeline stage as a pair of delegates that receive the container's
-    /// <see cref="IServiceProvider"/> — the overload for lambda-form stages that need to resolve services
+    /// <see cref="IServiceProvider"/> - the overload for lambda-form stages that need to resolve services
     /// (for example, a scoped dependency) rather than capturing them at builder-configuration time. See
     /// <see cref="AddStage{TRequest,TResponse}(Func{TRequest,CancellationToken,Task{StageResult{TResponse}}},Func{TRequest,TResponse,CancellationToken,Task},RegistrationLifetime)"/>
     /// for the simpler, service-free overload.
@@ -517,8 +517,8 @@ public sealed class InterlocutorBuilder
     }
 
     /// <summary>
-    /// Adds <see cref="PipelineStageBehavior{TRequest,TResponse}"/> — the single host behavior that
-    /// aggregates every registered <see cref="IPipelineStage{TRequest,TResponse}"/> — at the current
+    /// Adds <see cref="PipelineStageBehavior{TRequest,TResponse}"/> - the single host behavior that
+    /// aggregates every registered <see cref="IPipelineStage{TRequest,TResponse}"/> - at the current
     /// position in the chain. An ordinary behavior entry: position it anywhere, and register it more
     /// than once if different stage groupings should sit at different depths.
     /// </summary>
@@ -529,7 +529,7 @@ public sealed class InterlocutorBuilder
 
     /// <summary>
     /// Sets or replaces the builder's own internal default entry for <paramref name="serviceType"/>,
-    /// unconditionally — the mechanism behind every <c>Override*</c> method, guaranteeing it wins
+    /// unconditionally - the mechanism behind every <c>Override*</c> method, guaranteeing it wins
     /// regardless of call order relative to the corresponding <c>Add*Behavior</c> call.
     /// </summary>
     private void SetDefault(Type serviceType, Type implementationType, RegistrationLifetime lifetime) =>
@@ -542,7 +542,7 @@ public sealed class InterlocutorBuilder
 
     /// <summary>
     /// Sets the builder's own internal default entry for <paramref name="serviceType"/> only if no entry
-    /// exists yet — the mechanism behind every <c>Add*Behavior</c> convenience method's default
+    /// exists yet - the mechanism behind every <c>Add*Behavior</c> convenience method's default
     /// registration, so it never clobbers a prior <c>Override*</c> call.
     /// </summary>
     private void TryAddDefault(Type serviceType, Type implementationType)
@@ -560,7 +560,7 @@ public sealed class InterlocutorBuilder
 
     /// <summary>
     /// Attempts to resolve a type by its assembly-qualified or partially-qualified name, returning
-    /// <see langword="null"/> if the type (or the assembly it lives in) is not loaded — the same
+    /// <see langword="null"/> if the type (or the assembly it lives in) is not loaded - the same
     /// graceful-fallback lookup <see cref="DefaultPipelineRegistrations"/> uses for optional-package behaviors.
     /// </summary>
     private static Type? TryGetType(string typeName)

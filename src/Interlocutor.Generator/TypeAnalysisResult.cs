@@ -4,7 +4,7 @@ using System.Collections.Immutable;
 
 /// <summary>
 /// What <see cref="HandlerTypeAnalyzer"/> found for one candidate type declaration: zero or more handler
-/// contracts it implements, and — independently — the request marker it implements, if any.
+/// contracts it implements, and - independently - the request marker it implements, if any.
 /// </summary>
 /// <remarks>
 /// A single type is never both a handler and a request in practice, but the two facts are computed and

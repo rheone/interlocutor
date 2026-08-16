@@ -1,4 +1,4 @@
-# Addendum B: Extracting a Reusable Library — Packaging, Naming, and Positioning
+# Addendum B: Extracting a Reusable Library - Packaging, Naming, and Positioning
 
 *Continuation of the PRD/ADR set. Nothing below revises a prior decision;
 this addendum answers how the existing design should be split into
@@ -13,7 +13,7 @@ be satellite packages layered on top of it.
 - **The kernel** is exactly the vocabulary that has zero dependency on any
   framework: `Result<T>`, `Result`, `Failure` and its case types
   (`ValidationFailed`, `RuleViolation`, `NotFound`, `Forbidden`,
-  `Conflict`), `Success`, and `PagedResult<T>`. This is pure data — no EF
+  `Conflict`), `Success`, and `PagedResult<T>`. This is pure data - no EF
   Core, no ASP.NET, no FluentValidation, not even a dependency on the
   mediator abstractions. A console tool, a background worker, and a web API
   can all reference just this package.
@@ -31,13 +31,13 @@ dependency-free abstraction package, N adapter packages.
 | Package | Contains | Depends on |
 |---|---|---|
 | **`Interlocutor`** | `Result<T>`, `Result`, `Failure`, `Success`, `ValidationFailed`, `RuleViolation`, `NotFound`, `Forbidden`, `Conflict`, `PagedResult<T>` | .NET BCL only |
-| **`Interlocutor.Mediation`** | `IQuery<T>`, `ICommand<T>`, `ICommand`, `IPagedQuery<T>`, `IBulkCommand<TItem,TResponseItem>`, marker interfaces (`ITransactionalRequest`, `IExternalStoreRequest`, `IAuditableRequest`, `IRequiresPolicy`), `IPipelineBehavior<,>`, `IMediator`, the concrete `Mediator`, `ResourceCommandHandler<,,>`, and generic behaviors that need no *external* infrastructure (`LoggingBehavior`, `AuditingBehavior`, `AuthorizationBehavior`, `PagingValidationBehavior` — the last validates `IPagedQuery<T>.Page`/`PageSize` with plain bounds checks, no validation library needed) | `Interlocutor` |
+| **`Interlocutor.Mediation`** | `IQuery<T>`, `ICommand<T>`, `ICommand`, `IPagedQuery<T>`, `IBulkCommand<TItem,TResponseItem>`, marker interfaces (`ITransactionalRequest`, `IExternalStoreRequest`, `IAuditableRequest`, `IRequiresPolicy`), `IPipelineBehavior<,>`, `IMediator`, the concrete `Mediator`, `ResourceCommandHandler<,,>`, and generic behaviors that need no *external* infrastructure (`LoggingBehavior`, `AuditingBehavior`, `AuthorizationBehavior`, `PagingValidationBehavior` - the last validates `IPagedQuery<T>.Page`/`PageSize` with plain bounds checks, no validation library needed) | `Interlocutor` |
 | **`Interlocutor.Mediation.EntityFrameworkCore`** | `TransactionBehavior<TRequest,TResponse>` bound to `DbContext` | `Interlocutor.Mediation`, `Microsoft.EntityFrameworkCore` |
 | **`Interlocutor.Mediation.FluentValidation`** | `ValidationBehavior<TRequest,TResponse>` bound to `IValidator<T>`, and `BulkItemValidationBehavior<TRequest,TItem,TResponseItem>` for `IBulkCommand<,>` (both need FluentValidation's `IValidator<T>`, so both live here rather than in the dependency-free mediation package) | `Interlocutor.Mediation`, `FluentValidation` |
 | **`Interlocutor.AspNetCore`** | `ResultExtensions.ToActionResult(...)`, `ProblemDetails` mapping, minimal-API `TypedResults` mapping | `Interlocutor`, `Microsoft.AspNetCore.*` |
 
 Application code (the `Widget`/`Crm` examples from earlier) is **not** part
-of the library — it's the consumer, referencing whichever of the above
+of the library - it's the consumer, referencing whichever of the above
 packages it needs.
 
 ## B.3 Naming: `Interlocutor`
@@ -46,7 +46,7 @@ packages it needs.
 
 Rationale:
 - "Interlocutor" is the established legal/procedural term for *how a case
-  was resolved* — dismissed, upheld, remanded — which maps precisely onto
+  was resolved* - dismissed, upheld, remanded - which maps precisely onto
   "how this request was resolved: succeeded, not found, forbidden,
   conflicted, failed validation." It reads naturally in code:
   `result.Interlocutor`, "the disposition of this command was `Forbidden`."
@@ -61,7 +61,7 @@ Namespace root: `Interlocutor`. Satellite packages append the integration
 target: `Interlocutor.Mediation`, `Interlocutor.Mediation.EntityFrameworkCore`,
 `Interlocutor.Mediation.FluentValidation`, `Interlocutor.AspNetCore`.
 
-## B.4 What's defining about it — how it differs from existing packages
+## B.4 What's defining about it - how it differs from existing packages
 
 The space already has strong entries: `OneOf` (generic discriminated
 unions), `FluentResults`/`Ardalis.Result`/`ErrorOr` (Result-pattern
@@ -80,7 +80,7 @@ occupies this design's specific position:
    payload you populate however you like; `MediatR` has no opinion on
    result shape at all. Here, `ValidationBehavior` *is* the only producer
    of `ValidationFailed`, `AuthorizationBehavior`/`ResourceCommandHandler`
-   *are* the only producers of `Forbidden` — the failure vocabulary isn't
+   *are* the only producers of `Forbidden` - the failure vocabulary isn't
    bolted on after the fact, it's the pipeline's own contract.
 3. **`ValidationFailed` and `RuleViolation` are distinct, named cases.**
    Most Result libraries collapse "bad input" and "violated business rule"
@@ -101,7 +101,7 @@ occupies this design's specific position:
 2. **A hard, enforced stance that exceptions are exceptional.** No behavior
    shipped in any package catches an arbitrary exception and converts it to
    a `Failure`. This is a constraint on the *library's own code*, not just
-   documentation advice — consumers extending the pipeline inherit the same
+   documentation advice - consumers extending the pipeline inherit the same
    discipline by following the existing behaviors as examples.
 
 ## B.5 New interface-driven variants (detailed in code below)
@@ -114,12 +114,12 @@ copy-pasted between repos":
 - **`IPagedQuery<TItem> : IQuery<PagedResult<TItem>>`** exposes `Page`/
   `PageSize` as contract members, so the library can ship one generic
   `PagingValidationBehavior<TRequest,TItem>` that validates paging bounds
-  for *every* paged query in *every* consuming application — no
+  for *every* paged query in *every* consuming application - no
   per-query validator required unless additional rules are needed.
 - **`IBulkCommand<TItem,TResponseItem> : ICommand<IReadOnlyList<TResponseItem>>`**
   exposes `Items` as a contract member, so `Interlocutor.Mediation.FluentValidation`
   can ship one generic `BulkItemValidationBehavior<TRequest,TItem,TResponseItem>`
-  that resolves `IValidator<TItem>` and validates every item automatically —
+  that resolves `IValidator<TItem>` and validates every item automatically -
   no hand-written `RuleForEach` wrapper validator required unless the
   command needs cross-item rules (e.g. "no duplicate names within the
   batch"), in which case a normal `AbstractValidator<TRequest>` can still

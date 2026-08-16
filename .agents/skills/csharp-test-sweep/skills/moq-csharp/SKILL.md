@@ -4,8 +4,8 @@ description: Write, update, and improve Moq mock setups in C# test projects. Cov
 license: Apache-2.0
 user-invocable: true
 metadata:
-  author: Robert Engelhardt <rheone@gmail.com>
-  version: 2.0.0
+    author: Robert Engelhardt <rheone@gmail.com>
+    version: 2.0.0
 ---
 
 # Moq C# Mocking Skill
@@ -26,7 +26,7 @@ Apply these Moq-specific checks during every sweep, after the [General Quality C
 ## Core Rules
 
 - `new Mock<T>()` is for **dependencies**, not the **subject under test**.
-- **Never mock the class under test** — `Mock<T>` intercepts virtual methods on `T`. If `T` is the class under test, the method under test never executes and the mock returns the type default instead.
+- **Never mock the class under test** - `Mock<T>` intercepts virtual methods on `T`. If `T` is the class under test, the method under test never executes and the mock returns the type default instead.
 - If the method under test lives on an abstract base class, instantiate a **concrete subclass** that inherits the implementation without overriding it.
 - Mock verification (`mock.Verify`) belongs in the Assert section only.
 - Use `mock.Object` only when injecting the mock into another class as a dependency.
@@ -34,12 +34,12 @@ Apply these Moq-specific checks during every sweep, after the [General Quality C
 
 ## Anti-Pattern: Mocking the Class Under Test
 
-`new Mock<T>()` creates a dynamic proxy that intercepts **all virtual/abstract** members on `T`. When `T` is the class under test, the method under test never runs — the test always passes vacuously.
+`new Mock<T>()` creates a dynamic proxy that intercepts **all virtual/abstract** members on `T`. When `T` is the class under test, the method under test never runs - the test always passes vacuously.
 
 ```csharp
 // BROKEN: AbstractProcessor.Process is virtual, never executes
 var mock = new Mock<AbstractProcessor>();
-var result = mock.Object.Process("input");  // returns default — real code never runs
+var result = mock.Object.Process("input");  // returns default - real code never runs
 Assert.Equal("expected", result);            // fails or passes vacuously
 ```
 
@@ -54,19 +54,19 @@ Assert.Equal("expected", result);
 
 ## Creating Mocks
 
-| Scenario | Code |
-|----------|------|
-| Interface | `var mock = new Mock<IFoo>();` |
-| Concrete class (no-arg ctor) | `var mock = new Mock<Foo>();` |
-| Concrete class (with args) | `var mock = new Mock<Foo>(arg1, arg2);` |
-| LINQ mock (simple cases) | `var foo = Mock.Of<IFoo>(x => x.Name == "bar");` |
+| Scenario                     | Code                                             |
+| ---------------------------- | ------------------------------------------------ |
+| Interface                    | `var mock = new Mock<IFoo>();`                   |
+| Concrete class (no-arg ctor) | `var mock = new Mock<Foo>();`                    |
+| Concrete class (with args)   | `var mock = new Mock<Foo>(arg1, arg2);`          |
+| LINQ mock (simple cases)     | `var foo = Mock.Of<IFoo>(x => x.Name == "bar");` |
 
 ## MockBehavior
 
-| Mode | Behavior | Use |
-|------|----------|-----|
-| `Loose` (default) | Returns type defaults (`null`, `0`, `""`) for unsetup members | Most tests — only set up what matters |
-| `Strict` | Throws `MockException` on any unsetup call | Interaction testing where every call must be intentional |
+| Mode              | Behavior                                                      | Use                                                      |
+| ----------------- | ------------------------------------------------------------- | -------------------------------------------------------- |
+| `Loose` (default) | Returns type defaults (`null`, `0`, `""`) for unsetup members | Most tests - only set up what matters                    |
+| `Strict`          | Throws `MockException` on any unsetup call                    | Interaction testing where every call must be intentional |
 
 Use `Loose` as the default. Reserve `Strict` for cases where you must enforce that no unexpected calls occur.
 
@@ -76,7 +76,7 @@ Use `Loose` as the default. Reserve `Strict` for cases where you must enforce th
 // Returns a value
 mock.Setup(x => x.Method("arg")).Returns("result");
 
-// Async — returns Task<T>
+// Async - returns Task<T>
 mock.Setup(x => x.AsyncMethod()).ReturnsAsync("result");
 
 // Throws
@@ -96,13 +96,13 @@ mock.SetupProperty(x => x.Name, "default");
 
 ## Argument Matchers
 
-| Matcher | Usage |
-|---------|-------|
-| `It.IsAny<T>()` | Match any value of type `T` |
-| `It.Is<T>(p)` | Match values satisfying predicate `p` |
-| `It.IsInRange<T>(lo, hi, Range)` | Match inclusive/exclusive range |
-| `It.IsRegex(pattern)` | Match string against regex |
-| `It.IsNotNull<T>()` | Match any non-null value |
+| Matcher                          | Usage                                 |
+| -------------------------------- | ------------------------------------- |
+| `It.IsAny<T>()`                  | Match any value of type `T`           |
+| `It.Is<T>(p)`                    | Match values satisfying predicate `p` |
+| `It.IsInRange<T>(lo, hi, Range)` | Match inclusive/exclusive range       |
+| `It.IsRegex(pattern)`            | Match string against regex            |
+| `It.IsNotNull<T>()`              | Match any non-null value              |
 
 Use `It.IsAny<T>()` for `CancellationToken` when cancellation is not the subject. Use `It.Is<T>(p)` when the exact argument value matters for correctness.
 
@@ -124,14 +124,14 @@ mock.Verify(x => x.Method("arg"), "Save was not called when expected");
 
 ### Times
 
-| Member | Meaning |
-|--------|---------|
-| `Times.Once()` | Exactly 1 call |
-| `Times.Never()` | Exactly 0 calls |
-| `Times.Exactly(n)` | Exactly `n` calls |
-| `Times.AtLeastOnce()` | 1 or more |
-| `Times.AtLeast(n)` | `n` or more |
-| `Times.AtMost(n)` | `n` or fewer |
+| Member                       | Meaning                                 |
+| ---------------------------- | --------------------------------------- |
+| `Times.Once()`               | Exactly 1 call                          |
+| `Times.Never()`              | Exactly 0 calls                         |
+| `Times.Exactly(n)`           | Exactly `n` calls                       |
+| `Times.AtLeastOnce()`        | 1 or more                               |
+| `Times.AtLeast(n)`           | `n` or more                             |
+| `Times.AtMost(n)`            | `n` or fewer                            |
 | `Times.Between(a, b, Range)` | Between `a` and `b` inclusive/exclusive |
 
 ## Callbacks
@@ -165,7 +165,7 @@ mock.Setup(x => x.Method(Capture.In(capturedArgs)));
 // After exercise: assert on capturedArgs
 ```
 
-## Mock.Of<T> — LINQ to Mocks
+## Mock.Of<T> - LINQ to Mocks
 
 ```csharp
 var repo = Mock.Of<IRepository>(r =>
@@ -180,6 +180,7 @@ Use for simple, read-only arrangements. Switch to `new Mock<T>()` when you need 
 ```csharp
 mock.Invocations.Clear();  // reset call history without losing setups
 ```
+
 Useful in test setup when multiple tests share a mock but each needs a clean call count.
 
 ## Moq Analyzers
@@ -191,6 +192,7 @@ Add the [Moq.Analyzers](https://www.nuget.org/packages/Moq.Analyzers/) NuGet pac
 This skill is invoked automatically by [`csharp-test-sweep`](../../SKILL.md) when it detects Moq in the project file.
 
 See also:
-- [REFERENCE.md](REFERENCE.md) — API lookup tables
-- [EXAMPLES.md](EXAMPLES.md) — worked examples
-- [ANTI-PATTERNS.md](ANTI-PATTERNS.md) — framework-specific pitfalls
+
+- [REFERENCE.md](REFERENCE.md) - API lookup tables
+- [EXAMPLES.md](EXAMPLES.md) - worked examples
+- [ANTI-PATTERNS.md](ANTI-PATTERNS.md) - framework-specific pitfalls
