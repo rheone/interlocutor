@@ -10,7 +10,7 @@ Improve `TransactionBehavior` in `Interlocutor.EntityFrameworkCore` in two ways:
 Currently, if `SaveChangesAsync` throws, the exception propagates past `CommitAsync` and rolls back via `DisposeAsync`. Add an explicit `try`/`catch` that rolls back the transaction and re-throws, making the error path predictable and testable.
 
 **2. IExternalStoreRequest handling**
-The `ITransactionalRequest` opt-in marker already gates whether a transaction begins. The `IExternalStoreRequest` marker exists but is never checked — it should serve as an opt-out override. If a request implements `IExternalStoreRequest`, skip the transaction even if it also implements `ITransactionalRequest`.
+The `ITransactionalRequest` opt-in marker already gates whether a transaction begins. The `IExternalStoreRequest` marker exists but is never checked - it should serve as an opt-out override. If a request implements `IExternalStoreRequest`, skip the transaction even if it also implements `ITransactionalRequest`.
 
 The guard logic should be:
 ```
@@ -30,4 +30,4 @@ if (request is not ITransactionalRequest || request is IExternalStoreRequest)
 
 ## Blocked by
 
-None — can start immediately
+None - can start immediately

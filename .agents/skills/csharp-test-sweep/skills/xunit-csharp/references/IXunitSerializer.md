@@ -8,7 +8,7 @@ xUnit v3 serializes theory data so each test case appears as a distinct entry in
 
 > `Could not serialize value of type 'MyType' for display`
 
-## Step 1 — Implement `IXunitSerializer<T>`
+## Step 1 - Implement `IXunitSerializer<T>`
 
 ```csharp
 using Xunit.Sdk;
@@ -40,10 +40,10 @@ internal sealed class SubnetXunitSerializer : IXunitSerializer<Subnet>
 
 **Rules:**
 - `Serialize` and `Deserialize` must be inverse operations: `Deserialize(Serialize(x))` must equal `x`.
-- Keep the serialized form human-readable — it appears in test runner output.
+- Keep the serialized form human-readable - it appears in test runner output.
 - One serializer per type is sufficient; a single serializer can handle multiple related types by checking `type` in `IsSerializable`.
 
-## Step 2 — Register with `[assembly: RegisterXunitSerializer]`
+## Step 2 - Register with `[assembly: RegisterXunitSerializer]`
 
 Place the attribute in any `.cs` file in the test project (conventionally in `AssemblyInfo.cs` or a dedicated `XunitSerializers.cs`):
 
@@ -53,9 +53,9 @@ Place the attribute in any `.cs` file in the test project (conventionally in `As
 
 Register one attribute per serialized type.
 
-## Step 3 — Use in Theory Data Normally
+## Step 3 - Use in Theory Data Normally
 
-No changes needed at the `TheoryData` or `[MemberData]` site — xUnit picks up the serializer automatically:
+No changes needed at the `TheoryData` or `[MemberData]` site - xUnit picks up the serializer automatically:
 
 ```csharp
 public static TheoryData<Subnet, bool> Contains_Test_Data =>
@@ -70,7 +70,7 @@ public static TheoryData<Subnet, bool> Contains_Test_Data =>
 public void Contains_KnownSubnet_ReturnsExpected_Test(Subnet subnet, bool expected) { ... }
 ```
 
-## Full Example — Multiple Types in One File
+## Full Example - Multiple Types in One File
 
 ```csharp
 // XunitSerializers.cs
@@ -114,4 +114,4 @@ internal sealed class IPAddressRangeXunitSerializer : IXunitSerializer<IPAddress
 | No registration required | `[assembly: RegisterXunitSerializer(...)]` required |
 | `Populate` / `GetData` methods | `Serialize` / `Deserialize` / `IsSerializable` methods |
 
-Do not implement `IXunitSerializable` on production types — it bleeds test infrastructure into the production assembly.
+Do not implement `IXunitSerializable` on production types - it bleeds test infrastructure into the production assembly.

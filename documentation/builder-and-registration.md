@@ -1,6 +1,6 @@
 # Builder & Registration
 
-How to register Interlocutor with dependency injection. Handlers are discovered at compile time by a source generator — there's no runtime reflection scan — and the pipeline is empty until you explicitly compose it; nothing runs by default.
+How to register Interlocutor with dependency injection. Handlers are discovered at compile time by a source generator - there's no runtime reflection scan - and the pipeline is empty until you explicitly compose it; nothing runs by default.
 
 ## The Builder
 
@@ -14,7 +14,7 @@ services.AddInterlocutor(builder =>
     builder.UseRecommendedChain();
 });
 
-// Autofac — same builder delegate
+// Autofac - same builder delegate
 containerBuilder.AddInterlocutor(builder =>
 {
     builder.ScanAssembly(typeof(Program).Assembly);
@@ -29,13 +29,13 @@ This library has **no legacy registration API**. There are no bare `AddInterlocu
 If you're coming from MediatR or an earlier Interlocutor prototype, the entry point is different:
 
 ```csharp
-// ❌ Not supported — builder delegate is required
+// ❌ Not supported - builder delegate is required
 services.AddInterlocutor();
 
-// ❌ Not supported — use the builder instead
+// ❌ Not supported - use the builder instead
 services.AddInterlocutor<Program>();
 
-// ✅ Correct — builder is always required
+// ✅ Correct - builder is always required
 services.AddInterlocutor(builder =>
 {
     builder.ScanAssembly(typeof(Program).Assembly);
@@ -51,13 +51,13 @@ services.AddInterlocutor(builder =>
 {
     // Scan a single assembly
     builder.ScanAssembly(typeof(Program).Assembly);
-    
+
     // Scan the entry assembly (shorthand)
     builder.ScanEntryAssembly();
-    
+
     // Scan an assembly containing a specific marker type
     builder.ScanAssemblyContaining<UserService>();
-    
+
     // Scan multiple assemblies
     builder.ScanAssembly(typeof(MyDomainModel).Assembly);
     builder.ScanAssembly(typeof(MyApplicationService).Assembly);
@@ -80,13 +80,13 @@ Add behaviors to the builder, in the order you want them to execute (outermost t
 services.AddInterlocutor(builder =>
 {
     builder.ScanAssembly(typeof(Program).Assembly);
-    
+
     // Explicitly compose your pipeline
     builder.AddBehavior(typeof(LoggingBehavior<,>));
     builder.AddBehavior(typeof(AuditingBehavior<,>));
     builder.AddBehavior(typeof(ValidationBehavior<,>));
     builder.AddBehavior(typeof(TransactionBehavior<,>));
-    
+
     // Or use the documented recommended chain as sugar
     // builder.UseRecommendedChain();
 });
@@ -99,7 +99,7 @@ See [pipeline-and-behaviors.md](pipeline-and-behaviors.md) for the full rational
 Some behaviors and features need service registrations (an `IAuditSink`, a `IPolicyEvaluator`, an `IRequestContextAccessor`). The builder can register defaults, but your own registrations (made before the builder is applied) always take precedence:
 
 ```csharp
-// ✅ Your registration wins — no default is registered
+// ✅ Your registration wins - no default is registered
 services.AddSingleton<IAuditSink, MyAuditSink>();
 services.AddInterlocutor(builder =>
 {
@@ -128,7 +128,7 @@ services.AddInterlocutor(builder =>
 
 ## Cross-Assembly Aggregation
 
-When handlers live in a separate assembly, Interlocutor still discovers them — each assembly emits its own generated handler module, and the application-level generator aggregates all of them:
+When handlers live in a separate assembly, Interlocutor still discovers them - each assembly emits its own generated handler module, and the application-level generator aggregates all of them:
 
 ```
 src/
@@ -136,7 +136,7 @@ src/
     Handlers/
       GetUserHandler.cs (IQueryHandler<GetUser, ...>)
     MyApp.Domain.csproj
-    
+
   MyApp.Application/
     Program.cs
     MyApp.Application.csproj (references MyApp.Domain)
@@ -186,10 +186,10 @@ services.AddInterlocutor(builder =>
 });
 ```
 
-No separate configuration for "also scan this assembly" — the generator follows project references automatically.
+No separate configuration for "also scan this assembly" - the generator follows project references automatically.
 
 > [!NOTE]
-> Runtime assembly scanning fallback — disabled by default and only active if you explicitly opt into the legacy scanning mode — exists for the plugin scenario where handler assemblies are loaded dynamically after startup. See [Trim & AOT support](trim-and-aot-support.md) for details.
+> Runtime assembly scanning fallback - disabled by default and only active if you explicitly opt into the legacy scanning mode - exists for the plugin scenario where handler assemblies are loaded dynamically after startup. See [Trim & AOT support](trim-and-aot-support.md) for details.
 
 ## Startup Validation
 
@@ -266,4 +266,4 @@ var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 var result = await mediator.Send(new GetUser(1), cancellationToken);
 ```
 
-This is optional — missing handlers already failed at startup. But it's a sanity check if you're debugging registration issues.
+This is optional - missing handlers already failed at startup. But it's a sanity check if you're debugging registration issues.

@@ -6,7 +6,7 @@ namespace Interlocutor.Mediation;
 /// <summary>
 /// The remaining risk after removing <c>dynamic</c> from <see cref="Mediator"/>
 /// is that a missing handler registration is still only discovered the
-/// first time a given request type is dispatched — <c>GetRequiredService</c>
+/// first time a given request type is dispatched - <c>GetRequiredService</c>
 /// throws at that point, not at startup, no matter how the lookup is
 /// written. This does not make the locator call itself unsafe (a missing
 /// registration is a genuine configuration bug, and DI containers
@@ -61,7 +61,7 @@ public static class InterlocutorStartupValidation
         if (missing.Count > 0)
         {
             throw new InvalidOperationException(
-                "Interlocutor startup validation failed — missing handler registrations:\n"
+                "Interlocutor startup validation failed - missing handler registrations:\n"
                     + string.Join("\n", missing.Select(m => $"  - {m}"))
             );
         }

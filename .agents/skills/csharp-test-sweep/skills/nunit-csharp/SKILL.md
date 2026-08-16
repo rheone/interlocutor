@@ -4,21 +4,21 @@ description: Write, update, and improve NUnit v5 unit tests in C# projects. Cove
 license: Apache-2.0
 user-invocable: true
 metadata:
-  author: Robert Engelhardt <rheone@gmail.com>
-  version: 2.0.0
+    author: Robert Engelhardt <rheone@gmail.com>
+    version: 2.0.0
 ---
 
 # NUnit C# Testing Skill (v5)
 
 ## Scope Selection
 
-| Scope | Apply to |
-| ----- | -------- |
-| **Single test** | One `[Test]` method |
-| **Group** | Related tests within one `#region` |
-| **Class** | Entire test class file |
-| **Namespace** | All test classes in a namespace |
-| **Project** | All test classes in a project |
+| Scope           | Apply to                           |
+| --------------- | ---------------------------------- |
+| **Single test** | One `[Test]` method                |
+| **Group**       | Related tests within one `#region` |
+| **Class**       | Entire test class file             |
+| **Namespace**   | All test classes in a namespace    |
+| **Project**     | All test classes in a project      |
 
 ## Framework Checklist
 
@@ -26,7 +26,7 @@ Apply these NUnit-specific checks during every sweep, after the [General Quality
 
 - [ ] Constraint-based `Assert.That(actual, constraint)` used, not classic `Assert.AreEqual`
 - [ ] `Assert.Multiple` used for batched independent assertions in one scenario
-- [ ] `[SetUp]` used for per-test setup (not the constructor — NUnit creates one instance per test)
+- [ ] `[SetUp]` used for per-test setup (not the constructor - NUnit creates one instance per test)
 - [ ] `[TestCase]` with exactly one row converted to `[Test]`
 - [ ] `[Ignore]` includes written justification with ticket reference
 - [ ] `[Parallelizable]` / `[NonParallelizable]` explicitly chosen where parallelism matters
@@ -66,7 +66,7 @@ Default assertion style is **constraint-based**:
 
 ```csharp
 Assert.That(actual, Is.EqualTo(expected));       // preferred
-// NOT Assert.AreEqual(expected, actual);         // classic style — avoid
+// NOT Assert.AreEqual(expected, actual);         // classic style - avoid
 ```
 
 See REFERENCE.md for the full constraint catalog.
@@ -106,21 +106,21 @@ Assert.That(ex.Message, Does.Contain("input"));
 
 ### Fixture Lifecycle
 
-| Attribute | Runs |
-| --------- | ---- |
-| `[SetUp]` | Before each test |
-| `[TearDown]` | After each test |
-| `[OneTimeSetUp]` | Once before all tests in the class |
-| `[OneTimeTearDown]` | Once after all tests in the class |
+| Attribute           | Runs                               |
+| ------------------- | ---------------------------------- |
+| `[SetUp]`           | Before each test                   |
+| `[TearDown]`        | After each test                    |
+| `[OneTimeSetUp]`    | Once before all tests in the class |
+| `[OneTimeTearDown]` | Once after all tests in the class  |
 
-**Important:** NUnit creates one test class instance per test, unlike xUnit. Do not use the constructor for test setup — use `[SetUp]` instead.
+**Important:** NUnit creates one test class instance per test, unlike xUnit. Do not use the constructor for test setup - use `[SetUp]` instead.
 
 ### Parameterized Tests
 
 - `[TestCase]` for simple inline data (primitives, strings, enums).
 - `[TestCaseSource(nameof(...))]` for complex objects or computed data.
 - Use `TestCaseData` with `.SetName()` for readable test names.
-- Never write a `[TestCase]` with exactly one row — convert to `[Test]`.
+- Never write a `[TestCase]` with exactly one row - convert to `[Test]`.
 
 ### Skipping Tests
 
@@ -128,19 +128,19 @@ Assert.That(ex.Message, Does.Contain("input"));
 
 ```csharp
 [Test]
-[Ignore("Blocked by #42 — parser not yet implemented for IPv6")]
+[Ignore("Blocked by #42 - parser not yet implemented for IPv6")]
 public void Parse_ValidIPv6_ReturnsSubnet_Test() { }
 ```
 
 ### Mocking
 
-- Never substitute the class under test — see the detected mocking companion skill.
+- Never substitute the class under test - see the detected mocking companion skill.
 - Mock verification belongs in the Assert section.
 
 ### Test Isolation
 
 - No static mutable state shared between tests.
-- No `Thread.Sleep` — arrange deterministic conditions instead.
+- No `Thread.Sleep` - arrange deterministic conditions instead.
 
 ### String Input Coverage
 
@@ -158,8 +158,8 @@ For every public constructor or method reference-type parameter, test that `null
 
 ### Parallelization
 
-- `[Parallelizable(ParallelScope.Children)]` — methods within a class run in parallel.
-- `[NonParallelizable]` — force sequential execution for an individual test.
+- `[Parallelizable(ParallelScope.Children)]` - methods within a class run in parallel.
+- `[NonParallelizable]` - force sequential execution for an individual test.
 - By default, NUnit runs tests within a class sequentially, classes in parallel.
 
 ### Retry
@@ -175,6 +175,7 @@ public void ExternalService_Call_ReturnsOk_Test() { }
 ### [TestFixture]
 
 `[TestFixture]` is optional in NUnit v5 for simple test classes. Use it when:
+
 - The class inherits from a base test class.
 - The class uses constructor injection.
 - The class needs `[TestFixtureSource]`.

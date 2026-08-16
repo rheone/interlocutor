@@ -1,7 +1,7 @@
 # Sample App Walkthrough
 
 > [!NOTE]
-> **TBD**: This section provides a guided tour of the runnable sample application. It is blocked on ticket 18 (Sample application) — write this doc from the actual sample code once ticket 18 lands, not from a hypothetical one.
+> **TBD**: This section provides a guided tour of the runnable sample application. It is blocked on ticket 18 (Sample application) - write this doc from the actual sample code once ticket 18 lands, not from a hypothetical one.
 
 ## Expected content (once unblocked)
 
@@ -19,6 +19,6 @@
 
 ## Links
 
-- [builder-and-registration.md](builder-and-registration.md) — assembly scanning setup
-- [pipeline-and-behaviors.md](pipeline-and-behaviors.md) — explicit behavior composition
-- Ticket 18 (Sample application) — implementation in progress
+- [builder-and-registration.md](builder-and-registration.md) - assembly scanning setup
+- [pipeline-and-behaviors.md](pipeline-and-behaviors.md) - explicit behavior composition
+- Ticket 18 (Sample application) - implementation in progress

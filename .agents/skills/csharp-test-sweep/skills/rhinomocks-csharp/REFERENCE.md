@@ -29,7 +29,7 @@ mock.Stub(x => x.Method(args)).Return(value);
 mock.Stub(x => x.Property).Return(value);
 ```
 
-## Expect (Record/Replay — Deprecated)
+## Expect (Record/Replay - Deprecated)
 
 ```csharp
 mock.Expect(x => x.Method()).Return(value);

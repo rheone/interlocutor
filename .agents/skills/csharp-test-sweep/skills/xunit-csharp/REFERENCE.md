@@ -55,7 +55,7 @@ Specific assertions produce significantly better failure messages than boolean w
 
 ## Failure Messages
 
-Add a message only when the default failure output would be ambiguous — same assertion appears multiple times in one test, or the asserted value doesn't reveal the failure cause:
+Add a message only when the default failure output would be ambiguous - same assertion appears multiple times in one test, or the asserted value doesn't reveal the failure cause:
 
 ```csharp
 Assert.True(result.IsValid, "IsValid should be true after successful parse");
@@ -128,7 +128,7 @@ Install: `dotnet add package xunit.analyzers`
 
 ## Related
 
-- [SKILL.md](SKILL.md) — xUnit-specific rules.
-- [EXAMPLES.md](EXAMPLES.md) — worked examples.
-- [ANTI-PATTERNS.md](ANTI-PATTERNS.md) — framework-specific pitfalls.
+- [SKILL.md](SKILL.md) - xUnit-specific rules.
+- [EXAMPLES.md](EXAMPLES.md) - worked examples.
+- [ANTI-PATTERNS.md](ANTI-PATTERNS.md) - framework-specific pitfalls.
 - [General Quality Checklist](../../references/quality-checklist.md).

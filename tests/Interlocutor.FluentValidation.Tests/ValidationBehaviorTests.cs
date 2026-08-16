@@ -126,7 +126,7 @@ public class ValidationBehaviorTests
     public async Task FailingValidation_WithResponseTypeThatHasNoValidationErrorsCase_ThrowsNamedException()
     {
         // TResponse is no longer decomposed at compile time into a success-type parameter with
-        // ValidationErrors pinned as the failure case — it's an arbitrary IOperationOutcome the caller
+        // ValidationErrors pinned as the failure case - it's an arbitrary IOperationOutcome the caller
         // chose, constructed reflectively from a ValidationErrors case constructor when validation fails.
         // A response shape with no such case can't express "failed validation" at all, so it must fail
         // loudly and specifically rather than silently succeeding or crashing obscurely.

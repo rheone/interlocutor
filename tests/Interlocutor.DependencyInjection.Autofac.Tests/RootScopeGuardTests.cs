@@ -74,8 +74,8 @@ public class RootScopeGuardTests
         public Guid Id { get; } = Guid.NewGuid();
     }
 
-    /// <summary>Records the <see cref="ScopedThing.Id"/> observed by each participant in a dispatch — the
-    /// pipeline behavior and the handler — so the test can assert they match.</summary>
+    /// <summary>Records the <see cref="ScopedThing.Id"/> observed by each participant in a dispatch - the
+    /// pipeline behavior and the handler - so the test can assert they match.</summary>
     private sealed class ScopedDependencyRecorder
     {
         public List<Guid> RecordedIds { get; } = [];
@@ -105,7 +105,7 @@ public class RootScopeGuardTests
         }
     }
 
-    /// <summary>A singleton that captures <see cref="IMediator"/> at construction time — the misuse case this
+    /// <summary>A singleton that captures <see cref="IMediator"/> at construction time - the misuse case this
     /// test class exercises. Never legitimate application code; the point is to prove the mediator refuses to
     /// dispatch when reached this way.</summary>
     private sealed class SingletonMediatorConsumer(IMediator mediator)

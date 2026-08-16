@@ -15,15 +15,15 @@ metadata:
 
 ### 1. `[Theory]` with Exactly One Data Row
 
-A `[Theory]` with a single `[InlineData]` or one-element `MemberData` adds ceremony for no benefit. It also masks the intent — a `[Theory]` signals multiple scenarios.
+A `[Theory]` with a single `[InlineData]` or one-element `MemberData` adds ceremony for no benefit. It also masks the intent - a `[Theory]` signals multiple scenarios.
 
 ```csharp
-// BAD — single data row
+// BAD - single data row
 [Theory]
 [InlineData("192.168.0.0/24")]
 public void Parse_ValidInput_ReturnsSubnet_Test(string input) { ... }
 
-// GOOD — convert to [Fact]
+// GOOD - convert to [Fact]
 [Fact]
 public void Parse_ValidInput_ReturnsSubnet_Test() { ... }
 ```
@@ -50,14 +50,14 @@ public static TheoryData<string, int> Parse_Test_Values =>
 
 ### 3. `ITestOutputHelper` as Assertion Substitute
 
-Capturing output to later assert on it is a testing anti-pattern — it couples the test to an implementation detail and makes failures harder to diagnose.
+Capturing output to later assert on it is a testing anti-pattern - it couples the test to an implementation detail and makes failures harder to diagnose.
 
 ```csharp
-// BAD — asserting on captured output
+// BAD - asserting on captured output
 _output.WriteLine(result.ToString());
 Assert.Contains("192.168.0.0", _output.ToString());
 
-// GOOD — assert on the actual return value
+// GOOD - assert on the actual return value
 Assert.Equal("192.168.0.0", result.NetworkAddress.ToString());
 ```
 
@@ -65,13 +65,13 @@ Assert.Equal("192.168.0.0", result.NetworkAddress.ToString());
 
 ### 4. `Console.WriteLine` in Tests
 
-xUnit v3 suppresses `Console.WriteLine` by default — output goes nowhere. Use `ITestOutputHelper` if diagnostic output is genuinely needed.
+xUnit v3 suppresses `Console.WriteLine` by default - output goes nowhere. Use `ITestOutputHelper` if diagnostic output is genuinely needed.
 
 ```csharp
-// BAD — silent output
+// BAD - silent output
 Console.WriteLine($"Testing with input: {input}");
 
-// GOOD — visible diagnostic output
+// GOOD - visible diagnostic output
 _output.WriteLine($"Testing with input: {input}");
 ```
 
@@ -82,10 +82,10 @@ _output.WriteLine($"Testing with input: {input}");
 Boolean-wrapped equality checks produce opaque failure messages (`Expected: True, Actual: False`) that don't show the values involved.
 
 ```csharp
-// BAD — opaque failure
+// BAD - opaque failure
 Assert.True(result.Count == 3);
 
-// GOOD — shows both values on failure
+// GOOD - shows both values on failure
 Assert.Equal(3, result.Count);
 ```
 
@@ -98,10 +98,10 @@ See [REFERENCE.md](REFERENCE.md) for the full assertion anti-patterns table.
 Disabling all parallelism globally silences flaky-test symptoms without fixing the root cause. If tests share state, make the state isolated or use a named `[Collection]` for the specific classes that conflict.
 
 ```csharp
-// BAD — disables parallelism globally
+// BAD - disables parallelism globally
 [assembly: CollectionBehavior(DisableTestParallelization = true)]
 
-// GOOD — isolate only the conflicting classes
+// GOOD - isolate only the conflicting classes
 [Collection("DatabaseTests")]
 public sealed class SlowDatabaseTests { ... }
 ```
@@ -113,7 +113,7 @@ public sealed class SlowDatabaseTests { ... }
 When `ITestOutputHelper` is injected into a fixture or shared object that outlives a single test, the underlying buffer can accumulate across tests. Dispose it when the fixture is torn down.
 
 ```csharp
-// BAD — output grows unbounded in a class-level fixture
+// BAD - output grows unbounded in a class-level fixture
 public sealed class MyFixture
 {
     public ITestOutputHelper Output { get; }
@@ -124,7 +124,7 @@ public sealed class MyFixture
     }
 }
 
-// GOOD — avoid injecting ITestOutputHelper into shared fixtures.
+// GOOD - avoid injecting ITestOutputHelper into shared fixtures.
 // Use it only in per-test constructors.
 ```
 
@@ -132,10 +132,10 @@ public sealed class MyFixture
 
 ### 8. `ITestOutputHelper` Injection in Static Theory Data
 
-Theory data factory methods are static — they cannot receive `ITestOutputHelper` via constructor injection. If you need diagnostic output during data generation, move that logic into the test body or a separate helper.
+Theory data factory methods are static - they cannot receive `ITestOutputHelper` via constructor injection. If you need diagnostic output during data generation, move that logic into the test body or a separate helper.
 
 ```csharp
-// BAD — static data source cannot access ITestOutputHelper
+// BAD - static data source cannot access ITestOutputHelper
 public static TheoryData<string> Data
 {
     get
@@ -150,7 +150,7 @@ public static TheoryData<string> Data
 
 ## Related
 
-- [SKILL.md](SKILL.md) — xUnit-specific rules.
-- [REFERENCE.md](REFERENCE.md) — API lookup tables and assertion anti-patterns table.
-- [EXAMPLES.md](EXAMPLES.md) — worked examples.
+- [SKILL.md](SKILL.md) - xUnit-specific rules.
+- [REFERENCE.md](REFERENCE.md) - API lookup tables and assertion anti-patterns table.
+- [EXAMPLES.md](EXAMPLES.md) - worked examples.
 - [General Quality Checklist](../../references/quality-checklist.md).

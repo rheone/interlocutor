@@ -1,6 +1,6 @@
 ---
 name: nunit-csharp
-description: Worked examples for NUnit v5 — constraint model, Assert.Multiple, fixture lifecycle, parameterized tests, and parallelization.
+description: Worked examples for NUnit v5 - constraint model, Assert.Multiple, fixture lifecycle, parameterized tests, and parallelization.
 license: Apache-2.0
 metadata:
   author: Robert Engelhardt <rheone@gmail.com>
@@ -9,7 +9,7 @@ metadata:
 
 # NUnit v5 Examples
 
-## 1. Complete Test Class — Constraint Model
+## 1. Complete Test Class - Constraint Model
 
 ```csharp
 [TestFixture]
@@ -39,7 +39,7 @@ public sealed class SubnetParserTests
 }
 ```
 
-## 2. Parameterized Tests — `[TestCase]`
+## 2. Parameterized Tests - `[TestCase]`
 
 ```csharp
 [TestCase("192.168.0.0/24", "192.168.0.0", 24)]
@@ -55,7 +55,7 @@ public void Parse_ValidCidr_ReturnsCorrectSubnet_Test(
 }
 ```
 
-## 3. Exception Assertions — `Throws.InstanceOf`
+## 3. Exception Assertions - `Throws.InstanceOf`
 
 ```csharp
 [TestCase(null)]

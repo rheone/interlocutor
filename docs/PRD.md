@@ -1,4 +1,4 @@
-# PRD: Interlocutor — Mediator Result Pipeline for .NET
+# PRD: Interlocutor - Mediator Result Pipeline for .NET
 
 **Status:** Active
 **Target platform:** .NET 11 / C# 15 (union types)
@@ -12,7 +12,7 @@ Interlocutor is a mediator/CQRS pipeline library for .NET built on C# 15 union t
 
 ## 2. Problem statement
 
-Before this library, "what can go wrong" for a given handler was implicit — discoverable only by reading the method body, not the signature. Failure paths were inconsistently represented (exceptions, null returns, boolean flags), making API-layer error mapping ad hoc, testing incomplete, and cross-cutting concerns hard to compose.
+Before this library, "what can go wrong" for a given handler was implicit - discoverable only by reading the method body, not the signature. Failure paths were inconsistently represented (exceptions, null returns, boolean flags), making API-layer error mapping ad hoc, testing incomplete, and cross-cutting concerns hard to compose.
 
 ## 3. Goals
 
@@ -26,13 +26,13 @@ Before this library, "what can go wrong" for a given handler was implicit — di
 
 - Replacing ASP.NET exception-handling middleware.
 - Infrastructure retries/circuit breakers in the mediator pipeline.
-- Serializing `OperationOutcome`/`Failure` over the wire — API boundary always maps to a dedicated response shape.
+- Serializing `OperationOutcome`/`Failure` over the wire - API boundary always maps to a dedicated response shape.
 
 ## 5. Package structure
 
 | Package | Contents | Dependencies |
 |---------|----------|-------------|
-| `Interlocutor.CommonKernel` | `OperationOutcome<T>`, `OperationOutcome`, `Failure`, `Success`, `PagedResult<T>` — pure data types | .NET BCL only |
+| `Interlocutor.CommonKernel` | `OperationOutcome<T>`, `OperationOutcome`, `Failure`, `Success`, `PagedResult<T>` - pure data types | .NET BCL only |
 | `Interlocutor.Abstractions` | `IQuery<T>`, `ICommand<T>`, `ICommand`, marker interfaces, handler contracts, `IPipelineBehavior`, `IMediator`, `Mediator`, `ResourceCommandHandler`, `StartupValidation`, built-in pipeline behaviors (Logging, Auditing, Authorization, PipelineStage) | `Interlocutor.CommonKernel` |
 | `Interlocutor.AspNetCore` | `ToActionResult()` HTTP mapping | `Interlocutor.CommonKernel`, ASP.NET Core |
 | `Interlocutor.DependencyInjection.Microsoft` | Assembly-scanning `AddInterlocutor()` for MS DI | `Interlocutor.Abstractions` |
@@ -83,20 +83,20 @@ All behaviors implement `IPipelineBehavior<TRequest,TResponse>` and compose via 
 
 | Behavior | Package | Produces | Notes |
 |----------|---------|----------|-------|
-| `LoggingBehavior` | `Interlocutor.Abstractions` | — | Logs request type, handler, duration, outcome |
+| `LoggingBehavior` | `Interlocutor.Abstractions` | - | Logs request type, handler, duration, outcome |
 | `AuthorizationBehavior` | `Interlocutor.Abstractions` | `Forbidden` | Via `IRequiresPolicy` + `IPolicyEvaluator` |
-| `AuditingBehavior` | `Interlocutor.Abstractions` | — | Via `IAuditableRequest` + `IAuditSink` |
-| `PipelineStageBehavior` | `Interlocutor.Abstractions` | — | Aggregates `IPipelineStage` pre/post hooks |
+| `AuditingBehavior` | `Interlocutor.Abstractions` | - | Via `IAuditableRequest` + `IAuditSink` |
+| `PipelineStageBehavior` | `Interlocutor.Abstractions` | - | Aggregates `IPipelineStage` pre/post hooks |
 | `ValidationBehavior` | `Interlocutor.FluentValidation` | `ValidationFailed` | FluentValidation, short-circuits before handler |
 | `BulkItemValidationBehavior` | `Interlocutor.FluentValidation` | `ValidationFailed` | Per-item validation for `IBulkCommand` |
-| `TransactionBehavior` (EF Core) | `Interlocutor.EntityFrameworkCore` | — | Commit on success, rollback on Failure |
-| `TransactionBehavior` (NHibernate) | `Interlocutor.NHibernate` | — | Same semantics |
+| `TransactionBehavior` (EF Core) | `Interlocutor.EntityFrameworkCore` | - | Commit on success, rollback on Failure |
+| `TransactionBehavior` (NHibernate) | `Interlocutor.NHibernate` | - | Same semantics |
 
 ### 9.1 Execution order
 
 Designed order: Logging → Auditing → Validation → Authorization → Transaction → Handler
 
-This matches the intended order from the bootstrap PRD (see [bootstrap §7.1](../bootstrapreference/PRD-mediator-result-pipeline.md#71-request-flow-sequence)). Actual DI registration order determines the chain — behaviors are wrapped in reverse registration order, so the first registered behavior wraps outermost.
+This matches the intended order from the bootstrap PRD (see [bootstrap §7.1](../bootstrapreference/PRD-mediator-result-pipeline.md#71-request-flow-sequence)). Actual DI registration order determines the chain - behaviors are wrapped in reverse registration order, so the first registered behavior wraps outermost.
 
 ### 9.2 Transaction behavior
 
@@ -113,8 +113,8 @@ Void commands (`ICommand`) dispatch through the same pipeline mechanism as typed
 
 | Interface | Opts into | Carries |
 |-----------|-----------|---------|
-| `ITransactionalRequest` | TransactionBehavior | — |
-| `IExternalStoreRequest` | Declares no SQL needed | — |
+| `ITransactionalRequest` | TransactionBehavior | - |
+| `IExternalStoreRequest` | Declares no SQL needed | - |
 | `IAuditableRequest` | AuditingBehavior | `ActionName` |
 | `IRequiresPolicy` | AuthorizationBehavior | `PolicyName` |
 
@@ -129,7 +129,7 @@ The `Mediator` class implements `IMediator` (which inherits `ISender` + `IPublis
 - **ISender** (`Send`): Dispatches queries, typed commands, and void commands through the pipeline. Uses cached `HandlerWrapper<TResponse>`/`VoidHandlerWrapper` instances created via `Activator.CreateInstance` on discovery.
 - **IPublisher** (`Publish`): Dispatches notifications to all registered `INotificationHandler<T>` handlers. Supports `Sequential` and `Parallel` publish strategies.
 
-The mediator resolves all handlers from DI — it has no internal handler registry (see ADR-0003).
+The mediator resolves all handlers from DI - it has no internal handler registry (see ADR-0003).
 
 ## 11. DI registration
 

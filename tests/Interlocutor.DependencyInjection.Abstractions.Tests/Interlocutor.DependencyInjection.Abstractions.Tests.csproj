@@ -2,7 +2,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Interlocutor.DependencyInjection.Abstractions\Interlocutor.DependencyInjection.Abstractions.csproj" />
     <!-- Referenced only so AddValidationBehavior/AddTransactionBehavior's reflection-based package-presence
-         detection has a real package to find — proves the "wired" path, not just the graceful no-op fallback.
+         detection has a real package to find - proves the "wired" path, not just the graceful no-op fallback.
          NHibernate (not EF Core) specifically, so the NHibernate arity-2 TransactionBehavior<,> resolution is
          exercised via the real AddTransactionBehavior() call rather than EF Core's arity-3 one shadowing it
          via AddTransactionBehavior's EF-preferred `??` fallback. -->

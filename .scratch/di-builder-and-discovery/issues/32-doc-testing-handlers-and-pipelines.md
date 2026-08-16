@@ -4,11 +4,11 @@ ready-for-agent
 
 ## What to build
 
-A `documentation/testing-handlers-and-pipelines.md` covering how a consumer tests code built on Interlocutor — the current README's "Testing" section has no home elsewhere in this batch. Primary source: `docs/PRD.md` §16 (testing strategy).
+A `documentation/testing-handlers-and-pipelines.md` covering how a consumer tests code built on Interlocutor - the current README's "Testing" section has no home elsewhere in this batch. Primary source: `docs/PRD.md` §16 (testing strategy).
 
 Cover:
 
-- **Unit-testing handlers directly**, without going through the mediator or pipeline at all — handlers are plain classes with injected dependencies.
+- **Unit-testing handlers directly**, without going through the mediator or pipeline at all - handlers are plain classes with injected dependencies.
 - **Integration-testing pipeline composition**: verifying an explicitly-composed chain runs in the expected order, short-circuits correctly, and that transactional behavior actually commits/rolls back.
 - **DI startup validation**: how a consumer's own test suite can lean on Interlocutor's fail-fast startup validation (missing handler registrations) rather than reinventing that check.
 
@@ -22,4 +22,4 @@ Cover:
 
 ## Blocked by
 
-21 — Establish documentation/ directory; retire CONTEXT.md
+21 - Establish documentation/ directory; retire CONTEXT.md

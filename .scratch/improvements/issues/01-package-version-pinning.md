@@ -8,12 +8,12 @@ Pin all NuGet package versions in `Directory.Packages.props` or enable `RestoreP
 
 Currently, all package versions use floating patterns (`4.*`, `1.*`, `11.0.0-*`). Combined with `CentralPackageFloatingVersionsEnabled=true` and no lock file, the same commit can build with different dependency versions on different machines or at different times.
 
-Option A — pin to specific versions in `Directory.Packages.props`:
+Option A - pin to specific versions in `Directory.Packages.props`:
   - Resolve current floating versions to specific numbers
   - Update each `Version` attribute to the exact version
   - Disable `CentralPackageFloatingVersionsEnabled`
 
-Option B — enable lock file:
+Option B - enable lock file:
   - Set `RestorePackagesWithLockFile=true` in `Directory.Build.props`
   - Run `dotnet restore` to generate `packages.lock.json`
   - Check the lock file in
@@ -28,4 +28,4 @@ Either approach suffices. The key outcome is deterministic builds.
 
 ## Blocked by
 
-None — can start immediately
+None - can start immediately

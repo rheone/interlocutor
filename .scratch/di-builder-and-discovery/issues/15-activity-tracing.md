@@ -8,9 +8,9 @@ Make dispatch visible in an operator's existing tracing tools with no adapter an
 
 Today the only observability the library offers is a logging behavior a developer must opt into, which writes text. An operator running distributed tracing gets nothing: a request dispatched through the mediator is an invisible gap between the incoming HTTP span and the outgoing database span.
 
-Emit spans through the standard .NET activity mechanism from the mediator itself, not from an opt-in behavior — tracing that only works if you remembered to add a behavior is tracing you cannot rely on. One activity source, with spans covering send and publish, tagged with the request type, the resolved handler type, and the resulting outcome case. Failures recorded as the outcome they are, not as exceptions.
+Emit spans through the standard .NET activity mechanism from the mediator itself, not from an opt-in behavior - tracing that only works if you remembered to add a behavior is tracing you cannot rely on. One activity source, with spans covering send and publish, tagged with the request type, the resolved handler type, and the resulting outcome case. Failures recorded as the outcome they are, not as exceptions.
 
-This must cost effectively nothing when nobody is listening, which the standard mechanism supports directly — no allocation and no string formatting on the un-listened path. Verify that rather than assuming it.
+This must cost effectively nothing when nobody is listening, which the standard mechanism supports directly - no allocation and no string formatting on the un-listened path. Verify that rather than assuming it.
 
 Because it is in the mediator rather than a behavior, it must not duplicate or conflict with the logging behavior when both are in use.
 
@@ -26,4 +26,4 @@ Because it is in the mediator rather than a behavior, it must not duplicate or c
 
 ## Blocked by
 
-03 — Builder API, alongside the legacy overloads
+03 - Builder API, alongside the legacy overloads

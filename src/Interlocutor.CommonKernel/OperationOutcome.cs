@@ -6,8 +6,8 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// Represents the outcome of a void operation as one of two possible cases: success with no payload, or failure.
 /// </summary>
 /// <remarks>
-/// <para>This is a union declaration with two case types: <see cref="Success"/> — the operation completed
-/// successfully, or <see cref="Failure"/> — the operation failed.</para>
+/// <para>This is a union declaration with two case types: <see cref="Success"/> - the operation completed
+/// successfully, or <see cref="Failure"/> - the operation failed.</para>
 /// <para>Values of either case type convert implicitly to <see cref="OperationOutcome"/>, and switch expressions
 /// over it are exhaustive without a discard arm.</para>
 /// </remarks>
@@ -29,8 +29,8 @@ public readonly union OperationOutcome(Success, Failure) : IOperationOutcome
 /// <typeparam name="TFailureResult">The type produced when the operation fails.</typeparam>
 /// <remarks>
 /// <para>This is a union declaration with two case types: </para>
-/// <list type="bullet"><item><description><typeparamref name="TSuccessResult"/> — the operation completed
-/// successfully.</description></item> <item><description><typeparamref name="TFailureResult"/> — the operation
+/// <list type="bullet"><item><description><typeparamref name="TSuccessResult"/> - the operation completed
+/// successfully.</description></item> <item><description><typeparamref name="TFailureResult"/> - the operation
 /// failed.</description></item> </list>
 /// <para>Values of either case type convert implicitly to <see cref="OperationOutcome{TSuccessResult, TFailureResult}"/>,
 /// and switch expressions over it are exhaustive without a discard arm. </para>
@@ -55,9 +55,9 @@ public readonly union OperationOutcome<TSuccessResult, TFailureResult>(TSuccessR
 /// <typeparam name="TCase3">The type of the second alternative result case.</typeparam>
 /// <remarks>
 /// <para>This is a union declaration with three case types: </para>
-/// <list type="bullet"><item><description><typeparamref name="TSuccessResult"/> — the operation completed
-/// successfully.</description></item> <item><description><typeparamref name="TCase2"/> — the operation
-/// resolved to the first alternative result case.</description></item> <item><description><typeparamref name="TCase3"/> — the operation
+/// <list type="bullet"><item><description><typeparamref name="TSuccessResult"/> - the operation completed
+/// successfully.</description></item> <item><description><typeparamref name="TCase2"/> - the operation
+/// resolved to the first alternative result case.</description></item> <item><description><typeparamref name="TCase3"/> - the operation
 /// resolved to the second alternative result case.</description></item> </list>
 /// <para>Values of any case type convert implicitly to <see cref="OperationOutcome{TSuccessResult, TCase2, TCase3}"/>, and
 /// switch expressions over it are exhaustive without a discard arm. </para>
@@ -95,10 +95,10 @@ public readonly union OperationOutcome<TSuccessResult, TCase2, TCase3>(TSuccessR
 /// <typeparam name="TCase4">The type of the third alternative result case.</typeparam>
 /// <remarks>
 /// <para>This is a union declaration with four case types: </para>
-/// <list type="bullet"><item><description><typeparamref name="TSuccessResult"/> — the operation completed
-/// successfully.</description></item> <item><description><typeparamref name="TCase2"/> — the operation
-/// resolved to the first alternative result case.</description></item> <item><description><typeparamref name="TCase3"/> — the operation
-/// resolved to the second alternative result case.</description></item> <item><description><typeparamref name="TCase4"/> — the operation
+/// <list type="bullet"><item><description><typeparamref name="TSuccessResult"/> - the operation completed
+/// successfully.</description></item> <item><description><typeparamref name="TCase2"/> - the operation
+/// resolved to the first alternative result case.</description></item> <item><description><typeparamref name="TCase3"/> - the operation
+/// resolved to the second alternative result case.</description></item> <item><description><typeparamref name="TCase4"/> - the operation
 /// resolved to the third alternative result case.</description></item> </list>
 /// <para>Values of any case type convert implicitly to <see cref="OperationOutcome{TSuccessResult, TCase2, TCase3, TCase4}"/>, and
 /// switch expressions over it are exhaustive without a discard arm. </para>
@@ -138,11 +138,11 @@ public readonly union OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4>(T
 /// <typeparam name="TCase5">The type of the fourth alternative result case.</typeparam>
 /// <remarks>
 /// <para>This is a union declaration with five case types: </para>
-/// <list type="bullet"><item><description><typeparamref name="TSuccessResult"/> — the operation completed
-/// successfully.</description></item> <item><description><typeparamref name="TCase2"/> — the operation
-/// resolved to the first alternative result case.</description></item> <item><description><typeparamref name="TCase3"/> — the operation
-/// resolved to the second alternative result case.</description></item> <item><description><typeparamref name="TCase4"/> — the operation
-/// resolved to the third alternative result case.</description></item> <item><description><typeparamref name="TCase5"/> — the operation
+/// <list type="bullet"><item><description><typeparamref name="TSuccessResult"/> - the operation completed
+/// successfully.</description></item> <item><description><typeparamref name="TCase2"/> - the operation
+/// resolved to the first alternative result case.</description></item> <item><description><typeparamref name="TCase3"/> - the operation
+/// resolved to the second alternative result case.</description></item> <item><description><typeparamref name="TCase4"/> - the operation
+/// resolved to the third alternative result case.</description></item> <item><description><typeparamref name="TCase5"/> - the operation
 /// resolved to the fourth alternative result case.</description></item> </list>
 /// <para>Values of any case type convert implicitly to <see cref="OperationOutcome{TSuccessResult, TCase2, TCase3, TCase4, TCase5}"/>, and
 /// switch expressions over it are exhaustive without a discard arm. </para>
@@ -187,12 +187,12 @@ public readonly union OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, T
 ///
 /// <para>This is a union declaration with six case types: </para>
 ///
-/// <list type="bullet"><item><description><typeparamref name="TSuccessResult"/> — the operation completed
-/// successfully.</description></item> <item><description><typeparamref name="TCase2"/> — the operation resolved to the
-/// first alternative result case.</description></item> <item><description><typeparamref name="TCase3"/> — the operation resolved to
-/// the second alternative result case.</description></item> <item><description><typeparamref name="TCase4"/> — the operation resolved
-/// to the third alternative result case.</description></item> <item><description><typeparamref name="TCase5"/> — the operation
-/// resolved to the fourth alternative result case.</description></item> <item><description><typeparamref name="TCase6"/> — the operation
+/// <list type="bullet"><item><description><typeparamref name="TSuccessResult"/> - the operation completed
+/// successfully.</description></item> <item><description><typeparamref name="TCase2"/> - the operation resolved to the
+/// first alternative result case.</description></item> <item><description><typeparamref name="TCase3"/> - the operation resolved to
+/// the second alternative result case.</description></item> <item><description><typeparamref name="TCase4"/> - the operation resolved
+/// to the third alternative result case.</description></item> <item><description><typeparamref name="TCase5"/> - the operation
+/// resolved to the fourth alternative result case.</description></item> <item><description><typeparamref name="TCase6"/> - the operation
 /// resolved to the fifth alternative result case.</description></item> </list>
 ///
 /// <para>Values of any case type convert implicitly to <see cref="OperationOutcome{TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6}"/>, and

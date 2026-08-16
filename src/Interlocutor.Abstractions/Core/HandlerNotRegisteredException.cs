@@ -21,8 +21,8 @@ namespace Interlocutor.Abstractions.Core;
 /// </para>
 /// </remarks>
 // RCS1194 wants the standard parameterless/message/message+innerException/serialization constructor set. This
-// exception's RequestType is load-bearing — the whole point of catching it is to read which type had no handler
-// — so a parameterless or message-only constructor would produce a useless exception missing the one thing
+// exception's RequestType is load-bearing - the whole point of catching it is to read which type had no handler
+// - so a parameterless or message-only constructor would produce a useless exception missing the one thing
 // callers need. Suppressed here rather than adding constructors that would only confuse callers into using them.
 #pragma warning disable RCS1194
 public sealed class HandlerNotRegisteredException : Exception

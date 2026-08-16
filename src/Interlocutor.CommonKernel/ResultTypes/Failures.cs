@@ -8,7 +8,7 @@ using System.Collections.Immutable;
 /// <remarks>
 /// <para>
 /// Similar to <see cref="ValidationErrors"/>, this type aggregates multiple <see cref="Failure"/> instances
-/// without relying on property names or error codes — purely reason messages. Use this when you need to
+/// without relying on property names or error codes - purely reason messages. Use this when you need to
 /// return multiple independent failure reasons from a handler.
 /// </para>
 /// <para>

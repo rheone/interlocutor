@@ -21,36 +21,36 @@ This directory contains Claude agent definitions and custom skills for the Inter
 
 The `.agents/` directory stores:
 
-1. **Skills** — Custom Claude Code skills that extend functionality
-2. **Agent definitions** — YAML files configuring how skills run
-3. **Skill documentation** — Usage guides and reference material
+1. **Skills** - Custom Claude Code skills that extend functionality
+2. **Agent definitions** - YAML files configuring how skills run
+3. **Skill documentation** - Usage guides and reference material
 
-Skills here are **scoped to the Interlocutor project** — they are automatically preferred over global skills of the same name.
+Skills here are **scoped to the Interlocutor project** - they are automatically preferred over global skills of the same name.
 
 ## Available Skills
 
 ### Code Review & Standards
-- **`code-review`** — Review against Standards and Spec
-- **`codebase-design`** — Deep module design patterns
-- **`csharp-docs-and-comments`** — XML doc and code comment improvements
+- **`code-review`** - Review against Standards and Spec
+- **`codebase-design`** - Deep module design patterns
+- **`csharp-docs-and-comments`** - XML doc and code comment improvements
 
 ### Development Workflows
-- **`tdd`** — Test-driven development (red-green-refactor, integration tests)
-- **`resolving-merge-conflicts`** — Merge/rebase conflict resolution
-- **`grilling`** — Stress-test ideas and design decisions
+- **`tdd`** - Test-driven development (red-green-refactor, integration tests)
+- **`resolving-merge-conflicts`** - Merge/rebase conflict resolution
+- **`grilling`** - Stress-test ideas and design decisions
 
 ### Documentation & Writing
-- **`mermaid-diagram-generator`** — Flowcharts, sequences, ERD, state, C4, Gantt, etc.
-- **`research`** — Investigate topics against primary sources
-- **`writing-for-agents`** — Write or improve agent skills and documentation
+- **`mermaid-diagram-generator`** - Flowcharts, sequences, ERD, state, C4, Gantt, etc.
+- **`research`** - Investigate topics against primary sources
+- **`writing-for-agents`** - Write or improve agent skills and documentation
 
 ### Other
-- **`triage`** — Issue triage and classification
-- **`wayfinder`** — Navigate the codebase
-- **`implement`** — Implement features
-- **`handoff`** — Hand off work to another agent
-- **`to-spec`** — Ensure code matches specification
-- **`to-tickets`** — Convert findings to ticket format
+- **`triage`** - Issue triage and classification
+- **`wayfinder`** - Navigate the codebase
+- **`implement`** - Implement features
+- **`handoff`** - Hand off work to another agent
+- **`to-spec`** - Ensure code matches specification
+- **`to-tickets`** - Convert findings to ticket format
 
 ## Using Skills
 
@@ -179,13 +179,13 @@ See `settings.json` for:
 ## Integration with Claude Code
 
 Skills are automatically discovered and available:
-1. **Project-scoped** — Appear as `interlocutor:skill-name`
-2. **Instant reload** — Changes take effect immediately
-3. **Documented** — Use `/skill-doctor` to validate
+1. **Project-scoped** - Appear as `interlocutor:skill-name`
+2. **Instant reload** - Changes take effect immediately
+3. **Documented** - Use `/skill-doctor` to validate
 
 ## References
 
-- [AGENTS.md](../AGENTS.md) — Agent and skill writing standards
-- [CLAUDE.md](../CLAUDE.md) — Project-level Claude Code guidance
-- [CONTEXT.md](../CONTEXT.md) — Domain terminology and design decisions
+- [AGENTS.md](../AGENTS.md) - Agent and skill writing standards
+- [CLAUDE.md](../CLAUDE.md) - Project-level Claude Code guidance
+- [CONTEXT.md](../CONTEXT.md) - Domain terminology and design decisions
 - [Claude Code Docs](https://claude.ai/code/docs)

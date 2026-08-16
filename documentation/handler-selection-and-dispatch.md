@@ -1,6 +1,6 @@
 # Handler Selection & Dispatch
 
-How Interlocutor finds the handler for a request. Handler discovery happens at compile time, and dispatch always resolves to a single unambiguous handler — an ambiguous match is a build error, not a runtime guess.
+How Interlocutor finds the handler for a request. Handler discovery happens at compile time, and dispatch always resolves to a single unambiguous handler - an ambiguous match is a build error, not a runtime guess.
 
 ## Compile-Time Discovery
 
@@ -8,7 +8,7 @@ Handlers are discovered at compile time via a Roslyn source generator, not at ru
 
 - **Missing handlers are build errors**, not first-request failures.
 - **Ambiguous handlers are build errors**, not silent resolution.
-- **AOT and trim-friendly** — no runtime reflection needed.
+- **AOT and trim-friendly** - no runtime reflection needed.
 
 Every assembly containing handlers emits a generated module that the application-level generator aggregates. No runtime configuration or scanning is needed.
 
@@ -70,7 +70,7 @@ public class GetUserHandlerV2 : IQueryHandler<GetUser, OperationOutcome<UserDto,
 A closed handler wins over an open generic handler when both could apply:
 
 ```csharp
-// Open generic — handles any GetById<T> query
+// Open generic - handles any GetById<T> query
 public class GetByIdHandler<T> : IQueryHandler<GetById<T>, OperationOutcome<T, NotFound>>
 {
     public async Task<OperationOutcome<T, NotFound>> Handle(
@@ -78,7 +78,7 @@ public class GetByIdHandler<T> : IQueryHandler<GetById<T>, OperationOutcome<T, N
     { /* generic implementation */ }
 }
 
-// Closed — specific to GetById<User>
+// Closed - specific to GetById<User>
 public class GetUserByIdHandler : IQueryHandler<GetById<User>, OperationOutcome<User, NotFound>>
 {
     public async Task<OperationOutcome<User, NotFound>> Handle(
@@ -118,14 +118,14 @@ When you need one handler to intentionally supersede another, use the `[Override
 
 ```csharp
 // Open generic
-public class LoggingQueryHandler<TQuery, TResponse> 
+public class LoggingQueryHandler<TQuery, TResponse>
     : IQueryHandler<TQuery, TResponse>
     where TQuery : IQuery<TResponse>
 { /* logs all queries */ }
 
-// Closed — opt out of logging for a specific query
+// Closed - opt out of logging for a specific query
 [OverridesHandler(typeof(LoggingQueryHandler<,>))]
-public class GetSecretDataHandler 
+public class GetSecretDataHandler
     : IQueryHandler<GetSecretData, OperationOutcome<string, Forbidden>>
 {
     public async Task<OperationOutcome<string, Forbidden>> Handle(
@@ -144,18 +144,18 @@ Without the attribute, this would be a build error. The attribute is your explic
 
 ## Resource-Based Authorization
 
-Some commands need to authorize based on the loaded entity (ownership, entity state, etc.), not just a policy name. Use `ResourceCommandHandler<TCommand, TEntity, TSuccess>` — a template method implementing the load → authorize → handle pattern:
+Some commands need to authorize based on the loaded entity (ownership, entity state, etc.), not just a policy name. Use `ResourceCommandHandler<TCommand, TEntity, TSuccess>` - a template method implementing the load → authorize → handle pattern:
 
 ```csharp
 public record DeleteDocument(int DocumentId, int RequestedByUserId)
     : ICommand<OperationOutcome<Success, NotFound, Failure>>;
 
-public class DeleteDocumentHandler 
+public class DeleteDocumentHandler
     : ResourceCommandHandler<DeleteDocument, Document, Success>
 {
     private readonly IDocumentRepository repository;
 
-    public DeleteDocumentHandler(IDocumentRepository repository) 
+    public DeleteDocumentHandler(IDocumentRepository repository)
         => this.repository = repository;
 
     // Step 1: Load the entity
@@ -185,22 +185,22 @@ var result = await mediator.Send(new DeleteDocument(42, currentUserId));
 // result is Success, NotFound, or Failure depending on what Authorize/HandleAsync produce
 ```
 
-**Why is this not a pipeline behavior?** A behavior cannot express "if this specific part fails, produce this specific outcome" for a reason that depends on data loaded mid-pipeline. Resource authorization needs the entity that was just loaded, and passing it forward would require shared mutable state — exactly the architectural pattern Interlocutor avoids. The template method encapsulates the load, authorize, handle sequence as a single cohesive unit, rather than splitting it across multiple layers.
+**Why is this not a pipeline behavior?** A behavior cannot express "if this specific part fails, produce this specific outcome" for a reason that depends on data loaded mid-pipeline. Resource authorization needs the entity that was just loaded, and passing it forward would require shared mutable state - exactly the architectural pattern Interlocutor avoids. The template method encapsulates the load, authorize, handle sequence as a single cohesive unit, rather than splitting it across multiple layers.
 
 > [!NOTE]
-> `ResourceCommandHandler` always returns `OperationOutcome<TSuccess, NotFound, Failure>` — it can produce `NotFound` (when `LoadAsync` returns null) and `Failure` (when `Authorize` returns a failure), and any other outcome depends on what `HandleAsync` produces. The shape is fixed and enforced by the handler's own contract.
+> `ResourceCommandHandler` always returns `OperationOutcome<TSuccess, NotFound, Failure>` - it can produce `NotFound` (when `LoadAsync` returns null) and `Failure` (when `Authorize` returns a failure), and any other outcome depends on what `HandleAsync` produces. The shape is fixed and enforced by the handler's own contract.
 
 ## Contrast: Resource vs. Non-Resource Authorization
 
-- **Non-resource authorization** (policy-based, `IRequiresPolicy` marker) — evaluated by `AuthorizationBehavior` before the handler runs. Decides whether the caller can *attempt* a command, without needing to load anything first.
-- **Resource authorization** (entity-based, `ResourceCommandHandler`) — decided after loading, based on the loaded entity's state or the caller's relationship to it.
+- **Non-resource authorization** (policy-based, `IRequiresPolicy` marker) - evaluated by `AuthorizationBehavior` before the handler runs. Decides whether the caller can *attempt* a command, without needing to load anything first.
+- **Resource authorization** (entity-based, `ResourceCommandHandler`) - decided after loading, based on the loaded entity's state or the caller's relationship to it.
 
 Both are useful and solve different problems:
 
 ```csharp
 // Non-resource: "Can this user DELETE (any) document?"
 public record DeleteDocument(int DocumentId, int RequestedByUserId)
-    : ICommand<OperationOutcome<Success, NotFound, Failure>>, 
+    : ICommand<OperationOutcome<Success, NotFound, Failure>>,
       IRequiresPolicy  // Evaluated before loading
 {
     public string PolicyName => "DeleteDocument";
@@ -219,7 +219,7 @@ public class DeleteDocumentHandler : ResourceCommandHandler<DeleteDocument, Docu
 {
     protected override Failure? Authorize(Document entity, DeleteDocument command)
     {
-        // Checked after loading — based on entity ownership, status, etc.
+        // Checked after loading - based on entity ownership, status, etc.
         return entity.OwnerId == command.RequestedByUserId ? null : new Failure("Not the owner");
     }
 }
@@ -227,7 +227,7 @@ public class DeleteDocumentHandler : ResourceCommandHandler<DeleteDocument, Docu
 
 Use non-resource authorization for coarse gating (role checks, feature flags). Use resource authorization for fine-grained access (ownership, entity state).
 
-The two models don't just check different things — they short-circuit at different points relative to the handler:
+The two models don't just check different things - they short-circuit at different points relative to the handler:
 
 ```mermaid
 sequenceDiagram
@@ -251,7 +251,7 @@ sequenceDiagram
     deactivate Authorization
 ```
 
-Non-resource authorization runs and can deny *before the handler is ever reached* — the handler's lifeline never activates on the denied path.
+Non-resource authorization runs and can deny *before the handler is ever reached* - the handler's lifeline never activates on the denied path.
 
 ```mermaid
 sequenceDiagram
@@ -278,11 +278,11 @@ sequenceDiagram
     deactivate Handler
 ```
 
-Resource authorization's short-circuit happens *inside* the handler's own template method, after it has already started (and already loaded the entity) — there's no separate outer behavior to skip.
+Resource authorization's short-circuit happens *inside* the handler's own template method, after it has already started (and already loaded the entity) - there's no separate outer behavior to skip.
 
 ## Notifications (Multiple Handlers Allowed)
 
-Notifications are different from queries/commands — they support contravariant fan-out, meaning one notification can match multiple handlers:
+Notifications are different from queries/commands - they support contravariant fan-out, meaning one notification can match multiple handlers:
 
 ```csharp
 public record OrderShipped(int OrderId, string TrackingNumber) : INotification;
@@ -314,7 +314,7 @@ In infrastructure code (outbox replay, queue consumers), you may not know the re
 var requestType = Type.GetType(message.RequestType);  // Runtime type token
 var request = JsonSerializer.Deserialize(message.Payload, requestType);
 
-// Runtime-typed dispatch — no generic parameter
+// Runtime-typed dispatch - no generic parameter
 var result = await mediator.Send(request);  // request is object
 
 // Result is IOperationOutcome (the base interface all outcomes implement)

@@ -12,7 +12,7 @@ Both transaction behaviors, plus the logging and auditing behaviors, must obtain
 
 ## Acceptance criteria
 
-- [ ] A handler returning any kernel failure case — non-generic, generic, or aggregate — rolls back in both store implementations
+- [ ] A handler returning any kernel failure case - non-generic, generic, or aggregate - rolls back in both store implementations
 - [ ] A consumer-registered custom failure type rolls back
 - [ ] An unregistered custom type follows the policy decided in the classifier slice, and that behavior is asserted
 - [ ] Both transaction behaviors produce identical commit and rollback decisions for identical inputs

@@ -1,6 +1,6 @@
-# Conversation Export — C# 15 Union-Based Mediator Result Design
+# Conversation Export - C# 15 Union-Based Mediator Result Design
 
-*Exported conversation. Code artifacts created during the session are not reproduced here — only the discussion itself.*
+*Exported conversation. Code artifacts created during the session are not reproduced here - only the discussion itself.*
 
 ---
 
@@ -30,11 +30,11 @@
 
 **Claude:**
 
-Quick correction on the source first: this is real — C# unions shipped as a language feature but the runtime pieces (`UnionAttribute`/`IUnion`) aren't in .NET 11 Preview 2 yet, so today you declare the plumbing yourself (the doc gives the exact boilerplate). Worth knowing since it affects how portable your code is across preview builds.
+Quick correction on the source first: this is real - C# unions shipped as a language feature but the runtime pieces (`UnionAttribute`/`IUnion`) aren't in .NET 11 Preview 2 yet, so today you declare the plumbing yourself (the doc gives the exact boilerplate). Worth knowing since it affects how portable your code is across preview builds.
 
 ### What you're missing, and why
 
-**Authentication vs authorization.** "Not authorized" is really two different things: *not authenticated* (401-equivalent) and *authenticated but forbidden* (403-equivalent). Split into `Unauthorized` and `Forbidden`. *(Superseded in a later turn — see §2 below: authentication turned out to happen entirely upstream, so `Unauthorized` was dropped.)*
+**Authentication vs authorization.** "Not authorized" is really two different things: *not authenticated* (401-equivalent) and *authenticated but forbidden* (403-equivalent). Split into `Unauthorized` and `Forbidden`. *(Superseded in a later turn - see §2 below: authentication turned out to happen entirely upstream, so `Unauthorized` was dropped.)*
 
 **Business-rule violations distinct from field validation.** Field validation ("email is malformed") is a precondition check on the input shape. A business rule violation ("account balance insufficient") is a domain invariant failing after the input was structurally valid. Cramming both into `ValidationFailed` makes the error map ambiguous. Added a distinct `RuleViolation` (or `Error`) case with a code/message, separate from the per-field map.
 
@@ -44,11 +44,11 @@ Quick correction on the source first: this is real — C# unions shipped as a la
 
 **Identity info on `NotFound`.** A bare marker loses debuggability. Carry entity type + key internally (for logs/telemetry) even if the API layer strips it before serializing to the client.
 
-**What you correctly excluded, and rightly so:** cancellation, timeouts, infra failures — these are legitimately exceptional and should throw. Don't model them in the union.
+**What you correctly excluded, and rightly so:** cancellation, timeouts, infra failures - these are legitimately exceptional and should throw. Don't model them in the union.
 
 ### Two shapes, and the tradeoff
 
-**Option A — flat union.** All cases listed directly on `Result<T>`:
+**Option A - flat union.** All cases listed directly on `Result<T>`:
 
 ```csharp
 public record ValidationFailed(IReadOnlyDictionary<string, IReadOnlyList<(string Code, string Message)>> Errors);
@@ -63,9 +63,9 @@ public union Result(Success, ValidationFailed, RuleViolation, NotFound, Unauthor
 public record Success; // marker for no-payload commands
 ```
 
-Every failure record converts implicitly and directly into `Result<T>` — one hop, no ceremony in handlers.
+Every failure record converts implicitly and directly into `Result<T>` - one hop, no ceremony in handlers.
 
-**Option B — composed union.** Pull the failure cases into their own union, nested as a single case type:
+**Option B - composed union.** Pull the failure cases into their own union, nested as a single case type:
 
 ```csharp
 public union Failure(ValidationFailed, RuleViolation, NotFound, Unauthorized, Forbidden, Conflict);
@@ -73,9 +73,9 @@ public union Result<T>(T, Failure);
 public union Result(Success, Failure);
 ```
 
-Unions can be case types of other unions. Less duplication, and decorators can work in terms of `Failure` alone. The catch: C# doesn't chain two user-defined implicit conversions, so `ValidationFailed → Failure → Result<T>` won't happen in one assignment — needs an explicit two-step hop, or a small helper extension.
+Unions can be case types of other unions. Less duplication, and decorators can work in terms of `Failure` alone. The catch: C# doesn't chain two user-defined implicit conversions, so `ValidationFailed → Failure → Result<T>` won't happen in one assignment - needs an explicit two-step hop, or a small helper extension.
 
-**Recommendation:** go with B, especially given the decorator-pipeline architecture (lookup → validation → handler) — a shared `Failure` type earns its keep there.
+**Recommendation:** go with B, especially given the decorator-pipeline architecture (lookup → validation → handler) - a shared `Failure` type earns its keep there.
 
 ### Shape/mutability
 
@@ -100,11 +100,11 @@ IActionResult ToActionResult<T>(Result<T> result) => result.Value switch
 };
 ```
 
-Exhaustive, so adding a case later flags every mapping site — the point of reaching for a union here.
+Exhaustive, so adding a case later flags every mapping site - the point of reaching for a union here.
 
 ---
 
-## 2. Correction and refinement — auth timing, read models, pre/post validation
+## 2. Correction and refinement - auth timing, read models, pre/post validation
 
 **User:**
 
@@ -132,7 +132,7 @@ Exhaustive, so adding a case later flags every mapping site — the point of rea
 
 **Claude:**
 
-Confirmed — Preview 3 landed the same syntax I used, still marked non-final, and ASP.NET/minimal-API `TypedResults` integration isn't wired up yet.
+Confirmed - Preview 3 landed the same syntax I used, still marked non-final, and ASP.NET/minimal-API `TypedResults` integration isn't wired up yet.
 
 ### Types
 
@@ -154,7 +154,7 @@ public union Result<T>(T, Failure);   // queries, and commands that return somet
 public union Result(Success, Failure); // commands with no payload
 ```
 
-`T` for queries is the read-only projection — a DTO/graph shaped for the query, not the entity itself.
+`T` for queries is the read-only projection - a DTO/graph shaped for the query, not the entity itself.
 
 ### Handler contracts (async, cancellation-aware)
 
@@ -172,11 +172,11 @@ public interface ICommandHandler<TCommand, TResponse> where TCommand : ICommand<
 }
 ```
 
-**Gotcha:** don't put `CancellationToken ct = default` on these interface methods — default parameter values on interfaces resolve at the call site's *static* type, not virtually, so calling through the interface vs. a concrete type can silently diverge. Put the default exactly once, at the outer boundary (`IMediator.Send`).
+**Gotcha:** don't put `CancellationToken ct = default` on these interface methods - default parameter values on interfaces resolve at the call site's *static* type, not virtually, so calling through the interface vs. a concrete type can silently diverge. Put the default exactly once, at the outer boundary (`IMediator.Send`).
 
 ### Pipeline shape: two different concerns need two different mechanisms
 
-Pre-validation (shape) needs no data from lookup, so a generic decorator is fine. Post-validation (resource ownership) needs the entity lookup just fetched — doing that with generic decorators requires a shared mutable context object, which is exactly the mutability to avoid.
+Pre-validation (shape) needs no data from lookup, so a generic decorator is fine. Post-validation (resource ownership) needs the entity lookup just fetched - doing that with generic decorators requires a shared mutable context object, which is exactly the mutability to avoid.
 
 Two ways to avoid it:
 
@@ -201,7 +201,7 @@ public abstract class ResourceCommandHandler<TCommand, TEntity, TResponse>
 }
 ```
 
-Everything stays a plain return value passed down a call stack — no ambient state.
+Everything stays a plain return value passed down a call stack - no ambient state.
 
 ### Mapping to the API
 
@@ -233,15 +233,15 @@ public static class ResultExtensions
 }
 ```
 
-The top-level switch is two-armed (`T` / `Failure`) — detailed failure handling lives in the second switch. Adding a new `Failure` case later only requires updating `ToActionResult(Failure)`.
+The top-level switch is two-armed (`T` / `Failure`) - detailed failure handling lives in the second switch. Adding a new `Failure` case later only requires updating `ToActionResult(Failure)`.
 
 ### Problems likely to be hit
 
-- **Preview instability** — isolate `union` usage behind owned types so a syntax change is localized.
-- **Struct boxing** of value-type `T` — usually irrelevant, worth knowing for hot paths.
-- **No built-in serialization support** for unions — don't serialize `Result<T>`/`Failure` directly; map to DTOs/`IActionResult` at the boundary.
-- **Scattered ad hoc switches** — funnel through one canonical `Failure -> X` switch per output format rather than duplicating logic.
-- **`NotFound`/`Conflict` payload design** — decide structured fields up front; retrofitting a *case* later means touching every exhaustive switch (intended friction, but budget for it).
+- **Preview instability** - isolate `union` usage behind owned types so a syntax change is localized.
+- **Struct boxing** of value-type `T` - usually irrelevant, worth knowing for hot paths.
+- **No built-in serialization support** for unions - don't serialize `Result<T>`/`Failure` directly; map to DTOs/`IActionResult` at the boundary.
+- **Scattered ad hoc switches** - funnel through one canonical `Failure -> X` switch per output format rather than duplicating logic.
+- **`NotFound`/`Conflict` payload design** - decide structured fields up front; retrofitting a *case* later means touching every exhaustive switch (intended friction, but budget for it).
 
 ---
 
@@ -259,7 +259,7 @@ The top-level switch is two-armed (`T` / `Failure`) — detailed failure handlin
 
 ### Terminology
 
-"Decorator" is fine informally, but the more precise term is **pipeline behavior** (MediatR's term) or **middleware** (ASP.NET's term). The mental model is the **onion / Russian-doll model**: each layer wraps the next, and *the same layer* handles both "on the way in" and "on the way out" — one behavior, one `next()` call in the middle:
+"Decorator" is fine informally, but the more precise term is **pipeline behavior** (MediatR's term) or **middleware** (ASP.NET's term). The mental model is the **onion / Russian-doll model**: each layer wraps the next, and *the same layer* handles both "on the way in" and "on the way out" - one behavior, one `next()` call in the middle:
 
 ```csharp
 public interface IPipelineBehavior<TRequest, TResponse>
@@ -281,7 +281,7 @@ public sealed class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRe
 }
 ```
 
-Because it's generic over `<TRequest, TResponse>`, **`T` never needs to be known by any behavior** — composition is mechanical, no per-request-type coupling.
+Because it's generic over `<TRequest, TResponse>`, **`T` never needs to be known by any behavior** - composition is mechanical, no per-request-type coupling.
 
 ### Recommended layering (outer → inner)
 
@@ -295,31 +295,31 @@ Tracing/telemetry span
             Handler (lookup → resource authz → business logic → T)
 ```
 
-- Validation before transaction — don't open a transaction for a request that fails shape validation.
-- Auditing and transactions are write-path concerns — use marker interfaces (`IAuditableRequest`, `ITransactionalRequest`) rather than type-checking every request, so behaviors no-op cleanly for queries.
-- Non-resource authorization is genuinely allowed to be a no-op — an `IRequiresPolicy` marker, checked only if present.
-- Resource-based authorization stays inside the handler's template method, not a behavior — same reasoning as before.
+- Validation before transaction - don't open a transaction for a request that fails shape validation.
+- Auditing and transactions are write-path concerns - use marker interfaces (`IAuditableRequest`, `ITransactionalRequest`) rather than type-checking every request, so behaviors no-op cleanly for queries.
+- Non-resource authorization is genuinely allowed to be a no-op - an `IRequiresPolicy` marker, checked only if present.
+- Resource-based authorization stays inside the handler's template method, not a behavior - same reasoning as before.
 
 ### Exceptions don't belong in the pipeline
 
-Don't add an "exception → Failure" behavior — that quietly turns bugs into legitimate domain outcomes. Keep unexpected-fault handling outside the mediator pipeline entirely, at the ASP.NET level (`IExceptionHandler`), so it catches faults from any layer and turns them into a uniform 500/ProblemDetails response.
+Don't add an "exception → Failure" behavior - that quietly turns bugs into legitimate domain outcomes. Keep unexpected-fault handling outside the mediator pipeline entirely, at the ASP.NET level (`IExceptionHandler`), so it catches faults from any layer and turns them into a uniform 500/ProblemDetails response.
 
 ### Is wrapping going to get you in trouble?
 
-- **Nothing enforces a request goes through the right behaviors** — mitigate with an architecture test or analyzer.
-- **Registration order determines execution order**, and containers vary — pin it with a test.
-- **Scoped services across the chain** — make sure the transaction behavior and handler resolve the same scoped `DbContext`.
-- **Deep async call stacks** — .NET 11's Runtime Async V2 helps; keep the pipeline to ~6 layers.
-- **Testing shifts** — unit-test handlers directly; integration-test the pipeline itself.
+- **Nothing enforces a request goes through the right behaviors** - mitigate with an architecture test or analyzer.
+- **Registration order determines execution order**, and containers vary - pin it with a test.
+- **Scoped services across the chain** - make sure the transaction behavior and handler resolve the same scoped `DbContext`.
+- **Deep async call stacks** - .NET 11's Runtime Async V2 helps; keep the pipeline to ~6 layers.
+- **Testing shifts** - unit-test handlers directly; integration-test the pipeline itself.
 
 ### Other layers worth planning for
 
-- **Caching** (queries) — between authorization and handler.
-- **Idempotency** (commands) — before opening a transaction.
-- **Telemetry/tracing span** — outermost.
-- **Resilience (retries/circuit breakers)** — belongs at the infrastructure layer (Polly around DB/HTTP clients), not the mediator pipeline — retrying a `NotFound`/`Forbidden` is meaningless.
+- **Caching** (queries) - between authorization and handler.
+- **Idempotency** (commands) - before opening a transaction.
+- **Telemetry/tracing span** - outermost.
+- **Resilience (retries/circuit breakers)** - belongs at the infrastructure layer (Polly around DB/HTTP clients), not the mediator pipeline - retrying a `NotFound`/`Forbidden` is meaningless.
 
-The mental-model adjustment: don't think "pre-processors and post-processors" as two lists — one behavior wraps `next()`; reserve the template-method handler for anything needing the fetched entity.
+The mental-model adjustment: don't think "pre-processors and post-processors" as two lists - one behavior wraps `next()`; reserve the template-method handler for anything needing the fetched entity.
 
 ---
 
@@ -337,7 +337,7 @@ The mental-model adjustment: don't think "pre-processors and post-processors" as
 
 Two files: the **PRD** (goals, type catalog, mermaid diagrams for request flow / type composition / transactional scope, API mapping, anticipated future shapes) and the **ADR set** (8 records covering unions-as-Result, validation-vs-rule-violation split, template-method resource authorization, onion pipeline behaviors, exceptions-only-for-bugs, single transactional scope via scoped DI session, cancellation-token defaulting, marker interfaces).
 
-The transactional scope point (ADR-0006) is the one worth double-checking against the actual data layer — it assumes a `Scoped`-lifetime session shared by `TransactionBehavior` and `ResourceCommandHandler` via constructor injection, which holds for standard per-HTTP-request DI but needs a manual scope for background/queue dispatch.
+The transactional scope point (ADR-0006) is the one worth double-checking against the actual data layer - it assumes a `Scoped`-lifetime session shared by `TransactionBehavior` and `ResourceCommandHandler` via constructor injection, which holds for standard per-HTTP-request DI but needs a manual scope for background/queue dispatch.
 
 *(Patterns named in the PRD: CQRS, Mediator, Result/Railway-Oriented Programming via C# 15 unions, Chain of Responsibility / Onion middleware, Template Method, Marker Interface, Unit of Work.)*
 
@@ -357,7 +357,7 @@ The transactional scope point (ADR-0006) is the one worth double-checking agains
 
 ### 1. Non-database queries/commands (external APIs, other stores)
 
-Yes — existing marker interface territory, with a tightened subtlety: **absence of `ITransactionalRequest` should mean the session is never even constructed**, not just "not wrapped in a transaction."
+Yes - existing marker interface territory, with a tightened subtlety: **absence of `ITransactionalRequest` should mean the session is never even constructed**, not just "not wrapped in a transaction."
 
 Resolve the session lazily:
 
@@ -372,7 +372,7 @@ public sealed class TransactionBehavior<TRequest, TResponse> : IPipelineBehavior
     public async Task<Result<TResponse>> Handle(TRequest request, CancellationToken ct, Func<Task<Result<TResponse>>> next)
     {
         if (request is not ITransactionalRequest)
-            return await next(); // _db.Value is never evaluated — no session created
+            return await next(); // _db.Value is never evaluated - no session created
 
         var db = _db.Value;
         await using var tx = await db.Database.BeginTransactionAsync(ct);
@@ -391,11 +391,11 @@ public interface ITransactionalRequest { }   // opts into the DB unit-of-work
 public interface IExternalStoreRequest { }   // documents "deliberately no DB session"
 ```
 
-An architecture test asserts every `ICommand` implements exactly one. Handlers for `IExternalStoreRequest` commands inject whatever client they need (e.g. `ICrmClient`), same as `ResourceCommandHandler.LoadAsync` already allows. Retries/circuit breakers for the external call remain a Polly/client-layer concern, not a pipeline behavior — genuine transient faults still throw.
+An architecture test asserts every `ICommand` implements exactly one. Handlers for `IExternalStoreRequest` commands inject whatever client they need (e.g. `ICrmClient`), same as `ResourceCommandHandler.LoadAsync` already allows. Retries/circuit breakers for the external call remain a Polly/client-layer concern, not a pipeline behavior - genuine transient faults still throw.
 
 ### 2. Enumerable / paged results
 
-Don't return `IEnumerable<T>`/`IAsyncEnumerable<T>` as the success payload — risks deferred execution outliving a scoped session, and can't carry paging metadata.
+Don't return `IEnumerable<T>`/`IAsyncEnumerable<T>` as the success payload - risks deferred execution outliving a scoped session, and can't carry paging metadata.
 
 ```csharp
 public sealed record PagedResult<T>(IReadOnlyList<T> Items, int Page, int PageSize, long TotalCount)
@@ -405,11 +405,11 @@ public sealed record PagedResult<T>(IReadOnlyList<T> Items, int Page, int PageSi
 }
 ```
 
-Used as `Result<PagedResult<WidgetDto>>` — no change to `Failure` or any behavior, since `PagedResult<T>` is just another success payload shape flowing through the same generic `Result<T>` contract. Empty result set is success, not `NotFound`.
+Used as `Result<PagedResult<WidgetDto>>` - no change to `Failure` or any behavior, since `PagedResult<T>` is just another success payload shape flowing through the same generic `Result<T>` contract. Empty result set is success, not `NotFound`.
 
 ### 3. DI for validators over `T` (and collections of `T`)
 
-Falls out of existing generic composition — `ValidationBehavior<TRequest,TResponse>` never looks at `TResponse`, only `TRequest`:
+Falls out of existing generic composition - `ValidationBehavior<TRequest,TResponse>` never looks at `TResponse`, only `TRequest`:
 
 ```csharp
 public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
@@ -444,7 +444,7 @@ public sealed class BulkCreateWidgetsCommandValidator : AbstractValidator<BulkCr
 }
 ```
 
-Behaviors never need to know whether `TResponse` is `T`, `IReadOnlyList<T>`, or `PagedResult<T>` — that's the payoff of keeping `TResponse` opaque to every behavior.
+Behaviors never need to know whether `TResponse` is `T`, `IReadOnlyList<T>`, or `PagedResult<T>` - that's the payoff of keeping `TResponse` opaque to every behavior.
 
 ---
 
@@ -456,12 +456,12 @@ Behaviors never need to know whether `TResponse` is `T`, `IReadOnlyList<T>`, or 
 
 **Claude:**
 
-*(Appended "Addendum A" to the PRD — non-database requests, paged results, validator composition, updated type catalog, a session-resolution mermaid diagram — and "ADR-0009 through ADR-0011" to the ADR document, covering the same three decisions in ADR format.)*
+*(Appended "Addendum A" to the PRD - non-database requests, paged results, validator composition, updated type catalog, a session-resolution mermaid diagram - and "ADR-0009 through ADR-0011" to the ADR document, covering the same three decisions in ADR format.)*
 
 Both files updated in place with an **Addendum** section each, so the originals stay intact and these read as continuations:
 
-- **PRD** — Addendum A covers non-DB requests (lazy `Lazy<AppDbContext>` + paired `ITransactionalRequest`/`IExternalStoreRequest` markers), collection/paged results (`PagedResult<T>`), and validator composition (scalar, bulk via `RuleForEach`, paged queries) — each with a worked example, an updated type-catalog table, and a new mermaid decision-flow diagram for session resolution.
-- **ADRs** — three new records (ADR-0009, 0010, 0011) documenting each decision with context/consequences/alternatives, explicitly noting they extend rather than revise the earlier set.
+- **PRD** - Addendum A covers non-DB requests (lazy `Lazy<AppDbContext>` + paired `ITransactionalRequest`/`IExternalStoreRequest` markers), collection/paged results (`PagedResult<T>`), and validator composition (scalar, bulk via `RuleForEach`, paged queries) - each with a worked example, an updated type-catalog table, and a new mermaid decision-flow diagram for session resolution.
+- **ADRs** - three new records (ADR-0009, 0010, 0011) documenting each decision with context/consequences/alternatives, explicitly noting they extend rather than revise the earlier set.
 
 ---
 
@@ -473,11 +473,11 @@ Both files updated in place with an **Addendum** section each, so the originals 
 
 **Claude:**
 
-*(Created a set of example source files: `Core/Results.cs`, `Core/Abstractions.cs`, `Core/PipelineBehaviors.cs`, `Core/ResultExtensions.cs`, `Widgets/WidgetEntities.cs`, `Widgets/CreateWidgetCommand.cs` (simple transactional command), `Widgets/UpdateWidgetCommand.cs` (`ResourceCommandHandler` example with ownership authorization and concurrency conflict), `Widgets/BulkCreateWidgetsCommand.cs` (collection validation), `Widgets/GetWidgetsQuery.cs` (paged, non-transactional query), `Crm/SyncCustomerToCrmCommand.cs` (external-store command), and `Api/WidgetsController.cs` — each fully XML-documented, tying every design decision back to the earlier discussion. No closing narrative message was sent for this turn; the files themselves were the deliverable.)*
+*(Created a set of example source files: `Core/Results.cs`, `Core/Abstractions.cs`, `Core/PipelineBehaviors.cs`, `Core/ResultExtensions.cs`, `Widgets/WidgetEntities.cs`, `Widgets/CreateWidgetCommand.cs` (simple transactional command), `Widgets/UpdateWidgetCommand.cs` (`ResourceCommandHandler` example with ownership authorization and concurrency conflict), `Widgets/BulkCreateWidgetsCommand.cs` (collection validation), `Widgets/GetWidgetsQuery.cs` (paged, non-transactional query), `Crm/SyncCustomerToCrmCommand.cs` (external-store command), and `Api/WidgetsController.cs` - each fully XML-documented, tying every design decision back to the earlier discussion. No closing narrative message was sent for this turn; the files themselves were the deliverable.)*
 
 ---
 
-## 8. Library extraction — packaging, naming, and new query/command variants
+## 8. Library extraction - packaging, naming, and new query/command variants
 
 **User:**
 
@@ -491,17 +491,17 @@ Both files updated in place with an **Addendum** section each, so the originals 
 
 Summary of what was delivered:
 
-**Packaging** — a real shared kernel is only the dependency-free `Result`/`Failure` vocabulary; everything else (mediation abstractions, EF/FluentValidation/ASP.NET bindings) is a satellite. Proposed name **`Interlocutor`** — the legal/procedural term for how a case was resolved, unclaimed on NuGet, doesn't collide with `Task.Result`. What's defining vs. `OneOf`/`FluentResults`/`ErrorOr`/`MediatR`: native-union exhaustiveness (no source generator), the Result vocabulary and pipeline co-designed rather than bolted together, `ValidationFailed`/`RuleViolation` kept semantically distinct, resource-based authorization as a named first-class pattern, and a hard no-exceptions-as-Failure rule enforced in the library's own code, not just docs.
+**Packaging** - a real shared kernel is only the dependency-free `Result`/`Failure` vocabulary; everything else (mediation abstractions, EF/FluentValidation/ASP.NET bindings) is a satellite. Proposed name **`Interlocutor`** - the legal/procedural term for how a case was resolved, unclaimed on NuGet, doesn't collide with `Task.Result`. What's defining vs. `OneOf`/`FluentResults`/`ErrorOr`/`MediatR`: native-union exhaustiveness (no source generator), the Result vocabulary and pipeline co-designed rather than bolted together, `ValidationFailed`/`RuleViolation` kept semantically distinct, resource-based authorization as a named first-class pattern, and a hard no-exceptions-as-Failure rule enforced in the library's own code, not just docs.
 
-**New query/command variants**: `IQuery<T>`, `IEnumerableQuery<T>`, `IPagedQuery<T>` (load-bearing `Page`/`PageSize`), `ICommand<T>`, `ICommand`, `IEnumerableCommand<T>`, `IBulkCommand<TItem,TResponseItem>` (load-bearing `Items`) — the last two make cross-cutting validation reusable across *any* app without per-request boilerplate: `PagingValidationBehavior` and `BulkItemValidationBehavior` work off the interface, not a naming convention.
+**New query/command variants**: `IQuery<T>`, `IEnumerableQuery<T>`, `IPagedQuery<T>` (load-bearing `Page`/`PageSize`), `ICommand<T>`, `ICommand`, `IEnumerableCommand<T>`, `IBulkCommand<TItem,TResponseItem>` (load-bearing `Items`) - the last two make cross-cutting validation reusable across *any* app without per-request boilerplate: `PagingValidationBehavior` and `BulkItemValidationBehavior` work off the interface, not a naming convention.
 
-**The nesting-doll made concrete** (in `Mediator.cs`) — the actual fold that builds `Logging(next: Auditing(next: Validation(...(next: Handler))))` from a registered behavior list, with the equivalent hand-written version documented alongside it.
+**The nesting-doll made concrete** (in `Mediator.cs`) - the actual fold that builds `Logging(next: Auditing(next: Validation(...(next: Handler))))` from a registered behavior list, with the equivalent hand-written version documented alongside it.
 
-**`Example/CompositionAndUsage.cs`** ties it together: a paged query and a bulk command using the new interfaces, DI registration order, and a fully narrated trace of one request — including a short-circuit at item validation and the happy path all the way down to the returned `WidgetDto`.
+**`Example/CompositionAndUsage.cs`** ties it together: a paged query and a bulk command using the new interfaces, DI registration order, and a fully narrated trace of one request - including a short-circuit at item validation and the happy path all the way down to the returned `WidgetDto`.
 
 ---
 
-## 9. Service locator usage — guidance and type safety
+## 9. Service locator usage - guidance and type safety
 
 **User:**
 
@@ -515,21 +515,21 @@ Summary of what was delivered:
 
 ### The guidance
 
-Mark Seemann's "Service Locator is an anti-pattern" critique is specific: it's a problem when **application/business code** reaches into a container to fetch its own dependencies, hiding them from the constructor signature and defeating compile-time checking. It is **not** the same problem when confined to a small piece of generic infrastructure whose entire job is runtime dispatch on a type only known at the call site — MediatR, ASP.NET's controller activation, and AutoMapper's internal resolution all do the same, for the same reason. The rule of thumb: **confine it to one class, and make sure nothing downstream (handlers, behaviors) ever touches `IServiceProvider` directly** — already true here, since every behavior/handler uses ordinary constructor injection.
+Mark Seemann's "Service Locator is an anti-pattern" critique is specific: it's a problem when **application/business code** reaches into a container to fetch its own dependencies, hiding them from the constructor signature and defeating compile-time checking. It is **not** the same problem when confined to a small piece of generic infrastructure whose entire job is runtime dispatch on a type only known at the call site - MediatR, ASP.NET's controller activation, and AutoMapper's internal resolution all do the same, for the same reason. The rule of thumb: **confine it to one class, and make sure nothing downstream (handlers, behaviors) ever touches `IServiceProvider` directly** - already true here, since every behavior/handler uses ordinary constructor injection.
 
 ### Where it's used, and why it can't be fully avoided
 
-Exactly two lookups, both inside `Dispatch`: resolving the concrete handler for the request's runtime type, and resolving the ordered `IPipelineBehavior<TRequest,TResponse>` list for that same type. `Send<TResponse>(IQuery<TResponse> query, ...)` only knows the *static* type is `IQuery<TResponse>` — there's no way to write `services.GetRequiredService<IQueryHandler<???, TResponse>>()` without a runtime type token.
+Exactly two lookups, both inside `Dispatch`: resolving the concrete handler for the request's runtime type, and resolving the ordered `IPipelineBehavior<TRequest,TResponse>` list for that same type. `Send<TResponse>(IQuery<TResponse> query, ...)` only knows the *static* type is `IQuery<TResponse>` - there's no way to write `services.GetRequiredService<IQueryHandler<???, TResponse>>()` without a runtime type token.
 
 ### What was avoidably unsafe: `dynamic`
 
-Fixed with a small **handler-wrapper hierarchy** (the same technique MediatR uses internally): a non-generic `HandlerWrapper<TResponse>` base, with fully statically-typed generic implementations (`QueryHandlerWrapper<TQuery,TResponse>`, `CommandHandlerWrapper<TCommand,TResponse>`) constructed once via reflection and cached in a `ConcurrentDictionary<Type,object>`. Every call after construction is ordinary, compiler-checked C# — no `dynamic`, no runtime binder.
+Fixed with a small **handler-wrapper hierarchy** (the same technique MediatR uses internally): a non-generic `HandlerWrapper<TResponse>` base, with fully statically-typed generic implementations (`QueryHandlerWrapper<TQuery,TResponse>`, `CommandHandlerWrapper<TCommand,TResponse>`) constructed once via reflection and cached in a `ConcurrentDictionary<Type,object>`. Every call after construction is ordinary, compiler-checked C# - no `dynamic`, no runtime binder.
 
 Added `InterlocutorStartupValidation.ValidateInterlocutorHandlerRegistrations(...)` to close the remaining gap: a missing handler registration would otherwise only surface on the first production request that hits it; this scans all `IQuery<T>`/`ICommand<T>`/`ICommand` types at boot and fails startup instead.
 
 ### Would you use it to fetch validation/logging for `T`? No.
 
-`ValidationBehavior<TRequest,TResponse>(IEnumerable<IValidator<TRequest>> validators)`, `LoggingBehavior<TRequest,TResponse>(ILogger<...> logger)`, `AuthorizationBehavior<TRequest,TResponse>(IPolicyEvaluator policyEvaluator)` — all ordinary constructor injection. The container resolves those dependencies automatically the moment it constructs the behavior instance, which happens *inside* `Mediator`'s one locator call — not because the behavior calls `GetService` itself. If a handler or behavior ever calls `IServiceProvider.GetService<T>()` directly from its own logic, that's the anti-pattern reappearing; the fix is always to add it as a constructor parameter instead.
+`ValidationBehavior<TRequest,TResponse>(IEnumerable<IValidator<TRequest>> validators)`, `LoggingBehavior<TRequest,TResponse>(ILogger<...> logger)`, `AuthorizationBehavior<TRequest,TResponse>(IPolicyEvaluator policyEvaluator)` - all ordinary constructor injection. The container resolves those dependencies automatically the moment it constructs the behavior instance, which happens *inside* `Mediator`'s one locator call - not because the behavior calls `GetService` itself. If a handler or behavior ever calls `IServiceProvider.GetService<T>()` directly from its own logic, that's the anti-pattern reappearing; the fix is always to add it as a constructor parameter instead.
 
 ---
 
@@ -545,11 +545,11 @@ Added `InterlocutorStartupValidation.ValidateInterlocutorHandlerRegistrations(..
 
 Two examples, deliberately annotated so it's obvious which lines are yours versus the library's:
 
-**Query — `GetOrderByIdQuery`**: you write the record shape, the `AbstractValidator` rules, and the handler body (what counts as `NotFound`, what projection to return). The library only guarantees your validator runs before your handler, and that your handler's `Result<OrderDto>` flows back through the pipeline unchanged.
+**Query - `GetOrderByIdQuery`**: you write the record shape, the `AbstractValidator` rules, and the handler body (what counts as `NotFound`, what projection to return). The library only guarantees your validator runs before your handler, and that your handler's `Result<OrderDto>` flows back through the pipeline unchanged.
 
-**Command — `CancelOrderCommand`**: same split, but through `ResourceCommandHandler` — you supply `LoadAsync` (your query), `Authorize` (your ownership rule), and `HandleAsync` (your business rule — note `RuleViolation` here, not `ValidationFailed`, since "already shipped" depends on loaded state, not input shape). The library's contribution is calling those three methods in order and committing the transaction once you return.
+**Command - `CancelOrderCommand`**: same split, but through `ResourceCommandHandler` - you supply `LoadAsync` (your query), `Authorize` (your ownership rule), and `HandleAsync` (your business rule - note `RuleViolation` here, not `ValidationFailed`, since "already shipped" depends on loaded state, not input shape). The library's contribution is calling those three methods in order and committing the transaction once you return.
 
-The registration block is the only place the two connect to the pipeline — and it's the same two lines for every new query or command added. Nothing about adding either example required touching `LoggingBehavior`, `TransactionBehavior`, or any other pipeline registration — concrete proof that the cross-cutting plumbing and business logic stay fully decoupled.
+The registration block is the only place the two connect to the pipeline - and it's the same two lines for every new query or command added. Nothing about adding either example required touching `LoggingBehavior`, `TransactionBehavior`, or any other pipeline registration - concrete proof that the cross-cutting plumbing and business logic stay fully decoupled.
 
 ---
 
@@ -563,20 +563,20 @@ The registration block is the only place the two connect to the pipeline — and
 
 *(Created `PipelineStage.cs`, and refactored `LoggingBehavior`/`AuditingBehavior` to use it.)*
 
-**`PipelineStage<TRequest,TResponse>`** — implements `IPipelineBehavior<TRequest,TResponse>` explicitly (so a subclass can't reopen/short-circuit it), and exposes two `protected virtual` hooks:
+**`PipelineStage<TRequest,TResponse>`** - implements `IPipelineBehavior<TRequest,TResponse>` explicitly (so a subclass can't reopen/short-circuit it), and exposes two `protected virtual` hooks:
 
-- `OnIngress(request, ct)` — runs before `next()`
-- `OnEgress(request, result, ct)` — runs after `next()`, given the result
+- `OnIngress(request, ct)` - runs before `next()`
+- `OnEgress(request, result, ct)` - runs after `next()`, given the result
 
-Both default to `Task.CompletedTask` and are **always invoked**, regardless of whether a subclass overrides them — the "appropriately called... may be a no-op" contract: the framework's obligation to call both sides is unconditional; whether a given stage does anything with the call is the subclass's choice.
+Both default to `Task.CompletedTask` and are **always invoked**, regardless of whether a subclass overrides them - the "appropriately called... may be a no-op" contract: the framework's obligation to call both sides is unconditional; whether a given stage does anything with the call is the subclass's choice.
 
-`AuditingBehavior` is the clean demonstration — it only overrides `OnEgress` (it needs the outcome to decide what to record), so `OnIngress` runs as an inherited no-op every dispatch, invisibly. `LoggingBehavior` uses both.
+`AuditingBehavior` is the clean demonstration - it only overrides `OnEgress` (it needs the outcome to decide what to record), so `OnIngress` runs as an inherited no-op every dispatch, invisibly. `LoggingBehavior` uses both.
 
-Deliberate limitation, called out in the docs: this type can't express **short-circuiting** (`OnIngress` can't refuse to call `next()`) or **result-dependent branching that changes what happens** (`OnEgress` can observe but not replace the result). `ValidationBehavior`, `AuthorizationBehavior`, and `TransactionBehavior` stay as direct `IPipelineBehavior` implementations because they need to either reject before `next()` or make a commit/rollback decision *because of* the result — control flow, not observation. `PipelineStage<TRequest,TResponse>` is scoped to the purely observational subset.
+Deliberate limitation, called out in the docs: this type can't express **short-circuiting** (`OnIngress` can't refuse to call `next()`) or **result-dependent branching that changes what happens** (`OnEgress` can observe but not replace the result). `ValidationBehavior`, `AuthorizationBehavior`, and `TransactionBehavior` stay as direct `IPipelineBehavior` implementations because they need to either reject before `next()` or make a commit/rollback decision *because of* the result - control flow, not observation. `PipelineStage<TRequest,TResponse>` is scoped to the purely observational subset.
 
 ---
 
-Also caught and fixed a real defect while compiling this: `ResourceCommandHandler<TCommand,TEntity,TResponse>` never actually declared `: ICommandHandler<TCommand,TResponse>` — so the DI registrations in the Widget/Order examples (`AddScoped<ICommandHandler<CancelOrderCommand, OrderDto>, CancelOrderCommandHandler>()`) wouldn't have compiled. Fixed.
+Also caught and fixed a real defect while compiling this: `ResourceCommandHandler<TCommand,TEntity,TResponse>` never actually declared `: ICommandHandler<TCommand,TResponse>` - so the DI registrations in the Widget/Order examples (`AddScoped<ICommandHandler<CancelOrderCommand, OrderDto>, CancelOrderCommandHandler>()`) wouldn't have compiled. Fixed.
 
 ## Interfaces that exist
 
@@ -590,7 +590,7 @@ Also caught and fixed a real defect while compiling this: `ResourceCommandHandle
 | `IEnumerableCommand<TResponseItem>` | Readability specialization of `ICommand<IReadOnlyList<TResponseItem>>`. |
 | `IBulkCommand<TItem,TResponseItem>` | Bulk-write contract exposing `Items`, so `BulkItemValidationBehavior` can validate every item generically. |
 | `ITransactionalRequest` | Opts a command into the SQL unit-of-work (`TransactionBehavior` resolves the session). |
-| `IExternalStoreRequest` | Declares a command deliberately has no SQL session — paired with the above. |
+| `IExternalStoreRequest` | Declares a command deliberately has no SQL session - paired with the above. |
 | `IAuditableRequest` | Opts a request into audit logging; exposes `ActionName`. |
 | `IRequiresPolicy` | Opts a request into a named, non-resource authorization check; exposes `PolicyName`. |
 | `IQueryHandler<TQuery,TResponse>` | Contract for a query's handler. |
@@ -615,18 +615,18 @@ Also caught and fixed a real defect while compiling this: `ResourceCommandHandle
 | `TransactionBehavior<TRequest,TResponse,TContext>` | `IPipelineBehavior<...>` | Lazily opens/commits/rolls back a SQL transaction for `ITransactionalRequest` commands. |
 | `ValidationBehavior<TRequest,TResponse>` | `IPipelineBehavior<...>` | Runs registered FluentValidation `IValidator<TRequest>`s, short-circuits with `ValidationFailed`. |
 | `BulkItemValidationBehavior<TRequest,TItem,TResponseItem>` | `IPipelineBehavior<...>` | Validates every item of an `IBulkCommand<,>` via `IValidator<TItem>`. |
-| `ResultExtensions` (static) | — | The single `Result`/`Failure` → HTTP mapping. |
+| `ResultExtensions` (static) | - | The single `Result`/`Failure` → HTTP mapping. |
 
 ## What's missing for a "true" mediator/CQRS implementation
 
 | Should exist | Purpose |
 |---|---|
-| **`INotification` + `INotificationHandler<TNotification>` + `IMediator.Publish(...)`** | The other half of the mediator pattern. `Send` is strictly one-handler request/response; a real mediator also supports **publish**: broadcasting a domain/integration event (e.g. `OrderCancelled`) to zero-or-more independent handlers, with no `Result<T>` contract and no coupling between the command handler and whatever reacts to it. This is the biggest structural gap — nothing here currently lets a command handler raise a fact for others to react to. |
-| **`IPipelineBehavior<TRequest>` (no `TResponse`) + a matching wrapper** | Real gap, not hypothetical: `Mediator.Send(ICommand command)` (the no-payload path) currently bypasses the entire behavior pipeline — no logging, validation, or transaction runs for it, because it was left as a simplified reflection call. No-payload commands need the same wrapper treatment as `CommandHandlerWrapper<TCommand,TResponse>`, just returning `Result` instead of `Result<TResponse>`. |
-| **`IStreamQuery<TItem>` / `IStreamQueryHandler<TQuery,TItem>` returning `IAsyncEnumerable<T>`** | Flagged as future work in the PRD (Addendum A.2) but never built. Needed for genuinely large exports where materializing a full `PagedResult<T>` isn't viable — a deliberately separate contract from `Result<T>`, since streaming and "commit/rollback as one unit" don't compose. |
+| **`INotification` + `INotificationHandler<TNotification>` + `IMediator.Publish(...)`** | The other half of the mediator pattern. `Send` is strictly one-handler request/response; a real mediator also supports **publish**: broadcasting a domain/integration event (e.g. `OrderCancelled`) to zero-or-more independent handlers, with no `Result<T>` contract and no coupling between the command handler and whatever reacts to it. This is the biggest structural gap - nothing here currently lets a command handler raise a fact for others to react to. |
+| **`IPipelineBehavior<TRequest>` (no `TResponse`) + a matching wrapper** | Real gap, not hypothetical: `Mediator.Send(ICommand command)` (the no-payload path) currently bypasses the entire behavior pipeline - no logging, validation, or transaction runs for it, because it was left as a simplified reflection call. No-payload commands need the same wrapper treatment as `CommandHandlerWrapper<TCommand,TResponse>`, just returning `Result` instead of `Result<TResponse>`. |
+| **`IStreamQuery<TItem>` / `IStreamQueryHandler<TQuery,TItem>` returning `IAsyncEnumerable<T>`** | Flagged as future work in the PRD (Addendum A.2) but never built. Needed for genuinely large exports where materializing a full `PagedResult<T>` isn't viable - a deliberately separate contract from `Result<T>`, since streaming and "commit/rollback as one unit" don't compose. |
 | **`ISender` / `IPublisher` (splitting `IMediator`)** | Interface Segregation: most consumers only ever call `Send`; splitting lets a handler that only needs to publish events depend on `IPublisher` without pulling in the ability to dispatch arbitrary commands, and vice versa. |
-| **An assembly-scanning registration extension (`AddInterlocutorMediation(params Assembly[])`)** | Every handler and validator is currently registered by hand, one line per type. A "true" reusable library ships a scanner that finds every `IQueryHandler<,>`/`ICommandHandler<,>`/`IValidator<>` in given assemblies and registers them automatically — this is what makes `Interlocutor` competitive with MediatR's `AddMediatR(...)` ergonomically, and it should call `InterlocutorStartupValidation` automatically at the end. |
-| **`IRequestExceptionHandler<TRequest,TResponse,TException>`** | Distinct from ADR-0005's "exceptions are exceptional" stance — this isn't about converting exceptions into `Failure`. It's about letting a request type declare typed enrichment/logging/translation for a *specific* infrastructure exception (e.g. wrap `SqlException` with request context before it propagates) without ever turning it into a domain outcome. Optional, but a mature mediator library usually offers it as an escape hatch. |
+| **An assembly-scanning registration extension (`AddInterlocutorMediation(params Assembly[])`)** | Every handler and validator is currently registered by hand, one line per type. A "true" reusable library ships a scanner that finds every `IQueryHandler<,>`/`ICommandHandler<,>`/`IValidator<>` in given assemblies and registers them automatically - this is what makes `Interlocutor` competitive with MediatR's `AddMediatR(...)` ergonomically, and it should call `InterlocutorStartupValidation` automatically at the end. |
+| **`IRequestExceptionHandler<TRequest,TResponse,TException>`** | Distinct from ADR-0005's "exceptions are exceptional" stance - this isn't about converting exceptions into `Failure`. It's about letting a request type declare typed enrichment/logging/translation for a *specific* infrastructure exception (e.g. wrap `SqlException` with request context before it propagates) without ever turning it into a domain outcome. Optional, but a mature mediator library usually offers it as an escape hatch. |
 | **`IRequestContextAccessor` (correlation id / current user / tenant)** | Right now `ICurrentUser` is ad hoc, defined per example rather than by the library. A shared ambient-context abstraction would let `LoggingBehavior`/`AuditingBehavior`/tracing pull a correlation id consistently instead of each app inventing its own. |
 
-The `Publish`/notification gap and the no-payload pipeline gap are the two I'd treat as priorities — the first is a missing half of "mediator" by definition, the second is a latent bug in what's already shipped.
+The `Publish`/notification gap and the no-payload pipeline gap are the two I'd treat as priorities - the first is a missing half of "mediator" by definition, the second is a latent bug in what's already shipped.

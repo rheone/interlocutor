@@ -5,7 +5,7 @@ namespace Interlocutor.Generator;
 /// </summary>
 /// <remarks>
 /// Mirrors the four contracts <c>Interlocutor.DependencyInjection.Abstractions.HandlerDiscovery</c> checks
-/// at runtime — this generator replicates that same discovery semantic at compile time.
+/// at runtime - this generator replicates that same discovery semantic at compile time.
 /// </remarks>
 internal enum HandlerKind
 {

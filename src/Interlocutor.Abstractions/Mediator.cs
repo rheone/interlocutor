@@ -31,11 +31,11 @@ using Interlocutor.CommonKernel;
 /// <para>
 /// Every dispatch (<c>Send</c> and <c>Publish</c>, including the runtime-typed <see cref="Send(object, CancellationToken)"/>
 /// overload) starts an <see cref="Activity"/> via <see cref="MediatorActivitySource.Source"/>, tagged with the
-/// request type, the resolved handler type(s), and — for <c>Send</c> — the resulting outcome case. This is built
+/// request type, the resolved handler type(s), and - for <c>Send</c> - the resulting outcome case. This is built
 /// into the mediator itself (see <see cref="MediatorActivitySource"/>), independent of and non-conflicting with the
 /// opt-in <see cref="Pipeline.LoggingBehavior{TRequest,TResponse}"/>. When nothing listens to
 /// <see cref="MediatorActivitySource.Name"/>, <see cref="ActivitySource.StartActivity(string, ActivityKind)"/>
-/// returns <see langword="null"/> and every dispatch method takes a fast path that skips tracing entirely — no
+/// returns <see langword="null"/> and every dispatch method takes a fast path that skips tracing entirely - no
 /// allocation, no string formatting.
 /// </para>
 /// </remarks>
@@ -59,7 +59,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     private static readonly MethodInfo CommandSendMethod = ResolveSendMethod(typeof(ICommand<>));
     private static readonly MethodInfo VoidCommandSendMethod = ResolveSendMethod(typeof(ICommand));
 
-    // A unit command (ICommand) does not declare its own response type — the caller picks it via Send<TResult>'s
+    // A unit command (ICommand) does not declare its own response type - the caller picks it via Send<TResult>'s
     // type argument. Runtime-typed dispatch has no caller-supplied type argument, so it discovers the response
     // type by scanning loaded assemblies for a registered IVoidCommandHandler<TCommand, TResult> closing over the
     // concrete command type. This is the expensive part of the reflection fallback; results are cached per command
@@ -82,7 +82,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
                         )!
                 );
 
-        // StartActivity returns null when nothing listens to MediatorActivitySource.Name — the fast path below
+        // StartActivity returns null when nothing listens to MediatorActivitySource.Name - the fast path below
         // takes over immediately with no further tracing work, so the dispatch stays allocation- and
         // formatting-free when unobserved.
         var activity = MediatorActivitySource.Source.StartActivity();
@@ -140,12 +140,12 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     /// Wraps a strongly-typed <c>Send</c> dispatch with activity tracing: tags the request type up front, invokes
     /// <paramref name="dispatch"/> (a closure over the resolved <c>HandlerWrapper</c>/<c>VoidHandlerWrapper</c> that
     /// tags the resolved handler type once it resolves it), tags the resulting outcome case on success, and records
-    /// a thrown exception as an <see cref="ActivityStatusCode.Error"/> status rather than an outcome — before,
+    /// a thrown exception as an <see cref="ActivityStatusCode.Error"/> status rather than an outcome - before,
     /// either way, stopping the activity.
     /// </summary>
     /// <remarks>
     /// Only called once <see cref="MediatorActivitySource.Source"/> has already produced a non-null
-    /// <paramref name="activity"/> — callers take a synchronous fast path when nothing is listening, so this method
+    /// <paramref name="activity"/> - callers take a synchronous fast path when nothing is listening, so this method
     /// (and the async state machine and closure allocation it requires) is never reached on the unlistened dispatch
     /// path. Taking a <see cref="Func{T1,T2,TResult}"/> rather than the wrapper type directly lets one method serve
     /// both <see cref="HandlerWrapper{TResponse}"/> and <see cref="VoidHandlerWrapper{TResult}"/> callers, which
@@ -165,14 +165,14 @@ public sealed class Mediator(IServiceProvider services) : IMediator
             {
                 var result = await dispatch(request, activity).ConfigureAwait(false);
 
-                // An OperationOutcome failure case is an expected business outcome, not a bug — record it as the
+                // An OperationOutcome failure case is an expected business outcome, not a bug - record it as the
                 // outcome it is, via the same classifier LoggingBehavior uses, rather than as an activity error.
                 activity.SetTag(MediatorActivitySource.OutcomeTag, OutcomeClassifierBuilder.DefaultClassifier.GetLabel(result));
                 return result;
             }
             catch (Exception ex)
             {
-                // A thrown exception is a bug or infrastructure fault, not an expected outcome — record it as an
+                // A thrown exception is a bug or infrastructure fault, not an expected outcome - record it as an
                 // activity error rather than tagging a synthetic outcome case.
                 activity.SetStatus(ActivityStatusCode.Error, ex.Message);
                 throw;
@@ -186,7 +186,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
         ArgumentNullException.ThrowIfNull(request);
 
         // Routing (below, in DispatchAsync) resolves the concrete generic overload and invokes it reflectively,
-        // which starts its own nested activity — the two naturally parent via Activity.Current, the same way any
+        // which starts its own nested activity - the two naturally parent via Activity.Current, the same way any
         // handler-initiated nested Send call would. This method's own activity represents the runtime-typed
         // routing step itself.
         var activity = MediatorActivitySource.Source.StartActivity();
@@ -253,10 +253,10 @@ public sealed class Mediator(IServiceProvider services) : IMediator
 
         if (request is ICommand)
         {
-            // A unit command doesn't declare its own response type — Send<TResult>'s caller-supplied type
+            // A unit command doesn't declare its own response type - Send<TResult>'s caller-supplied type
             // argument picks it. Runtime-typed dispatch has no caller-supplied type argument, so the response
             // type is discovered by scanning loaded assemblies for a registered IVoidCommandHandler<TCommand,
-            // TResult> closing over this concrete command type (cached per command type — see the field doc).
+            // TResult> closing over this concrete command type (cached per command type - see the field doc).
             var resultType = VoidCommandResultTypes.GetOrAdd(requestType, ResolveVoidCommandResultType);
             if (resultType is null)
             {
@@ -302,7 +302,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
 
     /// <summary>
     /// Invokes a resolved generic <c>Send&lt;TResponse&gt;</c> overload reflectively, awaits it, and returns its
-    /// result as the base outcome interface — the reflection stand-in for the compile-time generic type
+    /// result as the base outcome interface - the reflection stand-in for the compile-time generic type
     /// argument a static caller would normally supply.
     /// </summary>
     private static async Task<IOperationOutcome> InvokeSendAsync(
@@ -317,7 +317,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
         var task = (Task)closedMethod.Invoke(instance, [request, ct])!;
         await task.ConfigureAwait(false);
 
-        // Reflectively read Task<TResponse>.Result rather than casting to a statically-typed Task<TResponse> —
+        // Reflectively read Task<TResponse>.Result rather than casting to a statically-typed Task<TResponse> -
         // TResponse is only known at this point as a runtime Type, not a compile-time generic argument. Result
         // is safe to read unconditionally here: the preceding await already completed (or faulted/threw out of)
         // the task, so a completed Task<T> always has a non-null Result property to reflect.
@@ -356,7 +356,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     /// </summary>
     /// <remarks>
     /// This is the expensive part of the reflection-based fallback (see the <see cref="VoidCommandResultTypes"/>
-    /// field doc) — a future generator-backed implementation replaces it with a compiled lookup, without
+    /// field doc) - a future generator-backed implementation replaces it with a compiled lookup, without
     /// changing <see cref="Send(object, CancellationToken)"/>'s contract.
     /// </remarks>
     private static Type? ResolveVoidCommandResultType(Type commandType)
@@ -465,7 +465,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     /// Wraps a <c>Publish</c> dispatch with activity tracing: tags the notification type up front, tags the
     /// resolved handler type(s) once the wrapper resolves them (via the <paramref name="activity"/> passed through
     /// to <see cref="NotificationHandlerWrapper.Handle"/>), and records a thrown exception as an
-    /// <see cref="ActivityStatusCode.Error"/> status — before, either way, stopping the activity.
+    /// <see cref="ActivityStatusCode.Error"/> status - before, either way, stopping the activity.
     /// </summary>
     /// <remarks>
     /// Publish has no <see cref="IOperationOutcome"/> to tag: notifications return <see cref="Task"/>, not an

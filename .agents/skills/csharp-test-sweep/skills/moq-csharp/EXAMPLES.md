@@ -1,6 +1,6 @@
 ---
 name: moq-csharp
-description: Worked examples of Moq 4.x patterns — creating mocks, setups, verification, argument matchers, sequences, and property stubbing.
+description: Worked examples of Moq 4.x patterns - creating mocks, setups, verification, argument matchers, sequences, and property stubbing.
 license: Apache-2.0
 metadata:
   author: Robert Engelhardt <rheone@gmail.com>
@@ -111,11 +111,11 @@ Assert.Equal("Alice", service.Lookup(1).Name);
 ## 8. Strict vs Loose Behavior
 
 ```csharp
-// Loose — unsetup calls return defaults, no exception
+// Loose - unsetup calls return defaults, no exception
 var loose = new Mock<IUserRepository>(MockBehavior.Loose);
 Assert.Null(loose.Object.Find(42));  // no exception, returns null
 
-// Strict — unsetup calls throw
+// Strict - unsetup calls throw
 var strict = new Mock<IUserRepository>(MockBehavior.Strict);
 Assert.Throws<MockException>(() => strict.Object.Find(42));
 ```

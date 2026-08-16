@@ -1,16 +1,16 @@
 # Pipeline & Behavior Composition
 
-The pipeline is the onion/Russian-doll model of cross-cutting concerns that wrap handler execution, and it's empty by default — nothing cross-cutting runs unless you explicitly compose it.
+The pipeline is the onion/Russian-doll model of cross-cutting concerns that wrap handler execution, and it's empty by default - nothing cross-cutting runs unless you explicitly compose it.
 
 ## No Default Pipeline
 
-**Nothing runs unless you ask for it.** Behaviors form a flat ordered list. A bare `AddInterlocutor()` call produces the mediator and discovered handlers — zero pipeline behaviors. You compose exactly what you need.
+**Nothing runs unless you ask for it.** Behaviors form a flat ordered list. A bare `AddInterlocutor()` call produces the mediator and discovered handlers - zero pipeline behaviors. You compose exactly what you need.
 
 ```csharp
 services.AddInterlocutor(builder =>
 {
     builder.ScanAssembly(typeof(Program).Assembly);  // Register handlers
-    
+
     // The pipeline is empty here. Add behaviors explicitly:
     builder.AddBehavior(typeof(LoggingBehavior<,>));
     builder.AddBehavior(typeof(AuthorizationBehavior<,>));
@@ -20,13 +20,13 @@ services.AddInterlocutor(builder =>
 
 ### Flat Ordered List
 
-Behaviors run in the order you register them — first registered wraps the outermost layer. Reading the builder configuration top to bottom tells you the execution order.
+Behaviors run in the order you register them - first registered wraps the outermost layer. Reading the builder configuration top to bottom tells you the execution order.
 
 ```csharp
 // Registration order → execution order (outermost to innermost)
 builder.AddBehavior(typeof(LoggingBehavior<,>));        // Outermost
-builder.AddBehavior(typeof(AuditingBehavior<,>));       // 
-builder.AddBehavior(typeof(ValidationBehavior<,>));     // 
+builder.AddBehavior(typeof(AuditingBehavior<,>));       //
+builder.AddBehavior(typeof(ValidationBehavior<,>));     //
 builder.AddBehavior(typeof(TransactionBehavior<,>));    // Innermost
 // Handler executes here
 ```
@@ -40,20 +40,20 @@ When a request dispatches:
 
 A behavior's scope (which requests it touches) is controlled by marker interfaces your request implements:
 
-- **`ITransactionalRequest`** — opts in `TransactionBehavior`
-- **`IAuditableRequest`** — opts in `AuditingBehavior` (carries `ActionName`)
-- **`IRequiresPolicy`** — opts in `AuthorizationBehavior` (carries `PolicyName`)
-- **`IExternalStoreRequest`** — explicitly declares "no SQL session for this request"
+- **`ITransactionalRequest`** - opts in `TransactionBehavior`
+- **`IAuditableRequest`** - opts in `AuditingBehavior` (carries `ActionName`)
+- **`IRequiresPolicy`** - opts in `AuthorizationBehavior` (carries `PolicyName`)
+- **`IExternalStoreRequest`** - explicitly declares "no SQL session for this request"
 
 A request's actual chain is the registered behavior list, filtered to entries whose generic constraint it satisfies, with relative order preserved.
 
 ```csharp
 public record CreateOrder(int CustomerId, List<OrderItem> Items)
-    : ICommand<OperationOutcome<int, ValidationError>>, 
+    : ICommand<OperationOutcome<int, ValidationError>>,
       ITransactionalRequest,    // Runs only TransactionBehavior (if registered)
       IAuditableRequest         // Runs only AuditingBehavior (if registered)
 {
-    // ValidationBehavior runs if registered, regardless of marker — no marker controls it
+    // ValidationBehavior runs if registered, regardless of marker - no marker controls it
     public string ActionName => "create_order";
 }
 
@@ -88,11 +88,11 @@ builder.AddBehavior(typeof(TransactionBehavior<,>));       // 5. Innermost
 > [!IMPORTANT]
 > This is the documented recommendation, not a default. The reasoning below is why you might compose this order. If your application has different needs, compose what serves you.
 
-- **Logging outermost** — times and logs the *entire* request lifecycle. If it sat closer to the handler, a request denied by authorization would be timed/logged as if it ran the handler (misleading).
-- **Auditing after logging** — an audit trail should record authorization denials and validation failures, not just successful handler runs. Placing it outside authorization captures the full story.
-- **Authorization before validation** — there's no reason to validate the shape of a request the caller isn't authorized to make. Failing fast on authorization saves the validator's work.
-- **Validation before transactions** — don't open a database transaction to discover the input was invalid. Catch input errors first.
-- **Transaction innermost** — it wraps only the handler's persistence work. It commits on success and rolls back on any `Failure` outcome, but not when an outer behavior short-circuits (e.g., when authorization denies the request — the caller shouldn't see a rolled-back transaction when they were never authorized to run the command).
+- **Logging outermost** - times and logs the *entire* request lifecycle. If it sat closer to the handler, a request denied by authorization would be timed/logged as if it ran the handler (misleading).
+- **Auditing after logging** - an audit trail should record authorization denials and validation failures, not just successful handler runs. Placing it outside authorization captures the full story.
+- **Authorization before validation** - there's no reason to validate the shape of a request the caller isn't authorized to make. Failing fast on authorization saves the validator's work.
+- **Validation before transactions** - don't open a database transaction to discover the input was invalid. Catch input errors first.
+- **Transaction innermost** - it wraps only the handler's persistence work. It commits on success and rolls back on any `Failure` outcome, but not when an outer behavior short-circuits (e.g., when authorization denies the request - the caller shouldn't see a rolled-back transaction when they were never authorized to run the command).
 
 ## Validation, Authorization & Auditing Behaviors
 
@@ -103,7 +103,7 @@ These three are the main cross-cutting concerns:
 Validates the request shape against registered FluentValidation rules. Returns `ValidationError` / `ValidationErrors<TErrorCode>` on validation failure, short-circuiting the pipeline.
 
 - Requires: `Interlocutor.FluentValidation` package
-- Marker: no marker — validates all requests, regardless of opt-in
+- Marker: no marker - validates all requests, regardless of opt-in
 - Constraint: `TResponse : IOperationOutcome` (must be able to construct a `ValidationError` case)
 
 ```csharp
@@ -129,7 +129,7 @@ var result = await mediator.Send(new CreateUser("", "bad-email"));
 Enforces policy-based, non-resource authorization. Short-circuits with `Forbidden` if the policy fails.
 
 > [!NOTE]
-> Resource-based authorization (needing the loaded entity) is *not* a behavior — it's handled by `ResourceCommandHandler`'s template method. See [handler-selection-and-dispatch.md](handler-selection-and-dispatch.md) for the full picture.
+> Resource-based authorization (needing the loaded entity) is *not* a behavior - it's handled by `ResourceCommandHandler`'s template method. See [handler-selection-and-dispatch.md](handler-selection-and-dispatch.md) for the full picture.
 
 - Requires: nothing (you register your own `IPolicyEvaluator` implementation)
 - Marker: `IRequiresPolicy` (carries the `PolicyName` to evaluate)
@@ -151,7 +151,7 @@ Records an audit trail of what ran and its outcome.
 
 - Requires: `IAuditSink` implementation (you register your own)
 - Marker: `IAuditableRequest` (carries the `ActionName` to record)
-- Constraint: no constraint — can be used with any response type
+- Constraint: no constraint - can be used with any response type
 
 ```csharp
 public record TransferFunds(int FromAccountId, int ToAccountId, decimal Amount)
@@ -196,7 +196,7 @@ public class LoggingStage<TRequest, TResponse> : PipelineStageBase<TRequest, TRe
 builder.AddStage(typeof(LoggingStage<,>));
 ```
 
-Stages are hosted by `PipelineStageBehavior<TRequest,TResponse>` — an ordinary entry in the behavior list that aggregates all registered stages. Stages run in registration order on the way in, reverse order on the way out, much like behaviors themselves.
+Stages are hosted by `PipelineStageBehavior<TRequest,TResponse>` - an ordinary entry in the behavior list that aggregates all registered stages. Stages run in registration order on the way in, reverse order on the way out, much like behaviors themselves.
 
 ### Short-Circuiting
 
@@ -216,10 +216,10 @@ protected override Task<StageResult<TResponse>> OnBeforeAsync(
 
 When a stage short-circuits:
 
-- Remaining stages' `OnBeforeAsync` methods **do not run** — we skip directly to egress.
+- Remaining stages' `OnBeforeAsync` methods **do not run** - we skip directly to egress.
 - The handler **does not run**.
 - Only the after-hooks of stages that already ran (including the one that short-circuited) execute.
-- Behaviors outside the stage host see an ordinary response — they cannot distinguish a short-circuited outcome from a handler-produced one.
+- Behaviors outside the stage host see an ordinary response - they cannot distinguish a short-circuited outcome from a handler-produced one.
 
 ## Composition Diagram
 
@@ -300,9 +300,9 @@ public class CustomLoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
     }
 }
 
-// Register it in the builder (position matters — registration order is execution order)
+// Register it in the builder (position matters - registration order is execution order)
 builder.AddBehavior(typeof(CustomLoggingBehavior<,>));
 ```
 
 > [!CAUTION]
-> **Exceptions are never converted to outcomes.** If a behavior throws, the exception propagates to the caller (or is handled by ASP.NET Core's exception middleware in a web context). Behaviors never catch an exception and convert it to a `Failure` outcome — that would blur the line between "expected failure" (an outcome) and "bug" (an exception).
+> **Exceptions are never converted to outcomes.** If a behavior throws, the exception propagates to the caller (or is handled by ASP.NET Core's exception middleware in a web context). Behaviors never catch an exception and convert it to a `Failure` outcome - that would blur the line between "expected failure" (an outcome) and "bug" (an exception).

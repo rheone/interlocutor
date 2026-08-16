@@ -15,8 +15,8 @@ return a closed, compiler-checked **Result** type built on C# 15 union
 types. Cross-cutting concerns (logging, auditing, validation, authorization,
 transactions) are composed around handlers using the **pipeline
 behavior** (onion / Russian-doll) pattern from the Mediator pattern family.
-Exceptions remain reserved for genuinely exceptional conditions — bugs,
-infrastructure faults — never for expected branches of business logic.
+Exceptions remain reserved for genuinely exceptional conditions - bugs,
+infrastructure faults - never for expected branches of business logic.
 
 ## 2. Problem statement
 
@@ -44,11 +44,11 @@ null returns, some as boolean flags), which made:
 
 ## 4. Non-goals
 
-- Replacing ASP.NET's exception-handling middleware — that remains the
+- Replacing ASP.NET's exception-handling middleware - that remains the
   catch-all for unexpected faults.
 - Modeling infrastructure retries/circuit breakers in the mediator pipeline
-  — that belongs at the data-access/HTTP-client layer.
-- Serializing the `Result`/`Failure` union directly over the wire — the API
+  - that belongs at the data-access/HTTP-client layer.
+- Serializing the `Result`/`Failure` union directly over the wire - the API
   boundary always maps to a dedicated response shape (see §9).
 
 ## 5. Patterns in use (glossary)
@@ -59,8 +59,8 @@ null returns, some as boolean flags), which made:
 | **Mediator** | `IMediator.Send(...)` | Decouples callers (controllers) from handler resolution/composition. |
 | **Result / Railway-Oriented Programming**, realized via **C# 15 union types** | `Result<T>`, `Result`, `Failure` | Expected outcomes are values, not control flow. Compiler enforces exhaustive handling. |
 | **Chain of Responsibility / Onion (Russian-doll) middleware** | `IPipelineBehavior<TRequest,TResponse>` | Cross-cutting concerns wrap the handler; each layer sees both the "in" and "out" side of the call around a single `next()` invocation. |
-| **Template Method** | `ResourceCommandHandler<TCommand,TEntity,TResponse>` | Fixes the sequence (load → authorize → handle) while letting concrete handlers fill in the steps — avoids sharing fetched state through a mutable context. |
-| **Marker Interface** | `ITransactionalRequest`, `IAuditableRequest`, `IRequiresPolicy` | Opt a request into a cross-cutting concern via its declared type, not pipeline configuration — visible at the request-type definition site. |
+| **Template Method** | `ResourceCommandHandler<TCommand,TEntity,TResponse>` | Fixes the sequence (load → authorize → handle) while letting concrete handlers fill in the steps - avoids sharing fetched state through a mutable context. |
+| **Marker Interface** | `ITransactionalRequest`, `IAuditableRequest`, `IRequiresPolicy` | Opt a request into a cross-cutting concern via its declared type, not pipeline configuration - visible at the request-type definition site. |
 | **Unit of Work** | Scoped `DbContext`/session shared by `TransactionBehavior` and handlers | One transactional boundary per request, guaranteed by DI scope lifetime. |
 
 ## 6. Functional requirements
@@ -80,14 +80,14 @@ null returns, some as boolean flags), which made:
 - Ordered, per §7 diagram: tracing → logging → auditing → shape validation →
   non-resource authorization → transaction → handler.
 - Each behavior is generic over `<TRequest, TResponse>` and never inspects
-  `T` — it only forwards `Func<Task<Result<TResponse>>> next`.
+  `T` - it only forwards `Func<Task<Result<TResponse>>> next`.
 - A behavior that doesn't apply to a given request type (e.g. auditing on a
   query) is a no-op via marker-interface check, not a special-cased list.
 
 ### 6.3 Resource-based authorization
 - Any authorization decision that requires the *loaded entity* (ownership,
   claims against resource state) happens inside `ResourceCommandHandler`,
-  **not** a generic pipeline behavior — a behavior would need shared mutable
+  **not** a generic pipeline behavior - a behavior would need shared mutable
   state to pass the entity forward, which we're explicitly avoiding.
 - Non-resource authorization (e.g. "does the caller have role X at all") is
   a pipeline behavior and is frequently a no-op (request doesn't declare
@@ -100,7 +100,7 @@ null returns, some as boolean flags), which made:
   `TransactionBehavior` and `ResourceCommandHandler` receive it via
   constructor injection within the same mediator dispatch.
 - Commit happens once, in `TransactionBehavior`, only when the pipeline
-  result is not a `Failure`. Any `Failure` outcome rolls back — including
+  result is not a `Failure`. Any `Failure` outcome rolls back - including
   domain outcomes like `Conflict`, not just thrown exceptions.
 
 ### 6.5 Cancellation
@@ -235,7 +235,7 @@ Nothing manually threads the session between layers.
 ## 8. Type catalog
 
 See companion document **Type Reference** below (also embedded here for
-completeness — kept in sync with the ADRs).
+completeness - kept in sync with the ADRs).
 
 | Type | Kind | Definition | Purpose |
 |---|---|---|---|
@@ -244,7 +244,7 @@ completeness — kept in sync with the ADRs).
 | `RuleViolation` | `record` | `record RuleViolation(string Code, string Message);` | A domain/business invariant failed, after input was structurally valid. |
 | `NotFound` | `record` | `record NotFound(string EntityType, object Key);` | Referenced entity doesn't exist. |
 | `Forbidden` | `record` | `record Forbidden(string? Reason = null);` | Resource-based (or policy-based) authorization denied. |
-| `Conflict` | `record` | `record Conflict(string Code, string Message);` | State conflict — concurrency, uniqueness, invalid transition. |
+| `Conflict` | `record` | `record Conflict(string Code, string Message);` | State conflict - concurrency, uniqueness, invalid transition. |
 | `Failure` | `union` | `union Failure(ValidationFailed, RuleViolation, NotFound, Forbidden, Conflict);` | Closed set of all failure outcomes. |
 | `Result<T>` | `union` | `union Result<T>(T, Failure);` | Outcome of a query, or a value-returning command. |
 | `Result` | `union` | `union Result(Success, Failure);` | Outcome of a no-payload command. |
@@ -310,7 +310,7 @@ public static class ResultExtensions
 - **List/paged queries.** Current `Result<T>` assumes a single projection.
   A future `PagedResult<T>` (or `Result<PagedList<T>>`) will likely wrap
   paging metadata (page, size, total) around the same `T`/`Failure`
-  contract — no change to `Failure` itself.
+  contract - no change to `Failure` itself.
 - **Bulk commands.** Multi-item commands may need a per-item outcome
   (`IReadOnlyList<Result<TItem>>`) rather than one aggregate `Result`. Not
   in scope now; flagging so `Failure` additions don't collide with a later
@@ -330,9 +330,9 @@ public static class ResultExtensions
 
 ## 12. Risks & open questions
 
-- Preview language surface may change before GA — mitigated per §10/§11.
+- Preview language surface may change before GA - mitigated per §10/§11.
 - Marker-interface opt-in (`ITransactionalRequest`, etc.) has no compiler
-  enforcement that the *right* commands implement it — recommend an
+  enforcement that the *right* commands implement it - recommend an
   analyzer or architecture test asserting all `ICommand` types implement
   `ITransactionalRequest` unless explicitly exempted.
 - Struct-based unions box value-type `T`. Acceptable for now; revisit if a
@@ -343,17 +343,17 @@ public static class ResultExtensions
 ## Addendum A: Non-database-backed requests, collection results, and validator composition
 
 *Continuation of the above. Nothing below revises or negates a prior
-decision — the base contract (`Result<T>`, `Result`, `Failure`, the onion
+decision - the base contract (`Result<T>`, `Result`, `Failure`, the onion
 pipeline, template-method resource handling) is unchanged. This addendum
 closes three gaps: requests that must never touch the SQL session,
 collection/paged success payloads, and how FluentValidation is composed
-generically — including for collection-shaped requests.
+generically - including for collection-shaped requests.
 
 ### A.1 Non-database-backed requests
 
 **Problem.** Some commands/queries are backed entirely by an external API
 or a non-relational store (a CRM webhook, a search index, a blob store).
-`TransactionBehavior` must never construct a SQL session for these — not
+`TransactionBehavior` must never construct a SQL session for these - not
 just "not open a transaction," but not resolve the session at all, since
 some stores/drivers open a connection eagerly on construction.
 
@@ -376,7 +376,7 @@ public sealed class TransactionBehavior<TRequest, TResponse> : IPipelineBehavior
     public async Task<Result<TResponse>> Handle(TRequest request, CancellationToken ct, Func<Task<Result<TResponse>>> next)
     {
         if (request is not ITransactionalRequest)
-            return await next(); // _db.Value never evaluated — no SQL session created
+            return await next(); // _db.Value never evaluated - no SQL session created
 
         var db = _db.Value;
         await using var tx = await db.Database.BeginTransactionAsync(ct);
@@ -393,7 +393,7 @@ public sealed class TransactionBehavior<TRequest, TResponse> : IPipelineBehavior
 **Composition:** an architecture test (or Roslyn analyzer) asserts every
 concrete `ICommand`/`ICommand<T>` implements exactly one of
 `ITransactionalRequest` or `IExternalStoreRequest`. Neither marker changes
-`Result<T>`/`Failure` — a `RuleViolation` or `Conflict` returned from an
+`Result<T>`/`Failure` - a `RuleViolation` or `Conflict` returned from an
 external-store handler maps to HTTP exactly the same way a DB-backed one
 does.
 
@@ -417,7 +417,7 @@ public sealed class SyncCustomerToCrmHandler : ICommandHandler<SyncCustomerToCrm
             CrmUpsertOutcome.NotFoundInCrm => new NotFound(nameof(SyncCustomerToCrmCommand), command.CustomerId),
             CrmUpsertOutcome.RemoteConflict => new Conflict("crm.stale_record", "CRM record was modified concurrently."),
         };
-        // transient HTTP faults from ICrmClient are allowed to throw — handled by
+        // transient HTTP faults from ICrmClient are allowed to throw - handled by
         // resilience policies at the client layer and the global exception middleware,
         // per ADR-0005; they are never translated into a Failure case here.
     }
@@ -425,7 +425,7 @@ public sealed class SyncCustomerToCrmHandler : ICommandHandler<SyncCustomerToCrm
 ```
 
 External-store `ResourceCommandHandler`-style flows (lookup → authorize →
-act) work unchanged — `LoadAsync` just calls the external client instead of
+act) work unchanged - `LoadAsync` just calls the external client instead of
 `AppDbContext`; the template method never assumed EF specifically.
 
 ### A.2 Enumerable / paged collection results
@@ -447,12 +447,12 @@ public sealed record PagedResult<T>(IReadOnlyList<T> Items, int Page, int PageSi
 }
 ```
 
-`PagedResult<T>` is an ordinary record — it slots into the existing
+`PagedResult<T>` is an ordinary record - it slots into the existing
 contract as `Result<PagedResult<T>>` with **no change to `Failure`, no new
 pipeline behavior, and no change to any existing behavior's signature**,
 since every behavior is already generic over the opaque `TResponse`.
 
-An empty result set is success, not `NotFound` — `NotFound` remains
+An empty result set is success, not `NotFound` - `NotFound` remains
 reserved for "this specific resource-by-id doesn't exist," never for "this
 query returned zero rows."
 
@@ -485,7 +485,7 @@ public sealed class GetWidgetsQueryHandler : IQueryHandler<GetWidgetsQuery, Page
 }
 ```
 
-`GetWidgetsQuery` is a plain `IQuery<T>` — it implements neither
+`GetWidgetsQuery` is a plain `IQuery<T>` - it implements neither
 `ITransactionalRequest` nor `IExternalStoreRequest` unless queries are
 included in the same architecture-test rule (recommended: queries default
 to "no transaction, DB session read directly," a third implicit category
@@ -495,7 +495,7 @@ don't require commit/rollback semantics).
 ### A.3 Validator composition for `T` and collections of `T`
 
 **Decision (no new behavior needed).** `ValidationBehavior<TRequest,
-TResponse>` is already generic over `TResponse` and never inspects it —
+TResponse>` is already generic over `TResponse` and never inspects it -
 composition for both scalar and collection/paged requests falls out of
 FluentValidation's own generic resolution, not special pipeline logic:
 
@@ -541,7 +541,7 @@ public sealed class CreateWidgetCommandValidator : AbstractValidator<CreateWidge
 }
 ```
 
-**Collection example — validating each item of a bulk command:**
+**Collection example - validating each item of a bulk command:**
 
 ```csharp
 public sealed record CreateWidgetItem(string Name, int Quantity);
@@ -559,7 +559,7 @@ public sealed class CreateWidgetItemValidator : AbstractValidator<CreateWidgetIt
 
 public sealed class BulkCreateWidgetsCommandValidator : AbstractValidator<BulkCreateWidgetsCommand>
 {
-    // item validator injected, not newed up — reusable if CreateWidgetItem is ever validated standalone
+    // item validator injected, not newed up - reusable if CreateWidgetItem is ever validated standalone
     public BulkCreateWidgetsCommandValidator(IValidator<CreateWidgetItem> itemValidator)
     {
         RuleFor(x => x.Items).NotEmpty();
@@ -583,11 +583,11 @@ public sealed class GetWidgetsQueryValidator : AbstractValidator<GetWidgetsQuery
 
 No behavior, marker interface, or `Result` case needed to know whether
 `TResponse` is `WidgetDto`, `IReadOnlyList<WidgetDto>`, or
-`PagedResult<WidgetDto>` — genericity over `TResponse` was the deliberate
+`PagedResult<WidgetDto>` - genericity over `TResponse` was the deliberate
 payoff of the original pipeline design (§6.2), and it holds without
 modification for collection-shaped payloads.
 
-### A.4 Updated type catalog (additions only — prior entries unchanged)
+### A.4 Updated type catalog (additions only - prior entries unchanged)
 
 | Type | Kind | Definition | Purpose |
 |---|---|---|---|
@@ -595,13 +595,13 @@ modification for collection-shaped payloads.
 | `IExternalStoreRequest` | marker interface | `interface IExternalStoreRequest { }` | Declares a command is deliberately backed by a non-SQL store/API; SQL session is never resolved. |
 | `PagedResult<T>` | record | `record PagedResult<T>(IReadOnlyList<T> Items, int Page, int PageSize, long TotalCount);` | Materialized page of results plus paging metadata; used as the `T` in `Result<PagedResult<T>>`. |
 
-### A.5 Updated diagram — session resolution decision
+### A.5 Updated diagram - session resolution decision
 
 ```mermaid
 flowchart TD
     Start["TransactionBehavior.Handle(request)"] --> Check{"request is\nITransactionalRequest?"}
-    Check -- "no" --> Next1["await next() — Lazy<AppDbContext> never touched"]
-    Check -- "yes" --> Resolve["_db.Value resolved — session created"]
+    Check -- "no" --> Next1["await next() - Lazy<AppDbContext> never touched"]
+    Check -- "yes" --> Resolve["_db.Value resolved - session created"]
     Resolve --> Begin["BeginTransactionAsync"]
     Begin --> Next2["await next()"]
     Next2 --> Outcome{"Result is Failure?"}
@@ -613,11 +613,11 @@ flowchart TD
 
 - Queries that read from SQL but are not "transactional" in the write
   sense (no `ITransactionalRequest`) still receive `AppDbContext`
-  directly via constructor injection in the handler — they just skip
+  directly via constructor injection in the handler - they just skip
   `TransactionBehavior`'s transaction/commit logic entirely, since reads
   don't need commit/rollback semantics. This is a third implicit category
   worth naming explicitly in the architecture test from §12 alongside the
   two markers.
 - `PagedResult<T>.TotalCount` as `long` anticipates large tables; `Page`/
   `PageSize` stay `int` since no realistic page size approaches `int`
-  bounds — validated by `GetWidgetsQueryValidator` regardless.
+  bounds - validated by `GetWidgetsQueryValidator` regardless.

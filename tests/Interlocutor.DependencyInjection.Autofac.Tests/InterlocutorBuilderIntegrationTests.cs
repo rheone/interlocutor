@@ -88,7 +88,7 @@ public class InterlocutorBuilderIntegrationTests
         );
 
         var container = containerBuilder.Build();
-        // Dispatch must happen from a real scope, never the root container directly — see ADR-0011.
+        // Dispatch must happen from a real scope, never the root container directly - see ADR-0011.
         using var scope = container.BeginLifetimeScope();
         var mediator = scope.Resolve<IMediator>();
 
@@ -112,7 +112,7 @@ public class InterlocutorBuilderIntegrationTests
         );
 
         var container = containerBuilder.Build();
-        // Dispatch must happen from a real scope, never the root container directly — see ADR-0011.
+        // Dispatch must happen from a real scope, never the root container directly - see ADR-0011.
         using var scope = container.BeginLifetimeScope();
         var mediator = scope.Resolve<IMediator>();
 
@@ -172,7 +172,7 @@ public class InterlocutorBuilderIntegrationTests
         );
 
         var container = containerBuilder.Build();
-        // Dispatch must happen from a real scope, never the root container directly — see ADR-0011.
+        // Dispatch must happen from a real scope, never the root container directly - see ADR-0011.
         using var scope = container.BeginLifetimeScope();
         var mediator = scope.Resolve<IMediator>();
 

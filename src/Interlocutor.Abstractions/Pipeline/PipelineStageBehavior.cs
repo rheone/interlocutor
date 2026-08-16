@@ -10,11 +10,11 @@ using Microsoft.Extensions.Logging;
 /// <param name="rethrowAfterHookExceptions">
 /// When <see langword="true"/>, an after-hook exception is logged and then re-thrown, aborting the
 /// remainder of the unwind and propagating out of <see cref="Handle"/>. When <see langword="false"/>
-/// (the default), it is logged and swallowed, and unwind continues with the next stage — so a failing
+/// (the default), it is logged and swallowed, and unwind continues with the next stage - so a failing
 /// teardown hook can never mask the pipeline's real result.
 /// </param>
 /// <remarks>
-/// An ordinary entry in the pipeline behavior list — the developer positions it anywhere and may register
+/// An ordinary entry in the pipeline behavior list - the developer positions it anywhere and may register
 /// it more than once. It is not pinned relative to any other behavior (for example, a transaction
 /// behavior); see ADR-0002's amendment for the full short-circuit and unwind contract this class implements.
 /// </remarks>
@@ -31,7 +31,7 @@ public class PipelineStageBehavior<TRequest, TResponse>(
     /// <param name="next">The next behavior in the pipeline.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>
-    /// The result from the next behavior or handler, or — if a before-hook short-circuited — the
+    /// The result from the next behavior or handler, or - if a before-hook short-circuited - the
     /// short-circuit response. Both cases return through this same <see cref="Task{TResult}"/>, so
     /// behaviors outside this host cannot tell them apart.
     /// </returns>

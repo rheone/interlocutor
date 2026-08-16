@@ -9,8 +9,8 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Interlocutor.Example;
 
 // ---------------------------------------------------------------------------
-// Everything below is application code — NOT part of any Interlocutor
-// package — showing how a consumer wires the library together and uses the
+// Everything below is application code - NOT part of any Interlocutor
+// package - showing how a consumer wires the library together and uses the
 // IPagedQuery<T> / IBulkCommand<TItem,TResponseItem> variants.
 // ---------------------------------------------------------------------------
 
@@ -33,7 +33,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 /// A paged query using the library's <see cref="IPagedQuery{TItem}"/>
 /// contract. Implementing <c>Page</c>/<c>PageSize</c> is all that's needed
 /// for <see cref="PagingValidationBehavior{TRequest,TItem}"/> to validate
-/// this query automatically — no <c>GetWidgetsQueryValidator</c> is
+/// this query automatically - no <c>GetWidgetsQueryValidator</c> is
 /// required unless additional, application-specific rules are wanted.
 /// </summary>
 public sealed record GetWidgetsQuery(int Page, int PageSize, string? SearchTerm) : IPagedQuery<WidgetDto>;
@@ -63,7 +63,7 @@ public sealed record CreateWidgetItem(string Name, int Quantity);
 /// contract. Implementing <c>Items</c> is all that's needed for
 /// <see cref="BulkItemValidationBehavior{TRequest,TItem,TResponseItem}"/>
 /// to validate every item automatically via <c>IValidator&lt;CreateWidgetItem&gt;</c>
-/// — no hand-written <c>RuleForEach</c> wrapper validator required.
+/// - no hand-written <c>RuleForEach</c> wrapper validator required.
 /// </summary>
 public sealed record BulkCreateWidgetsCommand(IReadOnlyList<CreateWidgetItem> Items)
     : IBulkCommand<CreateWidgetItem, WidgetDto>,
@@ -111,7 +111,7 @@ public interface ICurrentUser
 
 /// <summary>
 /// Composition root. Registration order for the open-generic
-/// <c>IPipelineBehavior&lt;,&gt;</c> entries determines pipeline order —
+/// <c>IPipelineBehavior&lt;,&gt;</c> entries determines pipeline order -
 /// this is what <see cref="Mediator.Dispatch{TResponse}"/> folds into the
 /// nested "Russian doll" call graph at dispatch time.
 /// </summary>
@@ -131,7 +131,7 @@ public static class CompositionRoot
         services.AddScoped<IValidator<CreateWidgetItem>, CreateWidgetItemValidator>();
 
         // Pipeline order (outer -> inner). This list IS the "nesting doll"
-        // — see Mediator.Dispatch for how it's folded into nested calls.
+        // - see Mediator.Dispatch for how it's folded into nested calls.
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(AuditingBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
@@ -163,7 +163,7 @@ public sealed class AppWidgetTransactionBehavior<TRequest, TResponse>(Lazy<AppDb
 
 /*
  * ---------------------------------------------------------------------------
- * WORKED EXAMPLE — tracing BulkCreateWidgetsCommand end to end
+ * WORKED EXAMPLE - tracing BulkCreateWidgetsCommand end to end
  * ---------------------------------------------------------------------------
  * Given the registration order above, Mediator.Dispatch builds this nested
  * pipeline for a BulkCreateWidgetsCommand (folding, per Mediator.cs, so the
@@ -178,17 +178,17 @@ public sealed class AppWidgetTransactionBehavior<TRequest, TResponse>(Lazy<AppDb
  *   return result.ToActionResult();
  *
  * Trace:
- *   1. Logging       — logs "Handling BulkCreateWidgetsCommand", starts a stopwatch, calls next().
- *   2. Auditing       — command implements IAuditableRequest, so it calls next()
+ *   1. Logging       - logs "Handling BulkCreateWidgetsCommand", starts a stopwatch, calls next().
+ *   2. Auditing       - command implements IAuditableRequest, so it calls next()
  *                        and will record ActionName="Widget.BulkCreate" with the eventual outcome.
- *   3. Validation     — no IValidator<BulkCreateWidgetsCommand> is registered
+ *   3. Validation     - no IValidator<BulkCreateWidgetsCommand> is registered
  *                        (no cross-item rules needed here), so this is a no-op; calls next().
- *   4. BulkItemValidation — command implements IBulkCommand<CreateWidgetItem,WidgetDto>;
+ *   4. BulkItemValidation - command implements IBulkCommand<CreateWidgetItem,WidgetDto>;
  *                        validates each item via IValidator<CreateWidgetItem>.
  *                        Item[1] ("", -1) fails both NotEmpty and GreaterThanOrEqualTo(0).
  *                        SHORT-CIRCUITS here: returns
  *                        ValidationFailed({ "Items[1].Name": [...], "Items[1].Quantity": [...] })
- *                        — Authorization, Transaction, and the handler never run.
+ *                        - Authorization, Transaction, and the handler never run.
  *   5. (not reached)  Authorization, Transaction, Handler.
  *   6. Back up the stack: Validation, Auditing (records ActionName with succeeded=false),
  *      Logging (logs "Handled BulkCreateWidgetsCommand in Nms -> ValidationFailed") each
@@ -198,12 +198,12 @@ public sealed class AppWidgetTransactionBehavior<TRequest, TResponse>(Lazy<AppDb
  *
  * With a fully valid Items list instead, step 4 calls next(): Authorization
  * is a no-op (command doesn't implement IRequiresPolicy), Transaction resolves
- * db.Value (first time — this command IS ITransactionalRequest), begins a
+ * db.Value (first time - this command IS ITransactionalRequest), begins a
  * transaction, calls the Handler, which adds N Widget entities and returns
  * Result<IReadOnlyList<WidgetDto>> with the created DTOs. Transaction sees a
  * non-Failure Result, calls SaveChangesAsync + CommitAsync once, and the
  * DTOs flow back up through every behavior unchanged to the controller,
- * which returns 200 OK with the list of WidgetDto — the actual data the
+ * which returns 200 OK with the list of WidgetDto - the actual data the
  * caller asked for, having passed through five behaviors without any of
  * them needing to know what a Widget is.
  * ---------------------------------------------------------------------------

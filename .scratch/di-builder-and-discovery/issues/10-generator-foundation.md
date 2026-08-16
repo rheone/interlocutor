@@ -8,7 +8,7 @@ Move handler discovery from runtime reflection to compile time, so a registratio
 
 A developer writes a command and forgets to write or register its handler. Today they find out when the request is dispatched, possibly in production. After this ticket they find out at build time, with a diagnostic naming the request type.
 
-Scope for this ticket is the compiling project only — cross-assembly aggregation is ticket 12, and open generics are ticket 11.
+Scope for this ticket is the compiling project only - cross-assembly aggregation is ticket 12, and open generics are ticket 11.
 
 Build the generator module and have it:
 
@@ -19,7 +19,7 @@ Build the generator module and have it:
 
 **Hard constraint: the generator emits registrations and dispatch, never direct construction.** Handlers, behaviors, and stages must stay container-activated so constructor injection, decoration, and lifetime rules keep working. What disappears is the reflection used to *build the wrapper*, not the resolution of the handler inside it. A handler with constructor dependencies must resolve exactly as it does today.
 
-Runtime assembly scanning survives as an explicitly opted-in fallback for plugin scenarios. It is never active by default — "it worked in development and not in the trimmed build" is precisely the surprise this library exists to avoid.
+Runtime assembly scanning survives as an explicitly opted-in fallback for plugin scenarios. It is never active by default - "it worked in development and not in the trimmed build" is precisely the surprise this library exists to avoid.
 
 Set up the generator test project in this ticket, since every later generator ticket depends on it: snapshot the emitted code and assert the diagnostic's identifier, severity, and location.
 
@@ -37,4 +37,4 @@ Set up the generator test project in this ticket, since every later generator ti
 
 ## Blocked by
 
-04 — Migrate to the builder and delete the legacy API
+04 - Migrate to the builder and delete the legacy API

@@ -11,9 +11,9 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// <para>
 /// Subclasses override three steps executed in order:
 /// <list type="number">
-///   <item><description><see cref="LoadAsync"/> — retrieves the target entity.</description></item>
-///   <item><description><see cref="Authorize"/> — checks access permissions against the loaded entity.</description></item>
-///   <item><description><see cref="HandleAsync"/> — performs the business operation.</description></item>
+///   <item><description><see cref="LoadAsync"/> - retrieves the target entity.</description></item>
+///   <item><description><see cref="Authorize"/> - checks access permissions against the loaded entity.</description></item>
+///   <item><description><see cref="HandleAsync"/> - performs the business operation.</description></item>
 /// </list>
 /// If loading returns <c>null</c> the pipeline short-circuits with <see cref="NotFound"/>.
 /// If authorization returns a <see cref="Failure"/> the pipeline short-circuits with that failure.
@@ -64,7 +64,7 @@ public abstract class ResourceCommandHandler<TCommand, TEntity, TSuccess>
     {
         var entity = await this.LoadAsync(command, ct);
 
-        // Short-circuit if the entity does not exist — no need to authorize or process.
+        // Short-circuit if the entity does not exist - no need to authorize or process.
         if (entity is null)
         {
             return new NotFound($"{typeof(TEntity).Name} '{this.DescribeKey(command)}' was not found.");
@@ -78,7 +78,7 @@ public abstract class ResourceCommandHandler<TCommand, TEntity, TSuccess>
             return new OperationOutcome<TSuccess, NotFound, Failure>(failure);
         }
 
-        // Entity exists and caller is authorized — delegate to the subclass business logic.
+        // Entity exists and caller is authorized - delegate to the subclass business logic.
         return await this.HandleAsync(command, entity, ct);
     }
 

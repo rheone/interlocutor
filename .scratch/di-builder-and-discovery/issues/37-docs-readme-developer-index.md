@@ -4,7 +4,7 @@ ready-for-agent
 
 ## What to build
 
-A `docs/README.md` — the developer-documentation index, mirroring `documentation/index.md`'s role but for contributors and maintainers of this repository rather than library consumers. Today `docs/` has no index at all: a contributor lands in a folder with `PRD.md`, `TODO.md`, `adr/`, `agents/`, `bootstrapreference/`, `guides/` and no map.
+A `docs/README.md` - the developer-documentation index, mirroring `documentation/index.md`'s role but for contributors and maintainers of this repository rather than library consumers. Today `docs/` has no index at all: a contributor lands in a folder with `PRD.md`, `TODO.md`, `adr/`, `agents/`, `bootstrapreference/`, `guides/` and no map.
 
 Cover:
 
@@ -12,7 +12,7 @@ Cover:
 - Links to `PRD.md` and `TODO.md`.
 - Links to every ADR in `adr/` (13 files, 0001–0013), with their titles.
 - Links to `guides/composing-operationoutcome-arities.md` and the three files in `agents/` (`domain.md`, `issue-tracker.md`, `triage-labels.md`).
-- A `[!NOTE]` marking `bootstrapreference/` as historical/superseded — it predates this repo's implementation and has been reconciled into `PRD.md` §15 ("Comparison with bootstrap PRD"), which is the current source of truth. Consult it only for historical context, never as authoritative for current behavior.
+- A `[!NOTE]` marking `bootstrapreference/` as historical/superseded - it predates this repo's implementation and has been reconciled into `PRD.md` §15 ("Comparison with bootstrap PRD"), which is the current source of truth. Consult it only for historical context, never as authoritative for current behavior.
 
 ## Acceptance criteria
 
@@ -23,4 +23,4 @@ Cover:
 
 ## Blocked by
 
-None — can start immediately
+None - can start immediately

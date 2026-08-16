@@ -9,15 +9,15 @@ Root `README.md`'s `## Deeper dive` section currently mixes user-facing and deve
 ```
 ## Deeper dive
 
-- **[Full documentation index](documentation/)** — ...
-- **[Architecture Decision Records](docs/adr/)** — ...
-- **[Project PRD](docs/PRD.md)** — ...
+- **[Full documentation index](documentation/)** - ...
+- **[Architecture Decision Records](docs/adr/)** - ...
+- **[Project PRD](docs/PRD.md)** - ...
 ```
 
-Split it into two clearly separated, explicitly labeled subsections. README.md is primarily for package users — user docs stay primary and prominent; developer docs are visually secondary and explicitly labeled as contributor-facing, not needed to use the library:
+Split it into two clearly separated, explicitly labeled subsections. README.md is primarily for package users - user docs stay primary and prominent; developer docs are visually secondary and explicitly labeled as contributor-facing, not needed to use the library:
 
-- **User documentation** (listed first) — links to `documentation/` only.
-- **Developer documentation** (explicitly labeled "for contributors and maintainers working on this repository — not needed to use the library") — links to `docs/README.md` (ticket 37) instead of the current direct `docs/adr/` and `docs/PRD.md` links, which move one hop deeper behind that new index.
+- **User documentation** (listed first) - links to `documentation/` only.
+- **Developer documentation** (explicitly labeled "for contributors and maintainers working on this repository - not needed to use the library") - links to `docs/README.md` (ticket 37) instead of the current direct `docs/adr/` and `docs/PRD.md` links, which move one hop deeper behind that new index.
 
 ## Acceptance criteria
 
@@ -27,4 +27,4 @@ Split it into two clearly separated, explicitly labeled subsections. README.md i
 
 ## Blocked by
 
-37 — Create developer documentation index
+37 - Create developer documentation index

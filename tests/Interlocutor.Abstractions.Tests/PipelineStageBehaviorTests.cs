@@ -270,8 +270,8 @@ public class PipelineStageBehaviorTests
     [Fact]
     public async Task Handle_WhenBeforeHookShortCircuits_OuterBehaviorObservesAnOrdinaryResponse()
     {
-        // A behavior wrapping the stage host from outside — the position every real chain actually puts a
-        // behavior like logging or auditing — must receive the short-circuit response exactly as it would
+        // A behavior wrapping the stage host from outside - the position every real chain actually puts a
+        // behavior like logging or auditing - must receive the short-circuit response exactly as it would
         // any handler-produced response. It has no way to ask "was this short-circuited?"; it can only see
         // the TResponse value that came back from calling next(), which is PipelineStageBehavior.Handle.
         var callOrder = new List<string>();
@@ -412,8 +412,8 @@ public class PipelineStageBehaviorTests
 
     /// <summary>
     /// A stand-in for an ordinary outer behavior (logging, auditing) wrapping the stage host from outside.
-    /// Records only what an outer behavior can actually observe — the <c>TResponse</c> value <c>next()</c>
-    /// returned — never anything about whether a stage short-circuited, because nothing in that value says so.
+    /// Records only what an outer behavior can actually observe - the <c>TResponse</c> value <c>next()</c>
+    /// returned - never anything about whether a stage short-circuited, because nothing in that value says so.
     /// </summary>
     private sealed class RecordingOuterBehavior : IPipelineBehavior<TestRequest, OperationOutcome<TestResponse, Failure>>
     {
@@ -430,7 +430,7 @@ public class PipelineStageBehaviorTests
             var result = await next();
             this.ObservedResponse = true;
 
-            // There is no member on OperationOutcome<,> — or anything else visible here — that could ever
+            // There is no member on OperationOutcome<,> - or anything else visible here - that could ever
             // set this true. It exists to make explicit, in the assertion, that "ordinary response" isn't
             // merely unasserted; there is structurally nothing to distinguish here.
             this.ObservedShortCircuit = false;

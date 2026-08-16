@@ -18,12 +18,12 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 /// <para>
 /// Scope is intentionally the compiling project only: cross-assembly aggregation of registration modules from
 /// referenced assemblies is ticket 12, and open generic handler resolution is ticket 11. A handler or request
-/// declared in a referenced assembly (rather than the current compilation) is invisible to this generator —
+/// declared in a referenced assembly (rather than the current compilation) is invisible to this generator -
 /// see <see cref="InterlocutorDiagnostics.MissingHandler"/>'s remarks.
 /// </para>
 /// <para>
 /// Every type implementing one of the four handler contracts or three request markers is found via Roslyn's
-/// semantic model (<see cref="HandlerTypeAnalyzer"/>) — never by matching interface names as source text —
+/// semantic model (<see cref="HandlerTypeAnalyzer"/>) - never by matching interface names as source text -
 /// exactly replicating <c>Interlocutor.DependencyInjection.Abstractions.HandlerDiscovery</c>'s reflection-based
 /// discovery semantics at compile time instead of runtime.
 /// </para>

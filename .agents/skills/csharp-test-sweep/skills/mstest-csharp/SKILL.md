@@ -4,20 +4,20 @@ description: Write, update, and improve MSTest unit tests in C# projects. Covers
 license: Apache-2.0
 user-invocable: true
 metadata:
-  author: Robert Engelhardt <rheone@gmail.com>
-  version: 2.0.0
+    author: Robert Engelhardt <rheone@gmail.com>
+    version: 2.0.0
 ---
 
 # MSTest C# Testing Skill
 
-Targets **MSTest v4** (MSTest 4.x). Classic assertion style — use `Assert.AreEqual(expected, actual)`, not constraint-based syntax.
+Targets **MSTest v4** (MSTest 4.x). Classic assertion style - use `Assert.AreEqual(expected, actual)`, not constraint-based syntax.
 
 ## Framework Checklist
 
 Apply these MSTest-specific checks during every sweep, after the [General Quality Checklist](../../references/quality-checklist.md).
 
 - [ ] `[TestClass]` on all test classes
-- [ ] `[TestMethod]` on all test methods (not `[DataTestMethod]` — unnecessary in v3+)
+- [ ] `[TestMethod]` on all test methods (not `[DataTestMethod]` - unnecessary in v3+)
 - [ ] `Assert.AreEqual(expected, actual)` with correct argument order (expected first)
 - [ ] `Assert.ThrowsException<T>` / `Assert.ThrowsExceptionAsync<T>` for exception testing
 - [ ] `Assert.Multiple` used for batched independent assertions in one scenario
@@ -43,7 +43,7 @@ Every test follows **Arrange / Act / Assert** with section comments:
 ## Required Attributes
 
 - `[TestClass]` on every test class
-- `[TestMethod]` on every test method (not `[DataTestMethod]` — `[TestMethod]` works with `[DataRow]` in v3+)
+- `[TestMethod]` on every test method (not `[DataTestMethod]` - `[TestMethod]` works with `[DataRow]` in v3+)
 
 ## Parameterized Tests
 
@@ -53,7 +53,7 @@ Every test follows **Arrange / Act / Assert** with section comments:
 
 ## Assertions
 
-- `Assert.AreEqual(expected, actual)` — expected first, actual second
+- `Assert.AreEqual(expected, actual)` - expected first, actual second
 - `Assert.IsTrue(condition)` / `Assert.IsFalse(condition)` for booleans
 - `Assert.ThrowsException<T>(() => ...)` for synchronous exceptions
 - `await Assert.ThrowsExceptionAsync<T>(() => asyncCall())` for async exceptions
@@ -67,48 +67,48 @@ Every test follows **Arrange / Act / Assert** with section comments:
 
 - `StringAssert.Contains(actual, substring)`
 - `StringAssert.Matches(actual, regex)`
-- `CollectionAssert.AreEqual(expected, actual)` — ordered comparison
-- `CollectionAssert.AreEquivalent(expected, actual)` — unordered comparison
+- `CollectionAssert.AreEqual(expected, actual)` - ordered comparison
+- `CollectionAssert.AreEquivalent(expected, actual)` - unordered comparison
 - `CollectionAssert.AllItemsAreUnique(collection)`
 - `CollectionAssert.IsSubsetOf(subset, superset)`
 
 ## Async Tests
 
-- Return `Task` or `ValueTask` — never `async void`
+- Return `Task` or `ValueTask` - never `async void`
 - `await` async methods under test
 - `await Assert.ThrowsExceptionAsync<T>(async () => ...)`
 
 ## Test Lifecycle
 
-| Scope | Attribute | Signature |
-|-------|-----------|-----------|
-| Per-test setup | `[TestInitialize]` | `public void Init()` |
-| Per-test cleanup | `[TestCleanup]` | `public void Cleanup()` |
-| Per-class setup | `[ClassInitialize]` | `public static void InitClass(TestContext ctx)` |
-| Per-class cleanup | `[ClassCleanup]` | `public static void CleanupClass()` |
-| Per-assembly setup | `[AssemblyInitialize]` | `public static void InitAssembly(TestContext ctx)` |
-| Per-assembly cleanup | `[AssemblyCleanup]` | `public static void CleanupAssembly()` |
+| Scope                | Attribute              | Signature                                          |
+| -------------------- | ---------------------- | -------------------------------------------------- |
+| Per-test setup       | `[TestInitialize]`     | `public void Init()`                               |
+| Per-test cleanup     | `[TestCleanup]`        | `public void Cleanup()`                            |
+| Per-class setup      | `[ClassInitialize]`    | `public static void InitClass(TestContext ctx)`    |
+| Per-class cleanup    | `[ClassCleanup]`       | `public static void CleanupClass()`                |
+| Per-assembly setup   | `[AssemblyInitialize]` | `public static void InitAssembly(TestContext ctx)` |
+| Per-assembly cleanup | `[AssemblyCleanup]`    | `public static void CleanupAssembly()`             |
 
 - ClassInitialize/Cleanup must be `static`
 - AssemblyInitialize/Cleanup must be `static`
 
 ## Execution Control
 
-- `[Ignore]` — add a `// reason` comment, do NOT pass a message string to the attribute
-- `[Timeout(milliseconds)]` — fail test if it exceeds the limit
-- `[Priority(N)]` — ordering hint for Visual Studio Test Explorer
-- `[DoNotParallelize]` — prevent parallel execution
-- `[STATestClass]` / `[STATestMethod]` — for tests requiring STA apartment
-- `[Retry(count)]` — retry flaky tests (use sparingly)
+- `[Ignore]` - add a `// reason` comment, do NOT pass a message string to the attribute
+- `[Timeout(milliseconds)]` - fail test if it exceeds the limit
+- `[Priority(N)]` - ordering hint for Visual Studio Test Explorer
+- `[DoNotParallelize]` - prevent parallel execution
+- `[STATestClass]` / `[STATestMethod]` - for tests requiring STA apartment
+- `[Retry(count)]` - retry flaky tests (use sparingly)
 
 ## Metadata & Traceability
 
-- `[TestCategory("CategoryName")]` — group tests into categories
-- `[TestProperty("key", "value")]` — custom key/value metadata
-- `[Owner("name")]` — test owner
-- `[WorkItem(id)]` — link to Azure DevOps work item
-- `[GitHubWorkItem(id)]` — link to GitHub issue
-- `[Description("text")]` — descriptive text
+- `[TestCategory("CategoryName")]` - group tests into categories
+- `[TestProperty("key", "value")]` - custom key/value metadata
+- `[Owner("name")]` - test owner
+- `[WorkItem(id)]` - link to Azure DevOps work item
+- `[GitHubWorkItem(id)]` - link to GitHub issue
+- `[Description("text")]` - descriptive text
 
 ## Discover Internals
 

@@ -27,7 +27,7 @@ var request = JsonSerializer.Deserialize(message.Payload, requestType);
 var result = await mediator.Send(request);  // object, no generic parameter
 ```
 
-The `result` is `IOperationOutcome` — the base interface all outcomes implement. You can inspect it without knowing the concrete outcome shape:
+The `result` is `IOperationOutcome` - the base interface all outcomes implement. You can inspect it without knowing the concrete outcome shape:
 
 ```csharp
 var succeeded = result.IsSuccess;
@@ -86,17 +86,17 @@ sequenceDiagram
     participant Processor as OutboxProcessor
     participant Mediator
 
-    Note over Handler,OutboxTable: Producer — inside the command's own transaction
+    Note over Handler,OutboxTable: Producer - inside the command's own transaction
     Handler->>Handler: perform the command's domain writes
     Handler->>OutboxTable: write outbox row (same transaction, same commit)
 
-    Note over Processor,Mediator: Consumer — separate transaction, polls independently
+    Note over Processor,Mediator: Consumer - separate transaction, polls independently
     loop every poll interval
         Processor->>OutboxTable: GetPendingAsync()
         OutboxTable-->>Processor: pending messages
         loop for each message
             Processor->>Processor: deserialize Payload as RequestType
-            Processor->>Mediator: Send(request) — runtime-typed
+            Processor->>Mediator: Send(request) - runtime-typed
             Mediator-->>Processor: IOperationOutcome
             alt outcome succeeded
                 Processor->>OutboxTable: MarkProcessedAsync
@@ -158,7 +158,7 @@ public class OutboxProcessor : BackgroundService
 
 ## Inbox Pattern Example
 
-`GetUnprocessedAsync` is where the dedupe happens — it excludes events already recorded as processed, so a redelivered message doesn't get published twice:
+`GetUnprocessedAsync` is where the dedupe happens - it excludes events already recorded as processed, so a redelivered message doesn't get published twice:
 
 ```mermaid
 sequenceDiagram
@@ -171,7 +171,7 @@ sequenceDiagram
         InboxTable-->>Processor: unprocessed events (already-processed events excluded)
         loop for each event
             Processor->>Processor: deserialize Payload as NotificationType
-            Processor->>Mediator: Publish(notification) — runtime-typed
+            Processor->>Mediator: Publish(notification) - runtime-typed
             Mediator-->>Processor: done
             Processor->>InboxTable: MarkProcessedAsync
         end

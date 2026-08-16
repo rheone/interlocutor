@@ -4,7 +4,7 @@ Fire-and-forget domain events and their contravariant fan-out.
 
 ## INotification
 
-Marker interface for domain events. No return value — fire-and-forget semantics.
+Marker interface for domain events. No return value - fire-and-forget semantics.
 
 ```csharp
 public record OrderShipped(int OrderId, string TrackingNumber) : INotification;
@@ -14,7 +14,7 @@ public record UserCreated(int UserId, string Name) : INotification;
 
 ## Handlers & Multiple Subscribers
 
-A single notification can have multiple handlers — normal and expected:
+A single notification can have multiple handlers - normal and expected:
 
 ```csharp
 public class OrderShippedEmailHandler : INotificationHandler<OrderShipped>
@@ -84,7 +84,7 @@ public class OrderShippedWebhookHandler : INotificationHandler<OrderShipped>
     /* ... */
 }
 
-// Publish — handlers run in: Email → Webhook → SMS (per the attributes above)
+// Publish - handlers run in: Email → Webhook → SMS (per the attributes above)
 await mediator.Publish(new OrderShipped(123, "TRACK-456"));
 ```
 
@@ -123,7 +123,7 @@ public class Handler3 : INotificationHandler<SomeRequest>
 {
     public async Task Handle(SomeRequest notification, CancellationToken ct)
     {
-        Console.WriteLine("Handler3 done");  // Won't run — Handler2 threw first
+        Console.WriteLine("Handler3 done");  // Won't run - Handler2 threw first
     }
 }
 
@@ -171,9 +171,9 @@ catch (AggregateException ex)
 - **Parallel**: faster, all handlers get a chance to run. Use when handlers are independent and can tolerate partial failure.
 
 > [!NOTE]
-> In Parallel mode, if one handler throws and the others succeed, the exception is still raised (inside an `AggregateException`) — but those other handlers still ran. You must decide whether to catch the aggregate exception or let it propagate.
+> In Parallel mode, if one handler throws and the others succeed, the exception is still raised (inside an `AggregateException`) - but those other handlers still ran. You must decide whether to catch the aggregate exception or let it propagate.
 
-The two strategies aren't just a speed trade-off — they behave differently the moment one handler fails:
+The two strategies aren't just a speed trade-off - they behave differently the moment one handler fails:
 
 ```mermaid
 sequenceDiagram
@@ -182,7 +182,7 @@ sequenceDiagram
     participant Handler2
     participant Handler3
 
-    Note over Publisher,Handler3: Sequential — Handler2 throws, Handler3 never runs
+    Note over Publisher,Handler3: Sequential - Handler2 throws, Handler3 never runs
     Publisher->>Handler1: Handle(notification)
     Handler1-->>Publisher: done
     Publisher->>Handler2: Handle(notification)
@@ -190,7 +190,7 @@ sequenceDiagram
     Publisher--xHandler3: never invoked
     Publisher->>Publisher: rethrow (subsequent handlers skipped)
 
-    Note over Publisher,Handler3: Parallel — Handler2 throws, Handler1 and Handler3 still run to completion
+    Note over Publisher,Handler3: Parallel - Handler2 throws, Handler1 and Handler3 still run to completion
     par
         Publisher->>Handler1: Handle(notification)
         Handler1-->>Publisher: done
@@ -261,7 +261,7 @@ public class CreateOrderHandler : ICommandHandler<CreateOrder, OperationOutcome<
     {
         var order = await this.repository.CreateAsync(command, ct);
 
-        // Publish an event — all registered handlers will run
+        // Publish an event - all registered handlers will run
         await this.publisher.Publish(new OrderCreated(order.Id, command.CustomerId, order.Total), ct);
 
         return order.Id;
@@ -348,7 +348,7 @@ public class SafeNotificationHandler<T> : INotificationHandler<T> where T : INot
         catch (Exception ex)
         {
             this.logger.LogError(ex, "Notification handler failed for {@Notification}", notification);
-            // Don't rethrow — let other handlers continue (if using Parallel)
+            // Don't rethrow - let other handlers continue (if using Parallel)
             // Or rethrow if you want Sequential mode to stop subsequent handlers
         }
     }

@@ -4,7 +4,7 @@ ready-for-agent
 
 ## What to build
 
-`documentation/notifications-and-fan-out.md` has zero diagrams despite its entire subject being concurrency/timing — the "Publish Strategies" section prose-describes Sequential (handlers awaited one at a time; the first exception stops the remaining handlers from running) vs. Parallel (`Task.WhenAll`; every handler runs regardless of whether another one failed), which is exactly the kind of ordering/timing distinction prose alone struggles to make vivid.
+`documentation/notifications-and-fan-out.md` has zero diagrams despite its entire subject being concurrency/timing - the "Publish Strategies" section prose-describes Sequential (handlers awaited one at a time; the first exception stops the remaining handlers from running) vs. Parallel (`Task.WhenAll`; every handler runs regardless of whether another one failed), which is exactly the kind of ordering/timing distinction prose alone struggles to make vivid.
 
 Add one sequence diagram, one `INotification` publisher fanning out to multiple (e.g. three) handlers, contrasting both strategies:
 
@@ -26,4 +26,4 @@ Place it in or near the "Which Strategy to Use" section so the diagram directly 
 
 ## Blocked by
 
-None — can start immediately
+None - can start immediately

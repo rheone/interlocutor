@@ -16,7 +16,7 @@ SDK-style projects define these symbols automatically based on `<TargetFramework
 | `NET9_0_OR_GREATER` | `net9.0` and above |
 | `NET10_0_OR_GREATER` | `net10.0` and above |
 
-The full set follows the pattern `NET{major}_{minor}_OR_GREATER`. Symbols are cumulative — `net10.0` defines `NET8_0_OR_GREATER`, `NET9_0_OR_GREATER`, and `NET10_0_OR_GREATER`.
+The full set follows the pattern `NET{major}_{minor}_OR_GREATER`. Symbols are cumulative - `net10.0` defines `NET8_0_OR_GREATER`, `NET9_0_OR_GREATER`, and `NET10_0_OR_GREATER`.
 
 ## Reading Target Frameworks from the Project File
 
@@ -43,7 +43,7 @@ Check for `net4` or `netstandard` prefix in `<TargetFrameworks>` to determine wh
 | API exists on all targets but behaves differently | `#if` guard around the assertion that differs |
 | API only exists on some targets | `#if` guard around the entire test method |
 | Test infrastructure unavailable on a target (e.g., `BinaryFormatter` on `net8+`) | `#if` guard around the test |
-| Test is slow or broken only on one target | `[Skip]` with justification — do not use `#if` to hide it |
+| Test is slow or broken only on one target | `[Skip]` with justification - do not use `#if` to hide it |
 | Behavior difference is so significant a separate test is clearer | Separate method with `#if` to exclude the other |
 
 **Never duplicate a test for each target.** If the only difference is a type name or a constant value, use `#if` to swap that value, not to copy the whole test.

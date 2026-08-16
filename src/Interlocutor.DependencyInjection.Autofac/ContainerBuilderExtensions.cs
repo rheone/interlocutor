@@ -25,14 +25,14 @@ using Interlocutor.DependencyInjection.Abstractions;
 /// Unlike Microsoft DI (where handlers are scoped), Autofac handlers are registered as <c>InstancePerLifetimeScope</c>.
 /// </para>
 /// <para>
-/// Per ADR-0009 ("No Default Pipeline"), a bare builder configures zero pipeline behaviors — nothing
+/// Per ADR-0009 ("No Default Pipeline"), a bare builder configures zero pipeline behaviors - nothing
 /// cross-cutting runs unless the configuration delegate explicitly adds it.
 /// </para>
 /// </remarks>
 public static class InterlocutorAutofacExtensions
 {
     /// <summary>
-    /// Configures Interlocutor via the container-neutral <see cref="InterlocutorBuilder"/> — the single
+    /// Configures Interlocutor via the container-neutral <see cref="InterlocutorBuilder"/> - the single
     /// fluent configuration surface identical across every supported container. Registers the mediator,
     /// discovered handlers, and stages unconditionally; registers zero pipeline behaviors unless
     /// <paramref name="configure"/> adds them (see ADR-0009, "No Default Pipeline").
@@ -46,13 +46,13 @@ public static class InterlocutorAutofacExtensions
     /// <returns>The same <see cref="ContainerBuilder"/> instance for chaining.</returns>
     /// <remarks>
     /// <para>
-    /// This is the only <c>AddInterlocutor</c> entry point Autofac exposes — there is no legacy
+    /// This is the only <c>AddInterlocutor</c> entry point Autofac exposes - there is no legacy
     /// options-based overload, no bare assembly-scanning overload, and no entry-assembly convenience
     /// overload; all configuration flows through <paramref name="configure"/>.
     /// <see cref="InterlocutorBuilder.Defaults"/> entries are translated with Autofac's <c>IfNotRegistered</c>
     /// try-add equivalent (see <see cref="TryApplyDefaults"/>), so a consumer's own registration of
     /// <see cref="IAuditSink"/>, <see cref="IPolicyEvaluator"/>, <see cref="IRequestContextAccessor"/>, or
-    /// <see cref="IResponseOutcomeDescriber"/> — made before this call — always wins; the builder's own
+    /// <see cref="IResponseOutcomeDescriber"/> - made before this call - always wins; the builder's own
     /// <c>Override*</c> methods cover winning when that registration is made after.
     /// </para>
     /// </remarks>
@@ -79,7 +79,7 @@ public static class InterlocutorAutofacExtensions
             .ExternallyOwned();
 
         // The real dispatcher is registered under its concrete type, not under IMediator directly, so the
-        // root-scope guard (RootScopeGuardedMediator) can wrap it — see ADR-0011. Both the detector and the
+        // root-scope guard (RootScopeGuardedMediator) can wrap it - see ADR-0011. Both the detector and the
         // guarded mediator are InstancePerLifetimeScope so a fresh answer/instance is produced per scope,
         // matching the concrete Mediator's own lifetime.
         builder.RegisterType<Mediator>().AsSelf().InstancePerLifetimeScope();
@@ -129,8 +129,8 @@ public static class InterlocutorAutofacExtensions
     }
 
     /// <summary>
-    /// Translates a sequence of container-neutral <see cref="InterlocutorFactoryRegistration"/> records —
-    /// delegate-backed registrations such as lambda-form pipeline stages — into Autofac factory
+    /// Translates a sequence of container-neutral <see cref="InterlocutorFactoryRegistration"/> records -
+    /// delegate-backed registrations such as lambda-form pipeline stages - into Autofac factory
     /// registrations, resolving the bridged <see cref="IServiceProvider"/> lazily at activation time.
     /// </summary>
     /// <param name="builder">The Autofac <see cref="ContainerBuilder"/> to register services into.</param>
@@ -148,7 +148,7 @@ public static class InterlocutorAutofacExtensions
 
     /// <summary>
     /// Translates <see cref="InterlocutorBuilder.Defaults"/> registrations into Autofac registrations
-    /// guarded by <c>IfNotRegistered</c> — Autofac's try-add equivalent — so an application's own
+    /// guarded by <c>IfNotRegistered</c> - Autofac's try-add equivalent - so an application's own
     /// registration of the same service type, made before this call runs, is left untouched.
     /// </summary>
     /// <param name="builder">The Autofac <see cref="ContainerBuilder"/> to register services into.</param>

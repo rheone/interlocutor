@@ -1,6 +1,6 @@
 # Transactions & Store Integration
 
-Managing transactions with `Interlocutor.EntityFrameworkCore` and `Interlocutor.NHibernate`. Because the mediator is scoped, each dispatch gets exactly one store session — a lookup and a write inside the same command execute against the same session.
+Managing transactions with `Interlocutor.EntityFrameworkCore` and `Interlocutor.NHibernate`. Because the mediator is scoped, each dispatch gets exactly one store session - a lookup and a write inside the same command execute against the same session.
 
 ## TransactionBehavior
 
@@ -51,7 +51,7 @@ public record SetUserPreferences(int UserId, Dictionary<string, object> Prefs)
 ```
 
 > [!IMPORTANT]
-> `TransactionBehavior` uses `Lazy<TContext>` / `Lazy<ISession>` — it defers session construction until it confirms the command implements `ITransactionalRequest`. Non-transactional requests never construct the session at all. This is critical for performance in applications with mixed transactional/non-transactional work.
+> `TransactionBehavior` uses `Lazy<TContext>` / `Lazy<ISession>` - it defers session construction until it confirms the command implements `ITransactionalRequest`. Non-transactional requests never construct the session at all. This is critical for performance in applications with mixed transactional/non-transactional work.
 
 ## EntityFramework Core Integration
 
@@ -61,7 +61,7 @@ Register the EF Core `TransactionBehavior`:
 services.AddInterlocutor(builder =>
 {
     builder.ScanAssembly(typeof(Program).Assembly);
-    
+
     // Add the transaction behavior (requires DbContext in DI)
     builder.AddBehavior(typeof(TransactionBehavior<,>));
 });
@@ -87,11 +87,11 @@ public class CreateOrderHandler : ICommandHandler<CreateOrder, OperationOutcome<
         CreateOrder command, CancellationToken ct)
     {
         var context = this.lazyContext.Value;  // Session is resolved here, in a transaction
-        
+
         var order = new Order { CustomerId = command.CustomerId, /* ... */ };
         context.Orders.Add(order);
         await context.SaveChangesAsync(ct);  // Committed by TransactionBehavior (if no Failure)
-        
+
         return order.Id;
     }
 }
@@ -105,7 +105,7 @@ Register the NHibernate `TransactionBehavior`:
 services.AddInterlocutor(builder =>
 {
     builder.ScanAssembly(typeof(Program).Assembly);
-    
+
     // Add the transaction behavior (requires ISession factory in DI)
     builder.AddBehavior(typeof(TransactionBehavior<,>));
 });
@@ -115,7 +115,7 @@ services.AddSingleton(sessionFactory);  // ISessionFactory
 services.AddScoped<ISession>(sp => sp.GetRequiredService<ISessionFactory>().OpenSession());
 ```
 
-NHibernate behavior works the same way — scoped `ISession` is shared per dispatch and transacted:
+NHibernate behavior works the same way - scoped `ISession` is shared per dispatch and transacted:
 
 ```csharp
 public class CreateOrderHandler : ICommandHandler<CreateOrder, OperationOutcome<int, ValidationError>>
@@ -129,11 +129,11 @@ public class CreateOrderHandler : ICommandHandler<CreateOrder, OperationOutcome<
         CreateOrder command, CancellationToken ct)
     {
         var session = this.lazySession.Value;  // Session is resolved here, in a transaction
-        
+
         var order = new Order { CustomerId = command.CustomerId, /* ... */ };
         await session.SaveAsync(order, ct);
         await session.FlushAsync(ct);  // Committed by TransactionBehavior (if no Failure)
-        
+
         return order.Id;
     }
 }
@@ -145,12 +145,12 @@ public class CreateOrderHandler : ICommandHandler<CreateOrder, OperationOutcome<
 - **Rollback on Failure**: transaction rolls back when the handler returns any `Failure` case (`NotFound`, `Forbidden`, `Conflict`, `ValidationError`, etc.).
 - **No rollback on pipeline short-circuit**: if `AuthorizationBehavior` or `ValidationBehavior` short-circuits a request before the handler runs, the transaction doesn't even start (lazy resolution). No transaction to roll back.
 
-The third rule is the one that's easy to misread as "any denied or failed request rolls back" — it doesn't, because a short-circuit means `TransactionBehavior` never ran in the first place:
+The third rule is the one that's easy to misread as "any denied or failed request rolls back" - it doesn't, because a short-circuit means `TransactionBehavior` never ran in the first place:
 
 ```mermaid
 flowchart TD
     Start["Request dispatched"] --> ShortCircuit{"Short-circuited before<br/>TransactionBehavior runs?<br/>(e.g. AuthorizationBehavior denies)"}
-    ShortCircuit -->|"yes"| NoTx["No transaction was ever opened —<br/>nothing to roll back"]
+    ShortCircuit -->|"yes"| NoTx["No transaction was ever opened -<br/>nothing to roll back"]
     ShortCircuit -->|"no"| Open["TransactionBehavior opens<br/>the transaction (lazy resolution)"]
     Open --> Outcome{"Handler's outcome?"}
     Outcome -->|"Success"| Commit["Commit"]
@@ -165,7 +165,7 @@ public record UpdateProduct(int Id, string Name, int Version)
     : ICommand<OperationOutcome<Success, NotFound, Conflict>>,
       ITransactionalRequest;
 
-public class UpdateProductHandler 
+public class UpdateProductHandler
     : ICommandHandler<UpdateProduct, OperationOutcome<Success, NotFound, Conflict>>
 {
     private readonly Lazy<AppDbContext> lazyContext;
@@ -203,7 +203,7 @@ public class ComplexOrderHandler : ICommandHandler<CreateComplexOrder, Operation
         CreateComplexOrder command, CancellationToken ct)
     {
         var context = this.lazyContext.Value;
-        
+
         // Create the order
         var order = new Order { /* ... */ };
         context.Orders.Add(order);
@@ -256,6 +256,6 @@ public class CreateOrderHandler : ICommandHandler<CreateOrder, OperationOutcome<
 }
 ```
 
-If a notification handler fails, it **does not roll back the command**. The command already committed. This is correct for the outbox pattern — you want the command to succeed even if downstream handlers fail.
+If a notification handler fails, it **does not roll back the command**. The command already committed. This is correct for the outbox pattern - you want the command to succeed even if downstream handlers fail.
 
 If you need to guarantee command + side effect atomicity, use the outbox pattern: publish events *inside* the transaction (as a persisted `Outbox` table row), then process them asynchronously in a separate transaction.

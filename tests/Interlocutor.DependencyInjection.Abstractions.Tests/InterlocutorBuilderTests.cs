@@ -216,7 +216,7 @@ public class InterlocutorBuilderTests
     public void AddTransactionBehavior_WithNHibernateReferenced_AddsNHibernateTransactionBehavior()
     {
         // This test project references NHibernate but not EntityFrameworkCore specifically so the NHibernate
-        // path is exercised for real through the public API — AddTransactionBehavior prefers EF Core via `??`
+        // path is exercised for real through the public API - AddTransactionBehavior prefers EF Core via `??`
         // when both are present, which would otherwise mask a regression in the NHibernate-specific lookup
         // (NHibernate's TransactionBehavior<TRequest,TResponse> is arity 2, not EF Core's arity-3 shape).
         var builder = new InterlocutorBuilder();
@@ -233,7 +233,7 @@ public class InterlocutorBuilderTests
 
         builder.UseRecommendedChain();
 
-        // The full canonical order, including validation and transaction — proven here rather than only
+        // The full canonical order, including validation and transaction - proven here rather than only
         // logging/auditing/authorization, since this test project references FluentValidation and NHibernate
         // and can therefore observe where those two land relative to the rest of the chain.
         Assert.Equal(

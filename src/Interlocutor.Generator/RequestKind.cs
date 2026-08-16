@@ -6,14 +6,14 @@ namespace Interlocutor.Generator;
 /// </summary>
 internal enum RequestKind
 {
-    /// <summary>Implements <c>IQuery&lt;TResponse&gt;</c> — needs a matching <c>IQueryHandler&lt;,&gt;</c>.</summary>
+    /// <summary>Implements <c>IQuery&lt;TResponse&gt;</c> - needs a matching <c>IQueryHandler&lt;,&gt;</c>.</summary>
     Query,
 
-    /// <summary>Implements <c>ICommand&lt;TResponse&gt;</c> — needs a matching <c>ICommandHandler&lt;,&gt;</c>.</summary>
+    /// <summary>Implements <c>ICommand&lt;TResponse&gt;</c> - needs a matching <c>ICommandHandler&lt;,&gt;</c>.</summary>
     Command,
 
     /// <summary>
-    /// Implements the non-generic <c>ICommand</c> — needs at least one matching
+    /// Implements the non-generic <c>ICommand</c> - needs at least one matching
     /// <c>IVoidCommandHandler&lt;TCommand, *&gt;</c> for any result type.
     /// </summary>
     VoidCommand,

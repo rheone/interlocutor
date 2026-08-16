@@ -5,7 +5,7 @@ namespace Interlocutor.Mediation;
 // ---------------------------------------------------------------------------
 // Package: Interlocutor.Mediation
 // Depends only on Interlocutor (the kernel). Everything here is storage- and
-// framework-agnostic — no EF Core, no ASP.NET, no FluentValidation. Those
+// framework-agnostic - no EF Core, no ASP.NET, no FluentValidation. Those
 // bindings live in the satellite packages that reference this one.
 // ---------------------------------------------------------------------------
 
@@ -17,7 +17,7 @@ public interface IQuery<TResponse>;
 /// <typeparamref name="TItem"/>. A thin specialization of
 /// <see cref="IQuery{TResponse}"/> so a query author can write
 /// <c>IEnumerableQuery&lt;WidgetDto&gt;</c> instead of
-/// <c>IQuery&lt;IReadOnlyList&lt;WidgetDto&gt;&gt;</c> — purely a
+/// <c>IQuery&lt;IReadOnlyList&lt;WidgetDto&gt;&gt;</c> - purely a
 /// readability aid, no behavior is keyed off this interface specifically.
 /// </summary>
 public interface IEnumerableQuery<TItem> : IQuery<IReadOnlyList<TItem>>;
@@ -47,7 +47,7 @@ public interface ICommand;
 /// <summary>
 /// A write request that returns a materialized collection of
 /// <typeparamref name="TResponseItem"/>. Readability aid, no behavior keyed
-/// off it specifically — contrast with <see cref="IBulkCommand{TItem,TResponseItem}"/>.
+/// off it specifically - contrast with <see cref="IBulkCommand{TItem,TResponseItem}"/>.
 /// </summary>
 public interface IEnumerableCommand<TResponseItem> : ICommand<IReadOnlyList<TResponseItem>>;
 
@@ -57,7 +57,7 @@ public interface IEnumerableCommand<TResponseItem> : ICommand<IReadOnlyList<TRes
 /// item. <see cref="Items"/> is load-bearing: the library's
 /// <c>BulkItemValidationBehavior</c> resolves <c>IValidator&lt;TItem&gt;</c>
 /// and validates every item automatically for any request implementing
-/// this interface — no per-command <c>RuleForEach</c> wrapper required
+/// this interface - no per-command <c>RuleForEach</c> wrapper required
 /// unless cross-item rules are needed.
 /// </summary>
 public interface IBulkCommand<TItem, TResponseItem> : ICommand<IReadOnlyList<TResponseItem>>
@@ -69,7 +69,7 @@ public interface IBulkCommand<TItem, TResponseItem> : ICommand<IReadOnlyList<TRe
 /// Opts a command into the unit-of-work provided by a persistence satellite
 /// package (e.g. <c>Interlocutor.Mediation.EntityFrameworkCore</c>'s
 /// <c>TransactionBehavior</c>). Every concrete command should implement
-/// exactly one of this or <see cref="IExternalStoreRequest"/> — enforced by
+/// exactly one of this or <see cref="IExternalStoreRequest"/> - enforced by
 /// an architecture test, not the compiler.
 /// </summary>
 public interface ITransactionalRequest;
@@ -128,7 +128,7 @@ public interface IPipelineBehavior<TRequest, TResponse>
 
 /// <summary>
 /// The single public dispatch entry point. The only place a default
-/// <see cref="CancellationToken"/> value is offered — every internal layer
+/// <see cref="CancellationToken"/> value is offered - every internal layer
 /// requires it explicitly.
 /// </summary>
 public interface IMediator
@@ -142,8 +142,8 @@ public interface IMediator
 /// Template-method base for commands that act on a single, previously
 /// persisted resource and require resource-based authorization (checks
 /// that depend on the loaded entity, such as ownership). Deliberately not a
-/// pipeline behavior — see the library README §"Why resource authorization
-/// isn't a behavior" — because passing the loaded entity between generic
+/// pipeline behavior - see the library README §"Why resource authorization
+/// isn't a behavior" - because passing the loaded entity between generic
 /// behaviors would require shared mutable state.
 /// </summary>
 public abstract class ResourceCommandHandler<TCommand, TEntity, TResponse>

@@ -10,7 +10,7 @@ internal static class IdentifierSanitizer
 {
     /// <summary>
     /// Replaces every character illegal in a C# identifier with an underscore. Not guaranteed globally
-    /// unique on its own — callers combining a handler type name with its <see cref="HandlerKind"/> get
+    /// unique on its own - callers combining a handler type name with its <see cref="HandlerKind"/> get
     /// uniqueness in practice because one handler type implements a given contract at most once.
     /// </summary>
     /// <param name="fullyQualifiedName">A fully-qualified type name, typically <c>global::</c>-prefixed.</param>

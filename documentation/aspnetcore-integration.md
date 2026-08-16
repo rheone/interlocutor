@@ -13,7 +13,7 @@ Add the NuGet package:
 dotnet add package Interlocutor.AspNetCore
 ```
 
-No additional registration needed — `Interlocutor.AspNetCore` provides extension methods used at the edge (controller/endpoint).
+No additional registration needed - `Interlocutor.AspNetCore` provides extension methods used at the edge (controller/endpoint).
 
 ## ToActionResult() Extension
 
@@ -36,7 +36,7 @@ public class OrdersController : ControllerBase
         var command = new CreateOrder(request.CustomerId, request.Items);
         var result = await this.mediator.Send(command, ct);
 
-        // Map the outcome to HTTP — built-in mapping handles all case types
+        // Map the outcome to HTTP - built-in mapping handles all case types
         return result.ToActionResult();
     }
 
@@ -45,7 +45,7 @@ public class OrdersController : ControllerBase
     {
         var result = await this.mediator.Send(new DeleteOrder(id), ct);
 
-        // Same extension method — maps the outcome type-safely
+        // Same extension method - maps the outcome type-safely
         return result.ToActionResult();
     }
 }
@@ -96,20 +96,20 @@ public class CustomMapper : IOperationOutcomeMapper
         where TResponse : IOperationOutcome
     {
         // Inspect outcome.IsSuccess, outcome.Failure, and map however you want
-        
+
         if (outcome.IsSuccess)
         {
             return new OkObjectResult(/* ... */);
         }
-        
+
         var failure = outcome.Failure;
-        
+
         // Map specific failure types
         if (failure is CustomConflict conflict)
         {
             return new ConflictObjectResult(new { conflict.Code, conflict.Message });
         }
-        
+
         // Fall back to default mapping for other cases
         return DefaultMapper.Map(outcome);
     }
@@ -212,7 +212,7 @@ public class OrdersController : ControllerBase
         CancellationToken ct)
     {
         var command = new CreateOrder(request.CustomerId, request.Items);
-        
+
         try
         {
             var result = await this.mediator.Send(command, ct);
@@ -245,9 +245,9 @@ public async Task CreateOrder_Valid_Returns200()
         .ReturnsAsync(new OperationOutcome<int>(42));  // Success with ID 42
 
     var controller = new OrdersController(mediator.Object);
-    
+
     var result = await controller.CreateOrder(new CreateOrderRequest { /* ... */ }, default);
-    
+
     var okResult = Assert.IsType<OkObjectResult>(result);
     Assert.Equal(42, okResult.Value);
 }
@@ -260,9 +260,9 @@ public async Task DeleteOrder_NotFound_Returns404()
         .ReturnsAsync(new OperationOutcome<Success, NotFound>(new NotFound()));
 
     var controller = new OrdersController(mediator.Object);
-    
+
     var result = await controller.DeleteOrder(999, default);
-    
+
     Assert.IsType<NotFoundResult>(result);
 }
 ```

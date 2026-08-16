@@ -1,6 +1,6 @@
 ---
 name: nsubstitute-csharp-reference
-description: API lookup tables for NSubstitute — substitutes, returns, matchers, verification, callbacks. Referenced by csharp-test-sweep when configuring NSubstitute mocks.
+description: API lookup tables for NSubstitute - substitutes, returns, matchers, verification, callbacks. Referenced by csharp-test-sweep when configuring NSubstitute mocks.
 license: Apache-2.0
 metadata:
   author: Robert Engelhardt <rheone@gmail.com>
@@ -21,7 +21,7 @@ For framework-specific pitfalls see [`ANTI-PATTERNS.md`](ANTI-PATTERNS.md).
 | `Substitute.For<T>(args)` | With constructor arguments |
 | `Substitute.For<T1, T2>()` | Implements two interfaces |
 | `Substitute.For<T1, T2, T3>()` | Implements three interfaces |
-| `Substitute.ForPartsOf<T>()` | Partial — real impl unless configured |
+| `Substitute.ForPartsOf<T>()` | Partial - real impl unless configured |
 | `Substitute.For([Type]types, args)` | Runtime type array + constructor args |
 
 ## Configuring Return Values
@@ -29,7 +29,7 @@ For framework-specific pitfalls see [`ANTI-PATTERNS.md`](ANTI-PATTERNS.md).
 | Pattern | Description |
 |---------|-------------|
 | `sub.Method().Returns(value)` | Stub single return value |
-| `sub.Method().Returns(v1, v2)` | Sequence — returns v1, then v2, then v2 onwards |
+| `sub.Method().Returns(v1, v2)` | Sequence - returns v1, then v2, then v2 onwards |
 | `sub.Method().ReturnsNull()` | Returns `null` for nullable return |
 | `sub.Method().ReturnsNullForAnyArgs()` | Returns `null` regardless of arguments |
 | `sub.Method().ReturnsForAnyArgs(val)` | Stub value regardless of arguments |
@@ -48,7 +48,7 @@ For framework-specific pitfalls see [`ANTI-PATTERNS.md`](ANTI-PATTERNS.md).
 | `Arg.Invoke()` | Invoke the callback argument |
 | `Arg.Invoke<T>(value)` | Invoke callback with `value` |
 | `Arg.Compat.Ignore<T>()` | Ignore argument (VB.NET compat) |
-| `Arg.Do<T>(action)` | Capture argument — see EXAMPLES.md |
+| `Arg.Do<T>(action)` | Capture argument - see EXAMPLES.md |
 
 ## Call Verification
 

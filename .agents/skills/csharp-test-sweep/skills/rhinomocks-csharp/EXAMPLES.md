@@ -14,7 +14,7 @@ metadata:
 
 All examples use xUnit; the RhinoMocks API is identical across test frameworks.
 
-## 1. AAA Style — Create, Stub, AssertWasCalled
+## 1. AAA Style - Create, Stub, AssertWasCalled
 
 ```csharp
 public interface ICalculator
@@ -43,7 +43,7 @@ public void DoubleSum_delegates_to_calculator_and_doubles_result()
 }
 ```
 
-## 2. Argument Matcher — Is.Equal and Is.Anything
+## 2. Argument Matcher - Is.Equal and Is.Anything
 
 ```csharp
 [Fact]
@@ -135,7 +135,7 @@ public void Record_replay_style_deprecated()
 {
     var mock = MockRepository.GenerateMock<ICalculator>();
     mock.Expect(x => x.Add(1, 1)).Return(3);
-    // no AAA—record/replay switch needed
+    // no AAA-record/replay switch needed
     var repository = MockRepository.FromInstance(mock);
 
     repository.ReplayAll();
@@ -179,7 +179,7 @@ public abstract class AbstractProcessor
     public string Process(string input) => Transform(input) + "!";
 }
 
-// Testable subclass — does NOT override the method under test
+// Testable subclass - does NOT override the method under test
 private class TestableProcessor : AbstractProcessor { }
 
 [Fact]

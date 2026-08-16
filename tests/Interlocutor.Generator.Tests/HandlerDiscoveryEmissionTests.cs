@@ -59,7 +59,7 @@ public sealed class HandlerDiscoveryEmissionTests
             StringComparison.Ordinal
         );
 
-        // Not a single Type.GetType(string)/reflection-scan call anywhere — every reference is a compile-time
+        // Not a single Type.GetType(string)/reflection-scan call anywhere - every reference is a compile-time
         // typeof() token, which is what keeps this emitted code AOT- and trim-friendly (ADR-0008).
         Assert.DoesNotContain("Type.GetType", registrationsSource, StringComparison.Ordinal);
         Assert.DoesNotContain("Assembly.Load", registrationsSource, StringComparison.Ordinal);
@@ -73,7 +73,7 @@ public sealed class HandlerDiscoveryEmissionTests
         var dispatchSource = GetGeneratedSource(result, "InterlocutorGeneratedDispatch.g.cs");
 
         // Hard constraint (ADR-0008 / ticket 10): the generator emits registrations and dispatch, never direct
-        // construction — the handler is always resolved from the container, never `new`-ed.
+        // construction - the handler is always resolved from the container, never `new`-ed.
         Assert.DoesNotContain("new global::TestApp.GetFooQueryHandler", dispatchSource, StringComparison.Ordinal);
         Assert.DoesNotContain("Activator.CreateInstance", dispatchSource, StringComparison.Ordinal);
         Assert.DoesNotContain("MakeGenericType", dispatchSource, StringComparison.Ordinal);

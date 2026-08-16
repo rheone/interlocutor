@@ -1,4 +1,4 @@
-> **Status: superseded** — this issue predates the `documentation/` restructure.
+> **Status: superseded** - this issue predates the `documentation/` restructure.
 > Reason: the single-ticket scope here doesn't fit a single context window, and blocking needs to be unbundled per topic rather than gated on tickets 17/18 as a whole.
 > Superseded by tickets 20–35 in this same directory. Do not pick this up.
 
@@ -27,11 +27,11 @@ Remove old and invalid information
 Cover, from the developer's perspective:
 
 - **The builder** as the single configuration entry point, with the migration note that every older overload is gone.
-- **The no-default-pipeline model** — nothing runs unless asked for, behaviors form a flat ordered list in call order, a request's chain is that list filtered by generic constraints on the marker interfaces, and the same behavior may appear more than once. Include the recommended chain *and its rationale* — why auditing sits outside authorization, why transaction is innermost — because a developer composing their own chain needs the reasoning, not just the sequence.
+- **The no-default-pipeline model** - nothing runs unless asked for, behaviors form a flat ordered list in call order, a request's chain is that list filtered by generic constraints on the marker interfaces, and the same behavior may appear more than once. Include the recommended chain *and its rationale* - why auditing sits outside authorization, why transaction is innermost - because a developer composing their own chain needs the reasoning, not just the sequence.
 - **Handler selection**: generic handlers serving a family, closed beats open, ambiguity as a build error, the override attribute, and the explicit guarantee that namespace and assembly location never affect dispatch.
 - **Pipeline stages**, including short-circuiting and the unwind guarantees.
 - **Notification fan-out**, unordered execution with relative ordering attributes, and the per-strategy failure semantics including the partial-execution caveat.
-- **Lifetimes and scope** — why the mediator is scoped and non-configurable, what the root-scope exception means, and how to dispatch correctly from a background service.
+- **Lifetimes and scope** - why the mediator is scoped and non-configurable, what the root-scope exception means, and how to dispatch correctly from a background service.
 - **Runtime-typed dispatch** for outbox and queue consumers.
 - **Trim and ahead-of-time support**, and what the runtime scanning fallback costs.
 - **The deliberate absence of streaming**, with the reasoning, so it is a closed question.
@@ -50,11 +50,11 @@ Minified examples of common use cases
 - [ ] Mermaid diagrams render correctly
 - [ ] A migration note covers the removed registration API and the response-type constraint
 - [ ] No documentation outside the web package references an HTTP status code
-- [ ] Documentation matches the shipped behavior — no aspirational statements
+- [ ] Documentation matches the shipped behavior - no aspirational statements
 - [ ] Common Examples
 - [ ] Packages / Libraries that this project creates, and when to use them
 
 ## Blocked by
 
-17 — Trim and AOT hardening
-18 — Sample application
+17 - Trim and AOT hardening
+18 - Sample application

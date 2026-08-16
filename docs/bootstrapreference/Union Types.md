@@ -75,7 +75,7 @@ Declare a union when a value must be exactly one of a fixed set of types and you
 A union differs from other type declarations in important ways:
 
 - Unlike a `class` or `struct`, a union doesn't define new data members. Instead, it composes existing types into a closed set of alternatives.
-- Unlike an `interface`, a union is closed—you define the complete list of case types in the declaration, and the compiler uses that list for exhaustiveness checks.
+- Unlike an `interface`, a union is closed-you define the complete list of case types in the declaration, and the compiler uses that list for exhaustiveness checks.
 - Unlike a `record`, a union doesn't add equality, cloning, or deconstruction behavior. A union focuses on "which case is it?" rather than "what fields does it have?"
 
 ## Union declarations
@@ -229,10 +229,10 @@ For class-based unions, `null` succeeds when either the union reference itself i
 
 ```csharp
 Result<string>? result = null;
-if (result is null) { /* true — the reference is null */ }
+if (result is null) { /* true - the reference is null */ }
 
 Result<string> empty = new Result<string>((string?)null);
-if (empty is null) { /* true — Value is null */ }
+if (empty is null) { /* true - Value is null */ }
 ```
 
 For nullable union struct types (`Pet?`), `null` succeeds when the nullable wrapper has no value or when the underlying union's `Value` is null.

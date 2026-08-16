@@ -8,11 +8,11 @@ using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 using Microsoft.Extensions.DependencyInjection;
 
-/// <summary>A query with no handler registered in any test's service collection — used to prove the
+/// <summary>A query with no handler registered in any test's service collection - used to prove the
 /// "unregistered request type" failure path.</summary>
 public record UnregisteredQuery(int Value) : IQuery<OperationOutcome<int, Failure>>;
 
-/// <summary>A void command with no handler registered in any test's service collection — used to prove the
+/// <summary>A void command with no handler registered in any test's service collection - used to prove the
 /// "unregistered request type" failure path for the unit-command shape.</summary>
 public record UnregisteredVoidCommand : ICommand;
 
@@ -20,14 +20,14 @@ public record UnregisteredVoidCommand : ICommand;
 /// outcome is pattern-matchable for failure without the caller knowing the concrete outcome shape.</summary>
 public record FailingQuery : IQuery<OperationOutcome<int, Failure>>;
 
-/// <summary>Handler for <see cref="FailingQuery"/> — always fails.</summary>
+/// <summary>Handler for <see cref="FailingQuery"/> - always fails.</summary>
 public class FailingQueryHandler : IQueryHandler<FailingQuery, OperationOutcome<int, Failure>>
 {
     public Task<OperationOutcome<int, Failure>> Handle(FailingQuery query, CancellationToken ct) =>
         Task.FromResult(new OperationOutcome<int, Failure>(new Failure("boom")));
 }
 
-/// <summary>Tests for <see cref="ISender.Send(object, CancellationToken)"/> — the runtime-typed dispatch
+/// <summary>Tests for <see cref="ISender.Send(object, CancellationToken)"/> - the runtime-typed dispatch
 /// overload used by infrastructure callers (outbox/inbox/queue consumers) that only have a deserialized
 /// <see cref="object"/>, not a statically-typed request.</summary>
 public class RuntimeTypedDispatchTests
@@ -85,7 +85,7 @@ public class RuntimeTypedDispatchTests
         object request = new FailingQuery();
         var outcome = await sender.Send(request, CancellationToken.None);
 
-        // The caller here only has IOperationOutcome — no generic arguments, no knowledge of the concrete
+        // The caller here only has IOperationOutcome - no generic arguments, no knowledge of the concrete
         // OperationOutcome<TSuccess, TFailure> shape. IUnion.Value is the union's case value, and case types
         // (Failure, Success, plain data) can still be pattern-matched from it.
         var isFailure = outcome switch

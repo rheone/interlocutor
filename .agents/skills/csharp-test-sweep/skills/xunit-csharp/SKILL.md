@@ -4,25 +4,25 @@ description: Write, update, and improve xUnit v3 unit tests in C# projects. Use 
 license: Apache-2.0
 user-invocable: true
 metadata:
-  author: Robert Engelhardt <rheone@gmail.com>
-  version: 2.0.0
+    author: Robert Engelhardt <rheone@gmail.com>
+    version: 2.0.0
 ---
 
 # xUnit C# Testing Skill
 
-Framework-specific rules for xUnit v3. Framework-agnostic rules (naming, AAA structure, one-scenario-per-test, no static state, etc.) are in the [General Quality Checklist](../../references/quality-checklist.md) — apply those first, then these.
+Framework-specific rules for xUnit v3. Framework-agnostic rules (naming, AAA structure, one-scenario-per-test, no static state, etc.) are in the [General Quality Checklist](../../references/quality-checklist.md) - apply those first, then these.
 
 > This skill is invoked by [`csharp-test-sweep`](../../SKILL.md).
 
 ## Scope Selection
 
-| Scope | Apply to |
-|---|---|
-| **Single test** | One `[Fact]` or `[Theory]` method |
-| **Group** | Related tests within one `#region` |
-| **Class** | Entire test class file |
-| **Namespace** | All classes in a namespace |
-| **Project** | All classes in a project |
+| Scope           | Apply to                           |
+| --------------- | ---------------------------------- |
+| **Single test** | One `[Fact]` or `[Theory]` method  |
+| **Group**       | Related tests within one `#region` |
+| **Class**       | Entire test class file             |
+| **Namespace**   | All classes in a namespace         |
+| **Project**     | All classes in a project           |
 
 **Test type:** Default is **unit tests**. If standalone, ask: "Are these unit tests, or do some require real infrastructure? [Y = include integration tests / N = unit tests only]". If invoked via sweep, inherit its answer.
 
@@ -30,7 +30,7 @@ Framework-specific rules for xUnit v3. Framework-agnostic rules (naming, AAA str
 
 Apply these xUnit-specific checks during every sweep, after the [General Quality Checklist](../../references/quality-checklist.md).
 
-- [ ] `[Fact]` vs `[Theory]` correctly chosen — single-row `[Theory]` converted to `[Fact]`
+- [ ] `[Fact]` vs `[Theory]` correctly chosen - single-row `[Theory]` converted to `[Fact]`
 - [ ] Strongly-typed `TheoryData<T>` used, not `IEnumerable<object[]>`
 - [ ] `Assert.Equivalent` used for structural comparison when type lacks `Equals`
 - [ ] `Assert.Multiple` used for batched independent assertions in one scenario
@@ -62,7 +62,7 @@ Apply these xUnit-specific checks during every sweep, after the [General Quality
 
 Select theory data by partitioning the input space into behavioral partitions. Include one representative per partition plus boundary values. Document which partition each row represents in the `<summary>`.
 
-> Default: one case per partition. Add more only when branching within a partition requires it — state the reason in the `<summary>`.
+> Default: one case per partition. Add more only when branching within a partition requires it - state the reason in the `<summary>`.
 
 ### Exception Assertions
 
@@ -110,21 +110,21 @@ Every reference-type parameter in a public constructor or method must have a tes
 
 ### Test Output (`ITestOutputHelper`)
 
-- Diagnostic context only — logging generated inputs, timing data.
+- Diagnostic context only - logging generated inputs, timing data.
 - Never a substitute for assertions.
 - Inject via primary constructor: `public class Tests(ITestOutputHelper output)`.
 - Most tests do not need it. Do not inject without a clear diagnostic need.
 
 ### Test Fixtures
 
-| Situation | Use |
-|---|---|
-| Cheap, pure setup | Constructor / `IDisposable` |
-| Async setup or teardown | `IAsyncLifetime` |
-| Expensive setup shared per-class | `IClassFixture<T>` |
-| Shared across classes | `ICollectionFixture<T>` + `[Collection]` |
+| Situation                        | Use                                      |
+| -------------------------------- | ---------------------------------------- |
+| Cheap, pure setup                | Constructor / `IDisposable`              |
+| Async setup or teardown          | `IAsyncLifetime`                         |
+| Expensive setup shared per-class | `IClassFixture<T>`                       |
+| Shared across classes            | `ICollectionFixture<T>` + `[Collection]` |
 
-Never call async methods synchronously (`.Result`, `.GetAwaiter().GetResult()`) — use `IAsyncLifetime`. See [references/Fixtures.md](references/Fixtures.md) for wiring.
+Never call async methods synchronously (`.Result`, `.GetAwaiter().GetResult()`) - use `IAsyncLifetime`. See [references/Fixtures.md](references/Fixtures.md) for wiring.
 
 ### Object Mother
 
@@ -142,7 +142,7 @@ When working at class or project scope, run the sweep's gap detection checklist 
 
 ### Test Isolation
 
-No `Thread.Sleep` — arrange deterministic conditions instead.
+No `Thread.Sleep` - arrange deterministic conditions instead.
 
 ### Skipping Tests
 
@@ -150,11 +150,11 @@ No `Thread.Sleep` — arrange deterministic conditions instead.
 
 ### xUnit v1/v2 → v3 Upgrade
 
-| v1/v2 | v3 |
-|---|---|
+| v1/v2                            | v3                                               |
+| -------------------------------- | ------------------------------------------------ |
 | `IXunitSerializable` on the type | `IXunitSerializer` + `[RegisterXunitSerializer]` |
-| `[assembly: CollectionBehavior]` | Removed — parallelism on by default |
-| `xunit.runner.visualstudio` | Use v3-compatible runner package |
+| `[assembly: CollectionBehavior]` | Removed - parallelism on by default              |
+| `xunit.runner.visualstudio`      | Use v3-compatible runner package                 |
 
 ### Integration Tests
 
@@ -162,14 +162,14 @@ Apply only when opted in during scope selection:
 
 - Use `IClassFixture<T>` / `ICollectionFixture<T>` for shared resources.
 - Each test leaves infrastructure clean. Use `IAsyncLifetime.DisposeAsync` for teardown.
-- Do not mock infrastructure — verify the real interaction.
+- Do not mock infrastructure - verify the real interaction.
 - Group sharing classes under `[Collection]`.
 - Tag with `[Trait("Category", "Integration")]`.
 
 ## Related Skills
 
-- [`csharp-test-sweep`](../../SKILL.md) — orchestrates project-wide test quality improvements.
-- [General Quality Checklist](../../references/quality-checklist.md) — framework-agnostic rules applied at every class.
-- [REFERENCE.md](REFERENCE.md) — API lookup tables and assertion anti-patterns.
-- [EXAMPLES.md](EXAMPLES.md) — worked examples.
-- [ANTI-PATTERNS.md](ANTI-PATTERNS.md) — framework-specific pitfalls.
+- [`csharp-test-sweep`](../../SKILL.md) - orchestrates project-wide test quality improvements.
+- [General Quality Checklist](../../references/quality-checklist.md) - framework-agnostic rules applied at every class.
+- [REFERENCE.md](REFERENCE.md) - API lookup tables and assertion anti-patterns.
+- [EXAMPLES.md](EXAMPLES.md) - worked examples.
+- [ANTI-PATTERNS.md](ANTI-PATTERNS.md) - framework-specific pitfalls.

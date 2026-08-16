@@ -1,7 +1,7 @@
 namespace Interlocutor.DependencyInjection.Abstractions;
 
 /// <summary>
-/// A container-neutral description of a single factory-backed service registration — the delegate-form
+/// A container-neutral description of a single factory-backed service registration - the delegate-form
 /// counterpart to <see cref="InterlocutorRegistration"/>, used where a registration is a caller-supplied
 /// closure rather than a type the container can construct on its own (for example, a lambda-form pipeline
 /// stage registered via <c>InterlocutorBuilder.AddStage</c>'s delegate overloads).
@@ -9,11 +9,11 @@ namespace Interlocutor.DependencyInjection.Abstractions;
 /// <remarks>
 /// Like <see cref="InterlocutorRegistration"/>, this is the unit of exchange between the container-neutral
 /// builder and the container-specific translators in <c>Interlocutor.DependencyInjection.Microsoft</c> and
-/// <c>Interlocutor.DependencyInjection.Autofac</c> — neither retains its own factory-registration logic.
+/// <c>Interlocutor.DependencyInjection.Autofac</c> - neither retains its own factory-registration logic.
 /// </remarks>
 /// <param name="ServiceType">The closed service (contract) type the registration satisfies.</param>
 /// <param name="Factory">
-/// Produces the service instance given the container's <see cref="IServiceProvider"/> — used both by
+/// Produces the service instance given the container's <see cref="IServiceProvider"/> - used both by
 /// factories that need no services (which simply ignore the parameter) and by lambda-form stages that
 /// resolve services from it.
 /// </param>

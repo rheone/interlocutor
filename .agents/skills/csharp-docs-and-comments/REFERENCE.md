@@ -39,9 +39,9 @@ If the code already answers those questions clearly, the comment is probably unn
 
 Documentation in this skill is written **for senior developer consumers**:
 
-- They know C# — do not explain language mechanics
-- They may not know the domain — **do** explain domain concepts, RFC references, business rules, and naming conventions that are specific to this codebase
-- They are reading to understand intent, constraints, and safe usage — not to learn syntax
+- They know C# - do not explain language mechanics
+- They may not know the domain - **do** explain domain concepts, RFC references, business rules, and naming conventions that are specific to this codebase
+- They are reading to understand intent, constraints, and safe usage - not to learn syntax
 
 ---
 
@@ -86,7 +86,7 @@ Apply all of the following. They are grouped by category.
 
 - **Never** write a `<summary>` that restates the identifier name, paraphrases the signature, or narrates obvious code.
 - **Never** leave default Visual Studio placeholder text (e.g., "TODO: Add summary here").
-- **Never** copy and paste documentation verbatim from one member to another — if two members are similar, explain the *difference*.
+- **Never** copy and paste documentation verbatim from one member to another - if two members are similar, explain the *difference*.
 - `<summary>` should describe purpose, not implementation. "What does this do for the caller?" not "How does it work internally?"
 - If a method is one of several similar methods, explain what distinguishes it from the others.
 - Call out unexpected behaviors: global state modifications, caching, deferred execution, non-obvious ordering requirements.
@@ -99,19 +99,19 @@ Apply all of the following. They are grouped by category.
 - Text ends with a **period** (full stop).
 - No blank lines inside the `<summary>` block.
 - No tabs; no consecutive whitespace characters.
-- No markdown syntax — use XML doc tags instead (see §5).
+- No markdown syntax - use XML doc tags instead (see §5).
 - Constructors: begin with `Initializes a new instance of the <see cref="TypeName"/> class.` (or struct/record as appropriate). Add more after this standard phrase if useful.
 - Finalizers/destructors: begin with `Finalizes an instance of the <see cref="TypeName"/> class.`
 - Properties: `<summary>` should reflect the accessible accessors. For a get-only property, say "Gets the...". For get+set, say "Gets or sets the...".
 
 ### 4d. Tag Correctness
 
-- `<param name="x">` — the `name` attribute must **exactly** match the parameter name in the signature. No empty `name`, no missing `name`, no mismatched casing.
-- `<typeparam name="T">` — same rule: exact match to the generic type parameter name.
+- `<param name="x">` - the `name` attribute must **exactly** match the parameter name in the signature. No empty `name`, no missing `name`, no mismatched casing.
+- `<typeparam name="T">` - same rule: exact match to the generic type parameter name.
 - `<returns>` must **not** appear on `void` methods or constructors.
 - `<value>` must **not** appear on methods.
 - `<inheritdoc>` must only appear on members that actually inherit from a base class or implement an interface (see §8).
-- The set of `<param>` tags must exactly match the parameter list — no extras, no missing.
+- The set of `<param>` tags must exactly match the parameter list - no extras, no missing.
 - The set of `<typeparam>` tags must exactly match the generic parameter list.
 - All `<exception cref="ExceptionType">` values must reference a real, resolvable exception type.
 - No empty tags: every opening tag must have meaningful content.
@@ -166,7 +166,7 @@ Apply all of the following. They are grouped by category.
 | `<exception cref="">` | Methods, properties, constructors | For contractually thrown exceptions | Describe the circumstances that cause the exception | `cref` must resolve |
 | `<example>` | Any member or type | To illustrate usage | Wrap code in `<code>` block | High-value for public APIs |
 | `<code>` | Inside `<example>`, `<remarks>` | Multi-line code snippets | Preserve formatting and indentation | Rendered as a code block |
-| `<c>` | Inline in prose | Short code fragments, keywords, values | Wrap the literal snippet | Do not use for type/member names — use `<see cref="">` |
+| `<c>` | Inline in prose | Short code fragments, keywords, values | Wrap the literal snippet | Do not use for type/member names - use `<see cref="">` |
 | `<para>` | Inside text-containing tags | Multiple paragraphs | Separate logical sections | Required inside `<remarks>` and `<note>` |
 | `<list type="">` | Inside remarks, examples | Structured lists | Types: `bullet`, `number`, `table` | Requires `<item>` children |
 | `<item>` | Inside `<list>` | One entry per list item | Contains `<term>` and/or `<description>` | Structure varies by list type |
@@ -242,21 +242,21 @@ XML docs and inline comments serve different audiences. A public method may need
 
 Use `<inheritdoc/>` on a member when:
 
-- The member **implements an interface member** — the interface already has the authoritative doc.
-- The member **overrides a base class member** — the base class already has the authoritative doc.
+- The member **implements an interface member** - the interface already has the authoritative doc.
+- The member **overrides a base class member** - the base class already has the authoritative doc.
 - The docs would be identical to the base/interface and add no new information.
 
 ### When to use `<inheritdoc cref="..."/>`
 
 Use the `cref` form when:
 
-- The type implements multiple interfaces that both declare a member with the same name — specify which interface's docs to inherit.
+- The type implements multiple interfaces that both declare a member with the same name - specify which interface's docs to inherit.
 - A partial class wants to inherit from a specific partial sibling.
 
 ### When NOT to use `<inheritdoc/>`
 
 - On a type or member that neither inherits from a base class nor implements any interface.
-- When the overriding or implementing member has meaningfully different behavior, preconditions, or exceptions — in that case, write explicit docs (or use `<inheritdoc/>` plus additional `<remarks>`).
+- When the overriding or implementing member has meaningfully different behavior, preconditions, or exceptions - in that case, write explicit docs (or use `<inheritdoc/>` plus additional `<remarks>`).
 
 ### Extending inherited docs
 
@@ -289,7 +289,7 @@ The test method name and test body together make the intent completely clear:
 - The test name is ambiguous or abbreviated
 - A non-obvious precondition exists (e.g., a specific OS, network state, or clock dependency)
 - A domain concept in the test body would be confusing to a reader unfamiliar with the domain
-- The test exists to catch a regression from a specific bug — link to the bug/issue
+- The test exists to catch a regression from a specific bug - link to the bug/issue
 
 ### Do NOT Remove existing docs if they are quality
 
@@ -321,10 +321,10 @@ If it is known and obvious add information stating if the endpoint requires spec
 Skip documentation work entirely on files matching these patterns. These files are owned by tooling and edits will be overwritten:
 
 **By filename:**
-- `*.g.cs` — source generators
-- `*.Designer.cs` — Windows Forms / XAML designers
-- `AssemblyInfo.cs` — assembly metadata
-- `GlobalUsings.cs`, `GlobalUsings.g.cs` — implicit usings
+- `*.g.cs` - source generators
+- `*.Designer.cs` - Windows Forms / XAML designers
+- `AssemblyInfo.cs` - assembly metadata
+- `GlobalUsings.cs`, `GlobalUsings.g.cs` - implicit usings
 
 **By path:**
 - Any file inside `obj/` or `bin/` directories

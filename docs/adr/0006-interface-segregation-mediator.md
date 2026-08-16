@@ -10,9 +10,9 @@ The mediator exposes two fundamentally different operations: request/response di
 
 Split into three interfaces following the Interface Segregation Principle:
 
-- **`ISender`** — Narrow interface for send-only. Exposes three `Send` overloads: `IQuery<TResponse>`, `ICommand<TResponse>`, and `ICommand` (void).
-- **`IPublisher`** — Narrow interface for publish-only. Exposes `Publish<TNotification>(TNotification, CancellationToken)`.
-- **`IMediator`** — Combined convenience interface that inherits both `ISender` and `IPublisher`. Used by root-level code (controllers, background jobs) that needs both capabilities.
+- **`ISender`** - Narrow interface for send-only. Exposes three `Send` overloads: `IQuery<TResponse>`, `ICommand<TResponse>`, and `ICommand` (void).
+- **`IPublisher`** - Narrow interface for publish-only. Exposes `Publish<TNotification>(TNotification, CancellationToken)`.
+- **`IMediator`** - Combined convenience interface that inherits both `ISender` and `IPublisher`. Used by root-level code (controllers, background jobs) that needs both capabilities.
 
 DI registers `IMediator` (scoped), and then aliases `ISender` and `IPublisher` to the same `Mediator` instance:
 ```csharp
@@ -23,12 +23,12 @@ services.AddScoped<IPublisher>(sp => sp.GetRequiredService<IMediator>());
 
 ## Consequences
 
-- **Positive:** Consumers declare only the interface they need — `ISender` for controllers, `IPublisher` for domain event emitters.
-- **Positive:** Test doubles are simpler — mock only `ISender` or `IPublisher` rather than the full `IMediator`.
+- **Positive:** Consumers declare only the interface they need - `ISender` for controllers, `IPublisher` for domain event emitters.
+- **Positive:** Test doubles are simpler - mock only `ISender` or `IPublisher` rather than the full `IMediator`.
 - **Positive:** The `IMediator` convenience interface preserves a familiar entry point for code that needs both.
 - **Negative:** Three interfaces to maintain instead of one. The maintenance cost is negligible since `IMediator` explicitly inherits the other two and adds no members.
 
 ## Alternatives considered
 
-- **Single `IMediator` interface:** Rejected — violates ISP, forces unnecessary dependencies on consumers that only send or only publish.
-- **Separate `IMediator` with `ISender` and `IPublisher` as unrelated types:** Rejected — the common case of needing both would require depending on two interfaces, adding friction.
+- **Single `IMediator` interface:** Rejected - violates ISP, forces unnecessary dependencies on consumers that only send or only publish.
+- **Separate `IMediator` with `ISender` and `IPublisher` as unrelated types:** Rejected - the common case of needing both would require depending on two interfaces, adding friction.

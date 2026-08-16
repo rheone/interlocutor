@@ -2,11 +2,11 @@
 
 ## Summary
 - **Files created:** 30 (22 from Abstractions.cs, 8 from Behaviors.cs)
-- **Files deleted:** 1 (`Abstractions.cs` — `Behaviors.cs` did not exist, likely already removed or never tracked)
+- **Files deleted:** 1 (`Abstractions.cs` - `Behaviors.cs` did not exist, likely already removed or never tracked)
 
 ## Issues
 - `Behaviors.cs` was not present in the repository (not tracked by git, file not found). No action needed.
-- Build will not pass — expected per task constraints.
+- Build will not pass - expected per task constraints.
 
 ## Directory structure created
 ```

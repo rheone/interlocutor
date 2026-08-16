@@ -3,7 +3,7 @@ namespace Interlocutor;
 // ---------------------------------------------------------------------------
 // Package: Interlocutor
 // The shared kernel (Addendum B.1). Depends on nothing but the BCL, so any
-// consumer — console tool, worker, web API — can reference just this
+// consumer - console tool, worker, web API - can reference just this
 // package. Every other package in the family (Interlocutor.Mediation and its
 // satellites) depends on this one; this one depends on nothing in the family.
 // ---------------------------------------------------------------------------
@@ -13,7 +13,7 @@ public sealed record Success;
 
 /// <summary>
 /// Input/shape validation failed, before any lookup or business logic ran.
-/// Distinct from <see cref="RuleViolation"/> — see that type's remarks.
+/// Distinct from <see cref="RuleViolation"/> - see that type's remarks.
 /// </summary>
 /// <param name="Errors">Field name mapped to the list of (code, message) failures for that field.</param>
 public sealed record ValidationFailed(
@@ -21,7 +21,7 @@ public sealed record ValidationFailed(
 
 /// <summary>
 /// A domain/business invariant was violated after the input was
-/// structurally valid — e.g. "insufficient balance," "invalid state
+/// structurally valid - e.g. "insufficient balance," "invalid state
 /// transition." Kept distinct from <see cref="ValidationFailed"/> because
 /// the two occur at different pipeline stages and map to different HTTP
 /// semantics (400 vs 422).

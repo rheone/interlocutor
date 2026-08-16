@@ -7,7 +7,7 @@ namespace Interlocutor.Generator;
 /// </summary>
 /// <remarks>
 /// One handler type implementing more than one handler contract (or the same contract closed over more than
-/// one request) produces one <see cref="HandlerModel"/> per closed interface — mirroring
+/// one request) produces one <see cref="HandlerModel"/> per closed interface - mirroring
 /// <c>Interlocutor.DependencyInjection.Abstractions.HandlerDiscovery</c>'s "one registration per matching
 /// handler interface" rule, replicated here at compile time.
 /// </remarks>
@@ -15,14 +15,14 @@ namespace Interlocutor.Generator;
 /// <param name="HandlerTypeName">The handler's fully-qualified (<c>global::</c>-prefixed) type name.</param>
 /// <param name="RequestTypeName">The request type's fully-qualified (<c>global::</c>-prefixed) type name.</param>
 /// <param name="ResponseTypeName">
-/// The response type's fully-qualified (<c>global::</c>-prefixed) type name — the handler's own <c>TResponse</c>/
+/// The response type's fully-qualified (<c>global::</c>-prefixed) type name - the handler's own <c>TResponse</c>/
 /// <c>TResult</c> type argument. Never <see langword="null"/>: even <see cref="HandlerKind.Notification"/> handlers
 /// have no response type in the pipeline sense, but this field is only read for the three kinds that do.
 /// </param>
 /// <param name="ServiceInterfaceName">
 /// The fully-qualified closed handler-contract interface name (for example
 /// <c>global::Interlocutor.Abstractions.Queries.IQueryHandler&lt;global::MyApp.FooQuery, global::MyApp.FooResult&gt;</c>)
-/// this handler satisfies — used verbatim as the emitted registration's service type.
+/// this handler satisfies - used verbatim as the emitted registration's service type.
 /// </param>
 internal sealed record HandlerModel(
     HandlerKind Kind,

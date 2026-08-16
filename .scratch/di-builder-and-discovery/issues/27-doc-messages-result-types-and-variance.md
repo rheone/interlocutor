@@ -1,4 +1,4 @@
-> **Amendment** — this ticket instructed citing ADR-0001 and ADR-0013 directly in the shipped `documentation/messages-and-result-types.md` prose. That instruction is superseded: `documentation/` files must state design rationale as fact and must never cite or link to `docs/adr/`, `docs/PRD.md`, or other `docs/` paths — see the house convention added in ticket 36. The shipped file has been corrected by ticket 36. No action needed here; historical context only.
+> **Amendment** - this ticket instructed citing ADR-0001 and ADR-0013 directly in the shipped `documentation/messages-and-result-types.md` prose. That instruction is superseded: `documentation/` files must state design rationale as fact and must never cite or link to `docs/adr/`, `docs/PRD.md`, or other `docs/` paths - see the house convention added in ticket 36. The shipped file has been corrected by ticket 36. No action needed here; historical context only.
 
 ## Labels
 
@@ -10,11 +10,11 @@ A `documentation/messages-and-result-types.md` covering requests, result types, 
 
 Cover:
 
-- **The message shapes**: `IQuery<TResponse>`, `ICommand<TResponse>`, `ICommand` (void), and their enumerable/bulk/paged variants where they exist in shipped code — verify the current set against `src/Interlocutor.Abstractions`, don't assume the bootstrap-PRD list (`IEnumerableCommand`, `IBulkCommand`, etc.) all shipped as originally sketched.
-- **`OperationOutcome<...>` and its case types** (`Success`, `NotFound`, `Forbidden`, `Conflict`, `ValidationFailed`, `Failure`, ...) — use the case-type names resolved in ticket 21 against actual `Interlocutor.CommonKernel` source, not the older README/CONTEXT.md wording. Link to the full marker-interface catalog (`ITransactionalRequest`, `IExternalStoreRequest`, `IAuditableRequest`, `IRequiresPolicy`) briefly, pointing to tickets 23/30 for where each is used rather than re-explaining them here.
-- **The existing worked-example guide** at `docs/guides/composing-operationoutcome-arities.md` — link to it for concrete arity examples rather than duplicating those examples here.
+- **The message shapes**: `IQuery<TResponse>`, `ICommand<TResponse>`, `ICommand` (void), and their enumerable/bulk/paged variants where they exist in shipped code - verify the current set against `src/Interlocutor.Abstractions`, don't assume the bootstrap-PRD list (`IEnumerableCommand`, `IBulkCommand`, etc.) all shipped as originally sketched.
+- **`OperationOutcome<...>` and its case types** (`Success`, `NotFound`, `Forbidden`, `Conflict`, `ValidationFailed`, `Failure`, ...) - use the case-type names resolved in ticket 21 against actual `Interlocutor.CommonKernel` source, not the older README/CONTEXT.md wording. Link to the full marker-interface catalog (`ITransactionalRequest`, `IExternalStoreRequest`, `IAuditableRequest`, `IRequiresPolicy`) briefly, pointing to tickets 23/30 for where each is used rather than re-explaining them here.
+- **The existing worked-example guide** at `docs/guides/composing-operationoutcome-arities.md` - link to it for concrete arity examples rather than duplicating those examples here.
 - **Variance**, stated plainly and marked `[!CAUTION]` per house convention as the single most likely thing a future contributor attempts and fails at: the response type parameter can never be variant. It sits inside a `Task` on the handler interfaces, and in *both* an argument position and the return position on the behavior interface. Polymorphism is request-side only, permanently, across every interface in the library.
-- **The deliberate absence of streaming**, with the reasoning from ADR-0013, so it reads as a closed, considered decision rather than a gap — streaming and "commit/rollback as one unit" don't compose, which is why it's deliberately kept out of `OperationOutcome`.
+- **The deliberate absence of streaming**, with the reasoning from ADR-0013, so it reads as a closed, considered decision rather than a gap - streaming and "commit/rollback as one unit" don't compose, which is why it's deliberately kept out of `OperationOutcome`.
 
 ## Acceptance criteria
 
@@ -28,4 +28,4 @@ Cover:
 
 ## Blocked by
 
-21 — Establish documentation/ directory; retire CONTEXT.md
+21 - Establish documentation/ directory; retire CONTEXT.md

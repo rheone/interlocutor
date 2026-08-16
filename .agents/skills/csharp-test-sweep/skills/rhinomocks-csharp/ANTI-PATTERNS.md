@@ -33,7 +33,7 @@ mock.AssertWasCalled(x => x.GetValue());
 
 ## 2. Mocking the Class Under Test
 
-**Problem:** `GenerateMock<T>()` intercepts all virtual methods. When `T` is the class under test, the real method never runs — the mock returns `default(TResult)`.
+**Problem:** `GenerateMock<T>()` intercepts all virtual methods. When `T` is the class under test, the real method never runs - the mock returns `default(TResult)`.
 
 **Fix:** Use a concrete test subclass that inherits without overriding.
 
@@ -46,21 +46,21 @@ See [Core Rule 2 in SKILL.md](SKILL.md#core-rules) for the pattern.
 **Fix:** Use `.Repeat.Once()` sparingly. Prefer `.Repeat.AtLeastOnce()` or `AssertWasCalled` with no repeat constraint. Reserve `.Repeat.Times(N)` for cases where call count is a documented behavioral contract.
 
 ```csharp
-// Brittle — breaks if Save is called exactly once elsewhere
+// Brittle - breaks if Save is called exactly once elsewhere
 mock.Expect(x => x.Save()).Repeat.Once();
 
-// Better — asserts it was called at least once
+// Better - asserts it was called at least once
 mock.AssertWasCalled(x => x.Save());
 ```
 
 ## 4. Not Calling VerifyAll in Record/Replay Mode
 
-**Problem:** `VerifyAll` must be called to assert expectations. If omitted, the test passes even when no expectations were set — a false positive.
+**Problem:** `VerifyAll` must be called to assert expectations. If omitted, the test passes even when no expectations were set - a false positive.
 
 **Fix:** Always call `repository.VerifyAll()` in a `finally` block or, better yet, migrate to AAA style where verification is explicit per mock.
 
 ```csharp
-// Dangerous — test passes even if Expect was never set up
+// Dangerous - test passes even if Expect was never set up
 repository.ReplayAll();
 sut.DoWork();
 
@@ -72,7 +72,7 @@ repository.VerifyAll();
 
 ## 5. StructureMap.AutoMocking Hiding Complex Dependency Configuration
 
-**Problem:** `RhinoAutoMocker<T>` creates mocks for all constructor dependencies automatically. When a dependency needs non-trivial fake behavior (e.g., a `MemoryStream` with seeded data, or a fake `DbContext`), the auto-mocker creates a plain mock that returns defaults — causing silent failures or null-reference exceptions.
+**Problem:** `RhinoAutoMocker<T>` creates mocks for all constructor dependencies automatically. When a dependency needs non-trivial fake behavior (e.g., a `MemoryStream` with seeded data, or a fake `DbContext`), the auto-mocker creates a plain mock that returns defaults - causing silent failures or null-reference exceptions.
 
 **Fix:** For complex dependencies, register a concrete fake via the container before accessing `ClassUnderTest`:
 

@@ -10,9 +10,9 @@ considered. Status is `Accepted` unless noted.
 **Context**
 Handlers need to communicate a closed set of expected outcomes (success
 value, or one of several named failures) in a way the compiler can check
-exhaustively. Prior options — `object` returns, boolean flags with out
+exhaustively. Prior options - `object` returns, boolean flags with out
 parameters, third-party libraries (e.g. `OneOf`), or throwing exceptions
-for expected outcomes — each fail at least one of: compile-time
+for expected outcomes - each fail at least one of: compile-time
 exhaustiveness, discoverability from the signature, or freedom from an
 external dependency.
 
@@ -28,7 +28,7 @@ case types.
 - Con: language surface is preview-only; syntax may shift before GA
   (~November 2026). Mitigated by isolating all `union` declarations to a
   single type-catalog file.
-- Con: compiler-generated unions are structs that box their `Value` —
+- Con: compiler-generated unions are structs that box their `Value` -
   acceptable overhead for a mediator layer, flagged as a future
   optimization point if needed (non-boxing custom union pattern is
   available).
@@ -80,7 +80,7 @@ loaded data (non-resource), and ownership/claims checks that need the
 *fetched entity* (resource-based). Generic pipeline behaviors operate
 before the handler runs and have no natural place to receive data the
 handler's lookup step produces, short of introducing a shared mutable
-context object — which conflicts with the goal of keeping all result types
+context object - which conflicts with the goal of keeping all result types
 and pipeline plumbing immutable/stateless.
 
 **Decision**
@@ -94,18 +94,18 @@ all sequential, all local to one method call, no shared context.
 - Pro: no mutable state threaded through the pipeline.
 - Pro: authorization logic lives next to the lookup it depends on, easy to
   reason about and test as one unit.
-- Con: resource-based authorization isn't a swappable pipeline layer — it's
+- Con: resource-based authorization isn't a swappable pipeline layer - it's
   fixed to the template method's shape. Acceptable since resource
   authorization is inherently handler-specific, not a generic cross-cutting
   concern.
 
 **Alternatives considered**
 - Shared per-request mutable context (`RequestContext` bag) populated by a
-  `LookupBehavior` and read by an `AuthorizationBehavior`: rejected —
+  `LookupBehavior` and read by an `AuthorizationBehavior`: rejected -
   reintroduces mutable shared state and an implicit ordering dependency
   between behaviors that the compiler can't verify.
 - Re-fetching the entity inside a generic authorization behavior: rejected
-  — duplicate query per request, and still needs the entity type as a
+  - duplicate query per request, and still needs the entity type as a
   generic parameter, cutting against genericity.
 
 ---
@@ -126,12 +126,12 @@ handler.
 
 **Consequences**
 - Pro: one behavior class expresses both "on the way in" and "on the way
-  out" logic around a single `next()` call — no separate pre/post
+  out" logic around a single `next()` call - no separate pre/post
   registries to keep in sync.
 - Pro: behaviors are generic over `<TRequest,TResponse>` and never need to
-  know `T` — `Result<T>` flows through untouched.
+  know `T` - `Result<T>` flows through untouched.
 - Con: execution order depends on DI registration order, which isn't
-  guaranteed identical across containers — mitigated by a pinned
+  guaranteed identical across containers - mitigated by a pinned
   integration test (ADR-0008 also addresses opt-in correctness).
 
 **Alternatives considered**
@@ -148,7 +148,7 @@ handler.
 It's tempting to add a pipeline behavior that catches all exceptions and
 folds them into a `Failure` case, for a "uniform" result contract. This
 would blur the line between bugs/infrastructure faults and legitimate
-domain outcomes — the exact distinction this design exists to preserve.
+domain outcomes - the exact distinction this design exists to preserve.
 
 **Decision**
 No behavior or handler catches and converts arbitrary exceptions into
@@ -174,7 +174,7 @@ generic 500 `ProblemDetails` response.
 
 **Context**
 A `ResourceCommandHandler`'s lookup and its subsequent write must observe
-a consistent view of data and commit atomically — the session used to load
+a consistent view of data and commit atomically - the session used to load
 the entity must be the same session the write is applied through and
 committed on.
 
@@ -190,18 +190,18 @@ any writes performed in `HandleAsync`.
 
 **Consequences**
 - Pro: atomicity guaranteed by DI scope lifetime, not by manual
-  coordination — no risk of lookup and write using different connections.
+  coordination - no risk of lookup and write using different connections.
 - Pro: commit/rollback decision is centralized and driven directly by the
-  `Result` type — a `Conflict` or `RuleViolation` rolls back exactly like a
+  `Result` type - a `Conflict` or `RuleViolation` rolls back exactly like a
   thrown exception would, with no special-casing.
 - Con: requires discipline that all repositories/read stores used inside a
-  transactional request resolve the same scoped session — standard ASP.NET
+  transactional request resolve the same scoped session - standard ASP.NET
   DI behavior within a request, but worth an explicit test for
   background/queue-triggered dispatches that build scopes manually.
 
 **Alternatives considered**
 - Handler-managed transactions (each handler opens/commits its own): rejected
-  — duplicates transaction logic per handler and makes "did we roll back on
+  - duplicates transaction logic per handler and makes "did we roll back on
   every failure path" a per-handler audit instead of a guarantee.
 
 ---
@@ -236,7 +236,7 @@ entry point.
 ## ADR-0008: Marker interfaces for opt-in cross-cutting behaviors
 
 **Context**
-Not every request needs every cross-cutting concern — queries don't need
+Not every request needs every cross-cutting concern - queries don't need
 auditing or transactions; many commands don't need a named authorization
 policy check. Behaviors need a way to know whether they apply without a
 central configuration list that's easy to forget to update.
@@ -249,7 +249,7 @@ checks `request is TMarker` and no-ops (calls `next()` directly) when
 absent.
 
 **Consequences**
-- Pro: opt-in is visible at the request type's declaration — reading the
+- Pro: opt-in is visible at the request type's declaration - reading the
   `record` or `class` for a command tells you which concerns apply, no need
   to check pipeline registration.
 - Pro: no reflection-based convention or naming-pattern guessing.
@@ -262,7 +262,7 @@ absent.
 
 **Alternatives considered**
 - Central per-request-type configuration table mapping request → behaviors:
-  rejected — moves the opt-in decision away from the type definition,
+  rejected - moves the opt-in decision away from the type definition,
   easy to drift out of sync.
 
 ---
@@ -283,7 +283,7 @@ remain in force.*
 ADR-0006/ADR-0008 established `ITransactionalRequest` as the opt-in for the
 SQL unit-of-work. In practice some commands and queries are backed by an
 external API or a non-relational store and must **never** cause a SQL
-session to be constructed — not just skip the transaction, since some
+session to be constructed - not just skip the transaction, since some
 drivers/stores open connections eagerly at construction, and even where
 they don't, resolving an unused `AppDbContext` obscures intent and can
 mask accidental SQL usage in code review.
@@ -291,7 +291,7 @@ mask accidental SQL usage in code review.
 **Decision**
 `TransactionBehavior` depends on `Lazy<AppDbContext>` rather than
 `AppDbContext` directly, so the session is constructed only if
-`.Value` is actually evaluated — which happens only inside the
+`.Value` is actually evaluated - which happens only inside the
 `ITransactionalRequest` branch. A second marker, `IExternalStoreRequest`,
 is added purely to make the "deliberately no SQL" choice an explicit,
 reviewable declaration rather than an inferred absence. An architecture
@@ -300,7 +300,7 @@ one of the two markers.
 
 **Consequences**
 - Pro: SQL session is provably never constructed for external-store
-  requests — verifiable by inspecting `TransactionBehavior`'s single
+  requests - verifiable by inspecting `TransactionBehavior`'s single
   branch, not by auditing every handler.
 - Pro: the choice is visible at the command's type declaration, consistent
   with the marker-interface philosophy of ADR-0008.
@@ -310,10 +310,10 @@ one of the two markers.
 
 **Alternatives considered**
 - Inferring "no DB" purely from the absence of `ITransactionalRequest`:
-  rejected — indistinguishable from "forgot to add the marker," and
+  rejected - indistinguishable from "forgot to add the marker," and
   provides no positive signal for review or tooling.
 - A single `IStoreBackedRequest<TStore>` generic marker naming the store
-  type: rejected as unnecessary complexity — the pipeline only needs to
+  type: rejected as unnecessary complexity - the pipeline only needs to
   know "SQL session: yes or no," not which specific external store is in
   play; that detail belongs to the handler's own constructor-injected
   client.
@@ -342,21 +342,21 @@ behavior, since every behavior is already generic over the opaque
 **Consequences**
 - Pro: no risk of a disposed-session exception surfacing after the
   pipeline believes the request succeeded.
-- Pro: zero pipeline changes required — confirms the original genericity
+- Pro: zero pipeline changes required - confirms the original genericity
   goal from ADR-0004 holds under a new payload shape.
 - Pro: empty results stay unambiguously "success with zero items," keeping
   `NotFound` reserved for its original meaning (a specific resource-by-id
   missing), not overloaded to mean "empty result set."
-- Con: none identified — purely additive.
+- Con: none identified - purely additive.
 
 **Alternatives considered**
-- Returning `IAsyncEnumerable<T>` for streaming: rejected as the default —
+- Returning `IAsyncEnumerable<T>` for streaming: rejected as the default -
   streaming and the "commit/rollback as one unit" transactional model
   (ADR-0006) don't compose cleanly; a genuinely necessary streaming export
   should be a distinct, separately-designed endpoint contract, not routed
   through `Result<T>`.
 - Encoding paging metadata as HTTP headers only, with `Result<T>` staying
-  `IReadOnlyList<T>`: rejected — keeps paging state out of the type the
+  `IReadOnlyList<T>`: rejected - keeps paging state out of the type the
   compiler checks, and duplicates total-count logic at the API layer
   instead of the query handler where it's naturally computed.
 
@@ -383,15 +383,15 @@ validated on its own.
 
 **Consequences**
 - Pro: confirms `TResponse`-genericity (ADR-0004) extends to validation as
-  well as to the rest of the pipeline — one mechanism for scalar, bulk,
+  well as to the rest of the pipeline - one mechanism for scalar, bulk,
   and paged requests alike.
 - Pro: item-level validators stay independently testable and reusable.
-- Con: none identified — this ADR is primarily a confirmation that the
+- Con: none identified - this ADR is primarily a confirmation that the
   existing design already covers the case, recorded so the question isn't
   re-litigated later.
 
 **Alternatives considered**
 - A dedicated `ICollectionValidationBehavior<TItem>` for bulk requests:
-  rejected as unnecessary — FluentValidation's `RuleForEach` already
+  rejected as unnecessary - FluentValidation's `RuleForEach` already
   expresses this within the existing `IValidator<TRequest>` contract with
   no pipeline changes.

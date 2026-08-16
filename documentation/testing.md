@@ -4,7 +4,7 @@ Strategies for testing code built on Interlocutor.
 
 ## Unit Testing Handlers
 
-Handlers are plain classes with injected dependencies — test them directly without the mediator:
+Handlers are plain classes with injected dependencies - test them directly without the mediator:
 
 ```csharp
 public record GetUser(int UserId) : IQuery<OperationOutcome<UserDto, NotFound>>;
@@ -85,7 +85,7 @@ public async Task PipelineOrder_ValidationBeforeTransaction()
         builder.AddBehavior(typeof(ValidationBehavior<,>));
         builder.AddBehavior(typeof(TransactionBehavior<,>));
     });
-    
+
     services.AddDbContext<TestDbContext>(
         options => options.UseInMemoryDatabase("test"),
         ServiceLifetime.Scoped
@@ -101,7 +101,7 @@ public async Task PipelineOrder_ValidationBeforeTransaction()
     // Assert: validation fails before the handler runs, so no transaction starts
     Assert.False(result.IsSuccess);
     var validation = Assert.IsType<ValidationError>(result.Value);
-    
+
     // Database should be unchanged (transaction never started)
     var context = scope.ServiceProvider.GetRequiredService<TestDbContext>();
     Assert.Empty(context.Orders);
@@ -118,12 +118,12 @@ public async Task ShortCircuit_AuthorizationStopsTransaction()
         builder.AddBehavior(typeof(AuthorizationBehavior<,>));
         builder.AddBehavior(typeof(TransactionBehavior<,>));
     });
-    
+
     services.AddDbContext<TestDbContext>(
         options => options.UseInMemoryDatabase("test"),
         ServiceLifetime.Scoped
     );
-    
+
     // Mock the policy evaluator to deny access
     services.AddSingleton<IPolicyEvaluator>(new DenyAllPolicyEvaluator());
 
@@ -139,7 +139,7 @@ public async Task ShortCircuit_AuthorizationStopsTransaction()
     // Assert: authorization short-circuits, transaction never starts
     Assert.False(result.IsSuccess);
     var forbidden = Assert.IsType<Forbidden>(result.Value);
-    
+
     // No side effects because transaction never started
 }
 ```
@@ -168,7 +168,7 @@ public class LoggingBehaviorTests
 
         // Assert
         Assert.Equal(response, result);
-        
+
         // Verify logging was called
         logger.Verify(
             l => l.Log(
@@ -194,7 +194,7 @@ public void AddInterlocutor_WithMissingHandler_ThrowsOnStartup()
 {
     // Arrange: don't register handlers
     var services = new ServiceCollection();
-    
+
     // Act & Assert: building the container should throw because no handler for GetUser
     var ex = Assert.Throws<InvalidOperationException>(() =>
     {
@@ -202,10 +202,10 @@ public void AddInterlocutor_WithMissingHandler_ThrowsOnStartup()
         {
             builder.ScanAssembly(typeof(Program).Assembly);  // But no GetUserHandler registered
         });
-        
+
         var provider = services.BuildServiceProvider();  // Should throw here
     });
-    
+
     Assert.Contains("GetUser", ex.Message);
 }
 ```
@@ -225,7 +225,7 @@ public async Task CreateOrder_WithTransaction_RollsBackOnFailure()
         builder.ScanAssembly(typeof(Tests).Assembly);
         builder.AddBehavior(typeof(TransactionBehavior<,>));
     });
-    
+
     services.AddDbContext<AppDbContext>(
         options => options.UseInMemoryDatabase(Guid.NewGuid().ToString()),
         ServiceLifetime.Scoped
@@ -237,26 +237,26 @@ public async Task CreateOrder_WithTransaction_RollsBackOnFailure()
     using var scope1 = provider.CreateScope();
     var mediator1 = scope1.ServiceProvider.GetRequiredService<IMediator>();
     var result1 = await mediator1.Send(new CreateOrder(1, Items()), CancellationToken.None);
-    
+
     var db1 = scope1.ServiceProvider.GetRequiredService<AppDbContext>();
     Assert.Single(db1.Orders);  // Order was created and committed
 
     // Act 2: invalid order (duplicate unique constraint)
     using var scope2 = provider.CreateScope();
     var mediator2 = scope2.ServiceProvider.GetRequiredService<IMediator>();
-    
+
     // This command will fail with a Conflict outcome
     var handler = new CreateOrderHandler(scope2.ServiceProvider.GetRequiredService<Lazy<AppDbContext>>());
     var result2 = await handler.Handle(
         new CreateOrder(1, Items()),  // Same ID, violates uniqueness
         CancellationToken.None
     );
-    
+
     // Assert
     Assert.False(result2.IsSuccess);
     var conflict = Assert.IsType<Conflict>(result2.Value);
-    
-    // Transaction rolled back — no duplicate order in database
+
+    // Transaction rolled back - no duplicate order in database
     var db2 = scope2.ServiceProvider.GetRequiredService<AppDbContext>();
     Assert.Single(db2.Orders);  // Still just one order
 }
@@ -319,9 +319,9 @@ public async Task OrderShippedEmailHandler_SendsEmail()
 
 ## Best Practices
 
-1. **Unit test handlers directly** — mock their dependencies, bypass the mediator. Fast and focused.
-2. **Integration test pipeline composition** — use a real container, verify order and short-circuiting.
-3. **Test behaviors independently** — mock the `next()` delegate, verify the behavior's before/after logic.
-4. **Use in-memory databases** — for realistic transaction testing without a real database.
-5. **Verify startup validation** — catch missing handlers at build time in your CI, not at runtime.
-6. **Keep tests focused** — one scenario per test, one assertion per behavior test.
+1. **Unit test handlers directly** - mock their dependencies, bypass the mediator. Fast and focused.
+2. **Integration test pipeline composition** - use a real container, verify order and short-circuiting.
+3. **Test behaviors independently** - mock the `next()` delegate, verify the behavior's before/after logic.
+4. **Use in-memory databases** - for realistic transaction testing without a real database.
+5. **Verify startup validation** - catch missing handlers at build time in your CI, not at runtime.
+6. **Keep tests focused** - one scenario per test, one assertion per behavior test.

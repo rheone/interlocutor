@@ -8,9 +8,9 @@ Bring the recorded decisions in line with what this effort actually decided, so 
 
 Three existing ADRs contradict the plan or the shipped code:
 
-- **ADR-0002 (behavior onion model)** — amend, do not supersede. Its rejection of pre/post processors *as a replacement for* behaviors still stands. What it did not anticipate is the pipeline stage abstraction that ships today: an ergonomic layer that composes *into* the behavior chain through a single host behavior, never forming a second pipeline. Record that distinction and the short-circuit contract.
-- **ADR-0003 (mediator as service locator)** — supersede. Its own listed alternative, source-generated registration, is now being taken — for build-time diagnostics and AOT compatibility, not for the startup-cost reason it anticipated. The superseding ADR must distinguish "the container is the handler registry" (still true) from "handlers may locate services themselves" (never true, and not what the old title meant).
-- **ADR-0007 (publish strategies)** — amend. It claims handlers execute in registration order; ordering is now explicitly unspecified, with relative run-after/run-before attributes as the escape hatch.
+- **ADR-0002 (behavior onion model)** - amend, do not supersede. Its rejection of pre/post processors *as a replacement for* behaviors still stands. What it did not anticipate is the pipeline stage abstraction that ships today: an ergonomic layer that composes *into* the behavior chain through a single host behavior, never forming a second pipeline. Record that distinction and the short-circuit contract.
+- **ADR-0003 (mediator as service locator)** - supersede. Its own listed alternative, source-generated registration, is now being taken - for build-time diagnostics and AOT compatibility, not for the startup-cost reason it anticipated. The superseding ADR must distinguish "the container is the handler registry" (still true) from "handlers may locate services themselves" (never true, and not what the old title meant).
+- **ADR-0007 (publish strategies)** - amend. It claims handlers execute in registration order; ordering is now explicitly unspecified, with relative run-after/run-before attributes as the escape hatch.
 
 ADR-0002 and ADR-0005 are also written against result type names that no longer exist; correct the terminology while amending.
 
@@ -19,10 +19,10 @@ Then write the new ADRs this effort produces: compile-time discovery with per-as
 Finally, correct the glossary. It currently documents types that do not exist and ties result types to a transport the core should know nothing about:
 
 - Remove every HTTP status reference.
-- Remove the rule-violation row — it was only ever an example.
+- Remove the rule-violation row - it was only ever an example.
 - Mark the paged result and paged query rows as illustrations of union payloads a consumer defines themselves, or drop them.
 - Correct the failure type row: it is a simple record struct carrying a reason and an error code, not a closed union of five cases. The individual failure cases are independent types composed into an outcome union.
-- Rename "void command" to "unit command" — those handlers always return an outcome.
+- Rename "void command" to "unit command" - those handlers always return an outcome.
 
 ## Acceptance criteria
 
@@ -38,4 +38,4 @@ Finally, correct the glossary. It currently documents types that do not exist an
 
 ## Blocked by
 
-None — can start immediately
+None - can start immediately

@@ -6,9 +6,9 @@ ready-for-agent
 
 Make the lightweight before/after hook genuinely useful: let a before-hook decline a request and return an outcome without the handler running, and guarantee the after-hooks unwind correctly when it does.
 
-Today a stage's before-hook returns nothing, so short-circuiting requires writing a full pipeline behavior. And the after-hook contract is documented as running even on failure, but does not — if a before-hook throws, stages that already ran never receive their after-hook, so whatever they set up is never torn down.
+Today a stage's before-hook returns nothing, so short-circuiting requires writing a full pipeline behavior. And the after-hook contract is documented as running even on failure, but does not - if a before-hook throws, stages that already ran never receive their after-hook, so whatever they set up is never torn down.
 
-**The signalling shape is forced, not stylistic.** Outcomes are value-type unions, so a nullable response cannot distinguish "did not short-circuit" from "short-circuited with the default value" — the success case is a field-less struct, making those the same bit pattern. Use a dedicated two-state result. This shape came out of the design discussion and encodes the decision more precisely than prose:
+**The signalling shape is forced, not stylistic.** Outcomes are value-type unions, so a nullable response cannot distinguish "did not short-circuit" from "short-circuited with the default value" - the success case is a field-less struct, making those the same bit pattern. Use a dedicated two-state result. This shape came out of the design discussion and encodes the decision more precisely than prose:
 
 ```csharp
 public readonly struct StageResult<TResponse>
@@ -16,7 +16,7 @@ public readonly struct StageResult<TResponse>
     public bool ShortCircuited { get; }
     public TResponse Response { get; }   // meaningful only when ShortCircuited
 }
-// default(StageResult<T>) is Continue — consistent with the
+// default(StageResult<T>) is Continue - consistent with the
 // library's existing "safe at default value" convention.
 ```
 
@@ -32,7 +32,7 @@ Semantics to implement:
 
 Both hooks are no-ops by default via an abstract base class. Stages also register as delegates, with an overload receiving the service provider so lambda-form stages can use services.
 
-The stage host is an ordinary entry in the behavior list — the developer positions it, at any depth, and may register it more than once. It is explicitly **not** pinned relative to the transaction behavior; a transaction is only one of many things a developer might wrap.
+The stage host is an ordinary entry in the behavior list - the developer positions it, at any depth, and may register it more than once. It is explicitly **not** pinned relative to the transaction behavior; a transaction is only one of many things a developer might wrap.
 
 The request type parameter becomes contravariant. The response type parameter cannot, because it appears in the before-hook's return.
 
@@ -51,4 +51,4 @@ The request type parameter becomes contravariant. The response type parameter ca
 
 ## Blocked by
 
-03 — Builder API, alongside the legacy overloads
+03 - Builder API, alongside the legacy overloads

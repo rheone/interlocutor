@@ -4,7 +4,7 @@ ready-for-agent
 
 ## What to build
 
-`documentation/runtime-typed-dispatch.md` walks through the Outbox and Inbox pattern examples in prose and code but has no diagrams, even though both patterns are notoriously easy to lose track of in prose alone — they involve multiple participants (handler, database/outbox or inbox table, background dispatcher, mediator, downstream handler) coordinating across two separate points in time (the write, and the later asynchronous processing).
+`documentation/runtime-typed-dispatch.md` walks through the Outbox and Inbox pattern examples in prose and code but has no diagrams, even though both patterns are notoriously easy to lose track of in prose alone - they involve multiple participants (handler, database/outbox or inbox table, background dispatcher, mediator, downstream handler) coordinating across two separate points in time (the write, and the later asynchronous processing).
 
 Add two sequence diagrams:
 
@@ -25,4 +25,4 @@ Place each near its corresponding existing example section ("Outbox Pattern Exam
 
 ## Blocked by
 
-None — can start immediately
+None - can start immediately

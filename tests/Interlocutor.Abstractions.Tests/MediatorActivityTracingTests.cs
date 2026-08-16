@@ -37,7 +37,7 @@ public class MediatorActivityTracingTests
         Assert.Equal(typeof(TracingSuccessQueryHandler).FullName, activity.GetTagItem(MediatorActivitySource.HandlerTypeTag));
 
         // The classifier (the same one LoggingBehavior uses) labels an int-payload success by its runtime type,
-        // not literally "Success" — that label is reserved for the Success marker type itself (covered below).
+        // not literally "Success" - that label is reserved for the Success marker type itself (covered below).
         Assert.Equal("Int32", activity.GetTagItem(MediatorActivitySource.OutcomeTag));
         Assert.Equal(ActivityStatusCode.Unset, activity.Status);
     }
@@ -144,7 +144,7 @@ public class MediatorActivityTracingTests
     [Fact]
     public async Task Send_Query_WithNoListener_ActivityCurrentStaysNull()
     {
-        // No ActivityListener attached to MediatorActivitySource.Name — the mechanism's built-in cheap path.
+        // No ActivityListener attached to MediatorActivitySource.Name - the mechanism's built-in cheap path.
         var mediator = CreateMediator();
 
         await mediator.Send(new TracingSuccessQuery(21), CancellationToken.None);
@@ -160,7 +160,7 @@ public class MediatorActivityTracingTests
         await mediator.Send(new TracingSuccessQuery(21), CancellationToken.None);
 
         // Nothing in this test attached an ActivityListener to MediatorActivitySource.Name, so the source itself
-        // reports no listeners — the condition StartActivity checks internally to short-circuit before any
+        // reports no listeners - the condition StartActivity checks internally to short-circuit before any
         // allocation or string formatting happens.
         using var probe = new ActivitySource(MediatorActivitySource.Name);
         Assert.False(probe.HasListeners());

@@ -1,6 +1,6 @@
 ---
 name: nunit-csharp
-description: API reference for NUnit v5 — constraint catalog, fixture lifecycle, data source patterns, and analyzer recommendations.
+description: API reference for NUnit v5 - constraint catalog, fixture lifecycle, data source patterns, and analyzer recommendations.
 license: Apache-2.0
 metadata:
   author: Robert Engelhardt <rheone@gmail.com>
@@ -11,7 +11,7 @@ metadata:
 
 ## Constraint Catalog
 
-Use `Assert.That(actual, constraint)` — never classic `Assert.AreEqual`.
+Use `Assert.That(actual, constraint)` - never classic `Assert.AreEqual`.
 
 ### Equality & Identity
 
@@ -102,7 +102,7 @@ Assert.That(value, Is.LessThan(0) | Is.EqualTo(42));
 | Complex objects or computed data | `[TestCaseSource]` |
 | Dynamic or external data sources | `[TestCaseSource]` |
 | Named test cases | `TestCaseData(...).SetName("...")` |
-| Single data row | Never — convert to `[Test]` |
+| Single data row | Never - convert to `[Test]` |
 
 ## Fixture Lifecycle
 

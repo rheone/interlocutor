@@ -1,6 +1,6 @@
 ---
 name: nsubstitute-csharp-anti-patterns
-description: NSubstitute framework-specific pitfalls — substituting the class under test, Arg.Any overuse, ForPartsOf misuse, non-virtual members, and more. Referenced by csharp-test-sweep.
+description: NSubstitute framework-specific pitfalls - substituting the class under test, Arg.Any overuse, ForPartsOf misuse, non-virtual members, and more. Referenced by csharp-test-sweep.
 license: Apache-2.0
 metadata:
   author: Robert Engelhardt <rheone@gmail.com>
@@ -15,7 +15,7 @@ Examples at [`EXAMPLES.md`](EXAMPLES.md).
 
 ## 1. Substituting the Class Under Test
 
-**Never substitute the type whose behavior you are testing.** NSubstitute intercepts all virtual members and returns the type default — the real implementation never executes. The test passes vacuously because the method under test was never actually measured.
+**Never substitute the type whose behavior you are testing.** NSubstitute intercepts all virtual members and returns the type default - the real implementation never executes. The test passes vacuously because the method under test was never actually measured.
 
 ```csharp
 // BROKEN: Substitute.For<AbstractIPAddressRange> intercepts virtual ToString
@@ -33,7 +33,7 @@ Assert.Equal("192.168.1.1 - 192.168.1.42", result);
 
 ## 2. Arg.Any Overuse
 
-`Arg.Any<T>()` matches everything, so it cannot verify specific argument values. Overuse makes tests meaningless — they pass no matter what input is passed.
+`Arg.Any<T>()` matches everything, so it cannot verify specific argument values. Overuse makes tests meaningless - they pass no matter what input is passed.
 
 ```csharp
 // BROKEN: doesn't verify the actual input
@@ -106,7 +106,7 @@ public void Test2()
 {
     // repo still has call history from Test1!
     sut.Run();
-    repo.Received(1).Search("a"); // fails — received 2 total calls, expected 1
+    repo.Received(1).Search("a"); // fails - received 2 total calls, expected 1
 }
 
 // FIX: repo.ClearReceivedCalls() in setup, or recreate per test
@@ -114,7 +114,7 @@ public void Test2()
 
 ## 7. Returns on a Non-Virtual Member
 
-NSubstitute only intercepts `virtual`, `abstract`, or interface members. Calling `.Returns` on a non-virtual member has no effect — the real implementation still runs.
+NSubstitute only intercepts `virtual`, `abstract`, or interface members. Calling `.Returns` on a non-virtual member has no effect - the real implementation still runs.
 
 ```csharp
 public class FileReader

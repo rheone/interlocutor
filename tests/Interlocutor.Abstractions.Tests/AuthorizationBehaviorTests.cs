@@ -8,18 +8,18 @@ using Interlocutor.CommonKernel.ResultTypes;
 using NSubstitute;
 
 // AuthorizationBehavior<TRequest, TResponse> now constrains TRequest : IRequiresPolicy, so a request that
-// doesn't require a policy cannot close this generic at all — there is no runtime "skip" branch left to unit
+// doesn't require a policy cannot close this generic at all - there is no runtime "skip" branch left to unit
 // test here. The "a request without the marker never resolves the behavior" guarantee is proven at the
 // container level instead: see BehaviorSubsetConstraintTests in the DependencyInjection.Microsoft/Autofac
 // test projects.
 //
-// TResponse is the whole outcome type directly — not decomposed into a success type parameter — so this
+// TResponse is the whole outcome type directly - not decomposed into a success type parameter - so this
 // behavior's type parameters map 1:1 onto IPipelineBehavior<TRequest,TResponse>, exactly like every other
 // built-in behavior. This is load-bearing, not a style choice: Microsoft.Extensions.DependencyInjection's
 // open-generic resolver does positional substitution (implementationType.MakeGenericType(serviceType's
 // generic arguments)) and cannot resolve an implementation whose type parameter is nested inside the
 // service's generic argument (the previous <TRequest,TSuccess> shape, implementing
-// IPipelineBehavior<TRequest, OperationOutcome<TSuccess,Forbidden>>) — it throws ArgumentException for
+// IPipelineBehavior<TRequest, OperationOutcome<TSuccess,Forbidden>>) - it throws ArgumentException for
 // every request, unconditionally, the moment that shape is registered. Autofac's RegisterGeneric performs
 // real structural unification and would have tolerated the old shape, which is why this went uncaught until
 // a real Microsoft DI resolution was attempted (see BehaviorSubsetConstraintTests).
@@ -155,7 +155,7 @@ public class AuthorizationBehaviorTests
     public async Task Handle_WithResponseTypeThatHasNoForbiddenCase_ThrowsNamedExceptionOnDenial()
     {
         // TResponse is no longer decomposed at compile time into a success-type parameter with Forbidden
-        // pinned as the failure case — it's an arbitrary IOperationOutcome the caller chose, constructed
+        // pinned as the failure case - it's an arbitrary IOperationOutcome the caller chose, constructed
         // reflectively from a Forbidden case constructor when authorization is denied. A response shape with
         // no such case (like OperationOutcome<string, NotFound> here) can't express "denied" at all, so
         // denial must fail loudly and specifically rather than silently succeeding or crashing obscurely.

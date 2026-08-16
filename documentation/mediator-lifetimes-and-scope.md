@@ -12,17 +12,17 @@ Narrow interface for send-only (request/response dispatch). Exposes `Send<TRespo
 public interface ISender
 {
     Task<TResponse> Send<TResponse>(
-        IQuery<TResponse> query, 
+        IQuery<TResponse> query,
         CancellationToken cancellationToken = default)
         where TResponse : IOperationOutcome;
 
     Task<TResponse> Send<TResponse>(
-        ICommand<TResponse> command, 
+        ICommand<TResponse> command,
         CancellationToken cancellationToken = default)
         where TResponse : IOperationOutcome;
 
     Task<OperationOutcome> Send(
-        ICommand command, 
+        ICommand command,
         CancellationToken cancellationToken = default);
 }
 ```
@@ -37,7 +37,7 @@ Narrow interface for publish-only (fire-and-forget notifications). Exposes `Publ
 public interface IPublisher
 {
     Task Publish(
-        INotification notification, 
+        INotification notification,
         CancellationToken cancellationToken = default);
 }
 ```
@@ -57,10 +57,10 @@ public interface IMediator : ISender, IPublisher { }
 The mediator is **registered as scoped** and **cannot be changed to singleton or transient**.
 
 ```csharp
-// The mediator is scoped — registered by AddInterlocutor:
+// The mediator is scoped - registered by AddInterlocutor:
 services.AddScoped<IMediator>(/* ... */);
 
-// NOT configurable — no way to register it singleton or transient
+// NOT configurable - no way to register it singleton or transient
 ```
 
 ### Why Scoped?
@@ -70,22 +70,22 @@ One dispatch = one scoped DI container scope = one consistent view of scoped dep
 When you dispatch a command:
 
 1. The mediator resolves handlers from the current scope.
-2. Those handlers are scoped (by default) — same instance for the entire dispatch.
-3. A `DbContext` or `ISession` is scoped — all database calls in the dispatch happen on the same session, in the same transaction.
-4. Pipeline behaviors are scoped — same instances run the whole dispatch.
+2. Those handlers are scoped (by default) - same instance for the entire dispatch.
+3. A `DbContext` or `ISession` is scoped - all database calls in the dispatch happen on the same session, in the same transaction.
+4. Pipeline behaviors are scoped - same instances run the whole dispatch.
 
 If the mediator were singleton:
 
 - All dispatches share the same mediator instance.
 - But handlers are still scoped per-request.
-- A scoped `DbContext` registered in one dispatch's scope becomes inaccessible in another dispatch's scope — the mediator can't resolve it.
+- A scoped `DbContext` registered in one dispatch's scope becomes inaccessible in another dispatch's scope - the mediator can't resolve it.
 - Worse: multiple concurrent dispatches in the same application would see a mixed view of their scoped dependencies.
 
 Scoped lifetime forces the invariant: **one dispatch, one scope, one consistent DI context**.
 
 ```csharp
 // In a web context (ASP.NET Core)
-// — each HTTP request gets its own DI scope automatically
+// - each HTTP request gets its own DI scope automatically
 var scope = serviceProvider.CreateScope();
 var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
@@ -100,11 +100,11 @@ var result = await mediator.Send(new CreateOrder(...));
 You cannot use the mediator in the **root DI scope** (the application's main container). The library detects and throws an exception:
 
 ```csharp
-// ❌ This throws — root scope violation
+// ❌ This throws - root scope violation
 var mediator = serviceProvider.GetRequiredService<IMediator>();
 await mediator.Send(new Query(...));
 
-// ✅ Correct — create a child scope first
+// ✅ Correct - create a child scope first
 using var scope = serviceProvider.CreateScope();
 var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 await mediator.Send(new Query(...));
@@ -112,7 +112,7 @@ await mediator.Send(new Query(...));
 
 ### Why?
 
-Scoped services (like `DbContext`) are only valid within a scope. Using a scoped mediator in the root scope means scoped services have no scope to resolve from — it's an architectural violation.
+Scoped services (like `DbContext`) are only valid within a scope. Using a scoped mediator in the root scope means scoped services have no scope to resolve from - it's an architectural violation.
 
 The root-scope guard catches this mistake at dispatch time, not silently at the first request.
 
@@ -152,7 +152,7 @@ public class UsersController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetUser(int id, CancellationToken ct)
     {
-        // No scope creation needed — the framework already created a scope for this request
+        // No scope creation needed - the framework already created a scope for this request
         var result = await this.mediator.Send(new GetUser(id), ct);
         return result.ToActionResult();
     }
@@ -161,7 +161,7 @@ public class UsersController : ControllerBase
 
 ### Background Service / Hosted Service
 
-You must create a scope explicitly — there's no framework request to hang it off of:
+You must create a scope explicitly - there's no framework request to hang it off of:
 
 ```mermaid
 sequenceDiagram
@@ -214,7 +214,7 @@ public class OutboxProcessor : BackgroundService
 
 ### Minimal API
 
-No explicit scope creation needed — ASP.NET Core handles it. Same framework-owned scope lifecycle as the [Web Context diagram above](#web-context-aspnet-core), just with a route delegate instead of a controller action:
+No explicit scope creation needed - ASP.NET Core handles it. Same framework-owned scope lifecycle as the [Web Context diagram above](#web-context-aspnet-core), just with a route delegate instead of a controller action:
 
 ```csharp
 app.MapPost("/api/orders", async (CreateOrder command, ISender mediator, CancellationToken ct) =>
@@ -265,7 +265,7 @@ public class RequestContextMiddleware
         // Extract user ID from claims
         var userId = context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-        // Set the request context — accessible throughout this request's dispatch
+        // Set the request context - accessible throughout this request's dispatch
         accessor.Context = new RequestContext
         {
             CorrelationId = correlationId,
@@ -325,7 +325,7 @@ protected override async Task ExecuteAsync(CancellationToken ct)
 ```
 
 > [!IMPORTANT]
-> `RequestContext` is immutable — you swap it via the property, not modify it:
+> `RequestContext` is immutable - you swap it via the property, not modify it:
 > ```csharp
 > // Create a new context; don't mutate the existing one
 > accessor.Context = new RequestContext
@@ -374,7 +374,7 @@ services.AddSingleton<IQueryHandler<GetSetting, OperationOutcome<string, Failure
 > If you make a handler singleton, ensure it's **stateless and thread-safe**. Singletons are shared across all dispatches, so mutable state is a concurrency bug waiting to happen.
 
 ```csharp
-// ✅ Safe to make singleton — stateless
+// ✅ Safe to make singleton - stateless
 public class GetUserHandler : IQueryHandler<GetUser, OperationOutcome<UserDto, NotFound>>
 {
     private readonly IUserRepository repository;
@@ -389,10 +389,10 @@ public class GetUserHandler : IQueryHandler<GetUser, OperationOutcome<UserDto, N
     }
 }
 
-// ❌ NOT safe to make singleton — has mutable state
+// ❌ NOT safe to make singleton - has mutable state
 public class CreateUserHandler : ICommandHandler<CreateUser, OperationOutcome<int, ValidationError>>
 {
-    private int lastCreatedId = 0;  // Shared mutable state — concurrency bug
+    private int lastCreatedId = 0;  // Shared mutable state - concurrency bug
 
     public async Task<OperationOutcome<int, ValidationError>> Handle(
         CreateUser command, CancellationToken ct)

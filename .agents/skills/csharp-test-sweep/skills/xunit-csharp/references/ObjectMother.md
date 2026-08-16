@@ -10,9 +10,9 @@ Object mother should be stateless, and provide either immutable data, or a new i
 | --------- | ------------------ |
 | Same value constructed identically in 3+ tests | Yes |
 | Value has a meaningful name in the domain ("a typical IPv4 subnet", "a host route") | Yes |
-| Type is trivially constructable with one line | No — construct inline |
-| Tests need slight variations of the same base object | No — use theory data or constructor arguments |
-| The value is the subject of the assertion | No — pass explicitly so intent is clear |
+| Type is trivially constructable with one line | No - construct inline |
+| Tests need slight variations of the same base object | No - use theory data or constructor arguments |
+| The value is the subject of the assertion | No - pass explicitly so intent is clear |
 
 ## Placement
 
@@ -31,7 +31,7 @@ src/
       ComparerMother.cs      ← only used in this folder, colocated
 ```
 
-## Example — `SubnetMother`
+## Example - `SubnetMother`
 
 ```csharp
 // TestData/SubnetMother.cs
@@ -54,7 +54,7 @@ internal static class SubnetMother
 }
 ```
 
-## Example — Using the Mother in Tests
+## Example - Using the Mother in Tests
 
 ```csharp
 public sealed class SubnetTests
@@ -95,7 +95,7 @@ public sealed class SubnetTests
 }
 ```
 
-## Example — Mother Used Across Classes
+## Example - Mother Used Across Classes
 
 ```csharp
 // SubnetTests.cs
@@ -126,7 +126,7 @@ public sealed class DefaultIPAddressRangeComparerTests
 ## What NOT to Do
 
 ```csharp
-// BAD — Object Mother substituting for theory data
+// BAD - Object Mother substituting for theory data
 // If the test cares about specific addresses, pass them explicitly
 [Fact]
 public void Parse_SpecificInput_ReturnsExpected_Test()
@@ -136,7 +136,7 @@ public void Parse_SpecificInput_ReturnsExpected_Test()
     Assert.Equal("192.168.0.0", subnet.NetworkAddress.ToString());
 }
 
-// GOOD — value is explicit when it's what's being asserted
+// GOOD - value is explicit when it's what's being asserted
 [Fact]
 public void Parse_SpecificInput_ReturnsExpected_Test()
 {
@@ -147,7 +147,7 @@ public void Parse_SpecificInput_ReturnsExpected_Test()
 
 ## Rules Summary
 
-- Methods return **new instances** on each call — never cache or reuse.
+- Methods return **new instances** on each call - never cache or reuse.
 - Name methods after domain concepts, not technical descriptions (`TypicalIPv4`, not `GetSubnetWithPrefix24`).
 - Add an XML `<summary>` to each method documenting the exact value and why it is canonical.
-- Keep the class `internal static` — it has no business in the production assembly.
+- Keep the class `internal static` - it has no business in the production assembly.

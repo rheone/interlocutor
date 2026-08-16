@@ -20,7 +20,7 @@ When reporting information to me, be extremely concise and sacrifice grammar for
 - Concise implementations; match existing project style and libraries
 - Value added comments only for non-obvious logic
 - Rich XML documentation on all members public and private
-- Documentation: minimal but useful — README covers what/install/use
+- Documentation: minimal but useful - README covers what/install/use
 
 ### Attribution
 
@@ -39,7 +39,7 @@ When reporting information to me, be extremely concise and sacrifice grammar for
 
 ### Issue tracker
 
-Local markdown — issues live as files under `.scratch/<feature>/`. No PR triage. See `docs/agents/issue-tracker.md`.
+Local markdown - issues live as files under `.scratch/<feature>/`. No PR triage. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
@@ -60,7 +60,7 @@ When a code change touches a `src/Interlocutor.*` package, consider whether the 
 | `Interlocutor.DependencyInjection.Microsoft` / `.Autofac` | [builder-and-registration.md](documentation/builder-and-registration.md) |
 | `Interlocutor.AspNetCore` | [aspnetcore-integration.md](documentation/aspnetcore-integration.md) |
 | `Interlocutor.EntityFrameworkCore` / `.NHibernate` | [transactions-and-store-integration.md](documentation/transactions-and-store-integration.md) |
-| `Interlocutor.FluentValidation` | [pipeline-and-behaviors.md](documentation/pipeline-and-behaviors.md) — ValidationBehavior section |
-| `Interlocutor.Generator` | [builder-and-registration.md](documentation/builder-and-registration.md) — compilation discovery section |
+| `Interlocutor.FluentValidation` | [pipeline-and-behaviors.md](documentation/pipeline-and-behaviors.md) - ValidationBehavior section |
+| `Interlocutor.Generator` | [builder-and-registration.md](documentation/builder-and-registration.md) - compilation discovery section |
 
-**No CI enforcement** — this is advisory. If a code change might affect public API surface or developer-facing behavior, the person/agent making the change should review the mapped doc file(s) and update them if needed. Include doc updates in the same commit as code changes when they're part of a deliberate feature or API shift.
+**No CI enforcement** - this is advisory. If a code change might affect public API surface or developer-facing behavior, the person/agent making the change should review the mapped doc file(s) and update them if needed. Include doc updates in the same commit as code changes when they're part of a deliberate feature or API shift.

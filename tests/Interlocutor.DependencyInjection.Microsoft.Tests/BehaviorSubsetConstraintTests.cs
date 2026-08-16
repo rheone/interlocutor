@@ -14,7 +14,7 @@ using Interlocutor.DependencyInjection.Abstractions;
 /// Proves ticket 06's behavior-subset-constraints outcome against Microsoft DI: a marker-constrained behavior
 /// (<see cref="AuditingBehavior{TRequest,TResponse}"/>, <see cref="AuthorizationBehavior{TRequest,TResponse}"/>)
 /// is filtered purely by Microsoft DI's own open-generic constraint handling when the container resolves
-/// <see cref="IPipelineBehavior{TRequest,TResponse}"/> — no custom filtering code in this library decides
+/// <see cref="IPipelineBehavior{TRequest,TResponse}"/> - no custom filtering code in this library decides
 /// whether a behavior applies to a request.
 /// </summary>
 public class BehaviorSubsetConstraintTests
@@ -67,7 +67,7 @@ public class BehaviorSubsetConstraintTests
     {
         // AuthorizationBehavior<TRequest,TResponse> maps its type parameters 1:1 onto
         // IPipelineBehavior<TRequest,TResponse> (see its own XML remarks for why that shape is load-bearing
-        // for Microsoft DI specifically) — a real resolution through a built ServiceProvider, not merely a
+        // for Microsoft DI specifically) - a real resolution through a built ServiceProvider, not merely a
         // registration-list check or a MakeGenericType probe.
         var services = NewServices();
         services.AddInterlocutor(builder =>
@@ -99,7 +99,7 @@ public class BehaviorSubsetConstraintTests
         Assert.Equal(["LoggingBehavior`2", "AuditingBehavior`2"], auditableChain);
 
         // PlainCommand does not satisfy AuditingBehavior's constraint: only the unconstrained LoggingBehavior
-        // resolves, at the same relative position — filtering one entry out of the list doesn't reorder the rest.
+        // resolves, at the same relative position - filtering one entry out of the list doesn't reorder the rest.
         var plainChain = provider
             .GetServices<IPipelineBehavior<PlainCommand, OperationOutcome<string, Forbidden>>>()
             .Select(b => b.GetType().Name)
@@ -166,7 +166,7 @@ public class BehaviorSubsetConstraintTests
     {
         // ValidationBehavior<TRequest,TResponse> has the identical structural shape as
         // AuthorizationBehavior<TRequest,TResponse> and was fixed for the same reason at the same time (see
-        // both types' XML remarks) — proven here the same way, via a real ServiceProvider resolution rather
+        // both types' XML remarks) - proven here the same way, via a real ServiceProvider resolution rather
         // than a registration-list check.
         var services = NewServices();
         services.AddInterlocutor(builder =>
@@ -186,7 +186,7 @@ public class BehaviorSubsetConstraintTests
     }
 
     /// <summary>
-    /// A fresh <see cref="ServiceCollection"/> with a null <see cref="ILogger{TCategoryName}"/> registered — the
+    /// A fresh <see cref="ServiceCollection"/> with a null <see cref="ILogger{TCategoryName}"/> registered - the
     /// default audit sink <c>InterlocutorBuilder.AddAuditingBehavior</c> try-adds depends on it, and these
     /// tests care about which behaviors resolve, not about logging output.
     /// </summary>

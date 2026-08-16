@@ -6,13 +6,13 @@ ready-for-agent
 
 `documentation/handler-selection-and-dispatch.md` currently has zero diagrams despite covering two genuinely decision/process-shaped topics in pure prose. Add two:
 
-**(a) Handler-resolution decision tree — flowchart.** Diagram the rules from "Handler Selection Rules": a closed handler match beats an open generic match; namespace/assembly are never used as a tiebreaker; if more than one handler remains eligible after those rules, it's a build error unless an explicit override is declared (the "Ambiguity Is a Build Error (With an Override Escape Hatch)" section). Model it as a genuine decision tree — the reader should be able to trace "I have handlers X and Y for this request, which one wins?" down the diagram to an answer.
+**(a) Handler-resolution decision tree - flowchart.** Diagram the rules from "Handler Selection Rules": a closed handler match beats an open generic match; namespace/assembly are never used as a tiebreaker; if more than one handler remains eligible after those rules, it's a build error unless an explicit override is declared (the "Ambiguity Is a Build Error (With an Override Escape Hatch)" section). Model it as a genuine decision tree - the reader should be able to trace "I have handlers X and Y for this request, which one wins?" down the diagram to an answer.
 
-**(b) Authorization model contrast — two small sequence diagrams.** The doc already has a dedicated "Contrast: Resource vs. Non-Resource Authorization" prose section specifically because these two models get conflated. Diagram them side by side:
+**(b) Authorization model contrast - two small sequence diagrams.** The doc already has a dedicated "Contrast: Resource vs. Non-Resource Authorization" prose section specifically because these two models get conflated. Diagram them side by side:
   - AuthorizationBehavior: pipeline-level, policy-based, runs pre-handler, short-circuits with `Forbidden` before the handler (or any inner behavior) ever runs.
-  - ResourceCommandHandler's template method: load the entity first, authorize against the *loaded resource* (not just the request shape), then execute — short-circuits only after the load step, later in the sequence than AuthorizationBehavior's check.
+  - ResourceCommandHandler's template method: load the entity first, authorize against the *loaded resource* (not just the request shape), then execute - short-circuits only after the load step, later in the sequence than AuthorizationBehavior's check.
 
-  Each diagram should make clear *where* in its respective sequence the short-circuit can happen — that's the crux of the contrast.
+  Each diagram should make clear *where* in its respective sequence the short-circuit can happen - that's the crux of the contrast.
 
 Place (a) near "Handler Selection Rules" and (b) near "Contrast: Resource vs. Non-Resource Authorization".
 
@@ -28,4 +28,4 @@ Place (a) near "Handler Selection Rules" and (b) near "Contrast: Resource vs. No
 
 ## Blocked by
 
-None — can start immediately
+None - can start immediately

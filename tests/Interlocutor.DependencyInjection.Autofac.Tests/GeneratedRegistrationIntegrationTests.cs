@@ -9,7 +9,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
 /// Proves a handler discovered by <c>Interlocutor.Generator</c> (rather than runtime assembly scanning)
-/// resolves and dispatches correctly through Autofac, including a constructor dependency — the acceptance
+/// resolves and dispatches correctly through Autofac, including a constructor dependency - the acceptance
 /// criteria "Both containers work against generated registrations" and "A handler with constructor
 /// dependencies resolves and receives them".
 /// </summary>
@@ -22,14 +22,14 @@ public sealed class GeneratedRegistrationIntegrationTests
         containerBuilder.RegisterType<Greeter>().As<IGreeter>().SingleInstance();
 
         // No ScanAssembly call: the only source of handler registrations here is the generator's own
-        // compile-time discovered module — proving the generated path works on its own, not merely
+        // compile-time discovered module - proving the generated path works on its own, not merely
         // alongside runtime scanning.
         containerBuilder.AddInterlocutor(builder =>
             builder.AddGeneratedRegistrations(Interlocutor.Generated.InterlocutorGeneratedRegistrations.Registrations)
         );
 
         var container = containerBuilder.Build();
-        // Dispatch must happen from a real lifetime scope, never the root container directly — see ADR-0011.
+        // Dispatch must happen from a real lifetime scope, never the root container directly - see ADR-0011.
         await using var scope = container.BeginLifetimeScope();
         var mediator = scope.Resolve<IMediator>();
 

@@ -76,7 +76,7 @@ public class DefaultOutcomeStatusMapperTests
     public void Map_WithNotFoundGeneric_ViaDerivedMapper_IsOverridable()
     {
         // NotFound<TId> can't be pattern-matched directly (it's an open generic case type), so it needs its own
-        // override point — MapNotFoundGeneric — distinct from MapUnrecognized. This proves a consumer can change
+        // override point - MapNotFoundGeneric - distinct from MapUnrecognized. This proves a consumer can change
         // just that case without reimplementing the reflection that detects it.
         var entityAwareMapper = new EntityNameIncludingOutcomeStatusMapper();
 

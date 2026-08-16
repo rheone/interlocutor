@@ -11,7 +11,7 @@ using Microsoft.CodeAnalysis;
 /// <remarks>
 /// Every match here is decided by resolving <see cref="WellKnownTypeNames"/> to real symbols via
 /// <see cref="Compilation.GetTypeByMetadataName(string)"/> and comparing <see cref="INamedTypeSymbol.OriginalDefinition"/>
-/// with <see cref="SymbolEqualityComparer.Default"/> — never by matching interface names as text. This is what
+/// with <see cref="SymbolEqualityComparer.Default"/> - never by matching interface names as text. This is what
 /// makes discovery correct for aliased usings, nested types, and types outside the generator's own syntax tree.
 /// </remarks>
 internal static class HandlerTypeAnalyzer
@@ -149,7 +149,7 @@ internal static class HandlerTypeAnalyzer
     private static string Format(ITypeSymbol symbol) => symbol.ToDisplayString(QualifiedFormat);
 
     /// <summary>
-    /// Whether <paramref name="symbol"/> — and every type it is nested inside — is visible from generated
+    /// Whether <paramref name="symbol"/> - and every type it is nested inside - is visible from generated
     /// code living in an unrelated type in the same assembly (the registration module and dispatch wrappers
     /// this generator emits are never nested inside the handler's own containing type). A <see langword="private"/>,
     /// <see langword="protected"/>, or <see langword="private protected"/> handler or request type at any

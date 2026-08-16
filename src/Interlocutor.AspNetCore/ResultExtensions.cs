@@ -62,7 +62,7 @@ public static class ResultExtensions
     /// <param name="result">The result to convert.</param>
     /// <param name="mapper">
     /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
-    /// <see cref="DefaultOutcomeStatusMapper"/> is used — the same instance the controller-based
+    /// <see cref="DefaultOutcomeStatusMapper"/> is used - the same instance the controller-based
     /// <see cref="ToActionResult{TSuccess, TFailure}(OperationOutcome{TSuccess, TFailure}, IOutcomeStatusMapper?)"/>
     /// defaults to, so the two paths cannot drift.
     /// </param>

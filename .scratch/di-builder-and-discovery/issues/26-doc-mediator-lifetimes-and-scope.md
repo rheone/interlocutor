@@ -1,4 +1,4 @@
-> **Amendment** — this ticket instructed citing ADR-0006 and ADR-0011 directly in the shipped `documentation/mediator-lifetimes-and-scope.md` prose. That instruction is superseded: `documentation/` files must state design rationale as fact and must never cite or link to `docs/adr/`, `docs/PRD.md`, or other `docs/` paths — see the house convention added in ticket 36. The shipped file has been corrected by ticket 36. No action needed here; historical context only.
+> **Amendment** - this ticket instructed citing ADR-0006 and ADR-0011 directly in the shipped `documentation/mediator-lifetimes-and-scope.md` prose. That instruction is superseded: `documentation/` files must state design rationale as fact and must never cite or link to `docs/adr/`, `docs/PRD.md`, or other `docs/` paths - see the house convention added in ticket 36. The shipped file has been corrected by ticket 36. No action needed here; historical context only.
 
 ## Labels
 
@@ -11,10 +11,10 @@ A `documentation/mediator-lifetimes-and-scope.md` covering `IMediator`/`ISender`
 Cover:
 
 - **`IMediator`, `ISender`, `IPublisher`**: what each interface segregates and why a consumer might depend on the narrower one.
-- **Why the mediator is scoped, and deliberately non-configurable** — no escape hatch to make it singleton or transient — and what that buys (one DI scope, one dispatch, one consistent view of scoped dependencies like a `DbContext`/`ISession`).
+- **Why the mediator is scoped, and deliberately non-configurable** - no escape hatch to make it singleton or transient - and what that buys (one DI scope, one dispatch, one consistent view of scoped dependencies like a `DbContext`/`ISession`).
 - **The root-scope exception**: what triggers it and what it's protecting against.
-- **Dispatching correctly from a background service** — since background services don't get a request-scoped `IServiceProvider` for free, show the pattern for creating a scope explicitly before dispatching.
-- **Ambient context** (`IRequestContextAccessor`): `CorrelationId`, `UserId`, `TenantId`, `Items`, and that `RequestContext` is an immutable, swappable reference — how it flows through a dispatch and how a background service or queue consumer sets it up.
+- **Dispatching correctly from a background service** - since background services don't get a request-scoped `IServiceProvider` for free, show the pattern for creating a scope explicitly before dispatching.
+- **Ambient context** (`IRequestContextAccessor`): `CorrelationId`, `UserId`, `TenantId`, `Items`, and that `RequestContext` is an immutable, swappable reference - how it flows through a dispatch and how a background service or queue consumer sets it up.
 
 ## Acceptance criteria
 
@@ -27,4 +27,4 @@ Cover:
 
 ## Blocked by
 
-21 — Establish documentation/ directory; retire CONTEXT.md
+21 - Establish documentation/ directory; retire CONTEXT.md

@@ -1,6 +1,6 @@
 # Messages, Result Types & Variance
 
-Request types (queries and commands) and their response type constraints. Result types are C# 15 discriminated unions, and every response is constrained to implement `IOperationOutcome` — a bare DTO response type fails to compile.
+Request types (queries and commands) and their response type constraints. Result types are C# 15 discriminated unions, and every response is constrained to implement `IOperationOutcome` - a bare DTO response type fails to compile.
 
 ## Request Types (Messages)
 
@@ -27,7 +27,7 @@ var result = await mediator.Send(new GetUser(42));  // OperationOutcome<UserDto,
 Marks a write request that returns a value. Returns `TResponse : IOperationOutcome`.
 
 ```csharp
-public record CreateUser(string Name, string Email) 
+public record CreateUser(string Name, string Email)
     : ICommand<OperationOutcome<int, ValidationError>>;  // Returns new user ID
 
 public record TransferFunds(int FromAccountId, int ToAccountId, decimal Amount)
@@ -43,7 +43,7 @@ var result = await mediator.Send(new CreateUser("Alice", "alice@example.com"));
 
 ### ICommand (Unit Command)
 
-Marks a write request with no domain data payload — only success or failure. Returns `OperationOutcome` (the non-generic form, `Success | Failure`).
+Marks a write request with no domain data payload - only success or failure. Returns `OperationOutcome` (the non-generic form, `Success | Failure`).
 
 ```csharp
 public record DeleteAllUsers() : ICommand;
@@ -77,7 +77,7 @@ public interface ICommand<TResponse>
 This constraint is **compiler-enforced**. A bare DTO response type fails to compile:
 
 ```csharp
-// ❌ Compile error — UserDto doesn't implement IOperationOutcome
+// ❌ Compile error - UserDto doesn't implement IOperationOutcome
 public record GetUser(int UserId) : IQuery<UserDto>;
 
 // ✅ Correct
@@ -92,7 +92,7 @@ Interlocutor.CommonKernel ships the standard failure case types and outcome unio
 
 ### Success
 
-Marker record for unit command success — carries no payload:
+Marker record for unit command success - carries no payload:
 
 ```csharp
 public record Success;
@@ -154,7 +154,7 @@ var result = await mediator.Send(new CreateUser("", "bad-email"));
 
 ### Conflict
 
-State conflict — concurrency, uniqueness violation, invalid transition:
+State conflict - concurrency, uniqueness violation, invalid transition:
 
 ```csharp
 public record Conflict(string Code, string? Message = null);
@@ -214,7 +214,7 @@ var message = result.Value switch
 The compiler enforces that all cases are handled:
 
 ```csharp
-// ❌ Compile error — Forbidden case not handled
+// ❌ Compile error - Forbidden case not handled
 var message = result.Value switch
 {
     Success => "User deleted",
@@ -236,22 +236,22 @@ var message = result.Value switch
 Don't route every failure through a single `Failure`. Pick the arity that an operation can actually produce:
 
 ```csharp
-// ✅ Specific — only NotFound and Failure are possible
+// ✅ Specific - only NotFound and Failure are possible
 public record GetUser(int UserId) : IQuery<OperationOutcome<UserDto, NotFound>>;
 
-// ❌ Over-broad — ValidationError should never occur (read-only query)
+// ❌ Over-broad - ValidationError should never occur (read-only query)
 public record GetUser(int UserId) : IQuery<OperationOutcome<UserDto, NotFound, ValidationError>>;
 
-// ✅ Specific — a command can fail with input validation or a concurrency conflict
+// ✅ Specific - a command can fail with input validation or a concurrency conflict
 public record UpdateProduct(int Id, string Name, int Version)
     : ICommand<OperationOutcome<Success, ValidationError, Conflict>>;
 
-// ❌ Ambiguous — operation produces either a value or one of many failures, lose specificity
+// ❌ Ambiguous - operation produces either a value or one of many failures, lose specificity
 public record UpdateProduct(int Id, string Name, int Version)
     : ICommand<OperationOutcome<Success, Failure>>;
 ```
 
-When a handler's response arity is specific (only the cases it can produce), the compiler forces callers to handle exactly those cases — no more, no less.
+When a handler's response arity is specific (only the cases it can produce), the compiler forces callers to handle exactly those cases - no more, no less.
 
 ## Marker Interfaces
 
@@ -259,8 +259,8 @@ Requests can opt into pipeline behaviors via marker interfaces:
 
 | Interface | Used by | Carries |
 |-----------|---------|---------|
-| `ITransactionalRequest` | `TransactionBehavior` | — |
-| `IExternalStoreRequest` | Declares "no SQL session" | — |
+| `ITransactionalRequest` | `TransactionBehavior` | - |
+| `IExternalStoreRequest` | Declares "no SQL session" | - |
 | `IAuditableRequest` | `AuditingBehavior` | `ActionName` |
 | `IRequiresPolicy` | `AuthorizationBehavior` | `PolicyName` |
 
@@ -292,7 +292,7 @@ public interface IPipelineBehavior<TRequest, TResponse>
 {
     Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct);
     // TResponse is in return position (covariance)
-    // AND inside Func<Task<TResponse>> — an argument position (contravariance)
+    // AND inside Func<Task<TResponse>> - an argument position (contravariance)
 }
 
 public interface IQueryHandler<TQuery, TResponse> where TResponse : IOperationOutcome
@@ -304,12 +304,12 @@ public interface IQueryHandler<TQuery, TResponse> where TResponse : IOperationOu
 }
 ```
 
-This dual usage prevents variance from being sound. You cannot declare `TResponse` as covariant or contravariant — it must be invariant.
+This dual usage prevents variance from being sound. You cannot declare `TResponse` as covariant or contravariant - it must be invariant.
 
 **What this means in practice:**
 
 ```csharp
-// ❌ Cannot do this — there's no implicit conversion from more-specific to less-specific response
+// ❌ Cannot do this - there's no implicit conversion from more-specific to less-specific response
 public class GetUserHandler : IQueryHandler<GetUser, OperationOutcome<Admin, NotFound>>
 {
 }
@@ -327,12 +327,12 @@ Polymorphism is request-side only. Queries and commands can inherit from a base 
 
 ## Streaming: Deliberately Not Supported
 
-There is no `IAsyncEnumerable<T>` / streaming response type — streaming and "commit/rollback as one unit" don't compose, so it's deliberately kept out permanently, not a gap waiting to be filled.
+There is no `IAsyncEnumerable<T>` / streaming response type - streaming and "commit/rollback as one unit" don't compose, so it's deliberately kept out permanently, not a gap waiting to be filled.
 
 The constraint (all responses must be `IOperationOutcome`) ensures:
 
 - A caller can inspect success/failure without knowing the concrete outcome shape (enables runtime-typed dispatch).
-- Transactions can guarantee "all or nothing" — a single commit/rollback boundary.
+- Transactions can guarantee "all or nothing" - a single commit/rollback boundary.
 - Pipeline behaviors can compose generically over `TResponse`.
 
 Streaming violates both: a partial stream can fail halfway, the caller might not consume the stream, and the transaction boundary becomes unclear.
@@ -340,7 +340,7 @@ Streaming violates both: a partial stream can fail halfway, the caller might not
 Use materialized collections instead:
 
 ```csharp
-// ✅ Correct — materialized list, one outcome
+// ✅ Correct - materialized list, one outcome
 public record GetUsers() : IQuery<OperationOutcome<IReadOnlyList<UserDto>, Failure>>;
 
 public class GetUsersHandler : IQueryHandler<GetUsers, OperationOutcome<IReadOnlyList<UserDto>, Failure>>
@@ -353,14 +353,14 @@ public class GetUsersHandler : IQueryHandler<GetUsers, OperationOutcome<IReadOnl
     }
 }
 
-// ❌ Not supported — streaming response
+// ❌ Not supported - streaming response
 public record GetUsers() : IQuery<IAsyncEnumerable<UserDto>>;
 ```
 
 For paged results, use `PagedResult<T>` (a consumer-defined or library-provided type carrying `Items`, `Page`, `PageSize`, `TotalCount`):
 
 ```csharp
-public record GetUsers(int Page, int PageSize) 
+public record GetUsers(int Page, int PageSize)
     : IQuery<OperationOutcome<PagedResult<UserDto>, Failure>>;
 
 var result = await mediator.Send(new GetUsers(1, 10));

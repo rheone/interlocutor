@@ -6,7 +6,7 @@ using Interlocutor.CommonKernel;
 /// Marks a type as a CQRS query and defines the type of data produced when the query is handled.
 /// </summary>
 /// <typeparam name="TResponse">
-/// The <see cref="IOperationOutcome"/>-shaped union the query produces. Queries never return a bare DTO —
+/// The <see cref="IOperationOutcome"/>-shaped union the query produces. Queries never return a bare DTO -
 /// the response must be (or be wrapped in) an outcome union so callers exhaustively handle every case.
 /// </typeparam>
 /// <remarks>

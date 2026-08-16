@@ -84,7 +84,7 @@ public class InterlocutorBuilderIntegrationTests
         );
 
         var provider = services.BuildServiceProvider();
-        // Dispatch must happen from a real scope, never the root provider directly — see ADR-0011.
+        // Dispatch must happen from a real scope, never the root provider directly - see ADR-0011.
         using var scope = provider.CreateScope();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
@@ -108,7 +108,7 @@ public class InterlocutorBuilderIntegrationTests
         );
 
         var provider = services.BuildServiceProvider();
-        // Dispatch must happen from a real scope, never the root provider directly — see ADR-0011.
+        // Dispatch must happen from a real scope, never the root provider directly - see ADR-0011.
         using var scope = provider.CreateScope();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
@@ -141,7 +141,7 @@ public class InterlocutorBuilderIntegrationTests
     {
         // The decisive end-to-end proof: AuthorizationBehavior and ValidationBehavior both had a structural
         // shape that made Microsoft DI throw ArgumentException on every single dispatch the instant either
-        // was registered (see both types' XML remarks) — a registration-list check, like the test above,
+        // was registered (see both types' XML remarks) - a registration-list check, like the test above,
         // could never have caught that; only an actual dispatch through a built container can. This request
         // satisfies every marker in the recommended chain (IAuditableRequest, IRequiresPolicy) and carries no
         // FluentValidation validators, so it exercises every fixed behavior on the real send path and must
@@ -154,7 +154,7 @@ public class InterlocutorBuilderIntegrationTests
         );
 
         var provider = services.BuildServiceProvider();
-        // Dispatch must happen from a real scope, never the root provider directly — see ADR-0011.
+        // Dispatch must happen from a real scope, never the root provider directly - see ADR-0011.
         using var scope = provider.CreateScope();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
@@ -176,7 +176,7 @@ public class InterlocutorBuilderIntegrationTests
         );
 
         var provider = services.BuildServiceProvider();
-        // Dispatch must happen from a real scope, never the root provider directly — see ADR-0011.
+        // Dispatch must happen from a real scope, never the root provider directly - see ADR-0011.
         using var scope = provider.CreateScope();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
@@ -207,7 +207,7 @@ public class InterlocutorBuilderIntegrationTests
         );
 
         var provider = services.BuildServiceProvider();
-        // Dispatch must happen from a real scope, never the root provider directly — see ADR-0011.
+        // Dispatch must happen from a real scope, never the root provider directly - see ADR-0011.
         using var scope = provider.CreateScope();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
@@ -239,11 +239,11 @@ public class InterlocutorBuilderIntegrationTests
         );
 
         var provider = services.BuildServiceProvider();
-        // Dispatch must happen from a real scope, never the root provider directly — see ADR-0011.
+        // Dispatch must happen from a real scope, never the root provider directly - see ADR-0011.
         using var scope = provider.CreateScope();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-        // Act & Assert: dispatch completes normally — the after-hook's exception does not propagate out of
+        // Act & Assert: dispatch completes normally - the after-hook's exception does not propagate out of
         // Send, matching PipelineStageBehavior's default (non-rethrowing) after-hook exception handling.
         var result = await mediator.Send(new SampleQuery(), TestContext.Current.CancellationToken);
 
