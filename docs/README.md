@@ -34,6 +34,9 @@ Immutable once accepted - a changed decision gets a new ADR that supersedes the 
 - [ADR-0008](adr/0008-compile-time-handler-discovery.md) - Compile-Time Handler Discovery via Source Generator: a Roslyn generator emits registration and dispatch code, replacing runtime reflection - enables build-time diagnostics and AOT/trim compatibility.
 - [ADR-0010](adr/0010-dispatch-scope-fan-out-open-generics-ambiguity.md) - Dispatch Scope - Notification Fan-Out, Open Generics, and Build-Error Ambiguity: closed handlers beat open generic ones, ambiguous matches fail the build, and notification fan-out is contravariant (deliberately different from query/command dispatch).
 
+**DI registration & configuration** - how the builder decides what gets registered
+- [ADR-0014](adr/0014-di-builder-matching-registration-and-build-validation.md) - DI Builder Extension - Explicit Handler Lifetime, Type-Matching Registration, and Opt-In Build Validation: scan methods gain an explicit lifetime parameter, a new type-matching mechanism registers handlers/behaviors by predicate rather than only by contract interface, and an opt-in `ValidateOnBuild()` checks the registration list itself and reports one aggregated failure instead of a first-failure-only exception.
+
 **Mediator interface & lifecycle** - the shape and lifetime of the mediator itself
 - [ADR-0006](adr/0006-interface-segregation-mediator.md) - Interface Segregation for Mediator: `ISender`/`IPublisher`/`IMediator` are split so a consumer depends only on the capability it actually uses.
 - [ADR-0011](adr/0011-mediator-scoped-lifetime-and-root-scope-guard.md) - Mediator Scoped Lifetime, Non-Configurable, with a Root-Scope Guard: the mediator is always scoped, never singleton or transient, and a guard catches accidental root-scope use.

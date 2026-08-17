@@ -125,6 +125,14 @@ None of these run by default - the pipeline is empty until a builder call adds a
 | **Transaction scope** | One logical request = one DI scope = one scoped `DbContext` / `ISession`. `TransactionBehavior` and `ResourceCommandHandler` receive the same scoped session via constructor injection. The mediator never opens its own scope - it borrows the ambient one. |
 | **Lazy resolution** | `TransactionBehavior` uses `Lazy<TContext>` to defer session construction until it's confirmed the request implements `ITransactionalRequest`. Non-transactional requests never resolve the session. |
 
+## DI Registration
+
+| Term | Definition |
+|------|------------|
+| **InterlocutorBuilder** | The single container-neutral, fluent configuration entry point passed to `AddInterlocutor`. Accumulates registrations (handlers, behaviors, stages, infrastructure defaults) as `InterlocutorRegistration`/`InterlocutorFactoryRegistration` records; each container-specific package translates the accumulated list into its own registrations. Every mutating method returns the builder itself for chaining. |
+| **RegistrationLifetime** | Container-neutral lifetime enum (`Singleton`, `Scoped`, `Transient`) used by every builder registration method in place of a container-specific lifetime type. |
+| **RegistrationKind** | Classifies an accumulated registration as `Handler`, `Behavior`, `Default`, or `Stage`. Only `Default`-kind registrations use try-add precedence; the rest are always-add - duplicates are legal. |
+
 ## Pagination
 
 These are not shipped types. Interlocutor's core has no opinion about pagination - these rows illustrate one way a consumer composes their own paged response as a union payload.
