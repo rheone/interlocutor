@@ -1,3 +1,5 @@
+> **Status: superseded** - `Directory.Packages.props` now pins every `PackageVersion` to an exact version (no `4.*`/`1.*`/`11.0.0-*` floats remain), and `CentralPackageFloatingVersionsEnabled` is unset. Builds are already deterministic; no lock file was needed. No action needed here; historical context only.
+
 ## Labels
 
 ready-for-agent

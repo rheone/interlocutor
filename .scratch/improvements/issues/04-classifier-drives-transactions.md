@@ -1,3 +1,5 @@
+> **Status: superseded** - resolved by the remediation effort (see `.scratch/remediation/discovery.md`). `OutcomeClassifierBuilder.DefaultClassifier` is wired into both `TransactionBehavior` implementations (EF Core and NHibernate), `LoggingBehavior`, and `AuditingBehavior` via the injected `IOutcomeClassifier`/`IResponseOutcomeDescriber` abstractions. No action needed here; historical context only.
+
 ## Labels
 
 ready-for-agent

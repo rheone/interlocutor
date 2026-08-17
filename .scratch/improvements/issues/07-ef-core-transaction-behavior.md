@@ -1,3 +1,5 @@
+> **Status: superseded** - `TransactionBehavior<TRequest,TResponse,TContext>` in `src/Interlocutor.EntityFrameworkCore` already implements both asks: an explicit `try`/`catch` around `SaveChangesAsync` that rolls back and rethrows, and an `IExternalStoreRequest` opt-out check ahead of the transaction. What remains is test coverage for these paths, tracked as ticket 02 in `.scratch/audit-followups/issues/`. No action needed here; historical context only.
+
 ## Labels
 
 ready-for-agent
