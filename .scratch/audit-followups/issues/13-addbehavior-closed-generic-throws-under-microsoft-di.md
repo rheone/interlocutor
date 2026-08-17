@@ -4,16 +4,31 @@ ready-for-agent
 
 ## What to build
 
-`GeneratedRegistration_WithMultipleBehaviors_ExecutesBehaviorsInCorrectOrder` in `tests/Interlocutor.DependencyInjection.Microsoft.Tests/GeneratedRegistrationIntegrationTests.cs` currently **fails**, discovered incidentally while re-verifying the remediation effort's defects (unrelated to that effort - a real, separate regression).
+`GeneratedRegistration_WithMultipleBehaviors_ExecutesBehaviorsInCorrectOrder` in `tests/Interlocutor.DependencyInjection.Microsoft.Tests/GeneratedRegistrationIntegrationTests.cs` currently **fails** - reproduced directly (not just reported secondhand):
 
-`builder.AddBehavior(typeof(ClosedGenericBehaviorType))` throws `ArgumentException: Open generic service type ... requires registering an open generic implementation type` when the type passed to `AddBehavior` is a *closed* (non-open-generic) custom behavior implementation, registered under Microsoft.Extensions.DependencyInjection. `AddBehavior` always registers against the open `IPipelineBehavior<,>` service type regardless of whether the implementation type passed in is itself open or closed generic (per `InterlocutorBuilder.AddBehavior`'s own documented shape) - Microsoft DI's open-generic resolver rejects that combination when the implementation side isn't also an open generic definition. The Autofac translator branches on `ImplementationType.IsGenericTypeDefinition` (`RegisterGeneric` vs `RegisterType`) specifically to avoid this; the Microsoft DI translator does not have an equivalent branch.
+```
+System.ArgumentException : Open generic service type 'Interlocutor.Abstractions.Pipeline.IPipelineBehavior`2[TRequest,TResponse]' requires registering an open generic implementation type. (Parameter 'descriptors')
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteFactory.Populate()
+   at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteFactory..ctor(ICollection`1 descriptors)
+   at Microsoft.Extensions.DependencyInjection.ServiceProvider..ctor(ICollection`1 serviceDescriptors, ServiceProviderOptions options)
+   ...
+   at Interlocutor.DependencyInjection.Microsoft.Tests.GeneratedRegistrationIntegrationTests.GeneratedRegistration_WithMultipleBehaviors_ExecutesBehaviorsInCorrectOrder() in .../GeneratedRegistrationIntegrationTests.cs:line 63
+```
+
+Discovered incidentally while re-verifying the remediation effort's defects; unrelated to that effort, a real, separate regression. Root cause pinned down by reading both sides directly:
+
+- `InterlocutorBuilder.AddBehavior` (`src/Interlocutor.DependencyInjection.Abstractions/InterlocutorBuilder.cs:215-229`) always pairs whatever implementation type it's given with the **open** `typeof(IPipelineBehavior<,>)` as `ServiceType`, regardless of whether the implementation type itself is open or closed generic.
+- `ServiceCollectionExtensions.Apply` (`src/Interlocutor.DependencyInjection.Microsoft/ServiceCollectionExtensions.cs:95-112`) translates every registration with a single, unconditional `services.AddScoped/AddSingleton/AddTransient(registration.ServiceType, registration.ImplementationType)` call - no branch on whether `ImplementationType` is itself an open generic definition.
+- The failing test's behaviors (`OrderTrackingBehavior1/2/3`, same file, ~line 76) each implement a **closed** `IPipelineBehavior<GeneratedQuery, OperationOutcome<string, Failure>>` directly - a legitimate, documented shape (`AddBehavior`'s own remarks describe accepting "an open generic type definition... or a closed type"). Pairing the open `IPipelineBehavior<,>` service type with a closed implementation type is not a legal Microsoft DI registration shape; the container throws at `BuildServiceProvider()` time (lazily - not at the `AddScoped` call site, which is why it doesn't surface until the test actually builds its provider).
+- `ContainerBuilderExtensions.cs` (Autofac, `src/Interlocutor.DependencyInjection.Autofac/`) already handles exactly this distinction correctly: `if (registration.ImplementationType.IsGenericTypeDefinition) builder.RegisterGeneric(...) else builder.RegisterType(...)`. The Microsoft DI translator has no equivalent branch - this is the fix pattern already proven in this same repo, just missing on one side.
 
 ## Acceptance criteria
 
-- [ ] `builder.AddBehavior(typeof(SomeClosedGenericBehavior))` (a behavior implementation that is itself closed/non-generic, or generic but not an open generic type definition) registers and resolves successfully under `Interlocutor.DependencyInjection.Microsoft`, mirroring how the Autofac translator already handles this distinction
+- [ ] `ServiceCollectionExtensions.Apply` (or wherever the fix naturally lands) registers a closed-generic behavior implementation against the specific closed `IPipelineBehavior<TRequest, TResponse>` it actually implements, not against the open `IPipelineBehavior<,>` - mirroring the open/closed branch the Autofac translator already has
+- [ ] An open-generic behavior implementation (e.g. `LoggingBehavior<,>`) continues to register and resolve exactly as it does today - no regression to the already-working path
 - [ ] `GeneratedRegistration_WithMultipleBehaviors_ExecutesBehaviorsInCorrectOrder` passes
-- [ ] A regression test covers both shapes explicitly: an open-generic behavior implementation (existing, already-passing case) and a closed behavior implementation, both registered via `AddBehavior` under Microsoft DI
-- [ ] `dotnet test tests/Interlocutor.DependencyInjection.Microsoft.Tests/Interlocutor.DependencyInjection.Microsoft.Tests.csproj` passes in full
+- [ ] A regression test covers both shapes explicitly under Microsoft DI: an open-generic behavior implementation and a closed one, both registered via `AddBehavior`, both resolving and executing
+- [ ] `dotnet test tests/Interlocutor.DependencyInjection.Microsoft.Tests/Interlocutor.DependencyInjection.Microsoft.Tests.csproj` passes in full (2/2, currently 1/2)
 
 ## Blocked by
 
