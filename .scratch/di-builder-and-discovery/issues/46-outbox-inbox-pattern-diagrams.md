@@ -1,3 +1,5 @@
+> **Status: done** - merged in `183cdbc`.
+
 ## Labels
 
 ready-for-agent

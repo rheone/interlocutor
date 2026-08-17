@@ -1,3 +1,5 @@
+> **Status: done** - merged in `8f32b56`.
+
 > **Amendment** - the house conventions established here omitted a rule against citing internal design records (ADRs, `docs/PRD.md`) in `documentation/` prose, which is why such citations crept into every subsequent ticket's output (23–34) and into `index.md`'s own links and `glossary.md`'s two inline citations. `documentation/` files must state design rationale as fact and must never cite or link to `docs/adr/`, `docs/PRD.md`, or other `docs/` paths - that rule has been added by ticket 36, and the shipped files corrected accordingly. No action needed here; historical context only.
 
 ## Labels

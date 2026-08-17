@@ -1,3 +1,5 @@
+> **Status: done** - merged in `36ab2bb`.
+
 > **Amendment** - this ticket instructed citing ADR-0006 and ADR-0011 directly in the shipped `documentation/mediator-lifetimes-and-scope.md` prose. That instruction is superseded: `documentation/` files must state design rationale as fact and must never cite or link to `docs/adr/`, `docs/PRD.md`, or other `docs/` paths - see the house convention added in ticket 36. The shipped file has been corrected by ticket 36. No action needed here; historical context only.
 
 ## Labels

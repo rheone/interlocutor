@@ -1,3 +1,5 @@
+> **Status: done** - merged via PR #2 (`7b3eff3`), later re-merged in PR #3 (`0e1465f`).
+
 ## Labels
 
 ready-for-agent
