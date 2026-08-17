@@ -18,6 +18,20 @@ namespace Interlocutor.CommonKernel.ResultTypes;
 public readonly record struct Failure
 {
     /// <summary>
+    /// Initializes a new instance of the <see cref="Failure"/> struct.
+    /// Initializes a new instance of the <see cref="Failure"/> class with the specified reason.
+    /// </summary>
+    /// <param name="reason">The human-readable reason for the failure.</param>
+    public Failure(string reason) => this.Reason = reason;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Failure"/> struct.
+    /// Initializes a new instance of the <see cref="Failure"/> class with the specified error code.
+    /// </summary>
+    /// <param name="errorCode">The error code associated with the failure.</param>
+    public Failure(long errorCode) => this.ErrorCode = errorCode;
+
+    /// <summary>
     /// Gets the human-readable reason for the failure, or <see langword="null"/> if none was provided.
     /// </summary>
     /// <value>The failure reason, or <see langword="null"/> if none was set.</value>
@@ -43,39 +57,9 @@ public readonly record struct Failure
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Failure"/> struct.
-    /// Initializes a new instance of the <see cref="Failure"/> class with the specified reason.
-    /// </summary>
-    /// <param name="reason">The human-readable reason for the failure.</param>
-    public Failure(string reason) => this.Reason = reason;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Failure"/> struct.
-    /// Initializes a new instance of the <see cref="Failure"/> class with the specified error code.
-    /// </summary>
-    /// <param name="errorCode">The error code associated with the failure.</param>
-    public Failure(long errorCode) => this.ErrorCode = errorCode;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Failure"/> struct.
     /// Initializes a new instance of the <see cref="Failure"/> class with the specified reason and error code.
     /// </summary>
     /// <param name="reason">The human-readable reason for the failure.</param>
     /// <param name="errorCode">The error code associated with the failure.</param>
     public Failure(string reason, long errorCode) => (this.Reason, this.ErrorCode) = (reason, errorCode);
-
-    ///// <summary>
-    ///// Returns a string representation of the failure, including the reason and/or error code when present.
-    ///// </summary>
-    ///// <returns>
-    ///// <c>"Failure(ErrorCode): Reason"</c> if both are set; <c>"Failure: Reason"</c> if only <see cref="Reason"/>
-    ///// is set; <c>"Failure(ErrorCode)"</c> if only <see cref="ErrorCode"/> is set; otherwise <c>"Failure"</c>.
-    ///// </returns>
-    //public override string ToString() =>
-    //    this switch
-    //    {
-    //        { Reason: not null, ErrorCode: not null } => $"Failure({ErrorCode}): {Reason}",
-    //        { Reason: not null } => $"Failure: {Reason}",
-    //        { ErrorCode: not null } => $"Failure({ErrorCode})",
-    //        _ => "Failure",
-    //    };
 }

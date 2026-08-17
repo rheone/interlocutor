@@ -25,7 +25,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 public sealed class OutcomeClassifierBuilder
 {
     private static IOutcomeClassifier? _defaultInstance;
-    private static readonly object _lockObject = new object();
+    private static readonly object _lockObject = new();
 
     private readonly Dictionary<Type, OutcomeClassification> _classifications = new();
     private readonly List<(Func<object?, bool> Predicate, string Label, bool IsFailure)> _predicates = new();
