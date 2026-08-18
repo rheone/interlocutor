@@ -58,7 +58,7 @@ public class DefaultOutcomeStatusMapperTests
     [Fact]
     public void Map_WithUnrecognizedCustomFailureType_Returns500()
     {
-        var mapping = this.mapper.Map(new RateLimited(TimeSpan.FromSeconds(1)));
+        var mapping = this.mapper.Map(new CustomRateLimited(TimeSpan.FromSeconds(1)));
 
         Assert.Equal(StatusCodes.Status500InternalServerError, mapping.StatusCode);
     }
@@ -68,7 +68,7 @@ public class DefaultOutcomeStatusMapperTests
     {
         var rateLimitAwareMapper = new RateLimitAwareOutcomeStatusMapper();
 
-        var mapping = rateLimitAwareMapper.Map(new RateLimited(TimeSpan.FromSeconds(1)));
+        var mapping = rateLimitAwareMapper.Map(new CustomRateLimited(TimeSpan.FromSeconds(1)));
 
         Assert.Equal(StatusCodes.Status429TooManyRequests, mapping.StatusCode);
     }
@@ -155,7 +155,7 @@ public class DefaultOutcomeStatusMapperTests
     private sealed class RateLimitAwareOutcomeStatusMapper : DefaultOutcomeStatusMapper
     {
         protected override OutcomeHttpMapping MapUnrecognized<TFailure>(TFailure failure) =>
-            failure is RateLimited rateLimited
+            failure is CustomRateLimited rateLimited
                 ? new OutcomeHttpMapping(StatusCodes.Status429TooManyRequests, rateLimited)
                 : base.MapUnrecognized(failure);
     }

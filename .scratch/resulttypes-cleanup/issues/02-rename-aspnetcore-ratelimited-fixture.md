@@ -8,6 +8,6 @@ ready-for-agent
 
 **Blocked by:** None - can start immediately
 
-- [ ] `tests/Interlocutor.AspNetCore.Tests/RateLimited.cs` is renamed (file and type) to `CustomRateLimited.cs` / `CustomRateLimited`
-- [ ] All references updated: `TeapotOutcomeStatusMapper.cs`, `DefaultOutcomeStatusMapperTests.cs`, `MinimalApiResultExtensionsTests.cs`, `ResultExtensionsTests.cs`, and any other file referencing the old name
-- [ ] `dotnet build` and `dotnet test tests/Interlocutor.AspNetCore.Tests/Interlocutor.AspNetCore.Tests.csproj` pass with no behavior change
+- [x] `tests/Interlocutor.AspNetCore.Tests/RateLimited.cs` is renamed (file and type) to `CustomRateLimited.cs` / `CustomRateLimited`
+- [x] All references updated: `TeapotOutcomeStatusMapper.cs`, `DefaultOutcomeStatusMapperTests.cs`, `MinimalApiResultExtensionsTests.cs`, `ResultExtensionsTests.cs`, and any other file referencing the old name
+- [x] `dotnet build` and `dotnet test tests/Interlocutor.AspNetCore.Tests/Interlocutor.AspNetCore.Tests.csproj` pass with no behavior change
