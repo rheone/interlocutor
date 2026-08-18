@@ -147,4 +147,104 @@ public class ResultExtensionsTests
         Assert.Equal(StatusCodes.Status429TooManyRequests, objectResult.StatusCode);
         Assert.Equal(TimeSpan.FromSeconds(30), Assert.IsType<RateLimited>(objectResult.Value).RetryAfter);
     }
+
+    // The tests below exercise 3-arity (one success + two failure cases) and 5-arity (one success + four
+    // failure cases) unions, mirroring a real handler that can produce several distinct failure cases -
+    // CLAUDE.md's result-type convention pushes handlers toward exactly this shape rather than a single
+    // generic Failure, so the 2-arity-only coverage above doesn't prove the multi-case switch works.
+
+    [Fact]
+    public void ToActionResult_ThreeArity_WithSuccess_ReturnsOkObjectResult()
+    {
+        OperationOutcome<string, NotFound, ValidationErrors> result = new("hello");
+        var actionResult = result.ToActionResult();
+
+        var okResult = Assert.IsType<OkObjectResult>(actionResult);
+        Assert.Equal("hello", okResult.Value);
+    }
+
+    [Fact]
+    public void ToActionResult_ThreeArity_WithNotFound_Returns404()
+    {
+        OperationOutcome<string, NotFound, ValidationErrors> result = new(new NotFound("Widget not found"));
+        var actionResult = result.ToActionResult();
+
+        var objectResult = Assert.IsType<ObjectResult>(actionResult);
+        Assert.Equal(StatusCodes.Status404NotFound, objectResult.StatusCode);
+        Assert.Equal("Widget not found", objectResult.Value);
+    }
+
+    [Fact]
+    public void ToActionResult_ThreeArity_WithValidationErrors_Returns422()
+    {
+        var errors = new ValidationErrors(["Name is required"]);
+        OperationOutcome<string, NotFound, ValidationErrors> result = new(errors);
+        var actionResult = result.ToActionResult();
+
+        var objectResult = Assert.IsType<ObjectResult>(actionResult);
+        Assert.Equal(StatusCodes.Status422UnprocessableEntity, objectResult.StatusCode);
+        var problemDetails = Assert.IsType<ProblemDetails>(objectResult.Value);
+        Assert.Contains("Name is required", problemDetails.Detail);
+    }
+
+    [Fact]
+    public void ToActionResult_FiveArity_WithSuccess_ReturnsOkObjectResult()
+    {
+        OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationErrors> result = new("hello");
+        var actionResult = result.ToActionResult();
+
+        var okResult = Assert.IsType<OkObjectResult>(actionResult);
+        Assert.Equal("hello", okResult.Value);
+    }
+
+    [Fact]
+    public void ToActionResult_FiveArity_WithNotFound_Returns404()
+    {
+        OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationErrors> result = new(
+            new NotFound("Widget not found")
+        );
+        var actionResult = result.ToActionResult();
+
+        var objectResult = Assert.IsType<ObjectResult>(actionResult);
+        Assert.Equal(StatusCodes.Status404NotFound, objectResult.StatusCode);
+        Assert.Equal("Widget not found", objectResult.Value);
+    }
+
+    [Fact]
+    public void ToActionResult_FiveArity_WithForbidden_Returns403()
+    {
+        OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationErrors> result = new(new Forbidden("No access"));
+        var actionResult = result.ToActionResult();
+
+        var statusCodeResult = Assert.IsType<StatusCodeResult>(actionResult);
+        Assert.Equal(StatusCodes.Status403Forbidden, statusCodeResult.StatusCode);
+    }
+
+    [Fact]
+    public void ToActionResult_FiveArity_WithConflict_Returns409()
+    {
+        OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationErrors> result = new(
+            new Conflict("Data changed", "stale.data")
+        );
+        var actionResult = result.ToActionResult();
+
+        var objectResult = Assert.IsType<ObjectResult>(actionResult);
+        Assert.Equal(StatusCodes.Status409Conflict, objectResult.StatusCode);
+        var problemDetails = Assert.IsType<ProblemDetails>(objectResult.Value);
+        Assert.Equal("stale.data", problemDetails.Title);
+    }
+
+    [Fact]
+    public void ToActionResult_FiveArity_WithValidationErrors_Returns422()
+    {
+        var errors = new ValidationErrors(["Name is required", "Email is invalid"]);
+        OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationErrors> result = new(errors);
+        var actionResult = result.ToActionResult();
+
+        var objectResult = Assert.IsType<ObjectResult>(actionResult);
+        Assert.Equal(StatusCodes.Status422UnprocessableEntity, objectResult.StatusCode);
+        var problemDetails = Assert.IsType<ProblemDetails>(objectResult.Value);
+        Assert.Contains("Name is required", problemDetails.Detail);
+        Assert.Contains("Email is invalid", problemDetails.Detail);
+    }
 }

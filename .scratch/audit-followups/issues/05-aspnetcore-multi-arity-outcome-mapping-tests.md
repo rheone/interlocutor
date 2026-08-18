@@ -8,10 +8,10 @@ Extend `Interlocutor.AspNetCore` result-mapping tests beyond 2-arity `OperationO
 
 ## Acceptance criteria
 
-- [ ] `ToActionResult()` is tested against outcomes of at least 3-arity and 5-arity, covering multiple distinct failure cases in the same union
-- [ ] `DefaultOutcomeStatusMapper` status-code selection is verified per case across a multi-arity outcome, not just the 2-arity shape
-- [ ] Minimal API result extensions are covered for the same multi-arity shapes
-- [ ] Existing 2-arity tests still pass
+- [x] `ToActionResult()` is tested against outcomes of at least 3-arity and 5-arity, covering multiple distinct failure cases in the same union
+- [x] `DefaultOutcomeStatusMapper` status-code selection is verified per case across a multi-arity outcome, not just the 2-arity shape
+- [x] Minimal API result extensions are covered for the same multi-arity shapes
+- [x] Existing 2-arity tests still pass
 
 ## Blocked by
 

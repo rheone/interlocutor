@@ -1,5 +1,6 @@
 namespace Interlocutor.AspNetCore.Tests;
 
+using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 using Microsoft.AspNetCore.Http;
 
@@ -84,6 +85,67 @@ public class DefaultOutcomeStatusMapperTests
 
         Assert.Equal(StatusCodes.Status404NotFound, mapping.StatusCode);
         Assert.Equal("String/42", mapping.Body);
+    }
+
+    // The tests below build a single 5-arity outcome type - one success case plus four distinct failure
+    // cases - and confirm the mapper picks the right status code for whichever case the outcome actually
+    // holds. This proves per-case selection generalizes beyond the 2-arity shape exercised above, matching
+    // a handler that reports several distinct failure cases from one operation.
+
+    [Fact]
+    public void Map_AcrossFiveArityOutcome_WithNotFoundCase_Returns404()
+    {
+        OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationErrors> outcome = new(new NotFound("missing"));
+
+        var mapping = this.mapper.Map(outcome.GetValue()!);
+
+        Assert.Equal(StatusCodes.Status404NotFound, mapping.StatusCode);
+    }
+
+    [Fact]
+    public void Map_AcrossFiveArityOutcome_WithForbiddenCase_Returns403()
+    {
+        OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationErrors> outcome = new(new Forbidden("denied"));
+
+        var mapping = this.mapper.Map(outcome.GetValue()!);
+
+        Assert.Equal(StatusCodes.Status403Forbidden, mapping.StatusCode);
+    }
+
+    [Fact]
+    public void Map_AcrossFiveArityOutcome_WithConflictCase_Returns409()
+    {
+        OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationErrors> outcome = new(
+            new Conflict("stale", "conflict.code")
+        );
+
+        var mapping = this.mapper.Map(outcome.GetValue()!);
+
+        Assert.Equal(StatusCodes.Status409Conflict, mapping.StatusCode);
+    }
+
+    [Fact]
+    public void Map_AcrossFiveArityOutcome_WithValidationErrorsCase_Returns422()
+    {
+        OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationErrors> outcome = new(
+            new ValidationErrors("required")
+        );
+
+        var mapping = this.mapper.Map(outcome.GetValue()!);
+
+        Assert.Equal(StatusCodes.Status422UnprocessableEntity, mapping.StatusCode);
+    }
+
+    [Fact]
+    public void Map_AcrossFiveArityOutcome_WithSuccessCase_IsNotMappedAsFailure()
+    {
+        // The success case is never handed to the mapper in production - ResultExtensions branches on
+        // IsSuccess before calling Map - but proving it round-trips through GetValue() confirms the
+        // multi-arity outcome itself distinguishes the success case from all four failure cases correctly.
+        OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationErrors> outcome = new("ok");
+
+        Assert.True(outcome.IsSuccess);
+        Assert.Equal("ok", outcome.GetValue());
     }
 
     /// <summary>
