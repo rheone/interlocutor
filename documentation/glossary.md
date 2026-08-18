@@ -70,7 +70,7 @@ Independent record-struct types, each usable as one case type in an `OperationOu
 |------|------------|
 | **INotification** | Marker interface for domain events/notifications. Has no return value - fire-and-forget. |
 | **INotificationHandler<T>** | Handler for a notification type. Contravariant fan-out: a handler registered against a base event type or interface receives every derived notification. |
-| **PublishStrategy** | Enum: `Sequential` (default - handlers run one by one, stop and propagate on the first exception, leaving partial execution reachable) or `Parallel` (every handler runs regardless of others failing, exceptions aggregated). Handler ordering is unspecified in general; a relative run-after/run-before attribute is the escape hatch for a genuine ordering need. |
+| **PublishStrategy** | Enum: `Sequential` (default - handlers run one by one, stop and propagate on the first exception, leaving partial execution reachable) or `Parallel` (every handler runs regardless of others failing, exceptions aggregated). Passed explicitly per call to `IMediator.Publish`; there is no attribute or configuration to declare relative ordering between handlers. |
 
 ## Interface Segregation
 
@@ -153,4 +153,4 @@ These are not shipped types. Interlocutor's core has no opinion about pagination
 | **Interlocutor.DependencyInjection.Autofac** | The builder-based registration entry point for Autofac. |
 | **Interlocutor.EntityFrameworkCore** | `TransactionBehavior` for EF Core `DbContext`. |
 | **Interlocutor.NHibernate** | `TransactionBehavior` for NHibernate `ISession`. |
-| **Interlocutor.FluentValidation** | `ValidationBehavior` and `BulkItemValidationBehavior` for FluentValidation. |
+| **Interlocutor.FluentValidation** | `ValidationBehavior` for FluentValidation. |

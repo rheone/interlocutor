@@ -23,12 +23,12 @@ No solution-level build/test scripts exist beyond the `dotnet` CLI - there's no 
 
 **Package layering** (`src/`), enforced by `tests/Interlocutor.Architecture.Tests/DependencyTests.cs` via NetArchTest - changes that violate these boundaries fail CI:
 
-- `Interlocutor.CommonKernel` - zero-dependency result types (`OperationOutcome<...>` unions, `Failure`/`NotFound`/`Forbidden`/`Conflict`/`ValidationError`/`Success`, `PagedResult<T>`). Must never depend on any other Interlocutor package.
+- `Interlocutor.CommonKernel` - zero-dependency result types (`OperationOutcome<...>` unions, `Failure`/`NotFound`/`Forbidden`/`Conflict`/`ValidationError`/`Success`). `PagedResult<T>` is not a shipped type here - it's a consumer-defined success-case type, per `documentation/glossary.md`. Must never depend on any other Interlocutor package.
 - `Interlocutor.Abstractions` - mediator core (`IMediator`/`ISender`/`IPublisher`), handler contracts (`IQueryHandler`, `ICommandHandler`, `ResourceCommandHandler`), pipeline behaviors (`LoggingBehavior`, `AuthorizationBehavior`, `AuditingBehavior`, `PipelineStageBehavior`), marker interfaces (`ITransactionalRequest`, `IAuditableRequest`, `IRequiresPolicy`, `IExternalStoreRequest`). Depends only on CommonKernel + framework DI/Logging abstractions - must never depend on AspNetCore or the store-specific packages.
 - `Interlocutor.AspNetCore` - HTTP mapping (`ToActionResult()`), web-framework integrations for Abstractions interfaces (e.g., `AspNetCoreRequestContextAccessor`). Depends on CommonKernel and Abstractions, but never on store-specific or validation packages.
 - `Interlocutor.DependencyInjection.Microsoft` / `.Autofac` - assembly-scanning `AddInterlocutor()` registration per container.
 - `Interlocutor.EntityFrameworkCore` / `Interlocutor.NHibernate` - store-specific `TransactionBehavior`; each must depend on Abstractions.
-- `Interlocutor.FluentValidation` - `ValidationBehavior` / `BulkItemValidationBehavior` (currently mid-migration - see commented-out assertion in `DependencyTests.cs`).
+- `Interlocutor.FluentValidation` - `ValidationBehavior`; `DependencyTests.cs` asserts it depends on Abstractions.
 
 Each `src/*` project has a matching `tests/*.Tests` project (xunit.v3, NSubstitute for mocking). `tests/Interlocutor.Architecture.Tests` is not per-package - it asserts the cross-package dependency rules above; add to it, not a per-package test project, when introducing a new package or changing what depends on what.
 

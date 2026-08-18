@@ -13,11 +13,11 @@ Strip documentation and PRD claims that describe features which are not actually
 
 ## Acceptance criteria
 
-- [ ] `documentation/notifications-and-fan-out.md` no longer shows `[RunAfter]`/`[RunBefore]` or `SetPublishStrategy` as working examples; it states plainly that ordering is unspecified and publish strategy is not yet configurable, without citing ticket numbers (per the house style rule against citing `docs/` paths)
-- [ ] `BulkItemValidationBehavior` is removed from the FluentValidation package description and `documentation/glossary.md`
-- [ ] `docs/PRD.md`'s type catalog no longer lists `IEnumerableQuery<T>`, `IEnumerableCommand<T>`, `IBulkCommand<T,T>`, `IPagedQuery<T>`, or `PagedResult<T>` as shipped library types, and doesn't contradict `documentation/glossary.md`
-- [ ] CLAUDE.md's FluentValidation layering claim matches the current state of `DependencyTests.cs` (live assertion, not commented out)
-- [ ] No other README.md or documentation/ claim was found to regress in the same sweep (spot-check truthfulness against `src/` for the files touched)
+- [x] `documentation/notifications-and-fan-out.md` no longer shows `[RunAfter]`/`[RunBefore]` or `SetPublishStrategy` as working examples; it states plainly that ordering is unspecified, without citing ticket numbers (per the house style rule against citing `docs/` paths). Note: verification found `PublishStrategy.Sequential`/`Parallel` and the `IMediator.Publish(notification, strategy, ct)` overload genuinely ship today (only the builder-level `SetPublishStrategy` does not), so the doc was corrected to show the real per-call overload rather than claiming strategy selection isn't available at all.
+- [x] `BulkItemValidationBehavior` is removed from the FluentValidation package description and `documentation/glossary.md`
+- [x] `docs/PRD.md`'s type catalog no longer lists `IEnumerableQuery<T>`, `IEnumerableCommand<T>`, `IBulkCommand<T,T>`, `IPagedQuery<T>`, or `PagedResult<T>` as shipped library types, and doesn't contradict `documentation/glossary.md`
+- [x] CLAUDE.md's FluentValidation layering claim matches the current state of `DependencyTests.cs` (live assertion, not commented out)
+- [x] No other README.md or documentation/ claim was found to regress in the same sweep (spot-check truthfulness against `src/` for the files touched)
 
 ## Blocked by
 

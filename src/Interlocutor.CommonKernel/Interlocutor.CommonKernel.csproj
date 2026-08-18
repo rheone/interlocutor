@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Description>Interlocutor shared kernel: OperationOutcome types, Failure vocabulary, and PagedResult - pure data with no framework dependencies.</Description>
+    <Description>Interlocutor shared kernel: OperationOutcome types and Failure vocabulary - pure data with no framework dependencies.</Description>
   </PropertyGroup>
 </Project>
