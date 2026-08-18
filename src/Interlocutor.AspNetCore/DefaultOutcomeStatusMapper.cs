@@ -85,7 +85,7 @@ public class DefaultOutcomeStatusMapper : IOutcomeStatusMapper
             new ProblemDetails
             {
                 Title = "Multiple Failures",
-                Detail = string.Join("; ", failures.Values.Select(failure => failure.Reason ?? "Failure")),
+                Detail = string.Join("; ", failures.Items.Select(failure => failure.Reason ?? "Failure")),
                 Status = StatusCodes.Status400BadRequest,
             }
         );

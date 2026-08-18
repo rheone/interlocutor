@@ -36,7 +36,7 @@ Independent record-struct types, each usable as one case type in an `OperationOu
 |------|------------|
 | **ValidationErrors** | Immutable collection of one or more `ValidationError` instances. De-duplicates preserving first-occurrence order. Safe at default value (returns empty collection). Exposes unified accessor `.Items` (primary), with semantic projections `.Errors` and `.Messages`. |
 | **ValidationErrors<TErrorCode>** | Immutable collection of one or more `ValidationError<TErrorCode>` instances with associated error codes. De-duplicates preserving first-occurrence order. Safe at default value. Exposes unified accessor `.Items` (primary), with semantic projections `.Errors`, `.Messages`, and `.ErrorCodes`. |
-| **Failures** | Immutable collection of one or more `Failure` instances. De-duplicates preserving first-occurrence order. Safe at default value. Exposes unified accessor `.Items` (primary), with semantic projection `.Values` (legacy name). |
+| **Failures** | Immutable collection of one or more `Failure` instances. De-duplicates preserving first-occurrence order. Safe at default value. Exposes unified accessor `.Items` (primary). |
 | **Conflicts** | Immutable collection of one or more `Conflict` instances (state conflicts, concurrency, uniqueness violations). De-duplicates preserving first-occurrence order. Safe at default value. Exposes unified accessor `.Items` (primary), with semantic projection `.Messages`. |
 
 ## CQRS

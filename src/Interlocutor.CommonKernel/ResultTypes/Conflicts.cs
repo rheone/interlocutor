@@ -1,6 +1,6 @@
 namespace Interlocutor.CommonKernel.ResultTypes;
 
-using System.Collections.Immutable;
+using Interlocutor.CommonKernel.ResultTypes.Internal;
 
 /// <summary>
 /// Represents an immutable collection of one or more conflict outcomes.
@@ -17,7 +17,7 @@ using System.Collections.Immutable;
 /// </remarks>
 public readonly record struct Conflicts
 {
-    private readonly ImmutableArray<Conflict> _conflicts;
+    private readonly DistinctItemSet<Conflict> _conflicts;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Conflicts"/> struct from the specified conflict values.
@@ -30,14 +30,7 @@ public readonly record struct Conflicts
     /// <exception cref="ArgumentException"><paramref name="conflicts"/> contains no elements.</exception>
     public Conflicts(IEnumerable<Conflict> conflicts)
     {
-        ArgumentNullException.ThrowIfNull(conflicts);
-
-        this._conflicts = [.. conflicts.Distinct()];
-
-        if (this._conflicts.IsEmpty)
-        {
-            throw new ArgumentException("At least one conflict is required.", nameof(conflicts));
-        }
+        this._conflicts = new DistinctItemSet<Conflict>(conflicts, "At least one conflict is required.", nameof(conflicts));
     }
 
     /// <summary>
@@ -56,7 +49,7 @@ public readonly record struct Conflicts
     /// rather than throwing. This permits the pipeline to pass a default response value when a handler has not yet
     /// produced one. Explicitly constructing this type with an empty sequence still throws.
     /// </remarks>
-    public int Count => this._conflicts.IsDefault ? 0 : this._conflicts.Length;
+    public int Count => this._conflicts.Count;
 
     /// <summary>
     /// Gets the distinct set of conflicts, in the order they were first encountered.
@@ -70,7 +63,7 @@ public readonly record struct Conflicts
     /// rather than throwing. This permits the pipeline to pass a default response value when a handler has not yet
     /// produced one. Explicitly constructing this type with an empty sequence still throws.
     /// </remarks>
-    public IReadOnlyList<Conflict> Items => this._conflicts.IsDefault ? [] : this._conflicts;
+    public IReadOnlyList<Conflict> Items => this._conflicts.Items;
 
     /// <summary>
     /// Gets the distinct set of conflict messages, in the order they were first encountered.
