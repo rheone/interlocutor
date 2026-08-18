@@ -247,4 +247,82 @@ public class ResultExtensionsTests
         Assert.Contains("Name is required", problemDetails.Detail);
         Assert.Contains("Email is invalid", problemDetails.Detail);
     }
+
+    // The tests below exercise the 6-arity overload (one success + five failure cases), including the three
+    // case types (Cancelled, Timeout, RateLimited) that DefaultOutcomeStatusMapper only recently learned to
+    // map. Covers success and every failure-case branch for this arity, matching what the audit-followups/05
+    // arity 3-6 overloads still lacked coverage for.
+
+    [Fact]
+    public void ToActionResult_SixArity_WithSuccess_ReturnsOkObjectResult()
+    {
+        OperationOutcome<string, NotFound, Forbidden, Cancelled, Timeout, RateLimited> result = new("hello");
+        var actionResult = result.ToActionResult();
+
+        var okResult = Assert.IsType<OkObjectResult>(actionResult);
+        Assert.Equal("hello", okResult.Value);
+    }
+
+    [Fact]
+    public void ToActionResult_SixArity_WithNotFound_Returns404()
+    {
+        OperationOutcome<string, NotFound, Forbidden, Cancelled, Timeout, RateLimited> result = new(
+            new NotFound("Widget not found")
+        );
+        var actionResult = result.ToActionResult();
+
+        var objectResult = Assert.IsType<ObjectResult>(actionResult);
+        Assert.Equal(StatusCodes.Status404NotFound, objectResult.StatusCode);
+        Assert.Equal("Widget not found", objectResult.Value);
+    }
+
+    [Fact]
+    public void ToActionResult_SixArity_WithForbidden_Returns403()
+    {
+        OperationOutcome<string, NotFound, Forbidden, Cancelled, Timeout, RateLimited> result = new(new Forbidden("No access"));
+        var actionResult = result.ToActionResult();
+
+        var statusCodeResult = Assert.IsType<StatusCodeResult>(actionResult);
+        Assert.Equal(StatusCodes.Status403Forbidden, statusCodeResult.StatusCode);
+    }
+
+    [Fact]
+    public void ToActionResult_SixArity_WithCancelled_Returns499NoBody()
+    {
+        OperationOutcome<string, NotFound, Forbidden, Cancelled, Timeout, RateLimited> result = new(
+            new Cancelled("caller went away")
+        );
+        var actionResult = result.ToActionResult();
+
+        var statusCodeResult = Assert.IsType<StatusCodeResult>(actionResult);
+        Assert.Equal(StatusCodes.Status499ClientClosedRequest, statusCodeResult.StatusCode);
+    }
+
+    [Fact]
+    public void ToActionResult_SixArity_WithTimeout_Returns408()
+    {
+        OperationOutcome<string, NotFound, Forbidden, Cancelled, Timeout, RateLimited> result = new(
+            new Timeout(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2), "downstream slow")
+        );
+        var actionResult = result.ToActionResult();
+
+        var objectResult = Assert.IsType<ObjectResult>(actionResult);
+        Assert.Equal(StatusCodes.Status408RequestTimeout, objectResult.StatusCode);
+        var problemDetails = Assert.IsType<ProblemDetails>(objectResult.Value);
+        Assert.Equal("downstream slow", problemDetails.Detail);
+    }
+
+    [Fact]
+    public void ToActionResult_SixArity_WithRateLimited_Returns429()
+    {
+        OperationOutcome<string, NotFound, Forbidden, Cancelled, Timeout, RateLimited> result = new(
+            new RateLimited("per-user", TimeSpan.FromSeconds(30), "slow down")
+        );
+        var actionResult = result.ToActionResult();
+
+        var objectResult = Assert.IsType<ObjectResult>(actionResult);
+        Assert.Equal(StatusCodes.Status429TooManyRequests, objectResult.StatusCode);
+        var problemDetails = Assert.IsType<ProblemDetails>(objectResult.Value);
+        Assert.Equal("slow down", problemDetails.Detail);
+    }
 }

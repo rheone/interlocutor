@@ -3,6 +3,7 @@ namespace Interlocutor.AspNetCore.Tests;
 using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 
 /// <summary>
 /// Verifies the status code <see cref="DefaultOutcomeStatusMapper"/> chooses for each built-in failure case,
@@ -34,6 +35,35 @@ public class DefaultOutcomeStatusMapperTests
     [Fact]
     public void Map_WithValidationErrors_Returns422() =>
         Assert.Equal(StatusCodes.Status422UnprocessableEntity, this.mapper.Map(new ValidationErrors("required")).StatusCode);
+
+    [Fact]
+    public void Map_WithCancelled_Returns499NoBody()
+    {
+        var mapping = this.mapper.Map(new Cancelled("caller went away"));
+
+        Assert.Equal(StatusCodes.Status499ClientClosedRequest, mapping.StatusCode);
+        Assert.Null(mapping.Body);
+    }
+
+    [Fact]
+    public void Map_WithTimeout_Returns408()
+    {
+        var mapping = this.mapper.Map(new Timeout(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2), "downstream slow"));
+
+        Assert.Equal(StatusCodes.Status408RequestTimeout, mapping.StatusCode);
+        var problemDetails = Assert.IsType<ProblemDetails>(mapping.Body);
+        Assert.Equal("downstream slow", problemDetails.Detail);
+    }
+
+    [Fact]
+    public void Map_WithRateLimited_Returns429()
+    {
+        var mapping = this.mapper.Map(new RateLimited("per-user", TimeSpan.FromSeconds(30), "slow down"));
+
+        Assert.Equal(StatusCodes.Status429TooManyRequests, mapping.StatusCode);
+        var problemDetails = Assert.IsType<ProblemDetails>(mapping.Body);
+        Assert.Equal("slow down", problemDetails.Detail);
+    }
 
     [Fact]
     public void Map_WithFailure_Returns400NotServerError()
