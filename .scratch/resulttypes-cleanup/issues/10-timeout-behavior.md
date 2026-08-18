@@ -10,12 +10,12 @@ Document plainly (XML remarks, matching `AuthorizationBehavior`'s style of docum
 
 **Blocked by:** 03 (IOutcomeCaseRegistry extension-point), 05 (new case types)
 
-- [ ] `IHasTimeout` marker interface (`TimeSpan Budget { get; }`) exists in `Interlocutor.Abstractions.Markers`
-- [ ] `ITimeoutPolicy` (`TimeSpan ResolveBudget(IHasTimeout request)`), `DefaultTimeoutPolicy`, `DelegateTimeoutPolicy` exist in `Interlocutor.Abstractions.Pipeline`
-- [ ] `TimeoutBehavior<TRequest, TResponse>` exists, generic only over `TRequest, TResponse`, races `next()` vs a delay for the resolved budget
-- [ ] Budget exceeded (delay wins, `ct` not cancelled) → short-circuits with `Timeout` via `IOutcomeCaseRegistry`, carrying `Budget` and actual `Elapsed`
-- [ ] Ambient cancellation during the race (delay wins because `ct.IsCancellationRequested`) → propagates as `OperationCanceledException`, not `Timeout`
-- [ ] Budget not exceeded → passes through `next()`'s result unchanged
-- [ ] XML doc remarks explicitly state the "cannot actually cancel downstream work" limitation
-- [ ] Unit tests cover all three branches above
-- [ ] `dotnet test tests/Interlocutor.Abstractions.Tests/Interlocutor.Abstractions.Tests.csproj` passes
+- [x] `IHasTimeout` marker interface (`TimeSpan Budget { get; }`) exists in `Interlocutor.Abstractions.Markers`
+- [x] `ITimeoutPolicy` (`TimeSpan ResolveBudget(IHasTimeout request)`), `DefaultTimeoutPolicy`, `DelegateTimeoutPolicy` exist in `Interlocutor.Abstractions.Pipeline`
+- [x] `TimeoutBehavior<TRequest, TResponse>` exists, generic only over `TRequest, TResponse`, races `next()` vs a delay for the resolved budget
+- [x] Budget exceeded (delay wins, `ct` not cancelled) → short-circuits with `Timeout` via `IOutcomeCaseRegistry`, carrying `Budget` and actual `Elapsed`
+- [x] Ambient cancellation during the race (delay wins because `ct.IsCancellationRequested`) → propagates as `OperationCanceledException`, not `Timeout`
+- [x] Budget not exceeded → passes through `next()`'s result unchanged
+- [x] XML doc remarks explicitly state the "cannot actually cancel downstream work" limitation
+- [x] Unit tests cover all three branches above
+- [x] `dotnet test tests/Interlocutor.Abstractions.Tests/Interlocutor.Abstractions.Tests.csproj` passes
