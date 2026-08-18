@@ -8,11 +8,11 @@ Extend `HandlerDiscoveryTests.cs` (`tests/Interlocutor.DependencyInjection.Abstr
 
 ## Acceptance criteria
 
-- [ ] A type implementing `ICommandHandler<,>` is discovered and registered correctly
-- [ ] A single type implementing more than one handler contract (e.g. a query handler and a notification handler) is discovered for both
-- [ ] Multiple `INotificationHandler<T>` implementations for the same notification type are all discovered
-- [ ] An open-generic handler class is discovered in whatever form current discovery supports (or the test documents that it is correctly *not* discovered, matching ticket 11's open-generic-handlers scope in `di-builder-and-discovery`)
-- [ ] Existing `HandlerDiscoveryTests.cs` assertions still pass
+- [x] A type implementing `ICommandHandler<,>` is discovered and registered correctly
+- [x] A single type implementing more than one handler contract (e.g. a query handler and a notification handler) is discovered for both
+- [x] Multiple `INotificationHandler<T>` implementations for the same notification type are all discovered
+- [x] An open-generic handler class is discovered in whatever form current discovery supports (or the test documents that it is correctly *not* discovered, matching ticket 11's open-generic-handlers scope in `di-builder-and-discovery`)
+- [x] Existing `HandlerDiscoveryTests.cs` assertions still pass
 
 ## Blocked by
 
