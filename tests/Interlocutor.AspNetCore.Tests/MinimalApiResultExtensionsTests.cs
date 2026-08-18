@@ -128,6 +128,87 @@ public class MinimalApiResultExtensionsTests
         Assert.Equal(minimalStatusCode, actionStatusCode);
     }
 
+    // Mirrors the multi-arity coverage in ResultExtensionsTests: the same 3-arity and 5-arity outcome shapes,
+    // routed through ToMinimalApiResult instead of ToActionResult, proving the two transport surfaces agree.
+
+    [Fact]
+    public void ToMinimalApiResult_ThreeArity_WithSuccess_CreatesOkResult()
+    {
+        OperationOutcome<string, NotFound, ValidationErrors> result = new("hello");
+        var minimalResult = result.ToMinimalApiResult();
+
+        Assert.Contains("Ok", minimalResult.GetType().Name);
+    }
+
+    [Fact]
+    public void ToMinimalApiResult_ThreeArity_WithNotFound_Returns404()
+    {
+        OperationOutcome<string, NotFound, ValidationErrors> result = new(new NotFound("Widget not found"));
+        var minimalResult = result.ToMinimalApiResult();
+
+        Assert.Equal(StatusCodes.Status404NotFound, GetStatusCode(minimalResult));
+    }
+
+    [Fact]
+    public void ToMinimalApiResult_ThreeArity_WithValidationErrors_Returns422()
+    {
+        var errors = new ValidationErrors(["Name is required"]);
+        OperationOutcome<string, NotFound, ValidationErrors> result = new(errors);
+        var minimalResult = result.ToMinimalApiResult();
+
+        Assert.Equal(StatusCodes.Status422UnprocessableEntity, GetStatusCode(minimalResult));
+    }
+
+    [Fact]
+    public void ToMinimalApiResult_FiveArity_WithSuccess_CreatesOkResult()
+    {
+        OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationErrors> result = new("hello");
+        var minimalResult = result.ToMinimalApiResult();
+
+        Assert.Contains("Ok", minimalResult.GetType().Name);
+    }
+
+    [Fact]
+    public void ToMinimalApiResult_FiveArity_WithNotFound_Returns404()
+    {
+        OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationErrors> result = new(
+            new NotFound("Widget not found")
+        );
+        var minimalResult = result.ToMinimalApiResult();
+
+        Assert.Equal(StatusCodes.Status404NotFound, GetStatusCode(minimalResult));
+    }
+
+    [Fact]
+    public void ToMinimalApiResult_FiveArity_WithForbidden_Returns403()
+    {
+        OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationErrors> result = new(new Forbidden("No access"));
+        var minimalResult = result.ToMinimalApiResult();
+
+        Assert.Equal(StatusCodes.Status403Forbidden, GetStatusCode(minimalResult));
+    }
+
+    [Fact]
+    public void ToMinimalApiResult_FiveArity_WithConflict_Returns409()
+    {
+        OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationErrors> result = new(
+            new Conflict("Data changed", "stale.data")
+        );
+        var minimalResult = result.ToMinimalApiResult();
+
+        Assert.Equal(StatusCodes.Status409Conflict, GetStatusCode(minimalResult));
+    }
+
+    [Fact]
+    public void ToMinimalApiResult_FiveArity_WithValidationErrors_Returns422()
+    {
+        var errors = new ValidationErrors(["Name is required", "Email is invalid"]);
+        OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationErrors> result = new(errors);
+        var minimalResult = result.ToMinimalApiResult();
+
+        Assert.Equal(StatusCodes.Status422UnprocessableEntity, GetStatusCode(minimalResult));
+    }
+
     /// <summary>
     /// Reads the status code off a minimal API <see cref="IResult"/> via its <c>StatusCode</c> property,
     /// present on every concrete result type <see cref="ResultExtensions"/> can produce.
