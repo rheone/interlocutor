@@ -16,10 +16,10 @@ ready-for-agent
 
 **Blocked by:** 01, 02, 03, 04, 05, 06, 07, 08, 09, 10, 11, 12, 13, 14 (docs describe the finished, compiled API)
 
-- [ ] `messages-and-result-types.md` has the new "IOperationOutcome as an Extension Point" section and an updated Result Types walkthrough
-- [ ] `glossary.md` reflects the new types and the dropped duplicate projections
-- [ ] `pipeline-and-behaviors.md` documents the three new behaviors as opt-in with no prescribed position - the existing five-behavior canonical order/diagram/rationale is left as-is, not expanded to eight
-- [ ] `README.md`'s pipeline-order comment (unchanged, still five behaviors) and result-types framing are updated
-- [ ] Every code example in the touched docs compiles against the shipped API (spot-check by pasting into a scratch file or an existing sample)
-- [ ] No HTTP status codes appear outside `aspnetcore-integration.md`; no enumerated counts in prose; no citations to `docs/`
-- [ ] `dotnet csharpier .` run if any code samples were added/edited inline
+- [x] `messages-and-result-types.md` has the new "IOperationOutcome as an Extension Point" section and an updated Result Types walkthrough
+- [x] `glossary.md` reflects the new types and the dropped duplicate projections
+- [x] `pipeline-and-behaviors.md` documents the three new behaviors as opt-in with no prescribed position - the existing five-behavior canonical order/diagram/rationale is left as-is, not expanded to eight
+- [x] `README.md`'s pipeline-order comment (unchanged, still five behaviors) and result-types framing are updated
+- [x] Every code example in the touched docs compiles against the shipped API (spot-check by pasting into a scratch file or an existing sample)
+- [x] No HTTP status codes appear outside `aspnetcore-integration.md`; no enumerated counts in prose; no citations to `docs/`
+- [x] `dotnet csharpier .` run if any code samples were added/edited inline
