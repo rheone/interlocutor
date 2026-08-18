@@ -66,9 +66,10 @@ public sealed class GeneratedRegistrationIntegrationTests
 
         var result = await mediator.Send(new GeneratedQuery(), TestContext.Current.CancellationToken);
 
-        // Behaviors registered as 1→2→3 must wrap in reverse order (3→2→1 on entry, 1→2→3 on exit).
+        // First registered wraps the outermost layer (documented in documentation/pipeline-and-behaviors.md):
+        // behaviors registered as 1→2→3 enter in that same order and exit in reverse (3→2→1 on exit).
         // Each behavior records entry and exit to verify the wrap order is correct.
-        var expected = new[] { "B3-enter", "B2-enter", "B1-enter", "handle", "B1-exit", "B2-exit", "B3-exit" };
+        var expected = new[] { "B1-enter", "B2-enter", "B3-enter", "handle", "B3-exit", "B2-exit", "B1-exit" };
         Assert.Equal(expected, executionOrder);
         Assert.Equal("hi from Microsoft DI", result.Value);
     }
@@ -82,7 +83,8 @@ public sealed class GeneratedRegistrationIntegrationTests
         public async Task<OperationOutcome<string, Failure>> Handle(
             GeneratedQuery request,
             Func<Task<OperationOutcome<string, Failure>>> next,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken
+        )
         {
             _executionOrder.Add("B1-enter");
             var result = await next();
@@ -100,7 +102,8 @@ public sealed class GeneratedRegistrationIntegrationTests
         public async Task<OperationOutcome<string, Failure>> Handle(
             GeneratedQuery request,
             Func<Task<OperationOutcome<string, Failure>>> next,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken
+        )
         {
             _executionOrder.Add("B2-enter");
             var result = await next();
@@ -118,7 +121,8 @@ public sealed class GeneratedRegistrationIntegrationTests
         public async Task<OperationOutcome<string, Failure>> Handle(
             GeneratedQuery request,
             Func<Task<OperationOutcome<string, Failure>>> next,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken
+        )
         {
             _executionOrder.Add("B3-enter");
             var result = await next();

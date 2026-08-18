@@ -96,20 +96,54 @@ public static class InterlocutorServiceCollectionExtensions
     {
         foreach (var registration in registrations)
         {
+            var serviceType = ResolveServiceType(registration);
             switch (registration.Lifetime)
             {
                 case RegistrationLifetime.Singleton:
-                    services.AddSingleton(registration.ServiceType, registration.ImplementationType);
+                    services.AddSingleton(serviceType, registration.ImplementationType);
                     break;
                 case RegistrationLifetime.Transient:
-                    services.AddTransient(registration.ServiceType, registration.ImplementationType);
+                    services.AddTransient(serviceType, registration.ImplementationType);
                     break;
                 case RegistrationLifetime.Scoped:
                 default:
-                    services.AddScoped(registration.ServiceType, registration.ImplementationType);
+                    services.AddScoped(serviceType, registration.ImplementationType);
                     break;
             }
         }
+    }
+
+    /// <summary>
+    /// Resolves the service type a registration should actually be paired with under Microsoft DI, which -
+    /// unlike Autofac - requires an open generic service type to be paired with an open generic
+    /// implementation type. <see cref="InterlocutorBuilder.AddBehavior"/> always records the open
+    /// <see cref="IPipelineBehavior{TRequest,TResponse}"/> as <see cref="InterlocutorRegistration.ServiceType"/>
+    /// regardless of whether <see cref="InterlocutorRegistration.ImplementationType"/> is itself open or
+    /// closed (a legal shape - see that method's remarks), so a closed implementation type here is
+    /// re-paired with the specific closed <see cref="IPipelineBehavior{TRequest,TResponse}"/> interface it
+    /// actually implements. Mirrors the open/closed branch <c>ContainerBuilderExtensions.Apply</c> already
+    /// has for Autofac, which needs no such translation because Autofac accepts the open/closed mismatch directly.
+    /// </summary>
+    /// <param name="registration">The registration to resolve the effective service type for.</param>
+    /// <returns>
+    /// The closed interface <see cref="InterlocutorRegistration.ImplementationType"/> implements, when
+    /// <see cref="InterlocutorRegistration.ServiceType"/> is an open generic definition and
+    /// <see cref="InterlocutorRegistration.ImplementationType"/> is closed; otherwise, the registration's
+    /// own <see cref="InterlocutorRegistration.ServiceType"/> unchanged.
+    /// </returns>
+    private static Type ResolveServiceType(InterlocutorRegistration registration)
+    {
+        var serviceType = registration.ServiceType;
+        if (!serviceType.IsGenericTypeDefinition || registration.ImplementationType.IsGenericTypeDefinition)
+        {
+            return serviceType;
+        }
+
+        var closedServiceInterface = registration
+            .ImplementationType.GetInterfaces()
+            .FirstOrDefault(candidate => candidate.IsGenericType && candidate.GetGenericTypeDefinition() == serviceType);
+
+        return closedServiceInterface ?? serviceType;
     }
 
     /// <summary>

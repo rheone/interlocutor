@@ -24,11 +24,11 @@ Discovered incidentally while re-verifying the remediation effort's defects; unr
 
 ## Acceptance criteria
 
-- [ ] `ServiceCollectionExtensions.Apply` (or wherever the fix naturally lands) registers a closed-generic behavior implementation against the specific closed `IPipelineBehavior<TRequest, TResponse>` it actually implements, not against the open `IPipelineBehavior<,>` - mirroring the open/closed branch the Autofac translator already has
-- [ ] An open-generic behavior implementation (e.g. `LoggingBehavior<,>`) continues to register and resolve exactly as it does today - no regression to the already-working path
-- [ ] `GeneratedRegistration_WithMultipleBehaviors_ExecutesBehaviorsInCorrectOrder` passes
-- [ ] A regression test covers both shapes explicitly under Microsoft DI: an open-generic behavior implementation and a closed one, both registered via `AddBehavior`, both resolving and executing
-- [ ] `dotnet test tests/Interlocutor.DependencyInjection.Microsoft.Tests/Interlocutor.DependencyInjection.Microsoft.Tests.csproj` passes in full (2/2, currently 1/2)
+- [x] `ServiceCollectionExtensions.Apply` (or wherever the fix naturally lands) registers a closed-generic behavior implementation against the specific closed `IPipelineBehavior<TRequest, TResponse>` it actually implements, not against the open `IPipelineBehavior<,>` - mirroring the open/closed branch the Autofac translator already has
+- [x] An open-generic behavior implementation (e.g. `LoggingBehavior<,>`) continues to register and resolve exactly as it does today - no regression to the already-working path
+- [x] `GeneratedRegistration_WithMultipleBehaviors_ExecutesBehaviorsInCorrectOrder` passes
+- [x] A regression test covers both shapes explicitly under Microsoft DI: an open-generic behavior implementation and a closed one, both registered via `AddBehavior`, both resolving and executing
+- [x] `dotnet test tests/Interlocutor.DependencyInjection.Microsoft.Tests/Interlocutor.DependencyInjection.Microsoft.Tests.csproj` passes in full (2/2, currently 1/2)
 
 ## Blocked by
 
