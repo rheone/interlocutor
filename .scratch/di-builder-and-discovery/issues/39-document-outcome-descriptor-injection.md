@@ -16,11 +16,11 @@ Once this lands, remove the corresponding line from `docs/TODO.md` (already done
 
 ## Acceptance criteria
 
-- [ ] `IResponseOutcomeDescriber`'s role and its consumers (Logging/Auditing/TransactionBehavior) are documented
-- [ ] `InterlocutorBuilder.OverrideOutcomeDescriber<TDescriber>()` is documented with an example of when to reach for it
-- [ ] `OutcomeClassifierBuilder`'s full fluent surface is documented with a worked example for a custom union type
-- [ ] Every code example compiles against the shipped API
-- [ ] Follows house conventions from ticket 21 (alerts, TBD markers, no-counts rule, no internal design-record citations)
+- [x] `IResponseOutcomeDescriber`'s role and its consumers (Logging/Auditing/TransactionBehavior) are documented
+- [x] `InterlocutorBuilder.OverrideOutcomeDescriber<TDescriber>()` is documented with an example of when to reach for it
+- [x] `OutcomeClassifierBuilder`'s full fluent surface is documented with a worked example for a custom union type
+- [x] Every code example compiles against the shipped API
+- [x] Follows house conventions from ticket 21 (alerts, TBD markers, no-counts rule, no internal design-record citations)
 
 ## Blocked by
 
