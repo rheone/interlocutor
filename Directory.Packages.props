@@ -26,6 +26,10 @@
   <!-- Entity Framework Core -->
   <ItemGroup>
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="11.0.0-preview.6.26359.118" />
+    <!-- Sqlite provider is test-only (Interlocutor.EntityFrameworkCore.Tests): an in-memory Sqlite database
+         gives TransactionBehavior tests a real ADO.NET transaction to commit/roll back against, which the
+         relational-agnostic base package alone cannot provide. -->
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="11.0.0-preview.6.26359.118" />
   </ItemGroup>
   <!-- FluentValidation -->
   <ItemGroup>
