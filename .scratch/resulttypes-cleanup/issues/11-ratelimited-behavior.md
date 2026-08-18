@@ -8,10 +8,10 @@ ready-for-agent
 
 **Blocked by:** 03 (IOutcomeCaseRegistry extension-point), 05 (new case types)
 
-- [ ] `IRateLimited` marker interface (`string LimitKey { get; }`) exists in `Interlocutor.Abstractions.Markers`
-- [ ] `IRateLimiter`, `RateLimitResult`, `DefaultRateLimiter`, `DelegateRateLimiter` exist in `Interlocutor.Abstractions.Pipeline`
-- [ ] `RateLimitedBehavior<TRequest, TResponse>` exists, generic only over `TRequest, TResponse`, calls `IRateLimiter.CheckAsync` before invoking `next()`
-- [ ] Disallowed → short-circuits with `RateLimited` via `IOutcomeCaseRegistry`, carrying `LimitKey` and the limiter's `RetryAfter` through
-- [ ] Allowed → passes through `next()`'s result unchanged
-- [ ] Unit tests cover both branches, including `RetryAfter` propagation
-- [ ] `dotnet test tests/Interlocutor.Abstractions.Tests/Interlocutor.Abstractions.Tests.csproj` passes
+- [x] `IRateLimited` marker interface (`string LimitKey { get; }`) exists in `Interlocutor.Abstractions.Markers`
+- [x] `IRateLimiter`, `RateLimitResult`, `DefaultRateLimiter`, `DelegateRateLimiter` exist in `Interlocutor.Abstractions.Pipeline`
+- [x] `RateLimitedBehavior<TRequest, TResponse>` exists, generic only over `TRequest, TResponse`, calls `IRateLimiter.CheckAsync` before invoking `next()`
+- [x] Disallowed → short-circuits with `RateLimited` via `IOutcomeCaseRegistry`, carrying `LimitKey` and the limiter's `RetryAfter` through
+- [x] Allowed → passes through `next()`'s result unchanged
+- [x] Unit tests cover both branches, including `RetryAfter` propagation
+- [x] `dotnet test tests/Interlocutor.Abstractions.Tests/Interlocutor.Abstractions.Tests.csproj` passes
