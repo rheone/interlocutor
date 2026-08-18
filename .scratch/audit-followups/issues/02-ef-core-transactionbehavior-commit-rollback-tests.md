@@ -8,10 +8,10 @@ Add test coverage for the commit/rollback logic in `TransactionBehavior<TRequest
 
 ## Acceptance criteria
 
-- [ ] A handler returning a classified success commits the transaction and persists changes via `SaveChangesAsync`
-- [ ] A handler returning a classified failure outcome rolls back the transaction without calling `SaveChangesAsync` a second time or swallowing the result
-- [ ] `SaveChangesAsync` throwing rolls back the transaction and rethrows the original exception (not a wrapped one)
-- [ ] Existing `IExternalStoreRequest` skip-path and generic-constraint tests still pass
+- [x] A handler returning a classified success commits the transaction and persists changes via `SaveChangesAsync`
+- [x] A handler returning a classified failure outcome rolls back the transaction without calling `SaveChangesAsync` a second time or swallowing the result
+- [x] `SaveChangesAsync` throwing rolls back the transaction and rethrows the original exception (not a wrapped one)
+- [x] Existing `IExternalStoreRequest` skip-path and generic-constraint tests still pass
 
 ## Blocked by
 
