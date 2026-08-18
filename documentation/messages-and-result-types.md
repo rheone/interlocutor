@@ -357,7 +357,7 @@ public class GetUsersHandler : IQueryHandler<GetUsers, OperationOutcome<IReadOnl
 public record GetUsers() : IQuery<IAsyncEnumerable<UserDto>>;
 ```
 
-For paged results, use `PagedResult<T>` (a consumer-defined or library-provided type carrying `Items`, `Page`, `PageSize`, `TotalCount`):
+For paged results, define your own `PagedResult<T>` (a consumer-defined type carrying `Items`, `Page`, `PageSize`, `TotalCount` - Interlocutor doesn't ship one):
 
 ```csharp
 public record GetUsers(int Page, int PageSize)

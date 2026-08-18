@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Description>FluentValidation integration for Interlocutor. Provides ValidationBehavior and BulkItemValidationBehavior using FluentValidation's IValidator resolution.</Description>
+    <Description>FluentValidation integration for Interlocutor. Provides ValidationBehavior using FluentValidation's IValidator resolution.</Description>
   </PropertyGroup>
 
   <ItemGroup>

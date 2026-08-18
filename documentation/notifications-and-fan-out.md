@@ -67,29 +67,10 @@ await mediator.Publish(new OrderShipped(123, "TRACK-456"));
 
 ## Execution Order
 
-Handlers run in **unspecified order by default**. If a specific order is required, use relative ordering attributes:
+Handlers run in **unspecified order**. There is no attribute or configuration to declare that one handler must run before or after another.
 
-```csharp
-// Run after the email handler
-[RunAfter(typeof(OrderShippedEmailHandler))]
-public class OrderShippedSmsHandler : INotificationHandler<OrderShipped>
-{
-    /* ... */
-}
-
-// Run before the SMS handler
-[RunBefore(typeof(OrderShippedSmsHandler))]
-public class OrderShippedWebhookHandler : INotificationHandler<OrderShipped>
-{
-    /* ... */
-}
-
-// Publish - handlers run in: Email → Webhook → SMS (per the attributes above)
-await mediator.Publish(new OrderShipped(123, "TRACK-456"));
-```
-
-> [!TIP]
-> Reach for these attributes only when you genuinely need one handler to run before another. By default, keep handlers independent and unordered.
+> [!IMPORTANT]
+> Keep notification handlers independent of one another. If one handler's outcome must influence another's, that's a signal the dependent step belongs in the originating command handler (or a follow-up command) rather than in a second notification handler.
 
 ## Publish Strategies
 
@@ -143,18 +124,10 @@ catch (InvalidOperationException ex)
 All handlers run concurrently. All exceptions are aggregated:
 
 ```csharp
-// Same handlers, but with Parallel strategy
-// Specify in the builder:
-services.AddInterlocutor(builder =>
-{
-    // ... register handlers ...
-    builder.SetPublishStrategy(PublishStrategy.Parallel);
-});
-
-// Now when you publish:
+// Same handlers, but with Parallel strategy - pass it explicitly per call:
 try
 {
-    await mediator.Publish(new SomeRequest());
+    await mediator.Publish(new SomeRequest(), PublishStrategy.Parallel);
 }
 catch (AggregateException ex)
 {
@@ -164,6 +137,9 @@ catch (AggregateException ex)
     // Handler3 also ran
 }
 ```
+
+> [!NOTE]
+> The strategy overload is exposed on `IMediator`, not `IPublisher` - `IPublisher` always publishes sequentially. There is no builder-level way to change the default strategy for every `Publish` call; each call site chooses explicitly.
 
 ### Which Strategy to Use
 
@@ -324,7 +300,7 @@ With Parallel strategy, all handlers run regardless:
 // Handler1, Handler2 (throws), and Handler3 all run concurrently
 // If Handler2 threw, an AggregateException is raised with that error inside
 // But Handler1 and Handler3 still ran
-await mediator.Publish(new SomeEvent());
+await mediator.Publish(new SomeEvent(), PublishStrategy.Parallel);
 ```
 
 Consider whether partial failure is acceptable:
