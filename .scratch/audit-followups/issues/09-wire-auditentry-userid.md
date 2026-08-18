@@ -10,11 +10,11 @@ Inject `IRequestContextAccessor` into `AuditingBehavior` and populate `UserId` f
 
 ## Acceptance criteria
 
-- [ ] `AuditingBehavior` accepts an `IRequestContextAccessor` dependency
-- [ ] When the accessor reports a current user, `AuditEntry.UserId` is populated with it end-to-end through a real `Send`
-- [ ] When the accessor reports no current user (or none is registered), `UserId` remains `null` and auditing still succeeds - no exception
-- [ ] `AspNetCoreRequestContextAccessor` (or an equivalent test double) is used in at least one test to prove the wiring works through the real accessor, not just a mock
-- [ ] Existing `AuditingBehaviorTests.cs` assertions still pass
+- [x] `AuditingBehavior` accepts an `IRequestContextAccessor` dependency
+- [x] When the accessor reports a current user, `AuditEntry.UserId` is populated with it end-to-end through a real `Send`
+- [x] When the accessor reports no current user (or none is registered), `UserId` remains `null` and auditing still succeeds - no exception
+- [x] `AspNetCoreRequestContextAccessor` (or an equivalent test double) is used in at least one test to prove the wiring works through the real accessor, not just a mock
+- [x] Existing `AuditingBehaviorTests.cs` assertions still pass
 
 ## Blocked by
 
