@@ -164,6 +164,72 @@ public record TransferFunds(int FromAccountId, int ToAccountId, decimal Amount)
 var result = await mediator.Send(new TransferFunds(1, 2, 100));
 ```
 
+## Cancellation, Timeout & Rate Limiting Behaviors
+
+These three behaviors are additive, opt-in cross-cutting concerns shipped alongside the recommended chain, but **not part of it**.
+
+> [!IMPORTANT]
+> `CancellationBehavior`, `TimeoutBehavior`, and `RateLimitedBehavior` have no prescribed position in the pipeline. They are ordinary `Add*Behavior()` calls - the consumer composes them wherever they choose in their own chain, exactly like any behavior outside `UseRecommendedChain()`. `UseRecommendedChain()` itself is unchanged: it still applies only the five behaviors documented above, in the same order.
+
+### CancellationBehavior
+
+Converts cooperative cancellation of the ambient request into a `Cancelled` outcome instead of letting `OperationCanceledException` propagate as an unexpected fault.
+
+- Requires: nothing beyond the try-added `IOutcomeCaseRegistry` default (`DefaultOutcomeCaseRegistry`)
+- Marker: `ICancellable` (no members - opts the request in)
+- Constraint: `TResponse : IOperationOutcome` (must be able to construct a `Cancelled` case)
+
+```csharp
+public record ExportReport(int ReportId)
+    : ICommand<OperationOutcome<Success, Cancelled>>, ICancellable;
+
+// builder.AddCancellationBehavior();
+// CancellationBehavior only converts cancellation tied to the ambient CancellationToken passed to
+// Handle - an OperationCanceledException raised by some unrelated token propagates unchanged.
+var result = await mediator.Send(new ExportReport(42), cancellationToken);
+```
+
+### TimeoutBehavior
+
+Races the rest of the pipeline against a time budget resolved via `ITimeoutPolicy`, short-circuiting with `Timeout` if the budget elapses first.
+
+- Requires: `ITimeoutPolicy` (you register your own, or accept the try-added `DefaultTimeoutPolicy`, which returns the request's own declared budget unchanged)
+- Marker: `IHasTimeout` (carries the request's declared `Budget`)
+- Constraint: `TResponse : IOperationOutcome` (must be able to construct a `Timeout` case)
+
+```csharp
+public record ExportReport(int ReportId)
+    : ICommand<OperationOutcome<Success, Timeout>>, IHasTimeout
+{
+    public TimeSpan Budget => TimeSpan.FromSeconds(30);
+}
+
+// builder.AddTimeoutBehavior();
+var result = await mediator.Send(new ExportReport(42));
+```
+
+> [!WARNING]
+> `TimeoutBehavior` can only *report* a timeout, not enforce one. `IPipelineBehavior<TRequest, TResponse>.Handle`'s `next` parameter is a parameterless delegate - there is no way to hand it a shorter-lived token, so the abandoned work keeps running in the background, unobserved, after the `Timeout` response is returned to the caller. Genuinely aborting in-flight work requires the handler itself to observe the cancellation token.
+
+### RateLimitedBehavior
+
+Checks a rate limit via `IRateLimiter`, short-circuiting with `RateLimited` if the check disallows the request.
+
+- Requires: `IRateLimiter` (you register your own, or accept the try-added `DefaultRateLimiter`)
+- Marker: `IRateLimited` (carries `LimitKey`, identifying which limiter/bucket applies)
+- Constraint: `TResponse : IOperationOutcome` (must be able to construct a `RateLimited` case)
+
+```csharp
+public record ExportReport(int ReportId)
+    : ICommand<OperationOutcome<Success, RateLimited>>, IRateLimited
+{
+    public string LimitKey => "exports";
+}
+
+// builder.AddRateLimitedBehavior();
+var result = await mediator.Send(new ExportReport(42));
+```
+
 ## Pipeline Stages (IPipelineStage)
 
 Pipeline stages are a lighter-weight alternative to writing a full `IPipelineBehavior<TRequest,TResponse>`. Use them for pre/post hooks that don't need the complexity of wrapping a `next()` delegate.

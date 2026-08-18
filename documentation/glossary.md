@@ -15,7 +15,7 @@ Domain vocabulary used throughout the Interlocutor project. Use these terms cons
 | **OperationOutcome<TSuccess, ...>** | C# 15 discriminated union, generic in 2 to 6 case types: the first type parameter is the success case, every remaining type parameter is an independent failure case (`NotFound`, `Forbidden`, `Conflict`, `Failure`, or a domain-specific type). A handler is written against the specific arity and case types that operation can actually produce rather than routing every failure through one generic case. |
 | **OperationOutcome** | Non-generic union: either `Success` or `Failure`. Used as the return type of unit commands. |
 | **IOperationOutcome** | Marker interface every `OperationOutcome`/`OperationOutcome<...>` union implements. `IQuery<TResponse>` and `ICommand<TResponse>` both carry a `where TResponse : IOperationOutcome` constraint, so a bare DTO response type fails to compile - every query and command response is compiler-guaranteed to be an outcome. This is what makes runtime-typed dispatch possible without the caller knowing the concrete outcome shape. Streaming (`IAsyncEnumerable<T>` or similar) is out of scope permanently - see [Messages, Result Types & Variance](messages-and-result-types.md) for the full reasoning. |
-| **Failure** | A simple `readonly record struct` carrying an optional human-readable `Reason`, an optional machine-readable `ErrorCode`, or both. Not a closed union of cases - it is the generic fallback failure case for when none of the more specific ones (`NotFound`, `Forbidden`, `Conflict`, `ValidationError`) apply. Never represents an unexpected exception; exceptions signal defects, not expected outcomes. |
+| **Failure** | A simple `readonly record struct` carrying an optional human-readable `Reason`. Not a closed union of cases - it is the generic fallback failure case for when none of the more specific ones (`NotFound`, `Forbidden`, `Conflict`, `ValidationError`) apply. Never represents an unexpected exception; exceptions signal defects, not expected outcomes. For a machine-readable error code, use `Failure<TErrorCode>` instead. |
 | **Success** | Marker record struct for unit command success - carries no payload. |
 
 ## Failure Case Types
@@ -24,11 +24,14 @@ Independent record-struct types, each usable as one case type in an `OperationOu
 
 | Term | Definition |
 |------|------------|
-| **ValidationError** | A single validation failure: a message, or a message paired with a generic error code. Aggregated via `ValidationErrors` / `ValidationErrors<TErrorCode>`. Produced by validation behaviors (e.g., `Interlocutor.FluentValidation`). |
+| **ValidationError** | A single validation failure: a message, or (via `ValidationError<TErrorCode>`) a message paired with a generic error code. Aggregated via `ValidationErrors` / `ValidationErrors<TErrorCode>`. Produced by validation behaviors (e.g., `Interlocutor.FluentValidation`). |
 | **NotFound** | Requested entity does not exist. Produced by `ResourceCommandHandler` (when `LoadAsync` returns null) or handler code. A generic `NotFound<TId>` variant carries the entity type and ID separately. |
 | **Forbidden** | Authorization denied for a specific resource. Produced by `ResourceCommandHandler.Authorize()` or `AuthorizationBehavior`. |
 | **Conflict** | State conflict: concurrency, uniqueness violation, or invalid transition. Carries a message and a machine-readable code. Produced by handler code. |
 | **Failure** | The generic fallback case - see Result Types above. |
+| **Cancelled** | Cooperative cancellation of the ambient request, converted from an `OperationCanceledException` rather than letting it propagate as an unexpected fault. Reason-only, matching the shape of `NotFound`/`Forbidden` - a `CancellationToken` carries no queryable reason of its own. Produced by `CancellationBehavior` for requests implementing `ICancellable`. |
+| **Timeout** | A handler exceeded its declared time budget. Carries the `Budget` that was allotted and the `Elapsed` time actually observed, plus an optional message. Produced by `TimeoutBehavior` for requests implementing `IHasTimeout`. Can only report a timeout, not enforce cancellation of the abandoned work - see the pipeline-and-behaviors reference doc. |
+| **RateLimited** | The caller was throttled by a rate limiter. Carries the `LimitKey` identifying which limiter/bucket was hit and an optional `RetryAfter` hint. Produced by `RateLimitedBehavior` for requests implementing `IRateLimited`. |
 
 ## Result Type Aggregates
 
@@ -36,7 +39,8 @@ Independent record-struct types, each usable as one case type in an `OperationOu
 |------|------------|
 | **ValidationErrors** | Immutable collection of one or more `ValidationError` instances. De-duplicates preserving first-occurrence order. Safe at default value (returns empty collection). Exposes unified accessor `.Items` (primary), with semantic projections `.Errors` and `.Messages`. |
 | **ValidationErrors<TErrorCode>** | Immutable collection of one or more `ValidationError<TErrorCode>` instances with associated error codes. De-duplicates preserving first-occurrence order. Safe at default value. Exposes unified accessor `.Items` (primary), with semantic projections `.Errors`, `.Messages`, and `.ErrorCodes`. |
-| **Failures** | Immutable collection of one or more `Failure` instances. De-duplicates preserving first-occurrence order. Safe at default value. Exposes unified accessor `.Items` (primary). |
+| **Failures** | Immutable collection of one or more `Failure` instances. De-duplicates preserving first-occurrence order. Safe at default value. Exposes unified accessor `.Items` (primary), with semantic projection `.Reasons`. For failures that carry error codes, use `Failures<TErrorCode>`. |
+| **Failures<TErrorCode>** | Immutable collection of one or more `Failure<TErrorCode>` instances with associated error codes. De-duplicates preserving first-occurrence order. Safe at default value. Exposes unified accessor `.Items` (primary), with semantic projections `.Reasons` and `.ErrorCodes`. |
 | **Conflicts** | Immutable collection of one or more `Conflict` instances (state conflicts, concurrency, uniqueness violations). De-duplicates preserving first-occurrence order. Safe at default value. Exposes unified accessor `.Items` (primary), with semantic projection `.Messages`. |
 
 ## CQRS
@@ -63,6 +67,9 @@ Independent record-struct types, each usable as one case type in an `OperationOu
 | **IExternalStoreRequest** | Declares a command is backed by a non-SQL store/API. `TransactionBehavior` never resolves the SQL session for it. |
 | **IAuditableRequest** | Opts a request into auditing. Carries `ActionName` used by `AuditingBehavior`. |
 | **IRequiresPolicy** | Opts a request into non-resource authorization. Carries `PolicyName` evaluated by `AuthorizationBehavior`. |
+| **ICancellable** | Opts a request into cooperative-cancellation reporting. No members - every request already carries its own `CancellationToken` through the pipeline. `CancellationBehavior` converts a cancellation of that token into `Cancelled` for requests implementing this marker. |
+| **IHasTimeout** | Opts a request into time-budget enforcement. Carries `Budget`, the request's own declared time budget (subject to override by a registered `ITimeoutPolicy`). `TimeoutBehavior` races the rest of the pipeline against the resolved budget for requests implementing this marker. |
+| **IRateLimited** | Opts a request into rate limiting. Carries `LimitKey`, identifying which limiter/bucket applies. `RateLimitedBehavior` checks the limit via a registered `IRateLimiter` for requests implementing this marker. |
 
 ## Notifications
 
@@ -94,10 +101,21 @@ Independent record-struct types, each usable as one case type in an `OperationOu
 | **LoggingBehavior** | Logs request type, handler, duration, and outcome for every request that opts it in. Uses `ILogger<T>`. |
 | **AuthorizationBehavior** | Enforces declarative authorization via `IPolicyEvaluator`. Short-circuits with `Forbidden` when policy fails. |
 | **AuditingBehavior** | Records audit trail via `IAuditSink` for requests implementing `IAuditableRequest`. |
+| **CancellationBehavior** | Converts cooperative cancellation of the ambient request into `Cancelled` for requests implementing `ICancellable`, instead of letting `OperationCanceledException` propagate as an unexpected fault. Opt-in, with no prescribed position in the pipeline. |
+| **TimeoutBehavior** | Races the rest of the pipeline against a time budget resolved via `ITimeoutPolicy`, short-circuiting with `Timeout` if the budget elapses first, for requests implementing `IHasTimeout`. Can only report a timeout, not cancel the abandoned work - the pipeline has no mechanism to hand `next()` a shorter-lived token. Opt-in, with no prescribed position in the pipeline. |
+| **RateLimitedBehavior** | Checks a rate limit via `IRateLimiter`, short-circuiting with `RateLimited` if it's exceeded, for requests implementing `IRateLimited`. Opt-in, with no prescribed position in the pipeline. |
 | **PipelineStageBehavior** | Single host behavior aggregating all registered `IPipelineStage<TRequest, TResponse>` instances into the behavior chain - it is an ordinary entry in the list, never a second pipeline. |
 | **IPipelineStage<TRequest, TResponse>** | Lightweight pre/post hook interface. Consumers implement `OnBeforeAsync` / `OnAfterAsync` without creating a full `IPipelineBehavior`. `OnBeforeAsync` returns `StageResult<TResponse>`: a stage may short-circuit and decline the request without the handler running. `TRequest` is contravariant. Both hooks default to a no-op via the `PipelineStageBase<TRequest, TResponse>` base class; stages can also be registered as delegates via `InterlocutorBuilder.AddStage`. |
 
-None of these run by default - the pipeline is empty until a builder call adds a behavior. The library documents a recommended chain as opt-in sugar with its rationale, never as a default. See the pipeline-and-behaviors reference doc for the full ordering and reasoning.
+None of these run by default - the pipeline is empty until a builder call adds a behavior. The library documents a recommended chain (`UseRecommendedChain()`, five behaviors: Logging → Auditing → Authorization → Validation → Transaction) as opt-in sugar with its rationale, never as a default. `CancellationBehavior`, `TimeoutBehavior`, and `RateLimitedBehavior` are ordinary opt-in behaviors outside that chain, with no prescribed position - a consumer composes them wherever suits their application. See the pipeline-and-behaviors reference doc for the full ordering and reasoning.
+
+## Outcome Case Registry
+
+| Term | Definition |
+|------|------------|
+| **IOutcomeCaseRegistry** | Constructs an `IOperationOutcome` response from one of its case values, and extracts the active case type/value back out of an existing response, without either side knowing whether the response is a compiler-generated union or a hand-rolled `IOperationOutcome` implementation. `AuthorizationBehavior`, `CancellationBehavior`, `TimeoutBehavior`, `RateLimitedBehavior`, and the FluentValidation `ValidationBehavior` all depend on it to build their short-circuit response generically. `DefaultOutcomeCaseRegistry` is the zero-config default, handling any compiler-generated union via reflection; `OutcomeCaseRegistryBuilder` lets a consumer register a custom factory/extractor pair for their own non-union `IOperationOutcome` implementation, falling back to the default for anything unregistered. See [messages-and-result-types.md](messages-and-result-types.md) for the extension-point framing. |
+| **ITimeoutPolicy** | Resolves the effective time budget for a request implementing `IHasTimeout`, letting a consumer override the request's own declared budget (e.g., a tenant-wide ceiling). `TimeoutBehavior` invokes it to resolve the budget it races against. `DefaultTimeoutPolicy` returns the request's own `Budget` unchanged. |
+| **IRateLimiter** | Minimal rate-limiting abstraction with no framework coupling. `RateLimitedBehavior` invokes it to check whether a request implementing `IRateLimited` is allowed to proceed. An implementation can delegate to `System.Threading.RateLimiting`, a distributed limiter, or any throttling system. |
 
 ## Auditing
 

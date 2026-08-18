@@ -86,6 +86,50 @@ public record GetUser(int UserId) : IQuery<OperationOutcome<UserDto, NotFound>>;
 
 The constraint enables runtime-typed dispatch (see [runtime-typed-dispatch.md](runtime-typed-dispatch.md)) and ensures callers can pattern-match on success/failure without knowing the concrete outcome shape.
 
+## IOperationOutcome as an Extension Point
+
+`IOperationOutcome` is the real extension surface, not an implementation detail of the built-in unions. The compiler-generated `OperationOutcome<...>` unions documented throughout this page are the library's own built-in implementation of that marker interface - not the only legal one. Any type that implements `IOperationOutcome` can stand in as a handler's response, including a hand-rolled class that isn't a compiler-generated `union` at all:
+
+```csharp
+public sealed class CustomOperationOutcome : IOperationOutcome
+{
+    private CustomOperationOutcome(Type caseType, object? caseValue)
+    {
+        this.CaseType = caseType;
+        this.CaseValue = caseValue;
+    }
+
+    public Type CaseType { get; }
+
+    public object? CaseValue { get; }
+
+    public static CustomOperationOutcome FromSuccess(Success value) => new(typeof(Success), value);
+
+    public static CustomOperationOutcome FromFailure<TFailure>(TFailure failure)
+        where TFailure : notnull => new(typeof(TFailure), failure);
+}
+```
+
+What makes a response type usable by the pipeline isn't a `union` declaration - it's being teachable to `IOutcomeCaseRegistry`, the construction/extraction seam behaviors use to build and inspect a response's active case without knowing its concrete shape. `AuthorizationBehavior`, `CancellationBehavior`, `TimeoutBehavior`, `RateLimitedBehavior`, and the FluentValidation `ValidationBehavior` all go through this registry rather than constructing a case directly, which is what lets them work against both compiler-generated unions and a consumer's own `IOperationOutcome` implementation.
+
+`DefaultOutcomeCaseRegistry` is the zero-config default: it handles any `IOperationOutcome` that is a compiler-generated `union`, via reflection over the union's case constructors and its compiler-generated `IUnion` marker. A response type that isn't a `union` - like `CustomOperationOutcome` above - has no case constructor for the default registry to find, so it needs a custom factory/extractor pair registered via `OutcomeCaseRegistryBuilder`:
+
+```csharp
+var registry = new OutcomeCaseRegistryBuilder()
+    .RegisterFactory<CustomOperationOutcome, Forbidden>(CustomOperationOutcome.FromFailure)
+    .RegisterExtractor<CustomOperationOutcome>(
+        (CustomOperationOutcome response, out Type caseType, out object? caseValue) =>
+        {
+            caseType = response.CaseType;
+            caseValue = response.CaseValue;
+            return true;
+        }
+    )
+    .Build();
+```
+
+Anything left unregistered still falls back to `DefaultOutcomeCaseRegistry`, so a consumer only needs to register the response types that aren't unions - every `OperationOutcome<...>` shape keeps working unmodified. Register a custom registry via `InterlocutorBuilder.OverrideOutcomeCaseRegistry<TRegistry>()`; see [pipeline-and-behaviors.md](pipeline-and-behaviors.md) for how the behaviors that depend on it are wired.
+
 ## Result Types
 
 Interlocutor.CommonKernel ships the standard failure case types and outcome unions. The exploration guide at `docs/guides/composing-operationoutcome-arities.md` walks through concrete examples; these are the standard shapes:
@@ -168,16 +212,55 @@ var result = await mediator.Send(new UpdateProduct(1, "New Name", 3));
 
 ### Failure
 
-Generic fallback failure when none of the specific cases apply:
+Generic fallback failure when none of the specific cases apply. `Failure` is reason-only; `Failure<TErrorCode>` adds a machine-readable error code, with `TErrorCode` fixed for the lifetime of the value:
 
 ```csharp
-public record Failure(string? Reason = null, string? ErrorCode = null);
+public readonly record struct Failure(string? Reason = null);
+
+public readonly record struct Failure<TErrorCode>(TErrorCode ErrorCode, string? Reason = null)
+    where TErrorCode : notnull, IEquatable<TErrorCode>;
 
 public record GetSetting(string Key) : IQuery<OperationOutcome<string, Failure>>;
 
 var result = await mediator.Send(new GetSetting("unknown.key"));
 // result.Value is Failure("Setting not found")
 ```
+
+Aggregate multiple failures with `Failures` (or `Failures<TErrorCode>` for the error-code variant) when a handler can fail for more than one independent reason at once:
+
+```csharp
+public record BulkDelete(IReadOnlyList<int> Ids) : ICommand<OperationOutcome<Success, Failures>>;
+
+var result = await mediator.Send(new BulkDelete([1, 2, 3]));
+// result.Value is Failures whose .Items holds one Failure per record that couldn't be deleted,
+// and .Reasons projects the non-null reasons
+```
+
+### Cancelled, Timeout & RateLimited
+
+Three additional case types cover cross-cutting concerns that opt-in pipeline behaviors (see [pipeline-and-behaviors.md](pipeline-and-behaviors.md)) can short-circuit with:
+
+```csharp
+public readonly record struct Cancelled(string? Reason = null);
+
+public readonly record struct Timeout(TimeSpan Budget, TimeSpan Elapsed, string? Message = null);
+
+public readonly record struct RateLimited(string LimitKey, TimeSpan? RetryAfter = null, string? Message = null);
+
+public record ExportReport(int ReportId)
+    : ICommand<OperationOutcome<Success, Cancelled, Timeout, RateLimited>>, ICancellable, IHasTimeout, IRateLimited
+{
+    public TimeSpan Budget => TimeSpan.FromSeconds(30);
+
+    public string LimitKey => "exports";
+}
+```
+
+- `Cancelled` - the ambient `CancellationToken` was cancelled mid-flight and `CancellationBehavior` converted the resulting `OperationCanceledException` into an outcome instead of letting it propagate.
+- `Timeout` - `TimeoutBehavior` raced the rest of the pipeline against a resolved time budget and the budget elapsed first; carries both the budget and the actual elapsed time for diagnostics.
+- `RateLimited` - `RateLimitedBehavior` rejected the request because an `IRateLimiter` check disallowed it; `LimitKey` identifies which limiter/bucket was hit.
+
+None of these three participate unless the request opts in via the matching marker interface (`ICancellable`, `IHasTimeout`, `IRateLimited`) and the corresponding behavior is registered - the same "nothing runs unless you ask for it" rule that governs every pipeline behavior.
 
 ## Outcome Unions
 
