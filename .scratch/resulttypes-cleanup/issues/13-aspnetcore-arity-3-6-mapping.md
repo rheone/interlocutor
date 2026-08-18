@@ -4,6 +4,8 @@
 
 ready-for-agent
 
+> **Partial-overlap note (2026-08-18):** `audit-followups/05-aspnetcore-multi-arity-outcome-mapping-tests.md` already added the 8 arity 3-6 `ToActionResult`/`ToMinimalApiResult` overloads described in the first acceptance criterion below, as a prerequisite for the test coverage that ticket required (`src/Interlocutor.AspNetCore/ResultExtensions.cs`, commit `38bff74`). When this ticket is picked up, verify that work against the acceptance criteria here rather than re-adding it - what's left is the `Cancelled`/`Timeout`/`RateLimited` mapper methods and the `.Reasons` swap, both still genuinely blocked on tickets 04/05.
+
 **What to build:** `ToActionResult`/`ToMinimalApiResult` today only have overloads for the non-generic `OperationOutcome` and the 2-case `OperationOutcome<TSuccess,TFailure>` - a handler returning `OperationOutcome<UserDto, NotFound, Conflict>` has no mapping helper to call at all. Add the missing overloads for arities 3 through 6, direct extensions of the existing arity-2 pattern (`.Value switch { ... }` dispatching through `IOutcomeStatusMapper`). Also extend `DefaultOutcomeStatusMapper` to handle the three new case types (`Cancelled`, `Timeout`, `RateLimited` from ticket 05) via new protected virtual `Map*` methods, following the existing per-case override-point pattern, and swap `MapFailures`'s use of `failures.Values` to the new `.Reasons` projection (ticket 04).
 
 **Blocked by:** 02 (fixture rename), 04 (Failure/Failures redesign, for `.Reasons`), 05 (new case types)
