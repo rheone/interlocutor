@@ -195,7 +195,7 @@ public class ValidationBehaviorTests
     /// <summary>A hand-rolled, non-union <see cref="IOperationOutcome"/> implementation with no
     /// compiler-generated case constructor for <see cref="UnionCaseFactory"/> to find reflectively - proves
     /// <see cref="ValidationBehavior{TRequest, TResponse}"/> goes through the injected
-    /// <see cref="IOutcomeCaseRegistry"/> rather than assuming <typeparamref name="TResponse"/> is a union.</summary>
+    /// <see cref="IOutcomeCaseRegistry"/> rather than assuming the response type is a union.</summary>
     public sealed class HandRolledOutcome : IOperationOutcome
     {
         private HandRolledOutcome(Type caseType, object? caseValue)
