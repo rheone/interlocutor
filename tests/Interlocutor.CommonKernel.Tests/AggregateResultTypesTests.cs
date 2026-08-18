@@ -212,6 +212,25 @@ public class AggregateResultTypesTests
     }
 
     [Fact]
+    public void Failures_DefaultValue_ReasonsIsEmpty()
+    {
+        var defaultValue = default(Failures);
+        Assert.Empty(defaultValue.Reasons);
+    }
+
+    [Fact]
+    public void Failures_ReasonsProjection_ExtractsDistinctNonNullReasons()
+    {
+        var failures = new Failures(
+            new[] { new Failure("Timeout"), new Failure(Reason: null), new Failure("Disk full"), new Failure("Timeout") }
+        );
+
+        Assert.Equal(2, failures.Reasons.Count);
+        Assert.Contains("Timeout", failures.Reasons);
+        Assert.Contains("Disk full", failures.Reasons);
+    }
+
+    [Fact]
     public void Conflicts_NullEnumerable_Throws()
     {
         Assert.Throws<ArgumentNullException>(() => new Conflicts(null!));
@@ -255,5 +274,94 @@ public class AggregateResultTypesTests
     public void ValidationErrors_Generic_NullEnumerable_Throws()
     {
         Assert.Throws<ArgumentNullException>(() => new ValidationErrors<int>((IEnumerable<ValidationError<int>>)null!));
+    }
+
+    [Fact]
+    public void Failures_Generic_DefaultValue_CountIsZero()
+    {
+        var defaultValue = default(Failures<int>);
+        Assert.Equal(0, defaultValue.Count);
+    }
+
+    [Fact]
+    public void Failures_Generic_DefaultValue_ItemsIsEmpty()
+    {
+        var defaultValue = default(Failures<int>);
+        Assert.Empty(defaultValue.Items);
+    }
+
+    [Fact]
+    public void Failures_Generic_DefaultValue_ReasonsIsEmpty()
+    {
+        var defaultValue = default(Failures<int>);
+        Assert.Empty(defaultValue.Reasons);
+    }
+
+    [Fact]
+    public void Failures_Generic_DefaultValue_ErrorCodesIsEmpty()
+    {
+        var defaultValue = default(Failures<int>);
+        Assert.Empty(defaultValue.ErrorCodes);
+    }
+
+    [Fact]
+    public void Failures_Generic_ExplicitEmpty_StillThrows()
+    {
+        var ex = Assert.Throws<ArgumentException>(() => new Failures<int>(Array.Empty<Failure<int>>()));
+        Assert.Contains("At least one failure is required", ex.Message);
+    }
+
+    [Fact]
+    public void Failures_Generic_NullEnumerable_Throws()
+    {
+        Assert.Throws<ArgumentNullException>(() => new Failures<int>((IEnumerable<Failure<int>>)null!));
+    }
+
+    [Fact]
+    public void Failures_Generic_SingleItem_IsAccessible()
+    {
+        var failure = new Failure<int>(1001, "Timeout");
+        var failures = new Failures<int>(failure);
+
+        Assert.Equal(1, failures.Count);
+        Assert.Single(failures.Items);
+        Assert.Equal(failure, failures.Items[0]);
+    }
+
+    [Fact]
+    public void Failures_Generic_MultipleItems_DeduplicatedOrderPreserved()
+    {
+        var failure1 = new Failure<int>(1001, "Timeout");
+        var failure2 = new Failure<int>(1002, "Disk full");
+
+        var failures = new Failures<int>(new[] { failure1, failure2, failure1 });
+
+        Assert.Equal(2, failures.Count);
+        Assert.Equal(failure1, failures.Items[0]);
+        Assert.Equal(failure2, failures.Items[1]);
+    }
+
+    [Fact]
+    public void Failures_Generic_ReasonsProjection_ExtractsDistinctNonNullReasons()
+    {
+        var failures = new Failures<int>(
+            new[] { new Failure<int>(1001, "Timeout"), new Failure<int>(1002), new Failure<int>(1003, "Timeout") }
+        );
+
+        Assert.Single(failures.Reasons);
+        Assert.Contains("Timeout", failures.Reasons);
+    }
+
+    [Fact]
+    public void Failures_Generic_ErrorCodesProjection_ExtractsDistinctCodesAcrossDuplicateReasons()
+    {
+        var failures = new Failures<int>(
+            new[] { new Failure<int>(1001, "Email is required"), new Failure<int>(1002, "Email is required") }
+        );
+
+        Assert.Equal(2, failures.Count);
+        Assert.Equal(2, failures.ErrorCodes.Count);
+        Assert.Contains(1001, failures.ErrorCodes);
+        Assert.Contains(1002, failures.ErrorCodes);
     }
 }
