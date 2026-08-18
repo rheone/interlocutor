@@ -34,4 +34,33 @@ internal static class InterlocutorDiagnostics
             + "the same compilation. Add a handler, or reference the assembly that defines one (cross-assembly "
             + "aggregation is not yet performed by this generator)."
     );
+
+    /// <summary>
+    /// Reported when more than one concrete <c>IQueryHandler&lt;TQuery, TResponse&gt;</c> or
+    /// <c>ICommandHandler&lt;TCommand, TResponse&gt;</c> implementation is found in the compiling project for the
+    /// same closed request/response pair.
+    /// </summary>
+    /// <remarks>
+    /// Unlike a notification (see <see cref="RequestKind"/>'s remarks), a query or command must resolve to
+    /// exactly one handler - <c>Mediator.Send</c> and the generated dispatch wrapper both resolve the handler's
+    /// service interface as a single service, so a second registration silently shadows the first rather than
+    /// being an error at resolution time. This diagnostic catches that ambiguity at build time instead. Default
+    /// severity is <see cref="DiagnosticSeverity.Warning"/>, escalated the same way as
+    /// <see cref="MissingHandler"/>:
+    /// <code>
+    /// dotnet_diagnostic.INTERLOC002.severity = error
+    /// </code>
+    /// </remarks>
+    public static readonly DiagnosticDescriptor DuplicateHandler = new(
+        id: "INTERLOC002",
+        title: "Multiple handlers registered for request type",
+        messageFormat: "Request type '{0}' has multiple matching handlers in this compilation: {1}",
+        category: "Interlocutor.Discovery",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "More than one IQueryHandler<,> or ICommandHandler<,> implementation was found for the same "
+            + "closed request/response pair in the same compilation. A query or command must resolve to exactly "
+            + "one handler, unlike a notification, which permits zero or many. Remove or rename the extra "
+            + "handler so only one remains."
+    );
 }

@@ -1,5 +1,7 @@
 namespace Interlocutor.Generator;
 
+using Microsoft.CodeAnalysis;
+
 /// <summary>
 /// An equatable, incremental-pipeline-safe snapshot of one discovered handler-to-contract match: a concrete
 /// handler type implementing one of the four mediator handler contracts, closed over its request (and, for
@@ -24,10 +26,15 @@ namespace Interlocutor.Generator;
 /// <c>global::Interlocutor.Abstractions.Queries.IQueryHandler&lt;global::MyApp.FooQuery, global::MyApp.FooResult&gt;</c>)
 /// this handler satisfies - used verbatim as the emitted registration's service type.
 /// </param>
+/// <param name="Location">
+/// The handler type declaration's identifier location, used to anchor the duplicate-handler diagnostic at
+/// the handler type itself rather than at the compilation as a whole.
+/// </param>
 internal sealed record HandlerModel(
     HandlerKind Kind,
     string HandlerTypeName,
     string RequestTypeName,
     string? ResponseTypeName,
-    string ServiceInterfaceName
+    string ServiceInterfaceName,
+    Location Location
 );

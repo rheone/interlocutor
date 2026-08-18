@@ -10,10 +10,10 @@ Notification handlers have different arity semantics than request handlers: zero
 
 ## Acceptance criteria
 
-- [ ] Zero registered `INotificationHandler<T>` implementations for a published notification does NOT produce a missing-handler diagnostic (this is valid, unlike request handlers)
-- [ ] A missing-handler diagnostic is still produced for a query/command/void-command request with no handler (regression check on existing behavior)
-- [ ] Two concrete handlers registered for the same query or command request produces a diagnostic naming both
-- [ ] Existing `MissingHandlerDiagnosticTests.cs` assertions still pass
+- [x] Zero registered `INotificationHandler<T>` implementations for a published notification does NOT produce a missing-handler diagnostic (this is valid, unlike request handlers)
+- [x] A missing-handler diagnostic is still produced for a query/command/void-command request with no handler (regression check on existing behavior)
+- [x] Two concrete handlers registered for the same query or command request produces a diagnostic naming both
+- [x] Existing `MissingHandlerDiagnosticTests.cs` assertions still pass
 
 ## Blocked by
 

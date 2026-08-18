@@ -121,6 +121,152 @@ public sealed class MissingHandlerDiagnosticTests
     }
 
     [Fact]
+    public void Notification_with_no_handlers_reports_no_diagnostic()
+    {
+        // Unlike a query or command, a notification is valid with zero registered handlers - INotification is
+        // not tracked as a request marker by the generator at all, so it never enters the missing-handler check.
+        const string source = """
+            namespace TestApp;
+
+            using Interlocutor.Abstractions.Notifications;
+
+            public sealed class FooHappened : INotification;
+            """;
+
+        var result = GeneratorTestHarness.Run(source);
+
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public void Notification_with_one_handler_reports_no_diagnostic()
+    {
+        const string source = """
+            namespace TestApp;
+
+            using System.Threading;
+            using System.Threading.Tasks;
+            using Interlocutor.Abstractions.Notifications;
+
+            public sealed class FooHappened : INotification;
+
+            public sealed class FooHappenedHandler : INotificationHandler<FooHappened>
+            {
+                public Task Handle(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
+            }
+            """;
+
+        var result = GeneratorTestHarness.Run(source);
+
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public void Notification_with_multiple_handlers_reports_no_diagnostic()
+    {
+        // Unlike a query or command, zero-or-many is the valid arity for a notification, so multiple concrete
+        // handlers for the same notification never trigger INTERLOC002 either.
+        const string source = """
+            namespace TestApp;
+
+            using System.Threading;
+            using System.Threading.Tasks;
+            using Interlocutor.Abstractions.Notifications;
+
+            public sealed class FooHappened : INotification;
+
+            public sealed class FooHappenedHandlerOne : INotificationHandler<FooHappened>
+            {
+                public Task Handle(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
+            }
+
+            public sealed class FooHappenedHandlerTwo : INotificationHandler<FooHappened>
+            {
+                public Task Handle(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
+            }
+            """;
+
+        var result = GeneratorTestHarness.Run(source);
+
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Fact]
+    public void Query_with_two_handlers_reports_duplicate_handler_diagnostic_naming_both()
+    {
+        const string source = """
+            namespace TestApp;
+
+            using System.Threading;
+            using System.Threading.Tasks;
+            using Interlocutor.Abstractions.Queries;
+            using Interlocutor.CommonKernel;
+
+            public sealed class GetFooQuery : IQuery<OperationOutcome>;
+
+            public sealed class GetFooQueryHandlerOne : IQueryHandler<GetFooQuery, OperationOutcome>
+            {
+                public Task<OperationOutcome> Handle(GetFooQuery query, CancellationToken ct) => throw new System.NotImplementedException();
+            }
+
+            public sealed class GetFooQueryHandlerTwo : IQueryHandler<GetFooQuery, OperationOutcome>
+            {
+                public Task<OperationOutcome> Handle(GetFooQuery query, CancellationToken ct) => throw new System.NotImplementedException();
+            }
+            """;
+
+        var result = GeneratorTestHarness.Run(source);
+
+        Assert.Equal(2, result.Diagnostics.Length);
+        Assert.All(result.Diagnostics, d => Assert.Equal("INTERLOC002", d.Id));
+        Assert.All(result.Diagnostics, d => Assert.Contains("TestApp.GetFooQuery", d.GetMessage(), StringComparison.Ordinal));
+        Assert.All(result.Diagnostics, d => Assert.Contains("GetFooQueryHandlerOne", d.GetMessage(), StringComparison.Ordinal));
+        Assert.All(result.Diagnostics, d => Assert.Contains("GetFooQueryHandlerTwo", d.GetMessage(), StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Command_with_two_handlers_reports_duplicate_handler_diagnostic_naming_both()
+    {
+        const string source = """
+            namespace TestApp;
+
+            using System.Threading;
+            using System.Threading.Tasks;
+            using Interlocutor.Abstractions.Commands;
+            using Interlocutor.CommonKernel;
+
+            public sealed class CreateFooCommand : ICommand<OperationOutcome>;
+
+            public sealed class CreateFooCommandHandlerOne : ICommandHandler<CreateFooCommand, OperationOutcome>
+            {
+                public Task<OperationOutcome> Handle(CreateFooCommand command, CancellationToken ct) => throw new System.NotImplementedException();
+            }
+
+            public sealed class CreateFooCommandHandlerTwo : ICommandHandler<CreateFooCommand, OperationOutcome>
+            {
+                public Task<OperationOutcome> Handle(CreateFooCommand command, CancellationToken ct) => throw new System.NotImplementedException();
+            }
+            """;
+
+        var result = GeneratorTestHarness.Run(source);
+
+        Assert.Equal(2, result.Diagnostics.Length);
+        Assert.All(result.Diagnostics, d => Assert.Equal("INTERLOC002", d.Id));
+        Assert.All(
+            result.Diagnostics,
+            d => Assert.Contains("TestApp.CreateFooCommand", d.GetMessage(), StringComparison.Ordinal)
+        );
+        Assert.All(
+            result.Diagnostics,
+            d => Assert.Contains("CreateFooCommandHandlerOne", d.GetMessage(), StringComparison.Ordinal)
+        );
+        Assert.All(
+            result.Diagnostics,
+            d => Assert.Contains("CreateFooCommandHandlerTwo", d.GetMessage(), StringComparison.Ordinal)
+        );
+    }
+
+    [Fact]
     public void Consumer_escalates_the_diagnostic_to_an_error_via_the_standard_editorconfig_mechanism()
     {
         const string source = """
