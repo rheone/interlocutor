@@ -274,8 +274,7 @@ public sealed class InterlocutorBuilder
     /// <summary>
     /// Adds <c>Interlocutor.FluentValidation.ValidationBehavior&lt;,&gt;</c> at the current position in
     /// the chain, if the <c>Interlocutor.FluentValidation</c> package is referenced by the application.
-    /// A no-op, matching the graceful-fallback behavior of <see cref="DefaultPipelineRegistrations"/>,
-    /// when that package is not loaded.
+    /// A no-op when that package is not loaded.
     /// </summary>
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorBuilder AddValidationBehavior()
@@ -293,9 +292,8 @@ public sealed class InterlocutorBuilder
 
     /// <summary>
     /// Adds the EF Core or NHibernate <c>TransactionBehavior</c> at the current position in the chain,
-    /// preferring EF Core, if either store-specific package is referenced by the application. A no-op,
-    /// matching the graceful-fallback behavior of <see cref="DefaultPipelineRegistrations"/>, when
-    /// neither package is loaded.
+    /// preferring EF Core, if either store-specific package is referenced by the application. A no-op
+    /// when neither package is loaded.
     /// </summary>
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorBuilder AddTransactionBehavior()
@@ -560,8 +558,8 @@ public sealed class InterlocutorBuilder
 
     /// <summary>
     /// Attempts to resolve a type by its assembly-qualified or partially-qualified name, returning
-    /// <see langword="null"/> if the type (or the assembly it lives in) is not loaded - the same
-    /// graceful-fallback lookup <see cref="DefaultPipelineRegistrations"/> uses for optional-package behaviors.
+    /// <see langword="null"/> if the type (or the assembly it lives in) is not loaded - the graceful-fallback
+    /// lookup used for optional-package behaviors.
     /// </summary>
     private static Type? TryGetType(string typeName)
     {
