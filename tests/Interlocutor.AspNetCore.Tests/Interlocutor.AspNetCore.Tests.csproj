@@ -4,6 +4,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Needed for the manual sanity-check test host (TestServer) that hits real minimal-API endpoints. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="Microsoft.Testing.Platform" />
@@ -14,5 +19,6 @@
     </PackageReference>
     <PackageReference Include="NSubstitute" />
     <PackageReference Include="NSubstitute.Analyzers.CSharp" />
+    <PackageReference Include="Microsoft.AspNetCore.TestHost" />
   </ItemGroup>
 </Project>

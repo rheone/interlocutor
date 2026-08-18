@@ -22,6 +22,8 @@
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="11.0.0-preview.6.26359.118" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="11.0.0-preview.6.26359.118" />
     <PackageVersion Include="Microsoft.Extensions.Logging" Version="11.0.0-preview.6.26359.118" />
+    <!-- Test-only: in-memory ASP.NET Core test host for AspNetCore.Tests' manual sanity-check host. -->
+    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="11.0.0-preview.6.26359.118" />
   </ItemGroup>
   <!-- Entity Framework Core -->
   <ItemGroup>
