@@ -43,6 +43,20 @@ Each `src/*` project has a matching `tests/*.Tests` project (xunit.v3, NSubstitu
 - Value-added inline comments only - don't narrate obvious logic.
 - Conventional commits (`feat:`, `fix:`, `chore:`...), imperative mood, subject <72 chars.
 
+## Agent skills
+
+### Issue tracker
+
+Local markdown - issues live as files under `.scratch/<feature>/`. No PR triage. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` and one `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
 ## Code style enforcement
 
 StyleCop + Roslynator analyzers run on every build (`Directory.Build.props`); `.editorconfig` and `stylecop.json` at repo root are shared across all projects via `AdditionalFiles` linking - don't duplicate per-project style config. A specific set of StyleCop rules is suppressed solution-wide (see `NoWarn` in `Directory.Build.props`); check there before re-adding a suppression locally. `csharpier` (pinned via `dotnet-tools.json`) is the formatter - run it instead of hand-formatting.
@@ -51,7 +65,7 @@ StyleCop + Roslynator analyzers run on every build (`Directory.Build.props`); `.
 
 Every documentation file in this directory follows these conventions:
 
-### GitHub Alerts
+### GitHub Markdown Alerts
 
 Use all five GitHub alert types purposefully:
 
