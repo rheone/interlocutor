@@ -12,10 +12,10 @@ No test anywhere registers all five real behaviors together and records the orde
 
 ## Acceptance criteria
 
-- [ ] A test registers Logging, Auditing, Authorization, Validation, and Transaction behaviors together via `InterlocutorBuilder.UseRecommendedChain()` (the real default registration path)
-- [ ] Sending a request through the composed pipeline produces an observed execution order matching Logging → Auditing → Authorization → Validation → Transaction (inbound), and the reverse on the way out
-- [ ] The test fails if any two adjacent stages are swapped, proving it actually asserts order and not just presence
-- [ ] Existing pipeline-ordering tests elsewhere in `tests/Interlocutor.DependencyInjection.Abstractions.Tests/` still pass
+- [x] A test registers Logging, Auditing, Authorization, Validation, and Transaction behaviors together via `InterlocutorBuilder.UseRecommendedChain()` (the real default registration path)
+- [x] Sending a request through the composed pipeline produces an observed execution order matching Logging → Auditing → Authorization → Validation → Transaction (inbound), and the reverse on the way out
+- [x] The test fails if any two adjacent stages are swapped, proving it actually asserts order and not just presence
+- [x] Existing pipeline-ordering tests elsewhere in `tests/Interlocutor.DependencyInjection.Abstractions.Tests/` still pass
 
 ## Blocked by
 
