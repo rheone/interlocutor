@@ -19,6 +19,15 @@ using Interlocutor.Abstractions.Pipeline.Cases;
 /// registration primitives - no scanning, ordering, or override logic is duplicated per container.
 /// </para>
 /// <para>
+/// <b>Pipeline composition is delegated.</b> Every pipeline-composition method on this type
+/// (<see cref="AddBehavior"/>, the named <c>Add*Behavior</c> convenience methods, <see cref="UseRecommendedChain"/>,
+/// and the <c>AddStage</c>/<see cref="AddStageHost"/> family) is a thin, source-compatible wrapper over an
+/// internal <see cref="InterlocutorPipelineBuilder"/> instance, which holds the actual behavior/stage list
+/// state. This keeps "what runs in what order" a self-contained concern, separate from this type's own
+/// discovery (<c>Scan*</c>) and infrastructure-override responsibilities. <see cref="Behaviors"/>,
+/// <see cref="Stages"/>, and <see cref="StageFactories"/> simply expose that inner builder's state.
+/// </para>
+/// <para>
 /// Per <c>ADR-0009</c> ("No Default Pipeline"), a builder with no behavior calls produces zero pipeline
 /// behaviors - <see cref="Behaviors"/> starts empty and stays empty unless a builder call adds to it.
 /// <see cref="Defaults"/> starts seeded with exactly one entry, <see cref="IRequestContextAccessor"/>,
@@ -74,11 +83,9 @@ using Interlocutor.Abstractions.Pipeline.Cases;
 public sealed class InterlocutorBuilder
 {
     private readonly List<Assembly> _assembliesToScan = [];
-    private readonly List<InterlocutorRegistration> _behaviors = [];
     private readonly Dictionary<Type, InterlocutorRegistration> _defaults;
     private readonly List<InterlocutorRegistration> _generatedRegistrations = [];
-    private readonly List<InterlocutorRegistration> _stages = [];
-    private readonly List<InterlocutorFactoryRegistration> _stageFactories = [];
+    private readonly InterlocutorPipelineBuilder _pipeline;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="InterlocutorBuilder"/> class, seeded with the
@@ -96,6 +103,12 @@ public sealed class InterlocutorBuilder
                 RegistrationKind.Default
             ),
         };
+
+        // The pipeline builder shares this exact dictionary instance (rather than owning a copy) so a
+        // pipeline default an Add*Behavior call try-adds (for example, IAuditSink) and an infrastructure
+        // Override* call on this type that targets the same service type are always the same entry,
+        // regardless of which one runs first.
+        this._pipeline = new InterlocutorPipelineBuilder(this._defaults);
     }
 
     /// <summary>Gets the assemblies configured for handler discovery, in the order they were added.</summary>
@@ -107,7 +120,7 @@ public sealed class InterlocutorBuilder
     /// a bare builder. May contain the same implementation type more than once.
     /// </summary>
     /// <value>The flat, ordered list of pipeline behavior registrations, in builder-call order.</value>
-    public IReadOnlyList<InterlocutorRegistration> Behaviors => this._behaviors;
+    public IReadOnlyList<InterlocutorRegistration> Behaviors => this._pipeline.Behaviors;
 
     /// <summary>
     /// Gets the try-add-able default registrations, one per service type. Always contains exactly one
@@ -122,14 +135,14 @@ public sealed class InterlocutorBuilder
     /// each keyed to the closed <see cref="IPipelineStage{TRequest,TResponse}"/> interface it implements.
     /// </summary>
     /// <value>The pipeline stage registrations added via <see cref="AddStage(Type, RegistrationLifetime)"/>.</value>
-    public IReadOnlyList<InterlocutorRegistration> Stages => this._stages;
+    public IReadOnlyList<InterlocutorRegistration> Stages => this._pipeline.Stages;
 
     /// <summary>
     /// Gets the delegate-backed pipeline stage registrations added via the <c>AddStage</c> delegate
     /// overloads - the lambda-form counterpart to <see cref="Stages"/>.
     /// </summary>
     /// <value>The delegate-backed pipeline stage registrations.</value>
-    public IReadOnlyList<InterlocutorFactoryRegistration> StageFactories => this._stageFactories;
+    public IReadOnlyList<InterlocutorFactoryRegistration> StageFactories => this._pipeline.StageFactories;
 
     /// <summary>
     /// Gets the compile-time generated handler registrations added via
@@ -218,15 +231,7 @@ public sealed class InterlocutorBuilder
         RegistrationLifetime lifetime = RegistrationLifetime.Scoped
     )
     {
-        ArgumentNullException.ThrowIfNull(behaviorImplementationType);
-        this._behaviors.Add(
-            new InterlocutorRegistration(
-                typeof(IPipelineBehavior<,>),
-                behaviorImplementationType,
-                lifetime,
-                RegistrationKind.Behavior
-            )
-        );
+        this._pipeline.AddBehavior(behaviorImplementationType, lifetime);
         return this;
     }
 
@@ -243,7 +248,11 @@ public sealed class InterlocutorBuilder
     /// to opt into a specific implementation instead.
     /// </remarks>
     /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder AddLoggingBehavior() => this.AddBehavior(typeof(LoggingBehavior<,>));
+    public InterlocutorBuilder AddLoggingBehavior()
+    {
+        this._pipeline.AddLoggingBehavior();
+        return this;
+    }
 
     /// <summary>
     /// Adds <see cref="AuditingBehavior{TRequest,TResponse}"/> at the current position in the chain, and
@@ -254,8 +263,7 @@ public sealed class InterlocutorBuilder
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorBuilder AddAuditingBehavior()
     {
-        this.AddBehavior(typeof(AuditingBehavior<,>));
-        this.TryAddDefault(typeof(IAuditSink), typeof(LoggingAuditSink));
+        this._pipeline.AddAuditingBehavior();
         return this;
     }
 
@@ -268,9 +276,7 @@ public sealed class InterlocutorBuilder
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorBuilder AddAuthorizationBehavior()
     {
-        this.AddBehavior(typeof(AuthorizationBehavior<,>));
-        this.TryAddDefault(typeof(IPolicyEvaluator), typeof(DefaultPolicyEvaluator));
-        this.TryAddDefault(typeof(IOutcomeCaseRegistry), typeof(DefaultOutcomeCaseRegistry));
+        this._pipeline.AddAuthorizationBehavior();
         return this;
     }
 
@@ -284,15 +290,7 @@ public sealed class InterlocutorBuilder
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorBuilder AddValidationBehavior()
     {
-        var validationBehaviorType = TryGetType(
-            "Interlocutor.FluentValidation.ValidationBehavior`2, Interlocutor.FluentValidation"
-        );
-        if (validationBehaviorType is not null)
-        {
-            this.AddBehavior(validationBehaviorType);
-            this.TryAddDefault(typeof(IOutcomeCaseRegistry), typeof(DefaultOutcomeCaseRegistry));
-        }
-
+        this._pipeline.AddValidationBehavior();
         return this;
     }
 
@@ -304,16 +302,7 @@ public sealed class InterlocutorBuilder
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorBuilder AddTransactionBehavior()
     {
-        // EF Core's TransactionBehavior<TRequest,TResponse,TContext> is arity 3 (generic over the DbContext
-        // type too); NHibernate's TransactionBehavior<TRequest,TResponse> is arity 2 (ISession isn't generic).
-        var transactionBehaviorType =
-            TryGetType("Interlocutor.EntityFrameworkCore.TransactionBehavior`3, Interlocutor.EntityFrameworkCore")
-            ?? TryGetType("Interlocutor.NHibernate.TransactionBehavior`2, Interlocutor.NHibernate");
-        if (transactionBehaviorType is not null)
-        {
-            this.AddBehavior(transactionBehaviorType);
-        }
-
+        this._pipeline.AddTransactionBehavior();
         return this;
     }
 
@@ -331,8 +320,7 @@ public sealed class InterlocutorBuilder
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorBuilder AddCancellationBehavior()
     {
-        this.AddBehavior(typeof(CancellationBehavior<,>));
-        this.TryAddDefault(typeof(IOutcomeCaseRegistry), typeof(DefaultOutcomeCaseRegistry));
+        this._pipeline.AddCancellationBehavior();
         return this;
     }
 
@@ -351,9 +339,7 @@ public sealed class InterlocutorBuilder
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorBuilder AddTimeoutBehavior()
     {
-        this.AddBehavior(typeof(TimeoutBehavior<,>));
-        this.TryAddDefault(typeof(ITimeoutPolicy), typeof(DefaultTimeoutPolicy));
-        this.TryAddDefault(typeof(IOutcomeCaseRegistry), typeof(DefaultOutcomeCaseRegistry));
+        this._pipeline.AddTimeoutBehavior();
         return this;
     }
 
@@ -372,9 +358,7 @@ public sealed class InterlocutorBuilder
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorBuilder AddRateLimitedBehavior()
     {
-        this.AddBehavior(typeof(RateLimitedBehavior<,>));
-        this.TryAddDefault(typeof(IRateLimiter), typeof(DefaultRateLimiter));
-        this.TryAddDefault(typeof(IOutcomeCaseRegistry), typeof(DefaultOutcomeCaseRegistry));
+        this._pipeline.AddRateLimitedBehavior();
         return this;
     }
 
@@ -397,12 +381,11 @@ public sealed class InterlocutorBuilder
     /// </list>
     /// </remarks>
     /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder UseRecommendedChain() =>
-        this.AddLoggingBehavior()
-            .AddAuditingBehavior()
-            .AddAuthorizationBehavior()
-            .AddValidationBehavior()
-            .AddTransactionBehavior();
+    public InterlocutorBuilder UseRecommendedChain()
+    {
+        this._pipeline.UseRecommendedChain();
+        return this;
+    }
 
     /// <summary>
     /// Replaces the default <see cref="IAuditSink"/> implementation <see cref="AuditingBehavior{TRequest,TResponse}"/>
@@ -445,7 +428,7 @@ public sealed class InterlocutorBuilder
     public InterlocutorBuilder OverrideTimeoutPolicy<TPolicy>(RegistrationLifetime lifetime = RegistrationLifetime.Scoped)
         where TPolicy : class, ITimeoutPolicy
     {
-        this.SetDefault(typeof(ITimeoutPolicy), typeof(TPolicy), lifetime);
+        this._pipeline.OverrideTimeoutPolicy<TPolicy>(lifetime);
         return this;
     }
 
@@ -460,7 +443,7 @@ public sealed class InterlocutorBuilder
     public InterlocutorBuilder OverrideRateLimiter<TLimiter>(RegistrationLifetime lifetime = RegistrationLifetime.Scoped)
         where TLimiter : class, IRateLimiter
     {
-        this.SetDefault(typeof(IRateLimiter), typeof(TLimiter), lifetime);
+        this._pipeline.OverrideRateLimiter<TLimiter>(lifetime);
         return this;
     }
 
@@ -480,7 +463,7 @@ public sealed class InterlocutorBuilder
     )
         where TRegistry : class, IOutcomeCaseRegistry
     {
-        this.SetDefault(typeof(IOutcomeCaseRegistry), typeof(TRegistry), lifetime);
+        this._pipeline.OverrideOutcomeCaseRegistry<TRegistry>(lifetime);
         return this;
     }
 
@@ -533,18 +516,7 @@ public sealed class InterlocutorBuilder
         RegistrationLifetime lifetime = RegistrationLifetime.Scoped
     )
     {
-        ArgumentNullException.ThrowIfNull(stageImplementationType);
-
-        foreach (var stageInterface in stageImplementationType.GetInterfaces())
-        {
-            if (stageInterface.IsGenericType && stageInterface.GetGenericTypeDefinition() == typeof(IPipelineStage<,>))
-            {
-                this._stages.Add(
-                    new InterlocutorRegistration(stageInterface, stageImplementationType, lifetime, RegistrationKind.Stage)
-                );
-            }
-        }
-
+        this._pipeline.AddStage(stageImplementationType, lifetime);
         return this;
     }
 
@@ -556,7 +528,11 @@ public sealed class InterlocutorBuilder
     /// <param name="lifetime">The service lifetime to register the stage with. Defaults to scoped.</param>
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorBuilder AddStage<TStage>(RegistrationLifetime lifetime = RegistrationLifetime.Scoped)
-        where TStage : class => this.AddStage(typeof(TStage), lifetime);
+        where TStage : class
+    {
+        this._pipeline.AddStage<TStage>(lifetime);
+        return this;
+    }
 
     /// <summary>
     /// Registers a pipeline stage as a pair of delegates instead of a dedicated implementation type -
@@ -578,14 +554,7 @@ public sealed class InterlocutorBuilder
         RegistrationLifetime lifetime = RegistrationLifetime.Singleton
     )
     {
-        this._stageFactories.Add(
-            new InterlocutorFactoryRegistration(
-                typeof(IPipelineStage<TRequest, TResponse>),
-                _ => new DelegatePipelineStage<TRequest, TResponse>(onBefore, onAfter),
-                lifetime,
-                RegistrationKind.Stage
-            )
-        );
+        this._pipeline.AddStage(onBefore, onAfter, lifetime);
         return this;
     }
 
@@ -617,17 +586,7 @@ public sealed class InterlocutorBuilder
         RegistrationLifetime lifetime = RegistrationLifetime.Scoped
     )
     {
-        this._stageFactories.Add(
-            new InterlocutorFactoryRegistration(
-                typeof(IPipelineStage<TRequest, TResponse>),
-                sp => new DelegatePipelineStage<TRequest, TResponse>(
-                    onBefore is null ? null : (request, ct) => onBefore(sp, request, ct),
-                    onAfter is null ? null : (request, response, ct) => onAfter(sp, request, response, ct)
-                ),
-                lifetime,
-                RegistrationKind.Stage
-            )
-        );
+        this._pipeline.AddStage(onBefore, onAfter, lifetime);
         return this;
     }
 
@@ -639,8 +598,11 @@ public sealed class InterlocutorBuilder
     /// </summary>
     /// <param name="lifetime">The service lifetime to register the host with. Defaults to scoped.</param>
     /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder AddStageHost(RegistrationLifetime lifetime = RegistrationLifetime.Scoped) =>
-        this.AddBehavior(typeof(PipelineStageBehavior<,>), lifetime);
+    public InterlocutorBuilder AddStageHost(RegistrationLifetime lifetime = RegistrationLifetime.Scoped)
+    {
+        this._pipeline.AddStageHost(lifetime);
+        return this;
+    }
 
     /// <summary>
     /// Sets or replaces the builder's own internal default entry for <paramref name="serviceType"/>,
@@ -654,39 +616,4 @@ public sealed class InterlocutorBuilder
             lifetime,
             RegistrationKind.Default
         );
-
-    /// <summary>
-    /// Sets the builder's own internal default entry for <paramref name="serviceType"/> only if no entry
-    /// exists yet - the mechanism behind every <c>Add*Behavior</c> convenience method's default
-    /// registration, so it never clobbers a prior <c>Override*</c> call.
-    /// </summary>
-    private void TryAddDefault(Type serviceType, Type implementationType)
-    {
-        if (!this._defaults.ContainsKey(serviceType))
-        {
-            this._defaults[serviceType] = new InterlocutorRegistration(
-                serviceType,
-                implementationType,
-                RegistrationLifetime.Scoped,
-                RegistrationKind.Default
-            );
-        }
-    }
-
-    /// <summary>
-    /// Attempts to resolve a type by its assembly-qualified or partially-qualified name, returning
-    /// <see langword="null"/> if the type (or the assembly it lives in) is not loaded - the graceful-fallback
-    /// lookup used for optional-package behaviors.
-    /// </summary>
-    private static Type? TryGetType(string typeName)
-    {
-        try
-        {
-            return Type.GetType(typeName, throwOnError: false);
-        }
-        catch
-        {
-            return null;
-        }
-    }
 }

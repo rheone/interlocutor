@@ -97,6 +97,9 @@ services.AddInterlocutor(builder =>
 
 See [pipeline-and-behaviors.md](pipeline-and-behaviors.md) for the full rationale of the recommended chain and how to compose your own.
 
+> [!NOTE]
+> Internally, `InterlocutorBuilder`'s pipeline methods (`AddBehavior`, the named `Add*Behavior` methods, `UseRecommendedChain`, `AddStage`/`AddStageHost`) delegate to a dedicated `InterlocutorPipelineBuilder` that holds the actual behavior/stage state, keeping pipeline composition a self-contained concern separate from assembly scanning and infrastructure overrides. The public surface shown above is unchanged - every call above still compiles and behaves exactly as written.
+
 ## Dependency Defaults
 
 Some behaviors need service registrations of their own (an `IAuditSink`, an `IPolicyEvaluator`, an `IRequestContextAccessor`). The named `Add*Behavior` methods try-add a reasonable default for whatever that behavior depends on - your own registration, made before the builder is applied, always wins:
