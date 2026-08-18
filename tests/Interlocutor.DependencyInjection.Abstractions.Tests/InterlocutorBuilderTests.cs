@@ -205,7 +205,7 @@ public class InterlocutorBuilderTests
     }
 
     [Fact]
-    public void AddValidationBehavior_WithFluentValidationReferenced_AddsValidationBehavior()
+    public void AddValidationBehavior_WithFluentValidationReferenced_AddsValidationBehaviorAndCaseRegistryDefault()
     {
         var builder = new InterlocutorBuilder();
 
@@ -214,6 +214,10 @@ public class InterlocutorBuilderTests
         Assert.Contains(
             builder.Behaviors,
             r => r.ImplementationType == typeof(Interlocutor.FluentValidation.ValidationBehavior<,>)
+        );
+        Assert.Contains(
+            builder.Defaults,
+            r => r.ServiceType == typeof(IOutcomeCaseRegistry) && r.ImplementationType == typeof(DefaultOutcomeCaseRegistry)
         );
     }
 

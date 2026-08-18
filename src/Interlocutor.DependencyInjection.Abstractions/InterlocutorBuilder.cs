@@ -276,8 +276,10 @@ public sealed class InterlocutorBuilder
 
     /// <summary>
     /// Adds <c>Interlocutor.FluentValidation.ValidationBehavior&lt;,&gt;</c> at the current position in
-    /// the chain, if the <c>Interlocutor.FluentValidation</c> package is referenced by the application.
-    /// A no-op when that package is not loaded.
+    /// the chain, if the <c>Interlocutor.FluentValidation</c> package is referenced by the application,
+    /// and try-adds its default dependency, <see cref="IOutcomeCaseRegistry"/>
+    /// (<see cref="DefaultOutcomeCaseRegistry"/>), unless a default has already been set. A no-op when that
+    /// package is not loaded.
     /// </summary>
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorBuilder AddValidationBehavior()
@@ -288,6 +290,7 @@ public sealed class InterlocutorBuilder
         if (validationBehaviorType is not null)
         {
             this.AddBehavior(validationBehaviorType);
+            this.TryAddDefault(typeof(IOutcomeCaseRegistry), typeof(DefaultOutcomeCaseRegistry));
         }
 
         return this;

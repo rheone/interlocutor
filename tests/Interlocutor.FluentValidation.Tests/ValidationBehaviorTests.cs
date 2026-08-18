@@ -2,6 +2,7 @@ namespace Interlocutor.FluentValidation.Tests;
 
 using global::FluentValidation;
 using Interlocutor.Abstractions.Pipeline;
+using Interlocutor.Abstractions.Pipeline.Cases;
 using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 
@@ -11,7 +12,10 @@ public class ValidationBehaviorTests
     public async Task NoValidators_PassesThrough()
     {
         var request = new TestRequest("Alice", 30);
-        var behavior = new ValidationBehavior<TestRequest, OperationOutcome<string, ValidationErrors>>([]);
+        var behavior = new ValidationBehavior<TestRequest, OperationOutcome<string, ValidationErrors>>(
+            [],
+            DefaultOutcomeCaseRegistry.Instance
+        );
 
         var handlerInvoked = false;
         var next = async () =>
@@ -33,7 +37,10 @@ public class ValidationBehaviorTests
     {
         var request = new TestRequest("Alice", 30);
         var validators = new AbstractValidator<TestRequest>[] { new TestRequestNameValidator(), new TestRequestAgeValidator() };
-        var behavior = new ValidationBehavior<TestRequest, OperationOutcome<string, ValidationErrors>>(validators);
+        var behavior = new ValidationBehavior<TestRequest, OperationOutcome<string, ValidationErrors>>(
+            validators,
+            DefaultOutcomeCaseRegistry.Instance
+        );
 
         var handlerInvoked = false;
         var next = async () =>
@@ -55,7 +62,10 @@ public class ValidationBehaviorTests
     {
         var request = new TestRequest(string.Empty, 30);
         var validators = new AbstractValidator<TestRequest>[] { new TestRequestNameValidator() };
-        var behavior = new ValidationBehavior<TestRequest, OperationOutcome<string, ValidationErrors>>(validators);
+        var behavior = new ValidationBehavior<TestRequest, OperationOutcome<string, ValidationErrors>>(
+            validators,
+            DefaultOutcomeCaseRegistry.Instance
+        );
 
         var handlerInvoked = false;
         var next = async () =>
@@ -77,7 +87,10 @@ public class ValidationBehaviorTests
     {
         var request = new TestRequest("Al", -5);
         var validators = new AbstractValidator<TestRequest>[] { new TestRequestNameValidator(), new TestRequestAgeValidator() };
-        var behavior = new ValidationBehavior<TestRequest, OperationOutcome<string, ValidationErrors>>(validators);
+        var behavior = new ValidationBehavior<TestRequest, OperationOutcome<string, ValidationErrors>>(
+            validators,
+            DefaultOutcomeCaseRegistry.Instance
+        );
 
         var next = async () =>
         {
@@ -104,7 +117,10 @@ public class ValidationBehaviorTests
         var validator1 = new TestRequestNameValidator();
         var validator2 = new TestRequestNameValidator(); // Same validator twice
         var validators = new AbstractValidator<TestRequest>[] { validator1, validator2 };
-        var behavior = new ValidationBehavior<TestRequest, OperationOutcome<string, ValidationErrors>>(validators);
+        var behavior = new ValidationBehavior<TestRequest, OperationOutcome<string, ValidationErrors>>(
+            validators,
+            DefaultOutcomeCaseRegistry.Instance
+        );
 
         var next = async () =>
         {
@@ -132,7 +148,10 @@ public class ValidationBehaviorTests
         // loudly and specifically rather than silently succeeding or crashing obscurely.
         var request = new TestRequest(string.Empty, 30);
         var validators = new AbstractValidator<TestRequest>[] { new TestRequestNameValidator() };
-        var behavior = new ValidationBehavior<TestRequest, OperationOutcome<string, Failure>>(validators);
+        var behavior = new ValidationBehavior<TestRequest, OperationOutcome<string, Failure>>(
+            validators,
+            DefaultOutcomeCaseRegistry.Instance
+        );
 
         var next = () => Task.FromResult<OperationOutcome<string, Failure>>("unreachable");
 
@@ -141,5 +160,56 @@ public class ValidationBehaviorTests
         );
 
         Assert.Contains("ValidationErrors", ex.Message);
+    }
+
+    [Fact]
+    public async Task FailingValidation_WithHandRolledOutcomeAndCustomRegistry_ConstructsValidationErrorsCase()
+    {
+        // TResponse need not be a compiler-generated union at all - IOutcomeCaseRegistry is the seam that
+        // lets ValidationBehavior construct a hand-rolled IOperationOutcome's ValidationErrors case via a
+        // consumer-registered factory, rather than requiring UnionCaseFactory's reflection to find a case
+        // constructor that a hand-rolled type simply doesn't have.
+        var registry = new OutcomeCaseRegistryBuilder()
+            .RegisterFactory<HandRolledOutcome, string>(HandRolledOutcome.FromSuccess)
+            .RegisterFactory<HandRolledOutcome, ValidationErrors>(HandRolledOutcome.FromValidationErrors)
+            .Build();
+
+        var request = new TestRequest(string.Empty, 30);
+        var validators = new AbstractValidator<TestRequest>[] { new TestRequestNameValidator() };
+        var behavior = new ValidationBehavior<TestRequest, HandRolledOutcome>(validators, registry);
+
+        var handlerInvoked = false;
+        var next = () =>
+        {
+            handlerInvoked = true;
+            return Task.FromResult(HandRolledOutcome.FromSuccess("unreachable"));
+        };
+
+        var result = await behavior.Handle(request, next, CancellationToken.None);
+
+        Assert.False(handlerInvoked, "Handler should NOT be invoked when validation fails");
+        var validationErrors = Assert.IsType<ValidationErrors>(result.CaseValue);
+        Assert.Contains("Name is required", validationErrors.Messages);
+    }
+
+    /// <summary>A hand-rolled, non-union <see cref="IOperationOutcome"/> implementation with no
+    /// compiler-generated case constructor for <see cref="UnionCaseFactory"/> to find reflectively - proves
+    /// <see cref="ValidationBehavior{TRequest, TResponse}"/> goes through the injected
+    /// <see cref="IOutcomeCaseRegistry"/> rather than assuming <typeparamref name="TResponse"/> is a union.</summary>
+    public sealed class HandRolledOutcome : IOperationOutcome
+    {
+        private HandRolledOutcome(Type caseType, object? caseValue)
+        {
+            this.CaseType = caseType;
+            this.CaseValue = caseValue;
+        }
+
+        public Type CaseType { get; }
+
+        public object? CaseValue { get; }
+
+        public static HandRolledOutcome FromSuccess(string value) => new(typeof(string), value);
+
+        public static HandRolledOutcome FromValidationErrors(ValidationErrors errors) => new(typeof(ValidationErrors), errors);
     }
 }

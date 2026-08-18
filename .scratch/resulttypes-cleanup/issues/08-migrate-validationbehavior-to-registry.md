@@ -8,9 +8,9 @@ ready-for-agent
 
 **Blocked by:** 03 (IOutcomeCaseRegistry extension-point)
 
-- [ ] `ValidationBehavior<TRequest, TResponse>` takes `IOutcomeCaseRegistry` via constructor injection
-- [ ] The `ValidationErrors` short-circuit path calls `caseRegistry.Construct<TResponse, ValidationErrors>(...)` instead of calling `UnionCaseFactory` directly
-- [ ] The local `static readonly ConstructorInfo?` field/manual reflection is removed
-- [ ] Existing `ValidationBehavior` tests still pass unchanged in observed behavior
-- [ ] A new test proves `ValidationBehavior` correctly short-circuits with `ValidationErrors` against a hand-rolled, non-union `IOperationOutcome` type registered with a custom `IOutcomeCaseRegistry`
-- [ ] `dotnet test` for the FluentValidation test project passes
+- [x] `ValidationBehavior<TRequest, TResponse>` takes `IOutcomeCaseRegistry` via constructor injection
+- [x] The `ValidationErrors` short-circuit path calls `caseRegistry.Construct<TResponse, ValidationErrors>(...)` instead of calling `UnionCaseFactory` directly
+- [x] The local `static readonly ConstructorInfo?` field/manual reflection is removed
+- [x] Existing `ValidationBehavior` tests still pass unchanged in observed behavior
+- [x] A new test proves `ValidationBehavior` correctly short-circuits with `ValidationErrors` against a hand-rolled, non-union `IOperationOutcome` type registered with a custom `IOutcomeCaseRegistry`
+- [x] `dotnet test` for the FluentValidation test project passes
