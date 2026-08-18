@@ -1,89 +1,72 @@
-//using System.Diagnostics;
-//using Interlocutor.CommonKernel.ResultTypes;
+namespace Interlocutor.CommonKernel.Tests;
 
-//namespace Interlocutor.CommonKernel.Tests;
+using Interlocutor.CommonKernel.ResultTypes;
 
-//public class OperationOutcomeTests
-//{
-//    [Fact]
-//    public void Result_WithValue_CanMatchSuccess()
-//    {
-//        var result = CreateSuccessResult(42);
-//        var value = result.Value switch
-//        {
-//            int v => v,
-//            Failure => -1,
-//            _ => throw new UnreachableException(),
-//        };
-//        Assert.Equal(42, value);
-//    }
+/// <summary>
+/// Covers the non-generic, two-case <see cref="OperationOutcome"/> union: construction from each case type,
+/// implicit conversion from a bare case value, and exhaustive switch pattern matching.
+/// </summary>
+public class OperationOutcomeTests
+{
+    [Fact]
+    public void Construct_FromSuccess_IsSuccessTrue()
+    {
+        var result = new OperationOutcome(default(Success));
 
-//    [Fact]
-//    public void Result_WithFailure_CanMatchFailure()
-//    {
-//        var result = CreateFailureResult(new NotFound("Entity", 1));
-//        var value = result.Value switch
-//        {
-//            int => -1,
-//            Failure f => f switch
-//            {
-//                NotFound => 0,
-//                _ => -1,
-//            },
-//            _ => throw new UnreachableException(),
-//        };
-//        Assert.Equal(0, value);
-//    }
+        Assert.True(result.IsSuccess);
+    }
 
-//    [Fact]
-//    public void Result_NonGeneric_Success_MatchesAsSuccess()
-//    {
-//        var result = new OperationOutcome(new Success());
-//        var outcome = result.Value switch
-//        {
-//            Success => true,
-//            Failure => false,
-//            _ => throw new UnreachableException(),
-//        };
-//        Assert.True(outcome);
-//    }
+    [Fact]
+    public void Construct_FromFailure_IsSuccessFalse()
+    {
+        var result = new OperationOutcome(new Failure("boom"));
 
-//    [Fact]
-//    public void Success_Record_CanBeConstructed()
-//    {
-//        var success = new Success();
-//        Assert.NotNull(success);
-//    }
+        Assert.False(result.IsSuccess);
+    }
 
-//    [Fact]
-//    public void Failure_Cases_HaveExpectedProperties()
-//    {
-//        var validationFailed = new ValidationFailed(
-//            new Dictionary<string, IReadOnlyList<(string, string)>> { ["Name"] = [("NotEmpty", "Name is required")] }
-//        );
-//        Assert.Single(validationFailed.errors);
+    [Fact]
+    public void ImplicitConversion_FromSuccess_ProducesSuccessOutcome()
+    {
+        OperationOutcome result = default(Success);
 
-//        var ruleViolation = new ValidationFailure("insufficient.balance", "Balance too low");
-//        Assert.Equal("insufficient.balance", ruleViolation.code);
+        Assert.True(result.IsSuccess);
+    }
 
-//        var notFound = new NotFound("Widget", 99);
-//        Assert.Equal("Widget", notFound.entityType);
+    [Fact]
+    public void ImplicitConversion_FromFailure_ProducesFailureOutcome()
+    {
+        OperationOutcome result = new Failure("boom");
 
-//        var forbidden = new Forbidden("Not your resource");
-//        Assert.Equal("Not your resource", forbidden.Reason);
+        Assert.False(result.IsSuccess);
+    }
 
-//        var conflict = new Conflict("stale.data", "Data was modified");
-//        Assert.Equal("stale.data", conflict.code);
-//    }
+    [Fact]
+    public void Switch_OverSuccess_MatchesSuccessCase()
+    {
+        OperationOutcome result = default(Success);
 
-//    [Fact]
-//    public void Forbidden_WithDefaultReason_IsNull()
-//    {
-//        var forbidden = new Forbidden();
-//        Assert.Null(forbidden.Reason);
-//    }
+        var message = result.Value switch
+        {
+            Success => "success",
+            Failure => "failure",
+            _ => throw new InvalidOperationException("Unreachable"),
+        };
 
-//    private static OperationOutcome<int> CreateSuccessResult(int value) => new(value);
+        Assert.Equal("success", message);
+    }
 
-//    private static OperationOutcome<int> CreateFailureResult(Failure failure) => new(failure);
-//}
+    [Fact]
+    public void Switch_OverFailure_MatchesFailureCase()
+    {
+        OperationOutcome result = new Failure("boom");
+
+        var message = result.Value switch
+        {
+            Success => "success",
+            Failure failure => failure.Reason,
+            _ => throw new InvalidOperationException("Unreachable"),
+        };
+
+        Assert.Equal("boom", message);
+    }
+}

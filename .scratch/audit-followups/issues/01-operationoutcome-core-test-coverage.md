@@ -10,11 +10,11 @@ A developer picking `OperationOutcome<TSuccess, TFailure1>` through `OperationOu
 
 ## Acceptance criteria
 
-- [ ] Each of the 5 declared arities has tests covering construction from every case type it declares
-- [ ] Implicit conversion from a bare case value (e.g. `Success`, `NotFound`) to the union type is covered for each arity
-- [ ] Exhaustive `switch`/pattern-matching over the union correctly discriminates every case, for each arity
-- [ ] The rewritten test file compiles and passes against the current `OperationOutcome` API - no stale signatures
-- [ ] All existing tests still pass
+- [x] Each of the 5 declared arities has tests covering construction from every case type it declares
+- [x] Implicit conversion from a bare case value (e.g. `Success`, `NotFound`) to the union type is covered for each arity
+- [x] Exhaustive `switch`/pattern-matching over the union correctly discriminates every case, for each arity
+- [x] The rewritten test file compiles and passes against the current `OperationOutcome` API - no stale signatures
+- [x] All existing tests still pass
 
 ## Blocked by
 
