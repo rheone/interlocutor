@@ -56,27 +56,23 @@ internal static class RegistrationModuleEmitter
             "        public static global::System.Collections.Generic.IReadOnlyList<global::Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration> Registrations { get; } ="
         );
 
-        if (handlers.IsEmpty)
+        // Always at least one entry: the generated request dispatcher (see RequestDispatchSwitchEmitter) is
+        // registered here unconditionally, even with zero discovered handlers, so a bare compilation still
+        // gets a reflection-free (if entirely-unrecognizing) Send(object, ...) dispatch target the moment its
+        // registrations are passed to AddGeneratedRegistrations.
+        builder.AppendLine("            new global::Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration[]");
+        builder.AppendLine("            {");
+        builder.AppendLine(
+            $"                new global::Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration(typeof(global::Interlocutor.Abstractions.Core.IGeneratedRequestDispatcher), typeof(global::{RequestDispatchSwitchEmitter.GeneratedNamespace}.{RequestDispatchSwitchEmitter.DispatcherTypeName}), global::Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Singleton, global::Interlocutor.DependencyInjection.Abstractions.RegistrationKind.Dispatcher),"
+        );
+        foreach (var handler in handlers)
         {
             builder.AppendLine(
-                "            global::System.Array.Empty<global::Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration>();"
+                $"                new global::Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration(typeof({handler.ServiceInterfaceName}), typeof({handler.HandlerTypeName}), global::Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Scoped, global::Interlocutor.DependencyInjection.Abstractions.RegistrationKind.Handler),"
             );
         }
-        else
-        {
-            builder.AppendLine(
-                "            new global::Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration[]"
-            );
-            builder.AppendLine("            {");
-            foreach (var handler in handlers)
-            {
-                builder.AppendLine(
-                    $"                new global::Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration(typeof({handler.ServiceInterfaceName}), typeof({handler.HandlerTypeName}), global::Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Scoped, global::Interlocutor.DependencyInjection.Abstractions.RegistrationKind.Handler),"
-                );
-            }
 
-            builder.AppendLine("            };");
-        }
+        builder.AppendLine("            };");
 
         builder.AppendLine("    }");
         builder.AppendLine("}");

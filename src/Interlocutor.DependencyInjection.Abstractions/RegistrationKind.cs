@@ -38,4 +38,12 @@ public enum RegistrationKind
     /// a stage carries no override precedence - it is translated with add, not try-add, semantics.
     /// </summary>
     Stage,
+
+    /// <summary>
+    /// The generator-emitted <c>IGeneratedRequestDispatcher</c> implementation - a single, compilation-wide
+    /// singleton registered alongside <see cref="Handler"/> entries whenever a compilation's generated
+    /// registrations are added via <c>InterlocutorBuilder.AddGeneratedRegistrations</c>. Like
+    /// <see cref="Handler"/> and <see cref="Stage"/>, it carries no override precedence.
+    /// </summary>
+    Dispatcher,
 }

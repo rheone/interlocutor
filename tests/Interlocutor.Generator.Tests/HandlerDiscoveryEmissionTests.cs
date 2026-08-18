@@ -104,8 +104,11 @@ public sealed class HandlerDiscoveryEmissionTests
     }
 
     [Fact]
-    public void No_handlers_emits_an_empty_but_valid_registration_module()
+    public void No_handlers_still_registers_the_generated_dispatcher()
     {
+        // No handler registrations, but the registration module is never truly empty (ticket 13): the
+        // compile-time generated IGeneratedRequestDispatcher is registered unconditionally, so
+        // Send(object, ...) stays reflection-free even in a project with no discovered handlers.
         const string source = """
             namespace TestApp;
             public sealed class Nothing;
@@ -115,6 +118,11 @@ public sealed class HandlerDiscoveryEmissionTests
 
         var registrationsSource = GetGeneratedSource(result, "InterlocutorGeneratedRegistrations.g.cs");
         Assert.Contains(
+            "new global::Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration(typeof(global::Interlocutor.Abstractions.Core.IGeneratedRequestDispatcher), typeof(global::Interlocutor.Generated.Dispatch.GeneratedRequestDispatcher), global::Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Singleton, global::Interlocutor.DependencyInjection.Abstractions.RegistrationKind.Dispatcher)",
+            registrationsSource,
+            StringComparison.Ordinal
+        );
+        Assert.DoesNotContain(
             "global::System.Array.Empty<global::Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration>()",
             registrationsSource,
             StringComparison.Ordinal

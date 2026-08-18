@@ -11,7 +11,8 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 /// <summary>
 /// Discovers Interlocutor query, command, void-command, and notification handlers in the current compilation
 /// at build time (ADR-0008), emits a container-neutral registration module, emits closed dispatch wrappers for
-/// query/command/void-command handlers, and reports a diagnostic for any query or command request with no
+/// query/command/void-command handlers, emits a reflection-free type switch dispatching a runtime-typed
+/// request across all of them (ticket 13), and reports a diagnostic for any query or command request with no
 /// matching handler.
 /// </summary>
 /// <remarks>
@@ -88,6 +89,7 @@ public sealed class InterlocutorSourceGenerator : IIncrementalGenerator
         context.AddSource("InterlocutorGeneratedModuleAttribute.g.cs", RegistrationModuleEmitter.EmitAssemblyAttribute());
         context.AddSource("InterlocutorGeneratedRegistrations.g.cs", RegistrationModuleEmitter.Emit(handlers));
         context.AddSource("InterlocutorGeneratedDispatch.g.cs", DispatchWrapperEmitter.Emit(handlers));
+        context.AddSource("InterlocutorGeneratedDispatchSwitch.g.cs", RequestDispatchSwitchEmitter.Emit(handlers, requests));
     }
 
     /// <summary>

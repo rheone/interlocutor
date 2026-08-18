@@ -1,0 +1,132 @@
+namespace Interlocutor.DependencyInjection.Microsoft.Tests;
+
+using global::Microsoft.Extensions.DependencyInjection;
+using Interlocutor.Abstractions;
+using Interlocutor.Abstractions.Commands;
+using Interlocutor.Abstractions.Core;
+using Interlocutor.Abstractions.Queries;
+using Interlocutor.CommonKernel;
+using Interlocutor.CommonKernel.ResultTypes;
+
+/// <summary>
+/// Proves <see cref="ISender.Send(object, CancellationToken)"/> (ticket 09) dispatches through the compile-time
+/// generated type switch (ticket 13, <see cref="IGeneratedRequestDispatcher"/>) - not reflection - when only
+/// <c>AddGeneratedRegistrations</c> is used, with the exact caller-visible contract ticket 09 established
+/// unchanged: a query, a value-returning command, and a unit command all dispatch correctly, an unregistered
+/// request type names itself in <see cref="HandlerNotRegisteredException"/>, and a non-request object produces
+/// <see cref="UnsupportedRequestTypeException"/>.
+/// </summary>
+public sealed class GeneratedDispatchSwitchIntegrationTests
+{
+    [Fact]
+    public async Task Send_Object_Query_DispatchesThroughTheGeneratedSwitch()
+    {
+        var sender = CreateSenderWithGeneratedRegistrationsOnly();
+
+        object request = new GeneratedSwitchQuery(21);
+        var outcome = await sender.Send(request, TestContext.Current.CancellationToken);
+
+        var union = Assert.IsAssignableFrom<System.Runtime.CompilerServices.IUnion>(outcome);
+        Assert.Equal(42, Assert.IsType<int>(union.Value));
+    }
+
+    [Fact]
+    public async Task Send_Object_ValueCommand_DispatchesThroughTheGeneratedSwitch()
+    {
+        var sender = CreateSenderWithGeneratedRegistrationsOnly();
+
+        object request = new GeneratedSwitchCommand("Ada");
+        var outcome = await sender.Send(request, TestContext.Current.CancellationToken);
+
+        var union = Assert.IsAssignableFrom<System.Runtime.CompilerServices.IUnion>(outcome);
+        Assert.Equal("Hello Ada", Assert.IsType<string>(union.Value));
+    }
+
+    [Fact]
+    public async Task Send_Object_UnitCommand_DispatchesThroughTheGeneratedSwitch()
+    {
+        var sender = CreateSenderWithGeneratedRegistrationsOnly();
+
+        object request = new GeneratedSwitchVoidCommand();
+        var outcome = await sender.Send(request, TestContext.Current.CancellationToken);
+
+        var union = Assert.IsAssignableFrom<System.Runtime.CompilerServices.IUnion>(outcome);
+        Assert.IsType<Success>(union.Value);
+    }
+
+    [Fact]
+    public async Task Send_Object_UnregisteredQuery_ThrowsHandlerNotRegisteredExceptionNamingTheType()
+    {
+        var sender = CreateSenderWithGeneratedRegistrationsOnly();
+
+        object request = new GeneratedSwitchUnregisteredQuery();
+        var ex = await Assert.ThrowsAsync<HandlerNotRegisteredException>(() =>
+            sender.Send(request, TestContext.Current.CancellationToken)
+        );
+
+        Assert.Equal(typeof(GeneratedSwitchUnregisteredQuery), ex.RequestType);
+        Assert.Contains(nameof(GeneratedSwitchUnregisteredQuery), ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Send_Object_NotARequest_ThrowsDistinctUnsupportedRequestTypeException()
+    {
+        var sender = CreateSenderWithGeneratedRegistrationsOnly();
+
+        var ex = await Assert.ThrowsAsync<UnsupportedRequestTypeException>(() =>
+            sender.Send("just a string, not a request", TestContext.Current.CancellationToken)
+        );
+
+        Assert.Equal(typeof(string), ex.RequestType);
+    }
+
+    /// <summary>
+    /// Builds a sender from a builder that only calls <c>AddGeneratedRegistrations</c> - no
+    /// <c>ScanAssembly</c> - so <see cref="IGeneratedRequestDispatcher"/> is the only possible source of
+    /// <see cref="ISender.Send(object, CancellationToken)"/> dispatch: if this passed via the reflection
+    /// fallback instead, that would mean the generated dispatcher failed to register or resolve.
+    /// </summary>
+    private static ISender CreateSenderWithGeneratedRegistrationsOnly()
+    {
+        var services = new ServiceCollection();
+        services.AddInterlocutor(builder =>
+            builder.AddGeneratedRegistrations(Interlocutor.Generated.InterlocutorGeneratedRegistrations.Registrations)
+        );
+
+        // No `using`/disposal here: this helper's scope must outlive the method for the caller's dispatch
+        // call, and each test is small and self-contained enough that leaving the scope for the process to
+        // reclaim is preferable to plumbing IDisposable back out through every call site.
+        var provider = services.BuildServiceProvider();
+        var scope = provider.CreateScope();
+        return scope.ServiceProvider.GetRequiredService<ISender>();
+    }
+
+    public sealed record GeneratedSwitchQuery(int Value) : IQuery<OperationOutcome<int, Failure>>;
+
+    public sealed class GeneratedSwitchQueryHandler : IQueryHandler<GeneratedSwitchQuery, OperationOutcome<int, Failure>>
+    {
+        public Task<OperationOutcome<int, Failure>> Handle(GeneratedSwitchQuery query, CancellationToken ct) =>
+            Task.FromResult<OperationOutcome<int, Failure>>(query.Value * 2);
+    }
+
+    public sealed record GeneratedSwitchCommand(string Name) : ICommand<OperationOutcome<string, Failure>>;
+
+    public sealed class GeneratedSwitchCommandHandler
+        : ICommandHandler<GeneratedSwitchCommand, OperationOutcome<string, Failure>>
+    {
+        public Task<OperationOutcome<string, Failure>> Handle(GeneratedSwitchCommand command, CancellationToken ct) =>
+            Task.FromResult<OperationOutcome<string, Failure>>($"Hello {command.Name}");
+    }
+
+    public sealed record GeneratedSwitchVoidCommand : ICommand;
+
+    public sealed class GeneratedSwitchVoidCommandHandler : IVoidCommandHandler<GeneratedSwitchVoidCommand, OperationOutcome>
+    {
+        public Task<OperationOutcome> Handle(GeneratedSwitchVoidCommand command, CancellationToken ct) =>
+            Task.FromResult(new OperationOutcome(default(Success)));
+    }
+
+    /// <summary>A query with no handler anywhere in this compilation - proves the generated switch's
+    /// "recognized shape, no handler" case throws the same named exception the reflection path does.</summary>
+    public sealed record GeneratedSwitchUnregisteredQuery : IQuery<OperationOutcome<int, Failure>>;
+}
