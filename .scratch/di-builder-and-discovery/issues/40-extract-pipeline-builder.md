@@ -1,3 +1,5 @@
+> **Status: done** - merged in `a7c096b` (extract pipeline composition into dedicated builder).
+
 ## Labels
 
 ready-for-agent

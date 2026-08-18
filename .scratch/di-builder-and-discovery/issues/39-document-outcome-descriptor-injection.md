@@ -1,3 +1,5 @@
+> **Status: done** - merged in `2183de3` (document IResponseOutcomeDescriber and OutcomeClassifierBuilder).
+
 ## Labels
 
 ready-for-agent

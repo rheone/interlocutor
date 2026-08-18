@@ -1,3 +1,5 @@
+> **Status: done** - merged in `19622a1` (replace reflection-based runtime dispatch with generated switch).
+
 ## Labels
 
 ready-for-agent
