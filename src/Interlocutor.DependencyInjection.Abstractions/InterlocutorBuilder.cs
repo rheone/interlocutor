@@ -3,6 +3,7 @@ namespace Interlocutor.DependencyInjection.Abstractions;
 using System.Reflection;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Pipeline;
+using Interlocutor.Abstractions.Pipeline.Cases;
 
 /// <summary>
 /// Container-neutral fluent builder that is the single configuration surface for Interlocutor -
@@ -260,14 +261,16 @@ public sealed class InterlocutorBuilder
 
     /// <summary>
     /// Adds <see cref="AuthorizationBehavior{TRequest,TResponse}"/> at the current position in the chain,
-    /// and try-adds its default dependency, <see cref="IPolicyEvaluator"/> (<see cref="DefaultPolicyEvaluator"/>),
-    /// unless a default has already been set.
+    /// and try-adds its default dependencies, <see cref="IPolicyEvaluator"/> (<see cref="DefaultPolicyEvaluator"/>)
+    /// and <see cref="IOutcomeCaseRegistry"/> (<see cref="DefaultOutcomeCaseRegistry"/>), unless a default
+    /// has already been set for either.
     /// </summary>
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorBuilder AddAuthorizationBehavior()
     {
         this.AddBehavior(typeof(AuthorizationBehavior<,>));
         this.TryAddDefault(typeof(IPolicyEvaluator), typeof(DefaultPolicyEvaluator));
+        this.TryAddDefault(typeof(IOutcomeCaseRegistry), typeof(DefaultOutcomeCaseRegistry));
         return this;
     }
 
