@@ -74,4 +74,15 @@ public readonly record struct Conflicts
     /// if this instance is the default value.
     /// </value>
     public IReadOnlyList<string> Messages => this.Items.Count == 0 ? [] : [.. this.Items.Select(c => c.Message).Distinct()];
+
+    /// <summary>
+    /// Returns a human-readable representation of this conflict set.
+    /// </summary>
+    /// <returns>
+    /// <c>"Conflicts"</c> when this instance is the default value (empty); otherwise
+    /// <c>"Conflicts: {messages joined by ", "}"</c>. Joins <see cref="Messages"/> rather than each item's own
+    /// <see cref="Conflict.ToString"/>, to avoid a doubled "Conflicts: Conflict: ..." prefix.
+    /// </returns>
+    public override string ToString() =>
+        this.Messages.Count == 0 ? "Conflicts" : $"Conflicts: {string.Join(", ", this.Messages)}";
 }

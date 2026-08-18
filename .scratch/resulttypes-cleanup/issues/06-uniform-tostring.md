@@ -8,13 +8,13 @@ ready-for-agent
 
 **Blocked by:** 01 (DistinctItemSet + plural-type rewrite), 04 (Failure/Failures redesign)
 
-- [ ] `Success` → `"Success"`
-- [ ] `Failure` → `"Failure"` / `"Failure: {Reason}"`; `Failure<TErrorCode>` → includes `ErrorCode` and optional `Reason`
-- [ ] `NotFound` → `"NotFound"` / `"NotFound: {Message}"`; `NotFound<TId>` → includes `EntityType`/`Id` and optional `Message`
-- [ ] `Forbidden` → `"Forbidden"` / `"Forbidden: {Reason}"`
-- [ ] `Conflict` → includes both `Code` and `Message` (both mandatory)
-- [ ] `ValidationError` → includes `Message`; `ValidationError<TErrorCode>` → includes `Message` and `ErrorCode`
-- [ ] `Conflicts`, `Failures`, `Failures<TErrorCode>`, `ValidationErrors`, `ValidationErrors<TErrorCode>` → empty set formats as bare type name; non-empty joins the primary semantic projection (not nested item `ToString()`)
-- [ ] The dead commented-out `ToString()` block in `Failure.cs`'s history is fully replaced (no leftover commented code)
-- [ ] Unit tests cover both the "has detail" and "bare" branches for every type
-- [ ] `dotnet test tests/Interlocutor.CommonKernel.Tests/Interlocutor.CommonKernel.Tests.csproj` passes
+- [x] `Success` → `"Success"`
+- [x] `Failure` → `"Failure"` / `"Failure: {Reason}"`; `Failure<TErrorCode>` → includes `ErrorCode` and optional `Reason`
+- [x] `NotFound` → `"NotFound"` / `"NotFound: {Message}"`; `NotFound<TId>` → includes `EntityType`/`Id` and optional `Message` (this generic variant does exist in this codebase, in `NotFound.cs`)
+- [x] `Forbidden` → `"Forbidden"` / `"Forbidden: {Reason}"`
+- [x] `Conflict` → includes both `Code` and `Message` (both mandatory)
+- [x] `ValidationError` → includes `Message`; `ValidationError<TErrorCode>` → includes `Message` and `ErrorCode`
+- [x] `Conflicts`, `Failures`, `Failures<TErrorCode>`, `ValidationErrors`, `ValidationErrors<TErrorCode>` → empty set formats as bare type name; non-empty joins the primary semantic projection (not nested item `ToString()`)
+- [x] The dead commented-out `ToString()` block in `Failure.cs`'s history is fully replaced (no leftover commented code)
+- [x] Unit tests cover both the "has detail" and "bare" branches for every type
+- [x] `dotnet test tests/Interlocutor.CommonKernel.Tests/Interlocutor.CommonKernel.Tests.csproj` passes

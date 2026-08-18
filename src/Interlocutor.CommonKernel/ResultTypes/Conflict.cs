@@ -16,4 +16,14 @@ namespace Interlocutor.CommonKernel.ResultTypes;
 /// (for user-facing error descriptions).
 /// </para>
 /// </remarks>
-public readonly record struct Conflict(string Message, string Code);
+public readonly record struct Conflict(string Message, string Code)
+{
+    /// <summary>
+    /// Returns a human-readable representation of this conflict.
+    /// </summary>
+    /// <returns>
+    /// <c>"Conflict: {Code} - {Message}"</c>. Unlike the other single-detail case types, both <see cref="Code"/> and
+    /// <see cref="Message"/> are mandatory, so there is no bare form.
+    /// </returns>
+    public override string ToString() => $"Conflict: {this.Code} - {this.Message}";
+}

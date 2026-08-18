@@ -364,4 +364,96 @@ public class AggregateResultTypesTests
         Assert.Contains(1001, failures.ErrorCodes);
         Assert.Contains(1002, failures.ErrorCodes);
     }
+
+    [Fact]
+    public void Conflicts_DefaultValue_ToString_ReturnsBareTypeName()
+    {
+        Assert.Equal("Conflicts", default(Conflicts).ToString());
+    }
+
+    [Fact]
+    public void Conflicts_NonEmpty_ToString_JoinsMessages()
+    {
+        var conflicts = new Conflicts(
+            new[] { new Conflict("State conflict", "STATE_ERROR"), new Conflict("Key already exists", "KEY_ERROR") }
+        );
+
+        Assert.Equal("Conflicts: State conflict, Key already exists", conflicts.ToString());
+    }
+
+    [Fact]
+    public void ValidationErrors_DefaultValue_ToString_ReturnsBareTypeName()
+    {
+        Assert.Equal("ValidationErrors", default(ValidationErrors).ToString());
+    }
+
+    [Fact]
+    public void ValidationErrors_NonEmpty_ToString_JoinsMessages()
+    {
+        var errors = new ValidationErrors(new[] { "Email is required", "Name is required" });
+
+        Assert.Equal("ValidationErrors: Email is required, Name is required", errors.ToString());
+    }
+
+    [Fact]
+    public void ValidationErrors_Generic_DefaultValue_ToString_ReturnsBareTypeName()
+    {
+        Assert.Equal("ValidationErrors", default(ValidationErrors<int>).ToString());
+    }
+
+    [Fact]
+    public void ValidationErrors_Generic_NonEmpty_ToString_JoinsMessages()
+    {
+        var errors = new ValidationErrors<int>(
+            new[] { new ValidationError<int>("Email is required", 1001), new ValidationError<int>("Name is required", 1002) }
+        );
+
+        Assert.Equal("ValidationErrors: Email is required, Name is required", errors.ToString());
+    }
+
+    [Fact]
+    public void Failures_DefaultValue_ToString_ReturnsBareTypeName()
+    {
+        Assert.Equal("Failures", default(Failures).ToString());
+    }
+
+    [Fact]
+    public void Failures_NonEmpty_ToString_JoinsReasons()
+    {
+        var failures = new Failures(new[] { new Failure("Timeout"), new Failure("Disk full") });
+
+        Assert.Equal("Failures: Timeout, Disk full", failures.ToString());
+    }
+
+    [Fact]
+    public void Failures_NonEmpty_AllReasonsNull_ToString_ReturnsBareTypeName()
+    {
+        // Count > 0 but Reasons is empty (nothing to display) - falls back to the bare type name
+        // rather than emitting "Failures: " with nothing after the colon.
+        var failures = new Failures(default(Failure));
+
+        Assert.Equal("Failures", failures.ToString());
+    }
+
+    [Fact]
+    public void Failures_Generic_DefaultValue_ToString_ReturnsBareTypeName()
+    {
+        Assert.Equal("Failures", default(Failures<int>).ToString());
+    }
+
+    [Fact]
+    public void Failures_Generic_NonEmpty_ToString_JoinsReasons()
+    {
+        var failures = new Failures<int>(new[] { new Failure<int>(1001, "Timeout"), new Failure<int>(1002, "Disk full") });
+
+        Assert.Equal("Failures: Timeout, Disk full", failures.ToString());
+    }
+
+    [Fact]
+    public void Failures_Generic_NonEmpty_AllReasonsNull_ToString_ReturnsBareTypeName()
+    {
+        var failures = new Failures<int>(new[] { new Failure<int>(1001), new Failure<int>(1002) });
+
+        Assert.Equal("Failures", failures.ToString());
+    }
 }

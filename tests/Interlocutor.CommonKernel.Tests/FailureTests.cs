@@ -111,4 +111,29 @@ public class FailureTests
 
         Assert.NotEqual(first, second);
     }
+
+    [Fact]
+    public void Failure_WithNoReason_ReturnsBareTypeName()
+    {
+        Assert.Equal("Failure", default(Failure).ToString());
+    }
+
+    [Fact]
+    public void Failure_WithReason_IncludesReason()
+    {
+        Assert.Equal("Failure: Operation failed", new Failure("Operation failed").ToString());
+    }
+
+    [Fact]
+    public void FailureOfTErrorCode_WithNoReason_IncludesErrorCodeOnly()
+    {
+        Assert.Equal("Failure: 404", new Failure<int>(404).ToString());
+    }
+
+    [Fact]
+    public void FailureOfTErrorCode_WithReason_IncludesErrorCodeAndReason()
+    {
+        var failure = new Failure<string>("payment_declined", "The card was declined");
+        Assert.Equal("Failure: payment_declined - The card was declined", failure.ToString());
+    }
 }

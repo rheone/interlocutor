@@ -78,6 +78,17 @@ public readonly record struct Failures
     /// </value>
     public IReadOnlyList<string> Reasons =>
         this.Items.Count == 0 ? [] : [.. this.Items.Where(f => f.Reason is not null).Select(f => f.Reason!).Distinct()];
+
+    /// <summary>
+    /// Returns a human-readable representation of this failure set.
+    /// </summary>
+    /// <returns>
+    /// <c>"Failures"</c> when <see cref="Reasons"/> is empty (either because this instance is the default value,
+    /// or because none of the contained failures carry a reason); otherwise <c>"Failures: {reasons joined by ", "}"</c>.
+    /// Joins <see cref="Reasons"/> rather than each item's own <see cref="Failure.ToString"/>, to avoid a doubled
+    /// "Failures: Failure: ..." prefix.
+    /// </returns>
+    public override string ToString() => this.Reasons.Count == 0 ? "Failures" : $"Failures: {string.Join(", ", this.Reasons)}";
 }
 
 /// <summary>
@@ -175,4 +186,15 @@ public readonly record struct Failures<TErrorCode>
     /// handler has not yet produced one. Explicitly constructing this type with an empty sequence still throws.
     /// </remarks>
     public IReadOnlyList<TErrorCode> ErrorCodes => this._uniqueErrorCodes.Items;
+
+    /// <summary>
+    /// Returns a human-readable representation of this failure set.
+    /// </summary>
+    /// <returns>
+    /// <c>"Failures"</c> when <see cref="Reasons"/> is empty (either because this instance is the default value,
+    /// or because none of the contained failures carry a reason); otherwise <c>"Failures: {reasons joined by ", "}"</c>.
+    /// Joins <see cref="Reasons"/> rather than each item's own <see cref="Failure{TErrorCode}.ToString"/>, to avoid
+    /// a doubled "Failures: Failure: ..." prefix.
+    /// </returns>
+    public override string ToString() => this.Reasons.Count == 0 ? "Failures" : $"Failures: {string.Join(", ", this.Reasons)}";
 }

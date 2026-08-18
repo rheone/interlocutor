@@ -14,4 +14,11 @@ namespace Interlocutor.CommonKernel.ResultTypes;
 /// or fails with not-found or generic failure.
 /// </para>
 /// </remarks>
-public readonly record struct Success;
+public readonly record struct Success
+{
+    /// <summary>
+    /// Returns a fixed, human-readable representation of this outcome.
+    /// </summary>
+    /// <returns>The literal string <c>"Success"</c>.</returns>
+    public override string ToString() => "Success";
+}
