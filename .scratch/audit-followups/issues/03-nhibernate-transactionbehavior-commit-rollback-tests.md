@@ -8,11 +8,11 @@ Add test coverage for the commit/rollback logic in `src/Interlocutor.NHibernate/
 
 ## Acceptance criteria
 
-- [ ] A handler returning a classified success commits the transaction/session
-- [ ] A handler returning a classified failure outcome rolls back the transaction/session
-- [ ] An exception during persistence rolls back and rethrows the original exception
-- [ ] Existing `IExternalStoreRequest` skip-path and generic-constraint tests still pass
-- [ ] Commit/rollback decisions match the EF Core behavior for identical classified inputs (both behaviors agree)
+- [x] A handler returning a classified success commits the transaction/session
+- [x] A handler returning a classified failure outcome rolls back the transaction/session
+- [x] An exception during persistence rolls back and rethrows the original exception
+- [x] Existing `IExternalStoreRequest` skip-path and generic-constraint tests still pass
+- [x] Commit/rollback decisions match the EF Core behavior for identical classified inputs (both behaviors agree)
 
 ## Blocked by
 
