@@ -77,7 +77,8 @@ internal static class HandlerTypeAnalyzer
                         Format(candidate),
                         Format(args[0]),
                         Format(args[1]),
-                        Format(candidateInterface)
+                        Format(candidateInterface),
+                        declarationLocation
                     )
                 );
             }
@@ -90,7 +91,8 @@ internal static class HandlerTypeAnalyzer
                         Format(candidate),
                         Format(args[0]),
                         Format(args[1]),
-                        Format(candidateInterface)
+                        Format(candidateInterface),
+                        declarationLocation
                     )
                 );
             }
@@ -103,7 +105,8 @@ internal static class HandlerTypeAnalyzer
                         Format(candidate),
                         Format(args[0]),
                         Format(args[1]),
-                        Format(candidateInterface)
+                        Format(candidateInterface),
+                        declarationLocation
                     )
                 );
             }
@@ -116,7 +119,8 @@ internal static class HandlerTypeAnalyzer
                         Format(candidate),
                         Format(args[0]),
                         null,
-                        Format(candidateInterface)
+                        Format(candidateInterface),
+                        declarationLocation
                     )
                 );
             }

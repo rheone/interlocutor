@@ -83,6 +83,7 @@ public sealed class InterlocutorSourceGenerator : IIncrementalGenerator
             .ToImmutableArray();
 
         ReportMissingHandlers(handlers, requests, context);
+        ReportDuplicateHandlers(handlers, context);
 
         context.AddSource("InterlocutorGeneratedModuleAttribute.g.cs", RegistrationModuleEmitter.EmitAssemblyAttribute());
         context.AddSource("InterlocutorGeneratedRegistrations.g.cs", RegistrationModuleEmitter.Emit(handlers));
@@ -127,6 +128,39 @@ public sealed class InterlocutorSourceGenerator : IIncrementalGenerator
             {
                 context.ReportDiagnostic(
                     Diagnostic.Create(InterlocutorDiagnostics.MissingHandler, request.Location, request.RequestTypeName)
+                );
+            }
+        }
+    }
+
+    /// <summary>
+    /// Reports <see cref="InterlocutorDiagnostics.DuplicateHandler"/> whenever more than one query or command
+    /// handler is found for the same closed request/response pair. A notification's zero-or-many arity (see
+    /// <see cref="HandlerKind.Notification"/>) and a void command's caller-chosen result type (see
+    /// <see cref="RequestKind.VoidCommand"/>) both make "more than one handler" the expected, valid shape for
+    /// those kinds, so only <see cref="HandlerKind.Query"/> and <see cref="HandlerKind.Command"/> are checked.
+    /// </summary>
+    private static void ReportDuplicateHandlers(ImmutableArray<HandlerModel> handlers, SourceProductionContext context)
+    {
+        var duplicateGroups = handlers
+            .Where(static h => h.Kind is HandlerKind.Query or HandlerKind.Command)
+            .GroupBy(static h => (h.RequestTypeName, h.ResponseTypeName))
+            .Where(static group => group.Count() > 1);
+
+        foreach (var group in duplicateGroups)
+        {
+            var duplicateHandlers = group.ToImmutableArray();
+            var handlerNames = string.Join(", ", duplicateHandlers.Select(static h => h.HandlerTypeName));
+
+            foreach (var handler in duplicateHandlers)
+            {
+                context.ReportDiagnostic(
+                    Diagnostic.Create(
+                        InterlocutorDiagnostics.DuplicateHandler,
+                        handler.Location,
+                        handler.RequestTypeName,
+                        handlerNames
+                    )
                 );
             }
         }
