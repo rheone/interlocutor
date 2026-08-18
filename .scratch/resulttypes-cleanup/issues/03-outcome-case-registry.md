@@ -8,10 +8,10 @@ ready-for-agent
 
 **Blocked by:** None - can start immediately
 
-- [ ] `Interlocutor.Abstractions.Pipeline.Cases.IOutcomeCaseRegistry` interface exists with a `Construct<TResponse, TCase>(TCase)` method and a `TryGetActiveCase<TResponse>(TResponse, out Type, out object?)` method
-- [ ] `DefaultOutcomeCaseRegistry` implements it by wrapping the existing `UnionCaseFactory` reflection (constructor lookup cached per `(Type, Type)` pair) and pattern-matching the compiler-generated `IUnion` marker for extraction
-- [ ] `OutcomeCaseRegistryBuilder` lets a consumer register a custom `Func<TCase, TResponse>` factory and a custom extractor for their own `IOperationOutcome` type, falling back to `DefaultOutcomeCaseRegistry` behavior for anything unregistered
-- [ ] `OutcomeCaseNotSupportedException` is thrown (not silently swallowed) when `Construct`/`TryGetActiveCase` can't resolve a case for a given `TResponse`, with a message in the same style as `AuthorizationBehavior`'s existing exception text
-- [ ] Unit tests cover `Construct`/`TryGetActiveCase` against a real `OperationOutcome<...>` union (both a case that exists and one that doesn't) AND against a hand-rolled, non-union, test-only `IOperationOutcome` implementation with a registered factory/extractor pair
-- [ ] No reference to `Interlocutor.AspNetCore` or any store-specific package from this new code (verify `Interlocutor.Architecture.Tests` still passes)
-- [ ] `dotnet test tests/Interlocutor.Abstractions.Tests/Interlocutor.Abstractions.Tests.csproj` and `tests/Interlocutor.Architecture.Tests/Interlocutor.Architecture.Tests.csproj` pass
+- [x] `Interlocutor.Abstractions.Pipeline.Cases.IOutcomeCaseRegistry` interface exists with a `Construct<TResponse, TCase>(TCase)` method and a `TryGetActiveCase<TResponse>(TResponse, out Type, out object?)` method
+- [x] `DefaultOutcomeCaseRegistry` implements it by wrapping the existing `UnionCaseFactory` reflection (constructor lookup cached per `(Type, Type)` pair) and pattern-matching the compiler-generated `IUnion` marker for extraction
+- [x] `OutcomeCaseRegistryBuilder` lets a consumer register a custom `Func<TCase, TResponse>` factory and a custom extractor for their own `IOperationOutcome` type, falling back to `DefaultOutcomeCaseRegistry` behavior for anything unregistered
+- [x] `OutcomeCaseNotSupportedException` is thrown (not silently swallowed) when `Construct`/`TryGetActiveCase` can't resolve a case for a given `TResponse`, with a message in the same style as `AuthorizationBehavior`'s existing exception text
+- [x] Unit tests cover `Construct`/`TryGetActiveCase` against a real `OperationOutcome<...>` union (both a case that exists and one that doesn't) AND against a hand-rolled, non-union, test-only `IOperationOutcome` implementation with a registered factory/extractor pair
+- [x] No reference to `Interlocutor.AspNetCore` or any store-specific package from this new code (verify `Interlocutor.Architecture.Tests` still passes)
+- [x] `dotnet test tests/Interlocutor.Abstractions.Tests/Interlocutor.Abstractions.Tests.csproj` and `tests/Interlocutor.Architecture.Tests/Interlocutor.Architecture.Tests.csproj` pass
