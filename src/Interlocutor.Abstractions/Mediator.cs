@@ -185,10 +185,10 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        // Routing (below, in DispatchAsync) resolves the concrete generic overload and invokes it reflectively,
-        // which starts its own nested activity - the two naturally parent via Activity.Current, the same way any
-        // handler-initiated nested Send call would. This method's own activity represents the runtime-typed
-        // routing step itself.
+        // Routing (below, in DispatchAsync) either invokes the generated dispatcher's switch case or, on the
+        // reflection fallback, the resolved concrete generic overload - either way a nested activity starts,
+        // parenting naturally via Activity.Current the same way any handler-initiated nested Send call would.
+        // This method's own activity represents the runtime-typed routing step itself.
         var activity = MediatorActivitySource.Source.StartActivity();
         return activity is null ? this.DispatchAsync(request, ct) : TraceDispatchAsync(activity, request, this, ct);
     }
@@ -222,12 +222,35 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     }
 
     /// <summary>
-    /// Resolves and invokes the correct strongly-typed <c>Send</c> overload for <paramref name="request"/>'s
-    /// runtime type, via reflection. Factored out of the public <see cref="Send(object, CancellationToken)"/>
-    /// overload so that method can take a synchronous, allocation-free fast path when activity tracing is
-    /// unobserved, without this routing logic (and the async state machine it requires) running on that path.
+    /// Routes <paramref name="request"/> to the compile-time generated type switch when one is registered
+    /// (<see cref="IGeneratedRequestDispatcher"/> - ticket 13), or to the reflection-based fallback
+    /// (<see cref="DispatchViaReflectionAsync"/> - ticket 09) otherwise. Factored out of the public
+    /// <see cref="Send(object, CancellationToken)"/> overload so that method can take a synchronous,
+    /// allocation-free fast path when activity tracing is unobserved, without this routing logic (and the
+    /// async state machine it requires) running on that path.
     /// </summary>
-    private async Task<IOperationOutcome> DispatchAsync(object request, CancellationToken ct)
+    /// <remarks>
+    /// <see cref="IGeneratedRequestDispatcher"/> is resolved fresh on every call rather than cached on this
+    /// instance: <see cref="Mediator"/> itself is typically scoped (see the type's own remarks), and the
+    /// generated dispatcher, when present, is a stateless singleton - a single <see cref="IServiceProvider.GetService(Type)"/>
+    /// lookup per call is cheap relative to the reflection it replaces, and keeps this method free of extra
+    /// constructor-time state.
+    /// </remarks>
+    private Task<IOperationOutcome> DispatchAsync(object request, CancellationToken ct)
+    {
+        var generatedDispatcher = (IGeneratedRequestDispatcher?)services.GetService(typeof(IGeneratedRequestDispatcher));
+        return generatedDispatcher is not null
+            ? generatedDispatcher.Dispatch(request, services, ct)
+            : this.DispatchViaReflectionAsync(request, ct);
+    }
+
+    /// <summary>
+    /// Resolves and invokes the correct strongly-typed <c>Send</c> overload for <paramref name="request"/>'s
+    /// runtime type, via reflection - the explicitly opted-in runtime-scanning fallback used when no
+    /// <see cref="IGeneratedRequestDispatcher"/> is registered (the generator never ran over the compilation,
+    /// or its output was never passed to <c>InterlocutorBuilder.AddGeneratedRegistrations</c>).
+    /// </summary>
+    private async Task<IOperationOutcome> DispatchViaReflectionAsync(object request, CancellationToken ct)
     {
         var requestType = request.GetType();
 

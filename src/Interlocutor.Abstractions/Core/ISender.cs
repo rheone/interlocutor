@@ -68,12 +68,14 @@ public interface ISender
     /// this overload determines the response type reflectively from the request's runtime type instead.
     /// </para>
     /// <para>
-    /// This overload is implemented reflectively for now - it locates the closed <c>IQuery{TResponse}</c> or
-    /// <c>ICommand{TResponse}</c> interface (or, for a unit command, the registered
-    /// <c>IVoidCommandHandler{TCommand, TResult}</c>) on the request's runtime type and invokes the matching
-    /// generic <c>Send</c> overload via reflection, so pipeline composition is not duplicated. A future
-    /// generator-backed implementation will replace the reflection with a compiled type switch without
-    /// changing this contract.
+    /// When <c>Interlocutor.Generator</c> ran over the compilation and its output was passed to
+    /// <c>InterlocutorBuilder.AddGeneratedRegistrations</c>, this overload dispatches through a compile-time
+    /// generated type switch (<see cref="IGeneratedRequestDispatcher"/>) - no reflection runs on that path.
+    /// Otherwise it falls back to locating the closed <c>IQuery{TResponse}</c> or <c>ICommand{TResponse}</c>
+    /// interface (or, for a unit command, the registered <c>IVoidCommandHandler{TCommand, TResult}</c>) on the
+    /// request's runtime type and invoking the matching generic <c>Send</c> overload via reflection - the
+    /// explicitly opted-in runtime-scanning fallback. Either way this method's contract - exceptions included
+    /// - is identical to the caller.
     /// </para>
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="request"/> is <see langword="null"/>.</exception>
