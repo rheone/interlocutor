@@ -69,6 +69,9 @@ public sealed class OutcomeClassifierBuilder
         this.RegisterFailureType<Conflict>("Conflict");
         this.RegisterFailureType<Conflicts>("Conflict");
         this.RegisterFailureType<Failure>("Failure");
+        this.RegisterFailureType<Cancelled>("Cancelled");
+        this.RegisterFailureType<Timeout>("Timeout");
+        this.RegisterFailureType<RateLimited>("RateLimited");
 
         // Register generic variants via predicate to handle open-ended shapes.
         // This covers ValidationError<TErrorCode>, ValidationErrors<TErrorCode>, and

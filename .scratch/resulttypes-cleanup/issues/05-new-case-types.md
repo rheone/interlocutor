@@ -14,9 +14,9 @@ Each gets a `ToString()` override per the shared convention (`"TypeName: detail"
 
 **Blocked by:** 02 (rename AspNetCore test fixture, so `RateLimited` doesn't collide when it lands)
 
-- [ ] `Cancelled`, `Timeout`, `RateLimited` exist in `src/Interlocutor.CommonKernel/ResultTypes/` with the shapes above
-- [ ] Each has XML doc comments matching the existing case types' style, including a remark on `Cancelled` explaining why it's reason-only (not an oversight relative to `Timeout`/`RateLimited`'s richer shape)
-- [ ] Each has a `ToString()` override: `Cancelled` → `"Cancelled"` / `"Cancelled: {Reason}"`; `Timeout` → includes `Budget` and `Elapsed`; `RateLimited` → includes `LimitKey`
-- [ ] `OutcomeClassifierBuilder`'s constructor registers all three as failure types (`RegisterFailureType<Cancelled>("Cancelled")`, etc.)
-- [ ] Unit tests cover construction, defaults, and `ToString()` for all three
-- [ ] `dotnet build` (whole solution, confirming the AspNetCore test fixture rename in ticket 02 already prevents any collision) and `dotnet test tests/Interlocutor.CommonKernel.Tests/Interlocutor.CommonKernel.Tests.csproj` pass
+- [x] `Cancelled`, `Timeout`, `RateLimited` exist in `src/Interlocutor.CommonKernel/ResultTypes/` with the shapes above
+- [x] Each has XML doc comments matching the existing case types' style, including a remark on `Cancelled` explaining why it's reason-only (not an oversight relative to `Timeout`/`RateLimited`'s richer shape)
+- [x] Each has a `ToString()` override: `Cancelled` → `"Cancelled"` / `"Cancelled: {Reason}"`; `Timeout` → includes `Budget` and `Elapsed`; `RateLimited` → includes `LimitKey`
+- [x] `OutcomeClassifierBuilder`'s constructor registers all three as failure types (`RegisterFailureType<Cancelled>("Cancelled")`, etc.)
+- [x] Unit tests cover construction, defaults, and `ToString()` for all three
+- [x] `dotnet build` (whole solution, confirming the AspNetCore test fixture rename in ticket 02 already prevents any collision) and `dotnet test tests/Interlocutor.CommonKernel.Tests/Interlocutor.CommonKernel.Tests.csproj` pass
