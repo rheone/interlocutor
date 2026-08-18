@@ -3,6 +3,7 @@ namespace Interlocutor.DependencyInjection.Abstractions.Tests;
 using System.Reflection;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Pipeline;
+using Interlocutor.Abstractions.Pipeline.Cases;
 using NSubstitute;
 
 public class InterlocutorBuilderTests
@@ -141,6 +142,10 @@ public class InterlocutorBuilderTests
         Assert.Contains(
             builder.Defaults,
             r => r.ServiceType == typeof(IPolicyEvaluator) && r.ImplementationType == typeof(DefaultPolicyEvaluator)
+        );
+        Assert.Contains(
+            builder.Defaults,
+            r => r.ServiceType == typeof(IOutcomeCaseRegistry) && r.ImplementationType == typeof(DefaultOutcomeCaseRegistry)
         );
     }
 

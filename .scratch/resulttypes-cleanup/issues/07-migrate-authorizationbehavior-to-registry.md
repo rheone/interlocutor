@@ -8,9 +8,9 @@ ready-for-agent
 
 **Blocked by:** 03 (IOutcomeCaseRegistry extension-point)
 
-- [ ] `AuthorizationBehavior<TRequest, TResponse>` takes `IOutcomeCaseRegistry` via constructor injection
-- [ ] The `Forbidden` short-circuit path calls `caseRegistry.Construct<TResponse, Forbidden>(...)` instead of calling `UnionCaseFactory` directly
-- [ ] The existing `InvalidOperationException` thrown when `TResponse` has no `Forbidden` case is preserved in behavior (now surfaced via `OutcomeCaseNotSupportedException` from the registry, or wrapped to preserve the existing message/exception type - confirm which against existing tests)
-- [ ] Existing `AuthorizationBehavior` tests still pass unchanged in observed behavior
-- [ ] A new test proves `AuthorizationBehavior` correctly short-circuits with `Forbidden` against a hand-rolled, non-union `IOperationOutcome` type registered with a custom `IOutcomeCaseRegistry`
-- [ ] `dotnet test tests/Interlocutor.Abstractions.Tests/Interlocutor.Abstractions.Tests.csproj` passes
+- [x] `AuthorizationBehavior<TRequest, TResponse>` takes `IOutcomeCaseRegistry` via constructor injection
+- [x] The `Forbidden` short-circuit path calls `caseRegistry.Construct<TResponse, Forbidden>(...)` instead of calling `UnionCaseFactory` directly
+- [x] The existing `InvalidOperationException` thrown when `TResponse` has no `Forbidden` case is preserved in behavior (now surfaced via `OutcomeCaseNotSupportedException` from the registry, or wrapped to preserve the existing message/exception type - confirm which against existing tests)
+- [x] Existing `AuthorizationBehavior` tests still pass unchanged in observed behavior
+- [x] A new test proves `AuthorizationBehavior` correctly short-circuits with `Forbidden` against a hand-rolled, non-union `IOperationOutcome` type registered with a custom `IOutcomeCaseRegistry`
+- [x] `dotnet test tests/Interlocutor.Abstractions.Tests/Interlocutor.Abstractions.Tests.csproj` passes
