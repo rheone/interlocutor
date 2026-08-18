@@ -164,6 +164,87 @@ public record TransferFunds(int FromAccountId, int ToAccountId, decimal Amount)
 var result = await mediator.Send(new TransferFunds(1, 2, 100));
 ```
 
+## Outcome Description & Classification
+
+`LoggingBehavior`, `AuditingBehavior`, and both store-specific `TransactionBehavior` implementations (EF Core and NHibernate) all need to answer the same two questions about a handler's response: *what should this be called in a log line or audit entry*, and *does this represent a failure that a transaction should roll back*. `IResponseOutcomeDescriber` is the shared abstraction that answers both, so the three behaviors classify responses consistently instead of each re-implementing their own success/failure detection.
+
+```csharp
+public interface IResponseOutcomeDescriber
+{
+    string Describe(object? response);   // e.g. "Success", "NotFound", "ValidationError"
+    bool IsFailure(object? response);    // true => TransactionBehavior rolls back
+}
+```
+
+- **`LoggingBehavior<TRequest, TResponse>`** calls `Describe()` to log the outcome alongside elapsed time.
+- **`AuditingBehavior<TRequest, TResponse>`** calls `Describe()` to record the outcome on each `AuditEntry`.
+- **`TransactionBehavior`** (both EF Core and NHibernate) calls `IsFailure()` to decide whether to commit or roll back.
+
+`LoggingBehavior`, `AuditingBehavior`, and both `TransactionBehavior` implementations accept `IResponseOutcomeDescriber` as an *optional* constructor parameter. When nothing is registered in DI, each falls back to its own `DefaultResponseOutcomeDescriber` instance backed by `OutcomeClassifierBuilder.DefaultClassifier` - the shared, pre-seeded classifier described below.
+
+> [!IMPORTANT]
+> There is no automatic `IResponseOutcomeDescriber` registration in `InterlocutorBuilder`. Registering one would require also registering a default `IOutcomeClassifier` to keep it resolvable - an orphan dependency the no-default-pipeline design avoids introducing for consumers who never call `OverrideOutcomeDescriber`. The optional-parameter fallback covers everyone else.
+
+### Overriding the Default
+
+Reach for `InterlocutorBuilder.OverrideOutcomeDescriber<TDescriber>()` when the default classifier doesn't recognize your response types - most commonly because your handlers return a custom union type instead of `OperationOutcome<...>`. The default classifier is fail-closed: any response type it hasn't seen is treated as a failure, so an unrecognized custom type would log misleading outcome labels and force every transaction to roll back even on success.
+
+```csharp
+services.AddInterlocutor(builder =>
+{
+    builder.ScanAssembly(typeof(Program).Assembly);
+    builder.OverrideOutcomeDescriber<PaymentOutcomeDescriber>();  // see worked example below
+    builder.AddLoggingBehavior();
+    builder.AddAuditingBehavior();
+});
+```
+
+`OverrideOutcomeDescriber<TDescriber>()` replaces the builder's internal default entry for `IResponseOutcomeDescriber` directly (registered as a singleton by default), so it wins regardless of whether it's called before or after `AddLoggingBehavior()` / `AddAuditingBehavior()` in the same chain.
+
+### OutcomeClassifierBuilder
+
+`OutcomeClassifierBuilder` is the fluent builder behind `DefaultResponseOutcomeDescriber` - it produces an immutable `IOutcomeClassifier` from a set of type and predicate registrations. `OutcomeClassifierBuilder.DefaultClassifier` is pre-seeded with every kernel result type, so a fresh builder only needs to add your own:
+
+- **`RegisterSuccessType<TSuccess>(label)`** - registers a type as success, with the given label.
+- **`RegisterFailureType<TFailure>(label)`** - registers a type as failure, with the given label.
+- **`RegisterFailureType(Type, label)`** - the non-generic form, for registering a type known only at runtime.
+- **`RegisterPredicate(predicate, label, isFailure)`** - for shapes that can't be keyed by exact type (e.g. an open generic family). Predicates are evaluated in registration order, after the type table misses, and the first match wins.
+- **`.Build()`** - produces the immutable `IOutcomeClassifier`.
+
+> [!IMPORTANT]
+> Unregistered types are fail-closed: if neither the type table nor any predicate matches a response, `IsFailure()` returns `true`. A custom outcome type you forget to register surfaces as an immediate, loud rollback rather than a silently committed write.
+
+#### Worked example: classifying a custom union type
+
+Say your handlers return a hand-rolled payment outcome instead of `OperationOutcome<...>`:
+
+```csharp
+public sealed record PaymentApproved(string ConfirmationCode);
+
+public sealed record PaymentDeclined(string Reason);
+
+public sealed record PaymentGatewayError(string Detail);
+```
+
+Build a classifier for it and wrap it in an `IResponseOutcomeDescriber`:
+
+```csharp
+public sealed class PaymentOutcomeDescriber : IResponseOutcomeDescriber
+{
+    private static readonly IOutcomeClassifier Classifier = new OutcomeClassifierBuilder()
+        .RegisterSuccessType<PaymentApproved>("PaymentApproved")
+        .RegisterFailureType<PaymentDeclined>("PaymentDeclined")
+        .RegisterFailureType<PaymentGatewayError>("PaymentGatewayError")
+        .Build();
+
+    public string Describe(object? response) => Classifier.GetLabel(response);
+
+    public bool IsFailure(object? response) => Classifier.IsFailure(response);
+}
+```
+
+Then wire it in with `OverrideOutcomeDescriber<TDescriber>()` as shown above. `LoggingBehavior`, `AuditingBehavior`, and `TransactionBehavior` now describe and classify `PaymentApproved`/`PaymentDeclined`/`PaymentGatewayError` correctly instead of falling back to the fail-closed default - a response you never registered would otherwise log as its raw type name and force a rollback even when it's a genuine success.
+
 ## Cancellation, Timeout & Rate Limiting Behaviors
 
 These three behaviors are additive, opt-in cross-cutting concerns shipped alongside the recommended chain, but **not part of it**.
