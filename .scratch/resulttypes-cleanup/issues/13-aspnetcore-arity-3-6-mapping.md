@@ -10,9 +10,9 @@ ready-for-agent
 
 **Blocked by:** 02 (fixture rename), 04 (Failure/Failures redesign, for `.Reasons`), 05 (new case types)
 
-- [ ] `ToActionResult`/`ToMinimalApiResult` overloads exist for `OperationOutcome<TSuccess, TCase2, TCase3>` through `OperationOutcome<TSuccess, TCase2, TCase3, TCase4, TCase5, TCase6>` (8 new overloads total), each delegating to `IOutcomeStatusMapper` exactly like the existing arity-2 overload
-- [ ] `DefaultOutcomeStatusMapper` gains `MapCancelled`, `MapTimeout`, `MapRateLimited` protected virtual methods, wired into its case-dispatch switch
-- [ ] `MapFailures` uses `failures.Reasons` instead of `failures.Values.Select(f => f.Reason ?? "Failure")`
-- [ ] No HTTP status code numbers appear in this ticket's description or in any doc other than `aspnetcore-integration.md` (house style) - the actual numeric choices live only in code and that one doc
-- [ ] Unit tests cover success and every failure-case branch for each new arity overload
-- [ ] `dotnet test tests/Interlocutor.AspNetCore.Tests/Interlocutor.AspNetCore.Tests.csproj` passes
+- [x] `ToActionResult`/`ToMinimalApiResult` overloads exist for `OperationOutcome<TSuccess, TCase2, TCase3>` through `OperationOutcome<TSuccess, TCase2, TCase3, TCase4, TCase5, TCase6>` (8 new overloads total), each delegating to `IOutcomeStatusMapper` exactly like the existing arity-2 overload - **already satisfied by prior work**: `audit-followups/05` (commit `38bff74`) added these to `src/Interlocutor.AspNetCore/ResultExtensions.cs`; verified in place, not re-added
+- [x] `DefaultOutcomeStatusMapper` gains `MapCancelled`, `MapTimeout`, `MapRateLimited` protected virtual methods, wired into its case-dispatch switch - **newly added** in this ticket
+- [x] `MapFailures` uses `failures.Reasons` instead of `failures.Values.Select(f => f.Reason ?? "Failure")` - **newly fixed** in this ticket (was still using `failures.Items.Select(f => f.Reason ?? "Failure")`, the post-`.Values`-removal form; swapped to `failures.Reasons`)
+- [x] No HTTP status code numbers appear in this ticket's description or in any doc other than `aspnetcore-integration.md` (house style) - the actual numeric choices live only in code and that one doc
+- [x] Unit tests cover success and every failure-case branch for each new arity overload - added a full success + 5-failure-case sweep of the 6-arity overload, plus dedicated mapper-level tests for `Cancelled`/`Timeout`/`RateLimited`
+- [x] `dotnet test tests/Interlocutor.AspNetCore.Tests/Interlocutor.AspNetCore.Tests.csproj` passes
