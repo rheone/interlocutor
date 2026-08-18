@@ -10,13 +10,13 @@ ready-for-agent
 
 ## Acceptance criteria
 
-- [ ] `IOutcomeCaseRegistry` default (`DefaultOutcomeCaseRegistry`) is try-added inside `AddAuthorizationBehavior()` and `AddValidationBehavior()`
-- [ ] `AddCancellationBehavior()`, `AddTimeoutBehavior()`, `AddRateLimitedBehavior()` exist on `InterlocutorBuilder`, each registering its behavior and try-adding its default evaluator (and `IOutcomeCaseRegistry` default)
-- [ ] `OverrideTimeoutPolicy<T>()`, `OverrideRateLimiter<T>()`, `OverrideOutcomeCaseRegistry<T>()` exist, following the existing `Override*` pattern (e.g. `OverridePolicyEvaluator<T>()`)
-- [ ] `UseRecommendedChain()` is unchanged - still exactly the 5-behavior Logging → Auditing → Authorization → Validation → Transaction chain, same XML doc
-- [ ] Each new `Add*Behavior()` method's XML doc states it has no prescribed position and the caller chooses where it lands, consistent with the maintainer decision above
-- [ ] DI resolution smoke tests for **both** `Interlocutor.DependencyInjection.Microsoft` and `Interlocutor.DependencyInjection.Autofac`: register each new/migrated behavior via `InterlocutorBuilder` and assert `IPipelineBehavior<TRequest,TResponse>` resolves without throwing (this is the exact failure mode described in `AuthorizationBehavior`'s remarks about Microsoft DI's open-generic resolver)
-- [ ] `dotnet test` passes for `Interlocutor.DependencyInjection.Abstractions`, `.Microsoft`, and `.Autofac` test projects
+- [x] `IOutcomeCaseRegistry` default (`DefaultOutcomeCaseRegistry`) is try-added inside `AddAuthorizationBehavior()` and `AddValidationBehavior()`
+- [x] `AddCancellationBehavior()`, `AddTimeoutBehavior()`, `AddRateLimitedBehavior()` exist on `InterlocutorBuilder`, each registering its behavior and try-adding its default evaluator (and `IOutcomeCaseRegistry` default)
+- [x] `OverrideTimeoutPolicy<T>()`, `OverrideRateLimiter<T>()`, `OverrideOutcomeCaseRegistry<T>()` exist, following the existing `Override*` pattern (e.g. `OverridePolicyEvaluator<T>()`)
+- [x] `UseRecommendedChain()` is unchanged - still exactly the 5-behavior Logging → Auditing → Authorization → Validation → Transaction chain, same XML doc
+- [x] Each new `Add*Behavior()` method's XML doc states it has no prescribed position and the caller chooses where it lands, consistent with the maintainer decision above
+- [x] DI resolution smoke tests for **both** `Interlocutor.DependencyInjection.Microsoft` and `Interlocutor.DependencyInjection.Autofac`: register each new/migrated behavior via `InterlocutorBuilder` and assert `IPipelineBehavior<TRequest,TResponse>` resolves without throwing (this is the exact failure mode described in `AuthorizationBehavior`'s remarks about Microsoft DI's open-generic resolver)
+- [x] `dotnet test` passes for `Interlocutor.DependencyInjection.Abstractions`, `.Microsoft`, and `.Autofac` test projects
 
 ## Blocked by
 

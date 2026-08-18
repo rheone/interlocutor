@@ -318,6 +318,67 @@ public sealed class InterlocutorBuilder
     }
 
     /// <summary>
+    /// Adds <see cref="CancellationBehavior{TRequest,TResponse}"/> at the current position in the chain,
+    /// and try-adds its default dependency, <see cref="IOutcomeCaseRegistry"/>
+    /// (<see cref="DefaultOutcomeCaseRegistry"/>), unless a default has already been set.
+    /// </summary>
+    /// <remarks>
+    /// This behavior has no prescribed position in the pipeline - unlike the five behaviors composed by
+    /// <see cref="UseRecommendedChain"/>, it is not part of that documented ordering. The caller chooses
+    /// where it lands in their own chain by where they call this method relative to their other
+    /// <c>Add*Behavior</c> calls.
+    /// </remarks>
+    /// <returns>This builder, for chaining.</returns>
+    public InterlocutorBuilder AddCancellationBehavior()
+    {
+        this.AddBehavior(typeof(CancellationBehavior<,>));
+        this.TryAddDefault(typeof(IOutcomeCaseRegistry), typeof(DefaultOutcomeCaseRegistry));
+        return this;
+    }
+
+    /// <summary>
+    /// Adds <see cref="TimeoutBehavior{TRequest,TResponse}"/> at the current position in the chain, and
+    /// try-adds its default dependencies, <see cref="ITimeoutPolicy"/> (<see cref="DefaultTimeoutPolicy"/>)
+    /// and <see cref="IOutcomeCaseRegistry"/> (<see cref="DefaultOutcomeCaseRegistry"/>), unless a default
+    /// has already been set for either.
+    /// </summary>
+    /// <remarks>
+    /// This behavior has no prescribed position in the pipeline - unlike the five behaviors composed by
+    /// <see cref="UseRecommendedChain"/>, it is not part of that documented ordering. The caller chooses
+    /// where it lands in their own chain by where they call this method relative to their other
+    /// <c>Add*Behavior</c> calls.
+    /// </remarks>
+    /// <returns>This builder, for chaining.</returns>
+    public InterlocutorBuilder AddTimeoutBehavior()
+    {
+        this.AddBehavior(typeof(TimeoutBehavior<,>));
+        this.TryAddDefault(typeof(ITimeoutPolicy), typeof(DefaultTimeoutPolicy));
+        this.TryAddDefault(typeof(IOutcomeCaseRegistry), typeof(DefaultOutcomeCaseRegistry));
+        return this;
+    }
+
+    /// <summary>
+    /// Adds <see cref="RateLimitedBehavior{TRequest,TResponse}"/> at the current position in the chain,
+    /// and try-adds its default dependencies, <see cref="IRateLimiter"/> (<see cref="DefaultRateLimiter"/>)
+    /// and <see cref="IOutcomeCaseRegistry"/> (<see cref="DefaultOutcomeCaseRegistry"/>), unless a default
+    /// has already been set for either.
+    /// </summary>
+    /// <remarks>
+    /// This behavior has no prescribed position in the pipeline - unlike the five behaviors composed by
+    /// <see cref="UseRecommendedChain"/>, it is not part of that documented ordering. The caller chooses
+    /// where it lands in their own chain by where they call this method relative to their other
+    /// <c>Add*Behavior</c> calls.
+    /// </remarks>
+    /// <returns>This builder, for chaining.</returns>
+    public InterlocutorBuilder AddRateLimitedBehavior()
+    {
+        this.AddBehavior(typeof(RateLimitedBehavior<,>));
+        this.TryAddDefault(typeof(IRateLimiter), typeof(DefaultRateLimiter));
+        this.TryAddDefault(typeof(IOutcomeCaseRegistry), typeof(DefaultOutcomeCaseRegistry));
+        return this;
+    }
+
+    /// <summary>
     /// Applies the library's documented recommended pipeline chain - logging, then auditing, then
     /// authorization, then validation, then transaction - in that order, as sugar over the individual
     /// <c>Add*Behavior</c> calls. Never applied automatically; a consumer opts in explicitly.
@@ -370,6 +431,56 @@ public sealed class InterlocutorBuilder
         where TEvaluator : class, IPolicyEvaluator
     {
         this.SetDefault(typeof(IPolicyEvaluator), typeof(TEvaluator), lifetime);
+        return this;
+    }
+
+    /// <summary>
+    /// Replaces the default <see cref="ITimeoutPolicy"/> implementation <see cref="TimeoutBehavior{TRequest,TResponse}"/>
+    /// receives when no application-level registration is present. Wins regardless of whether it is
+    /// called before or after <see cref="AddTimeoutBehavior"/> in the same chain.
+    /// </summary>
+    /// <typeparam name="TPolicy">The replacement <see cref="ITimeoutPolicy"/> implementation.</typeparam>
+    /// <param name="lifetime">The service lifetime to register the replacement with. Defaults to scoped.</param>
+    /// <returns>This builder, for chaining.</returns>
+    public InterlocutorBuilder OverrideTimeoutPolicy<TPolicy>(RegistrationLifetime lifetime = RegistrationLifetime.Scoped)
+        where TPolicy : class, ITimeoutPolicy
+    {
+        this.SetDefault(typeof(ITimeoutPolicy), typeof(TPolicy), lifetime);
+        return this;
+    }
+
+    /// <summary>
+    /// Replaces the default <see cref="IRateLimiter"/> implementation <see cref="RateLimitedBehavior{TRequest,TResponse}"/>
+    /// receives when no application-level registration is present. Wins regardless of whether it is
+    /// called before or after <see cref="AddRateLimitedBehavior"/> in the same chain.
+    /// </summary>
+    /// <typeparam name="TLimiter">The replacement <see cref="IRateLimiter"/> implementation.</typeparam>
+    /// <param name="lifetime">The service lifetime to register the replacement with. Defaults to scoped.</param>
+    /// <returns>This builder, for chaining.</returns>
+    public InterlocutorBuilder OverrideRateLimiter<TLimiter>(RegistrationLifetime lifetime = RegistrationLifetime.Scoped)
+        where TLimiter : class, IRateLimiter
+    {
+        this.SetDefault(typeof(IRateLimiter), typeof(TLimiter), lifetime);
+        return this;
+    }
+
+    /// <summary>
+    /// Replaces the default <see cref="IOutcomeCaseRegistry"/> implementation
+    /// <see cref="AuthorizationBehavior{TRequest,TResponse}"/>, <see cref="CancellationBehavior{TRequest,TResponse}"/>,
+    /// <see cref="TimeoutBehavior{TRequest,TResponse}"/>, <see cref="RateLimitedBehavior{TRequest,TResponse}"/>,
+    /// and the FluentValidation <c>ValidationBehavior</c> receive when no application-level registration is
+    /// present. Wins regardless of whether it is called before or after the corresponding <c>Add*Behavior</c>
+    /// call in the same chain.
+    /// </summary>
+    /// <typeparam name="TRegistry">The replacement <see cref="IOutcomeCaseRegistry"/> implementation.</typeparam>
+    /// <param name="lifetime">The service lifetime to register the replacement with. Defaults to scoped.</param>
+    /// <returns>This builder, for chaining.</returns>
+    public InterlocutorBuilder OverrideOutcomeCaseRegistry<TRegistry>(
+        RegistrationLifetime lifetime = RegistrationLifetime.Scoped
+    )
+        where TRegistry : class, IOutcomeCaseRegistry
+    {
+        this.SetDefault(typeof(IOutcomeCaseRegistry), typeof(TRegistry), lifetime);
         return this;
     }
 

@@ -184,12 +184,103 @@ public class InterlocutorBuilderIntegrationTests
         Assert.False(handlerRan);
     }
 
+    [Fact]
+    public void AddCancellationBehavior_ResolvesWithoutThrowing_UnderAutofac()
+    {
+        // The exact open-generic-resolution failure mode documented on AuthorizationBehavior's remarks and
+        // fixed once before (audit-followups/13): a behavior whose constrained TRequest/TResponse shape
+        // throws from Autofac's open-generic substitution instead of simply resolving. Registering and
+        // resolving against a closed generic that satisfies the constraints is the only way to prove this.
+        var containerBuilder = new ContainerBuilder();
+
+        containerBuilder.AddInterlocutor(builder =>
+            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).AddCancellationBehavior()
+        );
+
+        var container = containerBuilder.Build();
+        using var scope = container.BeginLifetimeScope();
+
+        var behaviors = scope
+            .Resolve<IEnumerable<IPipelineBehavior<CancellableQuery, OperationOutcome<string, Cancelled>>>>()
+            .ToList();
+
+        Assert.Contains(behaviors, b => b.GetType().Name.StartsWith("CancellationBehavior"));
+    }
+
+    [Fact]
+    public void AddTimeoutBehavior_ResolvesWithoutThrowing_UnderAutofac()
+    {
+        var containerBuilder = new ContainerBuilder();
+
+        containerBuilder.AddInterlocutor(builder =>
+            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).AddTimeoutBehavior()
+        );
+
+        var container = containerBuilder.Build();
+        using var scope = container.BeginLifetimeScope();
+
+        var behaviors = scope
+            .Resolve<IEnumerable<IPipelineBehavior<TimeBoundQuery, OperationOutcome<string, Timeout>>>>()
+            .ToList();
+
+        Assert.Contains(behaviors, b => b.GetType().Name.StartsWith("TimeoutBehavior"));
+    }
+
+    [Fact]
+    public void AddRateLimitedBehavior_ResolvesWithoutThrowing_UnderAutofac()
+    {
+        var containerBuilder = new ContainerBuilder();
+
+        containerBuilder.AddInterlocutor(builder =>
+            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).AddRateLimitedBehavior()
+        );
+
+        var container = containerBuilder.Build();
+        using var scope = container.BeginLifetimeScope();
+
+        var behaviors = scope
+            .Resolve<IEnumerable<IPipelineBehavior<ThrottledQuery, OperationOutcome<string, RateLimited>>>>()
+            .ToList();
+
+        Assert.Contains(behaviors, b => b.GetType().Name.StartsWith("RateLimitedBehavior"));
+    }
+
     private sealed record SampleQuery : IQuery<OperationOutcome>;
 
     private sealed class SampleQueryHandler : IQueryHandler<SampleQuery, OperationOutcome>
     {
         public Task<OperationOutcome> Handle(SampleQuery query, CancellationToken ct) =>
             Task.FromResult(default(OperationOutcome));
+    }
+
+    private sealed record CancellableQuery : IQuery<OperationOutcome<string, Cancelled>>, ICancellable;
+
+    private sealed class CancellableQueryHandler : IQueryHandler<CancellableQuery, OperationOutcome<string, Cancelled>>
+    {
+        public Task<OperationOutcome<string, Cancelled>> Handle(CancellableQuery query, CancellationToken ct) =>
+            Task.FromResult<OperationOutcome<string, Cancelled>>("ok");
+    }
+
+    private sealed record TimeBoundQuery : IQuery<OperationOutcome<string, Timeout>>, IHasTimeout
+    {
+        public TimeSpan Budget => TimeSpan.FromSeconds(30);
+    }
+
+    private sealed class TimeBoundQueryHandler : IQueryHandler<TimeBoundQuery, OperationOutcome<string, Timeout>>
+    {
+        public Task<OperationOutcome<string, Timeout>> Handle(TimeBoundQuery query, CancellationToken ct) =>
+            Task.FromResult<OperationOutcome<string, Timeout>>("ok");
+    }
+
+    private sealed record ThrottledQuery : IQuery<OperationOutcome<string, RateLimited>>, IRateLimited
+    {
+        public string LimitKey => "test-limit";
+    }
+
+    private sealed class ThrottledQueryHandler : IQueryHandler<ThrottledQuery, OperationOutcome<string, RateLimited>>
+    {
+        public Task<OperationOutcome<string, RateLimited>> Handle(ThrottledQuery query, CancellationToken ct) =>
+            Task.FromResult<OperationOutcome<string, RateLimited>>("ok");
     }
 
     private sealed record AuthorizableQuery : IQuery<OperationOutcome<string, Forbidden>>, IAuditableRequest, IRequiresPolicy
