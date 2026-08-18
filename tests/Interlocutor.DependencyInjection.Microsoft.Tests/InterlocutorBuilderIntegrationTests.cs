@@ -164,6 +164,59 @@ public class InterlocutorBuilderIntegrationTests
     }
 
     [Fact]
+    public async Task AuditingBehavior_PopulatesUserId_FromAmbientRequestContextAccessor_ThroughARealSend()
+    {
+        // End-to-end proof that IRequestContextAccessor flows into AuditEntry.UserId: the accessor's
+        // Context is set on the same scope a real IMediator.Send dispatches through, using the library's
+        // own default IRequestContextAccessor (AmbientRequestContextAccessor) rather than a hand-wired stub.
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var sink = new CapturingAuditSink();
+        services.AddSingleton<IAuditSink>(sink);
+
+        services.AddInterlocutor(builder =>
+            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).AddAuditingBehavior()
+        );
+
+        var provider = services.BuildServiceProvider();
+        // Dispatch must happen from a real scope, never the root provider directly - see ADR-0011.
+        using var scope = provider.CreateScope();
+        var contextAccessor = scope.ServiceProvider.GetRequiredService<IRequestContextAccessor>();
+        contextAccessor.Context = new RequestContext { UserId = "user-e2e" };
+        var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+
+        await mediator.Send(new AuditOnlyQuery(), TestContext.Current.CancellationToken);
+
+        var entry = Assert.Single(sink.Entries);
+        Assert.Equal("user-e2e", entry.UserId);
+    }
+
+    [Fact]
+    public async Task AuditingBehavior_LeavesUserIdNull_WhenNoRequestContextIsPopulated()
+    {
+        // The anonymous/no-ambient-context case: the default accessor is registered but nothing ever set
+        // its Context, matching a request with no authenticated caller. Auditing must still succeed.
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var sink = new CapturingAuditSink();
+        services.AddSingleton<IAuditSink>(sink);
+
+        services.AddInterlocutor(builder =>
+            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).AddAuditingBehavior()
+        );
+
+        var provider = services.BuildServiceProvider();
+        // Dispatch must happen from a real scope, never the root provider directly - see ADR-0011.
+        using var scope = provider.CreateScope();
+        var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+
+        await mediator.Send(new AuditOnlyQuery(), TestContext.Current.CancellationToken);
+
+        var entry = Assert.Single(sink.Entries);
+        Assert.Null(entry.UserId);
+    }
+
+    [Fact]
     public async Task StageHost_WithTypeRegisteredStage_RunsBeforeAndAfterAroundTheHandler()
     {
         var services = new ServiceCollection();
@@ -306,6 +359,29 @@ public class InterlocutorBuilderIntegrationTests
     private sealed class RecordingAuditSink : IAuditSink
     {
         public Task RecordAsync(AuditEntry entry, CancellationToken ct) => Task.CompletedTask;
+    }
+
+    private sealed record AuditOnlyQuery : IQuery<OperationOutcome>, IAuditableRequest
+    {
+        public string ActionName => "Test.AuditOnly";
+    }
+
+    private sealed class AuditOnlyQueryHandler : IQueryHandler<AuditOnlyQuery, OperationOutcome>
+    {
+        public Task<OperationOutcome> Handle(AuditOnlyQuery query, CancellationToken ct) =>
+            Task.FromResult(default(OperationOutcome));
+    }
+
+    /// <summary>An <see cref="IAuditSink"/> that captures every recorded entry for post-dispatch assertions.</summary>
+    private sealed class CapturingAuditSink : IAuditSink
+    {
+        public List<AuditEntry> Entries { get; } = [];
+
+        public Task RecordAsync(AuditEntry entry, CancellationToken ct)
+        {
+            this.Entries.Add(entry);
+            return Task.CompletedTask;
+        }
     }
 
     /// <summary>Container for two distinct recording behaviors so both can share the log-entry naming convention.</summary>

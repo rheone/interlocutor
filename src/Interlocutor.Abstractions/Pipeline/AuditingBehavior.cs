@@ -1,5 +1,6 @@
 namespace Interlocutor.Abstractions.Pipeline;
 
+using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Markers;
 using Interlocutor.Abstractions.Pipeline.Classifiers;
 
@@ -17,8 +18,11 @@ using Interlocutor.Abstractions.Pipeline.Classifiers;
 /// marker - the container never even attempts to construct this behavior for it, so a non-auditable request
 /// pays nothing for auditing being registered elsewhere in the chain.
 /// </remarks>
-public class AuditingBehavior<TRequest, TResponse>(IAuditSink sink, IResponseOutcomeDescriber? describer = null)
-    : IPipelineBehavior<TRequest, TResponse>
+public class AuditingBehavior<TRequest, TResponse>(
+    IAuditSink sink,
+    IResponseOutcomeDescriber? describer = null,
+    IRequestContextAccessor? contextAccessor = null
+) : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IAuditableRequest
 {
     private readonly IResponseOutcomeDescriber _describer =
@@ -40,10 +44,16 @@ public class AuditingBehavior<TRequest, TResponse>(IAuditSink sink, IResponseOut
         // compliance/forensics a quick way to filter audits by outcome type without parsing full result objects.
         var outcome = this._describer.Describe(result);
 
+        // Pull the authenticated user ID from the ambient request context, if one is registered and
+        // populated. Both "no accessor registered" and "accessor has no context yet" (e.g. an
+        // unauthenticated request) resolve to null here rather than throwing - auditing must never fail
+        // a request because identity information happens to be unavailable.
+        var userId = contextAccessor?.Context?.UserId;
+
         // Record the audit entry. This includes the action name (from IAuditableRequest.ActionName),
-        // request type name (for categorization), outcome, and timestamp. The request context middleware
-        // should populate UserId if available.
-        var entry = new AuditEntry(request.ActionName, typeof(TRequest).Name, outcome, DateTime.UtcNow);
+        // request type name (for categorization), outcome, timestamp, and the authenticated user ID
+        // (or null if anonymous or no request context is available).
+        var entry = new AuditEntry(request.ActionName, typeof(TRequest).Name, outcome, DateTime.UtcNow, userId);
         await sink.RecordAsync(entry, ct);
 
         return result;
