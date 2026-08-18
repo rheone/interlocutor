@@ -8,9 +8,9 @@ ready-for-agent
 
 **Blocked by:** 03 (IOutcomeCaseRegistry extension-point), 05 (new case types)
 
-- [ ] `ICancellable` marker interface exists in `Interlocutor.Abstractions.Markers`
-- [ ] `CancellationBehavior<TRequest, TResponse>` exists in `Interlocutor.Abstractions.Pipeline`, generic only over `TRequest, TResponse` (no extra type parameters, per the DI open-generic-resolution constraint documented on `AuthorizationBehavior`)
-- [ ] It catches `OperationCanceledException` from `next()` only `when (ct.IsCancellationRequested)`, converting to `Cancelled` via `IOutcomeCaseRegistry`; any other exception (or a cancellation not tied to the ambient token) propagates unchanged
-- [ ] Throws a clear exception (matching the `AuthorizationBehavior`/registry style) if `TResponse` has no `Cancelled` case
-- [ ] Unit tests: cancellation mid-`next()` produces `Cancelled`; a non-cancellation exception still propagates; an unrelated `OperationCanceledException` (not tied to the ambient `ct`) still propagates
-- [ ] `dotnet test tests/Interlocutor.Abstractions.Tests/Interlocutor.Abstractions.Tests.csproj` passes
+- [x] `ICancellable` marker interface exists in `Interlocutor.Abstractions.Markers`
+- [x] `CancellationBehavior<TRequest, TResponse>` exists in `Interlocutor.Abstractions.Pipeline`, generic only over `TRequest, TResponse` (no extra type parameters, per the DI open-generic-resolution constraint documented on `AuthorizationBehavior`)
+- [x] It catches `OperationCanceledException` from `next()` only `when (ct.IsCancellationRequested)`, converting to `Cancelled` via `IOutcomeCaseRegistry`; any other exception (or a cancellation not tied to the ambient token) propagates unchanged
+- [x] Throws a clear exception (matching the `AuthorizationBehavior`/registry style) if `TResponse` has no `Cancelled` case
+- [x] Unit tests: cancellation mid-`next()` produces `Cancelled`; a non-cancellation exception still propagates; an unrelated `OperationCanceledException` (not tied to the ambient `ct`) still propagates
+- [x] `dotnet test tests/Interlocutor.Abstractions.Tests/Interlocutor.Abstractions.Tests.csproj` passes
