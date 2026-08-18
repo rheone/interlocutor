@@ -1,6 +1,6 @@
 namespace Interlocutor.CommonKernel.ResultTypes;
 
-using System.Collections.Immutable;
+using Interlocutor.CommonKernel.ResultTypes.Internal;
 
 /// <summary>
 /// Represents an immutable collection of one or more generic failure reasons.
@@ -17,11 +17,9 @@ using System.Collections.Immutable;
 /// </remarks>
 public readonly record struct Failures
 {
-    private readonly ImmutableArray<Failure> _failures;
+    private readonly DistinctItemSet<Failure> _failures;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="Failures"/> struct.
-    /// Initializes a new instance of the <see cref="Failures"/> class.
     /// Initializes a new instance of the <see cref="Failures"/> struct from the specified failure values.
     /// </summary>
     /// <param name="failures">
@@ -32,19 +30,10 @@ public readonly record struct Failures
     /// <exception cref="ArgumentException"><paramref name="failures"/> contains no elements.</exception>
     public Failures(IEnumerable<Failure> failures)
     {
-        ArgumentNullException.ThrowIfNull(failures);
-
-        this._failures = [.. failures.Distinct()];
-
-        if (this._failures.IsEmpty)
-        {
-            throw new ArgumentException("At least one failure is required.", nameof(failures));
-        }
+        this._failures = new DistinctItemSet<Failure>(failures, "At least one failure is required.", nameof(failures));
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="Failures"/> struct.
-    /// Initializes a new instance of the <see cref="Failures"/> class.
     /// Initializes a new instance of the <see cref="Failures"/> struct from a single failure.
     /// </summary>
     /// <param name="failure">The failure value.</param>
@@ -60,7 +49,7 @@ public readonly record struct Failures
     /// rather than throwing. This permits the pipeline to pass a default response value when a handler has not yet
     /// produced one. Explicitly constructing this type with an empty sequence still throws.
     /// </remarks>
-    public int Count => this._failures.IsDefault ? 0 : this._failures.Length;
+    public int Count => this._failures.Count;
 
     /// <summary>
     /// Gets the distinct set of failures, in the order they were first encountered.
@@ -74,15 +63,5 @@ public readonly record struct Failures
     /// rather than throwing. This permits the pipeline to pass a default response value when a handler has not yet
     /// produced one. Explicitly constructing this type with an empty sequence still throws.
     /// </remarks>
-    public IReadOnlyList<Failure> Items => this._failures.IsDefault ? [] : this._failures;
-
-    /// <summary>
-    /// Gets the distinct set of failures, in the order they were first encountered.
-    /// Semantic projection of <see cref="Items"/>.
-    /// </summary>
-    /// <value>
-    /// An unmodifiable collection of the distinct <see cref="Failure"/> values provided at creation,
-    /// or an empty collection if this instance is the default value.
-    /// </value>
-    public IReadOnlyList<Failure> Values => this.Items;
+    public IReadOnlyList<Failure> Items => this._failures.Items;
 }

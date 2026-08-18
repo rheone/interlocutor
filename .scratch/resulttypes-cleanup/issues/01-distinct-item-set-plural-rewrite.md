@@ -8,11 +8,11 @@ ready-for-agent
 
 **Blocked by:** None - can start immediately
 
-- [ ] `Interlocutor.CommonKernel.ResultTypes.Internal.DistinctItemSet<TItem>` exists as an internal, non-public value type
-- [ ] `Conflicts`, `Failures`, `ValidationErrors`, `ValidationErrors<TErrorCode>` are rewritten to compose `DistinctItemSet<TItem>` internally
-- [ ] Each plural type keeps its own constructor overloads (single item, `IEnumerable<T>`, and any type-specific shapes like message-only or tuple constructors) - only the internal storage/dedup mechanism is shared
-- [ ] `.Items` is present and behaves identically to today on all four types (dedup-preserving-order, default-value-is-inert-not-throwing)
-- [ ] `Failures.Values` (pure duplicate of `.Items`) is removed
-- [ ] Existing semantic projections (`Conflicts.Messages`, `ValidationErrors.Messages`/`.Errors`, `ValidationErrors<TErrorCode>.Messages`/`.Errors`/`.ErrorCodes`) are preserved and still correct
-- [ ] All existing tests for these four types pass unchanged in behavior (extend rather than replace existing test coverage)
-- [ ] `dotnet build` and `dotnet test tests/Interlocutor.CommonKernel.Tests/Interlocutor.CommonKernel.Tests.csproj` pass
+- [x] `Interlocutor.CommonKernel.ResultTypes.Internal.DistinctItemSet<TItem>` exists as an internal, non-public value type
+- [x] `Conflicts`, `Failures`, `ValidationErrors`, `ValidationErrors<TErrorCode>` are rewritten to compose `DistinctItemSet<TItem>` internally
+- [x] Each plural type keeps its own constructor overloads (single item, `IEnumerable<T>`, and any type-specific shapes like message-only or tuple constructors) - only the internal storage/dedup mechanism is shared
+- [x] `.Items` is present and behaves identically to today on all four types (dedup-preserving-order, default-value-is-inert-not-throwing)
+- [x] `Failures.Values` (pure duplicate of `.Items`) is removed
+- [x] Existing semantic projections (`Conflicts.Messages`, `ValidationErrors.Messages`/`.Errors`, `ValidationErrors<TErrorCode>.Messages`/`.Errors`/`.ErrorCodes`) are preserved and still correct
+- [x] All existing tests for these four types pass unchanged in behavior (extend rather than replace existing test coverage)
+- [x] `dotnet build` and `dotnet test tests/Interlocutor.CommonKernel.Tests/Interlocutor.CommonKernel.Tests.csproj` pass

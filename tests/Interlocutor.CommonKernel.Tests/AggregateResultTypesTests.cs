@@ -66,10 +66,10 @@ public class AggregateResultTypesTests
     }
 
     [Fact]
-    public void Failures_DefaultValue_ValuesIsEmpty()
+    public void Failures_DefaultValue_ItemsIsEmpty()
     {
         var defaultValue = default(Failures);
-        Assert.Empty(defaultValue.Values);
+        Assert.Empty(defaultValue.Items);
     }
 
     [Fact]
@@ -173,11 +173,87 @@ public class AggregateResultTypesTests
         var failures = new Failures(new Failure("Operation failed"));
         var conflicts = new Conflicts(new Conflict("State conflict", "CONFLICT"));
 
-        // Each type is expected to expose a consistent primary accessor
-        // (Items, Errors, or Values depending on the type's semantic meaning,
-        // but all should be documented as exposing a unified pattern).
+        // Each type exposes the same canonical primary accessor: .Items. ValidationErrors also
+        // exposes .Errors as an alias (a genuinely distinct semantic name for the same data).
+        Assert.NotEmpty(validationErrors.Items);
         Assert.NotEmpty(validationErrors.Errors);
-        Assert.NotEmpty(failures.Values);
+        Assert.NotEmpty(failures.Items);
         Assert.NotEmpty(conflicts.Items);
+    }
+
+    [Fact]
+    public void Failures_SingleItem_IsAccessible()
+    {
+        var failure = new Failure("Operation failed");
+        var failures = new Failures(failure);
+
+        Assert.Equal(1, failures.Count);
+        Assert.Single(failures.Items);
+        Assert.Equal(failure, failures.Items[0]);
+    }
+
+    [Fact]
+    public void Failures_MultipleItems_DeduplicatedOrderPreserved()
+    {
+        var failure1 = new Failure("Timeout");
+        var failure2 = new Failure("Disk full");
+
+        var failures = new Failures(new[] { failure1, failure2, failure1 });
+
+        Assert.Equal(2, failures.Count);
+        Assert.Equal(failure1, failures.Items[0]);
+        Assert.Equal(failure2, failures.Items[1]);
+    }
+
+    [Fact]
+    public void Failures_NullEnumerable_Throws()
+    {
+        Assert.Throws<ArgumentNullException>(() => new Failures(null!));
+    }
+
+    [Fact]
+    public void Conflicts_NullEnumerable_Throws()
+    {
+        Assert.Throws<ArgumentNullException>(() => new Conflicts(null!));
+    }
+
+    [Fact]
+    public void ValidationErrors_NullEnumerable_Throws()
+    {
+        Assert.Throws<ArgumentNullException>(() => new ValidationErrors((IEnumerable<ValidationError>)null!));
+    }
+
+    [Fact]
+    public void ValidationErrors_Generic_MultipleItems_DeduplicatedOrderPreserved()
+    {
+        var error1 = new ValidationError<int>("Email is required", 1001);
+        var error2 = new ValidationError<int>("Name is required", 1002);
+
+        var errors = new ValidationErrors<int>(new[] { error1, error2, error1 });
+
+        Assert.Equal(2, errors.Count);
+        Assert.Equal(error1, errors.Items[0]);
+        Assert.Equal(error2, errors.Items[1]);
+    }
+
+    [Fact]
+    public void ValidationErrors_Generic_UniqueErrorCodeCount_CountsDistinctCodesAcrossDuplicateMessages()
+    {
+        var errors = new ValidationErrors<int>(
+            new[] { new ValidationError<int>("Email is required", 1001), new ValidationError<int>("Email is required", 1002) }
+        );
+
+        // Same message, different codes: two distinct (message, code) pairs, one unique message,
+        // two unique codes.
+        Assert.Equal(2, errors.Count);
+        Assert.Equal(1, errors.UniqueErrorCount);
+        Assert.Equal(2, errors.UniqueErrorCodeCount);
+        Assert.Equal(2, errors.ErrorCodes.Count);
+    }
+
+    [Fact]
+    public void ValidationErrors_Generic_NullEnumerable_Throws()
+    {
+        Assert.Throws<ArgumentNullException>(() => new ValidationErrors<int>((IEnumerable<ValidationError<int>>)null!));
     }
 }
