@@ -116,7 +116,7 @@ public class MinimalApiResultExtensionsTests
     public void ToMinimalApiResult_And_ToActionResult_WithSameCustomMapper_AgreeOnStatusCode()
     {
         var mapper = new TeapotOutcomeStatusMapper();
-        OperationOutcome<string, RateLimited> outcomeResult = new(new RateLimited(TimeSpan.FromSeconds(5)));
+        OperationOutcome<string, CustomRateLimited> outcomeResult = new(new CustomRateLimited(TimeSpan.FromSeconds(5)));
 
         var minimalResult = outcomeResult.ToMinimalApiResult(mapper);
         var actionResult = outcomeResult.ToActionResult(mapper);

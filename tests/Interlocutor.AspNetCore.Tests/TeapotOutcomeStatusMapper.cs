@@ -12,7 +12,7 @@ public sealed class TeapotOutcomeStatusMapper : IOutcomeStatusMapper
     public OutcomeHttpMapping Map<TFailure>(TFailure failure) =>
         failure switch
         {
-            RateLimited rateLimited => new OutcomeHttpMapping(StatusCodes.Status429TooManyRequests, rateLimited),
+            CustomRateLimited rateLimited => new OutcomeHttpMapping(StatusCodes.Status429TooManyRequests, rateLimited),
             _ => new OutcomeHttpMapping(StatusCodes.Status418ImATeapot),
         };
 }

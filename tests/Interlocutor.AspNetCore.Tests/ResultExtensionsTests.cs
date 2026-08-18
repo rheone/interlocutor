@@ -140,12 +140,12 @@ public class ResultExtensionsTests
     [Fact]
     public void ToActionResult_WithCustomAggregateFailureType_IsMappable()
     {
-        OperationOutcome<string, RateLimited> result = new(new RateLimited(TimeSpan.FromSeconds(30)));
+        OperationOutcome<string, CustomRateLimited> result = new(new CustomRateLimited(TimeSpan.FromSeconds(30)));
         var actionResult = result.ToActionResult(new TeapotOutcomeStatusMapper());
 
         var objectResult = Assert.IsType<ObjectResult>(actionResult);
         Assert.Equal(StatusCodes.Status429TooManyRequests, objectResult.StatusCode);
-        Assert.Equal(TimeSpan.FromSeconds(30), Assert.IsType<RateLimited>(objectResult.Value).RetryAfter);
+        Assert.Equal(TimeSpan.FromSeconds(30), Assert.IsType<CustomRateLimited>(objectResult.Value).RetryAfter);
     }
 
     // The tests below exercise 3-arity (one success + two failure cases) and 5-arity (one success + four
