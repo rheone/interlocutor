@@ -13,12 +13,12 @@ Remove three pieces of dead code identified by audit:
 
 ## Acceptance criteria
 
-- [ ] The commented-out `ToString()` block is deleted from `Failure.cs`
-- [ ] `NoOpAuditSink.cs` is deleted, and any reference to it (registration defaults, DI wiring) is confirmed absent first
-- [ ] `DelegatePolicyEvaluator.cs` is deleted, and any reference to it is confirmed absent first
-- [ ] `DefaultPipelineRegistrations.cs` is deleted (or, if a maintainer decides it should become the actual source of truth instead, `InterlocutorBuilder` is wired to call it - confirm which direction before deleting blindly, since unlike the other three items this one duplicates logic rather than just sitting unused) along with its dedicated test file if deleted
-- [ ] Full solution build and test run still pass after removal
-- [ ] No documentation (`README.md`, `documentation/`) references any deleted type
+- [x] The commented-out `ToString()` block is deleted from `Failure.cs` (already absent from the current file - nothing to delete; confirmed no sibling result type has an equivalent override)
+- [x] `NoOpAuditSink.cs` is deleted, and any reference to it (registration defaults, DI wiring) is confirmed absent first
+- [x] `DelegatePolicyEvaluator.cs` is deleted, and any reference to it is confirmed absent first
+- [x] `DefaultPipelineRegistrations.cs` is deleted along with its dedicated test file (`DefaultPipelineRegistrationsTests.cs`) - confirmed by reading `ServiceCollectionExtensions.cs` and `ContainerBuilderExtensions.cs` in full that neither `AddInterlocutor` entry point calls it; only the three `<see cref>` XML doc references inside `InterlocutorBuilder.cs` pointed to it, and those were rewritten to drop the dangling cref
+- [x] Full solution build and test run still pass after removal
+- [x] No documentation (`README.md`, `documentation/`) references any deleted type
 
 ## Blocked by
 
