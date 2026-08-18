@@ -303,6 +303,98 @@ public class InterlocutorBuilderIntegrationTests
         Assert.Equal(default, result);
     }
 
+    [Fact]
+    public void AddCancellationBehavior_ResolvesWithoutThrowing_UnderMicrosoftDI()
+    {
+        // The exact open-generic-resolution failure mode documented on AuthorizationBehavior's remarks and
+        // fixed once before (audit-followups/13): a behavior whose constrained TRequest/TResponse shape
+        // throws ArgumentException from Microsoft DI's positional open-generic substitution instead of simply
+        // resolving. Registering and resolving against a closed generic that satisfies the constraints is the
+        // only way to prove this.
+        var services = new ServiceCollection();
+
+        services.AddInterlocutor(builder =>
+            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).AddCancellationBehavior()
+        );
+
+        var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+
+        var behaviors = scope
+            .ServiceProvider.GetServices<IPipelineBehavior<CancellableQuery, OperationOutcome<string, Cancelled>>>()
+            .ToList();
+
+        Assert.Contains(behaviors, b => b.GetType().Name.StartsWith("CancellationBehavior"));
+    }
+
+    [Fact]
+    public void AddTimeoutBehavior_ResolvesWithoutThrowing_UnderMicrosoftDI()
+    {
+        var services = new ServiceCollection();
+
+        services.AddInterlocutor(builder =>
+            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).AddTimeoutBehavior()
+        );
+
+        var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+
+        var behaviors = scope
+            .ServiceProvider.GetServices<IPipelineBehavior<TimeBoundQuery, OperationOutcome<string, Timeout>>>()
+            .ToList();
+
+        Assert.Contains(behaviors, b => b.GetType().Name.StartsWith("TimeoutBehavior"));
+    }
+
+    [Fact]
+    public void AddRateLimitedBehavior_ResolvesWithoutThrowing_UnderMicrosoftDI()
+    {
+        var services = new ServiceCollection();
+
+        services.AddInterlocutor(builder =>
+            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).AddRateLimitedBehavior()
+        );
+
+        var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+
+        var behaviors = scope
+            .ServiceProvider.GetServices<IPipelineBehavior<ThrottledQuery, OperationOutcome<string, RateLimited>>>()
+            .ToList();
+
+        Assert.Contains(behaviors, b => b.GetType().Name.StartsWith("RateLimitedBehavior"));
+    }
+
+    private sealed record CancellableQuery : IQuery<OperationOutcome<string, Cancelled>>, ICancellable;
+
+    private sealed class CancellableQueryHandler : IQueryHandler<CancellableQuery, OperationOutcome<string, Cancelled>>
+    {
+        public Task<OperationOutcome<string, Cancelled>> Handle(CancellableQuery query, CancellationToken ct) =>
+            Task.FromResult<OperationOutcome<string, Cancelled>>("ok");
+    }
+
+    private sealed record TimeBoundQuery : IQuery<OperationOutcome<string, Timeout>>, IHasTimeout
+    {
+        public TimeSpan Budget => TimeSpan.FromSeconds(30);
+    }
+
+    private sealed class TimeBoundQueryHandler : IQueryHandler<TimeBoundQuery, OperationOutcome<string, Timeout>>
+    {
+        public Task<OperationOutcome<string, Timeout>> Handle(TimeBoundQuery query, CancellationToken ct) =>
+            Task.FromResult<OperationOutcome<string, Timeout>>("ok");
+    }
+
+    private sealed record ThrottledQuery : IQuery<OperationOutcome<string, RateLimited>>, IRateLimited
+    {
+        public string LimitKey => "test-limit";
+    }
+
+    private sealed class ThrottledQueryHandler : IQueryHandler<ThrottledQuery, OperationOutcome<string, RateLimited>>
+    {
+        public Task<OperationOutcome<string, RateLimited>> Handle(ThrottledQuery query, CancellationToken ct) =>
+            Task.FromResult<OperationOutcome<string, RateLimited>>("ok");
+    }
+
     private sealed record AuthorizableQuery : IQuery<OperationOutcome<string, Forbidden>>, IAuditableRequest, IRequiresPolicy
     {
         public string ActionName => "Test.Audit";
