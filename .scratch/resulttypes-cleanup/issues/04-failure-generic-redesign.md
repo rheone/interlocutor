@@ -8,11 +8,11 @@ ready-for-agent
 
 **Blocked by:** 01 (DistinctItemSet + plural-type rewrite)
 
-- [ ] `Failure` is `readonly record struct Failure(string? Reason = null)` - the three old constructors and `long? ErrorCode`/`HasReason`/`HasErrorCode` members are removed
-- [ ] `Failure<TErrorCode>` is a new type: `readonly record struct Failure<TErrorCode>(TErrorCode ErrorCode, string? Reason = null) where TErrorCode : notnull, IEquatable<TErrorCode>`
-- [ ] `Failures` aggregates non-generic `Failure`, composes `DistinctItemSet<Failure>`, exposes `.Items`, `.Count`, and a `.Reasons` semantic projection; `.Values` is removed (per ticket 01)
-- [ ] New `Failures<TErrorCode>` aggregates `Failure<TErrorCode>`, mirroring `ValidationErrors<TErrorCode>`'s shape: `.Items`, `.Count`, `.Reasons`, `.ErrorCodes`
-- [ ] `documentation/messages-and-result-types.md`'s `Failure` code sample is left as-is for now (doc pass is ticket 15) but the shipped type now matches what that doc already claims
-- [ ] Every call site of the old `Failure` constructors/members in `src/` and `tests/` is updated to the new shape (search the whole solution, not just CommonKernel)
-- [ ] Unit tests cover construction, equality, and default-value behavior for `Failure`, `Failure<TErrorCode>`, `Failures`, `Failures<TErrorCode>`
-- [ ] `dotnet build` (whole solution) and `dotnet test tests/Interlocutor.CommonKernel.Tests/Interlocutor.CommonKernel.Tests.csproj` pass
+- [x] `Failure` is `readonly record struct Failure(string? Reason = null)` - the three old constructors and `long? ErrorCode`/`HasReason`/`HasErrorCode` members are removed
+- [x] `Failure<TErrorCode>` is a new type: `readonly record struct Failure<TErrorCode>(TErrorCode ErrorCode, string? Reason = null) where TErrorCode : notnull, IEquatable<TErrorCode>`
+- [x] `Failures` aggregates non-generic `Failure`, composes `DistinctItemSet<Failure>`, exposes `.Items`, `.Count`, and a `.Reasons` semantic projection; `.Values` is removed (per ticket 01)
+- [x] New `Failures<TErrorCode>` aggregates `Failure<TErrorCode>`, mirroring `ValidationErrors<TErrorCode>`'s shape: `.Items`, `.Count`, `.Reasons`, `.ErrorCodes`
+- [x] `documentation/messages-and-result-types.md`'s `Failure` code sample is left as-is for now (doc pass is ticket 15) but the shipped type now matches what that doc already claims
+- [x] Every call site of the old `Failure` constructors/members in `src/` and `tests/` is updated to the new shape (search the whole solution, not just CommonKernel)
+- [x] Unit tests cover construction, equality, and default-value behavior for `Failure`, `Failure<TErrorCode>`, `Failures`, `Failures<TErrorCode>`
+- [x] `dotnet build` (whole solution) and `dotnet test tests/Interlocutor.CommonKernel.Tests/Interlocutor.CommonKernel.Tests.csproj` pass
