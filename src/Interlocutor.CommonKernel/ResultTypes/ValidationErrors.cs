@@ -111,6 +111,17 @@ public readonly record struct ValidationErrors
     /// produced one. Explicitly constructing this type with an empty sequence still throws.
     /// </remarks>
     public IReadOnlyList<string> Messages => this.Items.Count == 0 ? [] : [.. this.Items.Select(e => e.Message).Distinct()];
+
+    /// <summary>
+    /// Returns a human-readable representation of this validation error set.
+    /// </summary>
+    /// <returns>
+    /// <c>"ValidationErrors"</c> when this instance is the default value (empty); otherwise
+    /// <c>"ValidationErrors: {messages joined by ", "}"</c>. Joins <see cref="Messages"/> rather than each item's
+    /// own <see cref="ValidationError.ToString"/>, to avoid a doubled "ValidationErrors: ValidationError: ..." prefix.
+    /// </returns>
+    public override string ToString() =>
+        this.Messages.Count == 0 ? "ValidationErrors" : $"ValidationErrors: {string.Join(", ", this.Messages)}";
 }
 
 /// <summary>
@@ -270,4 +281,16 @@ public readonly record struct ValidationErrors<TErrorCode>
     /// produced one. Explicitly constructing this type with an empty sequence still throws.
     /// </remarks>
     public IReadOnlyList<TErrorCode> ErrorCodes => this._uniqueErrorCodes.Items;
+
+    /// <summary>
+    /// Returns a human-readable representation of this validation error set.
+    /// </summary>
+    /// <returns>
+    /// <c>"ValidationErrors"</c> when this instance is the default value (empty); otherwise
+    /// <c>"ValidationErrors: {messages joined by ", "}"</c>. Joins <see cref="Messages"/> rather than each item's
+    /// own <see cref="ValidationError{TErrorCode}.ToString"/>, to avoid a doubled
+    /// "ValidationErrors: ValidationError: ..." prefix.
+    /// </returns>
+    public override string ToString() =>
+        this.Messages.Count == 0 ? "ValidationErrors" : $"ValidationErrors: {string.Join(", ", this.Messages)}";
 }

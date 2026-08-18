@@ -20,7 +20,14 @@ namespace Interlocutor.CommonKernel.ResultTypes;
 /// instances with <see cref="Failures"/>.
 /// </para>
 /// </remarks>
-public readonly record struct Failure(string? Reason = null);
+public readonly record struct Failure(string? Reason = null)
+{
+    /// <summary>
+    /// Returns a human-readable representation of this failure.
+    /// </summary>
+    /// <returns><c>"Failure"</c> when <see cref="Reason"/> is <see langword="null"/>; otherwise <c>"Failure: {Reason}"</c>.</returns>
+    public override string ToString() => this.Reason is null ? "Failure" : $"Failure: {this.Reason}";
+}
 
 /// <summary>
 /// Represents a generic failure outcome consisting of an error code and, optionally, a reason.
@@ -42,4 +49,15 @@ public readonly record struct Failure(string? Reason = null);
 /// </para>
 /// </remarks>
 public readonly record struct Failure<TErrorCode>(TErrorCode ErrorCode, string? Reason = null)
-    where TErrorCode : notnull, IEquatable<TErrorCode>;
+    where TErrorCode : notnull, IEquatable<TErrorCode>
+{
+    /// <summary>
+    /// Returns a human-readable representation of this failure.
+    /// </summary>
+    /// <returns>
+    /// <c>"Failure: {ErrorCode}"</c> when <see cref="Reason"/> is <see langword="null"/>; otherwise
+    /// <c>"Failure: {ErrorCode} - {Reason}"</c>.
+    /// </returns>
+    public override string ToString() =>
+        this.Reason is null ? $"Failure: {this.ErrorCode}" : $"Failure: {this.ErrorCode} - {this.Reason}";
+}

@@ -14,7 +14,14 @@ namespace Interlocutor.CommonKernel.ResultTypes;
 /// entity type and ID separately, use the generic <see cref="NotFound{TId}"/> variant instead.
 /// </para>
 /// </remarks>
-public readonly record struct NotFound(string? Message = null);
+public readonly record struct NotFound(string? Message = null)
+{
+    /// <summary>
+    /// Returns a human-readable representation of this outcome.
+    /// </summary>
+    /// <returns><c>"NotFound"</c> when <see cref="Message"/> is <see langword="null"/>; otherwise <c>"NotFound: {Message}"</c>.</returns>
+    public override string ToString() => this.Message is null ? "NotFound" : $"NotFound: {this.Message}";
+}
 
 /// <summary>
 /// Indicates that a resource of a specific type and identifier was not found.
@@ -31,4 +38,17 @@ public readonly record struct NotFound(string? Message = null);
 /// (e.g., <c>Guid</c>, <c>int</c>, or a composite key).
 /// </para>
 /// </remarks>
-public readonly record struct NotFound<TId>(Type EntityType, TId Id, string? Message = null);
+public readonly record struct NotFound<TId>(Type EntityType, TId Id, string? Message = null)
+{
+    /// <summary>
+    /// Returns a human-readable representation of this outcome.
+    /// </summary>
+    /// <returns>
+    /// <c>"NotFound: {EntityType} {Id}"</c> when <see cref="Message"/> is <see langword="null"/>; otherwise
+    /// <c>"NotFound: {EntityType} {Id} - {Message}"</c>.
+    /// </returns>
+    public override string ToString() =>
+        this.Message is null
+            ? $"NotFound: {this.EntityType.Name} {this.Id}"
+            : $"NotFound: {this.EntityType.Name} {this.Id} - {this.Message}";
+}

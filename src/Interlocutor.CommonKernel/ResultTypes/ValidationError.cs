@@ -14,7 +14,14 @@ namespace Interlocutor.CommonKernel.ResultTypes;
 /// <see cref="ValidationError"/> instances with <see cref="ValidationErrors"/>.
 /// </para>
 /// </remarks>
-public readonly record struct ValidationError(string Message);
+public readonly record struct ValidationError(string Message)
+{
+    /// <summary>
+    /// Returns a human-readable representation of this validation error.
+    /// </summary>
+    /// <returns><c>"ValidationError: {Message}"</c>. <see cref="Message"/> is mandatory, so there is no bare form.</returns>
+    public override string ToString() => $"ValidationError: {this.Message}";
+}
 
 /// <summary>
 /// Represents a single validation error consisting of a message and an associated error code.
@@ -36,4 +43,14 @@ public readonly record struct ValidationError(string Message);
 /// </para>
 /// </remarks>
 public readonly record struct ValidationError<TErrorCode>(string Message, TErrorCode ErrorCode)
-    where TErrorCode : notnull, IEquatable<TErrorCode>;
+    where TErrorCode : notnull, IEquatable<TErrorCode>
+{
+    /// <summary>
+    /// Returns a human-readable representation of this validation error.
+    /// </summary>
+    /// <returns>
+    /// <c>"ValidationError: {ErrorCode} - {Message}"</c>. Both <see cref="Message"/> and <see cref="ErrorCode"/>
+    /// are mandatory, so there is no bare form.
+    /// </returns>
+    public override string ToString() => $"ValidationError: {this.ErrorCode} - {this.Message}";
+}
