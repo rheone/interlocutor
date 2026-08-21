@@ -33,4 +33,18 @@ internal static class WellKnownTypeNames
 
     /// <summary>The base outcome marker interface, <c>IOperationOutcome</c>.</summary>
     public const string OperationOutcome = "Interlocutor.CommonKernel.IOperationOutcome";
+
+    /// <summary>
+    /// The assembly-level attribute identifying a referenced assembly's generated registration module
+    /// (ticket 12), <c>InterlocutorGeneratedModuleAttribute</c>.
+    /// </summary>
+    public const string GeneratedModuleAttribute =
+        "Interlocutor.DependencyInjection.Abstractions.InterlocutorGeneratedModuleAttribute";
+
+    /// <summary>
+    /// The assembly-level attribute restating one referenced assembly's handler shape for the missing-handler
+    /// diagnostic (ticket 12), <c>InterlocutorGeneratedHandlerAttribute</c>.
+    /// </summary>
+    public const string GeneratedHandlerAttribute =
+        "Interlocutor.DependencyInjection.Abstractions.InterlocutorGeneratedHandlerAttribute";
 }
