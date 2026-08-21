@@ -41,7 +41,21 @@ public sealed class InterlocutorSourceGenerator : IIncrementalGenerator
             .Select(static (result, _) => result!)
             .Collect();
 
-        context.RegisterSourceOutput(analysisResults, static (spc, results) => Execute(results, spc));
+        // A second, independent syntax pass (ticket 11): every fully closed generic type usage anywhere in the
+        // compilation, matched against discovered open generic handlers' request types in Execute once both
+        // sides are known - see GenericUsageAnalyzer's remarks.
+        var genericUsages = context
+            .SyntaxProvider.CreateSyntaxProvider(
+                static (node, _) => GenericUsageAnalyzer.IsCandidate(node),
+                static (ctx, _) => GenericUsageAnalyzer.Analyze(ctx)
+            )
+            .Where(static usage => usage is not null)
+            .Select(static (usage, _) => usage!)
+            .Collect();
+
+        var combined = analysisResults.Combine(genericUsages).Combine(context.CompilationProvider);
+
+        context.RegisterSourceOutput(combined, static (spc, data) => Execute(data.Left.Left, data.Left.Right, data.Right, spc));
     }
 
     /// <summary>
@@ -71,17 +85,37 @@ public sealed class InterlocutorSourceGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// Combines every candidate's analysis result into the compilation-wide handler and request lists, reports
-    /// the missing-handler diagnostic, and emits the registration module and dispatch wrappers.
+    /// Combines every candidate's analysis result into the compilation-wide handler and request lists, closes
+    /// every open generic handler over its discovered concrete usages (ticket 11), reports the missing-handler
+    /// diagnostic, and emits the registration module and dispatch wrappers.
     /// </summary>
-    private static void Execute(ImmutableArray<TypeAnalysisResult> results, SourceProductionContext context)
+    private static void Execute(
+        ImmutableArray<TypeAnalysisResult> results,
+        ImmutableArray<ClosedGenericRequestUsageModel> genericUsages,
+        Compilation compilation,
+        SourceProductionContext context
+    )
     {
         var handlers = results.SelectMany(static r => r.Handlers).ToImmutableArray();
+        var openGenericHandlers = results.SelectMany(static r => r.OpenGenericHandlers).ToImmutableArray();
         var requests = results
             .Select(static r => r.Request)
             .Where(static r => r is not null)
             .Select(static r => r!)
             .ToImmutableArray();
+
+        var openGenericResolution = OpenGenericHandlerResolver.Resolve(
+            handlers,
+            openGenericHandlers,
+            genericUsages,
+            compilation
+        );
+        foreach (var diagnostic in openGenericResolution.Diagnostics)
+        {
+            context.ReportDiagnostic(diagnostic);
+        }
+
+        handlers = handlers.AddRange(openGenericResolution.ClosedHandlers);
 
         ReportMissingHandlers(handlers, requests, context);
         ReportDuplicateHandlers(handlers, context);

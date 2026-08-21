@@ -3,18 +3,24 @@ namespace Interlocutor.Generator;
 using System.Collections.Immutable;
 
 /// <summary>
-/// What <see cref="HandlerTypeAnalyzer"/> found for one candidate type declaration: zero or more handler
-/// contracts it implements, and - independently - the request marker it implements, if any.
+/// What <see cref="HandlerTypeAnalyzer"/> found for one candidate type declaration: zero or more closed handler
+/// contracts it implements, zero or more open generic handler contracts it implements, and - independently -
+/// the request marker it implements, if any.
 /// </summary>
 /// <remarks>
 /// A single type is never both a handler and a request in practice, but the two facts are computed and
 /// carried independently so the generator's two concerns (registration/dispatch emission and the
 /// missing-handler diagnostic) stay decoupled from how discovery happens to be batched.
 /// </remarks>
-/// <param name="Handlers">The handler-contract matches this type declaration produced, if any.</param>
+/// <param name="Handlers">The closed handler-contract matches this type declaration produced, if any.</param>
+/// <param name="OpenGenericHandlers">The open generic handler-contract matches this type declaration produced, if any (see <see cref="OpenGenericHandlerModel"/>).</param>
 /// <param name="Request">The request-marker match this type declaration produced, or <see langword="null"/>.</param>
-internal sealed record TypeAnalysisResult(ImmutableArray<HandlerModel> Handlers, RequestModel? Request)
+internal sealed record TypeAnalysisResult(
+    ImmutableArray<HandlerModel> Handlers,
+    ImmutableArray<OpenGenericHandlerModel> OpenGenericHandlers,
+    RequestModel? Request
+)
 {
     /// <summary>The shared empty result for a candidate that turned out to be neither a handler nor a request.</summary>
-    public static readonly TypeAnalysisResult Empty = new([], null);
+    public static readonly TypeAnalysisResult Empty = new([], [], null);
 }

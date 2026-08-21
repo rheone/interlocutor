@@ -44,4 +44,7 @@ internal static class WellKnownTypeNames
 
     /// <summary>The base outcome marker interface, <c>IOperationOutcome</c>.</summary>
     public const string OperationOutcome = "Interlocutor.CommonKernel.IOperationOutcome";
+
+    /// <summary>The open-generic-handler-ambiguity escape hatch, <c>HandlerOverrideAttribute</c>.</summary>
+    public const string HandlerOverride = "Interlocutor.Abstractions.Core.HandlerOverrideAttribute";
 }
