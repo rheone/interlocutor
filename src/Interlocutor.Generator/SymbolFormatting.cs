@@ -14,9 +14,8 @@ internal static class SymbolFormatting
     private static readonly SymbolDisplayFormat QualifiedFormat =
         SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.UseSpecialTypes);
 
-    private static readonly SymbolDisplayFormat DefinitionKeyFormat = SymbolDisplayFormat.FullyQualifiedFormat.WithGenericsOptions(
-        SymbolDisplayGenericsOptions.None
-    );
+    private static readonly SymbolDisplayFormat DefinitionKeyFormat =
+        SymbolDisplayFormat.FullyQualifiedFormat.WithGenericsOptions(SymbolDisplayGenericsOptions.None);
 
     /// <summary>Formats a symbol as a fully-qualified, <c>global::</c>-prefixed source-safe type name.</summary>
     /// <param name="symbol">The symbol to format.</param>
@@ -56,6 +55,8 @@ internal static class SymbolFormatting
         }
 
         var qualifiedName = string.Join("+", parts);
-        return named.ContainingNamespace is { IsGlobalNamespace: false } ns ? $"{ns.ToDisplayString()}.{qualifiedName}" : qualifiedName;
+        return named.ContainingNamespace is { IsGlobalNamespace: false } ns
+            ? $"{ns.ToDisplayString()}.{qualifiedName}"
+            : qualifiedName;
     }
 }

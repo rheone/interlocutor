@@ -28,7 +28,11 @@ internal static class GenericConstraintChecker
     /// </param>
     /// <param name="compilation">The compilation to re-resolve both sides' metadata names against.</param>
     /// <returns><see langword="true"/> if every constraint clause is satisfied (or unresolvable and therefore assumed satisfied).</returns>
-    public static bool Satisfies(GenericParameterConstraintModel constraint, string? argumentMetadataName, Compilation compilation)
+    public static bool Satisfies(
+        GenericParameterConstraintModel constraint,
+        string? argumentMetadataName,
+        Compilation compilation
+    )
     {
         if (argumentMetadataName is null)
         {

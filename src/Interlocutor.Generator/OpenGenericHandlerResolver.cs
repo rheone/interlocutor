@@ -49,7 +49,9 @@ internal static class OpenGenericHandlerResolver
         ReportInvalidOverrideTargets(openHandlers, closedHandlers, diagnostics);
 
         var closedRequestTypeNames = new HashSet<string>(
-            closedHandlers.Where(static h => h.Kind is HandlerKind.Query or HandlerKind.Command).Select(static h => h.RequestTypeName),
+            closedHandlers
+                .Where(static h => h.Kind is HandlerKind.Query or HandlerKind.Command)
+                .Select(static h => h.RequestTypeName),
             System.StringComparer.Ordinal
         );
 
@@ -119,7 +121,10 @@ internal static class OpenGenericHandlerResolver
         }
 
         var winner = matches.FirstOrDefault(candidate =>
-            matches.All(other => Equals(other.Handler, candidate.Handler) || candidate.Handler.OverrideTargetKeys.Contains(other.Handler.HandlerDefinitionKey))
+            matches.All(other =>
+                Equals(other.Handler, candidate.Handler)
+                || candidate.Handler.OverrideTargetKeys.Contains(other.Handler.HandlerDefinitionKey)
+            )
         );
 
         if (winner is not null)
@@ -128,7 +133,9 @@ internal static class OpenGenericHandlerResolver
             return;
         }
 
-        var sortedKeys = matches.Select(static m => m.Handler.HandlerDefinitionKey).OrderBy(static k => k, System.StringComparer.Ordinal);
+        var sortedKeys = matches
+            .Select(static m => m.Handler.HandlerDefinitionKey)
+            .OrderBy(static k => k, System.StringComparer.Ordinal);
         var ambiguityKey = usage.ClosedRequestDisplayName + "|" + string.Join(",", sortedKeys);
         if (!reportedAmbiguities.Add(ambiguityKey))
         {
@@ -137,7 +144,10 @@ internal static class OpenGenericHandlerResolver
 
         var handlerNames = string.Join(
             ", ",
-            matches.Select(static m => m.Handler).OrderBy(static h => h.HandlerDisplayName, System.StringComparer.Ordinal).Select(static h => h.HandlerDisplayName)
+            matches
+                .Select(static m => m.Handler)
+                .OrderBy(static h => h.HandlerDisplayName, System.StringComparer.Ordinal)
+                .Select(static h => h.HandlerDisplayName)
         );
         foreach (var match in matches)
         {
@@ -194,8 +204,14 @@ internal static class OpenGenericHandlerResolver
         ImmutableArray<Diagnostic>.Builder diagnostics
     )
     {
-        var knownOpenKeys = new HashSet<string>(openHandlers.Select(static h => h.HandlerDefinitionKey), System.StringComparer.Ordinal);
-        var knownClosedKeys = new HashSet<string>(closedHandlers.Select(static h => h.HandlerTypeName), System.StringComparer.Ordinal);
+        var knownOpenKeys = new HashSet<string>(
+            openHandlers.Select(static h => h.HandlerDefinitionKey),
+            System.StringComparer.Ordinal
+        );
+        var knownClosedKeys = new HashSet<string>(
+            closedHandlers.Select(static h => h.HandlerTypeName),
+            System.StringComparer.Ordinal
+        );
 
         foreach (var handler in openHandlers)
         {
@@ -227,7 +243,8 @@ internal static class OpenGenericHandlerResolver
             return template;
         }
 
-        var pattern = "\\b(" + string.Join("|", substitutions.Keys.OrderByDescending(static k => k.Length).Select(Regex.Escape)) + ")\\b";
+        var pattern =
+            "\\b(" + string.Join("|", substitutions.Keys.OrderByDescending(static k => k.Length).Select(Regex.Escape)) + ")\\b";
         return Regex.Replace(template, pattern, match => substitutions[match.Value]);
     }
 

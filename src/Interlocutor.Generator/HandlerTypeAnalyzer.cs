@@ -62,7 +62,12 @@ internal static class HandlerTypeAnalyzer
                 // ICommand marker itself.
                 if (SymbolEqualityComparer.Default.Equals(candidateInterface, voidCommandMarker))
                 {
-                    request = new RequestModel(RequestKind.VoidCommand, SymbolFormatting.Format(candidate), null, declarationLocation);
+                    request = new RequestModel(
+                        RequestKind.VoidCommand,
+                        SymbolFormatting.Format(candidate),
+                        null,
+                        declarationLocation
+                    );
                 }
 
                 continue;
@@ -124,8 +129,11 @@ internal static class HandlerTypeAnalyzer
                     )
                 );
             }
-            else if (SymbolEqualityComparer.Default.Equals(openDefinition, queryMarker))
+            else if (SymbolEqualityComparer.Default.Equals(openDefinition, queryMarker) && !candidate.IsGenericType)
             {
+                // An open generic request declaration itself (e.g. GenericQuery<T> : IQuery<...>) is not a
+                // concrete request the missing-handler diagnostic can check - only its closed usages, found
+                // separately by GenericUsageAnalyzer, ever need a handler (see ticket 11).
                 request = new RequestModel(
                     RequestKind.Query,
                     SymbolFormatting.Format(candidate),
@@ -133,7 +141,7 @@ internal static class HandlerTypeAnalyzer
                     declarationLocation
                 );
             }
-            else if (SymbolEqualityComparer.Default.Equals(openDefinition, commandMarker))
+            else if (SymbolEqualityComparer.Default.Equals(openDefinition, commandMarker) && !candidate.IsGenericType)
             {
                 request = new RequestModel(
                     RequestKind.Command,

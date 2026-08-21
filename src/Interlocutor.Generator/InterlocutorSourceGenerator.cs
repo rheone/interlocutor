@@ -55,10 +55,7 @@ public sealed class InterlocutorSourceGenerator : IIncrementalGenerator
 
         var combined = analysisResults.Combine(genericUsages).Combine(context.CompilationProvider);
 
-        context.RegisterSourceOutput(
-            combined,
-            static (spc, data) => Execute(data.Left.Left, data.Left.Right, data.Right, spc)
-        );
+        context.RegisterSourceOutput(combined, static (spc, data) => Execute(data.Left.Left, data.Left.Right, data.Right, spc));
     }
 
     /// <summary>
@@ -107,7 +104,12 @@ public sealed class InterlocutorSourceGenerator : IIncrementalGenerator
             .Select(static r => r!)
             .ToImmutableArray();
 
-        var openGenericResolution = OpenGenericHandlerResolver.Resolve(handlers, openGenericHandlers, genericUsages, compilation);
+        var openGenericResolution = OpenGenericHandlerResolver.Resolve(
+            handlers,
+            openGenericHandlers,
+            genericUsages,
+            compilation
+        );
         foreach (var diagnostic in openGenericResolution.Diagnostics)
         {
             context.ReportDiagnostic(diagnostic);
