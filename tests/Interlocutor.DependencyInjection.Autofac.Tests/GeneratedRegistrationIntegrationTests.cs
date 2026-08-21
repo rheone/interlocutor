@@ -25,7 +25,13 @@ public sealed class GeneratedRegistrationIntegrationTests
         // compile-time discovered module - proving the generated path works on its own, not merely
         // alongside runtime scanning.
         containerBuilder.AddInterlocutor(builder =>
-            builder.AddGeneratedRegistrations(Interlocutor.Generated.InterlocutorGeneratedRegistrations.Registrations)
+            builder.AddGeneratedRegistrations(
+                Interlocutor
+                    .Generated
+                    .Interlocutor_DependencyInjection_Autofac_Tests
+                    .InterlocutorGeneratedRegistrations
+                    .Registrations
+            )
         );
 
         var container = containerBuilder.Build();

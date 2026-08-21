@@ -43,18 +43,28 @@ public sealed class HandlerDiscoveryEmissionTests
         var registrationsSource = GetGeneratedSource(result, "InterlocutorGeneratedRegistrations.g.cs");
 
         Assert.Contains(
+            "namespace Interlocutor.Generated.Interlocutor_Generator_Tests_Compilation",
+            registrationsSource,
+            StringComparison.Ordinal
+        );
+        Assert.Contains(
             "public static class InterlocutorGeneratedRegistrations",
             registrationsSource,
             StringComparison.Ordinal
         );
         Assert.Contains(
-            "new global::Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration(typeof(global::Interlocutor.Abstractions.Queries.IQueryHandler<global::TestApp.GetFooQuery, global::Interlocutor.CommonKernel.OperationOutcome>), typeof(global::TestApp.GetFooQueryHandler), global::Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Scoped, global::Interlocutor.DependencyInjection.Abstractions.RegistrationKind.Handler)",
+            "registrations.Add(new global::Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration(typeof(global::Interlocutor.Abstractions.Queries.IQueryHandler<global::TestApp.GetFooQuery, global::Interlocutor.CommonKernel.OperationOutcome>), typeof(global::TestApp.GetFooQueryHandler), global::Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Scoped, global::Interlocutor.DependencyInjection.Abstractions.RegistrationKind.Handler));",
             registrationsSource,
             StringComparison.Ordinal
         );
         var attributeSource = GetGeneratedSource(result, "InterlocutorGeneratedModuleAttribute.g.cs");
         Assert.Contains(
-            "[assembly: global::Interlocutor.DependencyInjection.Abstractions.InterlocutorGeneratedModuleAttribute(typeof(global::Interlocutor.Generated.InterlocutorGeneratedRegistrations))]",
+            "[assembly: global::Interlocutor.DependencyInjection.Abstractions.InterlocutorGeneratedModuleAttribute(typeof(global::Interlocutor.Generated.Interlocutor_Generator_Tests_Compilation.InterlocutorGeneratedRegistrations))]",
+            attributeSource,
+            StringComparison.Ordinal
+        );
+        Assert.Contains(
+            "[assembly: global::Interlocutor.DependencyInjection.Abstractions.InterlocutorGeneratedHandlerAttribute(typeof(global::TestApp.GetFooQuery), typeof(global::Interlocutor.CommonKernel.OperationOutcome), global::Interlocutor.DependencyInjection.Abstractions.GeneratedHandlerKind.Query)]",
             attributeSource,
             StringComparison.Ordinal
         );
@@ -119,6 +129,10 @@ public sealed class HandlerDiscoveryEmissionTests
             registrationsSource,
             StringComparison.Ordinal
         );
+
+        var attributeSource = GetGeneratedSource(result, "InterlocutorGeneratedModuleAttribute.g.cs");
+        Assert.DoesNotContain("InterlocutorGeneratedHandlerAttribute", attributeSource, StringComparison.Ordinal);
+
         Assert.Empty(result.Diagnostics);
     }
 
