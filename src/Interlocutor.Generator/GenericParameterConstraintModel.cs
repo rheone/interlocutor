@@ -14,7 +14,11 @@ using System.Collections.Immutable;
 /// <param name="HasReferenceTypeConstraint">Whether the parameter declares a <c>class</c> constraint.</param>
 /// <param name="HasValueTypeConstraint">Whether the parameter declares a <c>struct</c> constraint.</param>
 /// <param name="HasConstructorConstraint">Whether the parameter declares a <c>new()</c> constraint.</param>
-/// <param name="HasNotNullConstraint">Whether the parameter declares a <c>notnull</c> constraint.</param>
+/// <param name="HasNotNullConstraint">
+/// Whether the parameter declares a <c>notnull</c> constraint. Captured for completeness but never enforced by
+/// <see cref="GenericConstraintChecker.Satisfies"/> - see that method's remarks for why a nullable-annotation
+/// constraint cannot be soundly checked from a metadata name alone.
+/// </param>
 /// <param name="ConstraintTypeMetadataNames">
 /// The CLR metadata name (resolvable via <see cref="Microsoft.CodeAnalysis.Compilation.GetTypeByMetadataName(string)"/>,
 /// no <c>global::</c> prefix) of every base type/interface constraint, or <see langword="null"/> for a

@@ -60,6 +60,15 @@ internal static class GenericConstraintChecker
             return false;
         }
 
+        // constraint.HasNotNullConstraint is deliberately not checked here: notnull is a nullable-annotation
+        // constraint, not a type-identity one. A nullable value type argument (int?) never reaches this method
+        // at all - it is a constructed generic (Nullable<T>) and SymbolFormatting.TryGetMetadataName already
+        // returns null for every constructed generic, so argumentMetadataName is null and Satisfies returns
+        // true above. A nullable-annotated reference type argument resolves to the same metadata name as its
+        // non-nullable counterpart (nullability annotation is not part of a type's metadata identity), so
+        // there is no way to distinguish the two from argumentMetadataName alone. Both cases fall back to this
+        // method's existing "unresolvable from a metadata name -> treated as satisfied" trade-off, the same one
+        // applied to every entry in ConstraintTypeMetadataNames that resolves to null above.
         foreach (var constraintTypeName in constraint.ConstraintTypeMetadataNames)
         {
             if (constraintTypeName is null)

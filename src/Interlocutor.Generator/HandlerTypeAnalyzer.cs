@@ -288,7 +288,7 @@ internal static class HandlerTypeAnalyzer
             // An unbound generic type token (typeof(SomeHandler<>)) names an open generic handler by its
             // definition key; any other type name is compared against a closed handler's own display name.
             keys.Add(
-                referencedType.IsUnboundGenericType || (referencedType.IsGenericType && referencedType.TypeArguments.Length > 0)
+                referencedType.IsUnboundGenericType
                     ? SymbolFormatting.FormatDefinitionKey(referencedType)
                     : SymbolFormatting.Format(referencedType)
             );
