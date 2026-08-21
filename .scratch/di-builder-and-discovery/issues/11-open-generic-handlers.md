@@ -1,4 +1,4 @@
-Status: ready-for-agent
+> **Status: done** - implemented on branch `ticket-11-open-generic-handlers` (commits `09e8327`, `5c6e7ec`).
 
 ## Labels
 
@@ -18,14 +18,14 @@ This is deliberately *not* handler-serves-an-unrelated-base-class dispatch. Cont
 
 ## Acceptance criteria
 
-- [ ] A generic handler is closed against each concrete request type discovered and dispatches correctly
-- [ ] Constraints on the generic handler's type parameter are honoured; a request that fails them is not matched
-- [ ] A concrete handler takes precedence over a generic handler that also matches
-- [ ] Two generic handlers matching the same request produce a build error naming both
-- [ ] The override attribute resolves such an ambiguity
-- [ ] An override attribute naming a missing or non-handler target produces a build error
-- [ ] Closed generic handlers with constructor dependencies resolve from the container
-- [ ] Moving a handler between namespaces or projects does not change dispatch
+- [x] A generic handler is closed against each concrete request type discovered and dispatches correctly
+- [x] Constraints on the generic handler's type parameter are honoured; a request that fails them is not matched
+- [x] A concrete handler takes precedence over a generic handler that also matches
+- [x] Two generic handlers matching the same request produce a build error naming both
+- [x] The override attribute resolves such an ambiguity
+- [x] An override attribute naming a missing or non-handler target produces a build error
+- [x] Closed generic handlers with constructor dependencies resolve from the container
+- [x] Moving a handler between namespaces or projects does not change dispatch
 
 ## Blocked by
 
