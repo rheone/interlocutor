@@ -135,4 +135,54 @@ internal static class InterlocutorDiagnostics
             + "referenced assembly - cross-assembly discovery is out of scope, see ticket 12) can never "
             + "participate in the ordering it names."
     );
+
+    /// <summary>
+    /// Reported when more than one open generic query or command handler closes over the same concrete request
+    /// type once every discovered closed-generic usage is matched against every open generic handler's own
+    /// constraints, and neither is resolved as the winner by a <c>HandlerOverrideAttribute</c>.
+    /// </summary>
+    /// <remarks>
+    /// There is exactly one selection rule between two open generic handlers: an explicit
+    /// <c>HandlerOverrideAttribute</c> naming the other. No ranking by inheritance distance, namespace, or
+    /// assembly location is ever considered, so moving either handler's declaring file never changes which
+    /// handler runs - an unresolved ambiguity is always a build error naming both handlers, never an arbitrary
+    /// runtime choice. Default severity is <see cref="DiagnosticSeverity.Error"/>: like
+    /// <see cref="NotificationHandlerOrderingCycle"/>, there is no meaningful partial behavior to fall back to.
+    /// </remarks>
+    public static readonly DiagnosticDescriptor OpenGenericHandlerAmbiguity = new(
+        id: "INTERLOC006",
+        title: "Ambiguous open generic handlers for request type",
+        messageFormat: "Request type '{0}' is matched by multiple open generic handlers with no resolving "
+            + "HandlerOverrideAttribute: {1}",
+        category: "Interlocutor.Discovery",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "More than one open generic IQueryHandler<,>/ICommandHandler<,> implementation closes over "
+            + "the same concrete request type once constraints are applied. Add a HandlerOverrideAttribute to "
+            + "one of the handlers naming the other, or narrow one handler's type parameter constraints so only "
+            + "one still matches."
+    );
+
+    /// <summary>
+    /// Reported when a <c>HandlerOverrideAttribute</c> argument names a type that is not itself a discovered
+    /// handler (open generic or closed) in this compilation.
+    /// </summary>
+    /// <remarks>
+    /// Default severity is <see cref="DiagnosticSeverity.Error"/>, for the same reason as
+    /// <see cref="NotificationHandlerOrderingReferenceIsNotAHandler"/>: the named type can never actually run,
+    /// so the declared override can never be honored.
+    /// </remarks>
+    public static readonly DiagnosticDescriptor HandlerOverrideInvalidTarget = new(
+        id: "INTERLOC007",
+        title: "Handler override reference is not a handler",
+        messageFormat: "'{0}' names '{1}' in a HandlerOverrideAttribute, but '{1}' is not a discovered handler "
+            + "implementation in this compilation",
+        category: "Interlocutor.Discovery",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "HandlerOverrideAttribute's type argument must name another IQueryHandler<,>/"
+            + "ICommandHandler<,> implementation (open generic or closed) discovered in the same compilation. A "
+            + "type that is not a handler - or a handler declared in a different, referenced assembly - can "
+            + "never participate in the override it names."
+    );
 }
