@@ -110,4 +110,29 @@ internal static class InterlocutorDiagnostics
             + "execution order exists. Remove or redirect one of the run-after/run-before declarations named "
             + "in the cycle."
     );
+
+    /// <summary>
+    /// Reported when a <c>NotificationHandlerRunAfterAttribute</c>/<c>NotificationHandlerRunBeforeAttribute</c>
+    /// argument names a type that is not itself a discovered <c>INotificationHandler&lt;TNotification&gt;</c>
+    /// implementation in this compilation.
+    /// </summary>
+    /// <remarks>
+    /// Default severity is <see cref="DiagnosticSeverity.Error"/>: the named type can never actually run, so
+    /// the declared relationship can never be honored - there is no meaningful partial behavior to fall back
+    /// to, the same reasoning behind <see cref="NotificationHandlerOrderingCycle"/> being an always-on error
+    /// rather than a <c>.editorconfig</c>-escalated warning.
+    /// </remarks>
+    public static readonly DiagnosticDescriptor NotificationHandlerOrderingReferenceIsNotAHandler = new(
+        id: "INTERLOC005",
+        title: "Notification handler ordering reference is not a handler",
+        messageFormat: "'{0}' names '{1}' in a run-after/run-before attribute, but '{1}' is not a discovered INotificationHandler<> implementation in this compilation",
+        category: "Interlocutor.Discovery",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "NotificationHandlerRunAfterAttribute/NotificationHandlerRunBeforeAttribute's type argument "
+            + "must name another INotificationHandler<TNotification> implementation discovered in the same "
+            + "compilation. A type that is not a notification handler (or a handler declared in a different, "
+            + "referenced assembly - cross-assembly discovery is out of scope, see ticket 12) can never "
+            + "participate in the ordering it names."
+    );
 }

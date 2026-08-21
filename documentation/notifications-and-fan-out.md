@@ -90,7 +90,7 @@ public class SendConfirmationEmailHandler : INotificationHandler<OrderCreated>
 }
 ```
 
-`NotificationHandlerRunBeforeAttribute` is the mirror image - declare it on the predecessor instead of the successor when that reads more naturally at the call site. Both are compiler-checked (the named type must exist), topologically sorted at build time, and apply more than once to declare more than one predecessor/successor. Handlers with no ordering attribute, and named by none, stay unranked and keep their otherwise-unspecified order.
+`NotificationHandlerRunBeforeAttribute` is the mirror image - declare it on the predecessor instead of the successor when that reads more naturally at the call site. Both are compiler-checked - the named type must exist and be a discovered `INotificationHandler<>` implementation, or the build fails - topologically sorted at build time, and apply more than once to declare more than one predecessor/successor. Handlers with no ordering attribute, and named by none, stay unranked and keep their otherwise-unspecified order.
 
 > [!WARNING]
 > A cycle in the declared run-after/run-before relationships is a build error (`INTERLOC004`), naming every handler type involved - there is no runtime fallback for an order that cannot be computed.

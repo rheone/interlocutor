@@ -193,6 +193,66 @@ public sealed class NotificationHandlerOrderingTests
     }
 
     [Fact]
+    public void RunAfter_naming_a_type_that_is_not_a_notification_handler_reports_an_error_diagnostic()
+    {
+        const string source = """
+            namespace TestApp;
+
+            using System.Threading;
+            using System.Threading.Tasks;
+            using Interlocutor.Abstractions.Notifications;
+
+            public sealed class FooHappened : INotification;
+
+            public sealed class NotAHandler;
+
+            [NotificationHandlerRunAfter(typeof(NotAHandler))]
+            public sealed class FirstHandler : INotificationHandler<FooHappened>
+            {
+                public Task Handle(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
+            }
+            """;
+
+        var result = GeneratorTestHarness.Run(source);
+
+        var diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal("INTERLOC005", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Contains("FirstHandler", diagnostic.GetMessage(), StringComparison.Ordinal);
+        Assert.Contains("NotAHandler", diagnostic.GetMessage(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RunBefore_naming_a_type_that_is_not_a_notification_handler_reports_an_error_diagnostic()
+    {
+        const string source = """
+            namespace TestApp;
+
+            using System.Threading;
+            using System.Threading.Tasks;
+            using Interlocutor.Abstractions.Notifications;
+
+            public sealed class FooHappened : INotification;
+
+            public sealed class NotAHandler;
+
+            [NotificationHandlerRunBefore(typeof(NotAHandler))]
+            public sealed class FirstHandler : INotificationHandler<FooHappened>
+            {
+                public Task Handle(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
+            }
+            """;
+
+        var result = GeneratorTestHarness.Run(source);
+
+        var diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal("INTERLOC005", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Contains("FirstHandler", diagnostic.GetMessage(), StringComparison.Ordinal);
+        Assert.Contains("NotAHandler", diagnostic.GetMessage(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void No_ordering_attributes_emits_an_empty_order_table_and_still_compiles()
     {
         const string source = """

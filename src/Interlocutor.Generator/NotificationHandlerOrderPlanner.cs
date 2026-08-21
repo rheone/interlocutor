@@ -26,19 +26,33 @@ internal static class NotificationHandlerOrderPlanner
     public static Result Compute(ImmutableArray<HandlerModel> notificationHandlers)
     {
         var declaringLocation = new Dictionary<string, Location>(StringComparer.Ordinal);
-        var edges = new HashSet<(string Before, string After)>();
-        var nodes = new HashSet<string>(StringComparer.Ordinal);
-
+        var knownHandlers = new HashSet<string>(StringComparer.Ordinal);
         foreach (var handler in notificationHandlers)
         {
             declaringLocation[handler.HandlerTypeName] = handler.Location;
+            knownHandlers.Add(handler.HandlerTypeName);
+        }
 
+        var edges = new HashSet<(string Before, string After)>();
+        var nodes = new HashSet<string>(StringComparer.Ordinal);
+        var invalidReferenceDiagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
+
+        foreach (var handler in notificationHandlers)
+        {
             // A handler only becomes a node in the graph - and therefore only receives a rank - if it
             // actually participates in a run-after/run-before relationship, either as the declaring handler
             // or as the type another handler names. A handler with no ordering attribute at all, and named by
-            // none, has no business appearing in the emitted order table (see Result's remarks).
+            // none, has no business appearing in the emitted order table (see Result's remarks). A named type
+            // that is not itself a discovered notification handler can never run, so it is reported and left
+            // out of the graph entirely rather than treated as a meaningless node.
             foreach (var predecessor in handler.RunAfterOrEmpty)
             {
+                if (!knownHandlers.Contains(predecessor))
+                {
+                    invalidReferenceDiagnostics.Add(CreateInvalidReferenceDiagnostic(handler, predecessor));
+                    continue;
+                }
+
                 nodes.Add(predecessor);
                 nodes.Add(handler.HandlerTypeName);
                 edges.Add((predecessor, handler.HandlerTypeName));
@@ -46,10 +60,21 @@ internal static class NotificationHandlerOrderPlanner
 
             foreach (var successor in handler.RunBeforeOrEmpty)
             {
+                if (!knownHandlers.Contains(successor))
+                {
+                    invalidReferenceDiagnostics.Add(CreateInvalidReferenceDiagnostic(handler, successor));
+                    continue;
+                }
+
                 nodes.Add(successor);
                 nodes.Add(handler.HandlerTypeName);
                 edges.Add((handler.HandlerTypeName, successor));
             }
+        }
+
+        if (invalidReferenceDiagnostics.Count > 0)
+        {
+            return new Result(ImmutableDictionary<string, int>.Empty, invalidReferenceDiagnostics.ToImmutable());
         }
 
         if (edges.Count == 0)
@@ -116,6 +141,19 @@ internal static class NotificationHandlerOrderPlanner
             .ToImmutableDictionary(t => t.handlerTypeName, t => t.index);
         return new Result(ranks, []);
     }
+
+    /// <summary>
+    /// Builds <see cref="InterlocutorDiagnostics.NotificationHandlerOrderingReferenceIsNotAHandler"/> for
+    /// <paramref name="handler"/> naming <paramref name="referencedTypeName"/> in a run-after/run-before
+    /// attribute when that type is not itself a discovered notification handler.
+    /// </summary>
+    private static Diagnostic CreateInvalidReferenceDiagnostic(HandlerModel handler, string referencedTypeName) =>
+        Diagnostic.Create(
+            InterlocutorDiagnostics.NotificationHandlerOrderingReferenceIsNotAHandler,
+            handler.Location,
+            handler.HandlerTypeName,
+            referencedTypeName
+        );
 
     /// <summary>The outcome of <see cref="Compute"/>: a rank per constrained handler type, plus any diagnostics.</summary>
     /// <param name="Ranks">Fully-qualified handler type name to its zero-based topological rank.</param>

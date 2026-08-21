@@ -8,3 +8,4 @@ Rule ID | Category | Severity | Notes
 INTERLOC002 | Interlocutor.Discovery | Warning | Multiple handlers registered for request type
 INTERLOC003 | Interlocutor.Discovery | Info | Catch-all notification handler
 INTERLOC004 | Interlocutor.Discovery | Error | Notification handler ordering cycle
+INTERLOC005 | Interlocutor.Discovery | Error | Notification handler ordering reference is not a handler
