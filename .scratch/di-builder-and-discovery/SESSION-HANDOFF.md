@@ -49,7 +49,7 @@ Review fixes worth knowing about if touching these areas again:
 Per `.scratch/di-builder-and-discovery/issues/*.md`'s `Blocked by` sections, checked fresh as of this session:
 
 - **11** (open-generic-handlers) - blocked by 10.
-- **12** (cross-assembly-modules) - blocked by 10.
+- **12** (cross-assembly-modules) - done (see `.scratch/di-builder-and-discovery/issues/12-cross-assembly-modules.md`'s own `## Comments`). Renamed the generated module's namespace from the bare `Interlocutor.Generated` to `Interlocutor.Generated.<SanitizedAssemblyName>` - anything referencing the old fixed name (`Interlocutor.Generated.InterlocutorGeneratedRegistrations`) needs updating.
 - **13** (generated-dispatch-switch) - blocked by 09 (done).
 - **14** (notification-fan-out) - blocked by 10.
 - **17** (trim-and-aot-hardening) - blocked by 12.
