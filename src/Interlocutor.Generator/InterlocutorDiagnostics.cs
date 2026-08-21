@@ -18,9 +18,11 @@ internal static class InterlocutorDiagnostics
     /// <code>
     /// dotnet_diagnostic.INTERLOC001.severity = error
     /// </code>
-    /// Cross-assembly discovery (a handler for this request living in a different, referenced assembly) is out
-    /// of scope for this generator - see ticket 12 - so this diagnostic only ever considers handlers declared in
-    /// the current compilation.
+    /// A handler for this request living in a different, referenced assembly is considered too (ticket 12) -
+    /// see <see cref="ReferencedModuleDiscovery"/> - as long as that assembly's own generated module is reachable
+    /// through the current compilation's reference graph, transitively. Only a handler declared purely in a
+    /// sibling assembly the current compilation neither directly nor transitively references, or one registered
+    /// only via runtime assembly scanning, is invisible to this check.
     /// </remarks>
     public static readonly DiagnosticDescriptor MissingHandler = new(
         id: "INTERLOC001",
@@ -30,9 +32,9 @@ internal static class InterlocutorDiagnostics
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
         description: "A type implementing IQuery<TResponse>, ICommand<TResponse>, or ICommand was found with no "
-            + "corresponding IQueryHandler<,>, ICommandHandler<,>, or IVoidCommandHandler<,> implementation in "
-            + "the same compilation. Add a handler, or reference the assembly that defines one (cross-assembly "
-            + "aggregation is not yet performed by this generator)."
+            + "corresponding IQueryHandler<,>, ICommandHandler<,>, or IVoidCommandHandler<,> implementation "
+            + "reachable from this compilation, including transitively-referenced assemblies. Add a handler, or "
+            + "reference the assembly that defines one."
     );
 
     /// <summary>

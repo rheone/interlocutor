@@ -78,7 +78,13 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
     {
         var containerBuilder = new ContainerBuilder();
         containerBuilder.AddInterlocutor(builder =>
-            builder.AddGeneratedRegistrations(Interlocutor.Generated.InterlocutorGeneratedRegistrations.Registrations)
+            builder.AddGeneratedRegistrations(
+                Interlocutor
+                    .Generated
+                    .Interlocutor_DependencyInjection_Autofac_Tests
+                    .InterlocutorGeneratedRegistrations
+                    .Registrations
+            )
         );
 
         var container = containerBuilder.Build();

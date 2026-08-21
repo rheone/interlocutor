@@ -90,7 +90,13 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
     {
         var services = new ServiceCollection();
         services.AddInterlocutor(builder =>
-            builder.AddGeneratedRegistrations(Interlocutor.Generated.InterlocutorGeneratedRegistrations.Registrations)
+            builder.AddGeneratedRegistrations(
+                Interlocutor
+                    .Generated
+                    .Interlocutor_DependencyInjection_Microsoft_Tests
+                    .InterlocutorGeneratedRegistrations
+                    .Registrations
+            )
         );
 
         // No `using`/disposal here: this helper's scope must outlive the method for the caller's dispatch

@@ -17,10 +17,19 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Scope is intentionally the compiling project only: cross-assembly aggregation of registration modules from
-/// referenced assemblies is ticket 12, and open generic handler resolution is ticket 11. A handler or request
-/// declared in a referenced assembly (rather than the current compilation) is invisible to this generator -
-/// see <see cref="InterlocutorDiagnostics.MissingHandler"/>'s remarks.
+/// Open generic query/command handlers are closed over every concrete usage found anywhere in the
+/// compilation (ticket 11) - see <see cref="GenericUsageAnalyzer"/> and <see cref="OpenGenericHandlerResolver"/>.
+/// </para>
+/// <para>
+/// A referenced assembly's own generated module and handlers are discovered too (ticket 12), via
+/// <see cref="ReferencedModuleDiscovery"/> - purely from compile-time assembly metadata
+/// (<c>InterlocutorGeneratedModuleAttribute</c>/<c>InterlocutorGeneratedHandlerAttribute</c>), never by
+/// loading or reflecting over the referenced assembly at run time. This compilation's own module aggregates
+/// every discovered upstream module's registrations, and the missing-handler diagnostic treats an upstream
+/// handler as satisfying a locally-declared request. A request or handler declared only in a *sibling*
+/// assembly that neither this compilation nor its transitive references reach remains invisible, as does any
+/// handler in an assembly loaded only at run time (the province of the explicitly opted-in runtime scanning
+/// fallback) - see <see cref="InterlocutorDiagnostics.MissingHandler"/>'s remarks.
 /// </para>
 /// <para>
 /// Every type implementing one of the four handler contracts or three request markers is found via Roslyn's
@@ -53,9 +62,26 @@ public sealed class InterlocutorSourceGenerator : IIncrementalGenerator
             .Select(static (usage, _) => usage!)
             .Collect();
 
-        var combined = analysisResults.Combine(genericUsages).Combine(context.CompilationProvider);
+        // Compilation-level (rather than per-syntax-node) because both facts - this compilation's own
+        // assembly name and every referenced assembly's discovered module - are properties of the whole
+        // reference graph, not of any one candidate type declaration. CompilationInfo is an equatable record,
+        // so a re-run whose result is structurally identical to the last one (for example, editing a method
+        // body inside a referenced library that changes no public API surface and so changes nothing this
+        // discovery step reads) still lets the driver skip re-emitting downstream source.
+        var compilationInfo = context.CompilationProvider.Select(
+            static (compilation, ct) =>
+                new CompilationInfo(
+                    IdentifierSanitizer.ToNamespaceSegment(compilation.AssemblyName ?? "GeneratedAssembly"),
+                    ReferencedModuleDiscovery.Discover(compilation, ct)
+                )
+        );
 
-        context.RegisterSourceOutput(combined, static (spc, data) => Execute(data.Left.Left, data.Left.Right, data.Right, spc));
+        var combined = analysisResults.Combine(genericUsages).Combine(context.CompilationProvider).Combine(compilationInfo);
+
+        context.RegisterSourceOutput(
+            combined,
+            static (spc, data) => Execute(data.Left.Left.Left, data.Left.Left.Right, data.Left.Right, data.Right, spc)
+        );
     }
 
     /// <summary>
@@ -85,14 +111,16 @@ public sealed class InterlocutorSourceGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// Combines every candidate's analysis result into the compilation-wide handler and request lists, closes
-    /// every open generic handler over its discovered concrete usages (ticket 11), reports the missing-handler
-    /// diagnostic, and emits the registration module and dispatch wrappers.
+    /// Combines every candidate's analysis result, generic usages, the compilation, and compilation-level info
+    /// into the compilation-wide handler and request lists, closes every open generic handler over its
+    /// discovered concrete usages (ticket 11), reports the missing-handler diagnostic (now considering upstream
+    /// referenced modules too, per ticket 12), and emits the registration module and dispatch wrappers.
     /// </summary>
     private static void Execute(
         ImmutableArray<TypeAnalysisResult> results,
         ImmutableArray<ClosedGenericRequestUsageModel> genericUsages,
         Compilation compilation,
+        CompilationInfo compilationInfo,
         SourceProductionContext context
     )
     {
@@ -117,7 +145,7 @@ public sealed class InterlocutorSourceGenerator : IIncrementalGenerator
 
         handlers = handlers.AddRange(openGenericResolution.ClosedHandlers);
 
-        ReportMissingHandlers(handlers, requests, context);
+        ReportMissingHandlers(handlers, compilationInfo.ExternalModules, requests, context);
         ReportDuplicateHandlers(handlers, context);
         ReportCatchAllNotificationHandlers(handlers, context);
 
@@ -128,8 +156,14 @@ public sealed class InterlocutorSourceGenerator : IIncrementalGenerator
             context.ReportDiagnostic(diagnostic);
         }
 
-        context.AddSource("InterlocutorGeneratedModuleAttribute.g.cs", RegistrationModuleEmitter.EmitAssemblyAttribute());
-        context.AddSource("InterlocutorGeneratedRegistrations.g.cs", RegistrationModuleEmitter.Emit(handlers));
+        context.AddSource(
+            "InterlocutorGeneratedModuleAttribute.g.cs",
+            RegistrationModuleEmitter.EmitAssemblyAttributes(handlers, compilationInfo.AssemblyNamespaceSegment)
+        );
+        context.AddSource(
+            "InterlocutorGeneratedRegistrations.g.cs",
+            RegistrationModuleEmitter.Emit(handlers, compilationInfo.AssemblyNamespaceSegment, compilationInfo.ExternalModules)
+        );
         context.AddSource("InterlocutorGeneratedDispatch.g.cs", DispatchWrapperEmitter.Emit(handlers));
         context.AddSource("InterlocutorGeneratedDispatchSwitch.g.cs", RequestDispatchSwitchEmitter.Emit(handlers, requests));
         context.AddSource("InterlocutorGeneratedNotificationOrder.g.cs", NotificationHandlerOrderEmitter.Emit(order.Ranks));
@@ -165,16 +199,20 @@ public sealed class InterlocutorSourceGenerator : IIncrementalGenerator
 
     /// <summary>
     /// Reports <see cref="InterlocutorDiagnostics.MissingHandler"/> for every request with no matching handler
-    /// in <paramref name="handlers"/>. A query or command request matches a handler with the same request and
-    /// response type; a void command matches any void-command handler for the same request type regardless of
-    /// the handler's chosen result type (see <see cref="RequestKind.VoidCommand"/>).
+    /// among <paramref name="handlers"/> or any upstream <paramref name="externalModules"/>'s own handlers. A
+    /// query or command request matches a handler with the same request and response type; a void command
+    /// matches any void-command handler for the same request type regardless of the handler's chosen result
+    /// type (see <see cref="RequestKind.VoidCommand"/>).
     /// </summary>
     private static void ReportMissingHandlers(
         ImmutableArray<HandlerModel> handlers,
+        ImmutableArray<ExternalModuleInfo> externalModules,
         ImmutableArray<RequestModel> requests,
         SourceProductionContext context
     )
     {
+        var externalHandlers = externalModules.SelectMany(static m => m.Handlers);
+
         var queryHandlerRequestTypes = new HashSet<(string, string?)>(
             handlers.Where(static h => h.Kind == HandlerKind.Query).Select(static h => (h.RequestTypeName, h.ResponseTypeName))
         );
@@ -186,6 +224,26 @@ public sealed class InterlocutorSourceGenerator : IIncrementalGenerator
         var voidCommandHandlerRequestTypes = new HashSet<string>(
             handlers.Where(static h => h.Kind == HandlerKind.VoidCommand).Select(static h => h.RequestTypeName)
         );
+
+        foreach (var externalHandler in externalHandlers)
+        {
+            switch (externalHandler.Kind)
+            {
+                case HandlerKind.Query:
+                    queryHandlerRequestTypes.Add((externalHandler.RequestTypeName, externalHandler.ResponseTypeName));
+                    break;
+                case HandlerKind.Command:
+                    commandHandlerRequestTypes.Add((externalHandler.RequestTypeName, externalHandler.ResponseTypeName));
+                    break;
+                case HandlerKind.VoidCommand:
+                    voidCommandHandlerRequestTypes.Add(externalHandler.RequestTypeName);
+                    break;
+                case HandlerKind.Notification:
+                default:
+                    // Never emitted for external handlers - see RegistrationModuleEmitter.EmitAssemblyAttributes.
+                    break;
+            }
+        }
 
         foreach (var request in requests)
         {

@@ -1,10 +1,10 @@
 namespace Interlocutor.DependencyInjection.Microsoft.Tests;
 
 using global::FluentValidation;
-using global::Microsoft.Extensions.DependencyInjection;
-using global::Microsoft.Extensions.Logging;
 using global::NHibernate;
 using global::NSubstitute;
+using global::Microsoft.Extensions.DependencyInjection;
+using global::Microsoft.Extensions.Logging;
 using Interlocutor.Abstractions;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;

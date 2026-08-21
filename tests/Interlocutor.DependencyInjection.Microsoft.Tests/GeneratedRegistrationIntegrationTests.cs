@@ -31,7 +31,13 @@ public sealed class GeneratedRegistrationIntegrationTests
         // compile-time discovered module - proving the generated path works on its own, not merely
         // alongside runtime scanning.
         services.AddInterlocutor(builder =>
-            builder.AddGeneratedRegistrations(Interlocutor.Generated.InterlocutorGeneratedRegistrations.Registrations)
+            builder.AddGeneratedRegistrations(
+                Interlocutor
+                    .Generated
+                    .Interlocutor_DependencyInjection_Microsoft_Tests
+                    .InterlocutorGeneratedRegistrations
+                    .Registrations
+            )
         );
 
         var provider = services.BuildServiceProvider();
@@ -54,7 +60,13 @@ public sealed class GeneratedRegistrationIntegrationTests
 
         services.AddInterlocutor(builder =>
             builder
-                .AddGeneratedRegistrations(Interlocutor.Generated.InterlocutorGeneratedRegistrations.Registrations)
+                .AddGeneratedRegistrations(
+                    Interlocutor
+                        .Generated
+                        .Interlocutor_DependencyInjection_Microsoft_Tests
+                        .InterlocutorGeneratedRegistrations
+                        .Registrations
+                )
                 .AddBehavior(typeof(OrderTrackingBehavior1))
                 .AddBehavior(typeof(OrderTrackingBehavior2))
                 .AddBehavior(typeof(OrderTrackingBehavior3))
