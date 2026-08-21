@@ -103,7 +103,8 @@ semantic-model lookups, from ticket 11), and `Compilation` is never equal across
 `RegisterSourceOutput` as a whole still re-executes and re-emits on every edit today, regardless of this step's
 own caching. Making the *whole* generator skip re-emission end to end would mean reworking how open generic
 resolution gets what it needs from the compilation, which is a ticket-11-era design decision, not something
-this ticket's own scope covers. Unchecked above rather than silently left as a false claim.
+this ticket's own scope covers. Unchecked above rather than silently left as a false claim. Follow-up:
+ticket 53.
 
 **Container coverage gap (code-review finding, not closed).** `GeneratedRegistrationIntegrationTests` in both
 `Interlocutor.DependencyInjection.Microsoft.Tests` and `.Autofac.Tests` were updated only for the new module
@@ -115,7 +116,7 @@ loaded), and there is no container-specific code path (`AddGeneratedRegistration
 "both containers work against aggregated registrations" is not actually backed by a test that emits two real
 assemblies, loads the downstream one, and resolves a handler from its aggregated module through a real
 container. Left as a known gap rather than claimed done; a follow-up ticket should add that end-to-end test if
-this risk needs closing formally.
+this risk needs closing formally. Follow-up: ticket 54.
 
 **Known gap, not introduced by this ticket.**
 `Interlocutor.DependencyInjection.Microsoft.Tests.GeneratedRegistrationIntegrationTests.GeneratedRegistration_WithMultipleBehaviors_ExecutesBehaviorsInCorrectOrder`
