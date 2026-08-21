@@ -12,6 +12,7 @@ internal static class InterlocutorDiagnostics
     /// <c>ICommand</c> but the compiling project defines no matching handler for it.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Default severity is <see cref="DiagnosticSeverity.Warning"/> - per ADR-0008 and this ticket's acceptance
     /// criteria, a consumer escalates it to an error via the standard <c>.editorconfig</c> mechanism every other
     /// diagnostic in this repository uses:
@@ -23,6 +24,19 @@ internal static class InterlocutorDiagnostics
     /// through the current compilation's reference graph, transitively. Only a handler declared purely in a
     /// sibling assembly the current compilation neither directly nor transitively references, or one registered
     /// only via runtime assembly scanning, is invisible to this check.
+    /// </para>
+    /// <para>
+    /// This has an inherent, asymmetric blind spot under acyclic project references: a request-declaring
+    /// assembly can never see a handler implemented *downstream* of it (for example, in the application that
+    /// eventually references it), since the request-declaring library's own build necessarily happens before
+    /// any consumer's. That library's own compilation reports this diagnostic even though the request is
+    /// ultimately served once the application is built - a false positive at the library level, not fixable
+    /// without either a circular reference (impossible) or deferring the check to the final consuming
+    /// compilation only (a design this ticket did not take, since a library ought to be independently
+    /// buildable and warn-clean on its own terms). Suppress per-request via <c>.editorconfig</c> or a targeted
+    /// <c>#pragma warning disable INTERLOC001</c> if a library intentionally declares a request it expects a
+    /// downstream consumer to serve.
+    /// </para>
     /// </remarks>
     public static readonly DiagnosticDescriptor MissingHandler = new(
         id: "INTERLOC001",

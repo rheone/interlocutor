@@ -1,4 +1,8 @@
-> **Status: done** - implemented on branch `worktree-agent-a03c1c713329c98d9` (commits `77b7fc0`, `f877dff`, `70b040d`, `1c5348c`).
+> **Status: done, with two known gaps** - implemented on branch `worktree-agent-a03c1c713329c98d9` (commits
+> `77b7fc0`, `f877dff`, `70b040d`, `1c5348c`), merged and code-reviewed on `improvements` (merge commit
+> `3fee863`, review-finding fixes on top). Core aggregation, dedup, three-level referencing, and the
+> missing-handler diagnostic are solid and tested. Full incremental caching and true multi-assembly container
+> resolution are not - see the two review-finding comments below.
 
 ## Labels
 
@@ -22,10 +26,10 @@ Handlers in assemblies loaded at runtime rather than referenced at compile time 
 - [x] Each handler-defining assembly emits its own registration module identified by an assembly-level attribute
 - [x] The application-level generator aggregates modules found across referenced assemblies
 - [x] Three-level referencing works: application references library A which references library B
-- [x] Changing one library does not force regeneration of the others
+- [ ] Changing one library does not force regeneration of the others - see "Incremental caching" comment below; not fully true today
 - [x] A missing-handler diagnostic still fires for a request declared in one assembly whose handler is absent everywhere
 - [x] Duplicate registration does not occur when an assembly is referenced through more than one path
-- [x] Both containers work against aggregated registrations
+- [~] Both containers work against aggregated registrations - see "Container coverage gap" comment below
 
 ## Blocked by
 
@@ -84,6 +88,34 @@ the two properties that are both testable and load-bearing: the diagnostic still
 request truly has no handler anywhere in the reference graph (guards against over-eager suppression), and it
 does not misfire when referencing a library whose own request/handler pairs are already fully matched
 (guards against stale/duplicated diagnostics leaking across the aggregation boundary).
+
+**Incremental caching (code-review finding, fixed).** `CompilationInfo`/`ExternalModuleInfo` wrap
+`ImmutableArray<T>`, whose own `Equals` compares the backing array by reference, not by element - the original
+compiler-generated positional-record equality these two types got was therefore useless for driver caching
+(two separately-built, content-identical arrays never compared equal). Both now override `Equals`/`GetHashCode`
+to compare their arrays element-wise, and `IncrementalCachingTests` (driving the generator with
+`trackIncrementalGeneratorSteps: true` via a new `GeneratorTestHarness.RunTwiceTrackingSteps`) proves the
+`"CompilationInfo"`-tracked step now reports `Unchanged` rather than `New` across two runs with an unchanged
+reference graph - it reported `Cached`/`New` incorrectly (this test failed) before the equality fix. That said,
+the acceptance criterion as stated is still not fully true: `InterlocutorSourceGenerator.Initialize`'s combined
+pipeline also threads the raw `Compilation` through unconditionally (needed by `OpenGenericHandlerResolver`'s
+semantic-model lookups, from ticket 11), and `Compilation` is never equal across runs - so
+`RegisterSourceOutput` as a whole still re-executes and re-emits on every edit today, regardless of this step's
+own caching. Making the *whole* generator skip re-emission end to end would mean reworking how open generic
+resolution gets what it needs from the compilation, which is a ticket-11-era design decision, not something
+this ticket's own scope covers. Unchecked above rather than silently left as a false claim.
+
+**Container coverage gap (code-review finding, not closed).** `GeneratedRegistrationIntegrationTests` in both
+`Interlocutor.DependencyInjection.Microsoft.Tests` and `.Autofac.Tests` were updated only for the new module
+namespace spelling (see "Naming had to change" above) - both still exercise a *single* project's own
+generated module, not a genuinely aggregated one. `CrossAssemblyAggregationTests` proves aggregation is
+correct at the generated-source-text level (in-memory `Compilation`s, never emitted to real assemblies or
+loaded), and there is no container-specific code path (`AddGeneratedRegistrations` takes any
+`IEnumerable<InterlocutorRegistration>` regardless of where the list came from), so the risk is low - but
+"both containers work against aggregated registrations" is not actually backed by a test that emits two real
+assemblies, loads the downstream one, and resolves a handler from its aggregated module through a real
+container. Left as a known gap rather than claimed done; a follow-up ticket should add that end-to-end test if
+this risk needs closing formally.
 
 **Known gap, not introduced by this ticket.**
 `Interlocutor.DependencyInjection.Microsoft.Tests.GeneratedRegistrationIntegrationTests.GeneratedRegistration_WithMultipleBehaviors_ExecutesBehaviorsInCorrectOrder`

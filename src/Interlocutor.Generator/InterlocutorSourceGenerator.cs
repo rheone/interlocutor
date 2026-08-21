@@ -41,6 +41,15 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 [Generator(LanguageNames.CSharp)]
 public sealed class InterlocutorSourceGenerator : IIncrementalGenerator
 {
+    /// <summary>
+    /// The tracking name given to the <see cref="CompilationInfo"/> pipeline step, so a test driven with
+    /// <c>trackIncrementalGeneratorSteps: true</c> can assert this specific step's cache behavior directly
+    /// (see <see cref="CompilationInfo"/>'s remarks on what this step's caching does and does not cover).
+    /// Public rather than internal so <c>Interlocutor.Generator.Tests</c> can reference it without this
+    /// project taking on an <c>InternalsVisibleTo</c> it otherwise has no need for.
+    /// </summary>
+    public const string CompilationInfoTrackingName = "CompilationInfo";
+
     /// <inheritdoc/>
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -64,17 +73,24 @@ public sealed class InterlocutorSourceGenerator : IIncrementalGenerator
 
         // Compilation-level (rather than per-syntax-node) because both facts - this compilation's own
         // assembly name and every referenced assembly's discovered module - are properties of the whole
-        // reference graph, not of any one candidate type declaration. CompilationInfo is an equatable record,
-        // so a re-run whose result is structurally identical to the last one (for example, editing a method
-        // body inside a referenced library that changes no public API surface and so changes nothing this
-        // discovery step reads) still lets the driver skip re-emitting downstream source.
-        var compilationInfo = context.CompilationProvider.Select(
-            static (compilation, ct) =>
-                new CompilationInfo(
-                    IdentifierSanitizer.ToNamespaceSegment(compilation.AssemblyName ?? "GeneratedAssembly"),
-                    ReferencedModuleDiscovery.Discover(compilation, ct)
-                )
-        );
+        // reference graph, not of any one candidate type declaration. CompilationInfo has real, element-wise
+        // structural equality (see its own remarks), so this step itself is cached whenever a rebuild's
+        // reference graph is unchanged - for example, editing a method body inside a referenced library that
+        // changes no public API surface and so changes nothing ReferencedModuleDiscovery reads. That said, the
+        // combined pipeline below also threads the raw Compilation through unconditionally (needed by
+        // OpenGenericHandlerResolver.Resolve's semantic-model lookups), and Compilation is never equal across
+        // runs - so RegisterSourceOutput as a whole still re-executes on every edit today regardless of this
+        // step's own caching. Making the overall pipeline skip re-emission end to end would mean reworking how
+        // open generic resolution gets what it needs from the compilation, which is outside this ticket's scope.
+        var compilationInfo = context
+            .CompilationProvider.Select(
+                static (compilation, ct) =>
+                    new CompilationInfo(
+                        IdentifierSanitizer.ToNamespaceSegment(compilation.AssemblyName ?? "GeneratedAssembly"),
+                        ReferencedModuleDiscovery.Discover(compilation, ct)
+                    )
+            )
+            .WithTrackingName(CompilationInfoTrackingName);
 
         var combined = analysisResults.Combine(genericUsages).Combine(context.CompilationProvider).Combine(compilationInfo);
 

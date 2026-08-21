@@ -115,6 +115,34 @@ internal static class GeneratorTestHarness
     public static MetadataReference ToMetadataReference(Compilation compilation) => compilation.ToMetadataReference();
 
     /// <summary>
+    /// Runs <see cref="InterlocutorSourceGenerator"/> over <paramref name="firstSource"/>, then re-runs the
+    /// same driver instance over <paramref name="secondSource"/> - with <c>trackIncrementalGeneratorSteps: true</c>,
+    /// so the second run's tracked steps report whether each named pipeline step was cached or re-computed.
+    /// Used to test the incremental pipeline itself, not just its emitted output - see
+    /// <see cref="CompilationInfo"/>'s remarks.
+    /// </summary>
+    /// <param name="firstSource">The source compiled and run first.</param>
+    /// <param name="secondSource">The source the same driver instance is then re-run against.</param>
+    /// <param name="extraReferences">Additional references shared by both runs - see <see cref="CreateCompilation"/>.</param>
+    /// <returns>The second run's result, with incremental step tracking enabled.</returns>
+    public static GeneratorDriverRunResult RunTwiceTrackingSteps(
+        string firstSource,
+        string secondSource,
+        IEnumerable<MetadataReference>? extraReferences = null
+    )
+    {
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(
+            [new InterlocutorSourceGenerator().AsSourceGenerator()],
+            driverOptions: new GeneratorDriverOptions(IncrementalGeneratorOutputKind.None, trackIncrementalGeneratorSteps: true)
+        );
+
+        driver = driver.RunGenerators(CreateCompilation(firstSource, extraReferences: extraReferences));
+        driver = driver.RunGenerators(CreateCompilation(secondSource, extraReferences: extraReferences));
+
+        return driver.GetRunResult();
+    }
+
+    /// <summary>
     /// Builds the reference assembly set every test compilation needs: the full trusted platform assembly
     /// list (BCL) plus the real, already-loaded Interlocutor assemblies the generator's discovery targets and
     /// its emitted code references.
