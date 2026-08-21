@@ -56,14 +56,18 @@ internal static class RegistrationModuleEmitter
             "        public static global::System.Collections.Generic.IReadOnlyList<global::Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration> Registrations { get; } ="
         );
 
-        // Always at least one entry: the generated request dispatcher (see RequestDispatchSwitchEmitter) is
-        // registered here unconditionally, even with zero discovered handlers, so a bare compilation still
-        // gets a reflection-free (if entirely-unrecognizing) Send(object, ...) dispatch target the moment its
-        // registrations are passed to AddGeneratedRegistrations.
+        // Always at least two entries: the generated request dispatcher (see RequestDispatchSwitchEmitter) and
+        // the generated notification handler order table (see NotificationHandlerOrderEmitter) are registered
+        // here unconditionally, even with zero discovered handlers, so a bare compilation still gets a
+        // reflection-free (if entirely-unrecognizing) Send(object, ...) dispatch target and a (possibly empty)
+        // order table the moment its registrations are passed to AddGeneratedRegistrations.
         builder.AppendLine("            new global::Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration[]");
         builder.AppendLine("            {");
         builder.AppendLine(
             $"                new global::Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration(typeof(global::Interlocutor.Abstractions.Core.IGeneratedRequestDispatcher), typeof(global::{RequestDispatchSwitchEmitter.GeneratedNamespace}.{RequestDispatchSwitchEmitter.DispatcherTypeName}), global::Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Singleton, global::Interlocutor.DependencyInjection.Abstractions.RegistrationKind.Dispatcher),"
+        );
+        builder.AppendLine(
+            $"                new global::Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration(typeof(global::Interlocutor.Abstractions.Core.IGeneratedNotificationHandlerOrder), typeof(global::{GeneratedNamespace}.{NotificationHandlerOrderEmitter.TypeName}), global::Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Singleton, global::Interlocutor.DependencyInjection.Abstractions.RegistrationKind.Dispatcher),"
         );
         foreach (var handler in handlers)
         {

@@ -1,5 +1,6 @@
 namespace Interlocutor.Generator;
 
+using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 
 /// <summary>
@@ -30,11 +31,30 @@ using Microsoft.CodeAnalysis;
 /// The handler type declaration's identifier location, used to anchor the duplicate-handler diagnostic at
 /// the handler type itself rather than at the compilation as a whole.
 /// </param>
+/// <param name="RunAfter">
+/// Fully-qualified handler type names this <see cref="HandlerKind.Notification"/> handler must run after
+/// (from <c>NotificationHandlerRunAfterAttribute</c>), empty for every other <see cref="HandlerKind"/> and
+/// for a notification handler with no such attribute. See ADR-0007's relative-ordering escape hatch.
+/// </param>
+/// <param name="RunBefore">
+/// The mirror image of <see cref="RunAfter"/>, from <c>NotificationHandlerRunBeforeAttribute</c>.
+/// </param>
 internal sealed record HandlerModel(
     HandlerKind Kind,
     string HandlerTypeName,
     string RequestTypeName,
     string? ResponseTypeName,
     string ServiceInterfaceName,
-    Location Location
-);
+    Location Location,
+    ImmutableArray<string> RunAfter = default,
+    ImmutableArray<string> RunBefore = default
+)
+{
+    /// <summary>Gets <see cref="RunAfter"/>.</summary>
+    /// <value>Defaulted to empty rather than a default (uninitialized) <c>ImmutableArray</c>.</value>
+    public ImmutableArray<string> RunAfterOrEmpty => this.RunAfter.IsDefault ? [] : this.RunAfter;
+
+    /// <summary>Gets <see cref="RunBefore"/>.</summary>
+    /// <value>Defaulted to empty rather than a default (uninitialized) <c>ImmutableArray</c>.</value>
+    public ImmutableArray<string> RunBeforeOrEmpty => this.RunBefore.IsDefault ? [] : this.RunBefore;
+}

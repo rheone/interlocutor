@@ -3,13 +3,16 @@ namespace Interlocutor.Abstractions.Notifications;
 using System.Diagnostics;
 using Interlocutor.Abstractions.Diagnostics;
 
-/// <summary>Dispatches a notification to all registered handlers sequentially, stopping on the first failure.</summary>
+/// <summary>Dispatches a notification to all applicable handlers sequentially, stopping on the first failure.</summary>
 /// <typeparam name="TNotification">The notification type. Must implement <see cref="INotification"/>.</typeparam>
 /// <remarks>
 /// <para>
-/// Iterates through registered handlers in order of registration, awaiting each one before proceeding to the next.
-/// If a handler throws, the exception propagates immediately and subsequent handlers are not invoked. Use this when
-/// handler ordering matters or when one handler's failure should prevent dependent handlers from running.
+/// Resolves every handler contravariantly applicable to <typeparamref name="TNotification"/> via
+/// <see cref="NotificationHandlerResolver"/> - including handlers registered against a base type or interface -
+/// and awaits each one in turn. If a handler throws, the exception propagates immediately and subsequent
+/// handlers are not invoked. Execution order is otherwise unspecified except where a
+/// <see cref="NotificationHandlerRunAfterAttribute"/>/<see cref="NotificationHandlerRunBeforeAttribute"/> pair
+/// pins it (see ADR-0007).
 /// </para>
 /// </remarks>
 internal sealed class SequentialNotificationHandlerWrapper<TNotification> : NotificationHandlerWrapper
@@ -31,13 +34,12 @@ internal sealed class SequentialNotificationHandlerWrapper<TNotification> : Noti
     )
     {
         var typedNotification = (TNotification)notification;
-        var handlers = services.GetServices<INotificationHandler<TNotification>>().ToArray();
+        var handlers = NotificationHandlerResolver.ResolveHandlers<TNotification>(services);
 
         activity?.SetTag(MediatorActivitySource.HandlerTypeTag, string.Join(",", handlers.Select(h => h.GetType().FullName)));
 
-        // Execute handlers sequentially in registration order. If a handler throws, the exception propagates
-        // immediately and subsequent handlers are not invoked. This is useful when handler ordering matters
-        // or when one handler's failure should prevent dependent handlers from running.
+        // Execute handlers sequentially in the resolved (contravariant, order-table-sorted) order. If a
+        // handler throws, the exception propagates immediately and subsequent handlers are not invoked.
         foreach (var handler in handlers)
         {
             await handler.Handle(typedNotification, ct);

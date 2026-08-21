@@ -1,4 +1,4 @@
-Status: ready-for-agent
+> **Status: done** - implemented on the `improvements` branch: contravariant dispatch via `NotificationHandlerResolver`, the `NotificationHandlerRunAfterAttribute`/`NotificationHandlerRunBeforeAttribute` escape hatch with generator-computed topological order (`IGeneratedNotificationHandlerOrder`), `INTERLOC003` (catch-all) and `INTERLOC004` (ordering cycle) diagnostics, and the `PublishStrategy` overload moved onto `IPublisher`. ADR-0007 and `documentation/notifications-and-fan-out.md` updated to match.
 
 ## Labels
 
@@ -23,16 +23,16 @@ The publish strategy must be selectable through the published publisher interfac
 
 ## Acceptance criteria
 
-- [ ] A handler registered against a base event type or interface receives derived events, in both containers
-- [ ] Handlers for the concrete type, an intermediate interface, and the base interface all run for one publish
-- [ ] Execution order is documented as unspecified; no test asserts an incidental order
-- [ ] Run-after and run-before attributes produce the declared relative order
-- [ ] An ordering cycle produces a build error naming the cycle
-- [ ] A catch-all handler works and produces an informational diagnostic
-- [ ] Sequential stops at the first exception and rethrows it unwrapped; parallel runs all and aggregates
-- [ ] The publish strategy is selectable through the published publisher interface
-- [ ] Notification handlers run in the caller's scope and share its scoped services
-- [ ] ADR-0007 is amended to match
+- [x] A handler registered against a base event type or interface receives derived events, in both containers
+- [x] Handlers for the concrete type, an intermediate interface, and the base interface all run for one publish
+- [x] Execution order is documented as unspecified; no test asserts an incidental order
+- [x] Run-after and run-before attributes produce the declared relative order
+- [x] An ordering cycle produces a build error naming the cycle
+- [x] A catch-all handler works and produces an informational diagnostic
+- [x] Sequential stops at the first exception and rethrows it unwrapped; parallel runs all and aggregates (pre-existing, unchanged, still covered)
+- [x] The publish strategy is selectable through the published publisher interface
+- [x] Notification handlers run in the caller's scope and share its scoped services (pre-existing, unchanged)
+- [x] ADR-0007 is amended to match
 
 ## Blocked by
 

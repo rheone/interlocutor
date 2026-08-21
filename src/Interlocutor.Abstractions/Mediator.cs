@@ -437,12 +437,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
         return this.PublishAsync(notification, PublishStrategy.Sequential, ct);
     }
 
-    /// <summary>Publishes a notification using the specified <paramref name="strategy"/>.</summary>
-    /// <typeparam name="TNotification">The notification type. Must implement <see cref="INotification"/>.</typeparam>
-    /// <param name="notification">The notification to publish.</param>
-    /// <param name="strategy"><see cref="PublishStrategy.Sequential"/> runs handlers in order and stops on failure; <see cref="PublishStrategy.Parallel"/> runs all handlers concurrently.</param>
-    /// <param name="ct">A token that may be used to cancel the notification dispatch.</param>
-    /// <returns>A task that completes when all registered handlers have finished processing the notification.</returns>
+    /// <inheritdoc/>
     public Task Publish<TNotification>(TNotification notification, PublishStrategy strategy, CancellationToken ct = default)
         where TNotification : INotification
     {

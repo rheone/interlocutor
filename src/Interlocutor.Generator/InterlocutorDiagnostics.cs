@@ -63,4 +63,51 @@ internal static class InterlocutorDiagnostics
             + "one handler, unlike a notification, which permits zero or many. Remove or rename the extra "
             + "handler so only one remains."
     );
+
+    /// <summary>
+    /// Reported when a notification handler implements <c>INotificationHandler&lt;INotification&gt;</c> -
+    /// subscribing to the base notification interface itself, and therefore to every notification published
+    /// anywhere in the process.
+    /// </summary>
+    /// <remarks>
+    /// Legal by design (ADR-0007) - this is the entire point of contravariant fan-out - but a process-wide
+    /// subscriber is easy to write by accident (e.g. a typo'd generic constraint). Default severity is
+    /// <see cref="DiagnosticSeverity.Info"/>: this is a deliberate-choice confirmation, not a problem.
+    /// </remarks>
+    public static readonly DiagnosticDescriptor CatchAllNotificationHandler = new(
+        id: "INTERLOC003",
+        title: "Catch-all notification handler",
+        messageFormat: "'{0}' handles every published notification (INotificationHandler<INotification>)",
+        category: "Interlocutor.Discovery",
+        defaultSeverity: DiagnosticSeverity.Info,
+        isEnabledByDefault: true,
+        description: "A handler implementing INotificationHandler<INotification> receives every notification "
+            + "published anywhere in the process, not just one family of events. This is a legal and useful "
+            + "pattern (a process-wide audit sink, for example), but is reported so it reads as a deliberate "
+            + "choice rather than an accidental catch-all."
+    );
+
+    /// <summary>
+    /// Reported when the relative order declared across notification handlers via
+    /// <c>NotificationHandlerRunAfterAttribute</c>/<c>NotificationHandlerRunBeforeAttribute</c> contains a
+    /// cycle - no topological order exists.
+    /// </summary>
+    /// <remarks>
+    /// Default severity is <see cref="DiagnosticSeverity.Error"/>, not warning: an ordering cycle has no
+    /// meaningful fallback behavior to run with, unlike <see cref="MissingHandler"/> or
+    /// <see cref="DuplicateHandler"/>, which still produce a program that runs (just not the one the developer
+    /// intended). It is not escalated via <c>.editorconfig</c> like those two - it is always an error.
+    /// </remarks>
+    public static readonly DiagnosticDescriptor NotificationHandlerOrderingCycle = new(
+        id: "INTERLOC004",
+        title: "Notification handler ordering cycle",
+        messageFormat: "Notification handler run-after/run-before ordering forms a cycle: {0}",
+        category: "Interlocutor.Discovery",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "NotificationHandlerRunAfterAttribute/NotificationHandlerRunBeforeAttribute declared a "
+            + "relative ordering across notification handlers that contains a cycle, so no consistent "
+            + "execution order exists. Remove or redirect one of the run-after/run-before declarations named "
+            + "in the cycle."
+    );
 }

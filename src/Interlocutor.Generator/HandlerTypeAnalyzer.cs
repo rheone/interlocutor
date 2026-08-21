@@ -48,6 +48,8 @@ internal static class HandlerTypeAnalyzer
         var queryMarker = compilation.GetTypeByMetadataName(WellKnownTypeNames.Query);
         var commandMarker = compilation.GetTypeByMetadataName(WellKnownTypeNames.Command);
         var voidCommandMarker = compilation.GetTypeByMetadataName(WellKnownTypeNames.VoidCommand);
+        var runAfterAttribute = compilation.GetTypeByMetadataName(WellKnownTypeNames.NotificationHandlerRunAfter);
+        var runBeforeAttribute = compilation.GetTypeByMetadataName(WellKnownTypeNames.NotificationHandlerRunBefore);
 
         var handlers = ImmutableArray.CreateBuilder<HandlerModel>();
         RequestModel? request = null;
@@ -120,7 +122,9 @@ internal static class HandlerTypeAnalyzer
                         Format(args[0]),
                         null,
                         Format(candidateInterface),
-                        declarationLocation
+                        declarationLocation,
+                        RunAfter: ResolveOrderingAttribute(candidate, runAfterAttribute),
+                        RunBefore: ResolveOrderingAttribute(candidate, runBeforeAttribute)
                     )
                 );
             }
@@ -151,6 +155,42 @@ internal static class HandlerTypeAnalyzer
 
     /// <summary>Formats a symbol as a fully-qualified, <c>global::</c>-prefixed source-safe type name.</summary>
     private static string Format(ITypeSymbol symbol) => symbol.ToDisplayString(QualifiedFormat);
+
+    /// <summary>
+    /// Collects the fully-qualified type name argument from every application of
+    /// <paramref name="orderingAttribute"/> (<c>NotificationHandlerRunAfterAttribute</c> or
+    /// <c>NotificationHandlerRunBeforeAttribute</c>) on <paramref name="candidate"/>.
+    /// </summary>
+    /// <param name="candidate">The notification handler type to inspect.</param>
+    /// <param name="orderingAttribute">The resolved attribute symbol, or <see langword="null"/> if the attribute type could not be resolved.</param>
+    /// <returns>One entry per attribute application, in declaration order; empty if none or the argument was not a type.</returns>
+    private static ImmutableArray<string> ResolveOrderingAttribute(
+        INamedTypeSymbol candidate,
+        INamedTypeSymbol? orderingAttribute
+    )
+    {
+        if (orderingAttribute is null)
+        {
+            return [];
+        }
+
+        var builder = ImmutableArray.CreateBuilder<string>();
+        foreach (var attribute in candidate.GetAttributes())
+        {
+            if (
+                !SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, orderingAttribute)
+                || attribute.ConstructorArguments.Length != 1
+                || attribute.ConstructorArguments[0].Value is not INamedTypeSymbol referencedHandlerType
+            )
+            {
+                continue;
+            }
+
+            builder.Add(Format(referencedHandlerType));
+        }
+
+        return builder.ToImmutable();
+    }
 
     /// <summary>
     /// Whether <paramref name="symbol"/> - and every type it is nested inside - is visible from generated

@@ -77,6 +77,15 @@ public sealed class RootScopeGuardedMediator(IMediator inner, IRootScopeDetector
         return inner.Publish(notification, ct);
     }
 
+    /// <inheritdoc/>
+    public Task Publish<TNotification>(TNotification notification, PublishStrategy strategy, CancellationToken ct = default)
+        where TNotification : INotification
+    {
+        ArgumentNullException.ThrowIfNull(notification);
+        this.EnsureNotRootScope(notification.GetType());
+        return inner.Publish(notification, strategy, ct);
+    }
+
     /// <summary>
     /// Throws <see cref="MediatorResolvedFromRootScopeException"/>, naming <paramref name="dispatchedType"/>,
     /// if <see cref="IRootScopeDetector.IsRootScope"/> reports this mediator was resolved from the root

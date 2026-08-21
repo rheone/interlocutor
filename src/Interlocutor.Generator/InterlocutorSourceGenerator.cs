@@ -85,11 +85,48 @@ public sealed class InterlocutorSourceGenerator : IIncrementalGenerator
 
         ReportMissingHandlers(handlers, requests, context);
         ReportDuplicateHandlers(handlers, context);
+        ReportCatchAllNotificationHandlers(handlers, context);
+
+        var notificationHandlers = handlers.Where(static h => h.Kind == HandlerKind.Notification).ToImmutableArray();
+        var order = NotificationHandlerOrderPlanner.Compute(notificationHandlers);
+        foreach (var diagnostic in order.Diagnostics)
+        {
+            context.ReportDiagnostic(diagnostic);
+        }
 
         context.AddSource("InterlocutorGeneratedModuleAttribute.g.cs", RegistrationModuleEmitter.EmitAssemblyAttribute());
         context.AddSource("InterlocutorGeneratedRegistrations.g.cs", RegistrationModuleEmitter.Emit(handlers));
         context.AddSource("InterlocutorGeneratedDispatch.g.cs", DispatchWrapperEmitter.Emit(handlers));
         context.AddSource("InterlocutorGeneratedDispatchSwitch.g.cs", RequestDispatchSwitchEmitter.Emit(handlers, requests));
+        context.AddSource("InterlocutorGeneratedNotificationOrder.g.cs", NotificationHandlerOrderEmitter.Emit(order.Ranks));
+    }
+
+    /// <summary>
+    /// Reports <see cref="InterlocutorDiagnostics.CatchAllNotificationHandler"/> for every notification handler
+    /// implementing <c>INotificationHandler&lt;INotification&gt;</c> - subscribing to the base marker interface
+    /// itself, and therefore to every notification published anywhere in the process.
+    /// </summary>
+    private static void ReportCatchAllNotificationHandlers(
+        ImmutableArray<HandlerModel> handlers,
+        SourceProductionContext context
+    )
+    {
+        foreach (var handler in handlers)
+        {
+            if (
+                handler.Kind == HandlerKind.Notification
+                && handler.RequestTypeName == "global::" + WellKnownTypeNames.Notification
+            )
+            {
+                context.ReportDiagnostic(
+                    Diagnostic.Create(
+                        InterlocutorDiagnostics.CatchAllNotificationHandler,
+                        handler.Location,
+                        handler.HandlerTypeName
+                    )
+                );
+            }
+        }
     }
 
     /// <summary>

@@ -26,7 +26,7 @@ internal sealed class ParallelNotificationHandlerWrapper<TNotification> : Notifi
     public override Task Handle(object notification, IServiceProvider services, CancellationToken ct, Activity? activity = null)
     {
         var typedNotification = (TNotification)notification;
-        var handlers = services.GetServices<INotificationHandler<TNotification>>().ToArray();
+        var handlers = NotificationHandlerResolver.ResolveHandlers<TNotification>(services);
 
         activity?.SetTag(MediatorActivitySource.HandlerTypeTag, string.Join(",", handlers.Select(h => h.GetType().FullName)));
 
