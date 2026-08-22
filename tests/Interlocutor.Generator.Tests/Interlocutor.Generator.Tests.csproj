@@ -3,6 +3,11 @@
     <ProjectReference Include="..\..\src\Interlocutor.Generator\Interlocutor.Generator.csproj" />
     <ProjectReference Include="..\..\src\Interlocutor.Abstractions\Interlocutor.Abstractions.csproj" />
     <ProjectReference Include="..\..\src\Interlocutor.DependencyInjection.Abstractions\Interlocutor.DependencyInjection.Abstractions.csproj" />
+    <!-- Referenced (rather than analyzer-only) so CrossAssemblyContainerResolutionTests (ticket 54) can build
+         real ServiceCollection/ContainerBuilder containers directly, alongside the Roslyn APIs this project
+         already uses to emit and load real assemblies. -->
+    <ProjectReference Include="..\..\src\Interlocutor.DependencyInjection.Microsoft\Interlocutor.DependencyInjection.Microsoft.csproj" />
+    <ProjectReference Include="..\..\src\Interlocutor.DependencyInjection.Autofac\Interlocutor.DependencyInjection.Autofac.csproj" />
   </ItemGroup>
 
   <ItemGroup>

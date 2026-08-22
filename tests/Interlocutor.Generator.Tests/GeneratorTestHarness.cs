@@ -1,8 +1,11 @@
 namespace Interlocutor.Generator.Tests;
 
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using Interlocutor.Abstractions.Queries;
 using Interlocutor.CommonKernel;
 using Interlocutor.DependencyInjection.Abstractions;
@@ -24,6 +27,17 @@ using Microsoft.CodeAnalysis.CSharp;
 internal static class GeneratorTestHarness
 {
     private static readonly ImmutableArray<MetadataReference> References = BuildReferences();
+
+    // Tracks every assembly EmitAndLoadAssembly has loaded, by simple name, so the Resolving handler wired up
+    // in that method's static constructor equivalent (see the field initializer below) can hand a dynamically
+    // loaded assembly back to the runtime when a *different* dynamically loaded assembly references it by
+    // name - Assembly.Load(byte[])'s own default resolution does not reliably find a same-process,
+    // byte[]-loaded assembly purely by name otherwise.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, Assembly> LoadedAssembliesByName = new(
+        StringComparer.Ordinal
+    );
+
+    private static readonly bool ResolvingHandlerRegistered = RegisterResolvingHandler();
 
     /// <summary>Builds an unaltered <see cref="CSharpCompilation"/> for <paramref name="source"/> with no generator run.</summary>
     /// <param name="source">The C# source to compile.</param>
@@ -114,6 +128,61 @@ internal static class GeneratorTestHarness
     /// <param name="compilation">The compilation to reference.</param>
     /// <returns>A metadata reference to <paramref name="compilation"/>.</returns>
     public static MetadataReference ToMetadataReference(Compilation compilation) => compilation.ToMetadataReference();
+
+    /// <summary>
+    /// Compiles <paramref name="source"/>, runs <see cref="InterlocutorSourceGenerator"/> over it, and emits the
+    /// result to a real in-memory PE (<c>Compilation.Emit</c> to a <see cref="MemoryStream"/>), then loads that
+    /// PE via <see cref="Assembly.Load(byte[])"/> - simulating a genuine project reference (ticket 54) rather
+    /// than <see cref="ToMetadataReference"/>'s in-memory <see cref="Compilation"/> reference, which never
+    /// produces a real, loadable assembly.
+    /// </summary>
+    /// <param name="source">The C# source to compile and analyze.</param>
+    /// <param name="assemblyName">
+    /// The compilation's assembly name. Must be distinct across every assembly emitted and loaded within the
+    /// same test process (the default <see cref="System.Runtime.Loader.AssemblyLoadContext"/> keeps every
+    /// loaded assembly for the process's lifetime, so two calls with the same name from different tests would
+    /// collide) - a caller running more than one emitting test should include a per-test-run unique suffix.
+    /// </param>
+    /// <param name="extraReferences">Additional references - see <see cref="CreateCompilation"/>.</param>
+    /// <returns>
+    /// The loaded assembly and the raw PE bytes it was loaded from (the latter for building a real
+    /// <see cref="MetadataReference"/> a further compilation can reference via <c>MetadataReference.CreateFromImage</c>).
+    /// </returns>
+    /// <exception cref="InvalidOperationException">Emission failed - the message includes every reported <see cref="Diagnostic"/>.</exception>
+    public static (Assembly Assembly, ImmutableArray<byte> PeBytes) EmitAndLoadAssembly(
+        string source,
+        string assemblyName,
+        IEnumerable<MetadataReference>? extraReferences = null
+    )
+    {
+        var compilation = RunAndUpdate(source, assemblyName, extraReferences, out _);
+
+        using var peStream = new MemoryStream();
+        var emitResult = compilation.Emit(peStream);
+        if (!emitResult.Success)
+        {
+            var diagnosticText = string.Join(Environment.NewLine, emitResult.Diagnostics.Select(static d => d.ToString()));
+            throw new InvalidOperationException($"Emitting '{assemblyName}' failed:{Environment.NewLine}{diagnosticText}");
+        }
+
+        var peBytes = peStream.ToArray();
+        var assembly = Assembly.Load(peBytes);
+        LoadedAssembliesByName[assembly.GetName().Name!] = assembly;
+        return (assembly, ImmutableArray.Create(peBytes));
+    }
+
+    /// <summary>
+    /// Wires <see cref="System.Runtime.Loader.AssemblyLoadContext.Resolving"/> on the default context once,
+    /// falling back to <see cref="LoadedAssembliesByName"/> for any reference the runtime's own default
+    /// resolution cannot find - see <see cref="EmitAndLoadAssembly"/>'s remarks.
+    /// </summary>
+    /// <returns><see langword="true"/> unconditionally - a marker return value so this can run from a field initializer.</returns>
+    private static bool RegisterResolvingHandler()
+    {
+        System.Runtime.Loader.AssemblyLoadContext.Default.Resolving += static (_, name) =>
+            name.Name is not null && LoadedAssembliesByName.TryGetValue(name.Name, out var assembly) ? assembly : null;
+        return true;
+    }
 
     /// <summary>
     /// Runs <see cref="InterlocutorSourceGenerator"/> over <paramref name="firstSource"/>, then re-runs the
