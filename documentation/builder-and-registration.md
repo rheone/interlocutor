@@ -11,14 +11,14 @@ How to register Interlocutor with dependency injection. Handlers can be discover
 services.AddInterlocutor(builder =>
 {
     builder.ScanAssembly(typeof(Program).Assembly);
-    builder.UseRecommendedChain();
+    builder.Pipeline.UseRecommendedChain();
 });
 
 // Autofac - same builder delegate
 containerBuilder.AddInterlocutor(builder =>
 {
     builder.ScanAssembly(typeof(Program).Assembly);
-    builder.UseRecommendedChain();
+    builder.Pipeline.UseRecommendedChain();
 });
 ```
 
@@ -79,7 +79,7 @@ Runtime scanning looks for:
 builder.ScanAssembly(typeof(MyDomainModel).Assembly, RegistrationLifetime.Singleton);
 ```
 
-`IPipelineStage<TRequest, TResponse>` registration is separate - stages are registered explicitly via `InterlocutorBuilder.AddStage`, not discovered by scanning.
+`IPipelineStage<TRequest, TResponse>` registration is separate - stages are registered explicitly via `InterlocutorPipelineBuilder.AddStage` (`builder.Pipeline.AddStage`), not discovered by scanning.
 
 ### Registering a Single Handler
 
@@ -118,20 +118,20 @@ services.AddInterlocutor(builder =>
     builder.ScanAssembly(typeof(Program).Assembly);
 
     // Explicitly compose your pipeline
-    builder.AddBehavior(typeof(LoggingBehavior<,>));
-    builder.AddBehavior(typeof(AuditingBehavior<,>));
-    builder.AddBehavior(typeof(ValidationBehavior<,>));
-    builder.AddBehavior(typeof(TransactionBehavior<,>));
+    builder.Pipeline.AddBehavior(typeof(LoggingBehavior<,>));
+    builder.Pipeline.AddBehavior(typeof(AuditingBehavior<,>));
+    builder.Pipeline.AddBehavior(typeof(ValidationBehavior<,>));
+    builder.Pipeline.AddBehavior(typeof(TransactionBehavior<,>));
 
     // Or use the documented recommended chain as sugar
-    // builder.UseRecommendedChain();
+    // builder.Pipeline.UseRecommendedChain();
 });
 ```
 
 See [pipeline-and-behaviors.md](pipeline-and-behaviors.md) for the full rationale of the recommended chain and how to compose your own.
 
-> [!NOTE]
-> Internally, `InterlocutorBuilder`'s pipeline methods (`AddBehavior`, the named `Add*Behavior` methods, `UseRecommendedChain`, `AddStage`/`AddStageHost`) delegate to a dedicated `InterlocutorPipelineBuilder` that holds the actual behavior/stage state, keeping pipeline composition a self-contained concern separate from assembly scanning and infrastructure overrides. The public surface shown above is unchanged - every call above still compiles and behaves exactly as written.
+> [!IMPORTANT]
+> Every pipeline-composition method - `AddBehavior`, the named `Add*Behavior` methods, `UseRecommendedChain`, `AddStage`/`AddStageHost`, and the behavior-dependency `Override*` methods below other than `OverrideRequestContextAccessor` - lives on `InterlocutorPipelineBuilder`, reachable only through `InterlocutorBuilder.Pipeline`. This is a deliberate breaking change from an earlier revision where those methods lived directly on `InterlocutorBuilder`: `.Pipeline` keeps "what runs in what order" a self-contained concern, with one canonical home for its documentation, separate from `InterlocutorBuilder`'s own assembly-scanning and ambient-default responsibilities.
 
 ## Dependency Defaults
 
@@ -143,7 +143,7 @@ services.AddSingleton<IAuditSink, MyAuditSink>();
 services.AddInterlocutor(builder =>
 {
     builder.ScanAssembly(typeof(Program).Assembly);
-    builder.AddAuditingBehavior();
+    builder.Pipeline.AddAuditingBehavior();
     // MyAuditSink is used - AddAuditingBehavior's own default was never applied
 });
 ```
@@ -155,12 +155,12 @@ services.AddSingleton<IAuditSink, MyAuditSink>();
 services.AddInterlocutor(builder =>
 {
     builder.ScanAssembly(typeof(Program).Assembly);
-    builder.AddAuditingBehavior();
-    builder.OverrideAuditSink<OtherAuditSink>();  // This one wins, regardless of order
+    builder.Pipeline.AddAuditingBehavior();
+    builder.Pipeline.OverrideAuditSink<OtherAuditSink>();  // This one wins, regardless of order
 });
 ```
 
-`OverrideAuditSink<TSink>()`, `OverridePolicyEvaluator<TEvaluator>()`, `OverrideRequestContextAccessor<TAccessor>()`, and `OverrideOutcomeDescriber<TDescriber>()` are generic methods, each constrained to the interface they override - there is no settable `Default*`/`Override*` property on the builder.
+`Pipeline.OverrideAuditSink<TSink>()`, `Pipeline.OverridePolicyEvaluator<TEvaluator>()`, and `Pipeline.OverrideOutcomeDescriber<TDescriber>()` are generic methods on `InterlocutorPipelineBuilder`, each constrained to the interface they override - there is no settable `Default*`/`Override*` property. `OverrideRequestContextAccessor<TAccessor>()` is the one exception: it stays directly on `InterlocutorBuilder` itself, since `IRequestContextAccessor` is ambient infrastructure rather than a pipeline-behavior dependency.
 
 ## Cross-Assembly Aggregation
 
@@ -175,7 +175,7 @@ services.AddInterlocutor(builder =>
 {
     builder.ScanAssembly(typeof(Program).Assembly);
     builder.ScanAssembly(typeof(MyApp.Domain.SomeHandler).Assembly);
-    builder.UseRecommendedChain();
+    builder.Pipeline.UseRecommendedChain();
 });
 ```
 
@@ -240,7 +240,7 @@ var builder = WebApplication.CreateBuilder();
 builder.Services.AddInterlocutor(interlocutor =>
 {
     interlocutor.ScanAssembly(typeof(Program).Assembly);
-    interlocutor.UseRecommendedChain();
+    interlocutor.Pipeline.UseRecommendedChain();
 });
 
 var app = builder.Build();
@@ -260,7 +260,7 @@ var containerBuilder = new ContainerBuilder();
 containerBuilder.AddInterlocutor(interlocutor =>
 {
     interlocutor.ScanAssembly(typeof(Program).Assembly);
-    interlocutor.UseRecommendedChain();
+    interlocutor.Pipeline.UseRecommendedChain();
 });
 
 var container = containerBuilder.Build();

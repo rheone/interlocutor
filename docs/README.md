@@ -36,6 +36,7 @@ Immutable once accepted - a changed decision gets a new ADR that supersedes the 
 
 **DI registration & configuration** - how the builder decides what gets registered
 - [ADR-0014](adr/0014-di-builder-matching-registration-and-build-validation.md) - DI Builder Extension - Explicit Handler Lifetime, Type-Matching Registration, and Opt-In Build Validation: scan methods gain an explicit lifetime parameter, a new type-matching mechanism registers handlers/behaviors by predicate rather than only by contract interface, and an opt-in `ValidateOnBuild()` checks the registration list itself and reports one aggregated failure instead of a first-failure-only exception.
+- [ADR-0015](adr/0015-pipeline-composition-behind-interlocutorpipelinebuilder.md) - Pipeline Composition Lives Behind `InterlocutorBuilder.Pipeline`, Not On `InterlocutorBuilder` Itself: every pipeline-composition method moves exclusively onto `InterlocutorPipelineBuilder`, reachable only via the new `.Pipeline` property, ending the doubled documentation and duplicated test matrix left by ticket 40's forwarding-method shape.
 
 **Mediator interface & lifecycle** - the shape and lifetime of the mediator itself
 - [ADR-0006](adr/0006-interface-segregation-mediator.md) - Interface Segregation for Mediator: `ISender`/`IPublisher`/`IMediator` are split so a consumer depends only on the capability it actually uses.

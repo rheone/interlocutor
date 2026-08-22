@@ -22,13 +22,14 @@ using Interlocutor.Abstractions.Queries;
 /// registration primitives - no scanning, ordering, or override logic is duplicated per container.
 /// </para>
 /// <para>
-/// <b>Pipeline composition is delegated.</b> Every pipeline-composition method on this type
-/// (<see cref="AddBehavior"/>, the named <c>Add*Behavior</c> convenience methods, <see cref="UseRecommendedChain"/>,
-/// and the <c>AddStage</c>/<see cref="AddStageHost"/> family) is a thin, source-compatible wrapper over an
-/// internal <see cref="InterlocutorPipelineBuilder"/> instance, which holds the actual behavior/stage list
-/// state. This keeps "what runs in what order" a self-contained concern, separate from this type's own
-/// discovery (<c>Scan*</c>) and infrastructure-override responsibilities. <see cref="Behaviors"/>,
-/// <see cref="Stages"/>, and <see cref="StageFactories"/> simply expose that inner builder's state.
+/// <b>Pipeline composition lives on <see cref="Pipeline"/>.</b> Every pipeline-composition method - the
+/// named <c>Add*Behavior</c> convenience methods, <c>AddBehavior</c>, <c>UseRecommendedChain</c>, the
+/// <c>AddStage</c>/<c>AddStageHost</c> family, and the behavior-dependency <c>Override*</c> methods other
+/// than <see cref="OverrideRequestContextAccessor{TAccessor}"/> - lives on <see cref="InterlocutorPipelineBuilder"/>,
+/// reachable only via <see cref="Pipeline"/>. This keeps "what runs in what order" a self-contained
+/// concern, separate from this type's own discovery (<c>Scan*</c>) and the one genuinely ambient default
+/// it still owns directly. <see cref="Behaviors"/>, <see cref="Stages"/>, and <see cref="StageFactories"/>
+/// remain pass-through projections of <see cref="Pipeline"/>'s state.
 /// </para>
 /// <para>
 /// Per <c>ADR-0009</c> ("No Default Pipeline"), a builder with no behavior calls produces zero pipeline
@@ -38,7 +39,7 @@ using Interlocutor.Abstractions.Queries;
 /// configured; the audit sink and policy evaluator defaults are added only alongside the specific
 /// behavior that consumes them, so a bare builder never carries an orphan dependency. There is
 /// deliberately no automatic <see cref="IResponseOutcomeDescriber"/> default - see
-/// <see cref="AddLoggingBehavior"/> for why.
+/// <c>Pipeline.AddLoggingBehavior</c> for why.
 /// </para>
 /// <para>
 /// <b>Order and duplicates.</b> <see cref="Behaviors"/> is a flat list in builder-call order. Adding the
@@ -50,17 +51,17 @@ using Interlocutor.Abstractions.Queries;
 /// <para>
 /// <b>Override precedence.</b> Every entry in <see cref="Defaults"/> is translated with try-add
 /// semantics, so a consumer's own service registration made before the container translator runs always
-/// wins. The <c>Override*</c> methods (<see cref="OverrideAuditSink{TSink}"/>,
-/// <see cref="OverridePolicyEvaluator{TEvaluator}"/>, <see cref="OverrideRequestContextAccessor{TAccessor}"/>,
-/// <see cref="OverrideOutcomeDescriber{TDescriber}"/>) replace the builder's own internal default entry
-/// directly, so they win regardless of whether they are called before or after the corresponding
-/// <c>Add*Behavior</c> call in the same chain - there is no scenario where call order within the builder
-/// changes which implementation is registered.
+/// wins. The <c>Override*</c> methods - <see cref="OverrideRequestContextAccessor{TAccessor}"/> here, and
+/// <c>OverrideAuditSink</c>/<c>OverridePolicyEvaluator</c>/<c>OverrideOutcomeDescriber</c> and the rest on
+/// <see cref="Pipeline"/> - replace the builder's own internal default entry directly, so they win
+/// regardless of whether they are called before or after the corresponding <c>Add*Behavior</c> call in
+/// the same chain - there is no scenario where call order within the builder changes which implementation
+/// is registered.
 /// </para>
 /// <para>
 /// <b>The three previously-dead <c>InterlocutorOptions</c> properties.</b> Of the legacy options never
 /// actually read (default publish strategy, outcome describer type, startup validation), only the outcome
-/// describer became a real builder member: <see cref="OverrideOutcomeDescriber{TDescriber}"/> genuinely
+/// describer became a real builder member: <c>Pipeline.OverrideOutcomeDescriber</c> genuinely
 /// changes what <see cref="LoggingBehavior{TRequest,TResponse}"/> and <see cref="AuditingBehavior{TRequest,TResponse}"/>
 /// resolve. The other two are deliberately absent from this builder rather than wired to look busy:
 /// </para>
@@ -122,6 +123,13 @@ public sealed class InterlocutorBuilder
     public IReadOnlyList<Assembly> AssembliesToScan => [.. this._assembliesToScan.Select(entry => entry.Assembly)];
 
     /// <summary>
+    /// Gets the sole entry point for pipeline composition - every behavior, stage, and behavior-dependency
+    /// override lives here. See <see cref="InterlocutorPipelineBuilder"/> for the full method set.
+    /// </summary>
+    /// <value>The pipeline-composition builder backing this <see cref="InterlocutorBuilder"/>.</value>
+    public InterlocutorPipelineBuilder Pipeline => this._pipeline;
+
+    /// <summary>
     /// Gets the flat, ordered list of pipeline behavior registrations, in builder-call order. Empty on
     /// a bare builder. May contain the same implementation type more than once.
     /// </summary>
@@ -137,10 +145,10 @@ public sealed class InterlocutorBuilder
     public IReadOnlyCollection<InterlocutorRegistration> Defaults => this._defaults.Values;
 
     /// <summary>
-    /// Gets the pipeline stage registrations added via <see cref="AddStage(Type, RegistrationLifetime)"/>,
+    /// Gets the pipeline stage registrations added via <see cref="InterlocutorPipelineBuilder.AddStage(Type, RegistrationLifetime)"/>,
     /// each keyed to the closed <see cref="IPipelineStage{TRequest,TResponse}"/> interface it implements.
     /// </summary>
-    /// <value>The pipeline stage registrations added via <see cref="AddStage(Type, RegistrationLifetime)"/>.</value>
+    /// <value>The pipeline stage registrations added via <see cref="InterlocutorPipelineBuilder.AddStage(Type, RegistrationLifetime)"/>.</value>
     public IReadOnlyList<InterlocutorRegistration> Stages => this._pipeline.Stages;
 
     /// <summary>
@@ -531,7 +539,7 @@ public sealed class InterlocutorBuilder
 
     /// <summary>
     /// Registers a single handler implementation type directly, without assembly scanning - the manual
-    /// escape hatch for handlers that mirrors <see cref="AddBehavior"/>'s shape. Reflects over the type's
+    /// escape hatch for handlers that mirrors <see cref="InterlocutorPipelineBuilder.AddBehavior"/>'s shape. Reflects over the type's
     /// implemented interfaces and registers one <see cref="RegistrationKind.Handler"/> entry per matching
     /// handler contract interface it implements (open or closed), each carrying
     /// <see cref="RegistrationProvenance.Explicit"/> provenance.
@@ -570,260 +578,6 @@ public sealed class InterlocutorBuilder
     }
 
     /// <summary>
-    /// Adds a pipeline behavior implementation at the current position in the chain. This is the
-    /// general escape hatch every named <c>Add*Behavior</c> convenience method is sugar over - use it
-    /// directly for a custom or third-party <see cref="IPipelineBehavior{TRequest,TResponse}"/>
-    /// implementation the builder has no dedicated method for.
-    /// </summary>
-    /// <param name="behaviorImplementationType">
-    /// The behavior's implementation type - typically an open generic type definition (for example
-    /// <c>typeof(MyBehavior&lt;,&gt;)</c>) so it applies across request/response shapes, registered
-    /// against the open <see cref="IPipelineBehavior{TRequest,TResponse}"/> contract.
-    /// </param>
-    /// <param name="lifetime">The service lifetime to register the behavior with. Defaults to scoped.</param>
-    /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder AddBehavior(
-        Type behaviorImplementationType,
-        RegistrationLifetime lifetime = RegistrationLifetime.Scoped
-    )
-    {
-        this._pipeline.AddBehavior(behaviorImplementationType, lifetime);
-        return this;
-    }
-
-    /// <summary>
-    /// Adds <see cref="LoggingBehavior{TRequest,TResponse}"/> at the current position in the chain.
-    /// </summary>
-    /// <remarks>
-    /// No <see cref="IResponseOutcomeDescriber"/> default is registered here: <see cref="LoggingBehavior{TRequest,TResponse}"/>
-    /// takes it as an <em>optional</em> constructor dependency and already falls back to a describer
-    /// built from <see cref="Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder.DefaultClassifier"/>
-    /// when nothing is registered - registering a default here would additionally require a default
-    /// <c>IOutcomeClassifier</c> registration to keep it resolvable, which is exactly the kind of orphan
-    /// dependency ADR-0009 asks the builder not to introduce. Call <see cref="OverrideOutcomeDescriber{TDescriber}"/>
-    /// to opt into a specific implementation instead.
-    /// </remarks>
-    /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder AddLoggingBehavior()
-    {
-        this._pipeline.AddLoggingBehavior();
-        return this;
-    }
-
-    /// <summary>
-    /// Adds <see cref="AuditingBehavior{TRequest,TResponse}"/> at the current position in the chain, and
-    /// try-adds its default dependency, <see cref="IAuditSink"/> (<see cref="LoggingAuditSink"/>), unless
-    /// a default has already been set. See <see cref="AddLoggingBehavior"/> for why no
-    /// <see cref="IResponseOutcomeDescriber"/> default is registered here either.
-    /// </summary>
-    /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder AddAuditingBehavior()
-    {
-        this._pipeline.AddAuditingBehavior();
-        return this;
-    }
-
-    /// <summary>
-    /// Adds <see cref="AuthorizationBehavior{TRequest,TResponse}"/> at the current position in the chain,
-    /// and try-adds its default dependencies, <see cref="IPolicyEvaluator"/> (<see cref="DefaultPolicyEvaluator"/>)
-    /// and <see cref="IOutcomeCaseRegistry"/> (<see cref="DefaultOutcomeCaseRegistry"/>), unless a default
-    /// has already been set for either.
-    /// </summary>
-    /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder AddAuthorizationBehavior()
-    {
-        this._pipeline.AddAuthorizationBehavior();
-        return this;
-    }
-
-    /// <summary>
-    /// Adds <c>Interlocutor.FluentValidation.ValidationBehavior&lt;,&gt;</c> at the current position in
-    /// the chain, if the <c>Interlocutor.FluentValidation</c> package is referenced by the application,
-    /// and try-adds its default dependency, <see cref="IOutcomeCaseRegistry"/>
-    /// (<see cref="DefaultOutcomeCaseRegistry"/>), unless a default has already been set. A no-op when that
-    /// package is not loaded.
-    /// </summary>
-    /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder AddValidationBehavior()
-    {
-        this._pipeline.AddValidationBehavior();
-        return this;
-    }
-
-    /// <summary>
-    /// Adds the EF Core or NHibernate <c>TransactionBehavior</c> at the current position in the chain,
-    /// preferring EF Core, if either store-specific package is referenced by the application. A no-op
-    /// when neither package is loaded.
-    /// </summary>
-    /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder AddTransactionBehavior()
-    {
-        this._pipeline.AddTransactionBehavior();
-        return this;
-    }
-
-    /// <summary>
-    /// Adds <see cref="CancellationBehavior{TRequest,TResponse}"/> at the current position in the chain,
-    /// and try-adds its default dependency, <see cref="IOutcomeCaseRegistry"/>
-    /// (<see cref="DefaultOutcomeCaseRegistry"/>), unless a default has already been set.
-    /// </summary>
-    /// <remarks>
-    /// This behavior has no prescribed position in the pipeline - unlike the five behaviors composed by
-    /// <see cref="UseRecommendedChain"/>, it is not part of that documented ordering. The caller chooses
-    /// where it lands in their own chain by where they call this method relative to their other
-    /// <c>Add*Behavior</c> calls.
-    /// </remarks>
-    /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder AddCancellationBehavior()
-    {
-        this._pipeline.AddCancellationBehavior();
-        return this;
-    }
-
-    /// <summary>
-    /// Adds <see cref="TimeoutBehavior{TRequest,TResponse}"/> at the current position in the chain, and
-    /// try-adds its default dependencies, <see cref="ITimeoutPolicy"/> (<see cref="DefaultTimeoutPolicy"/>)
-    /// and <see cref="IOutcomeCaseRegistry"/> (<see cref="DefaultOutcomeCaseRegistry"/>), unless a default
-    /// has already been set for either.
-    /// </summary>
-    /// <remarks>
-    /// This behavior has no prescribed position in the pipeline - unlike the five behaviors composed by
-    /// <see cref="UseRecommendedChain"/>, it is not part of that documented ordering. The caller chooses
-    /// where it lands in their own chain by where they call this method relative to their other
-    /// <c>Add*Behavior</c> calls.
-    /// </remarks>
-    /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder AddTimeoutBehavior()
-    {
-        this._pipeline.AddTimeoutBehavior();
-        return this;
-    }
-
-    /// <summary>
-    /// Adds <see cref="RateLimitedBehavior{TRequest,TResponse}"/> at the current position in the chain,
-    /// and try-adds its default dependencies, <see cref="IRateLimiter"/> (<see cref="DefaultRateLimiter"/>)
-    /// and <see cref="IOutcomeCaseRegistry"/> (<see cref="DefaultOutcomeCaseRegistry"/>), unless a default
-    /// has already been set for either.
-    /// </summary>
-    /// <remarks>
-    /// This behavior has no prescribed position in the pipeline - unlike the five behaviors composed by
-    /// <see cref="UseRecommendedChain"/>, it is not part of that documented ordering. The caller chooses
-    /// where it lands in their own chain by where they call this method relative to their other
-    /// <c>Add*Behavior</c> calls.
-    /// </remarks>
-    /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder AddRateLimitedBehavior()
-    {
-        this._pipeline.AddRateLimitedBehavior();
-        return this;
-    }
-
-    /// <summary>
-    /// Applies the library's documented recommended pipeline chain - logging, then auditing, then
-    /// authorization, then validation, then transaction - in that order, as sugar over the individual
-    /// <c>Add*Behavior</c> calls. Never applied automatically; a consumer opts in explicitly.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// The order protects specific concerns, documented here because a developer composing their own
-    /// chain instead of using this method needs the reasoning, not just the sequence:
-    /// </para>
-    /// <list type="bullet">
-    /// <item><description>Logging outermost so every request's timing and outcome is captured regardless of what happens inside.</description></item>
-    /// <item><description>Auditing outside authorization so a request that gets denied is still recorded - a rejected attempt is itself an auditable event.</description></item>
-    /// <item><description>Authorization before validation so an unauthorized caller never learns validation details about a request they cannot perform.</description></item>
-    /// <item><description>Validation before transaction so malformed input never opens a transaction that would only be rolled back.</description></item>
-    /// <item><description>Transaction innermost so only the handler's own work - not cross-cutting concerns - participates in the unit of work.</description></item>
-    /// </list>
-    /// </remarks>
-    /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder UseRecommendedChain()
-    {
-        this._pipeline.UseRecommendedChain();
-        return this;
-    }
-
-    /// <summary>
-    /// Replaces the default <see cref="IAuditSink"/> implementation <see cref="AuditingBehavior{TRequest,TResponse}"/>
-    /// receives when no application-level registration is present. Wins regardless of whether it is
-    /// called before or after <see cref="AddAuditingBehavior"/> in the same chain.
-    /// </summary>
-    /// <typeparam name="TSink">The replacement <see cref="IAuditSink"/> implementation.</typeparam>
-    /// <param name="lifetime">The service lifetime to register the replacement with. Defaults to scoped.</param>
-    /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder OverrideAuditSink<TSink>(RegistrationLifetime lifetime = RegistrationLifetime.Scoped)
-        where TSink : class, IAuditSink
-    {
-        this.SetDefault(typeof(IAuditSink), typeof(TSink), lifetime);
-        return this;
-    }
-
-    /// <summary>
-    /// Replaces the default <see cref="IPolicyEvaluator"/> implementation <see cref="AuthorizationBehavior{TRequest,TResponse}"/>
-    /// receives when no application-level registration is present. Wins regardless of whether it is
-    /// called before or after <see cref="AddAuthorizationBehavior"/> in the same chain.
-    /// </summary>
-    /// <typeparam name="TEvaluator">The replacement <see cref="IPolicyEvaluator"/> implementation.</typeparam>
-    /// <param name="lifetime">The service lifetime to register the replacement with. Defaults to scoped.</param>
-    /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder OverridePolicyEvaluator<TEvaluator>(RegistrationLifetime lifetime = RegistrationLifetime.Scoped)
-        where TEvaluator : class, IPolicyEvaluator
-    {
-        this.SetDefault(typeof(IPolicyEvaluator), typeof(TEvaluator), lifetime);
-        return this;
-    }
-
-    /// <summary>
-    /// Replaces the default <see cref="ITimeoutPolicy"/> implementation <see cref="TimeoutBehavior{TRequest,TResponse}"/>
-    /// receives when no application-level registration is present. Wins regardless of whether it is
-    /// called before or after <see cref="AddTimeoutBehavior"/> in the same chain.
-    /// </summary>
-    /// <typeparam name="TPolicy">The replacement <see cref="ITimeoutPolicy"/> implementation.</typeparam>
-    /// <param name="lifetime">The service lifetime to register the replacement with. Defaults to scoped.</param>
-    /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder OverrideTimeoutPolicy<TPolicy>(RegistrationLifetime lifetime = RegistrationLifetime.Scoped)
-        where TPolicy : class, ITimeoutPolicy
-    {
-        this._pipeline.OverrideTimeoutPolicy<TPolicy>(lifetime);
-        return this;
-    }
-
-    /// <summary>
-    /// Replaces the default <see cref="IRateLimiter"/> implementation <see cref="RateLimitedBehavior{TRequest,TResponse}"/>
-    /// receives when no application-level registration is present. Wins regardless of whether it is
-    /// called before or after <see cref="AddRateLimitedBehavior"/> in the same chain.
-    /// </summary>
-    /// <typeparam name="TLimiter">The replacement <see cref="IRateLimiter"/> implementation.</typeparam>
-    /// <param name="lifetime">The service lifetime to register the replacement with. Defaults to scoped.</param>
-    /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder OverrideRateLimiter<TLimiter>(RegistrationLifetime lifetime = RegistrationLifetime.Scoped)
-        where TLimiter : class, IRateLimiter
-    {
-        this._pipeline.OverrideRateLimiter<TLimiter>(lifetime);
-        return this;
-    }
-
-    /// <summary>
-    /// Replaces the default <see cref="IOutcomeCaseRegistry"/> implementation
-    /// <see cref="AuthorizationBehavior{TRequest,TResponse}"/>, <see cref="CancellationBehavior{TRequest,TResponse}"/>,
-    /// <see cref="TimeoutBehavior{TRequest,TResponse}"/>, <see cref="RateLimitedBehavior{TRequest,TResponse}"/>,
-    /// and the FluentValidation <c>ValidationBehavior</c> receive when no application-level registration is
-    /// present. Wins regardless of whether it is called before or after the corresponding <c>Add*Behavior</c>
-    /// call in the same chain.
-    /// </summary>
-    /// <typeparam name="TRegistry">The replacement <see cref="IOutcomeCaseRegistry"/> implementation.</typeparam>
-    /// <param name="lifetime">The service lifetime to register the replacement with. Defaults to scoped.</param>
-    /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder OverrideOutcomeCaseRegistry<TRegistry>(
-        RegistrationLifetime lifetime = RegistrationLifetime.Scoped
-    )
-        where TRegistry : class, IOutcomeCaseRegistry
-    {
-        this._pipeline.OverrideOutcomeCaseRegistry<TRegistry>(lifetime);
-        return this;
-    }
-
-    /// <summary>
     /// Replaces the default <see cref="IRequestContextAccessor"/> implementation
     /// (<see cref="AmbientRequestContextAccessor"/>) seeded by the constructor.
     /// </summary>
@@ -835,141 +589,7 @@ public sealed class InterlocutorBuilder
     )
         where TAccessor : class, IRequestContextAccessor
     {
-        this.SetDefault(typeof(IRequestContextAccessor), typeof(TAccessor), lifetime);
+        this._pipeline.SetDefault(typeof(IRequestContextAccessor), typeof(TAccessor), lifetime);
         return this;
     }
-
-    /// <summary>
-    /// Replaces the default <see cref="IResponseOutcomeDescriber"/> implementation
-    /// <see cref="LoggingBehavior{TRequest,TResponse}"/> and <see cref="AuditingBehavior{TRequest,TResponse}"/>
-    /// optionally consume when no application-level registration is present. Wins regardless of whether
-    /// it is called before or after <see cref="AddLoggingBehavior"/> / <see cref="AddAuditingBehavior"/>
-    /// in the same chain.
-    /// </summary>
-    /// <typeparam name="TDescriber">The replacement <see cref="IResponseOutcomeDescriber"/> implementation.</typeparam>
-    /// <param name="lifetime">The service lifetime to register the replacement with. Defaults to singleton.</param>
-    /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder OverrideOutcomeDescriber<TDescriber>(
-        RegistrationLifetime lifetime = RegistrationLifetime.Singleton
-    )
-        where TDescriber : class, IResponseOutcomeDescriber
-    {
-        this.SetDefault(typeof(IResponseOutcomeDescriber), typeof(TDescriber), lifetime);
-        return this;
-    }
-
-    /// <summary>
-    /// Registers a pipeline stage implementation directly, without assembly scanning. Reflects over the
-    /// type's implemented interfaces and registers one <see cref="RegistrationKind.Stage"/> entry per
-    /// closed <see cref="IPipelineStage{TRequest,TResponse}"/> interface it implements - mirroring how
-    /// <see cref="HandlerDiscovery"/> registers a handler per closed contract interface.
-    /// </summary>
-    /// <param name="stageImplementationType">The concrete stage implementation type.</param>
-    /// <param name="lifetime">The service lifetime to register the stage with. Defaults to scoped.</param>
-    /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder AddStage(
-        Type stageImplementationType,
-        RegistrationLifetime lifetime = RegistrationLifetime.Scoped
-    )
-    {
-        this._pipeline.AddStage(stageImplementationType, lifetime);
-        return this;
-    }
-
-    /// <summary>
-    /// Registers a pipeline stage implementation directly, without assembly scanning.
-    /// See <see cref="AddStage(Type, RegistrationLifetime)"/>.
-    /// </summary>
-    /// <typeparam name="TStage">The concrete stage implementation type.</typeparam>
-    /// <param name="lifetime">The service lifetime to register the stage with. Defaults to scoped.</param>
-    /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder AddStage<TStage>(RegistrationLifetime lifetime = RegistrationLifetime.Scoped)
-        where TStage : class
-    {
-        this._pipeline.AddStage<TStage>(lifetime);
-        return this;
-    }
-
-    /// <summary>
-    /// Registers a pipeline stage as a pair of delegates instead of a dedicated implementation type -
-    /// sugar over <see cref="DelegatePipelineStage{TRequest,TResponse}"/> for stages simple enough not to
-    /// need one. Either delegate may be omitted for a no-op hook. Legal alongside
-    /// <see cref="AddStage(Type, RegistrationLifetime)"/>; both add entries the stage host aggregates.
-    /// </summary>
-    /// <typeparam name="TRequest">The request type the stage participates in.</typeparam>
-    /// <typeparam name="TResponse">The response type the stage participates in.</typeparam>
-    /// <param name="onBefore">
-    /// The before-hook delegate, or <see langword="null"/> for a no-op (always-continue) before-hook.
-    /// </param>
-    /// <param name="onAfter">The after-hook delegate, or <see langword="null"/> for a no-op after-hook.</param>
-    /// <param name="lifetime">The service lifetime to register the stage with. Defaults to singleton - the delegates already capture whatever state they need.</param>
-    /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder AddStage<TRequest, TResponse>(
-        Func<TRequest, CancellationToken, Task<StageResult<TResponse>>>? onBefore = null,
-        Func<TRequest, TResponse, CancellationToken, Task>? onAfter = null,
-        RegistrationLifetime lifetime = RegistrationLifetime.Singleton
-    )
-    {
-        this._pipeline.AddStage(onBefore, onAfter, lifetime);
-        return this;
-    }
-
-    /// <summary>
-    /// Registers a pipeline stage as a pair of delegates that receive the container's
-    /// <see cref="IServiceProvider"/> - the overload for lambda-form stages that need to resolve services
-    /// (for example, a scoped dependency) rather than capturing them at builder-configuration time. See
-    /// <see cref="AddStage{TRequest,TResponse}(Func{TRequest,CancellationToken,Task{StageResult{TResponse}}},Func{TRequest,TResponse,CancellationToken,Task},RegistrationLifetime)"/>
-    /// for the simpler, service-free overload.
-    /// </summary>
-    /// <typeparam name="TRequest">The request type the stage participates in.</typeparam>
-    /// <typeparam name="TResponse">The response type the stage participates in.</typeparam>
-    /// <param name="onBefore">
-    /// The before-hook delegate, receiving the resolving <see cref="IServiceProvider"/> first, or
-    /// <see langword="null"/> for a no-op (always-continue) before-hook.
-    /// </param>
-    /// <param name="onAfter">
-    /// The after-hook delegate, receiving the resolving <see cref="IServiceProvider"/> first, or
-    /// <see langword="null"/> for a no-op after-hook.
-    /// </param>
-    /// <param name="lifetime">
-    /// The service lifetime to register the stage with. Defaults to scoped, since a service-resolving
-    /// stage most often wants scoped dependencies resolved fresh per request.
-    /// </param>
-    /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder AddStage<TRequest, TResponse>(
-        Func<IServiceProvider, TRequest, CancellationToken, Task<StageResult<TResponse>>>? onBefore,
-        Func<IServiceProvider, TRequest, TResponse, CancellationToken, Task>? onAfter,
-        RegistrationLifetime lifetime = RegistrationLifetime.Scoped
-    )
-    {
-        this._pipeline.AddStage(onBefore, onAfter, lifetime);
-        return this;
-    }
-
-    /// <summary>
-    /// Adds <see cref="PipelineStageBehavior{TRequest,TResponse}"/> - the single host behavior that
-    /// aggregates every registered <see cref="IPipelineStage{TRequest,TResponse}"/> - at the current
-    /// position in the chain. An ordinary behavior entry: position it anywhere, and register it more
-    /// than once if different stage groupings should sit at different depths.
-    /// </summary>
-    /// <param name="lifetime">The service lifetime to register the host with. Defaults to scoped.</param>
-    /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder AddStageHost(RegistrationLifetime lifetime = RegistrationLifetime.Scoped)
-    {
-        this._pipeline.AddStageHost(lifetime);
-        return this;
-    }
-
-    /// <summary>
-    /// Sets or replaces the builder's own internal default entry for <paramref name="serviceType"/>,
-    /// unconditionally - the mechanism behind every <c>Override*</c> method, guaranteeing it wins
-    /// regardless of call order relative to the corresponding <c>Add*Behavior</c> call.
-    /// </summary>
-    private void SetDefault(Type serviceType, Type implementationType, RegistrationLifetime lifetime) =>
-        this._defaults[serviceType] = new InterlocutorRegistration(
-            serviceType,
-            implementationType,
-            lifetime,
-            RegistrationKind.Default
-        );
 }

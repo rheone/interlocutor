@@ -63,7 +63,7 @@ services.AddInterlocutor(builder =>
     builder.ScanAssembly(typeof(Program).Assembly);
 
     // Add the transaction behavior (requires DbContext in DI)
-    builder.AddBehavior(typeof(TransactionBehavior<,>));
+    builder.Pipeline.AddBehavior(typeof(TransactionBehavior<,>));
 });
 
 // DbContext must be registered as scoped (usually already is)
@@ -107,7 +107,7 @@ services.AddInterlocutor(builder =>
     builder.ScanAssembly(typeof(Program).Assembly);
 
     // Add the transaction behavior (requires ISession factory in DI)
-    builder.AddBehavior(typeof(TransactionBehavior<,>));
+    builder.Pipeline.AddBehavior(typeof(TransactionBehavior<,>));
 });
 
 // NHibernate session factory must be registered

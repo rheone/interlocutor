@@ -25,7 +25,7 @@ public class BehaviorSubsetConstraintTests
     {
         var containerBuilder = NewContainerBuilder();
         containerBuilder.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).AddAuditingBehavior()
+            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).Pipeline.AddAuditingBehavior()
         );
 
         var container = containerBuilder.Build();
@@ -38,7 +38,7 @@ public class BehaviorSubsetConstraintTests
     {
         var containerBuilder = NewContainerBuilder();
         containerBuilder.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).AddAuditingBehavior()
+            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).Pipeline.AddAuditingBehavior()
         );
 
         var container = containerBuilder.Build();
@@ -55,7 +55,7 @@ public class BehaviorSubsetConstraintTests
     {
         var containerBuilder = NewContainerBuilder();
         containerBuilder.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).AddAuthorizationBehavior()
+            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).Pipeline.AddAuthorizationBehavior()
         );
 
         var container = containerBuilder.Build();
@@ -68,7 +68,7 @@ public class BehaviorSubsetConstraintTests
     {
         var containerBuilder = NewContainerBuilder();
         containerBuilder.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).AddAuthorizationBehavior()
+            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).Pipeline.AddAuthorizationBehavior()
         );
 
         var container = containerBuilder.Build();
@@ -85,7 +85,10 @@ public class BehaviorSubsetConstraintTests
     {
         var containerBuilder = NewContainerBuilder();
         containerBuilder.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).AddLoggingBehavior().AddAuditingBehavior()
+            builder
+                .ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly)
+                .Pipeline.AddLoggingBehavior()
+                .AddAuditingBehavior()
         );
 
         var container = containerBuilder.Build();
@@ -113,7 +116,7 @@ public class BehaviorSubsetConstraintTests
         containerBuilder.AddInterlocutor(builder =>
             builder
                 .ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly)
-                .AddLoggingBehavior()
+                .Pipeline.AddLoggingBehavior()
                 .AddAuditingBehavior()
                 .AddAuthorizationBehavior()
         );
@@ -148,7 +151,10 @@ public class BehaviorSubsetConstraintTests
     {
         var containerBuilder = NewContainerBuilder();
         containerBuilder.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).AddAuditingBehavior().AddAuditingBehavior()
+            builder
+                .ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly)
+                .Pipeline.AddAuditingBehavior()
+                .AddAuditingBehavior()
         );
 
         var container = containerBuilder.Build();

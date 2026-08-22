@@ -24,7 +24,7 @@ public class BehaviorSubsetConstraintTests
     {
         var services = NewServices();
         services.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).AddAuditingBehavior()
+            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).Pipeline.AddAuditingBehavior()
         );
 
         var provider = services.BuildServiceProvider();
@@ -37,7 +37,7 @@ public class BehaviorSubsetConstraintTests
     {
         var services = NewServices();
         services.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).AddAuditingBehavior()
+            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).Pipeline.AddAuditingBehavior()
         );
 
         var provider = services.BuildServiceProvider();
@@ -54,7 +54,7 @@ public class BehaviorSubsetConstraintTests
     {
         var services = NewServices();
         services.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).AddAuthorizationBehavior()
+            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).Pipeline.AddAuthorizationBehavior()
         );
 
         var provider = services.BuildServiceProvider();
@@ -71,7 +71,7 @@ public class BehaviorSubsetConstraintTests
         // registration-list check or a MakeGenericType probe.
         var services = NewServices();
         services.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).AddAuthorizationBehavior()
+            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).Pipeline.AddAuthorizationBehavior()
         );
 
         var provider = services.BuildServiceProvider();
@@ -86,7 +86,10 @@ public class BehaviorSubsetConstraintTests
     {
         var services = NewServices();
         services.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).AddLoggingBehavior().AddAuditingBehavior()
+            builder
+                .ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly)
+                .Pipeline.AddLoggingBehavior()
+                .AddAuditingBehavior()
         );
 
         var provider = services.BuildServiceProvider();
@@ -114,7 +117,7 @@ public class BehaviorSubsetConstraintTests
         services.AddInterlocutor(builder =>
             builder
                 .ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly)
-                .AddLoggingBehavior()
+                .Pipeline.AddLoggingBehavior()
                 .AddAuditingBehavior()
                 .AddAuthorizationBehavior()
         );
@@ -149,7 +152,10 @@ public class BehaviorSubsetConstraintTests
     {
         var services = NewServices();
         services.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).AddAuditingBehavior().AddAuditingBehavior()
+            builder
+                .ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly)
+                .Pipeline.AddAuditingBehavior()
+                .AddAuditingBehavior()
         );
 
         var provider = services.BuildServiceProvider();
@@ -170,7 +176,7 @@ public class BehaviorSubsetConstraintTests
         // than a registration-list check.
         var services = NewServices();
         services.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).AddValidationBehavior()
+            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).Pipeline.AddValidationBehavior()
         );
 
         var provider = services.BuildServiceProvider();

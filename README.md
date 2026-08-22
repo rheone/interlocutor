@@ -37,7 +37,7 @@ services.AddInterlocutor(builder =>
     // This example uses the library's documented recommended chain:
     // Logging → Auditing → Authorization → Validation → Transaction
     // (See documentation/pipeline-and-behaviors.md for the full rationale.)
-    builder.UseRecommendedChain();
+    builder.Pipeline.UseRecommendedChain();
 });
 ```
 

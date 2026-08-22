@@ -12,8 +12,8 @@ services.AddInterlocutor(builder =>
     builder.ScanAssembly(typeof(Program).Assembly);  // Register handlers
 
     // The pipeline is empty here. Add behaviors explicitly:
-    builder.AddBehavior(typeof(LoggingBehavior<,>));
-    builder.AddBehavior(typeof(AuthorizationBehavior<,>));
+    builder.Pipeline.AddBehavior(typeof(LoggingBehavior<,>));
+    builder.Pipeline.AddBehavior(typeof(AuthorizationBehavior<,>));
     // ... or use the recommended chain (see below)
 });
 ```
@@ -24,10 +24,10 @@ Behaviors run in the order you register them - first registered wraps the outerm
 
 ```csharp
 // Registration order → execution order (outermost to innermost)
-builder.AddBehavior(typeof(LoggingBehavior<,>));        // Outermost
-builder.AddBehavior(typeof(AuditingBehavior<,>));       //
-builder.AddBehavior(typeof(ValidationBehavior<,>));     //
-builder.AddBehavior(typeof(TransactionBehavior<,>));    // Innermost
+builder.Pipeline.AddBehavior(typeof(LoggingBehavior<,>));        // Outermost
+builder.Pipeline.AddBehavior(typeof(AuditingBehavior<,>));       //
+builder.Pipeline.AddBehavior(typeof(ValidationBehavior<,>));     //
+builder.Pipeline.AddBehavior(typeof(TransactionBehavior<,>));    // Innermost
 // Handler executes here
 ```
 
@@ -67,20 +67,20 @@ public record GetSetting(string Key)
 
 ## Recommended Chain (Opt-in Sugar)
 
-The library documents a recommended order with its rationale. Use it with `builder.UseRecommendedChain()`, or compose your own:
+The library documents a recommended order with its rationale. Use it with `builder.Pipeline.UseRecommendedChain()`, or compose your own:
 
 ```csharp
-builder.UseRecommendedChain();  // Sugar for the sequence below
+builder.Pipeline.UseRecommendedChain();  // Sugar for the sequence below
 ```
 
 Or explicitly:
 
 ```csharp
-builder.AddBehavior(typeof(LoggingBehavior<,>));           // 1. Outermost
-builder.AddBehavior(typeof(AuditingBehavior<,>));          // 2.
-builder.AddBehavior(typeof(AuthorizationBehavior<,>));     // 3.
-builder.AddBehavior(typeof(ValidationBehavior<,>));        // 4.
-builder.AddBehavior(typeof(TransactionBehavior<,>));       // 5. Innermost
+builder.Pipeline.AddBehavior(typeof(LoggingBehavior<,>));           // 1. Outermost
+builder.Pipeline.AddBehavior(typeof(AuditingBehavior<,>));          // 2.
+builder.Pipeline.AddBehavior(typeof(AuthorizationBehavior<,>));     // 3.
+builder.Pipeline.AddBehavior(typeof(ValidationBehavior<,>));        // 4.
+builder.Pipeline.AddBehavior(typeof(TransactionBehavior<,>));       // 5. Innermost
 ```
 
 ### Why This Order
@@ -187,15 +187,15 @@ public interface IResponseOutcomeDescriber
 
 ### Overriding the Default
 
-Reach for `InterlocutorBuilder.OverrideOutcomeDescriber<TDescriber>()` when the default classifier doesn't recognize your response types - most commonly because your handlers return a custom union type instead of `OperationOutcome<...>`. The default classifier is fail-closed: any response type it hasn't seen is treated as a failure, so an unrecognized custom type would log misleading outcome labels and force every transaction to roll back even on success.
+Reach for `InterlocutorPipelineBuilder.OverrideOutcomeDescriber<TDescriber>()` (reachable via `builder.Pipeline`) when the default classifier doesn't recognize your response types - most commonly because your handlers return a custom union type instead of `OperationOutcome<...>`. The default classifier is fail-closed: any response type it hasn't seen is treated as a failure, so an unrecognized custom type would log misleading outcome labels and force every transaction to roll back even on success.
 
 ```csharp
 services.AddInterlocutor(builder =>
 {
     builder.ScanAssembly(typeof(Program).Assembly);
-    builder.OverrideOutcomeDescriber<PaymentOutcomeDescriber>();  // see worked example below
-    builder.AddLoggingBehavior();
-    builder.AddAuditingBehavior();
+    builder.Pipeline.OverrideOutcomeDescriber<PaymentOutcomeDescriber>();  // see worked example below
+    builder.Pipeline.AddLoggingBehavior();
+    builder.Pipeline.AddAuditingBehavior();
 });
 ```
 
@@ -264,7 +264,7 @@ Converts cooperative cancellation of the ambient request into a `Cancelled` outc
 public record ExportReport(int ReportId)
     : ICommand<OperationOutcome<Success, Cancelled>>, ICancellable;
 
-// builder.AddCancellationBehavior();
+// builder.Pipeline.AddCancellationBehavior();
 // CancellationBehavior only converts cancellation tied to the ambient CancellationToken passed to
 // Handle - an OperationCanceledException raised by some unrelated token propagates unchanged.
 var result = await mediator.Send(new ExportReport(42), cancellationToken);
@@ -285,7 +285,7 @@ public record ExportReport(int ReportId)
     public TimeSpan Budget => TimeSpan.FromSeconds(30);
 }
 
-// builder.AddTimeoutBehavior();
+// builder.Pipeline.AddTimeoutBehavior();
 var result = await mediator.Send(new ExportReport(42));
 ```
 
@@ -307,7 +307,7 @@ public record ExportReport(int ReportId)
     public string LimitKey => "exports";
 }
 
-// builder.AddRateLimitedBehavior();
+// builder.Pipeline.AddRateLimitedBehavior();
 var result = await mediator.Send(new ExportReport(42));
 ```
 
@@ -340,7 +340,7 @@ public class LoggingStage<TRequest, TResponse> : PipelineStageBase<TRequest, TRe
 }
 
 // Register stages in the builder:
-builder.AddStage(typeof(LoggingStage<,>));
+builder.Pipeline.AddStage(typeof(LoggingStage<,>));
 ```
 
 Stages are hosted by `PipelineStageBehavior<TRequest,TResponse>` - an ordinary entry in the behavior list that aggregates all registered stages. Stages run in registration order on the way in, reverse order on the way out, much like behaviors themselves.
@@ -448,7 +448,7 @@ public class CustomLoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TReq
 }
 
 // Register it in the builder (position matters - registration order is execution order)
-builder.AddBehavior(typeof(CustomLoggingBehavior<,>));
+builder.Pipeline.AddBehavior(typeof(CustomLoggingBehavior<,>));
 ```
 
 > [!CAUTION]

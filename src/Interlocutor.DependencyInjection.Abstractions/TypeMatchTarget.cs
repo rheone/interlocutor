@@ -14,7 +14,7 @@ public enum TypeMatchTarget
 
     /// <summary>
     /// Register each matching type against the open <see cref="Interlocutor.Abstractions.Pipeline.IPipelineBehavior{TRequest,TResponse}"/>
-    /// contract, the same way <see cref="InterlocutorBuilder.AddBehavior"/> would.
+    /// contract, the same way <see cref="InterlocutorPipelineBuilder.AddBehavior"/> would.
     /// </summary>
     Behavior,
 }

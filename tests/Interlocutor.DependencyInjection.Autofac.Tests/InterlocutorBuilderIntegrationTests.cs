@@ -93,7 +93,7 @@ public class InterlocutorBuilderIntegrationTests
         var containerBuilder = new ContainerBuilder();
 
         containerBuilder.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).AddAuthorizationBehavior()
+            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).Pipeline.AddAuthorizationBehavior()
         );
 
         var container = containerBuilder.Build();
@@ -109,7 +109,7 @@ public class InterlocutorBuilderIntegrationTests
         containerBuilder.RegisterType<RecordingAuditSink>().As<IAuditSink>().InstancePerLifetimeScope();
 
         containerBuilder.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).AddAuditingBehavior()
+            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).Pipeline.AddAuditingBehavior()
         );
 
         var container = containerBuilder.Build();
@@ -124,7 +124,7 @@ public class InterlocutorBuilderIntegrationTests
         containerBuilder.AddInterlocutor(builder =>
             builder
                 .ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly)
-                .AddAuditingBehavior()
+                .Pipeline.AddAuditingBehavior()
                 .OverrideAuditSink<RecordingAuditSink>()
         );
 
@@ -142,7 +142,7 @@ public class InterlocutorBuilderIntegrationTests
         containerBuilder.AddInterlocutor(builder =>
             builder
                 .ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly)
-                .AddBehavior(typeof(RecordingBehavior<,>.First))
+                .Pipeline.AddBehavior(typeof(RecordingBehavior<,>.First))
                 .AddBehavior(typeof(RecordingBehavior<,>.Second))
         );
 
@@ -166,7 +166,7 @@ public class InterlocutorBuilderIntegrationTests
         containerBuilder.AddInterlocutor(builder =>
             builder
                 .ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly)
-                .AddBehavior(typeof(RecordingBehavior<,>.First))
+                .Pipeline.AddBehavior(typeof(RecordingBehavior<,>.First))
                 .AddBehavior(typeof(RecordingBehavior<,>.First))
         );
 
@@ -187,7 +187,7 @@ public class InterlocutorBuilderIntegrationTests
         containerBuilder.RegisterGeneric(typeof(NullLogger<>)).As(typeof(ILogger<>));
 
         containerBuilder.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).UseRecommendedChain()
+            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).Pipeline.UseRecommendedChain()
         );
 
         var container = containerBuilder.Build();
@@ -223,7 +223,7 @@ public class InterlocutorBuilderIntegrationTests
         containerBuilder.AddInterlocutor(builder =>
             builder
                 .ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly)
-                .AddStage<ShortCircuitQuery, OperationOutcome>(
+                .Pipeline.AddStage<ShortCircuitQuery, OperationOutcome>(
                     (request, ct) => Task.FromResult(StageResult<OperationOutcome>.ShortCircuit(declined)),
                     null
                 )
@@ -253,7 +253,7 @@ public class InterlocutorBuilderIntegrationTests
         var containerBuilder = new ContainerBuilder();
 
         containerBuilder.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).AddCancellationBehavior()
+            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).Pipeline.AddCancellationBehavior()
         );
 
         var container = containerBuilder.Build();
@@ -272,7 +272,7 @@ public class InterlocutorBuilderIntegrationTests
         var containerBuilder = new ContainerBuilder();
 
         containerBuilder.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).AddTimeoutBehavior()
+            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).Pipeline.AddTimeoutBehavior()
         );
 
         var container = containerBuilder.Build();
@@ -291,7 +291,7 @@ public class InterlocutorBuilderIntegrationTests
         var containerBuilder = new ContainerBuilder();
 
         containerBuilder.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).AddRateLimitedBehavior()
+            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).Pipeline.AddRateLimitedBehavior()
         );
 
         var container = containerBuilder.Build();

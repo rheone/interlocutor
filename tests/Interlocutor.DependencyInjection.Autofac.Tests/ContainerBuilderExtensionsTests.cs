@@ -26,7 +26,7 @@ public class ContainerBuilderExtensionsTests
         var builder = new ContainerBuilder();
 
         builder.AddInterlocutor(cfg =>
-            cfg.ScanAssembly(typeof(ContainerBuilderExtensionsTests).Assembly).UseRecommendedChain()
+            cfg.ScanAssembly(typeof(ContainerBuilderExtensionsTests).Assembly).Pipeline.UseRecommendedChain()
         );
         var container = builder.Build();
 
@@ -42,7 +42,7 @@ public class ContainerBuilderExtensionsTests
 
         builder.AddInterlocutor(cfg =>
             cfg.ScanAssembly(typeof(ContainerBuilderExtensionsTests).Assembly)
-                .OverrideOutcomeDescriber<DefaultResponseOutcomeDescriber>()
+                .Pipeline.OverrideOutcomeDescriber<DefaultResponseOutcomeDescriber>()
         );
         var container = builder.Build();
 

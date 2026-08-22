@@ -139,7 +139,7 @@ public class InterlocutorBuilderIntegrationTests
         var services = new ServiceCollection();
 
         services.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).AddAuthorizationBehavior()
+            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).Pipeline.AddAuthorizationBehavior()
         );
 
         Assert.DoesNotContain(services, s => s.ServiceType == typeof(IAuditSink));
@@ -153,7 +153,7 @@ public class InterlocutorBuilderIntegrationTests
         services.AddScoped<IAuditSink, RecordingAuditSink>();
 
         services.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).AddAuditingBehavior()
+            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).Pipeline.AddAuditingBehavior()
         );
 
         var provider = services.BuildServiceProvider();
@@ -169,7 +169,7 @@ public class InterlocutorBuilderIntegrationTests
         services.AddInterlocutor(builder =>
             builder
                 .ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly)
-                .AddAuditingBehavior()
+                .Pipeline.AddAuditingBehavior()
                 .OverrideAuditSink<RecordingAuditSink>()
         );
 
@@ -188,7 +188,7 @@ public class InterlocutorBuilderIntegrationTests
         services.AddInterlocutor(builder =>
             builder
                 .ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly)
-                .AddBehavior(typeof(RecordingBehavior<,>.First))
+                .Pipeline.AddBehavior(typeof(RecordingBehavior<,>.First))
                 .AddBehavior(typeof(RecordingBehavior<,>.Second))
         );
 
@@ -212,7 +212,7 @@ public class InterlocutorBuilderIntegrationTests
         services.AddInterlocutor(builder =>
             builder
                 .ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly)
-                .AddBehavior(typeof(RecordingBehavior<,>.First))
+                .Pipeline.AddBehavior(typeof(RecordingBehavior<,>.First))
                 .AddBehavior(typeof(RecordingBehavior<,>.First))
         );
 
@@ -232,7 +232,7 @@ public class InterlocutorBuilderIntegrationTests
         var services = new ServiceCollection();
 
         services.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).UseRecommendedChain()
+            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).Pipeline.UseRecommendedChain()
         );
 
         var behaviorImplementationTypes = services
@@ -259,7 +259,7 @@ public class InterlocutorBuilderIntegrationTests
         services.AddLogging();
 
         services.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).UseRecommendedChain()
+            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).Pipeline.UseRecommendedChain()
         );
 
         var provider = services.BuildServiceProvider();
@@ -284,7 +284,7 @@ public class InterlocutorBuilderIntegrationTests
         services.AddSingleton<IAuditSink>(sink);
 
         services.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).AddAuditingBehavior()
+            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).Pipeline.AddAuditingBehavior()
         );
 
         var provider = services.BuildServiceProvider();
@@ -311,7 +311,7 @@ public class InterlocutorBuilderIntegrationTests
         services.AddSingleton<IAuditSink>(sink);
 
         services.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).AddAuditingBehavior()
+            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).Pipeline.AddAuditingBehavior()
         );
 
         var provider = services.BuildServiceProvider();
@@ -334,7 +334,10 @@ public class InterlocutorBuilderIntegrationTests
         services.AddLogging();
 
         services.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).AddStage<RecordingStage>().AddStageHost()
+            builder
+                .ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly)
+                .Pipeline.AddStage<RecordingStage>()
+                .AddStageHost()
         );
 
         var provider = services.BuildServiceProvider();
@@ -361,7 +364,7 @@ public class InterlocutorBuilderIntegrationTests
         services.AddInterlocutor(builder =>
             builder
                 .ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly)
-                .AddStage<ShortCircuitQuery, OperationOutcome>(
+                .Pipeline.AddStage<ShortCircuitQuery, OperationOutcome>(
                     (request, ct) => Task.FromResult(StageResult<OperationOutcome>.ShortCircuit(declined)),
                     null
                 )
@@ -393,7 +396,7 @@ public class InterlocutorBuilderIntegrationTests
         services.AddInterlocutor(builder =>
             builder
                 .ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly)
-                .AddStage<SampleQuery, OperationOutcome>(
+                .Pipeline.AddStage<SampleQuery, OperationOutcome>(
                     null,
                     (request, result, ct) => throw new InvalidOperationException("after-hook boom")
                 )
@@ -423,7 +426,7 @@ public class InterlocutorBuilderIntegrationTests
         var services = new ServiceCollection();
 
         services.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).AddCancellationBehavior()
+            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).Pipeline.AddCancellationBehavior()
         );
 
         var provider = services.BuildServiceProvider();
@@ -442,7 +445,7 @@ public class InterlocutorBuilderIntegrationTests
         var services = new ServiceCollection();
 
         services.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).AddTimeoutBehavior()
+            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).Pipeline.AddTimeoutBehavior()
         );
 
         var provider = services.BuildServiceProvider();
@@ -461,7 +464,7 @@ public class InterlocutorBuilderIntegrationTests
         var services = new ServiceCollection();
 
         services.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).AddRateLimitedBehavior()
+            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).Pipeline.AddRateLimitedBehavior()
         );
 
         var provider = services.BuildServiceProvider();

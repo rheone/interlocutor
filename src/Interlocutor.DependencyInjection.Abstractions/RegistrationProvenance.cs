@@ -21,7 +21,7 @@ public enum RegistrationProvenance
 
     /// <summary>
     /// Registered directly by an explicit, single-target builder call - <see cref="InterlocutorBuilder.AddHandler"/>,
-    /// <see cref="InterlocutorBuilder.AddBehavior"/>, a named <c>Add*Behavior</c> convenience method, a stage
+    /// <see cref="InterlocutorPipelineBuilder.AddBehavior"/>, a named <c>Add*Behavior</c> convenience method, a stage
     /// registration, or a default - rather than discovered by scanning or produced by a predicate match rule.
     /// </summary>
     Explicit,

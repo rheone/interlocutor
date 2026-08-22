@@ -347,7 +347,7 @@ The mediator and request context are registered by `AddInterlocutor()`:
 services.AddInterlocutor(builder =>
 {
     builder.ScanAssembly(typeof(Program).Assembly);
-    builder.UseRecommendedChain();
+    builder.Pipeline.UseRecommendedChain();
 });
 
 // IRequestContextAccessor is already registered as scoped

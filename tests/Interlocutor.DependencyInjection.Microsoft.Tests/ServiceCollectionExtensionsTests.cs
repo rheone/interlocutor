@@ -28,7 +28,7 @@ public class ServiceCollectionExtensionsTests
         var services = new ServiceCollection();
 
         services.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(ServiceCollectionExtensionsTests).Assembly).UseRecommendedChain()
+            builder.ScanAssembly(typeof(ServiceCollectionExtensionsTests).Assembly).Pipeline.UseRecommendedChain()
         );
 
         var behaviorDescriptors = services.Where(s => s.ServiceType == typeof(IPipelineBehavior<,>)).ToList();
@@ -45,7 +45,7 @@ public class ServiceCollectionExtensionsTests
         services.AddInterlocutor(builder =>
             builder
                 .ScanAssembly(typeof(ServiceCollectionExtensionsTests).Assembly)
-                .OverrideOutcomeDescriber<DefaultResponseOutcomeDescriber>()
+                .Pipeline.OverrideOutcomeDescriber<DefaultResponseOutcomeDescriber>()
         );
 
         var descriptor = services.FirstOrDefault(s => s.ServiceType == typeof(IResponseOutcomeDescriber));
@@ -62,7 +62,7 @@ public class ServiceCollectionExtensionsTests
         services.AddInterlocutor(builder =>
             builder
                 .ScanAssembly(typeof(ServiceCollectionExtensionsTests).Assembly)
-                .OverrideOutcomeDescriber<DefaultResponseOutcomeDescriber>()
+                .Pipeline.OverrideOutcomeDescriber<DefaultResponseOutcomeDescriber>()
         );
 
         var provider = services.BuildServiceProvider();
@@ -92,7 +92,7 @@ public class ServiceCollectionExtensionsTests
         services.AddInterlocutor(builder =>
             builder
                 .ScanAssembly(typeof(ServiceCollectionExtensionsTests).Assembly)
-                .AddBehavior(typeof(OpenGenericBehavior<,>))
+                .Pipeline.AddBehavior(typeof(OpenGenericBehavior<,>))
                 .AddBehavior(typeof(ClosedGenericBehavior))
         );
 

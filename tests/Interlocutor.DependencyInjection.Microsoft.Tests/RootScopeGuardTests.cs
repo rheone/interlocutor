@@ -50,7 +50,7 @@ public class RootScopeGuardTests
         services.AddScoped<ScopedDependencyRecorder>();
 
         services.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(RootScopeGuardTests).Assembly).AddBehavior(typeof(RecordingScopedBehavior<,>))
+            builder.ScanAssembly(typeof(RootScopeGuardTests).Assembly).Pipeline.AddBehavior(typeof(RecordingScopedBehavior<,>))
         );
 
         var provider = services.BuildServiceProvider();

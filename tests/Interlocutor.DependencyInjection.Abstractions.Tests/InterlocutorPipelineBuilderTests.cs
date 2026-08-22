@@ -44,6 +44,16 @@ public class InterlocutorPipelineBuilderTests
     }
 
     [Fact]
+    public void AddBehavior_SameTypeTwice_AppearsTwice()
+    {
+        var builder = new InterlocutorPipelineBuilder();
+
+        builder.AddBehavior(typeof(FirstBehavior<,>)).AddBehavior(typeof(FirstBehavior<,>));
+
+        Assert.Equal(2, builder.Behaviors.Count(r => r.ImplementationType == typeof(FirstBehavior<,>)));
+    }
+
+    [Fact]
     public void AddBehavior_RegistersAgainstOpenPipelineBehaviorContract()
     {
         var builder = new InterlocutorPipelineBuilder();
@@ -53,6 +63,17 @@ public class InterlocutorPipelineBuilderTests
         var registration = Assert.Single(builder.Behaviors);
         Assert.Equal(typeof(IPipelineBehavior<,>), registration.ServiceType);
         Assert.Equal(RegistrationKind.Behavior, registration.Kind);
+    }
+
+    [Fact]
+    public void AddLoggingBehavior_AddsLoggingBehavior_WithoutOrphaningAnyDefault()
+    {
+        var builder = new InterlocutorPipelineBuilder();
+
+        builder.AddLoggingBehavior();
+
+        Assert.Contains(builder.Behaviors, r => r.ImplementationType == typeof(LoggingBehavior<,>));
+        Assert.DoesNotContain(builder.Defaults, r => r.ServiceType == typeof(IResponseOutcomeDescriber));
     }
 
     [Fact]
@@ -67,6 +88,100 @@ public class InterlocutorPipelineBuilderTests
             builder.Defaults,
             r => r.ServiceType == typeof(IAuditSink) && r.ImplementationType == typeof(LoggingAuditSink)
         );
+        Assert.DoesNotContain(builder.Defaults, r => r.ServiceType == typeof(IResponseOutcomeDescriber));
+    }
+
+    [Fact]
+    public void AddAuthorizationBehavior_AddsAuthorizationBehaviorAndPolicyEvaluatorDefault()
+    {
+        var builder = new InterlocutorPipelineBuilder();
+
+        builder.AddAuthorizationBehavior();
+
+        Assert.Contains(builder.Behaviors, r => r.ImplementationType == typeof(AuthorizationBehavior<,>));
+        Assert.Contains(
+            builder.Defaults,
+            r => r.ServiceType == typeof(IPolicyEvaluator) && r.ImplementationType == typeof(DefaultPolicyEvaluator)
+        );
+        Assert.Contains(
+            builder.Defaults,
+            r => r.ServiceType == typeof(IOutcomeCaseRegistry) && r.ImplementationType == typeof(DefaultOutcomeCaseRegistry)
+        );
+    }
+
+    [Fact]
+    public void OverrideAuditSink_CalledBeforeAddAuditingBehavior_StillWins()
+    {
+        var builder = new InterlocutorPipelineBuilder();
+
+        builder.OverrideAuditSink<CustomAuditSink>().AddAuditingBehavior();
+
+        var registration = Assert.Single(builder.Defaults, r => r.ServiceType == typeof(IAuditSink));
+        Assert.Equal(typeof(CustomAuditSink), registration.ImplementationType);
+    }
+
+    [Fact]
+    public void OverrideAuditSink_CalledAfterAddAuditingBehavior_StillWins()
+    {
+        var builder = new InterlocutorPipelineBuilder();
+
+        builder.AddAuditingBehavior().OverrideAuditSink<CustomAuditSink>();
+
+        var registration = Assert.Single(builder.Defaults, r => r.ServiceType == typeof(IAuditSink));
+        Assert.Equal(typeof(CustomAuditSink), registration.ImplementationType);
+    }
+
+    [Fact]
+    public void OverridePolicyEvaluator_Wins_RegardlessOfCallOrder()
+    {
+        var builder = new InterlocutorPipelineBuilder();
+
+        builder.OverridePolicyEvaluator<CustomPolicyEvaluator>().AddAuthorizationBehavior();
+
+        var registration = Assert.Single(builder.Defaults, r => r.ServiceType == typeof(IPolicyEvaluator));
+        Assert.Equal(typeof(CustomPolicyEvaluator), registration.ImplementationType);
+    }
+
+    [Fact]
+    public void OverrideOutcomeDescriber_Wins_RegardlessOfCallOrder()
+    {
+        var builder = new InterlocutorPipelineBuilder();
+
+        builder.AddLoggingBehavior().OverrideOutcomeDescriber<DefaultResponseOutcomeDescriber>();
+
+        var registration = Assert.Single(builder.Defaults, r => r.ServiceType == typeof(IResponseOutcomeDescriber));
+        Assert.Equal(typeof(DefaultResponseOutcomeDescriber), registration.ImplementationType);
+    }
+
+    [Fact]
+    public void AddValidationBehavior_WithFluentValidationReferenced_AddsValidationBehaviorAndCaseRegistryDefault()
+    {
+        var builder = new InterlocutorPipelineBuilder();
+
+        builder.AddValidationBehavior();
+
+        Assert.Contains(
+            builder.Behaviors,
+            r => r.ImplementationType == typeof(Interlocutor.FluentValidation.ValidationBehavior<,>)
+        );
+        Assert.Contains(
+            builder.Defaults,
+            r => r.ServiceType == typeof(IOutcomeCaseRegistry) && r.ImplementationType == typeof(DefaultOutcomeCaseRegistry)
+        );
+    }
+
+    [Fact]
+    public void AddTransactionBehavior_WithNHibernateReferenced_AddsNHibernateTransactionBehavior()
+    {
+        // This test project references NHibernate but not EntityFrameworkCore specifically so the NHibernate
+        // path is exercised for real through the public API - AddTransactionBehavior prefers EF Core via `??`
+        // when both are present, which would otherwise mask a regression in the NHibernate-specific lookup
+        // (NHibernate's TransactionBehavior<TRequest,TResponse> is arity 2, not EF Core's arity-3 shape).
+        var builder = new InterlocutorPipelineBuilder();
+
+        builder.AddTransactionBehavior();
+
+        Assert.Contains(builder.Behaviors, r => r.ImplementationType == typeof(Interlocutor.NHibernate.TransactionBehavior<,>));
     }
 
     [Fact]
@@ -119,6 +234,14 @@ public class InterlocutorPipelineBuilderTests
             ],
             builder.Behaviors.Select(r => r.ImplementationType)
         );
+    }
+
+    [Fact]
+    public void UseRecommendedChain_IsSugarOverIndividualCalls_NotAutomatic()
+    {
+        var bare = new InterlocutorPipelineBuilder();
+
+        Assert.Empty(bare.Behaviors);
     }
 
     [Fact]
@@ -197,6 +320,41 @@ public class InterlocutorPipelineBuilderTests
     }
 
     [Fact]
+    public void AddStage_TypeParameterOverload_DiscoversClosedPipelineStageInterface()
+    {
+        var builder = new InterlocutorPipelineBuilder();
+
+        builder.AddStage<SampleStage>();
+
+        var registration = Assert.Single(builder.Stages);
+        Assert.Equal(typeof(IPipelineStage<SampleRequest, SampleResponse>), registration.ServiceType);
+        Assert.Equal(typeof(SampleStage), registration.ImplementationType);
+    }
+
+    [Fact]
+    public async Task AddStage_WithServiceProviderDelegates_FactoryReceivesTheProvider()
+    {
+        var builder = new InterlocutorPipelineBuilder();
+        var sp = Substitute.For<IServiceProvider>();
+        IServiceProvider? observed = null;
+
+        builder.AddStage<SampleRequest, SampleResponse>(
+            (provider, request, ct) =>
+            {
+                observed = provider;
+                return Task.FromResult(StageResult<SampleResponse>.Continue);
+            },
+            null
+        );
+
+        var registration = Assert.Single(builder.StageFactories);
+        var stage = Assert.IsType<DelegatePipelineStage<SampleRequest, SampleResponse>>(registration.Factory(sp));
+        await stage.OnBeforeAsync(new SampleRequest(), CancellationToken.None);
+
+        Assert.Same(sp, observed);
+    }
+
+    [Fact]
     public void AddStageHost_AddsPipelineStageBehaviorAtCallPosition()
     {
         var builder = new InterlocutorPipelineBuilder();
@@ -207,6 +365,16 @@ public class InterlocutorPipelineBuilderTests
             [typeof(LoggingBehavior<,>), typeof(PipelineStageBehavior<,>), typeof(AuditingBehavior<,>)],
             builder.Behaviors.Select(r => r.ImplementationType)
         );
+    }
+
+    [Fact]
+    public void AddStageHost_CanBeRegisteredMoreThanOnce()
+    {
+        var builder = new InterlocutorPipelineBuilder();
+
+        builder.AddStageHost().AddStageHost();
+
+        Assert.Equal(2, builder.Behaviors.Count(r => r.ImplementationType == typeof(PipelineStageBehavior<,>)));
     }
 
     [Fact]
@@ -229,6 +397,16 @@ public class InterlocutorPipelineBuilderTests
     private sealed class SecondBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     {
         public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) => next();
+    }
+
+    private sealed class CustomAuditSink : IAuditSink
+    {
+        public Task RecordAsync(AuditEntry entry, CancellationToken ct) => Task.CompletedTask;
+    }
+
+    private sealed class CustomPolicyEvaluator : IPolicyEvaluator
+    {
+        public Task<bool> EvaluateAsync(string policyName, object request, CancellationToken ct) => Task.FromResult(true);
     }
 
     private sealed class CustomTimeoutPolicy : ITimeoutPolicy

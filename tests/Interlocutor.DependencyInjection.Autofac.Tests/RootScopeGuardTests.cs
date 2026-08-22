@@ -52,7 +52,7 @@ public class RootScopeGuardTests
         containerBuilder.RegisterType<ScopedDependencyRecorder>().AsSelf().InstancePerLifetimeScope();
 
         containerBuilder.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(RootScopeGuardTests).Assembly).AddBehavior(typeof(RecordingScopedBehavior<,>))
+            builder.ScanAssembly(typeof(RootScopeGuardTests).Assembly).Pipeline.AddBehavior(typeof(RecordingScopedBehavior<,>))
         );
 
         var container = containerBuilder.Build();

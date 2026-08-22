@@ -10,14 +10,11 @@ using Interlocutor.Abstractions.Pipeline.Cases;
 /// </summary>
 /// <remarks>
 /// <para>
-/// This is <see cref="InterlocutorBuilder"/>'s pipeline-composition responsibility, extracted so a
-/// consumer (and a reader of this code) can reason about "what runs in what order" as a self-contained
-/// concern, separate from "which assemblies get scanned" and "which infrastructure defaults are
-/// overridden" - both of which remain <see cref="InterlocutorBuilder"/>'s job.
-/// <see cref="InterlocutorBuilder"/>'s own pipeline methods (<see cref="InterlocutorBuilder.AddBehavior"/>,
-/// <see cref="InterlocutorBuilder.AddLoggingBehavior"/>, and the rest) delegate to an instance of this
-/// type rather than mutating their own state directly - every existing call on
-/// <see cref="InterlocutorBuilder"/> keeps compiling and behaving exactly as before.
+/// This is <see cref="InterlocutorBuilder"/>'s pipeline-composition responsibility, reachable only
+/// through <see cref="InterlocutorBuilder.Pipeline"/>, so a consumer (and a reader of this code) can
+/// reason about "what runs in what order" as a self-contained concern, separate from "which assemblies
+/// get scanned" and "which ambient infrastructure defaults are overridden" - both of which remain
+/// <see cref="InterlocutorBuilder"/>'s own job.
 /// </para>
 /// <para>
 /// Per <c>ADR-0009</c> ("No Default Pipeline"), a builder with no behavior calls produces zero pipeline
@@ -58,7 +55,7 @@ public sealed class InterlocutorPipelineBuilder
     /// given defaults dictionary - the constructor <see cref="InterlocutorBuilder"/> uses so that a
     /// pipeline default (for example, the <see cref="IAuditSink"/> entry <see cref="AddAuditingBehavior"/>
     /// try-adds) and an infrastructure override that targets the same service type
-    /// (for example, <see cref="InterlocutorBuilder.OverrideAuditSink{TSink}"/>) are always the same
+    /// (for example, <see cref="OverrideAuditSink{TSink}"/>) are always the same
     /// dictionary entry, regardless of which type's method runs first.
     /// </summary>
     /// <param name="sharedDefaults">The defaults dictionary to read from and write to.</param>
@@ -144,7 +141,7 @@ public sealed class InterlocutorPipelineBuilder
     /// built from <see cref="Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder.DefaultClassifier"/>
     /// when nothing is registered - registering a default here would additionally require a default
     /// <c>IOutcomeClassifier</c> registration to keep it resolvable, which is exactly the kind of orphan
-    /// dependency ADR-0009 asks the builder not to introduce. Call <see cref="InterlocutorBuilder.OverrideOutcomeDescriber{TDescriber}"/>
+    /// dependency ADR-0009 asks the builder not to introduce. Call <see cref="OverrideOutcomeDescriber{TDescriber}"/>
     /// to opt into a specific implementation instead.
     /// </remarks>
     /// <returns>This builder, for chaining.</returns>
@@ -343,6 +340,57 @@ public sealed class InterlocutorPipelineBuilder
             .AddTransactionBehavior();
 
     /// <summary>
+    /// Replaces the default <see cref="IAuditSink"/> implementation <see cref="AuditingBehavior{TRequest,TResponse}"/>
+    /// receives when no application-level registration is present. Wins regardless of whether it is
+    /// called before or after <see cref="AddAuditingBehavior"/> in the same chain.
+    /// </summary>
+    /// <typeparam name="TSink">The replacement <see cref="IAuditSink"/> implementation.</typeparam>
+    /// <param name="lifetime">The service lifetime to register the replacement with. Defaults to scoped.</param>
+    /// <returns>This builder, for chaining.</returns>
+    public InterlocutorPipelineBuilder OverrideAuditSink<TSink>(RegistrationLifetime lifetime = RegistrationLifetime.Scoped)
+        where TSink : class, IAuditSink
+    {
+        this.SetDefault(typeof(IAuditSink), typeof(TSink), lifetime);
+        return this;
+    }
+
+    /// <summary>
+    /// Replaces the default <see cref="IPolicyEvaluator"/> implementation <see cref="AuthorizationBehavior{TRequest,TResponse}"/>
+    /// receives when no application-level registration is present. Wins regardless of whether it is
+    /// called before or after <see cref="AddAuthorizationBehavior"/> in the same chain.
+    /// </summary>
+    /// <typeparam name="TEvaluator">The replacement <see cref="IPolicyEvaluator"/> implementation.</typeparam>
+    /// <param name="lifetime">The service lifetime to register the replacement with. Defaults to scoped.</param>
+    /// <returns>This builder, for chaining.</returns>
+    public InterlocutorPipelineBuilder OverridePolicyEvaluator<TEvaluator>(
+        RegistrationLifetime lifetime = RegistrationLifetime.Scoped
+    )
+        where TEvaluator : class, IPolicyEvaluator
+    {
+        this.SetDefault(typeof(IPolicyEvaluator), typeof(TEvaluator), lifetime);
+        return this;
+    }
+
+    /// <summary>
+    /// Replaces the default <see cref="IResponseOutcomeDescriber"/> implementation
+    /// <see cref="LoggingBehavior{TRequest,TResponse}"/> and <see cref="AuditingBehavior{TRequest,TResponse}"/>
+    /// optionally consume when no application-level registration is present. Wins regardless of whether
+    /// it is called before or after <see cref="AddLoggingBehavior"/> / <see cref="AddAuditingBehavior"/>
+    /// in the same chain.
+    /// </summary>
+    /// <typeparam name="TDescriber">The replacement <see cref="IResponseOutcomeDescriber"/> implementation.</typeparam>
+    /// <param name="lifetime">The service lifetime to register the replacement with. Defaults to singleton.</param>
+    /// <returns>This builder, for chaining.</returns>
+    public InterlocutorPipelineBuilder OverrideOutcomeDescriber<TDescriber>(
+        RegistrationLifetime lifetime = RegistrationLifetime.Singleton
+    )
+        where TDescriber : class, IResponseOutcomeDescriber
+    {
+        this.SetDefault(typeof(IResponseOutcomeDescriber), typeof(TDescriber), lifetime);
+        return this;
+    }
+
+    /// <summary>
     /// Replaces the default <see cref="ITimeoutPolicy"/> implementation <see cref="TimeoutBehavior{TRequest,TResponse}"/>
     /// receives when no application-level registration is present. Wins regardless of whether it is
     /// called before or after <see cref="AddTimeoutBehavior"/> in the same chain.
@@ -521,10 +569,16 @@ public sealed class InterlocutorPipelineBuilder
 
     /// <summary>
     /// Sets or replaces this builder's own internal default entry for <paramref name="serviceType"/>,
-    /// unconditionally - the mechanism behind every pipeline-specific <c>Override*</c> method, guaranteeing
-    /// it wins regardless of call order relative to the corresponding <c>Add*Behavior</c> call.
+    /// unconditionally - the mechanism behind every <c>Override*</c> method, guaranteeing it wins
+    /// regardless of call order relative to the corresponding <c>Add*Behavior</c> call. Internal rather
+    /// than private so <see cref="InterlocutorBuilder.OverrideRequestContextAccessor{TAccessor}"/> - the
+    /// one override that stays on <see cref="InterlocutorBuilder"/> itself - writes through this same
+    /// canonical path instead of keeping its own copy.
     /// </summary>
-    private void SetDefault(Type serviceType, Type implementationType, RegistrationLifetime lifetime) =>
+    /// <param name="serviceType">The service type to set or replace the default entry for.</param>
+    /// <param name="implementationType">The implementation type to register as that default.</param>
+    /// <param name="lifetime">The service lifetime to register the default with.</param>
+    internal void SetDefault(Type serviceType, Type implementationType, RegistrationLifetime lifetime) =>
         this._defaults[serviceType] = new InterlocutorRegistration(
             serviceType,
             implementationType,

@@ -81,9 +81,9 @@ public async Task PipelineOrder_ValidationBeforeTransaction()
     services.AddInterlocutor(builder =>
     {
         builder.ScanAssembly(typeof(Program).Assembly);
-        builder.AddBehavior(typeof(LoggingBehavior<,>));
-        builder.AddBehavior(typeof(ValidationBehavior<,>));
-        builder.AddBehavior(typeof(TransactionBehavior<,>));
+        builder.Pipeline.AddBehavior(typeof(LoggingBehavior<,>));
+        builder.Pipeline.AddBehavior(typeof(ValidationBehavior<,>));
+        builder.Pipeline.AddBehavior(typeof(TransactionBehavior<,>));
     });
 
     services.AddDbContext<TestDbContext>(
@@ -115,8 +115,8 @@ public async Task ShortCircuit_AuthorizationStopsTransaction()
     services.AddInterlocutor(builder =>
     {
         builder.ScanAssembly(typeof(Program).Assembly);
-        builder.AddBehavior(typeof(AuthorizationBehavior<,>));
-        builder.AddBehavior(typeof(TransactionBehavior<,>));
+        builder.Pipeline.AddBehavior(typeof(AuthorizationBehavior<,>));
+        builder.Pipeline.AddBehavior(typeof(TransactionBehavior<,>));
     });
 
     services.AddDbContext<TestDbContext>(
@@ -223,7 +223,7 @@ public async Task CreateOrder_WithTransaction_RollsBackOnFailure()
     services.AddInterlocutor(builder =>
     {
         builder.ScanAssembly(typeof(Tests).Assembly);
-        builder.AddBehavior(typeof(TransactionBehavior<,>));
+        builder.Pipeline.AddBehavior(typeof(TransactionBehavior<,>));
     });
 
     services.AddDbContext<AppDbContext>(

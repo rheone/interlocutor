@@ -128,7 +128,7 @@ var registry = new OutcomeCaseRegistryBuilder()
     .Build();
 ```
 
-Anything left unregistered still falls back to `DefaultOutcomeCaseRegistry`, so a consumer only needs to register the response types that aren't unions - every `OperationOutcome<...>` shape keeps working unmodified. Register a custom registry via `InterlocutorBuilder.OverrideOutcomeCaseRegistry<TRegistry>()`; see [pipeline-and-behaviors.md](pipeline-and-behaviors.md) for how the behaviors that depend on it are wired.
+Anything left unregistered still falls back to `DefaultOutcomeCaseRegistry`, so a consumer only needs to register the response types that aren't unions - every `OperationOutcome<...>` shape keeps working unmodified. Register a custom registry via `InterlocutorPipelineBuilder.OverrideOutcomeCaseRegistry<TRegistry>()` (reachable via `builder.Pipeline`); see [pipeline-and-behaviors.md](pipeline-and-behaviors.md) for how the behaviors that depend on it are wired.
 
 ## Result Types
 

@@ -67,7 +67,7 @@ public sealed class GeneratedRegistrationIntegrationTests
                         .InterlocutorGeneratedRegistrations
                         .Registrations
                 )
-                .AddBehavior(typeof(OrderTrackingBehavior1))
+                .Pipeline.AddBehavior(typeof(OrderTrackingBehavior1))
                 .AddBehavior(typeof(OrderTrackingBehavior2))
                 .AddBehavior(typeof(OrderTrackingBehavior3))
         );

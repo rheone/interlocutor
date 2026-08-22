@@ -14,7 +14,7 @@ using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
-/// Proves the canonical pipeline order documented on <see cref="DependencyInjection.Abstractions.InterlocutorBuilder.UseRecommendedChain"/>
+/// Proves the canonical pipeline order documented on <see cref="DependencyInjection.Abstractions.InterlocutorPipelineBuilder.UseRecommendedChain"/>
 /// (Logging → Auditing → Authorization → Validation → Transaction) by registering the five real behaviors
 /// together through that exact method and sending an actual request through the composed pipeline - not by
 /// inspecting the registration list, which only proves presence, not order.
@@ -38,7 +38,7 @@ public sealed class PipelineOrderingIntegrationTests
         services.AddInterlocutor(builder =>
             builder
                 .ScanAssembly(typeof(PipelineOrderingIntegrationTests).Assembly)
-                .UseRecommendedChain()
+                .Pipeline.UseRecommendedChain()
                 .OverrideAuditSink<RecordingAuditSink>()
                 .OverridePolicyEvaluator<RecordingPolicyEvaluator>()
         );
@@ -80,7 +80,7 @@ public sealed class PipelineOrderingIntegrationTests
         services.AddInterlocutor(builder =>
             builder
                 .ScanAssembly(typeof(PipelineOrderingIntegrationTests).Assembly)
-                .AddLoggingBehavior()
+                .Pipeline.AddLoggingBehavior()
                 .AddAuditingBehavior()
                 // Swapped: Validation before Authorization, the reverse of UseRecommendedChain's order.
                 .AddValidationBehavior()

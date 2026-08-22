@@ -2,8 +2,8 @@ namespace Interlocutor.DependencyInjection.Abstractions;
 
 /// <summary>
 /// Records a registration the builder deliberately did not make, and why - most notably the silent
-/// optional-package probing behind <see cref="InterlocutorBuilder.AddValidationBehavior"/> and
-/// <see cref="InterlocutorBuilder.AddTransactionBehavior"/>, which stays silent as behavior (a missing
+/// optional-package probing behind <see cref="InterlocutorPipelineBuilder.AddValidationBehavior"/> and
+/// <see cref="InterlocutorPipelineBuilder.AddTransactionBehavior"/>, which stays silent as behavior (a missing
 /// optional package is not an error) but becomes visible as an entry in
 /// <see cref="InterlocutorBuilder.DescribeRegistrations"/>'s report.
 /// </summary>
