@@ -128,6 +128,12 @@ public sealed class FullPipelineIncrementalCachingTests
         Assert.Equal(firstGeneratedSource, secondGeneratedSource);
     }
 
+    /// <summary>
+    /// Asserts that every output of the generator's final pipeline step - the one feeding
+    /// <c>RegisterSourceOutput</c> - reports <see cref="Microsoft.CodeAnalysis.IncrementalStepRunReason.Cached"/>
+    /// or <see cref="Microsoft.CodeAnalysis.IncrementalStepRunReason.Unchanged"/>, proving the rebuild this
+    /// result came from skipped re-emission end to end rather than merely caching an intermediate step.
+    /// </summary>
     private static void AssertFinalStepCachedOrUnchanged(Microsoft.CodeAnalysis.GeneratorDriverRunResult result)
     {
         var steps = result.Results.Single().TrackedSteps[InterlocutorSourceGenerator.FinalPipelineTrackingName];
@@ -149,6 +155,7 @@ public sealed class FullPipelineIncrementalCachingTests
         );
     }
 
+    /// <summary>Returns the generated source text whose hint name ends with <paramref name="hintNameSuffix"/>.</summary>
     private static string GetGeneratedSource(Microsoft.CodeAnalysis.GeneratorDriverRunResult result, string hintNameSuffix) =>
         result
             .Results.Single()

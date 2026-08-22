@@ -29,7 +29,7 @@ Handlers in assemblies loaded at runtime rather than referenced at compile time 
 - [ ] Changing one library does not force regeneration of the others - see "Incremental caching" comment below; not fully true today
 - [x] A missing-handler diagnostic still fires for a request declared in one assembly whose handler is absent everywhere
 - [x] Duplicate registration does not occur when an assembly is referenced through more than one path
-- [~] Both containers work against aggregated registrations - see "Container coverage gap" comment below
+- [x] Both containers work against aggregated registrations - closed by ticket 54's `CrossAssemblyContainerResolutionTests`, see "Container coverage gap" comment below
 
 ## Blocked by
 
@@ -106,17 +106,17 @@ resolution gets what it needs from the compilation, which is a ticket-11-era des
 this ticket's own scope covers. Unchecked above rather than silently left as a false claim. Follow-up:
 ticket 53.
 
-**Container coverage gap (code-review finding, not closed).** `GeneratedRegistrationIntegrationTests` in both
-`Interlocutor.DependencyInjection.Microsoft.Tests` and `.Autofac.Tests` were updated only for the new module
-namespace spelling (see "Naming had to change" above) - both still exercise a *single* project's own
-generated module, not a genuinely aggregated one. `CrossAssemblyAggregationTests` proves aggregation is
-correct at the generated-source-text level (in-memory `Compilation`s, never emitted to real assemblies or
-loaded), and there is no container-specific code path (`AddGeneratedRegistrations` takes any
-`IEnumerable<InterlocutorRegistration>` regardless of where the list came from), so the risk is low - but
-"both containers work against aggregated registrations" is not actually backed by a test that emits two real
+**Container coverage gap (code-review finding, closed by ticket 54).** `GeneratedRegistrationIntegrationTests` in
+both `Interlocutor.DependencyInjection.Microsoft.Tests` and `.Autofac.Tests` were updated only for the new
+module namespace spelling (see "Naming had to change" above) - both still exercised a *single* project's own
+generated module, not a genuinely aggregated one. `CrossAssemblyAggregationTests` proved aggregation correct
+at the generated-source-text level (in-memory `Compilation`s, never emitted to real assemblies or loaded), but
+"both containers work against aggregated registrations" wasn't actually backed by a test that emits two real
 assemblies, loads the downstream one, and resolves a handler from its aggregated module through a real
-container. Left as a known gap rather than claimed done; a follow-up ticket should add that end-to-end test if
-this risk needs closing formally. Follow-up: ticket 54.
+container. Ticket 54's `CrossAssemblyContainerResolutionTests` now does exactly that - emits and loads a real
+library assembly plus an app assembly referencing it, reads the app's aggregated `Registrations` by
+reflection, and dispatches a request whose handler lives only in the library through both a real
+`ServiceCollection` and a real Autofac `ContainerBuilder`.
 
 **Known gap, not introduced by this ticket.**
 `Interlocutor.DependencyInjection.Microsoft.Tests.GeneratedRegistrationIntegrationTests.GeneratedRegistration_WithMultipleBehaviors_ExecutesBehaviorsInCorrectOrder`
