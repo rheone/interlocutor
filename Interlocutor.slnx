@@ -11,6 +11,10 @@
     <Project Path="src/Interlocutor.FluentValidation/Interlocutor.FluentValidation.csproj" />
     <Project Path="src/Interlocutor.NHibernate/Interlocutor.NHibernate.csproj" />
   </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/Interlocutor.Sample.Handlers/Interlocutor.Sample.Handlers.csproj" />
+    <Project Path="samples/Interlocutor.Sample.WebApi/Interlocutor.Sample.WebApi.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Interlocutor.CommonKernel.Tests/Interlocutor.CommonKernel.Tests.csproj" />
     <Project Path="tests/Interlocutor.Abstractions.Tests/Interlocutor.Abstractions.Tests.csproj" />

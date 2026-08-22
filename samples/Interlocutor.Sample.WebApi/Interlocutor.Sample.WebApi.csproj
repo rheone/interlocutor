@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <Description>Runnable sample application for Interlocutor (ticket 18). Not published - shows the intended composition end to end: an explicitly composed pipeline, cross-assembly handler discovery, a short-circuiting stage, a multi-subscriber notification, and transport conversion at the edge.</Description>
+    <IsPackable>false</IsPackable>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Interlocutor.AspNetCore\Interlocutor.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\src\Interlocutor.DependencyInjection.Microsoft\Interlocutor.DependencyInjection.Microsoft.csproj" />
+    <ProjectReference Include="..\..\src\Interlocutor.EntityFrameworkCore\Interlocutor.EntityFrameworkCore.csproj" />
+
+    <!-- Normal reference: brings in the handler assembly's types plus the InterlocutorGeneratedModuleAttribute
+         that lets this project's own generator run aggregate the handler assembly's generated module too
+         (ticket 12) - the mechanism behind "cross-assembly discovery with no assembly list". -->
+    <ProjectReference Include="..\Interlocutor.Sample.Handlers\Interlocutor.Sample.Handlers.csproj" />
+
+    <!-- Analyzer-only reference: runs Interlocutor.Generator over this assembly's own compilation. -->
+    <ProjectReference
+      Include="..\..\src\Interlocutor.Generator\Interlocutor.Generator.csproj"
+      OutputItemType="Analyzer"
+      ReferenceOutputAssembly="false"
+    />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+  </ItemGroup>
+</Project>

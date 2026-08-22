@@ -1,0 +1,122 @@
+using Interlocutor.Abstractions.Core;
+using Interlocutor.Abstractions.Pipeline.Classifiers;
+using Interlocutor.AspNetCore;
+using Interlocutor.CommonKernel;
+using Interlocutor.CommonKernel.ResultTypes;
+using Interlocutor.DependencyInjection.Microsoft;
+using Interlocutor.Sample.Handlers;
+using Interlocutor.Sample.Handlers.Shared;
+using Interlocutor.Sample.Handlers.Todos;
+using Interlocutor.Sample.WebApi;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// A single open Sqlite connection kept alive for the app's lifetime backs the in-memory database - closing
+// the last connection to a Sqlite ":memory:" database deletes it, so the connection itself is the thing
+// that must outlive every request. EF Core's own connection-per-DbContext pooling reuses this one. Disposed
+// explicitly below via ApplicationStopping - the analyzer can't see that far, hence the suppression.
+#pragma warning disable CA2000 // Dispose objects before losing scope
+var connection = new SqliteConnection("Data Source=:memory:");
+#pragma warning restore CA2000
+connection.Open();
+builder.Services.AddSingleton(connection);
+builder.Services.AddDbContext<SampleDbContext>((sp, options) => options.UseSqlite(sp.GetRequiredService<SqliteConnection>()));
+
+// SampleTransactionBehavior (like the EF Core TransactionBehavior it wraps) takes a Lazy<SampleDbContext> so
+// it can defer resolving the context until it's confirmed the request is transactional - Microsoft DI has no
+// built-in Lazy<T> support, so the factory is registered explicitly.
+builder.Services.AddScoped(sp => new Lazy<SampleDbContext>(() => sp.GetRequiredService<SampleDbContext>()));
+
+builder.Services.AddSingleton<ITodoCreationCounter, TodoCreationCounter>();
+
+// The default IOutcomeClassifier only recognizes Interlocutor.CommonKernel's own case types as success -
+// everything else, including a domain type like TodoItem, is fail-closed to "failure" so an app that forgets
+// to register its own success types gets a loud rollback rather than a silently committed write.
+// CreateTodoCommand's success case is TodoItem, so it needs registering explicitly for the transaction
+// behavior below to ever commit a create.
+builder.Services.AddSingleton<IOutcomeClassifier>(
+    new OutcomeClassifierBuilder().RegisterSuccessType<TodoItem>("TodoItem").Build()
+);
+
+builder.Services.AddInterlocutor(interlocutor =>
+{
+    // Compile-time discovery only - no ScanAssembly call. This project's own generated module already
+    // aggregates Interlocutor.Sample.Handlers' generated module (ticket 12), so every handler in both
+    // assemblies is registered with no assembly list anywhere in this file.
+    interlocutor.AddGeneratedRegistrations(
+        Interlocutor.Generated.Interlocutor_Sample_WebApi.InterlocutorGeneratedRegistrations.Registrations
+    );
+
+    // Explicitly composed, not UseRecommendedChain() - the sample's point is that the developer chooses
+    // exactly the behaviors this application needs and the order they run in.
+    //
+    // AddBehavior(typeof(SampleTransactionBehavior<,>)), not AddTransactionBehavior(): see that type's
+    // remarks for why the raw EF Core TransactionBehavior<,,> can't be registered directly under Microsoft DI.
+    interlocutor
+        .Pipeline.AddLoggingBehavior()
+        .AddStage<DuplicateTitleGuardStage>()
+        .AddStageHost()
+        .AddBehavior(typeof(SampleTransactionBehavior<,>));
+});
+
+var app = builder.Build();
+
+// AddSingleton(instance) does not hand ownership of a pre-built instance to the container, so the
+// connection backing the in-memory database is disposed explicitly on shutdown instead.
+app.Lifetime.ApplicationStopping.Register(connection.Dispose);
+
+using (var scope = app.Services.CreateScope())
+{
+    scope.ServiceProvider.GetRequiredService<SampleDbContext>().Database.EnsureCreated();
+}
+
+app.MapGet(
+    "/todos/{id:int}",
+    async (int id, ISender sender, CancellationToken ct) =>
+        (await sender.Send(new GetTodoByIdQuery(id), ct)).ToMinimalApiResult()
+);
+
+// Same lookup, routed through the generic GetByIdQuery<TEntity> handler instead of the dedicated one above -
+// demonstrates the open generic handler serving a second concrete request type below (/tags/{id}). Dispatched
+// via GetByIdQueries' typed entry points, not by constructing GetByIdQuery<TEntity> here directly - see that
+// type's remarks for why.
+app.MapGet(
+    "/todos/{id:int}/generic",
+    async (int id, ISender sender, CancellationToken ct) => (await sender.GetTodoByIdGenericAsync(id, ct)).ToMinimalApiResult()
+);
+
+app.MapGet(
+    "/tags/{id:int}",
+    async (int id, ISender sender, CancellationToken ct) => (await sender.GetTagByIdAsync(id, ct)).ToMinimalApiResult()
+);
+
+app.MapPost(
+    "/todos",
+    async (CreateTodoRequest request, ISender sender, IPublisher publisher, CancellationToken ct) =>
+    {
+        var result = await sender.Send(new CreateTodoCommand(request.Title), ct);
+        if (result.Value is TodoItem created)
+        {
+            // Published after the command's transaction has already committed - the notification announces
+            // a fact that is now true in the database, not one that might still be rolled back.
+            await publisher.Publish(new TodoCreatedNotification(created.Id, created.Title), ct);
+        }
+
+        return result.ToMinimalApiResult();
+    }
+);
+
+app.MapDelete(
+    "/todos/{id:int}",
+    async (int id, ISender sender, CancellationToken ct) =>
+        (await sender.Send<OperationOutcome<Success, NotFound>>(new DeleteTodoCommand(id), ct)).ToMinimalApiResult()
+);
+
+app.MapGet("/todos/created-count", (ITodoCreationCounter counter) => TypedResults.Ok(counter.Count));
+
+app.Run();
+
+/// <summary>Marks this file's top-level statements as the entry point, for tests that need to reference the assembly.</summary>
+public partial class Program;

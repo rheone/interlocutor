@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Sample handler library for the Interlocutor runnable sample (ticket 18). Not published - demonstrates cross-assembly compile-time handler discovery, not a shipping package.</Description>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Interlocutor.CommonKernel\Interlocutor.CommonKernel.csproj" />
+    <ProjectReference Include="..\..\src\Interlocutor.Abstractions\Interlocutor.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\Interlocutor.DependencyInjection.Abstractions\Interlocutor.DependencyInjection.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\Interlocutor.EntityFrameworkCore\Interlocutor.EntityFrameworkCore.csproj" />
+
+    <!-- Analyzer-only reference: runs Interlocutor.Generator over this assembly's own compilation so its
+         handlers are discovered at compile time and emitted into a generated registration module the
+         sample web application aggregates (ticket 12) - no runtime assembly scanning anywhere in this sample. -->
+    <ProjectReference
+      Include="..\..\src\Interlocutor.Generator\Interlocutor.Generator.csproj"
+      OutputItemType="Analyzer"
+      ReferenceOutputAssembly="false"
+    />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+  </ItemGroup>
+</Project>

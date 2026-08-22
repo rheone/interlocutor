@@ -1,4 +1,26 @@
-Status: needs-triage (blocked)
+> **Status: done** - `samples/Interlocutor.Sample.Handlers` (class library: entities, requests, handlers, the
+> `DuplicateTitleGuardStage` pipeline stage, the two `TodoCreatedNotification` subscribers) and
+> `samples/Interlocutor.Sample.WebApi` (minimal API, explicitly composed pipeline, EF Core + Sqlite
+> persistence) added to `Interlocutor.slnx` under a `/samples/` folder, both `IsPackable=false`. Verified by
+> actually running the app and exercising every endpoint against a real Sqlite database (create, duplicate-title
+> conflict, validation error, both lookup handlers, delete, notification fan-out) - not just a build check.
+>
+> Two previously-unexercised library defects surfaced and were worked around at the sample's call sites (not
+> fixed in `src/`, since the real fix belongs to its own ticket - see below): (1) `TransactionBehavior<TRequest,
+> TResponse,TContext>`'s arity-3 open generic throws under Microsoft DI's `AddScoped(typeof(IPipelineBehavior<,>),
+> typeof(TransactionBehavior<,,>))` the moment an app actually references `Interlocutor.EntityFrameworkCore` and
+> builds a real `ServiceProvider` - `AddTransactionBehavior()`'s EF Core path was untested against a real
+> Microsoft DI container anywhere in the existing suite (only its NHibernate, arity-2, sibling was). Worked
+> around here via `SampleTransactionBehavior<TRequest,TResponse>`, a small subclass closing `TContext` over
+> `SampleDbContext`, registered via `AddBehavior(typeof(SampleTransactionBehavior<,>))` instead. (2)
+> `OpenGenericHandlerResolver` only closes an open generic handler over a request type when both the handler
+> and a closed usage of that instantiation are visible in the *same compilation* - an open handler defined in a
+> referenced library is invisible to the closing pass of an application that only uses it, since the generator's
+> syntax providers never see another project's syntax trees. Worked around by adding `GetByIdQueries`, typed
+> entry points beside `GetByIdHandler<TEntity>` in the handler library itself, so the closing usages live in the
+> same compilation as the handler; the web application dispatches through those instead of constructing
+> `GetByIdQuery<TEntity>` directly. Both are documented in code at their workaround sites and worth their own
+> tracked defects if this arity-3/cross-assembly-generic-closing pattern needs to work generally.
 
 ## Labels
 
