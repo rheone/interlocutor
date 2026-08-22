@@ -1,6 +1,7 @@
 namespace Interlocutor.Generator;
 
 using System.Collections.Immutable;
+using System.Linq;
 using Microsoft.CodeAnalysis;
 
 /// <summary>
@@ -54,4 +55,62 @@ internal sealed record OpenGenericHandlerModel(
     ImmutableArray<string> OverrideTargetKeys,
     ImmutableArray<string> OverrideTargetDisplayNames,
     Location Location
-);
+)
+{
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Overridden for two reasons (ticket 53) - see <see cref="HandlerModel.Equals(HandlerModel?)"/>'s remarks
+    /// for the full rationale, which applies here identically: <see cref="ImmutableArray{T}"/>'s own
+    /// <c>Equals</c> compares its backing array by reference rather than by element, and <see cref="Location"/>
+    /// is deliberately excluded since it compares the declaring <see cref="Microsoft.CodeAnalysis.SyntaxTree"/>
+    /// by reference, which changes on every re-parse regardless of whether this declaration itself changed.
+    /// </remarks>
+    public bool Equals(OpenGenericHandlerModel? other) =>
+        other is not null
+        && this.Kind == other.Kind
+        && this.HandlerDefinitionKey == other.HandlerDefinitionKey
+        && this.HandlerDisplayName == other.HandlerDisplayName
+        && this.RequestDefinitionKey == other.RequestDefinitionKey
+        && this.ResponseDisplayTemplate == other.ResponseDisplayTemplate
+        && this.ServiceInterfaceDisplayTemplate == other.ServiceInterfaceDisplayTemplate
+        && this.RequestArgumentParameterNames.SequenceEqual(other.RequestArgumentParameterNames)
+        && this.Constraints.SequenceEqual(other.Constraints)
+        && this.OverrideTargetKeys.SequenceEqual(other.OverrideTargetKeys)
+        && this.OverrideTargetDisplayNames.SequenceEqual(other.OverrideTargetDisplayNames);
+
+    /// <inheritdoc/>
+    public override int GetHashCode()
+    {
+        // netstandard2.0 (this project's target - see ADR-0008) has no System.HashCode, so combine by hand
+        // rather than pull in a polyfill package for one method. Location is deliberately excluded - see
+        // the remarks on Equals above.
+        var hash = 17;
+        hash = (hash * 31) + this.Kind.GetHashCode();
+        hash = (hash * 31) + this.HandlerDefinitionKey.GetHashCode();
+        hash = (hash * 31) + this.HandlerDisplayName.GetHashCode();
+        hash = (hash * 31) + this.RequestDefinitionKey.GetHashCode();
+        hash = (hash * 31) + this.ResponseDisplayTemplate.GetHashCode();
+        hash = (hash * 31) + this.ServiceInterfaceDisplayTemplate.GetHashCode();
+        foreach (var name in this.RequestArgumentParameterNames)
+        {
+            hash = (hash * 31) + name.GetHashCode();
+        }
+
+        foreach (var constraint in this.Constraints)
+        {
+            hash = (hash * 31) + constraint.GetHashCode();
+        }
+
+        foreach (var key in this.OverrideTargetKeys)
+        {
+            hash = (hash * 31) + key.GetHashCode();
+        }
+
+        foreach (var name in this.OverrideTargetDisplayNames)
+        {
+            hash = (hash * 31) + name.GetHashCode();
+        }
+
+        return hash;
+    }
+}

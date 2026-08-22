@@ -50,6 +50,23 @@ public sealed class InterlocutorSourceGenerator : IIncrementalGenerator
     /// </summary>
     public const string CompilationInfoTrackingName = "CompilationInfo";
 
+    /// <summary>
+    /// The tracking name given to the <see cref="GenericConstraintSnapshot"/> pipeline step (ticket 53), so a
+    /// test driven with <c>trackIncrementalGeneratorSteps: true</c> can assert this specific step's cache
+    /// behavior directly - see <see cref="GenericConstraintSnapshot"/>'s remarks.
+    /// </summary>
+    public const string GenericConstraintSnapshotTrackingName = "GenericConstraintSnapshot";
+
+    /// <summary>
+    /// The tracking name given to the value provider combining every input <see cref="Execute"/> depends on,
+    /// immediately before <c>RegisterSourceOutput</c>
+    /// (ticket 53) - so a test can assert the pipeline's final, fully-combined step (not just one of its
+    /// individual inputs) reports <see cref="Microsoft.CodeAnalysis.IncrementalStepRunReason.Cached"/> or
+    /// <see cref="Microsoft.CodeAnalysis.IncrementalStepRunReason.Unchanged"/>, proving real end-to-end
+    /// incrementality rather than just one well-behaved step among others.
+    /// </summary>
+    public const string FinalPipelineTrackingName = "FinalPipeline";
+
     /// <inheritdoc/>
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -76,12 +93,7 @@ public sealed class InterlocutorSourceGenerator : IIncrementalGenerator
         // reference graph, not of any one candidate type declaration. CompilationInfo has real, element-wise
         // structural equality (see its own remarks), so this step itself is cached whenever a rebuild's
         // reference graph is unchanged - for example, editing a method body inside a referenced library that
-        // changes no public API surface and so changes nothing ReferencedModuleDiscovery reads. That said, the
-        // combined pipeline below also threads the raw Compilation through unconditionally (needed by
-        // OpenGenericHandlerResolver.Resolve's semantic-model lookups), and Compilation is never equal across
-        // runs - so RegisterSourceOutput as a whole still re-executes on every edit today regardless of this
-        // step's own caching. Making the overall pipeline skip re-emission end to end would mean reworking how
-        // open generic resolution gets what it needs from the compilation, which is outside this ticket's scope.
+        // changes no public API surface and so changes nothing ReferencedModuleDiscovery reads.
         var compilationInfo = context
             .CompilationProvider.Select(
                 static (compilation, ct) =>
@@ -92,7 +104,27 @@ public sealed class InterlocutorSourceGenerator : IIncrementalGenerator
             )
             .WithTrackingName(CompilationInfoTrackingName);
 
-        var combined = analysisResults.Combine(genericUsages).Combine(context.CompilationProvider).Combine(compilationInfo);
+        var openGenericHandlersOnly = analysisResults.Select(
+            static (results, _) => results.SelectMany(static r => r.OpenGenericHandlers).ToImmutableArray()
+        );
+
+        // The only place left in the whole pipeline that still needs the raw Compilation (ticket 53) - see
+        // GenericConstraintSnapshot's remarks. This step's own transform function re-runs on every rebuild
+        // regardless (CompilationProvider is never equal to itself across runs, by design), but the *value* it
+        // produces has real, element-wise structural equality, so a rebuild whose open generic handlers and
+        // generic usages are unchanged produces a snapshot that compares equal to the previous run's - letting
+        // Execute, and therefore RegisterSourceOutput as a whole, skip re-emitting source entirely.
+        var genericConstraintSnapshot = context
+            .CompilationProvider.Combine(openGenericHandlersOnly)
+            .Combine(genericUsages)
+            .Select(static (data, _) => GenericConstraintSnapshotBuilder.Build(data.Left.Left, data.Left.Right, data.Right))
+            .WithTrackingName(GenericConstraintSnapshotTrackingName);
+
+        var combined = analysisResults
+            .Combine(genericUsages)
+            .Combine(compilationInfo)
+            .Combine(genericConstraintSnapshot)
+            .WithTrackingName(FinalPipelineTrackingName);
 
         context.RegisterSourceOutput(
             combined,
@@ -127,16 +159,17 @@ public sealed class InterlocutorSourceGenerator : IIncrementalGenerator
     }
 
     /// <summary>
-    /// Combines every candidate's analysis result, generic usages, the compilation, and compilation-level info
-    /// into the compilation-wide handler and request lists, closes every open generic handler over its
-    /// discovered concrete usages (ticket 11), reports the missing-handler diagnostic (now considering upstream
-    /// referenced modules too, per ticket 12), and emits the registration module and dispatch wrappers.
+    /// Combines every candidate's analysis result, generic usages, compilation-level info, and the open
+    /// generic constraint snapshot into the compilation-wide handler and request lists, closes every open
+    /// generic handler over its discovered concrete usages (ticket 11), reports the missing-handler diagnostic
+    /// (now considering upstream referenced modules too, per ticket 12), and emits the registration module and
+    /// dispatch wrappers.
     /// </summary>
     private static void Execute(
         ImmutableArray<TypeAnalysisResult> results,
         ImmutableArray<ClosedGenericRequestUsageModel> genericUsages,
-        Compilation compilation,
         CompilationInfo compilationInfo,
+        GenericConstraintSnapshot genericConstraintSnapshot,
         SourceProductionContext context
     )
     {
@@ -152,7 +185,7 @@ public sealed class InterlocutorSourceGenerator : IIncrementalGenerator
             handlers,
             openGenericHandlers,
             genericUsages,
-            compilation
+            genericConstraintSnapshot
         );
         foreach (var diagnostic in openGenericResolution.Diagnostics)
         {

@@ -1,6 +1,7 @@
 namespace Interlocutor.Generator;
 
 using System.Collections.Immutable;
+using System.Linq;
 using Microsoft.CodeAnalysis;
 
 /// <summary>
@@ -31,4 +32,42 @@ internal sealed record ClosedGenericRequestUsageModel(
     ImmutableArray<string> TypeArgumentDisplayNames,
     ImmutableArray<string?> TypeArgumentMetadataNames,
     Location Location
-);
+)
+{
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Overridden for two reasons (ticket 53) - see <see cref="HandlerModel.Equals(HandlerModel?)"/>'s remarks
+    /// for the full rationale, which applies here identically: <see cref="ImmutableArray{T}"/>'s own
+    /// <c>Equals</c> compares its backing array by reference rather than by element, and <see cref="Location"/>
+    /// is deliberately excluded since it compares the declaring <see cref="Microsoft.CodeAnalysis.SyntaxTree"/>
+    /// by reference, which changes on every re-parse regardless of whether this usage itself changed.
+    /// </remarks>
+    public bool Equals(ClosedGenericRequestUsageModel? other) =>
+        other is not null
+        && this.RequestDefinitionKey == other.RequestDefinitionKey
+        && this.ClosedRequestDisplayName == other.ClosedRequestDisplayName
+        && this.TypeArgumentDisplayNames.SequenceEqual(other.TypeArgumentDisplayNames)
+        && this.TypeArgumentMetadataNames.SequenceEqual(other.TypeArgumentMetadataNames);
+
+    /// <inheritdoc/>
+    public override int GetHashCode()
+    {
+        // netstandard2.0 (this project's target - see ADR-0008) has no System.HashCode, so combine by hand
+        // rather than pull in a polyfill package for one method. Location is deliberately excluded - see
+        // the remarks on Equals above.
+        var hash = 17;
+        hash = (hash * 31) + this.RequestDefinitionKey.GetHashCode();
+        hash = (hash * 31) + this.ClosedRequestDisplayName.GetHashCode();
+        foreach (var name in this.TypeArgumentDisplayNames)
+        {
+            hash = (hash * 31) + name.GetHashCode();
+        }
+
+        foreach (var name in this.TypeArgumentMetadataNames)
+        {
+            hash = (hash * 31) + (name?.GetHashCode() ?? 0);
+        }
+
+        return hash;
+    }
+}

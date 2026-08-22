@@ -2,6 +2,7 @@ namespace Interlocutor.Generator.Tests;
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using Interlocutor.Abstractions.Queries;
 using Interlocutor.CommonKernel;
 using Interlocutor.DependencyInjection.Abstractions;
@@ -138,6 +139,51 @@ internal static class GeneratorTestHarness
 
         driver = driver.RunGenerators(CreateCompilation(firstSource, extraReferences: extraReferences));
         driver = driver.RunGenerators(CreateCompilation(secondSource, extraReferences: extraReferences));
+
+        return driver.GetRunResult();
+    }
+
+    /// <summary>
+    /// Like <see cref="RunTwiceTrackingSteps(string, string, IEnumerable{MetadataReference}?)"/>, but the second
+    /// run's compilation is built as a genuine incremental edit of the first - <c>SyntaxTree.WithChangedText</c>
+    /// applied to the first run's own tree, then swapped into the first run's own compilation via
+    /// <c>Compilation.ReplaceSyntaxTree</c> - rather than two independently parsed compilations.
+    /// </summary>
+    /// <remarks>
+    /// This distinction matters for per-syntax-node incremental generator steps specifically (ticket 53):
+    /// Roslyn's incremental engine only recognizes an unaffected syntax subtree as reusable - and skips
+    /// re-invoking a <c>CreateSyntaxProvider</c> transform for it entirely, reporting that step's output as
+    /// <see cref="Microsoft.CodeAnalysis.IncrementalStepRunReason.Cached"/> - when the new tree shares green
+    /// nodes with the old one via this kind of incremental edit. Two independently parsed
+    /// <see cref="Microsoft.CodeAnalysis.SyntaxTree"/> instances (as <see cref="CreateCompilation"/> produces on
+    /// each call) share no such ancestry even when their text is identical, so every candidate's transform
+    /// re-runs regardless of what changed - which is the right way to test a *compilation-level* step like
+    /// <see cref="CompilationInfo"/>'s (a fresh, unrelated compilation is exactly what a separate project
+    /// reference or separate build invocation looks like), but the wrong way to test whether an edit untouched
+    /// by a given candidate lets that candidate's own step report <c>Cached</c>.
+    /// </remarks>
+    /// <param name="firstSource">The source compiled and run first.</param>
+    /// <param name="secondSource">The source the first run's own tree is incrementally edited into for the second run.</param>
+    /// <param name="extraReferences">Additional references shared by both runs - see <see cref="CreateCompilation"/>.</param>
+    /// <returns>The second run's result, with incremental step tracking enabled.</returns>
+    public static GeneratorDriverRunResult RunTwiceTrackingStepsWithIncrementalEdit(
+        string firstSource,
+        string secondSource,
+        IEnumerable<MetadataReference>? extraReferences = null
+    )
+    {
+        var firstCompilation = CreateCompilation(firstSource, extraReferences: extraReferences);
+        var firstTree = firstCompilation.SyntaxTrees.Single();
+        var secondTree = firstTree.WithChangedText(Microsoft.CodeAnalysis.Text.SourceText.From(secondSource));
+        var secondCompilation = firstCompilation.ReplaceSyntaxTree(firstTree, secondTree);
+
+        GeneratorDriver driver = CSharpGeneratorDriver.Create(
+            [new InterlocutorSourceGenerator().AsSourceGenerator()],
+            driverOptions: new GeneratorDriverOptions(IncrementalGeneratorOutputKind.None, trackIncrementalGeneratorSteps: true)
+        );
+
+        driver = driver.RunGenerators(firstCompilation);
+        driver = driver.RunGenerators(secondCompilation);
 
         return driver.GetRunResult();
     }

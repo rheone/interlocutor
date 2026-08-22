@@ -1,19 +1,17 @@
 namespace Interlocutor.Generator;
 
-using System.Linq;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-
 /// <summary>
 /// Decides whether a concrete type argument satisfies one of an open generic handler's own type parameter
 /// constraints (ADR-0008, ticket 11) - the check that keeps a request whose type argument fails a handler's
 /// <c>where</c> clause from being closed over that handler.
 /// </summary>
 /// <remarks>
-/// Resolution happens against the live <see cref="Compilation"/> at source-production time, not at analysis
-/// time, because the constraint and the concrete argument are usually discovered independently, from different
-/// syntax trees (see <see cref="OpenGenericHandlerModel"/> and <see cref="ClosedGenericRequestUsageModel"/>'s
-/// remarks) - both are re-resolved here from the metadata names each side already captured.
+/// Resolved purely from a pre-built <see cref="GenericConstraintSnapshot"/> (ticket 53) rather than the live
+/// <see cref="Microsoft.CodeAnalysis.Compilation"/> - both sides are looked up here by the metadata names each
+/// side already captured, but the actual semantic-model resolution happened once, earlier, in
+/// <see cref="GenericConstraintSnapshotBuilder.Build"/>, so this method (and everything that calls it) never
+/// needs the raw <see cref="Microsoft.CodeAnalysis.Compilation"/> object itself - keeping
+/// <see cref="OpenGenericHandlerResolver.Resolve"/>'s own inputs incremental-pipeline-cacheable.
 /// </remarks>
 internal static class GenericConstraintChecker
 {
@@ -26,12 +24,12 @@ internal static class GenericConstraintChecker
     /// resolve one for it (a constructed generic, array, or similar shape) - treated as satisfying every
     /// constraint, since it cannot be soundly checked from a metadata name alone.
     /// </param>
-    /// <param name="compilation">The compilation to re-resolve both sides' metadata names against.</param>
+    /// <param name="snapshot">The pre-resolved facts to check both sides against - see <see cref="GenericConstraintSnapshot"/>.</param>
     /// <returns><see langword="true"/> if every constraint clause is satisfied (or unresolvable and therefore assumed satisfied).</returns>
     public static bool Satisfies(
         GenericParameterConstraintModel constraint,
         string? argumentMetadataName,
-        Compilation compilation
+        GenericConstraintSnapshot snapshot
     )
     {
         if (argumentMetadataName is null)
@@ -39,23 +37,34 @@ internal static class GenericConstraintChecker
             return true;
         }
 
-        var argumentType = compilation.GetTypeByMetadataName(argumentMetadataName);
-        if (argumentType is null)
+        ResolvedArgumentTypeFact? argumentFact = null;
+        foreach (var fact in snapshot.ArgumentTypeFacts)
         {
+            if (fact.MetadataName == argumentMetadataName)
+            {
+                argumentFact = fact;
+                break;
+            }
+        }
+
+        if (argumentFact is null)
+        {
+            // Mirrors the original "GetTypeByMetadataName returned null - cannot soundly check, assume
+            // satisfied" fallback: no fact means the snapshot builder could not resolve this type either.
             return true;
         }
 
-        if (constraint.HasValueTypeConstraint && !argumentType.IsValueType)
+        if (constraint.HasValueTypeConstraint && !argumentFact.Value.IsValueType)
         {
             return false;
         }
 
-        if (constraint.HasReferenceTypeConstraint && !argumentType.IsReferenceType)
+        if (constraint.HasReferenceTypeConstraint && !argumentFact.Value.IsReferenceType)
         {
             return false;
         }
 
-        if (constraint.HasConstructorConstraint && !HasAccessibleParameterlessConstructor(argumentType))
+        if (constraint.HasConstructorConstraint && !argumentFact.Value.HasAccessibleParameterlessConstructor)
         {
             return false;
         }
@@ -68,7 +77,7 @@ internal static class GenericConstraintChecker
         // non-nullable counterpart (nullability annotation is not part of a type's metadata identity), so
         // there is no way to distinguish the two from argumentMetadataName alone. Both cases fall back to this
         // method's existing "unresolvable from a metadata name -> treated as satisfied" trade-off, the same one
-        // applied to every entry in ConstraintTypeMetadataNames that resolves to null above.
+        // applied to every constraint type name the snapshot builder could not resolve.
         foreach (var constraintTypeName in constraint.ConstraintTypeMetadataNames)
         {
             if (constraintTypeName is null)
@@ -78,17 +87,26 @@ internal static class GenericConstraintChecker
                 continue;
             }
 
-            var constraintType = compilation.GetTypeByMetadataName(constraintTypeName);
-            if (constraintType is null)
+            var isSatisfying = true;
+            var found = false;
+            foreach (var fact in snapshot.ConversionFacts)
             {
+                if (fact.ArgumentMetadataName == argumentMetadataName && fact.ConstraintTypeMetadataName == constraintTypeName)
+                {
+                    found = true;
+                    isSatisfying = fact.IsSatisfyingConversion;
+                    break;
+                }
+            }
+
+            if (!found)
+            {
+                // The snapshot builder could not resolve the constraint type either - treated as satisfied,
+                // same as the original "constraintType is null -> continue" fallback.
                 continue;
             }
 
-            // ClassifyConversion is a CSharpCompilation member, not one on the language-agnostic base type -
-            // this generator is C#-only (see InterlocutorSourceGenerator's [Generator(LanguageNames.CSharp)]),
-            // so the cast always succeeds in practice.
-            var conversion = ((CSharpCompilation)compilation).ClassifyConversion(argumentType, constraintType);
-            if (!conversion.Exists || !(conversion.IsIdentity || conversion.IsImplicit))
+            if (!isSatisfying)
             {
                 return false;
             }
@@ -96,12 +114,4 @@ internal static class GenericConstraintChecker
 
         return true;
     }
-
-    /// <summary>Whether <paramref name="type"/> has a public, accessible, parameterless constructor - or is a value type, which always does.</summary>
-    private static bool HasAccessibleParameterlessConstructor(ITypeSymbol type) =>
-        type.IsValueType
-        || (
-            type is INamedTypeSymbol named
-            && named.InstanceConstructors.Any(c => c.Parameters.Length == 0 && c.DeclaredAccessibility == Accessibility.Public)
-        );
 }

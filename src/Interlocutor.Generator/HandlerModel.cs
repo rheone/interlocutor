@@ -1,6 +1,7 @@
 namespace Interlocutor.Generator;
 
 using System.Collections.Immutable;
+using System.Linq;
 using Microsoft.CodeAnalysis;
 
 /// <summary>
@@ -57,4 +58,56 @@ internal sealed record HandlerModel(
     /// <summary>Gets <see cref="RunBefore"/>.</summary>
     /// <value>Defaulted to empty rather than a default (uninitialized) <c>ImmutableArray</c>.</value>
     public ImmutableArray<string> RunBeforeOrEmpty => this.RunBefore.IsDefault ? [] : this.RunBefore;
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Overridden for two reasons (ticket 53). First, the same reason as
+    /// <see cref="CompilationInfo.Equals(CompilationInfo?)"/>: <see cref="ImmutableArray{T}"/>'s own
+    /// <c>Equals</c> compares its backing array by reference, not by element, so the compiler-generated
+    /// positional-record equality this type would otherwise get from <see cref="RunAfter"/>/<see cref="RunBefore"/>
+    /// is useless for incremental-pipeline caching. Second, <see cref="Location"/> is deliberately excluded:
+    /// <see cref="Microsoft.CodeAnalysis.Location"/>'s own equality compares the declaring
+    /// <see cref="Microsoft.CodeAnalysis.SyntaxTree"/> by reference, and a syntax-provider transform re-runs
+    /// (producing a new <see cref="Microsoft.CodeAnalysis.SyntaxTree"/> instance) for every candidate in a file
+    /// whenever *any* part of that file changes - even a change nowhere near this handler's own declaration.
+    /// Two <see cref="HandlerModel"/>s whose registration-relevant fields are otherwise identical describe the
+    /// exact same logical registration regardless of which physical <see cref="Microsoft.CodeAnalysis.SyntaxTree"/>
+    /// instance produced them, so comparing <see cref="Location"/> would defeat downstream caching for reasons
+    /// that have nothing to do with what actually changed. <see cref="Location"/> remains available as data for
+    /// anchoring diagnostics within a single run; it is simply not part of this type's notion of equality.
+    /// </remarks>
+    public bool Equals(HandlerModel? other) =>
+        other is not null
+        && this.Kind == other.Kind
+        && this.HandlerTypeName == other.HandlerTypeName
+        && this.RequestTypeName == other.RequestTypeName
+        && this.ResponseTypeName == other.ResponseTypeName
+        && this.ServiceInterfaceName == other.ServiceInterfaceName
+        && this.RunAfterOrEmpty.SequenceEqual(other.RunAfterOrEmpty)
+        && this.RunBeforeOrEmpty.SequenceEqual(other.RunBeforeOrEmpty);
+
+    /// <inheritdoc/>
+    public override int GetHashCode()
+    {
+        // netstandard2.0 (this project's target - see ADR-0008) has no System.HashCode, so combine by hand
+        // rather than pull in a polyfill package for one method. Location is deliberately excluded - see
+        // the remarks on Equals above.
+        var hash = 17;
+        hash = (hash * 31) + this.Kind.GetHashCode();
+        hash = (hash * 31) + this.HandlerTypeName.GetHashCode();
+        hash = (hash * 31) + this.RequestTypeName.GetHashCode();
+        hash = (hash * 31) + (this.ResponseTypeName?.GetHashCode() ?? 0);
+        hash = (hash * 31) + this.ServiceInterfaceName.GetHashCode();
+        foreach (var name in this.RunAfterOrEmpty)
+        {
+            hash = (hash * 31) + name.GetHashCode();
+        }
+
+        foreach (var name in this.RunBeforeOrEmpty)
+        {
+            hash = (hash * 31) + name.GetHashCode();
+        }
+
+        return hash;
+    }
 }

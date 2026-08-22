@@ -36,13 +36,13 @@ internal static class OpenGenericHandlerResolver
     /// <param name="closedHandlers">Every already-closed query/command handler discovered in the compilation.</param>
     /// <param name="openHandlers">Every open generic query/command handler discovered in the compilation.</param>
     /// <param name="usages">Every fully closed generic type usage found anywhere in the compilation.</param>
-    /// <param name="compilation">The compilation to re-resolve constraint and argument metadata names against.</param>
+    /// <param name="snapshot">The pre-resolved constraint/argument facts to check against - see <see cref="GenericConstraintSnapshot"/>.</param>
     /// <returns>The closed handlers produced by successfully resolved matches, plus any diagnostics.</returns>
     public static Result Resolve(
         ImmutableArray<HandlerModel> closedHandlers,
         ImmutableArray<OpenGenericHandlerModel> openHandlers,
         ImmutableArray<ClosedGenericRequestUsageModel> usages,
-        Compilation compilation
+        GenericConstraintSnapshot snapshot
     )
     {
         var diagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
@@ -74,7 +74,7 @@ internal static class OpenGenericHandlerResolver
                     continue;
                 }
 
-                ResolveUsage(handlersInGroup, usage, compilation, closedResults, diagnostics, reportedAmbiguities);
+                ResolveUsage(handlersInGroup, usage, snapshot, closedResults, diagnostics, reportedAmbiguities);
             }
         }
 
@@ -85,7 +85,7 @@ internal static class OpenGenericHandlerResolver
     private static void ResolveUsage(
         ImmutableArray<OpenGenericHandlerModel> handlersInGroup,
         ClosedGenericRequestUsageModel usage,
-        Compilation compilation,
+        GenericConstraintSnapshot snapshot,
         ImmutableArray<HandlerModel>.Builder closedResults,
         ImmutableArray<Diagnostic>.Builder diagnostics,
         HashSet<string> reportedAmbiguities
@@ -103,7 +103,7 @@ internal static class OpenGenericHandlerResolver
                 .RequestArgumentParameterNames.Zip(usage.TypeArgumentDisplayNames, static (name, arg) => (name, arg))
                 .ToImmutableDictionary(static t => t.name, static t => t.arg, System.StringComparer.Ordinal);
 
-            if (SatisfiesEveryConstraint(handler, substitutions, usage, compilation))
+            if (SatisfiesEveryConstraint(handler, substitutions, usage, snapshot))
             {
                 matches.Add(new MatchedHandler(handler, substitutions));
             }
@@ -167,14 +167,14 @@ internal static class OpenGenericHandlerResolver
         OpenGenericHandlerModel handler,
         ImmutableDictionary<string, string> substitutions,
         ClosedGenericRequestUsageModel usage,
-        Compilation compilation
+        GenericConstraintSnapshot snapshot
     )
     {
         foreach (var constraint in handler.Constraints)
         {
             var position = handler.RequestArgumentParameterNames.IndexOf(constraint.ParameterName);
             var argumentMetadataName = position >= 0 ? usage.TypeArgumentMetadataNames[position] : null;
-            if (!GenericConstraintChecker.Satisfies(constraint, argumentMetadataName, compilation))
+            if (!GenericConstraintChecker.Satisfies(constraint, argumentMetadataName, snapshot))
             {
                 return false;
             }
