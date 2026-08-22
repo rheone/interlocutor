@@ -1,6 +1,7 @@
 namespace Interlocutor.DependencyInjection.Microsoft.Tests;
 
 using global::Microsoft.Extensions.DependencyInjection;
+using global::Microsoft.Extensions.Logging;
 using Interlocutor.Abstractions;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Markers;
@@ -13,6 +14,32 @@ using Interlocutor.DependencyInjection.Abstractions;
 public class InterlocutorBuilderIntegrationTests
 {
     [Fact]
+    public void AddInterlocutor_WithLoggerFactoryRegistered_LogsTheRegistrationReport()
+    {
+        var services = new ServiceCollection();
+        using var recordingFactory = new RecordingLoggerFactory();
+        services.AddSingleton<ILoggerFactory>(recordingFactory);
+
+        services.AddInterlocutor(builder => builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly));
+
+        var logger = Assert.Single(recordingFactory.CreatedLoggers);
+        var message = Assert.Single(logger.Messages);
+        Assert.Contains("Interlocutor registration report", message);
+    }
+
+    [Fact]
+    public void AddInterlocutor_WithoutLoggerFactoryRegistered_DoesNotThrow()
+    {
+        var services = new ServiceCollection();
+
+        var exception = Record.Exception(() =>
+            services.AddInterlocutor(builder => builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly))
+        );
+
+        Assert.Null(exception);
+    }
+
+    [Fact]
     public void BareBuilder_RegistersMediatorAndHandlers_ButZeroBehaviors()
     {
         var services = new ServiceCollection();
@@ -22,6 +49,88 @@ public class InterlocutorBuilderIntegrationTests
         Assert.Contains(services, s => s.ServiceType == typeof(IMediator));
         Assert.Contains(services, s => s.ServiceType == typeof(IQueryHandler<SampleQuery, OperationOutcome>));
         Assert.DoesNotContain(services, s => s.ServiceType == typeof(IPipelineBehavior<,>));
+    }
+
+    [Fact]
+    public void AddHandler_WithoutScanning_ResolvesThroughARealContainer()
+    {
+        var services = new ServiceCollection();
+
+        services.AddInterlocutor(builder => builder.AddHandler(typeof(SampleQueryHandler)));
+        using var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+
+        Assert.NotNull(scope.ServiceProvider.GetService<IQueryHandler<SampleQuery, OperationOutcome>>());
+    }
+
+    [Fact]
+    public void AddHandler_TakesPrecedenceOverScannedDuplicate_ThroughARealContainer()
+    {
+        var services = new ServiceCollection();
+
+        services.AddInterlocutor(builder =>
+            builder
+                .ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly)
+                .AddHandler(typeof(SampleQueryHandler), RegistrationLifetime.Singleton)
+        );
+        using var provider = services.BuildServiceProvider();
+
+        // A single Singleton registration for this handler - not one Scoped copy from scanning plus a
+        // second Singleton copy from AddHandler - proves the explicit registration replaced, rather than
+        // duplicated, the scanned one.
+        var descriptor = Assert.Single(services, s => s.ServiceType == typeof(IQueryHandler<SampleQuery, OperationOutcome>));
+        Assert.Equal(ServiceLifetime.Singleton, descriptor.Lifetime);
+
+        using var firstScope = provider.CreateScope();
+        using var secondScope = provider.CreateScope();
+        var first = firstScope.ServiceProvider.GetRequiredService<IQueryHandler<SampleQuery, OperationOutcome>>();
+        var second = secondScope.ServiceProvider.GetRequiredService<IQueryHandler<SampleQuery, OperationOutcome>>();
+        Assert.Same(first, second);
+    }
+
+    [Fact]
+    public void AddInterlocutor_WithValidateOnBuild_ThrowsAggregatingEveryProblem_WhenTheConfigurationHasAny()
+    {
+        var services = new ServiceCollection();
+
+        var exception = Assert.Throws<InterlocutorRegistrationValidationException>(() =>
+            services.AddInterlocutor(builder =>
+                builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).ValidateOnBuild()
+            )
+        );
+
+        Assert.Contains(
+            exception.Report.Problems,
+            p =>
+                p.Kind == RegistrationProblemKind.UnhandledRequestType
+                && p.Description.Contains(nameof(UnhandledValidationQuery))
+        );
+    }
+
+    [Fact]
+    public void AddInterlocutor_WithValidateOnBuild_LeavesServicesUnmutated_WhenValidationFails()
+    {
+        var services = new ServiceCollection();
+
+        Assert.Throws<InterlocutorRegistrationValidationException>(() =>
+            services.AddInterlocutor(builder =>
+                builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).ValidateOnBuild()
+            )
+        );
+
+        Assert.Empty(services);
+    }
+
+    [Fact]
+    public void AddInterlocutor_WithoutValidateOnBuild_DoesNotThrow_EvenWithAnUnhandledRequestType()
+    {
+        var services = new ServiceCollection();
+
+        var exception = Record.Exception(() =>
+            services.AddInterlocutor(builder => builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly))
+        );
+
+        Assert.Null(exception);
     }
 
     [Fact]
@@ -416,6 +525,9 @@ public class InterlocutorBuilderIntegrationTests
             Task.FromResult(default(OperationOutcome));
     }
 
+    /// <summary>Deliberately has no handler, so ValidateOnBuild() tests have a deterministic problem to find.</summary>
+    private sealed record UnhandledValidationQuery : IQuery<OperationOutcome>;
+
     private sealed class RecordingStage(List<string> log) : PipelineStageBase<SampleQuery, OperationOutcome>
     {
         public override async Task<StageResult<OperationOutcome>> OnBeforeAsync(SampleQuery request, CancellationToken ct)
@@ -500,5 +612,40 @@ public class InterlocutorBuilderIntegrationTests
                 return result;
             }
         }
+    }
+
+    /// <summary>An <see cref="ILoggerFactory"/> whose loggers record every formatted message they receive.</summary>
+    private sealed class RecordingLoggerFactory : ILoggerFactory
+    {
+        public List<RecordingLogger> CreatedLoggers { get; } = [];
+
+        public void AddProvider(ILoggerProvider provider) { }
+
+        public ILogger CreateLogger(string categoryName)
+        {
+            var logger = new RecordingLogger();
+            this.CreatedLoggers.Add(logger);
+            return logger;
+        }
+
+        public void Dispose() { }
+    }
+
+    private sealed class RecordingLogger : ILogger
+    {
+        public List<string> Messages { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state)
+            where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(
+            LogLevel logLevel,
+            EventId eventId,
+            TState state,
+            Exception? exception,
+            Func<TState, Exception?, string> formatter
+        ) => this.Messages.Add(formatter(state, exception));
     }
 }

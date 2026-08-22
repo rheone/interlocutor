@@ -70,6 +70,39 @@ public class InterlocutorPipelineBuilderTests
     }
 
     [Fact]
+    public void AddTransactionBehavior_WithNHibernateReferenced_RecordsEfCoreProbeAsSkipped()
+    {
+        // This test project references NHibernate but not EntityFrameworkCore (see its own comment), so
+        // AddTransactionBehavior finds NHibernate but the EF Core probe it tries first genuinely finds
+        // nothing - the real "package not referenced" path, not a contrived one.
+        var builder = new InterlocutorPipelineBuilder();
+
+        builder.AddTransactionBehavior();
+
+        var skipped = Assert.Single(builder.Skipped);
+        Assert.Contains("EntityFrameworkCore", skipped.Description);
+        Assert.Contains("not referenced", skipped.Reason);
+    }
+
+    [Fact]
+    public void AddValidationBehavior_WithFluentValidationReferenced_RecordsNothingAsSkipped()
+    {
+        var builder = new InterlocutorPipelineBuilder();
+
+        builder.AddValidationBehavior();
+
+        Assert.Empty(builder.Skipped);
+    }
+
+    [Fact]
+    public void BareBuilder_HasNoSkippedRegistrations()
+    {
+        var builder = new InterlocutorPipelineBuilder();
+
+        Assert.Empty(builder.Skipped);
+    }
+
+    [Fact]
     public void UseRecommendedChain_AddsBehaviorsInCanonicalOrder()
     {
         var builder = new InterlocutorPipelineBuilder();

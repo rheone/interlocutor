@@ -1,3 +1,5 @@
+> **Status: done** - implemented on the `improvements` branch: `ScanAssembly`/`ScanAssemblies`/`ScanAssemblyContaining<TMarker>`/`ScanEntryAssembly` each gained an optional `RegistrationLifetime` parameter (an overload for `ScanAssemblies`, since `params` forces the lifetime first); `InterlocutorBuilder.AddHandler(Type, RegistrationLifetime)` added, sharing `HandlerDiscovery`'s per-type contract-interface reflection via new internal `DescribeHandler`; `RegistrationProvenance` (`Scanned`/`Explicit`/`Matched`) added to `InterlocutorRegistration`; the new `InterlocutorBuilder.Handlers` property merges scanned and explicit registrations, explicit winning on a duplicate (service type, implementation type) pair regardless of call order; both DI packages now translate `builder.Handlers` instead of calling `HandlerDiscovery.Discover` directly.
+
 ## Labels
 
 ready-for-agent

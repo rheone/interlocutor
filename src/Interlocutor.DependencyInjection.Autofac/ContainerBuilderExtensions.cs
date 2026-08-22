@@ -3,6 +3,7 @@ namespace Interlocutor.DependencyInjection.Autofac;
 using global::Autofac;
 using global::Autofac.Builder;
 using global::Autofac.Extensions.DependencyInjection;
+using global::Microsoft.Extensions.Logging;
 using Interlocutor.Abstractions;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
@@ -63,12 +64,30 @@ public static class InterlocutorAutofacExtensions
         var interlocutorBuilder = new InterlocutorBuilder();
         configure(interlocutorBuilder);
 
-        Apply(builder, HandlerDiscovery.Discover(interlocutorBuilder.AssembliesToScan));
+        // Built once and reused for validation, the deferred log below, and nothing else - it needs no
+        // live container, so it is checked before this call mutates builder at all: a caller catching
+        // InterlocutorRegistrationValidationException finds builder exactly as it left it, not partially
+        // configured. Reused rather than calling DescribeRegistrations() a second time, since it re-scans
+        // every configured assembly each time.
+        var report = interlocutorBuilder.DescribeRegistrations();
+        if (report.Problems.Count > 0)
+        {
+            throw new InterlocutorRegistrationValidationException(report);
+        }
+
+        Apply(builder, interlocutorBuilder.Handlers);
         Apply(builder, interlocutorBuilder.GeneratedRegistrations);
         Apply(builder, interlocutorBuilder.Stages);
         ApplyFactories(builder, interlocutorBuilder.StageFactories);
         Apply(builder, interlocutorBuilder.Behaviors);
+        Apply(builder, interlocutorBuilder.MatchedRegistrations);
         TryApplyDefaults(builder, interlocutorBuilder.Defaults);
+
+        // Deferred to a build callback (rather than resolved eagerly here) since only the fully-built
+        // container can answer whether the application actually registered an ILoggerFactory - Autofac's
+        // registration order is unordered relative to this call, unlike Microsoft DI's IServiceCollection,
+        // which this same probe can inspect synchronously (see ServiceCollectionExtensions.TryLogRegistrationReport).
+        builder.RegisterBuildCallback(container => TryLogRegistrationReport(container, report));
 
         // Bridge Autofac's lifetime scope to IServiceProvider. The Mediator uses IServiceProvider to resolve
         // handlers, so we need to adapt Autofac's ILifetimeScope to the standard IServiceProvider abstraction.
@@ -178,6 +197,25 @@ public static class InterlocutorAutofacExtensions
                 );
             }
         }
+    }
+
+    /// <summary>
+    /// Logs <see cref="InterlocutorBuilder.DescribeRegistrations"/>'s formatted report once the container
+    /// finishes building, but only when the application has registered <see cref="ILoggerFactory"/> -
+    /// additive, never required to use the report. A container that never registered one is silently
+    /// skipped: reporting is observability, not a configuration requirement.
+    /// </summary>
+    /// <param name="container">The fully-built root lifetime scope the build callback receives.</param>
+    /// <param name="report">The already-built report to log.</param>
+    private static void TryLogRegistrationReport(ILifetimeScope container, RegistrationReport report)
+    {
+        if (!container.TryResolve<ILoggerFactory>(out var loggerFactory))
+        {
+            return;
+        }
+
+        var logger = loggerFactory.CreateLogger("Interlocutor");
+        logger.LogInformation("{Report}", report.Format());
     }
 
     /// <summary>

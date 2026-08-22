@@ -19,9 +19,23 @@ namespace Interlocutor.DependencyInjection.Abstractions;
 /// </param>
 /// <param name="Lifetime">The service lifetime the registration should use.</param>
 /// <param name="Kind">The role this registration plays, used by translators and future override policy.</param>
+/// <param name="Provenance">
+/// Which builder mechanism produced this registration. Defaults to <see cref="RegistrationProvenance.Explicit"/>
+/// since most construction sites (behaviors, stages, defaults, generator-emitted entries) are single-target
+/// calls; <see cref="HandlerDiscovery.Discover(System.Collections.Generic.IEnumerable{System.Reflection.Assembly})"/>
+/// is the one caller that overrides it to <see cref="RegistrationProvenance.Scanned"/>.
+/// </param>
+/// <param name="MatchedByRule">
+/// When <paramref name="Provenance"/> is <see cref="RegistrationProvenance.Matched"/>, identifies which
+/// <see cref="TypeMatchRule"/> produced this registration - either that rule's own
+/// <see cref="TypeMatchRule.Name"/>, or its position among <see cref="InterlocutorBuilder.MatchRules"/> when
+/// unnamed. <see langword="null"/> for every other <paramref name="Provenance"/>.
+/// </param>
 public readonly record struct InterlocutorRegistration(
     Type ServiceType,
     Type ImplementationType,
     RegistrationLifetime Lifetime,
-    RegistrationKind Kind
+    RegistrationKind Kind,
+    RegistrationProvenance Provenance = RegistrationProvenance.Explicit,
+    string? MatchedByRule = null
 );

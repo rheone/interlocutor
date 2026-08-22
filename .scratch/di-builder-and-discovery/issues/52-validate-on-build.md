@@ -1,3 +1,5 @@
+> **Status: done** - implemented on the `improvements` branch: `InterlocutorBuilder.ValidateOnBuild()` (opt-in flag), `RegistrationProblem`/`RegistrationProblemKind` (`UnhandledRequestType`/`UnmatchedRequiredRule`/`ConflictingLifetime`), and `InterlocutorRegistrationValidationException` (carries the same `RegistrationReport` `DescribeRegistrations()` returns, with `Problems` populated). `DescribeRegistrations()` only computes `Problems` when `ValidateOnBuild()` was called - omitting it runs zero additional checks, same as before. Both DI packages build the report once at `AddInterlocutor()` time and throw, aggregating every problem found, before applying container registrations further; `InterlocutorStartupValidation.ValidateHandlerRegistrations` is untouched.
+
 ## Labels
 
 ready-for-agent

@@ -1,3 +1,5 @@
+> **Status: done** - implemented on the `improvements` branch: `InterlocutorBuilder.AddTypeMatch(predicate, target, lifetime, except, require)`, `TypeMatchTarget` (`Handler`/`Behavior`), and `TypeMatchRule`. Matches are evaluated lazily against every candidate type found while scanning (`CandidateTypesForMatching`, the same concrete/non-abstract filter `HandlerDiscovery.Discover` uses) and exposed via the new `InterlocutorBuilder.MatchedRegistrations` property - strictly additive to `Handlers`/`Behaviors`/marker-interface-scoped behaviors, with no deduplication (two rules matching the same type as the same service at the same lifetime coexist as legal duplicates, consistent with the existing `Handler`/`Behavior` add-semantics precedent). `Require` is recorded on the rule but not enforced here - see ticket 52. Both DI packages apply `builder.MatchedRegistrations` as an additional pass alongside `Handlers`/`Behaviors`.
+
 ## Labels
 
 ready-for-agent

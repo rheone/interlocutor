@@ -73,7 +73,40 @@ Runtime scanning looks for:
 - `ICommandHandler<TCommand>` (void) implementations → registered as scoped
 - `INotificationHandler<TNotification>` implementations → registered as scoped
 
+`ScanAssembly`, `ScanAssemblyContaining<TMarker>`, and `ScanEntryAssembly` each take an optional `RegistrationLifetime`, applied to every handler that assembly yields; `ScanAssemblies` has a `RegistrationLifetime` overload for the same, since a `params` array forces the lifetime to come first. All default to scoped.
+
+```csharp
+builder.ScanAssembly(typeof(MyDomainModel).Assembly, RegistrationLifetime.Singleton);
+```
+
 `IPipelineStage<TRequest, TResponse>` registration is separate - stages are registered explicitly via `InterlocutorBuilder.AddStage`, not discovered by scanning.
+
+### Registering a Single Handler
+
+`AddHandler` registers one handler implementation type directly, without scanning - the manual escape hatch for handlers, mirroring `AddBehavior`'s shape:
+
+```csharp
+builder.AddHandler(typeof(CreateOrderHandler));
+builder.AddHandler(typeof(GenericAuditHandler<>), RegistrationLifetime.Singleton); // open generic
+```
+
+An `AddHandler` call takes precedence over a duplicate discovered by scanning in the same configuration - it replaces, rather than duplicates, the scanned registration for that (service type, implementation type) pair.
+
+### Registering by Predicate
+
+`AddTypeMatch` registers every candidate type found while scanning that a predicate matches, as a handler or a behavior:
+
+```csharp
+builder.ScanAssembly(typeof(Program).Assembly);
+builder.AddTypeMatch(
+    t => t.Namespace == "MyApp.Audit",
+    TypeMatchTarget.Handler,
+    except: t => t == typeof(LegacyAuditHandler),
+    name: "audit-handlers"
+);
+```
+
+Matching zero types is legal and silent by default; pass `require: true` to record that this rule must match at least one type - `ValidateOnBuild()` (below) is what actually enforces it. This is strictly additive to marker-interface-based behavior scoping (`ITransactionalRequest`, `IAuditableRequest`, `IRequiresPolicy`, `IExternalStoreRequest`) - both mechanisms work independently and simultaneously.
 
 ## Pipeline Behaviors
 
@@ -156,12 +189,38 @@ services.AddInterlocutor(builder =>
 });
 ```
 
+## Inspecting What Was Registered
+
+`InterlocutorBuilder.DescribeRegistrations()` returns a structured, container-neutral `RegistrationReport` - every accumulated registration with its provenance (`Scanned`, `Explicit`, or `Matched`, plus which rule for `Matched`), every optional-package probe that found nothing (`AddValidationBehavior`/`AddTransactionBehavior` when `Interlocutor.FluentValidation`/`.EntityFrameworkCore`/`.NHibernate` aren't referenced), and, once `ValidateOnBuild()` is configured, every validation problem found. Call it at any time; `Format()`/`ToString()` render it as text:
+
+```csharp
+services.AddInterlocutor(builder =>
+{
+    builder.ScanAssembly(typeof(Program).Assembly);
+    var report = builder.DescribeRegistrations();
+    Console.WriteLine(report.Format());
+});
+```
+
+If the application has already registered `ILoggerFactory` before `AddInterlocutor()` runs, both DI packages log the formatted report automatically at that point - additive, never required.
+
 ## Startup Validation
 
-`AddInterlocutor` itself does not validate that every discovered request type has a registered handler - it only accumulates and translates registrations, both for runtime scanning and for generated registrations. Two separate mechanisms exist for catching a missing handler, neither of them automatic:
+`AddInterlocutor` does not validate that every discovered request type has a registered handler unless you opt in - it otherwise only accumulates and translates registrations, both for runtime scanning and for generated registrations. Three separate mechanisms exist for catching a missing handler, none of them automatic:
 
 - **A build-time diagnostic from the source generator** (`INTERLOC001`) fires as a compiler warning when a request type has no matching handler *in the same compilation* - default severity `Warning`, escalatable to a build error via `.editorconfig` (`dotnet_diagnostic.INTERLOC001.severity = error`). This only sees what the compiler sees; it can't know about handlers registered through runtime scanning of an assembly outside the current compilation.
-- **An explicit, opt-in runtime check**, made once your container is built: `IServiceProvider.ValidateHandlerRegistrations(params Assembly[])`. It reflects over the given assemblies, derives each request type's expected handler contract, and throws `InvalidOperationException` - naming every missing registration in one message - if any are absent.
+- **`InterlocutorBuilder.ValidateOnBuild()`**, checked entirely from the accumulated registration list - no live container needed - the moment `AddInterlocutor()` is called:
+
+  ```csharp
+  services.AddInterlocutor(builder =>
+  {
+      builder.ScanAssembly(typeof(Program).Assembly);
+      builder.ValidateOnBuild();
+  });
+  ```
+
+  Besides an unhandled query/command type, it also catches a required `AddTypeMatch` rule that matched nothing, and two registrations of the same (service type, implementation type) pair at conflicting lifetimes. Every problem found is aggregated into one `InterlocutorRegistrationValidationException`, thrown from `AddInterlocutor()` before it mutates the container at all - carrying the same `RegistrationReport` `DescribeRegistrations()` returns, with `Problems` populated.
+- **An explicit, opt-in runtime check**, made once your container is built: `IServiceProvider.ValidateHandlerRegistrations(params Assembly[])`. It reflects over the given assemblies, derives each request type's expected handler contract, and throws `InvalidOperationException` - naming every missing registration in one message - if any are absent. Unlike `ValidateOnBuild()`, this needs a live container, so it can also catch what a registration-list-only check cannot (this method's own scope is otherwise the same query/command check as `ValidateOnBuild()`).
 
 ```csharp
 var provider = services.BuildServiceProvider();

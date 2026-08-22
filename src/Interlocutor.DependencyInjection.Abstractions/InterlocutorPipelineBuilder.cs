@@ -42,6 +42,7 @@ public sealed class InterlocutorPipelineBuilder
 {
     private readonly List<InterlocutorRegistration> _behaviors = [];
     private readonly Dictionary<Type, InterlocutorRegistration> _defaults;
+    private readonly List<SkippedRegistration> _skipped = [];
     private readonly List<InterlocutorRegistration> _stages = [];
     private readonly List<InterlocutorFactoryRegistration> _stageFactories = [];
 
@@ -95,6 +96,14 @@ public sealed class InterlocutorPipelineBuilder
     /// </summary>
     /// <value>The delegate-backed pipeline stage registrations.</value>
     public IReadOnlyList<InterlocutorFactoryRegistration> StageFactories => this._stageFactories;
+
+    /// <summary>
+    /// Gets every registration this builder deliberately did not make, and why - currently only the
+    /// silent optional-package probes behind <see cref="AddValidationBehavior"/> and
+    /// <see cref="AddTransactionBehavior"/> when the corresponding package is not referenced.
+    /// </summary>
+    /// <value>Every registration this builder deliberately did not make, and why.</value>
+    public IReadOnlyList<SkippedRegistration> Skipped => this._skipped;
 
     /// <summary>
     /// Adds a pipeline behavior implementation at the current position in the chain. This is the
@@ -188,6 +197,15 @@ public sealed class InterlocutorPipelineBuilder
             this.AddBehavior(validationBehaviorType);
             this.TryAddDefault(typeof(IOutcomeCaseRegistry), typeof(DefaultOutcomeCaseRegistry));
         }
+        else
+        {
+            this._skipped.Add(
+                new SkippedRegistration(
+                    "Interlocutor.FluentValidation.ValidationBehavior<,>",
+                    "Interlocutor.FluentValidation package is not referenced by the application"
+                )
+            );
+        }
 
         return this;
     }
@@ -202,9 +220,33 @@ public sealed class InterlocutorPipelineBuilder
     {
         // EF Core's TransactionBehavior<TRequest,TResponse,TContext> is arity 3 (generic over the DbContext
         // type too); NHibernate's TransactionBehavior<TRequest,TResponse> is arity 2 (ISession isn't generic).
-        var transactionBehaviorType =
-            TryGetType("Interlocutor.EntityFrameworkCore.TransactionBehavior`3, Interlocutor.EntityFrameworkCore")
-            ?? TryGetType("Interlocutor.NHibernate.TransactionBehavior`2, Interlocutor.NHibernate");
+        // NHibernate is only probed - and only reported as skipped - when EF Core isn't found, preserving
+        // the original short-circuit: a project referencing neither is silently skipped for both, one
+        // referencing only NHibernate is skipped for EF Core alone.
+        var efCoreType = TryGetType("Interlocutor.EntityFrameworkCore.TransactionBehavior`3, Interlocutor.EntityFrameworkCore");
+        Type? nHibernateType = null;
+        if (efCoreType is null)
+        {
+            this._skipped.Add(
+                new SkippedRegistration(
+                    "Interlocutor.EntityFrameworkCore.TransactionBehavior<,,>",
+                    "Interlocutor.EntityFrameworkCore package is not referenced by the application"
+                )
+            );
+
+            nHibernateType = TryGetType("Interlocutor.NHibernate.TransactionBehavior`2, Interlocutor.NHibernate");
+            if (nHibernateType is null)
+            {
+                this._skipped.Add(
+                    new SkippedRegistration(
+                        "Interlocutor.NHibernate.TransactionBehavior<,>",
+                        "Interlocutor.NHibernate package is not referenced by the application"
+                    )
+                );
+            }
+        }
+
+        var transactionBehaviorType = efCoreType ?? nHibernateType;
         if (transactionBehaviorType is not null)
         {
             this.AddBehavior(transactionBehaviorType);

@@ -1,3 +1,5 @@
+> **Status: done** - implemented on the `improvements` branch (commit `b45b2f9`): open generic handler resolution now consumes a `GenericConstraintSnapshot` built once in `Initialize` instead of the raw `Compilation`; `TypeAnalysisResult`/`HandlerModel`/`OpenGenericHandlerModel`/`GenericParameterConstraintModel`/`ClosedGenericRequestUsageModel` equality gaps fixed along the way. A structurally-unchanged rebuild now reports the final `RegisterSourceOutput` step as `Cached`/`Unchanged`.
+
 Status: ready-for-agent
 
 ## Labels

@@ -1,3 +1,5 @@
+> **Status: done** - implemented on the `improvements` branch: `RegistrationReport` (container-neutral, `Registrations`/`StageFactories`/`Skipped`/`Problems`, plus a `Format()`/`ToString()` renderer), `SkippedRegistration`, and `InterlocutorBuilder.DescribeRegistrations()`. `AddValidationBehavior`/`AddTransactionBehavior` now record a `SkippedRegistration` when an optional package probe (`TryGetType`) finds nothing. Both DI packages log the formatted report at `AddInterlocutor()` time when the application already registered `ILoggerFactory` - Microsoft DI checks `IServiceCollection` synchronously (a short-lived, non-validating temporary provider resolves the logger); Autofac defers to `RegisterBuildCallback` since only the built container can answer that question there. Neither path is required to use the report, and a failure to resolve a logger is swallowed rather than failing `AddInterlocutor()`.
+
 ## Labels
 
 ready-for-agent

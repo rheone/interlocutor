@@ -17,6 +17,20 @@ public class HandlerDiscoveryTests
         Assert.Equal(typeof(IQueryHandler<SampleQuery, OperationOutcome>), registration.ServiceType);
         Assert.Equal(RegistrationLifetime.Scoped, registration.Lifetime);
         Assert.Equal(RegistrationKind.Handler, registration.Kind);
+        Assert.Equal(RegistrationProvenance.Scanned, registration.Provenance);
+    }
+
+    [Fact]
+    public void Discover_WithPerAssemblyLifetime_AppliesItToEveryMatchFromThatAssembly()
+    {
+        var registrations = HandlerDiscovery.Discover([
+            (typeof(HandlerDiscoveryTests).Assembly, RegistrationLifetime.Singleton),
+        ]);
+
+        var registration = Assert.Single(registrations, r => r.ImplementationType == typeof(SampleQueryHandler));
+
+        Assert.Equal(RegistrationLifetime.Singleton, registration.Lifetime);
+        Assert.Equal(RegistrationProvenance.Scanned, registration.Provenance);
     }
 
     [Fact]

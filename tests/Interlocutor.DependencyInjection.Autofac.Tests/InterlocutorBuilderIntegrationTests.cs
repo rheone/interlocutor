@@ -29,6 +29,65 @@ public class InterlocutorBuilderIntegrationTests
     }
 
     [Fact]
+    public void AddInterlocutor_WithValidateOnBuild_ThrowsAggregatingEveryProblem_WhenTheConfigurationHasAny()
+    {
+        var containerBuilder = new ContainerBuilder();
+
+        var exception = Assert.Throws<InterlocutorRegistrationValidationException>(() =>
+            containerBuilder.AddInterlocutor(builder =>
+                builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).ValidateOnBuild()
+            )
+        );
+
+        Assert.Contains(
+            exception.Report.Problems,
+            p =>
+                p.Kind == RegistrationProblemKind.UnhandledRequestType
+                && p.Description.Contains(nameof(UnhandledValidationQuery))
+        );
+    }
+
+    [Fact]
+    public void AddInterlocutor_WithoutValidateOnBuild_DoesNotThrow_EvenWithAnUnhandledRequestType()
+    {
+        var containerBuilder = new ContainerBuilder();
+
+        var exception = Record.Exception(() =>
+            containerBuilder.AddInterlocutor(builder =>
+                builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly)
+            )
+        );
+
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void AddInterlocutor_WithLoggerFactoryRegistered_LogsTheRegistrationReport()
+    {
+        var containerBuilder = new ContainerBuilder();
+        using var recordingFactory = new RecordingLoggerFactory();
+        containerBuilder.RegisterInstance<ILoggerFactory>(recordingFactory).ExternallyOwned();
+
+        containerBuilder.AddInterlocutor(builder => builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly));
+        using var container = containerBuilder.Build();
+
+        var logger = Assert.Single(recordingFactory.CreatedLoggers);
+        var message = Assert.Single(logger.Messages);
+        Assert.Contains("Interlocutor registration report", message);
+    }
+
+    [Fact]
+    public void AddInterlocutor_WithoutLoggerFactoryRegistered_DoesNotThrow()
+    {
+        var containerBuilder = new ContainerBuilder();
+
+        containerBuilder.AddInterlocutor(builder => builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly));
+        var exception = Record.Exception(() => containerBuilder.Build());
+
+        Assert.Null(exception);
+    }
+
+    [Fact]
     public void AddAuthorizationBehavior_DoesNotOrphanAuditSink()
     {
         var containerBuilder = new ContainerBuilder();
@@ -253,6 +312,9 @@ public class InterlocutorBuilderIntegrationTests
             Task.FromResult(default(OperationOutcome));
     }
 
+    /// <summary>Deliberately has no handler, so ValidateOnBuild() tests have a deterministic problem to find.</summary>
+    private sealed record UnhandledValidationQuery : IQuery<OperationOutcome>;
+
     private sealed record CancellableQuery : IQuery<OperationOutcome<string, Cancelled>>, ICancellable;
 
     private sealed class CancellableQueryHandler : IQueryHandler<CancellableQuery, OperationOutcome<string, Cancelled>>
@@ -341,5 +403,40 @@ public class InterlocutorBuilderIntegrationTests
                 return result;
             }
         }
+    }
+
+    /// <summary>An <see cref="ILoggerFactory"/> whose loggers record every formatted message they receive.</summary>
+    private sealed class RecordingLoggerFactory : ILoggerFactory
+    {
+        public List<RecordingLogger> CreatedLoggers { get; } = [];
+
+        public void AddProvider(ILoggerProvider provider) { }
+
+        public ILogger CreateLogger(string categoryName)
+        {
+            var logger = new RecordingLogger();
+            this.CreatedLoggers.Add(logger);
+            return logger;
+        }
+
+        public void Dispose() { }
+    }
+
+    private sealed class RecordingLogger : ILogger
+    {
+        public List<string> Messages { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state)
+            where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(
+            LogLevel logLevel,
+            EventId eventId,
+            TState state,
+            Exception? exception,
+            Func<TState, Exception?, string> formatter
+        ) => this.Messages.Add(formatter(state, exception));
     }
 }

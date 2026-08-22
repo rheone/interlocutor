@@ -1,9 +1,12 @@
 namespace Interlocutor.DependencyInjection.Abstractions;
 
 using System.Reflection;
+using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
+using Interlocutor.Abstractions.Markers;
 using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Pipeline.Cases;
+using Interlocutor.Abstractions.Queries;
 
 /// <summary>
 /// Container-neutral fluent builder that is the single configuration surface for Interlocutor -
@@ -82,10 +85,13 @@ using Interlocutor.Abstractions.Pipeline.Cases;
 /// </remarks>
 public sealed class InterlocutorBuilder
 {
-    private readonly List<Assembly> _assembliesToScan = [];
+    private readonly List<(Assembly Assembly, RegistrationLifetime Lifetime)> _assembliesToScan = [];
     private readonly Dictionary<Type, InterlocutorRegistration> _defaults;
+    private readonly Dictionary<(Type ServiceType, Type ImplementationType), InterlocutorRegistration> _explicitHandlers = [];
     private readonly List<InterlocutorRegistration> _generatedRegistrations = [];
+    private readonly List<TypeMatchRule> _matchRules = [];
     private readonly InterlocutorPipelineBuilder _pipeline;
+    private bool _validateOnBuild;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="InterlocutorBuilder"/> class, seeded with the
@@ -113,7 +119,7 @@ public sealed class InterlocutorBuilder
 
     /// <summary>Gets the assemblies configured for handler discovery, in the order they were added.</summary>
     /// <value>The assemblies configured for handler discovery, in the order they were added.</value>
-    public IReadOnlyList<Assembly> AssembliesToScan => this._assembliesToScan;
+    public IReadOnlyList<Assembly> AssembliesToScan => [.. this._assembliesToScan.Select(entry => entry.Assembly)];
 
     /// <summary>
     /// Gets the flat, ordered list of pipeline behavior registrations, in builder-call order. Empty on
@@ -152,8 +158,164 @@ public sealed class InterlocutorBuilder
     public IReadOnlyList<InterlocutorRegistration> GeneratedRegistrations => this._generatedRegistrations;
 
     /// <summary>
+    /// Gets the merged set of handler registrations from both assembly scanning
+    /// (<see cref="ScanAssembly(Assembly, RegistrationLifetime)"/> and its siblings) and explicit
+    /// per-type registration (<see cref="AddHandler"/>) - the single list both container packages
+    /// translate instead of calling <see cref="HandlerDiscovery.Discover(IEnumerable{Assembly})"/> directly.
+    /// </summary>
+    /// <remarks>
+    /// An <see cref="AddHandler"/> call for a given (service type, implementation type) pair takes
+    /// precedence over a duplicate of that same pair discovered by scanning in the same configuration -
+    /// the explicit registration is the one this property yields, not an additional copy alongside it.
+    /// Recomputed on every access, so it always reflects the builder's current configuration.
+    /// </remarks>
+    /// <value>The merged handler registrations, with explicit entries winning over scanned duplicates.</value>
+    public IReadOnlyList<InterlocutorRegistration> Handlers
+    {
+        get
+        {
+            var merged = new Dictionary<(Type ServiceType, Type ImplementationType), InterlocutorRegistration>();
+
+            foreach (var registration in HandlerDiscovery.Discover(this._assembliesToScan))
+            {
+                merged[(registration.ServiceType, registration.ImplementationType)] = registration;
+            }
+
+            // Explicit registrations are applied last so they overwrite - never duplicate - a scanned entry
+            // for the same (service type, implementation type) pair.
+            foreach (var (key, registration) in this._explicitHandlers)
+            {
+                merged[key] = registration;
+            }
+
+            return [.. merged.Values];
+        }
+    }
+
+    /// <summary>
+    /// Gets every predicate-based type-matching rule added via <see cref="AddTypeMatch"/>, in call order.
+    /// </summary>
+    /// <value>Every type-matching rule added so far.</value>
+    public IReadOnlyList<TypeMatchRule> MatchRules => this._matchRules;
+
+    /// <summary>
+    /// Gets every registration produced by a <see cref="TypeMatchRule"/> matching a candidate type found
+    /// while scanning - strictly additive to <see cref="Handlers"/> and <see cref="Behaviors"/>, both of
+    /// which are unaffected by whether any match rules are configured.
+    /// </summary>
+    /// <remarks>
+    /// Two rules matching the same type as the same service at the same lifetime coexist here as legal
+    /// duplicates, consistent with the existing no-deduplication precedent for <see cref="RegistrationKind.Handler"/>
+    /// and <see cref="RegistrationKind.Behavior"/> entries - this property performs no deduplication of its own.
+    /// </remarks>
+    /// <value>Every registration produced by a type-matching rule.</value>
+    public IReadOnlyList<InterlocutorRegistration> MatchedRegistrations
+    {
+        get
+        {
+            var registrations = new List<InterlocutorRegistration>();
+            if (this._matchRules.Count == 0)
+            {
+                return registrations;
+            }
+
+            var candidates = this.CandidateTypesForMatching().ToList();
+            for (var ruleIndex = 0; ruleIndex < this._matchRules.Count; ruleIndex++)
+            {
+                var rule = this._matchRules[ruleIndex];
+                // Falls back to the rule's own position when unnamed, so RegistrationReport.Format can
+                // always distinguish which rule produced a given Matched registration, even when several
+                // rules are configured without names.
+                var ruleLabel = rule.Name ?? $"rule {ruleIndex}";
+
+                foreach (var candidate in candidates)
+                {
+                    if (!rule.Predicate(candidate) || (rule.Except?.Invoke(candidate) ?? false))
+                    {
+                        continue;
+                    }
+
+                    var produced = rule.Target switch
+                    {
+                        TypeMatchTarget.Handler => HandlerDiscovery.DescribeHandler(
+                            candidate,
+                            rule.Lifetime,
+                            RegistrationProvenance.Matched
+                        ),
+                        TypeMatchTarget.Behavior =>
+                        [
+                            new InterlocutorRegistration(
+                                typeof(IPipelineBehavior<,>),
+                                candidate,
+                                rule.Lifetime,
+                                RegistrationKind.Behavior,
+                                RegistrationProvenance.Matched
+                            ),
+                        ],
+                        _ => (IReadOnlyList<InterlocutorRegistration>)[],
+                    };
+
+                    registrations.AddRange(produced.Select(registration => registration with { MatchedByRule = ruleLabel }));
+                }
+            }
+
+            return registrations;
+        }
+    }
+
+    /// <summary>
+    /// Adds a predicate-based type-matching rule: every candidate type found while scanning that
+    /// <paramref name="predicate"/> matches (and <paramref name="except"/>, if given, does not) is
+    /// registered as <paramref name="target"/> describes. Strictly additive to the existing
+    /// marker-interface-based behavior scoping (<see cref="ITransactionalRequest"/>, <see cref="IAuditableRequest"/>,
+    /// <see cref="IRequiresPolicy"/>, <see cref="IExternalStoreRequest"/>) - a behavior scoped by a marker
+    /// interface constraint is unaffected by whether any match rules are configured.
+    /// </summary>
+    /// <remarks>
+    /// Matching zero candidate types is legal and silent by default - pass <paramref name="require"/> as
+    /// <see langword="true"/> to record that this rule must match at least one type; this call does not
+    /// itself throw when a required rule matches nothing; see <see cref="ValidateOnBuild"/> for the opt-in
+    /// check that does.
+    /// </remarks>
+    /// <param name="predicate">Tested against every candidate type found while scanning; every match is registered.</param>
+    /// <param name="target">What role each matching type is registered as.</param>
+    /// <param name="lifetime">The service lifetime to register each match with. Defaults to scoped.</param>
+    /// <param name="except">
+    /// An optional carve-out predicate excluding specific matches from the broader <paramref name="predicate"/>.
+    /// </param>
+    /// <param name="require">Whether this rule must match at least one candidate type.</param>
+    /// <param name="name">
+    /// An optional label for this rule, carried onto every registration it produces
+    /// (<see cref="InterlocutorRegistration.MatchedByRule"/>) so the report from <see cref="DescribeRegistrations"/>
+    /// can identify which rule matched a given type. Defaults to this rule's position among <see cref="MatchRules"/>.
+    /// </param>
+    /// <returns>This builder, for chaining.</returns>
+    public InterlocutorBuilder AddTypeMatch(
+        Func<Type, bool> predicate,
+        TypeMatchTarget target,
+        RegistrationLifetime lifetime = RegistrationLifetime.Scoped,
+        Func<Type, bool>? except = null,
+        bool require = false,
+        string? name = null
+    )
+    {
+        ArgumentNullException.ThrowIfNull(predicate);
+        this._matchRules.Add(new TypeMatchRule(predicate, target, lifetime, except, require, name));
+        return this;
+    }
+
+    /// <summary>
+    /// Enumerates every candidate type found while scanning - the same concrete, non-abstract class filter
+    /// <see cref="HandlerDiscovery.Discover(IEnumerable{Assembly})"/> applies, but unfiltered by handler
+    /// contract, since a type-matching rule's predicate decides relevance instead.
+    /// </summary>
+    /// <returns>Every candidate type found while scanning.</returns>
+    private IEnumerable<Type> CandidateTypesForMatching() =>
+        this._assembliesToScan.SelectMany(entry => entry.Assembly.GetTypes()).Where(HandlerDiscovery.IsCandidateType);
+
+    /// <summary>
     /// Adds handler registrations discovered at compile time by <c>Interlocutor.Generator</c> (ADR-0008),
-    /// alongside - never instead of - any registrations produced by <see cref="ScanAssembly"/>/<see cref="ScanAssemblies"/>.
+    /// alongside - never instead of - any registrations produced by <see cref="ScanAssembly"/>/<see cref="ScanAssemblies(Assembly[])"/>.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -166,7 +328,7 @@ public sealed class InterlocutorBuilder
     /// registration (see <see cref="RegistrationKind.Handler"/>'s remarks).
     /// </para>
     /// <para>
-    /// Runtime assembly scanning (<see cref="ScanAssembly"/>/<see cref="ScanAssemblies"/>/<see cref="ScanAssemblyContaining{TMarker}"/>/<see cref="ScanEntryAssembly"/>)
+    /// Runtime assembly scanning (<see cref="ScanAssembly"/>/<see cref="ScanAssemblies(Assembly[])"/>/<see cref="ScanAssemblyContaining{TMarker}"/>/<see cref="ScanEntryAssembly"/>)
     /// remains fully independent and opt-in - calling this method does not disable scanning, and a bare builder
     /// that calls neither registers no handlers at all. A consumer who wants generated registrations to be the
     /// *only* source of handlers simply never calls a <c>Scan*</c> method, which was already true before this
@@ -184,34 +346,228 @@ public sealed class InterlocutorBuilder
         return this;
     }
 
-    /// <summary>Adds an assembly to scan for handler implementations.</summary>
-    /// <param name="assembly">The assembly to scan.</param>
-    /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder ScanAssembly(Assembly assembly)
+    /// <summary>
+    /// Builds a structured, container-neutral report of everything this builder has accumulated so far -
+    /// every registration with its provenance, every optional-package probe that found nothing, and
+    /// (only once <see cref="ValidateOnBuild"/> is configured) every validation problem found. Buildable and
+    /// inspectable at any time; <see cref="RegistrationReport.Problems"/> stays empty when
+    /// <see cref="ValidateOnBuild"/> was never called, since computing it means re-scanning every configured
+    /// assembly and is therefore not free - consistent with <see cref="ValidateOnBuild"/> being opt-in.
+    /// </summary>
+    /// <returns>The structured registration report.</returns>
+    public RegistrationReport DescribeRegistrations()
     {
-        ArgumentNullException.ThrowIfNull(assembly);
-        this._assembliesToScan.Add(assembly);
+        var registrations = new List<InterlocutorRegistration>();
+        registrations.AddRange(this.Handlers);
+        registrations.AddRange(this._generatedRegistrations);
+        registrations.AddRange(this._pipeline.Stages);
+        registrations.AddRange(this._pipeline.Behaviors);
+        registrations.AddRange(this._defaults.Values);
+        registrations.AddRange(this.MatchedRegistrations);
+
+        var problems = this._validateOnBuild ? this.ComputeProblems(registrations) : [];
+
+        return new RegistrationReport(registrations, this._pipeline.StageFactories, this._pipeline.Skipped, problems);
+    }
+
+    /// <summary>
+    /// Opts into <see cref="DescribeRegistrations"/> computing <see cref="RegistrationReport.Problems"/> -
+    /// checking the accumulated registration list, with no live container needed, for a query or command
+    /// type discovered while scanning with no matching handler, a required type-matching rule
+    /// (<see cref="AddTypeMatch"/>) that matched nothing, and two registrations of the same (service type,
+    /// implementation type) pair at conflicting lifetimes. When the container translator finds any such
+    /// problem, it throws a single <see cref="InterlocutorRegistrationValidationException"/> carrying every
+    /// problem found, aggregated rather than failing on the first.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The unhandled-request-type check covers <c>IQuery&lt;TResponse&gt;</c>/<c>ICommand&lt;TResponse&gt;</c>
+    /// only - the same scope <c>InterlocutorStartupValidation.ValidateHandlerRegistrations</c> already checks
+    /// at the container level. A void <c>ICommand</c> is not checked (its result type isn't declared on the
+    /// command, so no single expected handler interface can be derived from the type alone), nor is
+    /// <c>INotificationHandler&lt;TNotification&gt;</c> (zero notification handlers is a valid configuration,
+    /// unlike zero query/command handlers).
+    /// </para>
+    /// <para>
+    /// Deliberately does not attempt anything that needs a live container - an unresolvable constructor
+    /// dependency, for instance, remains the job of the existing, separate, still-opt-in
+    /// <c>InterlocutorStartupValidation.ValidateHandlerRegistrations</c>, which this method leaves untouched.
+    /// Without this call, <see cref="DescribeRegistrations"/> runs zero additional checks - the report's
+    /// <see cref="RegistrationReport.Problems"/> stays empty, same as today.
+    /// </para>
+    /// </remarks>
+    /// <returns>This builder, for chaining.</returns>
+    public InterlocutorBuilder ValidateOnBuild()
+    {
+        this._validateOnBuild = true;
         return this;
     }
 
-    /// <summary>Adds one or more assemblies to scan for handler implementations, in the given order.</summary>
+    /// <summary>
+    /// Checks the accumulated registration list for every problem <see cref="ValidateOnBuild"/> documents,
+    /// answerable from <paramref name="registrations"/> and this builder's own state alone.
+    /// </summary>
+    /// <param name="registrations">Every registration accumulated so far, as <see cref="DescribeRegistrations"/> assembled it.</param>
+    /// <returns>Every problem found.</returns>
+    private List<RegistrationProblem> ComputeProblems(IReadOnlyList<InterlocutorRegistration> registrations)
+    {
+        var problems = new List<RegistrationProblem>();
+        var candidates = this.CandidateTypesForMatching().ToList();
+
+        // A request type discovered while scanning with no matching handler - the same detection
+        // InterlocutorStartupValidation.ValidateHandlerRegistrations uses, but checked against the
+        // accumulated registration list instead of a live container.
+        foreach (var requestType in candidates)
+        {
+            foreach (var iface in requestType.GetInterfaces().Where(i => i.IsGenericType))
+            {
+                var handlerType = iface.GetGenericTypeDefinition() switch
+                {
+                    var def when def == typeof(IQuery<>) => typeof(IQueryHandler<,>).MakeGenericType(
+                        requestType,
+                        iface.GetGenericArguments()[0]
+                    ),
+                    var def when def == typeof(ICommand<>) => typeof(ICommandHandler<,>).MakeGenericType(
+                        requestType,
+                        iface.GetGenericArguments()[0]
+                    ),
+                    _ => null,
+                };
+
+                if (
+                    handlerType is not null
+                    && !registrations.Any(r => r.Kind == RegistrationKind.Handler && r.ServiceType == handlerType)
+                )
+                {
+                    problems.Add(
+                        new RegistrationProblem(
+                            RegistrationProblemKind.UnhandledRequestType,
+                            $"{requestType.Name} implements {iface.Name} but no {handlerType.Name} is registered."
+                        )
+                    );
+                }
+            }
+        }
+
+        // A required type-matching rule that matched nothing.
+        foreach (var rule in this._matchRules.Where(r => r.Require))
+        {
+            var matchedAnything = candidates.Any(candidate =>
+                rule.Predicate(candidate) && !(rule.Except?.Invoke(candidate) ?? false)
+            );
+            if (!matchedAnything)
+            {
+                problems.Add(
+                    new RegistrationProblem(
+                        RegistrationProblemKind.UnmatchedRequiredRule,
+                        $"A required type-matching rule targeting {rule.Target} matched no candidate type."
+                    )
+                );
+            }
+        }
+
+        // Two registrations of the same (service type, implementation type) pair at conflicting lifetimes.
+        foreach (var group in registrations.GroupBy(r => (r.ServiceType, r.ImplementationType)))
+        {
+            var lifetimes = group.Select(r => r.Lifetime).Distinct().ToList();
+            if (lifetimes.Count > 1)
+            {
+                problems.Add(
+                    new RegistrationProblem(
+                        RegistrationProblemKind.ConflictingLifetime,
+                        $"{group.Key.ServiceType.Name} -> {group.Key.ImplementationType.Name} is registered at conflicting lifetimes: {string.Join(", ", lifetimes)}."
+                    )
+                );
+            }
+        }
+
+        return problems;
+    }
+
+    /// <summary>Adds an assembly to scan for handler implementations.</summary>
+    /// <param name="assembly">The assembly to scan.</param>
+    /// <param name="lifetime">The service lifetime to register every handler this assembly yields with. Defaults to scoped.</param>
+    /// <returns>This builder, for chaining.</returns>
+    public InterlocutorBuilder ScanAssembly(Assembly assembly, RegistrationLifetime lifetime = RegistrationLifetime.Scoped)
+    {
+        ArgumentNullException.ThrowIfNull(assembly);
+        this._assembliesToScan.Add((assembly, lifetime));
+        return this;
+    }
+
+    /// <summary>Adds one or more assemblies, all at the default scoped lifetime, to scan for handler implementations, in the given order.</summary>
     /// <param name="assemblies">The assemblies to scan.</param>
     /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder ScanAssemblies(params Assembly[] assemblies)
+    public InterlocutorBuilder ScanAssemblies(params Assembly[] assemblies) =>
+        this.ScanAssemblies(RegistrationLifetime.Scoped, assemblies);
+
+    /// <summary>Adds one or more assemblies to scan for handler implementations, in the given order.</summary>
+    /// <param name="lifetime">The service lifetime to register every handler these assemblies yield with.</param>
+    /// <param name="assemblies">The assemblies to scan.</param>
+    /// <returns>This builder, for chaining.</returns>
+    public InterlocutorBuilder ScanAssemblies(RegistrationLifetime lifetime, params Assembly[] assemblies)
     {
         ArgumentNullException.ThrowIfNull(assemblies);
-        this._assembliesToScan.AddRange(assemblies);
+        foreach (var assembly in assemblies)
+        {
+            this._assembliesToScan.Add((assembly, lifetime));
+        }
+
         return this;
     }
 
     /// <summary>Adds the assembly containing <typeparamref name="TMarker"/> to scan for handler implementations.</summary>
     /// <typeparam name="TMarker">Any type whose containing assembly should be scanned.</typeparam>
+    /// <param name="lifetime">The service lifetime to register every handler this assembly yields with. Defaults to scoped.</param>
     /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder ScanAssemblyContaining<TMarker>() => this.ScanAssembly(typeof(TMarker).Assembly);
+    public InterlocutorBuilder ScanAssemblyContaining<TMarker>(RegistrationLifetime lifetime = RegistrationLifetime.Scoped) =>
+        this.ScanAssembly(typeof(TMarker).Assembly, lifetime);
 
     /// <summary>Adds the entry assembly to scan for handler implementations.</summary>
+    /// <param name="lifetime">The service lifetime to register every handler this assembly yields with. Defaults to scoped.</param>
     /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder ScanEntryAssembly() => this.ScanAssembly(Assembly.GetEntryAssembly()!);
+    public InterlocutorBuilder ScanEntryAssembly(RegistrationLifetime lifetime = RegistrationLifetime.Scoped) =>
+        this.ScanAssembly(Assembly.GetEntryAssembly()!, lifetime);
+
+    /// <summary>
+    /// Registers a single handler implementation type directly, without assembly scanning - the manual
+    /// escape hatch for handlers that mirrors <see cref="AddBehavior"/>'s shape. Reflects over the type's
+    /// implemented interfaces and registers one <see cref="RegistrationKind.Handler"/> entry per matching
+    /// handler contract interface it implements (open or closed), each carrying
+    /// <see cref="RegistrationProvenance.Explicit"/> provenance.
+    /// </summary>
+    /// <remarks>
+    /// When a <c>ScanAssembly*</c> call in the same configuration would also discover
+    /// <paramref name="handlerImplementationType"/>, this explicit registration is the one <see cref="Handlers"/>
+    /// yields for each (service type, implementation type) pair the two would otherwise both produce - not
+    /// an additional copy alongside the scanned one. A type implementing no handler contract registers nothing.
+    /// </remarks>
+    /// <param name="handlerImplementationType">
+    /// The handler's implementation type - concrete, or an open generic type definition to register against
+    /// every closed contract interface it implements.
+    /// </param>
+    /// <param name="lifetime">The service lifetime to register the handler with. Defaults to scoped.</param>
+    /// <returns>This builder, for chaining.</returns>
+    public InterlocutorBuilder AddHandler(
+        Type handlerImplementationType,
+        RegistrationLifetime lifetime = RegistrationLifetime.Scoped
+    )
+    {
+        ArgumentNullException.ThrowIfNull(handlerImplementationType);
+
+        foreach (
+            var registration in HandlerDiscovery.DescribeHandler(
+                handlerImplementationType,
+                lifetime,
+                RegistrationProvenance.Explicit
+            )
+        )
+        {
+            this._explicitHandlers[(registration.ServiceType, registration.ImplementationType)] = registration;
+        }
+
+        return this;
+    }
 
     /// <summary>
     /// Adds a pipeline behavior implementation at the current position in the chain. This is the

@@ -1,10 +1,10 @@
 namespace Interlocutor.DependencyInjection.Microsoft.Tests;
 
 using global::FluentValidation;
-using global::NHibernate;
-using global::NSubstitute;
 using global::Microsoft.Extensions.DependencyInjection;
 using global::Microsoft.Extensions.Logging;
+using global::NHibernate;
+using global::NSubstitute;
 using Interlocutor.Abstractions;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
@@ -199,12 +199,18 @@ public sealed class PipelineOrderingIntegrationTests
     /// <summary>An <see cref="ILoggerProvider"/> whose loggers record every informational message - Logging's outbound side effect.</summary>
     private sealed class RecordingLoggerProvider(List<string> log) : ILoggerProvider
     {
-        public ILogger CreateLogger(string categoryName) => new RecordingLogger(log);
+        public ILogger CreateLogger(string categoryName) => new RecordingLogger(log, categoryName);
 
         public void Dispose() { }
     }
 
-    private sealed class RecordingLogger(List<string> log) : ILogger
+    /// <summary>
+    /// Records every informational message under any category except <c>"Interlocutor"</c> - the category
+    /// <c>AddInterlocutor()</c>'s own opt-in registration-report log
+    /// (<see cref="Interlocutor.DependencyInjection.Microsoft.InterlocutorServiceCollectionExtensions"/>) uses,
+    /// which fires once at configuration time and is not part of the pipeline-order sequence this test proves.
+    /// </summary>
+    private sealed class RecordingLogger(List<string> log, string categoryName) : ILogger
     {
         public IDisposable? BeginScope<TState>(TState state)
             where TState : notnull => null;
@@ -219,7 +225,7 @@ public sealed class PipelineOrderingIntegrationTests
             Func<TState, Exception?, string> formatter
         )
         {
-            if (logLevel == LogLevel.Information)
+            if (logLevel == LogLevel.Information && categoryName != "Interlocutor")
             {
                 log.Add("logging");
             }

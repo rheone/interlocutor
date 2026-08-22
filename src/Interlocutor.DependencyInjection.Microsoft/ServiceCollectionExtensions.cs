@@ -2,6 +2,7 @@ namespace Interlocutor.DependencyInjection.Microsoft;
 
 using global::Microsoft.Extensions.DependencyInjection;
 using global::Microsoft.Extensions.DependencyInjection.Extensions;
+using global::Microsoft.Extensions.Logging;
 using Interlocutor.Abstractions;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
@@ -61,12 +62,25 @@ public static class InterlocutorServiceCollectionExtensions
         var builder = new InterlocutorBuilder();
         configure(builder);
 
-        Apply(services, HandlerDiscovery.Discover(builder.AssembliesToScan));
+        // Built once and reused for validation, the optional log below, and nothing else - it needs no
+        // live container, so it is checked before this call mutates services at all: a caller catching
+        // InterlocutorRegistrationValidationException finds services exactly as it left them, not partially
+        // configured. Reused rather than calling DescribeRegistrations() a second time, since it re-scans
+        // every configured assembly each time.
+        var report = builder.DescribeRegistrations();
+        if (report.Problems.Count > 0)
+        {
+            throw new InterlocutorRegistrationValidationException(report);
+        }
+
+        Apply(services, builder.Handlers);
         Apply(services, builder.GeneratedRegistrations);
         Apply(services, builder.Stages);
         ApplyFactories(services, builder.StageFactories);
         Apply(services, builder.Behaviors);
+        Apply(services, builder.MatchedRegistrations);
         TryApplyDefaults(services, builder.Defaults);
+        TryLogRegistrationReport(services, report);
 
         // The real dispatcher is registered under its concrete type, not under IMediator directly, so the
         // root-scope guard (RootScopeGuardedMediator) can wrap it - see ADR-0011. RootServiceProviderMarker
@@ -201,6 +215,39 @@ public static class InterlocutorServiceCollectionExtensions
             };
 
             services.TryAdd(descriptor);
+        }
+    }
+
+    /// <summary>
+    /// Logs <see cref="InterlocutorBuilder.DescribeRegistrations"/>'s formatted report at
+    /// <c>AddInterlocutor()</c> time, but only when the application has already registered
+    /// <see cref="ILoggerFactory"/> in <paramref name="services"/> - additive, never required to use the
+    /// report. Absent that, or if resolving a logger from the services registered so far fails for any
+    /// reason, this is silently skipped: it is observability, not a configuration requirement, and must
+    /// never turn a working <c>AddInterlocutor()</c> call into a failing one.
+    /// </summary>
+    /// <param name="services">The <see cref="IServiceCollection"/> being configured.</param>
+    /// <param name="report">The already-built report to log.</param>
+    private static void TryLogRegistrationReport(IServiceCollection services, RegistrationReport report)
+    {
+        if (!services.Any(descriptor => descriptor.ServiceType == typeof(ILoggerFactory)))
+        {
+            return;
+        }
+
+        try
+        {
+            using var loggingOnlyProvider = services.BuildServiceProvider(
+                new ServiceProviderOptions { ValidateOnBuild = false, ValidateScopes = false }
+            );
+            var logger = loggingOnlyProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Interlocutor");
+            logger.LogInformation("{Report}", report.Format());
+        }
+        catch (InvalidOperationException)
+        {
+            // The application's own logging setup could not be resolved from what is registered so far
+            // (for example, a dependency it needs is registered after this AddInterlocutor() call).
+            // Reporting is advisory only - leave AddInterlocutor() itself unaffected.
         }
     }
 }
