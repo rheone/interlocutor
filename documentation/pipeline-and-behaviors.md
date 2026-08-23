@@ -24,10 +24,10 @@ Behaviors run in the order you register them - first registered wraps the outerm
 
 ```csharp
 // Registration order → execution order (outermost to innermost)
-builder.Pipeline.AddBehavior(typeof(LoggingBehavior<,>));        // Outermost
-builder.Pipeline.AddBehavior(typeof(AuditingBehavior<,>));       //
-builder.Pipeline.AddBehavior(typeof(ValidationBehavior<,>));     //
-builder.Pipeline.AddBehavior(typeof(TransactionBehavior<,>));    // Innermost
+builder.Pipeline.AddLoggingBehavior();        // Outermost
+builder.Pipeline.AddAuditingBehavior();       //
+builder.Pipeline.AddValidationBehavior();     //
+builder.Pipeline.AddTransactionBehavior();    // Innermost
 // Handler executes here
 ```
 
@@ -76,11 +76,11 @@ builder.Pipeline.UseRecommendedChain();  // Sugar for the sequence below
 Or explicitly:
 
 ```csharp
-builder.Pipeline.AddBehavior(typeof(LoggingBehavior<,>));           // 1. Outermost
-builder.Pipeline.AddBehavior(typeof(AuditingBehavior<,>));          // 2.
-builder.Pipeline.AddBehavior(typeof(AuthorizationBehavior<,>));     // 3.
-builder.Pipeline.AddBehavior(typeof(ValidationBehavior<,>));        // 4.
-builder.Pipeline.AddBehavior(typeof(TransactionBehavior<,>));       // 5. Innermost
+builder.Pipeline.AddLoggingBehavior();           // 1. Outermost
+builder.Pipeline.AddAuditingBehavior();          // 2.
+builder.Pipeline.AddAuthorizationBehavior();     // 3.
+builder.Pipeline.AddValidationBehavior();        // 4.
+builder.Pipeline.AddTransactionBehavior();       // 5. Innermost
 ```
 
 ### Why This Order

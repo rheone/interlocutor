@@ -118,12 +118,12 @@ services.AddInterlocutor(builder =>
     builder.ScanAssembly(typeof(Program).Assembly);
 
     // Explicitly compose your pipeline
-    builder.Pipeline.AddBehavior(typeof(LoggingBehavior<,>));
-    builder.Pipeline.AddBehavior(typeof(AuditingBehavior<,>));
-    builder.Pipeline.AddBehavior(typeof(ValidationBehavior<,>));
-    builder.Pipeline.AddBehavior(typeof(TransactionBehavior<,>));
+    builder.Pipeline.AddLoggingBehavior();
+    builder.Pipeline.AddAuditingBehavior();
+    builder.Pipeline.AddValidationBehavior();     // no-op if Interlocutor.FluentValidation isn't referenced
+    builder.Pipeline.AddTransactionBehavior();    // no-op if neither store package is referenced
 
-    // Or use the documented recommended chain as sugar
+    // Or use the documented recommended chain as sugar - it calls exactly these five, in this order
     // builder.Pipeline.UseRecommendedChain();
 });
 ```
@@ -165,9 +165,9 @@ services.AddInterlocutor(builder =>
 ## Cross-Assembly Aggregation
 
 > [!NOTE]
-> **TBD:** Automatic cross-assembly aggregation - scanning one entry-point assembly and having handlers from every referenced assembly discovered transitively - is not implemented yet. Each assembly that contains handlers needs to reach the builder explicitly today (see below). Write this section from the actual implemented behavior once that lands, not from the design intent.
+> Aggregation is explicit, not transitive. Scanning or registering one assembly never pulls in handlers from assemblies it references - each assembly that contains handlers reaches the builder its own `ScanAssembly`/`AddGeneratedRegistrations` call. This is the permanent design, not a stopgap: it keeps "what got registered" fully explainable from the builder delegate alone, without a hidden dependency-closure walk.
 
-Today, if handlers live in more than one assembly, scan each of them:
+If handlers live in more than one assembly, scan each of them:
 
 ```csharp
 // Program.cs (MyApp.Application), handlers also live in MyApp.Domain

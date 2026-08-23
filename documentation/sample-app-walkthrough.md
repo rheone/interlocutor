@@ -1,9 +1,9 @@
 # Sample App Walkthrough
 
 > [!NOTE]
-> **TBD**: This section provides a guided tour of the runnable sample application. It is blocked on ticket 18 (Sample application) - write this doc from the actual sample code once ticket 18 lands, not from a hypothetical one.
+> **TBD**: This section provides a guided tour of the runnable sample application under [`samples/`](../samples/) - `Interlocutor.Sample.Handlers` and `Interlocutor.Sample.WebApi`. The sample itself exists and is verified working end to end; this walkthrough doc hasn't been written yet. Write it from the actual sample code, not from a hypothetical one.
 
-## Expected content (once unblocked)
+## Expected content
 
 - Overview of sample architecture
 - Project structure (domain, application, API layers)

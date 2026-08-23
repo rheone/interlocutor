@@ -35,6 +35,7 @@ Registering the library and understanding how a dispatch's scope and context flo
 - [ASP.NET Core Integration & HTTP Mapping](aspnetcore-integration.md) - the `ToActionResult()` extension, status code mapping, `ValidationProblemDetails` and `ProblemDetails` (RFC 7807), custom mapping, minimal API usage, error handling.
 - [Transactions & Store Integration](transactions-and-store-integration.md) - `Interlocutor.EntityFrameworkCore` and `Interlocutor.NHibernate`, `TransactionBehavior`, the `ITransactionalRequest`/`IExternalStoreRequest` markers, lazy session resolution, commit/rollback semantics, nested dispatch, notifications after commit.
 - [Persistence Abstraction](persistence-abstraction.md) - the optional, opt-in `IUnitOfWork`/`IDomainRepository<TEntity, TKey>` CRUD/paging surface, `Page<T>`, per-container registration, NHibernate session concurrency.
+- [Trim & AOT Support](trim-and-aot-support.md) - what "trim-compatible, not yet Native AOT-compatible" means in practice, the runtime-scanning trim cost, publishing trimmed, known limitations.
 
 ### Testing
 
@@ -42,5 +43,4 @@ Registering the library and understanding how a dispatch's scope and context flo
 
 ### Coming soon
 
-- [Trim & AOT support](trim-and-aot-support.md) - [!NOTE] **TBD** - blocked on ticket 17 (Trim and AOT hardening).
-- [Sample app walkthrough](sample-app-walkthrough.md) - [!NOTE] **TBD** - blocked on ticket 18 (Sample application).
+- [Sample app walkthrough](sample-app-walkthrough.md) - [!NOTE] **TBD** - the runnable sample under `samples/` exists; this guided tour of it hasn't been written yet.

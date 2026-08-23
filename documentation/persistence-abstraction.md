@@ -5,6 +5,39 @@
 > [!IMPORTANT]
 > This is a façade over the same scoped session `TransactionBehavior` already manages, not a second transaction owner. `IUnitOfWork` has no `BeginTransactionAsync`/`CommitAsync`/`RollbackAsync` - transaction begin/commit/rollback stays inside `TransactionBehavior`, driven by `ITransactionalRequest`. See [Transactions & Store Integration](transactions-and-store-integration.md) for how that scoped session lifetime works; this package relies on it rather than re-explaining it.
 
+Both sides - the handler's repository calls and `TransactionBehavior`'s commit/rollback - resolve the *same* lazily-constructed scoped session, never two:
+
+```mermaid
+sequenceDiagram
+    participant Caller
+    participant Transaction as TransactionBehavior
+    participant Handler
+    participant Repo as IDomainRepository<TEntity, TKey>
+    participant UoW as IUnitOfWork
+    participant Session as Scoped DbContext / ISession
+
+    Caller->>Transaction: dispatch(ITransactionalRequest)
+    activate Transaction
+    Transaction->>Session: resolve (Lazy, first touch)
+    activate Session
+    Transaction->>Handler: next()
+    activate Handler
+    Handler->>Repo: InsertAsync(entity)
+    Repo->>Session: track change (same session)
+    Handler->>UoW: SaveChangesAsync()
+    UoW->>Session: SaveChangesAsync / FlushAsync
+    Handler-->>Transaction: outcome
+    deactivate Handler
+    alt Success
+        Transaction->>Session: commit
+    else Failure case
+        Transaction->>Session: rollback
+    end
+    deactivate Session
+    Transaction-->>Caller: outcome
+    deactivate Transaction
+```
+
 ## Package layout
 
 Three packages, mirroring the `Interlocutor.DependencyInjection.*` split:

@@ -173,6 +173,11 @@ These are not shipped types. `Interlocutor.CommonKernel` has no opinion about pa
 | **Interlocutor.AspNetCore** | `ToActionResult()`-style HTTP mapping, delegating to a pluggable mapper. Depends on CommonKernel and ASP.NET Core. The only package in the solution permitted to know about HTTP. |
 | **Interlocutor.DependencyInjection.Microsoft** | The builder-based registration entry point for Microsoft.Extensions.DependencyInjection. |
 | **Interlocutor.DependencyInjection.Autofac** | The builder-based registration entry point for Autofac. |
+| **Interlocutor.DependencyInjection.Abstractions** | Container-neutral registration model shared by the two DI packages - `InterlocutorBuilder`, `InterlocutorPipelineBuilder`, `RegistrationReport`. Depends on Abstractions only. |
 | **Interlocutor.EntityFrameworkCore** | `TransactionBehavior` for EF Core `DbContext`. |
 | **Interlocutor.NHibernate** | `TransactionBehavior` for NHibernate `ISession`. |
 | **Interlocutor.FluentValidation** | `ValidationBehavior` for FluentValidation. |
+| **Interlocutor.Persistence.Abstractions** | Optional, opt-in `IUnitOfWork`/`IDomainRepository<TEntity, TKey>` CRUD/paging surface. Zero ORM dependency; depends on Abstractions only - see [Persistence Abstraction](persistence-abstraction.md). |
+| **Interlocutor.Persistence.EntityFrameworkCore** | EF Core implementation of the persistence abstraction. |
+| **Interlocutor.Persistence.NHibernate** | NHibernate implementation of the persistence abstraction. |
+| **Interlocutor.Generator** | The Roslyn incremental source generator behind compile-time handler discovery (ADR-0008). An analyzer reference pulled in by Abstractions; never ships in build output. |
