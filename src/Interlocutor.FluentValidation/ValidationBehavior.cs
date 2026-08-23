@@ -99,23 +99,11 @@ public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<
         return this.ConstructValidationErrorsResponse(new ValidationErrors(errorMessages));
     }
 
-    private TResponse ConstructValidationErrorsResponse(ValidationErrors errors)
-    {
-        try
-        {
-            return this.caseRegistry.Construct<TResponse, ValidationErrors>(errors);
-        }
-        catch (OutcomeCaseNotSupportedException ex)
-        {
-            // Preserve the InvalidOperationException this behavior has always thrown for this configuration
-            // mistake - failing to construct ValidationErrors is a response-shape problem specific to this
-            // behavior, not the generic "no factory registered" failure the registry itself reports.
-            throw new InvalidOperationException(
-                $"ValidationBehavior<{typeof(TRequest).Name}, {typeof(TResponse).Name}> found validation errors, "
-                    + $"but {typeof(TResponse).Name} has no {nameof(ValidationErrors)} case to construct. Use a "
-                    + $"response type with a {nameof(ValidationErrors)} case.",
-                ex
-            );
-        }
-    }
+    private TResponse ConstructValidationErrorsResponse(ValidationErrors errors) =>
+        this.caseRegistry.ConstructOrThrow<TResponse, ValidationErrors>(
+            errors,
+            $"ValidationBehavior<{typeof(TRequest).Name}, {typeof(TResponse).Name}>",
+            "found validation errors",
+            $"Use a response type with a {nameof(ValidationErrors)} case"
+        );
 }

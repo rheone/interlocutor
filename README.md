@@ -85,7 +85,7 @@ var message = result switch
 | Package | Purpose |
 |---------|---------|
 | `Interlocutor.CommonKernel` | Result types. `IOperationOutcome` is the extension point every handler response implements - see [messages-and-result-types.md](documentation/messages-and-result-types.md) for the full walkthrough. `OperationOutcome<...>` unions and their failure cases (`Success`, `NotFound`, `Forbidden`, `Conflict`, `ValidationError`, `Failure`) are the library's own built-in implementation of it. Zero dependencies. |
-| `Interlocutor.Abstractions` | Core: `IMediator`, `ISender`, `IPublisher`; handler interfaces; pipeline behaviors (`LoggingBehavior`, `AuthorizationBehavior`, `AuditingBehavior`); marker interfaces for opt-in concerns. |
+| `Interlocutor.Abstractions` | Core: `IMediator`, `ISender`, `IPublisher`; handler interfaces; pipeline behaviors (`LoggingBehavior`, `AuthorizationBehavior`, `AuditingBehavior`, plus the opt-in `CancellationBehavior`, `TimeoutBehavior`, and `RateLimitedBehavior`, which have no prescribed position in the chain); marker interfaces for opt-in concerns. |
 | `Interlocutor.DependencyInjection.Microsoft` | Builder-based registration for Microsoft.Extensions.DependencyInjection. |
 | `Interlocutor.DependencyInjection.Autofac` | Builder-based registration for Autofac. |
 | `Interlocutor.AspNetCore` | `ToActionResult()` - maps result types to HTTP responses. ASP.NET Core only. |

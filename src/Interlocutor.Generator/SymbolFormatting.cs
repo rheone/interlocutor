@@ -4,10 +4,10 @@ using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
 
 /// <summary>
-/// Shared symbol-to-string formatting used by <see cref="HandlerTypeAnalyzer"/> and
-/// <see cref="GenericUsageAnalyzer"/> so both sides of the open-generic-handler match
-/// (<see cref="OpenGenericHandlerModel"/> and <see cref="ClosedGenericRequestUsageModel"/>) produce identically
-/// shaped strings for the same symbol regardless of which analyzer pass encountered it.
+/// Shared symbol-to-string formatting used by <see cref="HandlerTypeAnalyzer"/>, <see cref="GenericUsageAnalyzer"/>,
+/// and <see cref="ReferencedModuleDiscovery"/> so all callers - both sides of the open-generic-handler match
+/// (<see cref="OpenGenericHandlerModel"/> and <see cref="ClosedGenericRequestUsageModel"/>), and the cross-assembly
+/// metadata decode path - produce identically shaped strings for the same symbol.
 /// </summary>
 internal static class SymbolFormatting
 {

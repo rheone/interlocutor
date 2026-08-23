@@ -97,23 +97,11 @@ public class TimeoutBehavior<TRequest, TResponse>(ITimeoutPolicy timeoutPolicy, 
         return this.ConstructTimeoutResponse(new Timeout(budget, stopwatch.Elapsed));
     }
 
-    private TResponse ConstructTimeoutResponse(Timeout timeout)
-    {
-        try
-        {
-            return caseRegistry.Construct<TResponse, Timeout>(timeout);
-        }
-        catch (OutcomeCaseNotSupportedException ex)
-        {
-            // Preserve the AuthorizationBehavior precedent: OutcomeCaseNotSupportedException is a
-            // registry-level configuration signal, but the timeout itself is specifically a TimeoutBehavior
-            // concern, so it's wrapped rather than surfaced directly.
-            throw new InvalidOperationException(
-                $"TimeoutBehavior<{typeof(TRequest).Name}, {typeof(TResponse).Name}> timed out a request, "
-                    + $"but {typeof(TResponse).Name} has no {nameof(Timeout)} case to construct. A request "
-                    + $"implementing {nameof(IHasTimeout)} must use a response type with a {nameof(Timeout)} case.",
-                ex
-            );
-        }
-    }
+    private TResponse ConstructTimeoutResponse(Timeout timeout) =>
+        caseRegistry.ConstructOrThrow<TResponse, Timeout>(
+            timeout,
+            $"TimeoutBehavior<{typeof(TRequest).Name}, {typeof(TResponse).Name}>",
+            "timed out a request",
+            $"A request implementing {nameof(IHasTimeout)} must use a response type with a {nameof(Timeout)} case"
+        );
 }

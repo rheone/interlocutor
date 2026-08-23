@@ -187,6 +187,56 @@ public sealed class CrossAssemblyAggregationTests
         Assert.Contains("App.GetFooQuery", diagnostic.GetMessage(), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void Out_of_range_handler_kind_in_referenced_metadata_is_rejected_rather_than_misdecoded()
+    {
+        // Simulates a referenced assembly built against a newer generator version that emits a HandlerKind
+        // value this generator doesn't know about yet - hand-authored rather than produced by the real
+        // generator, since the real generator can only ever emit values it knows about itself.
+        const string futureLibrarySource = """
+            using Interlocutor.DependencyInjection.Abstractions;
+
+            [assembly: InterlocutorGeneratedModuleAttribute(typeof(LibraryFuture.Module))]
+            [assembly: InterlocutorGeneratedHandlerAttribute(
+                typeof(LibraryFuture.WeirdRequest),
+                typeof(Interlocutor.CommonKernel.OperationOutcome),
+                (GeneratedHandlerKind)99)]
+
+            namespace LibraryFuture;
+
+            using System.Collections.Generic;
+
+            public static class Module
+            {
+                public static IReadOnlyList<InterlocutorRegistration> Registrations { get; } = [];
+            }
+
+            public sealed class WeirdRequest;
+            """;
+
+        var libraryCompilation = GeneratorTestHarness.CreateCompilation(futureLibrarySource, "LibraryFuture");
+        var libraryReference = GeneratorTestHarness.ToMetadataReference(libraryCompilation);
+
+        // App declares the exact same request/response shape the malformed attribute claims to handle. If
+        // ReferencedModuleDiscovery decoded kindValue 99 instead of rejecting it, this request could be
+        // wrongly treated as already handled (whichever HandlerKind case 99 happened to alias); rejecting it
+        // means the diagnostic still fires here.
+        const string appSource = """
+            namespace App;
+
+            using Interlocutor.Abstractions.Queries;
+            using Interlocutor.CommonKernel;
+
+            public sealed class WeirdRequest : IQuery<OperationOutcome>;
+            """;
+
+        var result = GeneratorTestHarness.Run(appSource, [libraryReference]);
+
+        var diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Equal("INTERLOC001", diagnostic.Id);
+        Assert.Contains("App.WeirdRequest", diagnostic.GetMessage(), StringComparison.Ordinal);
+    }
+
     private static string GetGeneratedSource(GeneratorDriverRunResult result, string hintNameSuffix) =>
         result
             .Results.Single()

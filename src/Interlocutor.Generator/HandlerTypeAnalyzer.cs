@@ -1,5 +1,6 @@
 namespace Interlocutor.Generator;
 
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
@@ -274,17 +275,8 @@ internal static class HandlerTypeAnalyzer
 
         var keys = ImmutableArray.CreateBuilder<string>();
         var names = ImmutableArray.CreateBuilder<string>();
-        foreach (var attribute in candidate.GetAttributes())
+        foreach (var referencedType in CollectTypeArgumentAttributes(candidate, handlerOverrideAttribute))
         {
-            if (
-                !SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, handlerOverrideAttribute)
-                || attribute.ConstructorArguments.Length != 1
-                || attribute.ConstructorArguments[0].Value is not INamedTypeSymbol referencedType
-            )
-            {
-                continue;
-            }
-
             // An unbound generic type token (typeof(SomeHandler<>)) names an open generic handler by its
             // definition key; any other type name is compared against a closed handler's own display name.
             keys.Add(
@@ -317,22 +309,34 @@ internal static class HandlerTypeAnalyzer
             return [];
         }
 
-        var builder = ImmutableArray.CreateBuilder<string>();
+        return CollectTypeArgumentAttributes(candidate, orderingAttribute).Select(SymbolFormatting.Format).ToImmutableArray();
+    }
+
+    /// <summary>
+    /// Collects the single <see cref="INamedTypeSymbol"/> constructor argument from every application of
+    /// <paramref name="attributeType"/> on <paramref name="candidate"/> - the shape shared by
+    /// <see cref="ResolveHandlerOverrideAttribute"/> and <see cref="ResolveOrderingAttribute"/>, which differ only
+    /// in how the collected types are formatted.
+    /// </summary>
+    /// <param name="candidate">The type whose attributes to inspect.</param>
+    /// <param name="attributeType">The single-<see cref="INamedTypeSymbol"/>-argument attribute to match.</param>
+    /// <returns>One entry per matching attribute application, in declaration order.</returns>
+    private static IEnumerable<INamedTypeSymbol> CollectTypeArgumentAttributes(
+        INamedTypeSymbol candidate,
+        INamedTypeSymbol attributeType
+    )
+    {
         foreach (var attribute in candidate.GetAttributes())
         {
             if (
-                !SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, orderingAttribute)
-                || attribute.ConstructorArguments.Length != 1
-                || attribute.ConstructorArguments[0].Value is not INamedTypeSymbol referencedHandlerType
+                SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, attributeType)
+                && attribute.ConstructorArguments.Length == 1
+                && attribute.ConstructorArguments[0].Value is INamedTypeSymbol referencedType
             )
             {
-                continue;
+                yield return referencedType;
             }
-
-            builder.Add(SymbolFormatting.Format(referencedHandlerType));
         }
-
-        return builder.ToImmutable();
     }
 
     /// <summary>

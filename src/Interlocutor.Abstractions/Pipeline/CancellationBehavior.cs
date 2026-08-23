@@ -81,23 +81,11 @@ public class CancellationBehavior<TRequest, TResponse>(IOutcomeCaseRegistry case
         }
     }
 
-    private TResponse ConstructCancelledResponse(Cancelled cancelled)
-    {
-        try
-        {
-            return caseRegistry.Construct<TResponse, Cancelled>(cancelled);
-        }
-        catch (OutcomeCaseNotSupportedException ex)
-        {
-            // Preserve the same wrapping style as AuthorizationBehavior: OutcomeCaseNotSupportedException is
-            // a registry-level configuration signal, but observing cancellation is specifically a
-            // CancellationBehavior concern, so it's wrapped rather than surfaced directly.
-            throw new InvalidOperationException(
-                $"CancellationBehavior<{typeof(TRequest).Name}, {typeof(TResponse).Name}> observed cancellation, "
-                    + $"but {typeof(TResponse).Name} has no {nameof(Cancelled)} case to construct. A request "
-                    + $"implementing {nameof(ICancellable)} must use a response type with a {nameof(Cancelled)} case.",
-                ex
-            );
-        }
-    }
+    private TResponse ConstructCancelledResponse(Cancelled cancelled) =>
+        caseRegistry.ConstructOrThrow<TResponse, Cancelled>(
+            cancelled,
+            $"CancellationBehavior<{typeof(TRequest).Name}, {typeof(TResponse).Name}>",
+            "observed cancellation",
+            $"A request implementing {nameof(ICancellable)} must use a response type with a {nameof(Cancelled)} case"
+        );
 }

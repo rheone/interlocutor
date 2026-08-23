@@ -52,7 +52,7 @@ public static class InterlocutorAutofacExtensions
     /// options-based overload, no bare assembly-scanning overload, and no entry-assembly convenience
     /// overload; all configuration flows through <paramref name="configure"/>.
     /// <see cref="InterlocutorBuilder.Defaults"/> entries are translated with Autofac's <c>IfNotRegistered</c>
-    /// try-add equivalent (see <see cref="TryApplyDefaults"/>), so a consumer's own registration of
+    /// try-add equivalent (see <see cref="TryApplyDefault"/>), so a consumer's own registration of
     /// <see cref="IAuditSink"/>, <see cref="IPolicyEvaluator"/>, <see cref="IRequestContextAccessor"/>, or
     /// <see cref="IResponseOutcomeDescriber"/> - made before this call - always wins; the builder's own
     /// <c>Override*</c> methods cover winning when that registration is made after.
@@ -76,13 +76,16 @@ public static class InterlocutorAutofacExtensions
             throw new InterlocutorRegistrationValidationException(report);
         }
 
-        Apply(builder, interlocutorBuilder.Handlers);
-        Apply(builder, interlocutorBuilder.GeneratedRegistrations);
-        Apply(builder, interlocutorBuilder.Stages);
-        ApplyFactories(builder, interlocutorBuilder.StageFactories);
-        Apply(builder, interlocutorBuilder.Behaviors);
-        Apply(builder, interlocutorBuilder.MatchedRegistrations);
-        TryApplyDefaults(builder, interlocutorBuilder.Defaults);
+        var applier = new RegistrationApplier(
+            addRegistration: registration => Apply(builder, registration),
+            addFactory: registration =>
+                ApplyLifetime(
+                    builder.Register(c => registration.Factory(c.Resolve<IServiceProvider>())).As(registration.ServiceType),
+                    registration.Lifetime
+                ),
+            tryAddDefault: registration => TryApplyDefault(builder, registration)
+        );
+        applier.Apply(interlocutorBuilder);
 
         // Deferred to a build callback (rather than resolved eagerly here) since only the fully-built
         // container can answer whether the application actually registered an ILoggerFactory - Autofac's
@@ -119,84 +122,95 @@ public static class InterlocutorAutofacExtensions
     }
 
     /// <summary>
-    /// Translates a sequence of container-neutral <see cref="InterlocutorRegistration"/> records into
-    /// Autofac registrations, using <c>InstancePerLifetimeScope</c> as the Autofac equivalent of
-    /// <see cref="RegistrationLifetime.Scoped"/>.
+    /// Translates one container-neutral <see cref="InterlocutorRegistration"/> into an Autofac registration,
+    /// using <c>InstancePerLifetimeScope</c> as the Autofac equivalent of <see cref="RegistrationLifetime.Scoped"/>.
     /// </summary>
     /// <param name="builder">The Autofac <see cref="ContainerBuilder"/> to register services into.</param>
-    /// <param name="registrations">The container-neutral registrations to translate.</param>
-    private static void Apply(ContainerBuilder builder, IEnumerable<InterlocutorRegistration> registrations)
+    /// <param name="registration">The container-neutral registration to translate.</param>
+    private static void Apply(ContainerBuilder builder, InterlocutorRegistration registration)
     {
-        foreach (var registration in registrations)
-        {
-            // Open generic implementation types (e.g. IPipelineBehavior<,> behaviors) require
-            // RegisterGeneric; closed types (e.g. discovered handlers) require RegisterType.
-            if (registration.ImplementationType.IsGenericTypeDefinition)
-            {
-                ApplyLifetime(
-                    builder.RegisterGeneric(registration.ImplementationType).As(registration.ServiceType),
-                    registration.Lifetime
-                );
-            }
-            else
-            {
-                ApplyLifetime(
-                    builder.RegisterType(registration.ImplementationType).As(registration.ServiceType),
-                    registration.Lifetime
-                );
-            }
-        }
-    }
-
-    /// <summary>
-    /// Translates a sequence of container-neutral <see cref="InterlocutorFactoryRegistration"/> records -
-    /// delegate-backed registrations such as lambda-form pipeline stages - into Autofac factory
-    /// registrations, resolving the bridged <see cref="IServiceProvider"/> lazily at activation time.
-    /// </summary>
-    /// <param name="builder">The Autofac <see cref="ContainerBuilder"/> to register services into.</param>
-    /// <param name="registrations">The container-neutral factory registrations to translate.</param>
-    private static void ApplyFactories(ContainerBuilder builder, IEnumerable<InterlocutorFactoryRegistration> registrations)
-    {
-        foreach (var registration in registrations)
+        // Open generic implementation types (e.g. IPipelineBehavior<,> behaviors) require
+        // RegisterGeneric; closed types (e.g. discovered handlers) require RegisterType.
+        if (registration.ImplementationType.IsGenericTypeDefinition)
         {
             ApplyLifetime(
-                builder.Register(c => registration.Factory(c.Resolve<IServiceProvider>())).As(registration.ServiceType),
+                builder.RegisterGeneric(registration.ImplementationType).As(registration.ServiceType),
+                registration.Lifetime
+            );
+        }
+        else
+        {
+            ApplyLifetime(
+                builder.RegisterType(registration.ImplementationType).As(ResolveServiceType(registration)),
                 registration.Lifetime
             );
         }
     }
 
     /// <summary>
-    /// Translates <see cref="InterlocutorBuilder.Defaults"/> registrations into Autofac registrations
-    /// guarded by <c>IfNotRegistered</c> - Autofac's try-add equivalent - so an application's own
-    /// registration of the same service type, made before this call runs, is left untouched.
+    /// Resolves the service type a registration should actually be paired with under Autofac. Unlike
+    /// Microsoft DI, Autofac has no problem pairing an open generic implementation with an open generic
+    /// service type via <c>RegisterGeneric(...).As(...)</c> - but the reverse, a <em>closed</em> implementation
+    /// paired with an <em>open</em> service type via <c>RegisterType(...).As(...)</c>, throws
+    /// <see cref="ArgumentException"/> at <c>ContainerBuilder.Build()</c> time, the same shape Microsoft
+    /// DI's own <c>ServiceCollectionExtensions.ResolveServiceType</c> exists to handle. Both containers need
+    /// this translation for the identical reason: <see cref="InterlocutorPipelineBuilder.AddBehavior"/> always
+    /// records the open <see cref="IPipelineBehavior{TRequest,TResponse}"/> as
+    /// <see cref="InterlocutorRegistration.ServiceType"/> regardless of whether
+    /// <see cref="InterlocutorRegistration.ImplementationType"/> is itself open or closed (a legal shape - see
+    /// that method's remarks), so a closed implementation type here is re-paired with the specific closed
+    /// <see cref="IPipelineBehavior{TRequest,TResponse}"/> interface it actually implements.
+    /// </summary>
+    /// <param name="registration">The registration to resolve the effective service type for.</param>
+    /// <returns>
+    /// The closed interface <see cref="InterlocutorRegistration.ImplementationType"/> implements, when
+    /// <see cref="InterlocutorRegistration.ServiceType"/> is an open generic definition and
+    /// <see cref="InterlocutorRegistration.ImplementationType"/> is closed; otherwise, the registration's own
+    /// <see cref="InterlocutorRegistration.ServiceType"/> unchanged.
+    /// </returns>
+    private static Type ResolveServiceType(InterlocutorRegistration registration)
+    {
+        var serviceType = registration.ServiceType;
+        if (!serviceType.IsGenericTypeDefinition || registration.ImplementationType.IsGenericTypeDefinition)
+        {
+            return serviceType;
+        }
+
+        var closedServiceInterface = registration
+            .ImplementationType.GetInterfaces()
+            .FirstOrDefault(candidate => candidate.IsGenericType && candidate.GetGenericTypeDefinition() == serviceType);
+
+        return closedServiceInterface ?? serviceType;
+    }
+
+    /// <summary>
+    /// Translates one container-neutral <see cref="InterlocutorRegistration"/> from <see cref="InterlocutorBuilder.Defaults"/>
+    /// into an Autofac registration guarded by <c>IfNotRegistered</c> - Autofac's try-add equivalent - so an
+    /// application's own registration of the same service type, made before this call runs, is left untouched.
     /// </summary>
     /// <param name="builder">The Autofac <see cref="ContainerBuilder"/> to register services into.</param>
-    /// <param name="defaults">The try-add-able default registrations to translate.</param>
-    private static void TryApplyDefaults(ContainerBuilder builder, IEnumerable<InterlocutorRegistration> defaults)
+    /// <param name="registration">The try-add-able default registration to translate.</param>
+    private static void TryApplyDefault(ContainerBuilder builder, InterlocutorRegistration registration)
     {
-        foreach (var registration in defaults)
+        if (registration.ImplementationType.IsGenericTypeDefinition)
         {
-            if (registration.ImplementationType.IsGenericTypeDefinition)
-            {
-                ApplyLifetime(
-                    builder
-                        .RegisterGeneric(registration.ImplementationType)
-                        .As(registration.ServiceType)
-                        .IfNotRegistered(registration.ServiceType),
-                    registration.Lifetime
-                );
-            }
-            else
-            {
-                ApplyLifetime(
-                    builder
-                        .RegisterType(registration.ImplementationType)
-                        .As(registration.ServiceType)
-                        .IfNotRegistered(registration.ServiceType),
-                    registration.Lifetime
-                );
-            }
+            ApplyLifetime(
+                builder
+                    .RegisterGeneric(registration.ImplementationType)
+                    .As(registration.ServiceType)
+                    .IfNotRegistered(registration.ServiceType),
+                registration.Lifetime
+            );
+        }
+        else
+        {
+            ApplyLifetime(
+                builder
+                    .RegisterType(registration.ImplementationType)
+                    .As(registration.ServiceType)
+                    .IfNotRegistered(registration.ServiceType),
+                registration.Lifetime
+            );
         }
     }
 

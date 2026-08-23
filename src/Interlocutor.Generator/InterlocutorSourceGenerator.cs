@@ -1,6 +1,5 @@
 namespace Interlocutor.Generator;
 
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
@@ -194,9 +193,9 @@ public sealed class InterlocutorSourceGenerator : IIncrementalGenerator
 
         handlers = handlers.AddRange(openGenericResolution.ClosedHandlers);
 
-        ReportMissingHandlers(handlers, compilationInfo.ExternalModules, requests, context);
-        ReportDuplicateHandlers(handlers, context);
-        ReportCatchAllNotificationHandlers(handlers, context);
+        HandlerDiagnosticAnalyzer.ReportMissingHandlers(handlers, compilationInfo.ExternalModules, requests, context);
+        HandlerDiagnosticAnalyzer.ReportDuplicateHandlers(handlers, context);
+        HandlerDiagnosticAnalyzer.ReportCatchAllNotificationHandlers(handlers, context);
 
         var notificationHandlers = handlers.Where(static h => h.Kind == HandlerKind.Notification).ToImmutableArray();
         var order = NotificationHandlerOrderPlanner.Compute(notificationHandlers);
@@ -216,133 +215,5 @@ public sealed class InterlocutorSourceGenerator : IIncrementalGenerator
         context.AddSource("InterlocutorGeneratedDispatch.g.cs", DispatchWrapperEmitter.Emit(handlers));
         context.AddSource("InterlocutorGeneratedDispatchSwitch.g.cs", RequestDispatchSwitchEmitter.Emit(handlers, requests));
         context.AddSource("InterlocutorGeneratedNotificationOrder.g.cs", NotificationHandlerOrderEmitter.Emit(order.Ranks));
-    }
-
-    /// <summary>
-    /// Reports <see cref="InterlocutorDiagnostics.CatchAllNotificationHandler"/> for every notification handler
-    /// implementing <c>INotificationHandler&lt;INotification&gt;</c> - subscribing to the base marker interface
-    /// itself, and therefore to every notification published anywhere in the process.
-    /// </summary>
-    private static void ReportCatchAllNotificationHandlers(
-        ImmutableArray<HandlerModel> handlers,
-        SourceProductionContext context
-    )
-    {
-        foreach (var handler in handlers)
-        {
-            if (
-                handler.Kind == HandlerKind.Notification
-                && handler.RequestTypeName == "global::" + WellKnownTypeNames.Notification
-            )
-            {
-                context.ReportDiagnostic(
-                    Diagnostic.Create(
-                        InterlocutorDiagnostics.CatchAllNotificationHandler,
-                        handler.Location,
-                        handler.HandlerTypeName
-                    )
-                );
-            }
-        }
-    }
-
-    /// <summary>
-    /// Reports <see cref="InterlocutorDiagnostics.MissingHandler"/> for every request with no matching handler
-    /// among <paramref name="handlers"/> or any upstream <paramref name="externalModules"/>'s own handlers. A
-    /// query or command request matches a handler with the same request and response type; a void command
-    /// matches any void-command handler for the same request type regardless of the handler's chosen result
-    /// type (see <see cref="RequestKind.VoidCommand"/>).
-    /// </summary>
-    private static void ReportMissingHandlers(
-        ImmutableArray<HandlerModel> handlers,
-        ImmutableArray<ExternalModuleInfo> externalModules,
-        ImmutableArray<RequestModel> requests,
-        SourceProductionContext context
-    )
-    {
-        var externalHandlers = externalModules.SelectMany(static m => m.Handlers);
-
-        var queryHandlerRequestTypes = new HashSet<(string, string?)>(
-            handlers.Where(static h => h.Kind == HandlerKind.Query).Select(static h => (h.RequestTypeName, h.ResponseTypeName))
-        );
-        var commandHandlerRequestTypes = new HashSet<(string, string?)>(
-            handlers
-                .Where(static h => h.Kind == HandlerKind.Command)
-                .Select(static h => (h.RequestTypeName, h.ResponseTypeName))
-        );
-        var voidCommandHandlerRequestTypes = new HashSet<string>(
-            handlers.Where(static h => h.Kind == HandlerKind.VoidCommand).Select(static h => h.RequestTypeName)
-        );
-
-        foreach (var externalHandler in externalHandlers)
-        {
-            switch (externalHandler.Kind)
-            {
-                case HandlerKind.Query:
-                    queryHandlerRequestTypes.Add((externalHandler.RequestTypeName, externalHandler.ResponseTypeName));
-                    break;
-                case HandlerKind.Command:
-                    commandHandlerRequestTypes.Add((externalHandler.RequestTypeName, externalHandler.ResponseTypeName));
-                    break;
-                case HandlerKind.VoidCommand:
-                    voidCommandHandlerRequestTypes.Add(externalHandler.RequestTypeName);
-                    break;
-                case HandlerKind.Notification:
-                default:
-                    // Never emitted for external handlers - see RegistrationModuleEmitter.EmitAssemblyAttributes.
-                    break;
-            }
-        }
-
-        foreach (var request in requests)
-        {
-            var hasHandler = request.Kind switch
-            {
-                RequestKind.Query => queryHandlerRequestTypes.Contains((request.RequestTypeName, request.ResponseTypeName)),
-                RequestKind.Command => commandHandlerRequestTypes.Contains((request.RequestTypeName, request.ResponseTypeName)),
-                RequestKind.VoidCommand => voidCommandHandlerRequestTypes.Contains(request.RequestTypeName),
-                _ => true,
-            };
-
-            if (!hasHandler)
-            {
-                context.ReportDiagnostic(
-                    Diagnostic.Create(InterlocutorDiagnostics.MissingHandler, request.Location, request.RequestTypeName)
-                );
-            }
-        }
-    }
-
-    /// <summary>
-    /// Reports <see cref="InterlocutorDiagnostics.DuplicateHandler"/> whenever more than one query or command
-    /// handler is found for the same closed request/response pair. A notification's zero-or-many arity (see
-    /// <see cref="HandlerKind.Notification"/>) and a void command's caller-chosen result type (see
-    /// <see cref="RequestKind.VoidCommand"/>) both make "more than one handler" the expected, valid shape for
-    /// those kinds, so only <see cref="HandlerKind.Query"/> and <see cref="HandlerKind.Command"/> are checked.
-    /// </summary>
-    private static void ReportDuplicateHandlers(ImmutableArray<HandlerModel> handlers, SourceProductionContext context)
-    {
-        var duplicateGroups = handlers
-            .Where(static h => h.Kind is HandlerKind.Query or HandlerKind.Command)
-            .GroupBy(static h => (h.RequestTypeName, h.ResponseTypeName))
-            .Where(static group => group.Count() > 1);
-
-        foreach (var group in duplicateGroups)
-        {
-            var duplicateHandlers = group.ToImmutableArray();
-            var handlerNames = string.Join(", ", duplicateHandlers.Select(static h => h.HandlerTypeName));
-
-            foreach (var handler in duplicateHandlers)
-            {
-                context.ReportDiagnostic(
-                    Diagnostic.Create(
-                        InterlocutorDiagnostics.DuplicateHandler,
-                        handler.Location,
-                        handler.RequestTypeName,
-                        handlerNames
-                    )
-                );
-            }
-        }
     }
 }

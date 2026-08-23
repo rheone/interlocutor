@@ -20,7 +20,13 @@ namespace Interlocutor.CommonKernel.ResultTypes;
 /// </remarks>
 public readonly record struct RateLimited(string LimitKey, TimeSpan? RetryAfter = null, string? Message = null)
 {
-    /// <inheritdoc/>
+    /// <summary>
+    /// Returns a human-readable representation of this rate-limit rejection.
+    /// </summary>
+    /// <returns>
+    /// <c>"RateLimited: {LimitKey}"</c> when <see cref="Message"/> is <see langword="null"/>; otherwise
+    /// <c>"RateLimited: {LimitKey}, {Message}"</c>.
+    /// </returns>
     public override string ToString() =>
         this.Message is null ? $"RateLimited: {this.LimitKey}" : $"RateLimited: {this.LimitKey}, {this.Message}";
 }

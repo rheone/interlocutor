@@ -2,7 +2,6 @@ namespace Interlocutor.Abstractions.Notifications;
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using Interlocutor.Abstractions.Diagnostics;
 
 /// <summary>Dispatches a notification to all applicable handlers sequentially, stopping on the first failure.</summary>
 /// <typeparam name="TNotification">The notification type. Must implement <see cref="INotification"/>.</typeparam>
@@ -36,10 +35,7 @@ internal sealed class SequentialNotificationHandlerWrapper<
         Activity? activity = null
     )
     {
-        var typedNotification = (TNotification)notification;
-        var handlers = NotificationHandlerResolver.ResolveHandlers<TNotification>(services);
-
-        activity?.SetTag(MediatorActivitySource.HandlerTypeTag, string.Join(",", handlers.Select(h => h.GetType().FullName)));
+        var (typedNotification, handlers) = ResolveHandlers<TNotification>(notification, services, activity);
 
         // Execute handlers sequentially in the resolved (contravariant, order-table-sorted) order. If a
         // handler throws, the exception propagates immediately and subsequent handlers are not invoked.

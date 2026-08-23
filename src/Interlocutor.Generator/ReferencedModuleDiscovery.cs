@@ -23,9 +23,6 @@ using Microsoft.CodeAnalysis;
 /// </remarks>
 internal static class ReferencedModuleDiscovery
 {
-    private static readonly SymbolDisplayFormat QualifiedFormat =
-        SymbolDisplayFormat.FullyQualifiedFormat.WithMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.UseSpecialTypes);
-
     /// <summary>
     /// Finds every distinct referenced assembly carrying <c>InterlocutorGeneratedModuleAttribute</c>.
     /// </summary>
@@ -112,7 +109,9 @@ internal static class ReferencedModuleDiscovery
             }
         }
 
-        return moduleType is null ? null : new ExternalModuleInfo(assemblyIdentity, Format(moduleType), handlers.ToImmutable());
+        return moduleType is null
+            ? null
+            : new ExternalModuleInfo(assemblyIdentity, SymbolFormatting.Format(moduleType), handlers.ToImmutable());
     }
 
     /// <summary>Reads one <c>InterlocutorGeneratedHandlerAttribute</c> instance's constructor arguments.</summary>
@@ -124,8 +123,12 @@ internal static class ReferencedModuleDiscovery
             attribute.ConstructorArguments.Length < 3
             || attribute.ConstructorArguments[0].Value is not ITypeSymbol requestType
             || attribute.ConstructorArguments[2].Value is not int kindValue
-            || kindValue < 0
-            || kindValue > (int)HandlerKind.Notification
+            // Deliberately not "kindValue <= (int)HandlerKind.Notification": that would silently break if
+            // HandlerKind ever gained a new case that wasn't added last. Enum.IsDefined checks membership
+            // without assuming anything about member order or a "highest" value, so a referenced assembly
+            // built against a newer generator version (one that emits a kind this generator doesn't know
+            // about yet) is rejected here instead of being decoded as the wrong handler kind.
+            || !Enum.IsDefined(typeof(HandlerKind), kindValue)
         )
         {
             return false;
@@ -134,12 +137,9 @@ internal static class ReferencedModuleDiscovery
         var responseType = attribute.ConstructorArguments[1].Value as ITypeSymbol;
         handler = new ExternalHandlerInfo(
             (HandlerKind)kindValue,
-            Format(requestType),
-            responseType is null ? null : Format(responseType)
+            SymbolFormatting.Format(requestType),
+            responseType is null ? null : SymbolFormatting.Format(responseType)
         );
         return true;
     }
-
-    /// <summary>Formats a symbol as a fully-qualified, <c>global::</c>-prefixed source-safe type name.</summary>
-    private static string Format(ITypeSymbol symbol) => symbol.ToDisplayString(QualifiedFormat);
 }

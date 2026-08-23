@@ -1,5 +1,6 @@
 namespace Interlocutor.DependencyInjection.Microsoft;
 
+using System.Diagnostics.CodeAnalysis;
 using global::Microsoft.Extensions.DependencyInjection;
 using global::Microsoft.Extensions.DependencyInjection.Extensions;
 using global::Microsoft.Extensions.Logging;
@@ -48,8 +49,9 @@ public static class InterlocutorServiceCollectionExtensions
     /// This is the only <c>AddInterlocutor</c> entry point Microsoft DI exposes - there is no legacy
     /// options-based overload, no bare assembly-scanning overload, and no entry-assembly convenience
     /// overload; all configuration flows through <paramref name="configure"/>.
-    /// <see cref="InterlocutorBuilder.Defaults"/> entries are translated with try-add semantics (see
-    /// <see cref="TryApplyDefaults"/>), so a consumer's own registration of <see cref="IAuditSink"/>,
+    /// <see cref="InterlocutorBuilder.Defaults"/> entries are translated with try-add semantics (via the
+    /// shared <see cref="RegistrationApplier"/>'s <c>tryAddDefault</c> callback), so a consumer's own
+    /// registration of <see cref="IAuditSink"/>,
     /// <see cref="IPolicyEvaluator"/>, <see cref="IRequestContextAccessor"/>, or
     /// <see cref="IResponseOutcomeDescriber"/> - made before this call - always wins; the builder's own
     /// <c>Override*</c> methods cover winning when that registration is made after.
@@ -73,13 +75,19 @@ public static class InterlocutorServiceCollectionExtensions
             throw new InterlocutorRegistrationValidationException(report);
         }
 
-        Apply(services, builder.Handlers);
-        Apply(services, builder.GeneratedRegistrations);
-        Apply(services, builder.Stages);
-        ApplyFactories(services, builder.StageFactories);
-        Apply(services, builder.Behaviors);
-        Apply(services, builder.MatchedRegistrations);
-        TryApplyDefaults(services, builder.Defaults);
+        var applier = new RegistrationApplier(
+            addRegistration: registration =>
+                services.Add(
+                    CreateDescriptor(ResolveServiceType(registration), registration.ImplementationType, registration.Lifetime)
+                ),
+            addFactory: registration =>
+                services.Add(CreateDescriptor(registration.ServiceType, registration.Factory, registration.Lifetime)),
+            tryAddDefault: registration =>
+                services.TryAdd(
+                    CreateDescriptor(ResolveServiceType(registration), registration.ImplementationType, registration.Lifetime)
+                )
+        );
+        applier.Apply(builder);
         TryLogRegistrationReport(services, report);
 
         // The real dispatcher is registered under its concrete type, not under IMediator directly, so the
@@ -101,42 +109,16 @@ public static class InterlocutorServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Translates a sequence of container-neutral <see cref="InterlocutorRegistration"/> records into
-    /// Microsoft DI service descriptors.
-    /// </summary>
-    /// <param name="services">The <see cref="IServiceCollection"/> to register services into.</param>
-    /// <param name="registrations">The container-neutral registrations to translate.</param>
-    private static void Apply(IServiceCollection services, IEnumerable<InterlocutorRegistration> registrations)
-    {
-        foreach (var registration in registrations)
-        {
-            var serviceType = ResolveServiceType(registration);
-            switch (registration.Lifetime)
-            {
-                case RegistrationLifetime.Singleton:
-                    services.AddSingleton(serviceType, registration.ImplementationType);
-                    break;
-                case RegistrationLifetime.Transient:
-                    services.AddTransient(serviceType, registration.ImplementationType);
-                    break;
-                case RegistrationLifetime.Scoped:
-                default:
-                    services.AddScoped(serviceType, registration.ImplementationType);
-                    break;
-            }
-        }
-    }
-
-    /// <summary>
-    /// Resolves the service type a registration should actually be paired with under Microsoft DI, which -
-    /// unlike Autofac - requires an open generic service type to be paired with an open generic
-    /// implementation type. <see cref="InterlocutorPipelineBuilder.AddBehavior"/> always records the open
+    /// Resolves the service type a registration should actually be paired with under Microsoft DI, which
+    /// requires an open generic service type to be paired with an open generic implementation type.
+    /// <see cref="InterlocutorPipelineBuilder.AddBehavior"/> always records the open
     /// <see cref="IPipelineBehavior{TRequest,TResponse}"/> as <see cref="InterlocutorRegistration.ServiceType"/>
     /// regardless of whether <see cref="InterlocutorRegistration.ImplementationType"/> is itself open or
     /// closed (a legal shape - see that method's remarks), so a closed implementation type here is
     /// re-paired with the specific closed <see cref="IPipelineBehavior{TRequest,TResponse}"/> interface it
-    /// actually implements. Mirrors the open/closed branch <c>ContainerBuilderExtensions.Apply</c> already
-    /// has for Autofac, which needs no such translation because Autofac accepts the open/closed mismatch directly.
+    /// actually implements. Autofac needs the identical translation for the identical reason - see
+    /// <c>ContainerBuilderExtensions.ResolveServiceType</c>: it too throws at build time for a closed
+    /// implementation registered directly against an open service type.
     /// </summary>
     /// <param name="registration">The registration to resolve the effective service type for.</param>
     /// <returns>
@@ -160,63 +142,38 @@ public static class InterlocutorServiceCollectionExtensions
         return closedServiceInterface ?? serviceType;
     }
 
-    /// <summary>
-    /// Translates a sequence of container-neutral <see cref="InterlocutorFactoryRegistration"/> records -
-    /// delegate-backed registrations such as lambda-form pipeline stages - into Microsoft DI factory
-    /// service descriptors.
-    /// </summary>
-    /// <param name="services">The <see cref="IServiceCollection"/> to register services into.</param>
-    /// <param name="registrations">The container-neutral factory registrations to translate.</param>
-    private static void ApplyFactories(IServiceCollection services, IEnumerable<InterlocutorFactoryRegistration> registrations)
-    {
-        foreach (var registration in registrations)
+    /// <summary>Translates a container-neutral <see cref="RegistrationLifetime"/> into a <see cref="ServiceLifetime"/>.</summary>
+    /// <param name="lifetime">The container-neutral lifetime to translate.</param>
+    /// <returns>The equivalent <see cref="ServiceLifetime"/>.</returns>
+    private static ServiceLifetime ToServiceLifetime(RegistrationLifetime lifetime) =>
+        lifetime switch
         {
-            switch (registration.Lifetime)
-            {
-                case RegistrationLifetime.Singleton:
-                    services.AddSingleton(registration.ServiceType, registration.Factory);
-                    break;
-                case RegistrationLifetime.Transient:
-                    services.AddTransient(registration.ServiceType, registration.Factory);
-                    break;
-                case RegistrationLifetime.Scoped:
-                default:
-                    services.AddScoped(registration.ServiceType, registration.Factory);
-                    break;
-            }
-        }
-    }
+            RegistrationLifetime.Singleton => ServiceLifetime.Singleton,
+            RegistrationLifetime.Transient => ServiceLifetime.Transient,
+            RegistrationLifetime.Scoped or _ => ServiceLifetime.Scoped,
+        };
 
-    /// <summary>
-    /// Translates <see cref="InterlocutorBuilder.Defaults"/> registrations into Microsoft DI's <c>TryAdd</c>
-    /// descriptors, so an application's own registration of the same service type - made before this call
-    /// runs - is left untouched rather than superseded.
-    /// </summary>
-    /// <param name="services">The <see cref="IServiceCollection"/> to register services into.</param>
-    /// <param name="defaults">The try-add-able default registrations to translate.</param>
-    private static void TryApplyDefaults(IServiceCollection services, IEnumerable<InterlocutorRegistration> defaults)
-    {
-        foreach (var registration in defaults)
-        {
-            var descriptor = registration.Lifetime switch
-            {
-                RegistrationLifetime.Singleton => ServiceDescriptor.Singleton(
-                    registration.ServiceType,
-                    registration.ImplementationType
-                ),
-                RegistrationLifetime.Transient => ServiceDescriptor.Transient(
-                    registration.ServiceType,
-                    registration.ImplementationType
-                ),
-                RegistrationLifetime.Scoped or _ => ServiceDescriptor.Scoped(
-                    registration.ServiceType,
-                    registration.ImplementationType
-                ),
-            };
+    /// <summary>Builds a type-implementation <see cref="ServiceDescriptor"/> for the given container-neutral lifetime.</summary>
+    /// <param name="serviceType">The service type to register.</param>
+    /// <param name="implementationType">The implementation type to register.</param>
+    /// <param name="lifetime">The container-neutral lifetime to translate.</param>
+    /// <returns>The built <see cref="ServiceDescriptor"/>.</returns>
+    private static ServiceDescriptor CreateDescriptor(
+        Type serviceType,
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType,
+        RegistrationLifetime lifetime
+    ) => new(serviceType, implementationType, ToServiceLifetime(lifetime));
 
-            services.TryAdd(descriptor);
-        }
-    }
+    /// <summary>Builds a factory-backed <see cref="ServiceDescriptor"/> for the given container-neutral lifetime.</summary>
+    /// <param name="serviceType">The service type to register.</param>
+    /// <param name="factory">The factory that creates the service instance.</param>
+    /// <param name="lifetime">The container-neutral lifetime to translate.</param>
+    /// <returns>The built <see cref="ServiceDescriptor"/>.</returns>
+    private static ServiceDescriptor CreateDescriptor(
+        Type serviceType,
+        Func<IServiceProvider, object> factory,
+        RegistrationLifetime lifetime
+    ) => new(serviceType, factory, ToServiceLifetime(lifetime));
 
     /// <summary>
     /// Logs <see cref="InterlocutorBuilder.DescribeRegistrations"/>'s formatted report at

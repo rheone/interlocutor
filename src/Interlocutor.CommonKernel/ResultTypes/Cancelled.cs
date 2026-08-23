@@ -19,6 +19,9 @@ namespace Interlocutor.CommonKernel.ResultTypes;
 /// </remarks>
 public readonly record struct Cancelled(string? Reason = null)
 {
-    /// <inheritdoc/>
+    /// <summary>
+    /// Returns a human-readable representation of this cancellation.
+    /// </summary>
+    /// <returns><c>"Cancelled"</c> when <see cref="Reason"/> is <see langword="null"/>; otherwise <c>"Cancelled: {Reason}"</c>.</returns>
     public override string ToString() => this.Reason is null ? "Cancelled" : $"Cancelled: {this.Reason}";
 }

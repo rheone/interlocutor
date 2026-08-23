@@ -60,24 +60,11 @@ public class RateLimitedBehavior<TRequest, TResponse>(IRateLimiter rateLimiter, 
         return await next();
     }
 
-    private TResponse ConstructRateLimitedResponse(RateLimited rateLimited)
-    {
-        try
-        {
-            return caseRegistry.Construct<TResponse, RateLimited>(rateLimited);
-        }
-        catch (OutcomeCaseNotSupportedException ex)
-        {
-            // Preserve the pre-registry exception type/message shape existing callers already handle -
-            // OutcomeCaseNotSupportedException is a registry-level configuration signal, but the throttling
-            // itself is specifically a RateLimitedBehavior concern, so it's wrapped rather than surfaced
-            // directly.
-            throw new InvalidOperationException(
-                $"RateLimitedBehavior<{typeof(TRequest).Name}, {typeof(TResponse).Name}> throttled a request, "
-                    + $"but {typeof(TResponse).Name} has no {nameof(RateLimited)} case to construct. A request "
-                    + $"implementing {nameof(IRateLimited)} must use a response type with a {nameof(RateLimited)} case.",
-                ex
-            );
-        }
-    }
+    private TResponse ConstructRateLimitedResponse(RateLimited rateLimited) =>
+        caseRegistry.ConstructOrThrow<TResponse, RateLimited>(
+            rateLimited,
+            $"RateLimitedBehavior<{typeof(TRequest).Name}, {typeof(TResponse).Name}>",
+            "throttled a request",
+            $"A request implementing {nameof(IRateLimited)} must use a response type with a {nameof(RateLimited)} case"
+        );
 }

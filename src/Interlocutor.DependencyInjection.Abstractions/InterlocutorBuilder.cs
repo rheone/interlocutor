@@ -2,12 +2,10 @@ namespace Interlocutor.DependencyInjection.Abstractions;
 
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Markers;
 using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Pipeline.Cases;
-using Interlocutor.Abstractions.Queries;
 
 /// <summary>
 /// Container-neutral fluent builder that is the single configuration surface for Interlocutor -
@@ -415,7 +413,9 @@ public sealed class InterlocutorBuilder
         registrations.AddRange(this._defaults.Values);
         registrations.AddRange(this.MatchedRegistrations);
 
-        var problems = this._validateOnBuild ? this.ComputeProblems(registrations) : [];
+        var problems = this._validateOnBuild
+            ? RegistrationValidator.ComputeProblems(registrations, this.CandidateTypesForMatching().ToList(), this._matchRules)
+            : [];
 
         return new RegistrationReport(registrations, this._pipeline.StageFactories, this._pipeline.Skipped, problems);
     }
@@ -459,95 +459,6 @@ public sealed class InterlocutorBuilder
     {
         this._validateOnBuild = true;
         return this;
-    }
-
-    /// <summary>
-    /// Checks the accumulated registration list for every problem <see cref="ValidateOnBuild"/> documents,
-    /// answerable from <paramref name="registrations"/> and this builder's own state alone.
-    /// </summary>
-    /// <param name="registrations">Every registration accumulated so far, as <see cref="DescribeRegistrations"/> assembled it.</param>
-    /// <returns>Every problem found.</returns>
-    [RequiresUnreferencedCode(
-        "Scans every assembly passed to ScanAssembly* with Assembly.GetTypes()/Type.GetInterfaces() - reached "
-            + "only via the opt-in ValidateOnBuild. See documentation/trim-and-aot-support.md."
-    )]
-    [RequiresDynamicCode(
-        "Closes IQueryHandler<,>/ICommandHandler<,> reflectively via Type.MakeGenericType for every scanned "
-            + "request type. See documentation/trim-and-aot-support.md."
-    )]
-    private List<RegistrationProblem> ComputeProblems(IReadOnlyList<InterlocutorRegistration> registrations)
-    {
-        var problems = new List<RegistrationProblem>();
-        var candidates = this.CandidateTypesForMatching().ToList();
-
-        // A request type discovered while scanning with no matching handler - the same detection
-        // InterlocutorStartupValidation.ValidateHandlerRegistrations uses, but checked against the
-        // accumulated registration list instead of a live container.
-        foreach (var requestType in candidates)
-        {
-            foreach (var iface in requestType.GetInterfaces().Where(i => i.IsGenericType))
-            {
-                var handlerType = iface.GetGenericTypeDefinition() switch
-                {
-                    var def when def == typeof(IQuery<>) => typeof(IQueryHandler<,>).MakeGenericType(
-                        requestType,
-                        iface.GetGenericArguments()[0]
-                    ),
-                    var def when def == typeof(ICommand<>) => typeof(ICommandHandler<,>).MakeGenericType(
-                        requestType,
-                        iface.GetGenericArguments()[0]
-                    ),
-                    _ => null,
-                };
-
-                if (
-                    handlerType is not null
-                    && !registrations.Any(r => r.Kind == RegistrationKind.Handler && r.ServiceType == handlerType)
-                )
-                {
-                    problems.Add(
-                        new RegistrationProblem(
-                            RegistrationProblemKind.UnhandledRequestType,
-                            $"{requestType.Name} implements {iface.Name} but no {handlerType.Name} is registered."
-                        )
-                    );
-                }
-            }
-        }
-
-        // A required type-matching rule that matched nothing.
-        foreach (var rule in this._matchRules.Where(r => r.Require))
-        {
-            var matchedAnything = candidates.Any(candidate =>
-                rule.Predicate(candidate) && !(rule.Except?.Invoke(candidate) ?? false)
-            );
-            if (!matchedAnything)
-            {
-                problems.Add(
-                    new RegistrationProblem(
-                        RegistrationProblemKind.UnmatchedRequiredRule,
-                        $"A required type-matching rule targeting {rule.Target} matched no candidate type."
-                    )
-                );
-            }
-        }
-
-        // Two registrations of the same (service type, implementation type) pair at conflicting lifetimes.
-        foreach (var group in registrations.GroupBy(r => (r.ServiceType, r.ImplementationType)))
-        {
-            var lifetimes = group.Select(r => r.Lifetime).Distinct().ToList();
-            if (lifetimes.Count > 1)
-            {
-                problems.Add(
-                    new RegistrationProblem(
-                        RegistrationProblemKind.ConflictingLifetime,
-                        $"{group.Key.ServiceType.Name} -> {group.Key.ImplementationType.Name} is registered at conflicting lifetimes: {string.Join(", ", lifetimes)}."
-                    )
-                );
-            }
-        }
-
-        return problems;
     }
 
     /// <summary>Adds an assembly to scan for handler implementations.</summary>
@@ -664,9 +575,7 @@ public sealed class InterlocutorBuilder
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorBuilder OverrideRequestContextAccessor<
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TAccessor
-    >(
-        RegistrationLifetime lifetime = RegistrationLifetime.Scoped
-    )
+    >(RegistrationLifetime lifetime = RegistrationLifetime.Scoped)
         where TAccessor : class, IRequestContextAccessor
     {
         this._pipeline.SetDefault(typeof(IRequestContextAccessor), typeof(TAccessor), lifetime);

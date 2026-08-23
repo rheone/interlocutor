@@ -82,24 +82,11 @@ public class AuthorizationBehavior<TRequest, TResponse>(IPolicyEvaluator policyE
         return await next();
     }
 
-    private TResponse ConstructForbiddenResponse(Forbidden forbidden)
-    {
-        try
-        {
-            return caseRegistry.Construct<TResponse, Forbidden>(forbidden);
-        }
-        catch (OutcomeCaseNotSupportedException ex)
-        {
-            // Preserve the pre-registry exception type/message shape existing callers already handle -
-            // OutcomeCaseNotSupportedException is a registry-level configuration signal, but the denial
-            // itself is specifically an AuthorizationBehavior concern, so it's wrapped rather than surfaced
-            // directly.
-            throw new InvalidOperationException(
-                $"AuthorizationBehavior<{typeof(TRequest).Name}, {typeof(TResponse).Name}> denied a request, "
-                    + $"but {typeof(TResponse).Name} has no {nameof(Forbidden)} case to construct. A request "
-                    + $"implementing {nameof(IRequiresPolicy)} must use a response type with a {nameof(Forbidden)} case.",
-                ex
-            );
-        }
-    }
+    private TResponse ConstructForbiddenResponse(Forbidden forbidden) =>
+        caseRegistry.ConstructOrThrow<TResponse, Forbidden>(
+            forbidden,
+            $"AuthorizationBehavior<{typeof(TRequest).Name}, {typeof(TResponse).Name}>",
+            "denied a request",
+            $"A request implementing {nameof(IRequiresPolicy)} must use a response type with a {nameof(Forbidden)} case"
+        );
 }

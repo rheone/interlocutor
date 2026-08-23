@@ -19,7 +19,13 @@ namespace Interlocutor.CommonKernel.ResultTypes;
 /// </remarks>
 public readonly record struct Timeout(TimeSpan Budget, TimeSpan Elapsed, string? Message = null)
 {
-    /// <inheritdoc/>
+    /// <summary>
+    /// Returns a human-readable representation of this timeout.
+    /// </summary>
+    /// <returns>
+    /// <c>"Timeout: Budget={Budget}, Elapsed={Elapsed}"</c> when <see cref="Message"/> is <see langword="null"/>;
+    /// otherwise <c>"Timeout: Budget={Budget}, Elapsed={Elapsed}, {Message}"</c>.
+    /// </returns>
     public override string ToString() =>
         this.Message is null
             ? $"Timeout: Budget={this.Budget}, Elapsed={this.Elapsed}"
