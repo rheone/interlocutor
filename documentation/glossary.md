@@ -154,12 +154,15 @@ None of these run by default - the pipeline is empty until a builder call adds a
 
 ## Pagination
 
-These are not shipped types. Interlocutor's core has no opinion about pagination - these rows illustrate one way a consumer composes their own paged response as a union payload.
+These are not shipped types. `Interlocutor.CommonKernel` has no opinion about pagination - these rows illustrate one way a consumer composes their own paged response as a union payload.
 
 | Term | Definition |
 |------|------------|
 | **PagedResult<T>** | A consumer-defined materialized page of results with paging metadata (`Items`, `Page`, `PageSize`, `TotalCount`), used as the success case type in a consumer's own `OperationOutcome<PagedResult<T>, ...>`. Interlocutor never returns `IQueryable` and has no streaming response. |
 | **IPagedQuery<TItem>** | A consumer-defined query contract carrying `Page` and `PageSize`, illustrating one shape a query returning `PagedResult<TItem>` might take. |
+
+> [!NOTE]
+> The optional `Interlocutor.Persistence.Abstractions` package ships its own `Page<T>` type - see [Persistence Abstraction](persistence-abstraction.md). That is a different package's vocabulary for a different concern: a repository's return shape, not an `OperationOutcome` success-case shape. It does not contradict the above - `Interlocutor.CommonKernel` still ships no `PagedResult<T>` of its own.
 
 ## Packages
 

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>EF Core implementation of Interlocutor's optional persistence abstraction. Provides IUnitOfWork and IDomainRepository backed by DbContext.</Description>
+    <!-- Trim-compatible, deliberately NOT IsAotCompatible: OperationOutcome<...> is a value type, so the
+         container cannot close IPipelineBehavior<TRequest,TResponse> over it without a JIT. Tracked at
+         .scratch/aot-support/map.md; see docs/research/native-aot-and-trimming-options.md for the evidence. -->
+    <IsTrimmable>true</IsTrimmable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Interlocutor.Persistence.Abstractions\Interlocutor.Persistence.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+  </ItemGroup>
+</Project>

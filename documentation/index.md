@@ -34,6 +34,7 @@ Registering the library and understanding how a dispatch's scope and context flo
 
 - [ASP.NET Core Integration & HTTP Mapping](aspnetcore-integration.md) - the `ToActionResult()` extension, status code mapping, `ValidationProblemDetails` and `ProblemDetails` (RFC 7807), custom mapping, minimal API usage, error handling.
 - [Transactions & Store Integration](transactions-and-store-integration.md) - `Interlocutor.EntityFrameworkCore` and `Interlocutor.NHibernate`, `TransactionBehavior`, the `ITransactionalRequest`/`IExternalStoreRequest` markers, lazy session resolution, commit/rollback semantics, nested dispatch, notifications after commit.
+- [Persistence Abstraction](persistence-abstraction.md) - the optional, opt-in `IUnitOfWork`/`IDomainRepository<TEntity, TKey>` CRUD/paging surface, `Page<T>`, per-container registration, NHibernate session concurrency.
 
 ### Testing
 

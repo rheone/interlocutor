@@ -10,6 +10,11 @@
   <ItemGroup>
     <ProjectReference Include="..\Interlocutor.Abstractions\Interlocutor.Abstractions.csproj" />
     <ProjectReference Include="..\Interlocutor.DependencyInjection.Abstractions\Interlocutor.DependencyInjection.Abstractions.csproj" />
+    <!-- Persistence.Abstractions only - zero ORM dependency, so opting a Microsoft DI consumer into
+         AddInterlocutor() never pulls in EF Core or NHibernate transitively. The concrete IUnitOfWork/
+         IDomainRepository implementation is supplied by the consumer's own factory delegate at the call
+         site - see PersistenceServiceCollectionExtensions. -->
+    <ProjectReference Include="..\Interlocutor.Persistence.Abstractions\Interlocutor.Persistence.Abstractions.csproj" />
   </ItemGroup>
 
   <ItemGroup>

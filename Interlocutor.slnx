@@ -10,6 +10,9 @@
     <Project Path="src/Interlocutor.EntityFrameworkCore/Interlocutor.EntityFrameworkCore.csproj" />
     <Project Path="src/Interlocutor.FluentValidation/Interlocutor.FluentValidation.csproj" />
     <Project Path="src/Interlocutor.NHibernate/Interlocutor.NHibernate.csproj" />
+    <Project Path="src/Interlocutor.Persistence.Abstractions/Interlocutor.Persistence.Abstractions.csproj" />
+    <Project Path="src/Interlocutor.Persistence.EntityFrameworkCore/Interlocutor.Persistence.EntityFrameworkCore.csproj" />
+    <Project Path="src/Interlocutor.Persistence.NHibernate/Interlocutor.Persistence.NHibernate.csproj" />
   </Folder>
   <Folder Name="/samples/">
     <Project Path="samples/Interlocutor.Sample.Handlers/Interlocutor.Sample.Handlers.csproj" />
@@ -27,5 +30,8 @@
     <Project Path="tests/Interlocutor.FluentValidation.Tests/Interlocutor.FluentValidation.Tests.csproj" />
     <Project Path="tests/Interlocutor.NHibernate.Tests/Interlocutor.NHibernate.Tests.csproj" />
     <Project Path="tests/Interlocutor.Architecture.Tests/Interlocutor.Architecture.Tests.csproj" />
+    <Project Path="tests/Interlocutor.Persistence.Abstractions.Tests/Interlocutor.Persistence.Abstractions.Tests.csproj" />
+    <Project Path="tests/Interlocutor.Persistence.EntityFrameworkCore.Tests/Interlocutor.Persistence.EntityFrameworkCore.Tests.csproj" />
+    <Project Path="tests/Interlocutor.Persistence.NHibernate.Tests/Interlocutor.Persistence.NHibernate.Tests.csproj" />
   </Folder>
 </Solution>

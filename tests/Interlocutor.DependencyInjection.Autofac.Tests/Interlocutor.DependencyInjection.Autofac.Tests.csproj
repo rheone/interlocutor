@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="..\..\src\Interlocutor.DependencyInjection.Autofac\Interlocutor.DependencyInjection.Autofac.csproj" />
+    <!-- Referenced so AddInterlocutorUnitOfWork/AddInterlocutorRepository can be proven to resolve a real
+         EF Core implementation sharing one scoped DbContext - see PersistenceRegistrationTests. -->
+    <ProjectReference Include="..\..\src\Interlocutor.Persistence.EntityFrameworkCore\Interlocutor.Persistence.EntityFrameworkCore.csproj" />
     <!-- Analyzer-only reference: runs Interlocutor.Generator over this project's own compilation so
          GeneratedRegistrationIntegrationTests can dispatch through the real, compile-time discovered
          Interlocutor.Generated.InterlocutorGeneratedRegistrations module instead of runtime scanning. -->
@@ -22,5 +25,6 @@
     </PackageReference>
     <PackageReference Include="NSubstitute" />
     <PackageReference Include="NSubstitute.Analyzers.CSharp" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
   </ItemGroup>
 </Project>

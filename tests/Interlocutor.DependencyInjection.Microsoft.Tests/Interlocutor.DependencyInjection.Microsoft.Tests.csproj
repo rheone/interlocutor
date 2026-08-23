@@ -8,6 +8,9 @@
          of no-op'ing - see PipelineOrderingIntegrationTests, which needs every stage in the canonical chain
          to be the real, shipped implementation, not a stand-in. -->
     <ProjectReference Include="..\..\src\Interlocutor.NHibernate\Interlocutor.NHibernate.csproj" />
+    <!-- Referenced so AddInterlocutorUnitOfWork/AddInterlocutorRepository can be proven to resolve a real
+         EF Core implementation sharing one scoped DbContext - see PersistenceRegistrationTests. -->
+    <ProjectReference Include="..\..\src\Interlocutor.Persistence.EntityFrameworkCore\Interlocutor.Persistence.EntityFrameworkCore.csproj" />
     <!-- Analyzer-only reference: runs Interlocutor.Generator over this project's own compilation so
          GeneratedRegistrationIntegrationTests can dispatch through the real, compile-time discovered
          Interlocutor.Generated.InterlocutorGeneratedRegistrations module instead of runtime scanning. -->
@@ -29,5 +32,6 @@
     </PackageReference>
     <PackageReference Include="NSubstitute" />
     <PackageReference Include="NSubstitute.Analyzers.CSharp" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
   </ItemGroup>
 </Project>

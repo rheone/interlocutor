@@ -92,8 +92,11 @@ var message = result switch
 | `Interlocutor.EntityFrameworkCore` | `TransactionBehavior` for EF Core `DbContext`. |
 | `Interlocutor.NHibernate` | `TransactionBehavior` for NHibernate `ISession`. |
 | `Interlocutor.FluentValidation` | `ValidationBehavior` - automatic request validation via FluentValidation. |
+| `Interlocutor.Persistence.Abstractions` | Optional, opt-in `IUnitOfWork`/`IDomainRepository<TEntity, TKey>` persistence abstraction - see [persistence-abstraction.md](documentation/persistence-abstraction.md). Zero ORM dependency. |
+| `Interlocutor.Persistence.EntityFrameworkCore` | EF Core implementation of the persistence abstraction. |
+| `Interlocutor.Persistence.NHibernate` | NHibernate implementation of the persistence abstraction. |
 
-`Interlocutor.CommonKernel` has zero dependencies; every other package builds on `Interlocutor.Abstractions`, directly or transitively:
+`Interlocutor.CommonKernel` has zero dependencies; every other package builds on `Interlocutor.Abstractions`, directly or transitively. The `Interlocutor.Persistence.*` packages build on `Interlocutor.Persistence.Abstractions` instead, which itself builds only on `Interlocutor.Abstractions` - independently adoptable from `Interlocutor.EntityFrameworkCore`/`Interlocutor.NHibernate`:
 
 ```mermaid
 flowchart TD
@@ -104,6 +107,9 @@ flowchart TD
     Abstractions --> EFCore["Interlocutor.EntityFrameworkCore"]
     Abstractions --> NHibernate["Interlocutor.NHibernate"]
     Abstractions --> FluentValidation["Interlocutor.FluentValidation"]
+    Abstractions --> PersistenceAbstractions["Interlocutor.Persistence.Abstractions"]
+    PersistenceAbstractions --> PersistenceEFCore["Interlocutor.Persistence.EntityFrameworkCore"]
+    PersistenceAbstractions --> PersistenceNHibernate["Interlocutor.Persistence.NHibernate"]
 ```
 
 ## Deeper dive
