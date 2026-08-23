@@ -1,7 +1,7 @@
 # 02 - Prototype: does closed-generic behavior registration survive real dispatch?
 
 Type: prototype
-Status: open
+Status: resolved
 Blocked by: 01
 
 ## Question
@@ -57,4 +57,47 @@ filtering is not just an optimization, it is a fix.
 
 ## Answer
 
-_Pending._
+**Yes - the existing generator machinery generalizes to behaviors correctly, unmodified.** Proven by
+reusing the actual production code, not a lookalike: `HandlerTypeAnalyzer.BuildConstraints`,
+`GenericConstraintSnapshotBuilder.Build`, and `GenericConstraintChecker.Satisfies` were invoked via
+reflection against the sample's own compiled types, with zero changes to `src/`.
+
+```
+SampleTransactionBehavior<,> (where TRequest : ITransactionalRequest)
+  INCLUDE  x  CreateTodoCommand (implements ITransactionalRequest)
+  INCLUDE  x  DeleteTodoCommand (implements ITransactionalRequest)
+  exclude  x  GetTodoByIdQuery (does not)
+
+LoggingBehavior<,> (unconstrained)
+  INCLUDE  x  CreateTodoCommand
+  INCLUDE  x  DeleteTodoCommand
+  INCLUDE  x  GetTodoByIdQuery
+```
+
+Exactly the expected catalog: the constrained behavior closes only over requests that satisfy its marker
+interface; the unconstrained one closes over everything. `BuildConstraints` operates on any
+`INamedTypeSymbol`'s own type parameters - nothing about it is handler-specific - and
+`GenericConstraintSnapshotBuilder.Build`/`GenericConstraintChecker.Satisfies` only ever read the
+`.Constraints`/`.TypeArgumentMetadataNames` fields off whatever model carries them, so feeding them a
+behavior's constraints instead of a handler's needed no change to either method.
+
+**The stage host needs no special treatment.** `PipelineStageBehavior<TRequest, TResponse>` declares no
+`where` clause at all - structurally identical to the unconstrained `LoggingBehavior<,>` case already
+proven above.
+
+All four original concerns are now settled:
+
+- Fan-out and ordering - settled by the research (§3.3), against a genuine native binary.
+- End-to-end composition - settled by the research (§3.2), patched into this repo's own sample.
+- Constraint filtering - settled here, against this repo's own generator machinery.
+- The stage host - settled here, by inspection: it is the unconstrained case.
+
+**What this does not prove**, and what remains fog rather than decided: whether *wiring this into the
+generator's emission pipeline* - a new discovery pass finding every `IPipelineBehavior<,>` implementation,
+the cross product against every closed request, `RegistrationModuleEmitter` changes, both container
+translators dropping their open-generic behavior path - is itself straightforward. This prototype proves the
+one piece that could have been a silent, generator-specific gotcha isn't one. The generator-wiring work is
+still the size the research's option (B) already estimated.
+
+Prototype harness: `/tmp/claude-1000/-workspaces-interlocutor/bd7bf73b-b916-4b51-b47d-ed72db1d1539/scratchpad/behavior-catalog-prototype/`
+(throwaway, not committed - session-local scratchpad, per the research skill's own convention for prototypes).

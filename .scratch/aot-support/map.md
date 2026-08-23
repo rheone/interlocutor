@@ -53,6 +53,14 @@ effort grew out of; `33-doc-trim-and-aot-support.md` is its blocked documentatio
 
 <!-- one line per resolved ticket: gist plus link -->
 
+- [Prototype: does closed-generic behavior registration survive real dispatch?](issues/02-closed-registration-prototype.md) -
+  yes, the generator's existing constraint machinery (`HandlerTypeAnalyzer.BuildConstraints`,
+  `GenericConstraintSnapshotBuilder`, `GenericConstraintChecker.Satisfies`) generalizes to behaviors
+  unmodified - proven by invoking the real methods via reflection against the sample's compiled types, not a
+  reimplementation. `SampleTransactionBehavior<,>` correctly includes only `ITransactionalRequest`-satisfying
+  requests; the unconstrained `LoggingBehavior<,>` includes everything. The stage host needs no separate
+  treatment - it declares no constraint at all, the same shape already proven. All four original concerns
+  (fan-out, ordering, constraint filtering, stage host) are now settled between this ticket and the research.
 - [Native AOT feasibility: the constraint, the containers, and the realistic options](issues/01-aot-feasibility-research.md) -
   the wall is real and every container shares it; there are **two** blockers, not one (the mediator's own
   `Activator.CreateInstance` fails before DI is even reached); closed registrations demonstrably fix the DI
