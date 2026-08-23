@@ -2,6 +2,7 @@ namespace Interlocutor.Abstractions;
 
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using Interlocutor.Abstractions.Commands;
@@ -181,6 +182,12 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     }
 
     /// <inheritdoc/>
+    [RequiresUnreferencedCode(
+        "Send(object, CancellationToken) may run the runtime-typed dispatch fallback (see Mediator.Send(object,...)'s remarks) - see documentation/trim-and-aot-support.md."
+    )]
+    [RequiresDynamicCode(
+        "Send(object, CancellationToken) may run the runtime-typed dispatch fallback - see documentation/trim-and-aot-support.md."
+    )]
     public Task<IOperationOutcome> Send(object request, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -197,6 +204,12 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     /// Wraps <see cref="DispatchAsync"/> with the same activity-tracing shape as <see cref="TraceSendAsync{TResponse}"/>,
     /// but for the runtime-typed overload's <see cref="IOperationOutcome"/> return type.
     /// </summary>
+    [RequiresUnreferencedCode(
+        "TraceDispatchAsync may run the runtime-typed dispatch fallback (see Mediator.Send(object,...)'s remarks) - see documentation/trim-and-aot-support.md."
+    )]
+    [RequiresDynamicCode(
+        "TraceDispatchAsync may run the runtime-typed dispatch fallback - see documentation/trim-and-aot-support.md."
+    )]
     private static async Task<IOperationOutcome> TraceDispatchAsync(
         Activity activity,
         object request,
@@ -236,6 +249,14 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     /// lookup per call is cheap relative to the reflection it replaces, and keeps this method free of extra
     /// constructor-time state.
     /// </remarks>
+    [RequiresUnreferencedCode(
+        "The runtime-typed dispatch fallback reflects over runtime types and is only reached when no IGeneratedRequestDispatcher "
+            + "is registered (Interlocutor.Generator did not run, or its output was never passed to "
+            + "AddGeneratedRegistrations) - see documentation/trim-and-aot-support.md."
+    )]
+    [RequiresDynamicCode(
+        "The runtime-typed dispatch fallback closes generic types/methods reflectively - see documentation/trim-and-aot-support.md."
+    )]
     private Task<IOperationOutcome> DispatchAsync(object request, CancellationToken ct)
     {
         var generatedDispatcher = (IGeneratedRequestDispatcher?)services.GetService(typeof(IGeneratedRequestDispatcher));
@@ -250,6 +271,14 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     /// <see cref="IGeneratedRequestDispatcher"/> is registered (the generator never ran over the compilation,
     /// or its output was never passed to <c>InterlocutorBuilder.AddGeneratedRegistrations</c>).
     /// </summary>
+    [RequiresUnreferencedCode(
+        "The runtime-typed dispatch fallback reflects over runtime types and is only reached when no IGeneratedRequestDispatcher "
+            + "is registered (Interlocutor.Generator did not run, or its output was never passed to "
+            + "AddGeneratedRegistrations) - see documentation/trim-and-aot-support.md."
+    )]
+    [RequiresDynamicCode(
+        "The runtime-typed dispatch fallback closes generic types/methods reflectively - see documentation/trim-and-aot-support.md."
+    )]
     private async Task<IOperationOutcome> DispatchViaReflectionAsync(object request, CancellationToken ct)
     {
         var requestType = request.GetType();
@@ -306,6 +335,14 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     /// The open generic interface (e.g. <c>typeof(IQuery&lt;&gt;)</c>) or, for the unit-command overload, the
     /// non-generic <see cref="ICommand"/> type, identifying which overload's first parameter to match.
     /// </param>
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2026:RequiresUnreferencedCode",
+        Justification = "Enumerating ISender's own methods to find one by signature shape is not itself a call "
+            + "to the RequiresUnreferencedCode-annotated Send(object,...) overload; the resolved MethodInfo is "
+            + "only ever the strongly-typed Send<TResponse> overloads DispatchViaReflectionAsync invokes, which "
+            + "carries its own matching annotation. See documentation/trim-and-aot-support.md."
+    )]
     private static MethodInfo ResolveSendMethod(Type requestParameterType) =>
         typeof(ISender)
             .GetMethods()
@@ -328,6 +365,14 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     /// result as the base outcome interface - the reflection stand-in for the compile-time generic type
     /// argument a static caller would normally supply.
     /// </summary>
+    [RequiresUnreferencedCode(
+        "The runtime-typed dispatch fallback reflects over runtime types and is only reached when no IGeneratedRequestDispatcher "
+            + "is registered (Interlocutor.Generator did not run, or its output was never passed to "
+            + "AddGeneratedRegistrations) - see documentation/trim-and-aot-support.md."
+    )]
+    [RequiresDynamicCode(
+        "The runtime-typed dispatch fallback closes generic types/methods reflectively - see documentation/trim-and-aot-support.md."
+    )]
     private static async Task<IOperationOutcome> InvokeSendAsync(
         MethodInfo openGenericSendMethod,
         Mediator instance,
@@ -352,6 +397,14 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     /// Finds the closed generic interface matching <paramref name="openGenericInterface"/> that
     /// <paramref name="requestType"/> implements, or <see langword="null"/> if it implements none.
     /// </summary>
+    [RequiresUnreferencedCode(
+        "The runtime-typed dispatch fallback reflects over runtime types and is only reached when no IGeneratedRequestDispatcher "
+            + "is registered (Interlocutor.Generator did not run, or its output was never passed to "
+            + "AddGeneratedRegistrations) - see documentation/trim-and-aot-support.md."
+    )]
+    [RequiresDynamicCode(
+        "The runtime-typed dispatch fallback closes generic types/methods reflectively - see documentation/trim-and-aot-support.md."
+    )]
     private static Type? FindClosedInterface(Type requestType, Type openGenericInterface) =>
         requestType
             .GetInterfaces()
@@ -382,6 +435,14 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     /// field doc) - a future generator-backed implementation replaces it with a compiled lookup, without
     /// changing <see cref="Send(object, CancellationToken)"/>'s contract.
     /// </remarks>
+    [RequiresUnreferencedCode(
+        "The runtime-typed dispatch fallback reflects over runtime types and is only reached when no IGeneratedRequestDispatcher "
+            + "is registered (Interlocutor.Generator did not run, or its output was never passed to "
+            + "AddGeneratedRegistrations) - see documentation/trim-and-aot-support.md."
+    )]
+    [RequiresDynamicCode(
+        "The runtime-typed dispatch fallback closes generic types/methods reflectively - see documentation/trim-and-aot-support.md."
+    )]
     private static Type? ResolveVoidCommandResultType(Type commandType)
     {
         foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
@@ -444,6 +505,22 @@ public sealed class Mediator(IServiceProvider services) : IMediator
         return this.PublishAsync(notification, strategy, ct);
     }
 
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2026:RequiresUnreferencedCode",
+        Justification = "SequentialNotificationHandlerWrapper<>/ParallelNotificationHandlerWrapper<> are closed "
+            + "only over the reference-typed notification's own runtime type (already DynamicallyAccessedMembers-"
+            + "annotated as Interfaces on both wrapper classes) - see documentation/trim-and-aot-support.md."
+    )]
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2071:DynamicallyAccessedMembers",
+        Justification = "notification.GetType() is the reference-typed notification's own runtime type, which "
+            + "always satisfies DynamicallyAccessedMemberTypes.Interfaces in practice - the type is either the "
+            + "caller's own compile-time-known TNotification (interfaces already preserved by ordinary usage) "
+            + "or, for a polymorphic call, a concrete subtype that is likewise never trimmed away while it "
+            + "remains constructible by the caller. See documentation/trim-and-aot-support.md."
+    )]
     private Task PublishAsync<TNotification>(TNotification notification, PublishStrategy strategy, CancellationToken ct)
         where TNotification : INotification
     {

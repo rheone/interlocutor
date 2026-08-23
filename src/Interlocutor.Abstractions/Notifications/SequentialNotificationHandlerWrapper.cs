@@ -1,6 +1,7 @@
 namespace Interlocutor.Abstractions.Notifications;
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Interlocutor.Abstractions.Diagnostics;
 
 /// <summary>Dispatches a notification to all applicable handlers sequentially, stopping on the first failure.</summary>
@@ -15,7 +16,9 @@ using Interlocutor.Abstractions.Diagnostics;
 /// pins it (see ADR-0007).
 /// </para>
 /// </remarks>
-internal sealed class SequentialNotificationHandlerWrapper<TNotification> : NotificationHandlerWrapper
+internal sealed class SequentialNotificationHandlerWrapper<
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] TNotification
+> : NotificationHandlerWrapper
     where TNotification : INotification
 {
     /// <summary>

@@ -13,6 +13,13 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Minimal API's request-delegate generator requires every JSON-serialized request/response body to be
+// resolvable through a source-generated JsonSerializerContext once PublishAot is set - reflection-based
+// System.Text.Json serialization is unavailable under NativeAOT. See documentation/trim-and-aot-support.md.
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.TypeInfoResolverChain.Insert(0, SampleJsonContext.Default)
+);
+
 // A single open Sqlite connection kept alive for the app's lifetime backs the in-memory database - closing
 // the last connection to a Sqlite ":memory:" database deletes it, so the connection itself is the thing
 // that must outlive every request. EF Core's own connection-per-DbContext pooling reuses this one. Disposed

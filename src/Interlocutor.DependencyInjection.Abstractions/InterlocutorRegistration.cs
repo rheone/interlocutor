@@ -1,5 +1,7 @@
 namespace Interlocutor.DependencyInjection.Abstractions;
 
+using System.Diagnostics.CodeAnalysis;
+
 /// <summary>
 /// A container-neutral description of a single service registration: what service type it
 /// satisfies, what implementation type provides it, its lifetime, and what role it plays.
@@ -33,7 +35,7 @@ namespace Interlocutor.DependencyInjection.Abstractions;
 /// </param>
 public readonly record struct InterlocutorRegistration(
     Type ServiceType,
-    Type ImplementationType,
+    [property: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type ImplementationType,
     RegistrationLifetime Lifetime,
     RegistrationKind Kind,
     RegistrationProvenance Provenance = RegistrationProvenance.Explicit,

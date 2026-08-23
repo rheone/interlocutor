@@ -1,5 +1,6 @@
 namespace Interlocutor.AspNetCore;
 
+using System.Diagnostics.CodeAnalysis;
 using Interlocutor.CommonKernel.ResultTypes;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -188,6 +189,15 @@ public class DefaultOutcomeStatusMapper : IOutcomeStatusMapper
     protected virtual OutcomeHttpMapping MapUnrecognized<TFailure>(TFailure failure) =>
         new(StatusCodes.Status500InternalServerError, failure);
 
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2090:RequiresUnreferencedCode",
+        Justification = "The only closed generic ever tested here is Interlocutor.CommonKernel.ResultTypes."
+            + "NotFound<TId> - a library-owned type whose EntityType/Id/Message properties are always kept by "
+            + "the trimmer independent of this reflective read, since every consumer that produces a NotFound<> "
+            + "failure also constructs or pattern-matches it directly elsewhere. See "
+            + "documentation/trim-and-aot-support.md."
+    )]
     private OutcomeHttpMapping MapNotFoundGenericOrUnrecognized<TFailure>(TFailure failure)
     {
         // Pattern matching doesn't work against the open generic NotFound<> case type, so fall back to

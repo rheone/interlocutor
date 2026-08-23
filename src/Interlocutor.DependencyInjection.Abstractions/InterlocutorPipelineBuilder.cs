@@ -1,5 +1,6 @@
 namespace Interlocutor.DependencyInjection.Abstractions;
 
+using System.Diagnostics.CodeAnalysis;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Pipeline.Cases;
@@ -454,7 +455,7 @@ public sealed class InterlocutorPipelineBuilder
     /// <param name="lifetime">The service lifetime to register the stage with. Defaults to scoped.</param>
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorPipelineBuilder AddStage(
-        Type stageImplementationType,
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type stageImplementationType,
         RegistrationLifetime lifetime = RegistrationLifetime.Scoped
     )
     {
@@ -480,7 +481,9 @@ public sealed class InterlocutorPipelineBuilder
     /// <typeparam name="TStage">The concrete stage implementation type.</typeparam>
     /// <param name="lifetime">The service lifetime to register the stage with. Defaults to scoped.</param>
     /// <returns>This builder, for chaining.</returns>
-    public InterlocutorPipelineBuilder AddStage<TStage>(RegistrationLifetime lifetime = RegistrationLifetime.Scoped)
+    public InterlocutorPipelineBuilder AddStage<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] TStage>(
+        RegistrationLifetime lifetime = RegistrationLifetime.Scoped
+    )
         where TStage : class => this.AddStage(typeof(TStage), lifetime);
 
     /// <summary>
@@ -609,6 +612,14 @@ public sealed class InterlocutorPipelineBuilder
     /// <see langword="null"/> if the type (or the assembly it lives in) is not loaded - the graceful-fallback
     /// lookup used for optional-package behaviors.
     /// </summary>
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2057:UnrecognizedReflectionPattern",
+        Justification = "This is a best-effort probe for an optional package's type by name (EF Core/NHibernate/"
+            + "FluentValidation transaction and validation behaviors) - returning null when trimming has removed "
+            + "an unreferenced optional package is the same, correct 'that behavior is absent' outcome as the "
+            + "package never having been referenced at all. See documentation/trim-and-aot-support.md."
+    )]
     private static Type? TryGetType(string typeName)
     {
         try

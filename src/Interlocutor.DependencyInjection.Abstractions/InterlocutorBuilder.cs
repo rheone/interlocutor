@@ -1,5 +1,6 @@
 namespace Interlocutor.DependencyInjection.Abstractions;
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
@@ -178,6 +179,14 @@ public sealed class InterlocutorBuilder
     /// Recomputed on every access, so it always reflects the builder's current configuration.
     /// </remarks>
     /// <value>The merged handler registrations, with explicit entries winning over scanned duplicates.</value>
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2026:RequiresUnreferencedCode",
+        Justification = "HandlerDiscovery.Discover only reflects when ScanAssembly*/ScanAssemblies/"
+            + "ScanAssemblyContaining/ScanEntryAssembly (all annotated RequiresUnreferencedCode) added an "
+            + "assembly; with none configured, AssembliesToScan is empty and the scan loop never runs. See "
+            + "documentation/trim-and-aot-support.md."
+    )]
     public IReadOnlyList<InterlocutorRegistration> Handlers
     {
         get
@@ -217,6 +226,19 @@ public sealed class InterlocutorBuilder
     /// and <see cref="RegistrationKind.Behavior"/> entries - this property performs no deduplication of its own.
     /// </remarks>
     /// <value>Every registration produced by a type-matching rule.</value>
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2026:RequiresUnreferencedCode",
+        Justification = "CandidateTypesForMatching only reflects when AddTypeMatch (annotated "
+            + "RequiresUnreferencedCode) added a rule; with none configured this returns immediately before "
+            + "scanning. See documentation/trim-and-aot-support.md."
+    )]
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2072:DynamicallyAccessedMembers",
+        Justification = "Same opt-in-only rationale as the IL2026 suppression above - candidate is only ever "
+            + "produced when AddTypeMatch was called."
+    )]
     public IReadOnlyList<InterlocutorRegistration> MatchedRegistrations
     {
         get
@@ -298,6 +320,10 @@ public sealed class InterlocutorBuilder
     /// can identify which rule matched a given type. Defaults to this rule's position among <see cref="MatchRules"/>.
     /// </param>
     /// <returns>This builder, for chaining.</returns>
+    [RequiresUnreferencedCode(
+        "A rule added here drives CandidateTypesForMatching's Assembly.GetTypes() scan over every assembly "
+            + "passed to ScanAssembly*. See documentation/trim-and-aot-support.md."
+    )]
     public InterlocutorBuilder AddTypeMatch(
         Func<Type, bool> predicate,
         TypeMatchTarget target,
@@ -318,6 +344,11 @@ public sealed class InterlocutorBuilder
     /// contract, since a type-matching rule's predicate decides relevance instead.
     /// </summary>
     /// <returns>Every candidate type found while scanning.</returns>
+    [RequiresUnreferencedCode(
+        "Scans every assembly passed to ScanAssembly* with Assembly.GetTypes() - reached only from callers "
+            + "already annotated at their own opt-in point (AddTypeMatch, ValidateOnBuild). See "
+            + "documentation/trim-and-aot-support.md."
+    )]
     private IEnumerable<Type> CandidateTypesForMatching() =>
         this._assembliesToScan.SelectMany(entry => entry.Assembly.GetTypes()).Where(HandlerDiscovery.IsCandidateType);
 
@@ -363,6 +394,17 @@ public sealed class InterlocutorBuilder
     /// assembly and is therefore not free - consistent with <see cref="ValidateOnBuild"/> being opt-in.
     /// </summary>
     /// <returns>The structured registration report.</returns>
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2026:RequiresUnreferencedCode",
+        Justification = "ComputeProblems only reflects when ValidateOnBuild (annotated RequiresUnreferencedCode) "
+            + "was called; otherwise this ternary never evaluates it. See documentation/trim-and-aot-support.md."
+    )]
+    [UnconditionalSuppressMessage(
+        "AotAnalysis",
+        "IL3050:RequiresDynamicCode",
+        Justification = "Same ValidateOnBuild opt-in rationale as the IL2026 suppression above."
+    )]
     public RegistrationReport DescribeRegistrations()
     {
         var registrations = new List<InterlocutorRegistration>();
@@ -405,6 +447,14 @@ public sealed class InterlocutorBuilder
     /// </para>
     /// </remarks>
     /// <returns>This builder, for chaining.</returns>
+    [RequiresUnreferencedCode(
+        "Makes DescribeRegistrations' problem computation scan every assembly passed to ScanAssembly* with "
+            + "Assembly.GetTypes()/Type.GetInterfaces(). See documentation/trim-and-aot-support.md."
+    )]
+    [RequiresDynamicCode(
+        "Makes DescribeRegistrations' problem computation close IQueryHandler<,>/ICommandHandler<,> reflectively "
+            + "via Type.MakeGenericType. See documentation/trim-and-aot-support.md."
+    )]
     public InterlocutorBuilder ValidateOnBuild()
     {
         this._validateOnBuild = true;
@@ -417,6 +467,14 @@ public sealed class InterlocutorBuilder
     /// </summary>
     /// <param name="registrations">Every registration accumulated so far, as <see cref="DescribeRegistrations"/> assembled it.</param>
     /// <returns>Every problem found.</returns>
+    [RequiresUnreferencedCode(
+        "Scans every assembly passed to ScanAssembly* with Assembly.GetTypes()/Type.GetInterfaces() - reached "
+            + "only via the opt-in ValidateOnBuild. See documentation/trim-and-aot-support.md."
+    )]
+    [RequiresDynamicCode(
+        "Closes IQueryHandler<,>/ICommandHandler<,> reflectively via Type.MakeGenericType for every scanned "
+            + "request type. See documentation/trim-and-aot-support.md."
+    )]
     private List<RegistrationProblem> ComputeProblems(IReadOnlyList<InterlocutorRegistration> registrations)
     {
         var problems = new List<RegistrationProblem>();
@@ -496,6 +554,10 @@ public sealed class InterlocutorBuilder
     /// <param name="assembly">The assembly to scan.</param>
     /// <param name="lifetime">The service lifetime to register every handler this assembly yields with. Defaults to scoped.</param>
     /// <returns>This builder, for chaining.</returns>
+    [RequiresUnreferencedCode(
+        "Makes Handlers/MatchedRegistrations scan this assembly with Assembly.GetTypes(). See "
+            + "documentation/trim-and-aot-support.md."
+    )]
     public InterlocutorBuilder ScanAssembly(Assembly assembly, RegistrationLifetime lifetime = RegistrationLifetime.Scoped)
     {
         ArgumentNullException.ThrowIfNull(assembly);
@@ -506,6 +568,10 @@ public sealed class InterlocutorBuilder
     /// <summary>Adds one or more assemblies, all at the default scoped lifetime, to scan for handler implementations, in the given order.</summary>
     /// <param name="assemblies">The assemblies to scan.</param>
     /// <returns>This builder, for chaining.</returns>
+    [RequiresUnreferencedCode(
+        "Makes Handlers/MatchedRegistrations scan these assemblies with Assembly.GetTypes(). See "
+            + "documentation/trim-and-aot-support.md."
+    )]
     public InterlocutorBuilder ScanAssemblies(params Assembly[] assemblies) =>
         this.ScanAssemblies(RegistrationLifetime.Scoped, assemblies);
 
@@ -513,6 +579,10 @@ public sealed class InterlocutorBuilder
     /// <param name="lifetime">The service lifetime to register every handler these assemblies yield with.</param>
     /// <param name="assemblies">The assemblies to scan.</param>
     /// <returns>This builder, for chaining.</returns>
+    [RequiresUnreferencedCode(
+        "Makes Handlers/MatchedRegistrations scan these assemblies with Assembly.GetTypes(). See "
+            + "documentation/trim-and-aot-support.md."
+    )]
     public InterlocutorBuilder ScanAssemblies(RegistrationLifetime lifetime, params Assembly[] assemblies)
     {
         ArgumentNullException.ThrowIfNull(assemblies);
@@ -528,12 +598,20 @@ public sealed class InterlocutorBuilder
     /// <typeparam name="TMarker">Any type whose containing assembly should be scanned.</typeparam>
     /// <param name="lifetime">The service lifetime to register every handler this assembly yields with. Defaults to scoped.</param>
     /// <returns>This builder, for chaining.</returns>
+    [RequiresUnreferencedCode(
+        "Makes Handlers/MatchedRegistrations scan this assembly with Assembly.GetTypes(). See "
+            + "documentation/trim-and-aot-support.md."
+    )]
     public InterlocutorBuilder ScanAssemblyContaining<TMarker>(RegistrationLifetime lifetime = RegistrationLifetime.Scoped) =>
         this.ScanAssembly(typeof(TMarker).Assembly, lifetime);
 
     /// <summary>Adds the entry assembly to scan for handler implementations.</summary>
     /// <param name="lifetime">The service lifetime to register every handler this assembly yields with. Defaults to scoped.</param>
     /// <returns>This builder, for chaining.</returns>
+    [RequiresUnreferencedCode(
+        "Makes Handlers/MatchedRegistrations scan this assembly with Assembly.GetTypes(). See "
+            + "documentation/trim-and-aot-support.md."
+    )]
     public InterlocutorBuilder ScanEntryAssembly(RegistrationLifetime lifetime = RegistrationLifetime.Scoped) =>
         this.ScanAssembly(Assembly.GetEntryAssembly()!, lifetime);
 
@@ -557,7 +635,7 @@ public sealed class InterlocutorBuilder
     /// <param name="lifetime">The service lifetime to register the handler with. Defaults to scoped.</param>
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorBuilder AddHandler(
-        Type handlerImplementationType,
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type handlerImplementationType,
         RegistrationLifetime lifetime = RegistrationLifetime.Scoped
     )
     {

@@ -1,6 +1,7 @@
 namespace Interlocutor.AspNetCore;
 
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Interlocutor.Abstractions.Pipeline.Cases;
 using Interlocutor.Abstractions.Pipeline.Classifiers;
@@ -466,6 +467,17 @@ public static class ResultExtensions
     /// <param name="failureType">The failure value's runtime type.</param>
     /// <param name="failureValue">The failure value.</param>
     /// <returns>The mapped <see cref="OutcomeHttpMapping"/>.</returns>
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2060:MakeGenericMethod",
+        Justification = "Safe when trimming, NOT when compiling ahead of time. TFailure is always a failure "
+            + "case type the caller's own code already constructed to produce this outcome, so the trimmer "
+            + "keeps it and its Map<TFailure> instantiation reachable. That argument does not extend to "
+            + "ahead-of-time compilation: every case type is a readonly record struct, and value-type generic "
+            + "instantiations are not shared, so MakeGenericMethod needs a JIT here. This package is marked "
+            + "IsTrimmable, deliberately not IsAotCompatible, for exactly that reason - see "
+            + "docs/research/native-aot-and-trimming-options.md."
+    )]
     private static OutcomeHttpMapping InvokeMap(IOutcomeStatusMapper mapper, Type failureType, object? failureValue)
     {
         var closedMapMethod = MapMethodCache.GetOrAdd(failureType, static ft => MapMethodDefinition.MakeGenericMethod(ft));
@@ -479,6 +491,14 @@ public static class ResultExtensions
             : new ObjectResult(mapping.Body) { StatusCode = mapping.StatusCode };
 
     /// <summary>Renders an <see cref="OutcomeHttpMapping"/> as an <see cref="IResult"/> for minimal API endpoints.</summary>
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2026:RequiresUnreferencedCode",
+        Justification = "Results.Json serializes an arbitrary failure body reflectively - a real AOT caveat, not "
+            + "eliminated here. Documented in documentation/trim-and-aot-support.md: a consumer publishing "
+            + "trimmed/AOT should configure a System.Text.Json source-generated JsonSerializerContext for their "
+            + "own failure/success types via ConfigureHttpJsonOptions, which Results.Json already picks up."
+    )]
     private static IResult ToMinimalApiResult(this OutcomeHttpMapping mapping) =>
         mapping.Body is null
             ? Results.StatusCode(mapping.StatusCode)

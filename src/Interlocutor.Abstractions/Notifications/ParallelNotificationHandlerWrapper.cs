@@ -1,6 +1,7 @@
 namespace Interlocutor.Abstractions.Notifications;
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Interlocutor.Abstractions.Diagnostics;
 
 /// <summary>Dispatches a notification to all registered handlers concurrently using <see cref="Task.WhenAll(System.Collections.Generic.IEnumerable{System.Threading.Tasks.Task})"/>.</summary>
@@ -12,7 +13,9 @@ using Interlocutor.Abstractions.Diagnostics;
 /// when handlers are independent and order doesn't matter - it maximizes throughput at the cost of all-or-nothing failure semantics.
 /// </para>
 /// </remarks>
-internal sealed class ParallelNotificationHandlerWrapper<TNotification> : NotificationHandlerWrapper
+internal sealed class ParallelNotificationHandlerWrapper<
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] TNotification
+> : NotificationHandlerWrapper
     where TNotification : INotification
 {
     /// <summary>

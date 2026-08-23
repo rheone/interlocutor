@@ -1,5 +1,6 @@
 namespace Interlocutor.Abstractions;
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Queries;
@@ -19,6 +20,14 @@ public static class InterlocutorStartupValidation
     /// <param name="assembliesToScan">The assemblies to scan for request types.</param>
     /// <returns>The same <paramref name="provider"/> instance, for chaining.</returns>
     /// <exception cref="InvalidOperationException">Thrown when one or more handler types referenced by the scanned request types are not registered.</exception>
+    [RequiresUnreferencedCode(
+        "Scans the given assemblies with Assembly.GetTypes()/Type.GetInterfaces() - an explicitly opt-in "
+            + "startup check, not part of the mediator's dispatch path. See documentation/trim-and-aot-support.md."
+    )]
+    [RequiresDynamicCode(
+        "Closes IQueryHandler<,>/ICommandHandler<,> reflectively via Type.MakeGenericType for every scanned "
+            + "request type. See documentation/trim-and-aot-support.md."
+    )]
     public static IServiceProvider ValidateHandlerRegistrations(
         this IServiceProvider provider,
         params Assembly[] assembliesToScan

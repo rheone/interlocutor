@@ -1,5 +1,6 @@
 namespace Interlocutor.Abstractions.Core;
 
+using System.Diagnostics.CodeAnalysis;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Queries;
 using Interlocutor.CommonKernel;
@@ -87,5 +88,13 @@ public interface ISender
     /// <paramref name="request"/>'s runtime type is a recognized request shape, but no handler for it is
     /// registered in the service provider.
     /// </exception>
+    [RequiresUnreferencedCode(
+        "May run the runtime-typed dispatch fallback when no generated dispatcher is registered - see "
+            + "documentation/trim-and-aot-support.md."
+    )]
+    [RequiresDynamicCode(
+        "May run the runtime-typed dispatch fallback when no generated dispatcher is registered - see "
+            + "documentation/trim-and-aot-support.md."
+    )]
     Task<IOperationOutcome> Send(object request, CancellationToken ct = default);
 }

@@ -1,5 +1,6 @@
 namespace Interlocutor.DependencyInjection.Abstractions;
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Notifications;
@@ -41,6 +42,11 @@ public static class HandlerDiscovery
     /// <see cref="RegistrationProvenance.Scanned"/>. A type implementing more than one handler contract
     /// yields one registration per contract.
     /// </returns>
+    [RequiresUnreferencedCode(
+        "Scans every given assembly with Assembly.GetTypes() - only reached via InterlocutorBuilder.ScanAssembly* "
+            + "(themselves annotated), never via generated or explicit registrations. See "
+            + "documentation/trim-and-aot-support.md."
+    )]
     public static IReadOnlyList<InterlocutorRegistration> Discover(IEnumerable<Assembly> assembliesToScan) =>
         Discover(assembliesToScan.Select(a => (a, RegistrationLifetime.Scoped)));
 
@@ -56,6 +62,11 @@ public static class HandlerDiscovery
     /// with <see cref="RegistrationKind.Handler"/> and <see cref="RegistrationProvenance.Scanned"/>, at the
     /// lifetime its assembly was paired with.
     /// </returns>
+    [RequiresUnreferencedCode(
+        "Scans every given assembly with Assembly.GetTypes() - only reached via InterlocutorBuilder.ScanAssembly* "
+            + "(themselves annotated), never via generated or explicit registrations. See "
+            + "documentation/trim-and-aot-support.md."
+    )]
     public static IReadOnlyList<InterlocutorRegistration> Discover(
         IEnumerable<(Assembly Assembly, RegistrationLifetime Lifetime)> assembliesToScan
     )
@@ -100,7 +111,7 @@ public static class HandlerDiscovery
     /// implements, or an empty list when it implements none.
     /// </returns>
     internal static IReadOnlyList<InterlocutorRegistration> DescribeHandler(
-        Type handlerImplementationType,
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type handlerImplementationType,
         RegistrationLifetime lifetime,
         RegistrationProvenance provenance
     )

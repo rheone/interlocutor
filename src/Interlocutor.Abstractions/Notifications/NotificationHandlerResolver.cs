@@ -1,5 +1,6 @@
 namespace Interlocutor.Abstractions.Notifications;
 
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Interlocutor.Abstractions.Core;
 
@@ -30,7 +31,9 @@ internal static class NotificationHandlerResolver
     /// <typeparam name="TNotification">The notification's concrete, runtime type.</typeparam>
     /// <param name="services">The service provider to resolve handlers (and the optional order table) from.</param>
     /// <returns>Every matching handler, contravariantly, in the order they should run.</returns>
-    public static IReadOnlyList<INotificationHandler<TNotification>> ResolveHandlers<TNotification>(IServiceProvider services)
+    public static IReadOnlyList<INotificationHandler<TNotification>> ResolveHandlers<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] TNotification
+    >(IServiceProvider services)
         where TNotification : INotification
     {
         var handlers = new List<INotificationHandler<TNotification>>();
@@ -70,7 +73,9 @@ internal static class NotificationHandlerResolver
     /// is assignable to <see cref="INotification"/> - the set of service types a handler could legally be
     /// registered against and still apply to a publish of <paramref name="notificationType"/>.
     /// </summary>
-    private static IEnumerable<Type> NotificationTypeHierarchy(Type notificationType)
+    private static IEnumerable<Type> NotificationTypeHierarchy(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type notificationType
+    )
     {
         var seen = new HashSet<Type>();
 

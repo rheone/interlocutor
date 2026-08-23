@@ -1,5 +1,6 @@
 namespace Interlocutor.DependencyInjection.Autofac;
 
+using System.Diagnostics.CodeAnalysis;
 using global::Autofac;
 using global::Autofac.Builder;
 using global::Autofac.Extensions.DependencyInjection;
