@@ -38,7 +38,7 @@ Each `src/*` project has a matching `tests/*.Tests` project (xunit.v3, NSubstitu
 
 ## Conventions (from AGENTS.md)
 
-- One top-level public type per file, filename matches type name - except simple record/struct types, which may keep custom equality/formatting/operator members in the same file.
+- One top-level public type per file, filename matches type name - except simple record/struct types, which may keep custom equality/formatting/operator members in the same file. For member ordering, partial-class splitting, generic-arity file naming, and region grouping, use the `csharp-code-organization` skill.
 - Rich XML doc comments on all public members (doc-warning suppressions in `Directory.Build.props` are there so undocumented code doesn't break the build, not license to skip docs on new code).
 - Value-added inline comments only - don't narrate obvious logic.
 - Conventional commits (`feat:`, `fix:`, `chore:`...), imperative mood, subject <72 chars.
