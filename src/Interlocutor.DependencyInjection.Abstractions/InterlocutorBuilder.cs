@@ -635,7 +635,7 @@ public sealed class InterlocutorBuilder
     /// <param name="lifetime">The service lifetime to register the handler with. Defaults to scoped.</param>
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorBuilder AddHandler(
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type handlerImplementationType,
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type handlerImplementationType,
         RegistrationLifetime lifetime = RegistrationLifetime.Scoped
     )
     {
@@ -662,7 +662,9 @@ public sealed class InterlocutorBuilder
     /// <typeparam name="TAccessor">The replacement <see cref="IRequestContextAccessor"/> implementation.</typeparam>
     /// <param name="lifetime">The service lifetime to register the replacement with. Defaults to scoped.</param>
     /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder OverrideRequestContextAccessor<TAccessor>(
+    public InterlocutorBuilder OverrideRequestContextAccessor<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TAccessor
+    >(
         RegistrationLifetime lifetime = RegistrationLifetime.Scoped
     )
         where TAccessor : class, IRequestContextAccessor

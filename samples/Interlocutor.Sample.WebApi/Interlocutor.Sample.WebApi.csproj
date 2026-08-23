@@ -25,15 +25,22 @@
          (ticket 12) - the mechanism behind "cross-assembly discovery with no assembly list". -->
     <ProjectReference Include="..\Interlocutor.Sample.Handlers\Interlocutor.Sample.Handlers.csproj" />
 
-    <!-- Analyzer-only reference: runs Interlocutor.Generator over this assembly's own compilation. -->
+    <!-- Analyzer-only reference: runs Interlocutor.Generator over this assembly's own compilation.
+         UndefineProperties stops publish-time properties (PublishTrimmed, RuntimeIdentifier, ...) from
+         propagating into this netstandard2.0 project, which cannot build with them set - ReferenceOutputAssembly
+         excludes it from the publish *output*, not from inheriting the publish-time global property set. -->
     <ProjectReference
       Include="..\..\src\Interlocutor.Generator\Interlocutor.Generator.csproj"
       OutputItemType="Analyzer"
       ReferenceOutputAssembly="false"
+      UndefineProperties="PublishTrimmed;PublishAot;PublishReadyToRun;PublishSingleFile;RuntimeIdentifier;SelfContained"
     />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <!-- Design-time only: regenerates CompiledModels/ via `dotnet ef dbcontext optimize` when SampleDbContext's
+         model changes. PrivateAssets="all" keeps it out of the published output. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" PrivateAssets="all" />
   </ItemGroup>
 </Project>

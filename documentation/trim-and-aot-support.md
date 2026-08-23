@@ -75,10 +75,14 @@ un-trimmed, or move that registration to compile-time discovery instead.
   `System.Text.Json` configuration your application supplies. Under trimming, register a source-generated
   `JsonSerializerContext` covering every type your endpoints actually return - including failure bodies like
   `ProblemDetails` - the same way any trimmed ASP.NET Core minimal API application would.
-- **A store integration's own trim/AOT support is out of Interlocutor's control.** `Interlocutor.EntityFrameworkCore`
-  and `Interlocutor.NHibernate` are trim-compatible themselves, but the store library underneath your
-  `DbContext`/session mapping has its own trimming story - consult that library's own documentation for what
-  it requires (for example, EF Core's compiled models).
+- **A store integration's own trim/AOT support is out of Interlocutor's control - and for EF Core, it is not
+  optional.** `Interlocutor.EntityFrameworkCore` is trim-compatible itself, but EF Core's normal model
+  building reflectively constructs a value comparer per property type the first time any operation touches
+  the database - not only `EnsureCreated()`/`Migrate()`, any operation - and trimming removes that
+  constructor if nothing else references it, producing a `MissingMethodException` at that point despite a
+  clean build. A compiled model (`dotnet ef dbcontext optimize`, then `optionsBuilder.UseModel(...)`) avoids
+  this by building that step in at compile time instead. `Interlocutor.NHibernate` has its own trimming story
+  under NHibernate - consult that library's own documentation.
 
 ## Links
 

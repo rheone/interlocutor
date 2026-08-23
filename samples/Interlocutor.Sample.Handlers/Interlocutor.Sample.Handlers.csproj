@@ -13,10 +13,14 @@
     <!-- Analyzer-only reference: runs Interlocutor.Generator over this assembly's own compilation so its
          handlers are discovered at compile time and emitted into a generated registration module the
          sample web application aggregates (ticket 12) - no runtime assembly scanning anywhere in this sample. -->
+    <!-- UndefineProperties stops publish-time properties (PublishTrimmed, RuntimeIdentifier, ...) from
+         propagating into this netstandard2.0 project, which cannot build with them set - ReferenceOutputAssembly
+         excludes it from the publish *output*, not from inheriting the publish-time global property set. -->
     <ProjectReference
       Include="..\..\src\Interlocutor.Generator\Interlocutor.Generator.csproj"
       OutputItemType="Analyzer"
       ReferenceOutputAssembly="false"
+      UndefineProperties="PublishTrimmed;PublishAot;PublishReadyToRun;PublishSingleFile;RuntimeIdentifier;SelfContained"
     />
   </ItemGroup>
 

@@ -1,5 +1,6 @@
 namespace Interlocutor.Sample.Handlers.Shared;
 
+using System.Diagnostics.CodeAnalysis;
 using Interlocutor.Abstractions.Queries;
 using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
@@ -21,8 +22,17 @@ using Microsoft.EntityFrameworkCore;
 /// </remarks>
 /// <typeparam name="TEntity">The entity type this instantiation looks up.</typeparam>
 /// <param name="db">The sample's database context.</param>
-public sealed class GetByIdHandler<TEntity>(SampleDbContext db)
-    : IQueryHandler<GetByIdQuery<TEntity>, OperationOutcome<TEntity, NotFound>>
+public sealed class GetByIdHandler<
+    [DynamicallyAccessedMembers(
+        DynamicallyAccessedMemberTypes.PublicConstructors
+            | DynamicallyAccessedMemberTypes.NonPublicConstructors
+            | DynamicallyAccessedMemberTypes.PublicFields
+            | DynamicallyAccessedMemberTypes.NonPublicFields
+            | DynamicallyAccessedMemberTypes.PublicProperties
+            | DynamicallyAccessedMemberTypes.NonPublicProperties
+            | DynamicallyAccessedMemberTypes.Interfaces
+    )] TEntity
+>(SampleDbContext db) : IQueryHandler<GetByIdQuery<TEntity>, OperationOutcome<TEntity, NotFound>>
     where TEntity : class
 {
     /// <inheritdoc/>

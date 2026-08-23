@@ -117,7 +117,7 @@ public sealed class InterlocutorPipelineBuilder
     /// <param name="lifetime">The service lifetime to register the behavior with. Defaults to scoped.</param>
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorPipelineBuilder AddBehavior(
-        Type behaviorImplementationType,
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type behaviorImplementationType,
         RegistrationLifetime lifetime = RegistrationLifetime.Scoped
     )
     {
@@ -185,6 +185,15 @@ public sealed class InterlocutorPipelineBuilder
     /// package is not loaded.
     /// </summary>
     /// <returns>This builder, for chaining.</returns>
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2072:DynamicallyAccessedMembers",
+        Justification = "The probed type is Interlocutor.FluentValidation's own ValidationBehavior<,> - found "
+            + "by name only to detect whether the peer package is referenced at all, never to discover a type "
+            + "unknown to the application. A consuming app that references Interlocutor.FluentValidation "
+            + "already uses FluentValidation's own IValidator<T> types ordinarily elsewhere, which is what "
+            + "keeps this behavior's own members reachable independent of this reflective lookup."
+    )]
     public InterlocutorPipelineBuilder AddValidationBehavior()
     {
         var validationBehaviorType = TryGetType(
@@ -214,6 +223,15 @@ public sealed class InterlocutorPipelineBuilder
     /// when neither package is loaded.
     /// </summary>
     /// <returns>This builder, for chaining.</returns>
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2072:DynamicallyAccessedMembers",
+        Justification = "The probed type is Interlocutor.EntityFrameworkCore's or Interlocutor.NHibernate's own "
+            + "TransactionBehavior - found by name only to detect whether the peer package is referenced at "
+            + "all, never to discover a type unknown to the application. A consuming app that references "
+            + "either package already uses its DbContext/ISession types ordinarily elsewhere, which is what "
+            + "keeps this behavior's own members reachable independent of this reflective lookup."
+    )]
     public InterlocutorPipelineBuilder AddTransactionBehavior()
     {
         // EF Core's TransactionBehavior<TRequest,TResponse,TContext> is arity 3 (generic over the DbContext
@@ -348,7 +366,9 @@ public sealed class InterlocutorPipelineBuilder
     /// <typeparam name="TSink">The replacement <see cref="IAuditSink"/> implementation.</typeparam>
     /// <param name="lifetime">The service lifetime to register the replacement with. Defaults to scoped.</param>
     /// <returns>This builder, for chaining.</returns>
-    public InterlocutorPipelineBuilder OverrideAuditSink<TSink>(RegistrationLifetime lifetime = RegistrationLifetime.Scoped)
+    public InterlocutorPipelineBuilder OverrideAuditSink<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TSink>(
+        RegistrationLifetime lifetime = RegistrationLifetime.Scoped
+    )
         where TSink : class, IAuditSink
     {
         this.SetDefault(typeof(IAuditSink), typeof(TSink), lifetime);
@@ -363,7 +383,9 @@ public sealed class InterlocutorPipelineBuilder
     /// <typeparam name="TEvaluator">The replacement <see cref="IPolicyEvaluator"/> implementation.</typeparam>
     /// <param name="lifetime">The service lifetime to register the replacement with. Defaults to scoped.</param>
     /// <returns>This builder, for chaining.</returns>
-    public InterlocutorPipelineBuilder OverridePolicyEvaluator<TEvaluator>(
+    public InterlocutorPipelineBuilder OverridePolicyEvaluator<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TEvaluator
+    >(
         RegistrationLifetime lifetime = RegistrationLifetime.Scoped
     )
         where TEvaluator : class, IPolicyEvaluator
@@ -382,7 +404,9 @@ public sealed class InterlocutorPipelineBuilder
     /// <typeparam name="TDescriber">The replacement <see cref="IResponseOutcomeDescriber"/> implementation.</typeparam>
     /// <param name="lifetime">The service lifetime to register the replacement with. Defaults to singleton.</param>
     /// <returns>This builder, for chaining.</returns>
-    public InterlocutorPipelineBuilder OverrideOutcomeDescriber<TDescriber>(
+    public InterlocutorPipelineBuilder OverrideOutcomeDescriber<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TDescriber
+    >(
         RegistrationLifetime lifetime = RegistrationLifetime.Singleton
     )
         where TDescriber : class, IResponseOutcomeDescriber
@@ -399,7 +423,9 @@ public sealed class InterlocutorPipelineBuilder
     /// <typeparam name="TPolicy">The replacement <see cref="ITimeoutPolicy"/> implementation.</typeparam>
     /// <param name="lifetime">The service lifetime to register the replacement with. Defaults to scoped.</param>
     /// <returns>This builder, for chaining.</returns>
-    public InterlocutorPipelineBuilder OverrideTimeoutPolicy<TPolicy>(
+    public InterlocutorPipelineBuilder OverrideTimeoutPolicy<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TPolicy
+    >(
         RegistrationLifetime lifetime = RegistrationLifetime.Scoped
     )
         where TPolicy : class, ITimeoutPolicy
@@ -416,7 +442,9 @@ public sealed class InterlocutorPipelineBuilder
     /// <typeparam name="TLimiter">The replacement <see cref="IRateLimiter"/> implementation.</typeparam>
     /// <param name="lifetime">The service lifetime to register the replacement with. Defaults to scoped.</param>
     /// <returns>This builder, for chaining.</returns>
-    public InterlocutorPipelineBuilder OverrideRateLimiter<TLimiter>(
+    public InterlocutorPipelineBuilder OverrideRateLimiter<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TLimiter
+    >(
         RegistrationLifetime lifetime = RegistrationLifetime.Scoped
     )
         where TLimiter : class, IRateLimiter
@@ -436,7 +464,9 @@ public sealed class InterlocutorPipelineBuilder
     /// <typeparam name="TRegistry">The replacement <see cref="IOutcomeCaseRegistry"/> implementation.</typeparam>
     /// <param name="lifetime">The service lifetime to register the replacement with. Defaults to scoped.</param>
     /// <returns>This builder, for chaining.</returns>
-    public InterlocutorPipelineBuilder OverrideOutcomeCaseRegistry<TRegistry>(
+    public InterlocutorPipelineBuilder OverrideOutcomeCaseRegistry<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TRegistry
+    >(
         RegistrationLifetime lifetime = RegistrationLifetime.Scoped
     )
         where TRegistry : class, IOutcomeCaseRegistry
@@ -455,7 +485,7 @@ public sealed class InterlocutorPipelineBuilder
     /// <param name="lifetime">The service lifetime to register the stage with. Defaults to scoped.</param>
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorPipelineBuilder AddStage(
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type stageImplementationType,
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type stageImplementationType,
         RegistrationLifetime lifetime = RegistrationLifetime.Scoped
     )
     {
@@ -481,7 +511,7 @@ public sealed class InterlocutorPipelineBuilder
     /// <typeparam name="TStage">The concrete stage implementation type.</typeparam>
     /// <param name="lifetime">The service lifetime to register the stage with. Defaults to scoped.</param>
     /// <returns>This builder, for chaining.</returns>
-    public InterlocutorPipelineBuilder AddStage<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] TStage>(
+    public InterlocutorPipelineBuilder AddStage<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TStage>(
         RegistrationLifetime lifetime = RegistrationLifetime.Scoped
     )
         where TStage : class => this.AddStage(typeof(TStage), lifetime);
@@ -581,7 +611,11 @@ public sealed class InterlocutorPipelineBuilder
     /// <param name="serviceType">The service type to set or replace the default entry for.</param>
     /// <param name="implementationType">The implementation type to register as that default.</param>
     /// <param name="lifetime">The service lifetime to register the default with.</param>
-    internal void SetDefault(Type serviceType, Type implementationType, RegistrationLifetime lifetime) =>
+    internal void SetDefault(
+        Type serviceType,
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type implementationType,
+        RegistrationLifetime lifetime
+    ) =>
         this._defaults[serviceType] = new InterlocutorRegistration(
             serviceType,
             implementationType,
@@ -594,7 +628,10 @@ public sealed class InterlocutorPipelineBuilder
     /// exists yet - the mechanism behind every <c>Add*Behavior</c> convenience method's default
     /// registration, so it never clobbers a prior <c>Override*</c> call.
     /// </summary>
-    private void TryAddDefault(Type serviceType, Type implementationType)
+    private void TryAddDefault(
+        Type serviceType,
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type implementationType
+    )
     {
         if (!this._defaults.ContainsKey(serviceType))
         {

@@ -53,6 +53,15 @@ effort grew out of; `33-doc-trim-and-aot-support.md` is its blocked documentatio
 
 <!-- one line per resolved ticket: gist plus link -->
 
+- [CI gate that holds the promise](issues/05-ci-gate.md) - written as `.github/workflows/ci.yml` (this repo's
+  first CI workflow) plus `scripts/smoke-test-trimmed-sample.sh`. Builds with the trim-analyzer codes as
+  errors, publishes the sample trimmed, then **runs the published binary** and smoke-tests every dispatch
+  path - a build-only gate proved nothing twice already in this same effort. Building this gate caught a
+  second real instance of exactly that failure category: the "verified end to end" claim on the map's own
+  Option A decision had only ever tested a plain build/run, never an actual trimmed publish; the real one
+  crashed on the first request from EF Core's own reflective model validation. Fixed (EF Core compiled model
+  reinstated in the sample) and this time verified against the executed binary. ADR-0016 and
+  `documentation/trim-and-aot-support.md` both corrected accordingly.
 - [Commit to a support level and container promise](issues/03-commit-to-support-level.md) - stay on Option
   A (trim-compatible, "on the fly") as the shipped level; defer Option B (generated closed-registration
   catalog) as a scoped future effort. If B is ever built, it must coexist with A as an opt-in mode, not

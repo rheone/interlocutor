@@ -1,5 +1,6 @@
 namespace Interlocutor.EntityFrameworkCore;
 
+using System.Diagnostics.CodeAnalysis;
 using Interlocutor.Abstractions.Markers;
 using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Pipeline.Classifiers;
@@ -43,7 +44,7 @@ using Microsoft.EntityFrameworkCore;
 /// entities before the transaction can be committed.
 /// </para>
 /// </remarks>
-public class TransactionBehavior<TRequest, TResponse, TContext>(
+public class TransactionBehavior<TRequest, TResponse, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TContext>(
     Lazy<TContext> db,
     IOutcomeClassifier? classifier = null,
     IResponseOutcomeDescriber? describer = null

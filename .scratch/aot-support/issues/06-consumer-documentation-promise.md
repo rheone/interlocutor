@@ -43,15 +43,16 @@ Written: [`documentation/trim-and-aot-support.md`](../../documentation/trim-and-
   gap by attempting the publish and running the result, exactly as this session discovered it. Making that
   failure a build-time diagnostic instead is exactly the kind of consumer-facing improvement Option B's
   generator work would deliver alongside true support - not something to bolt onto Option A alone.
-- **What the consumer must do.** Turned out to be **less** than anticipated when this ticket was written.
-  The anticipated burden (a `JsonSerializerContext`, an EF Core compiled model, schema creation avoiding
-  design-time model building) was scoped against `PublishAot`, which the shipped decision does not support -
-  those specific costs were prototyped in the sample, found to belong to Native AOT specifically, and
-  reverted once the decision landed on trim-compatibility only. What actually remains for a trim consumer:
-  register a `JsonSerializerContext` for minimal API bodies (System.Text.Json's own trimming requirement,
-  not one this library adds), and resolve any `RequiresUnreferencedCode` warning if they call the optional
-  scanning fallback. Both are documented in the shipped file's "Publishing trimmed" and "Known limitations"
-  sections.
+- **What the consumer must do.** **Correction, written after this ticket was first marked resolved:** the
+  original answer here claimed the EF Core compiled-model burden was AOT-specific and had been dropped once
+  the decision landed on trim only. That was wrong, and the CI gate (ticket 05) is exactly what caught it -
+  a `dotnet publish -p:PublishTrimmed=true` of the sample, actually run rather than only built, crashed with
+  `MissingMethodException` on the very first request, from EF Core's own model validation reflectively
+  constructing a value comparer. `ExecuteSqlRaw` (not only `EnsureCreated()`) triggers it - it fires the
+  first time *any* database operation runs, which is unavoidable for an app that uses the database at all.
+  The compiled model is genuinely needed for trim, not merely AOT, and is back in the sample and documented
+  as a real, load-bearing cost in "Known limitations." A `JsonSerializerContext` for minimal API bodies
+  remains required too, confirmed by the same real trimmed run rather than assumed.
 - **The runtime-scanning fallback's price.** Documented in its own section: genuinely unsafe to trim by
   design (that is the point of calling it), every entry point carries `RequiresUnreferencedCode` so a
   trimmed publish that calls one gets a named warning rather than a silent removal, and none of it runs

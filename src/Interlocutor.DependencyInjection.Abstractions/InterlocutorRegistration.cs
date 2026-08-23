@@ -35,7 +35,13 @@ using System.Diagnostics.CodeAnalysis;
 /// </param>
 public readonly record struct InterlocutorRegistration(
     Type ServiceType,
-    [property: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type ImplementationType,
+    // Both targets are required: [property: ...] alone annotates the generated property but leaves the
+    // primary constructor's own parameter unannotated, and the constructor body assigning that parameter to
+    // the property's backing field is exactly what a whole-program trim pass (unlike the per-project
+    // analyzer) checks - see docs/research/native-aot-and-trimming-options.md §7.2.
+    [property: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+        Type ImplementationType,
     RegistrationLifetime Lifetime,
     RegistrationKind Kind,
     RegistrationProvenance Provenance = RegistrationProvenance.Explicit,

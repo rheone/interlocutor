@@ -32,6 +32,12 @@
          and the sample application (Interlocutor.Sample.Handlers) a real ADO.NET transaction to commit/roll
          back against, which the relational-agnostic base package alone cannot provide. -->
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="11.0.0-preview.6.26359.118" />
+    <!-- Design-time only (PrivateAssets="all" everywhere it's referenced): generates the sample's compiled
+         model (dotnet ef dbcontext optimize). EF Core's own model-validation pass reflectively constructs a
+         value comparer per property type via Activator.CreateInstance, which trimming removes when nothing
+         else statically references it - a compiled model bakes that step in at build time instead. See
+         documentation/trim-and-aot-support.md's "Known limitations". -->
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="11.0.0-preview.6.26359.118" />
   </ItemGroup>
   <!-- FluentValidation -->
   <ItemGroup>

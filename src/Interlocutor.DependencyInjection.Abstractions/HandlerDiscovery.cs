@@ -111,7 +111,9 @@ public static class HandlerDiscovery
     /// implements, or an empty list when it implements none.
     /// </returns>
     internal static IReadOnlyList<InterlocutorRegistration> DescribeHandler(
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] Type handlerImplementationType,
+        // .All, not just .Interfaces: this flows straight into an InterlocutorRegistration, whose
+        // ImplementationType itself demands .All (see that record's remarks).
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type handlerImplementationType,
         RegistrationLifetime lifetime,
         RegistrationProvenance provenance
     )
