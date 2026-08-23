@@ -4,7 +4,8 @@ namespace Interlocutor.DependencyInjection.Abstractions;
 /// A container-neutral description of a single factory-backed service registration - the delegate-form
 /// counterpart to <see cref="InterlocutorRegistration"/>, used where a registration is a caller-supplied
 /// closure rather than a type the container can construct on its own (for example, a lambda-form pipeline
-/// stage registered via <c>InterlocutorBuilder.AddStage</c>'s delegate overloads).
+/// stage registered via <see cref="InterlocutorPipelineBuilder.AddStage(Type, RegistrationLifetime)"/>'s
+/// delegate overloads).
 /// </summary>
 /// <remarks>
 /// Like <see cref="InterlocutorRegistration"/>, this is the unit of exchange between the container-neutral

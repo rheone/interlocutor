@@ -130,7 +130,7 @@ public static class InterlocutorServiceCollectionExtensions
     /// <summary>
     /// Resolves the service type a registration should actually be paired with under Microsoft DI, which -
     /// unlike Autofac - requires an open generic service type to be paired with an open generic
-    /// implementation type. <see cref="InterlocutorBuilder.AddBehavior"/> always records the open
+    /// implementation type. <see cref="InterlocutorPipelineBuilder.AddBehavior"/> always records the open
     /// <see cref="IPipelineBehavior{TRequest,TResponse}"/> as <see cref="InterlocutorRegistration.ServiceType"/>
     /// regardless of whether <see cref="InterlocutorRegistration.ImplementationType"/> is itself open or
     /// closed (a legal shape - see that method's remarks), so a closed implementation type here is
