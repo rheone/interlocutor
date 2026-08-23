@@ -1,6 +1,6 @@
 # ARD: Deepen the InterlocutorBuilder / InterlocutorPipelineBuilder Seam
 
-Status: ready-for-agent (not yet broken into tickets - see Ticketing Note at the end)
+Status: done - implemented in b483ab6 (refactor: move pipeline composition exclusively onto InterlocutorPipelineBuilder), recorded as ADR-0015
 
 ## Problem Statement
 
