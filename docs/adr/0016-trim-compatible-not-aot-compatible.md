@@ -1,0 +1,74 @@
+# ADR-0016: Trim-Compatible Now, Native AOT Deferred - Correcting ADR-0008's AOT Claim
+
+**Status:** Accepted
+
+## Context
+
+[ADR-0008](0008-compile-time-handler-discovery.md) states, in its Consequences, that "the library becomes AOT- and trim-compatible, a real differentiator against reflection-based mediator libraries," and in its Decision that "the library can ship trim-annotated and publish ahead-of-time without warnings." Half of that claim was true and half was not, and the untrue half was not caught by the analyzer.
+
+Marking every shipping package `IsAotCompatible` produced a build with **zero** trim/AOT analyzer warnings. Running the resulting sample application under the Native AOT runtime feature switches - `RuntimeFeature.IsDynamicCodeSupported=false`, which `PublishAot=true` sets even under an ordinary `dotnet run` on CoreCLR, not only inside a real native binary - threw on **every single dispatch**:
+
+```
+System.InvalidOperationException: Unable to create a generic service for type
+'IPipelineBehavior`2[CreateTodoCommand, OperationOutcome`3[TodoItem, ValidationErrors, Conflict]]'
+because 'OperationOutcome`3[...]' is a ValueType.
+Native code to support creating generic services might not be available with native AOT.
+```
+
+Investigated in full at [`docs/research/native-aot-and-trimming-options.md`](../research/native-aot-and-trimming-options.md), verified against a genuine native-compiled binary of the sample application, not just flipped feature switches. The findings, summarized:
+
+- **The constraint is structural, not a bug.** A response is a C# `union` (`OperationOutcome<...>`), which the compiler always lowers to a `readonly struct` - there is no reference-type form in the pinned preview SDK. Pipeline behaviors are registered as *open* generics (`IPipelineBehavior<TRequest, TResponse>`), closed by the container at dispatch time. Value-type generic instantiations are not shared the way reference-type ones are: the CLR needs a JIT to synthesize a closed generic type/method it has not seen before, and Native AOT ships without one. Microsoft.Extensions.DependencyInjection's `CallSiteFactory.VerifyOpenGenericAotCompatibility` exists specifically to fail loudly at this point rather than let the gap surface as a confusing runtime crash later.
+- **Every container hits it, not just Microsoft DI.** Verified against a real native binary: Autofac's `RegisterGeneric` fails on the identical shape, later and with a worse error, and Autofac's own source annotates that method `[RequiresDynamicCode]` naming this exact scenario. The deciding factor is whether the closed instantiation is statically visible at compile time, not which container is asked to build it.
+- **There are two blockers, not one.** Under a genuine native binary, the DI guard above is never even reached - `Mediator.Send<TResponse>` fails first, inside its own `Activator.CreateInstance(typeof(QueryHandlerWrapper<,>).MakeGenericType(query.GetType(), typeof(TResponse)))`, because `query.GetType()` has no static identity for the AOT compiler to see. Fixing only the DI registrations moves the error rather than removing it.
+- **A reference-type outcome is not available as a fix.** `public readonly union U(...)`, `public union U(...)`, `public class union U(...)`, and every other syntax combination were tried against the pinned SDK; only the struct forms compile. Making `OperationOutcome` a reference type means abandoning the `union` language feature for a hand-written class hierarchy, which loses compiler-verified exhaustiveness - the property [ADR-0001](0001-use-csharp-15-unions-for-result-types.md) chose unions specifically to get - and would be a breaking change to every handler signature in every consumer.
+- **Correcting the claim exposed a second bug.** Six `UnconditionalSuppressMessage` justifications in `src/` asserted the closed generics involved were "closed only over reference types." All six were false - every `OperationOutcome<...>` and every failure case type (`NotFound`, `Forbidden`, `Conflict`, ...) is a `readonly record struct`. Those suppressions are precisely what let a warning-free build coexist with a runtime that failed every request. Corrected in the same change that shipped this decision.
+
+A prototype (`.scratch/aot-support/issues/02-closed-registration-prototype.md`) additionally proved, by invoking the generator's own production constraint-checking code via reflection rather than reimplementing it, that a *closed* registration per (behavior, request) pair is filtered correctly by machinery the generator already has (`HandlerTypeAnalyzer.BuildConstraints`, `GenericConstraintSnapshotBuilder`, `GenericConstraintChecker.Satisfies`) - built originally for closing open generic handlers, and reused unmodified.
+
+## Decision
+
+Ship trim-compatibility now, as the corrected and honest version of ADR-0008's claim. Defer Native AOT as a scoped, well-understood, not-yet-committed follow-on. If it is pursued, build it as an **opt-in mode alongside today's mechanism**, never as its replacement.
+
+### Option A - today's mechanism, kept as the default ("on the fly")
+
+What ships today, corrected rather than replaced. A pipeline behavior is registered once, as an open generic, against `IPipelineBehavior<,>`; the container closes it over the concrete `(TRequest, TResponse)` pair the first time a matching request is dispatched. This is what "on the fly" means: the combination is built at the moment it's needed, not before.
+
+- **What it buys.** Every shipping package is `IsTrimmable` and builds clean under trim analysis. A self-contained trimmed publish (`PublishTrimmed=true`, JIT still present) works correctly - verified end to end against the real sample: creating, both open-generic dispatch paths, notification fan-out, the short-circuiting pipeline stage, and deleting all behave correctly, with zero exceptions. It works on every container tested (Microsoft DI, Autofac), because the JIT is present to do the improvisation a value-type generic instantiation needs. The runtime handler-scanning fallback remains opt-in and is now honestly annotated (`RequiresUnreferencedCode`/`RequiresDynamicCode`) rather than silently unsafe, per ADR-0008's original intent.
+- **What it does not buy.** True Native AOT - a single ahead-of-time-compiled binary with no JIT at all. Attempting `PublishAot=true` against this mechanism is not merely unsupported, it actively crashes: a warning-free build that fails every request. `IsAotCompatible` must not be set while this is the only registration mechanism, and the sample deliberately uses `PublishTrimmed`, not `PublishAot`.
+- **Cost to reach this state:** already paid. No further work is needed to keep Option A as-is.
+
+### Option B - a generated closed registration catalog, for true Native AOT
+
+Have the source generator discover every `IPipelineBehavior<,>` implementation in the compilation (the same kind of discovery it already performs for handlers), evaluate each one's generic constraints against every closed request type it also already discovers (reusing the exact machinery the prototype proved works, unmodified), and emit one closed registration per satisfying (behavior, request) pair - a compile-time-visible instantiation the AOT compiler can pre-generate code for. `Mediator`'s own `Activator.CreateInstance`/`MakeGenericType` wrapper construction must also be routed through the generator's existing closed dispatch wrappers (`DispatchWrapperEmitter` already produces them, currently wired only to the untyped `Send(object,...)` path); both changes are required together, since either alone leaves the other failure in place.
+
+- **What it would buy.** The ADR-0008 claim becomes true rather than aspirational. Genuine level-(c) Native AOT support - no JIT required at all - on every container that accepts a pre-closed registration, plus the startup-time and no-JIT-deployability benefits that come with it (an order-of-magnitude faster cold start was measured against a genuinely native binary in the research; see that document for the number).
+- **What is proven, versus what is not.** Proven: the constraint-filtering logic generalizes to behaviors with zero changes, correctly including only requests that satisfy a behavior's marker-interface constraint and excluding the rest; fan-out ordering and duplicate-registration semantics survive closed registration unchanged, verified against a genuine native binary. Not proven: wiring the catalog into the real registration and dispatch path, on both container translators, is a proposal rather than a built and tested design. Not measured: how large the catalog gets on a realistically sized application - a dozen behaviors against a few hundred request types is thousands of generated descriptors, which the generator's own documentation already flags as a binary-size concern for handler discovery, and nothing has confirmed the same doesn't bite here.
+- **The design tension this decision does not resolve.** [ADR-0015](0015-pipeline-composition-behind-interlocutorpipelinebuilder.md) puts pipeline composition behind a runtime fluent builder, deliberately. A generator can only see what the compilation contains, not what a builder call configures at process startup. martinothamar/Mediator - the one comparable library that ships this exact design - resolved the same tension by **requiring behaviors to be declared where its generator can see them**, i.e. giving up runtime-configurable pipelines for anyone who wants its AOT support; its own documentation carries a standing warning next to every runtime-registration example to that effect. This decision explicitly does not accept that trade for Interlocutor's default path - see the hybrid below for why.
+- **Cost.** Estimated at several weeks including tests, not days: behavior discovery, the (behavior × request) cross product with constraint filtering, catalog emission, both container translators dropping their open-generic behavior path (or gaining a second one - see the hybrid), `Mediator` rewiring to use the generated wrappers, and a CI gate that actually executes a native-published binary rather than merely building one.
+
+### The recommended hybrid, if and when Option B is pursued
+
+Option B's design as researched has the catalog **replace** open-generic behavior registration outright. That is not what this decision recommends building, for one concrete, verified reason: `CallSiteFactory`'s AOT guard is *not additive-safe*. A DI container that walks every registered descriptor for a service type (Microsoft DI does) re-triggers the exact same throw if even one open-generic descriptor is left registered alongside closed ones for that type - verified directly in the research. A coexistence design cannot register both forms for the same service type at once; it must **choose one, per compilation, and register only that one.**
+
+The shape this points to: the generator emits the catalog unconditionally (or behind a generator-level flag, cheap either way once the discovery pass exists), and each container translator picks which set to register from - the existing open-generic path (Option A, the default, unchanged, zero-config) or the generated closed catalog (opt-in, selected by an explicit builder call or an automatic `RuntimeFeature.IsDynamicCodeSupported` check). `InterlocutorPipelineBuilder`'s public fluent API is identical either way; only the translation step underneath it changes which registration shape it emits. A behavior invented genuinely at runtime - a `typeof(X<,>)` computed dynamically, a plugin - has no closed-catalog entry by construction and becomes an explicitly unsupported, annotated path under the opt-in mode, exactly as the runtime scanning fallback already is under Option A.
+
+This preserves ADR-0015 for every consumer who is not specifically publishing Native AOT, at the cost of the generator and both translators carrying two registration paths instead of one, and a configuration surface to select between them. That cost is deliberately not being paid today - see Decision above.
+
+### Option C - make `OperationOutcome` a reference type
+
+Rejected. Mechanically it would work - reference-type generic instantiations are shared, so the whole problem disappears. It is not available because the C# `union` feature this design depends on has no reference-type form; taking this option means abandoning unions for a hand-written hierarchy, reversing [ADR-0001](0001-use-csharp-15-unions-for-result-types.md) and losing compiler-verified exhaustiveness, to solve a problem the hybrid above solves without touching the type system at all. Worth revisiting only if a reference-type union form ships in a future C# version - unconfirmed whether one is even planned.
+
+## Consequences
+
+- **Positive:** The library's trim/AOT claim is now true rather than aspirational - `IsTrimmable`, not `IsAotCompatible`, and every remaining `UnconditionalSuppressMessage` in `src/` states honestly what it actually holds for.
+- **Positive:** The sample application is verified running correctly end to end under trimming, not merely building without warnings.
+- **Positive:** No engineering effort is spent on Native AOT support ahead of a concrete need for it, while the path to add it later - proven not to require abandoning ADR-0015, unlike the one comparable library that tried - is documented rather than lost.
+- **Negative:** "AOT-compatible" cannot be claimed to consumers until Option B (or the hybrid) ships. `documentation/trim-and-aot-support.md` states the limitation plainly rather than the ADR-0008 framing.
+- **Negative:** A consumer who genuinely needs zero-JIT Native AOT today has no path with this library. This is accepted rather than worked around, since no such consumer has been identified.
+- **Negative:** If Option B is eventually pursued, the hybrid's two-registration-path design costs more to build and maintain than Option B's original replace-everything design would have - accepted deliberately, in exchange for not repeating martinothamar/Mediator's trade-off against ADR-0015.
+
+## Alternatives considered
+
+- **Ship Option B outright, replacing open-generic behavior registration everywhere:** rejected for the reason under "The recommended hybrid" above - it requires giving up ADR-0015's runtime-configurable pipeline for every consumer, not just ones targeting Native AOT, which is a larger cost than the problem being solved justifies today.
+- **Ship Option C, a reference-type `OperationOutcome`:** rejected - see Option C above.
+- **Leave the false AOT claim in place until Option B ships:** rejected outright, independent of which option is eventually chosen - a warning-free build that crashes on every dispatch is a worse failure mode than an honestly narrower claim, and the six false suppressions this decision corrects were actively misleading regardless of what ships next.

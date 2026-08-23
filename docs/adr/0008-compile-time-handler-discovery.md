@@ -4,6 +4,8 @@
 
 Supersedes [ADR-0003](0003-mediator-as-service-locator.md).
 
+> **AOT claim corrected by [ADR-0016](0016-trim-compatible-not-aot-compatible.md).** Everything below about build-time diagnostics, per-assembly modules, and the generated dispatch switch still holds - this ADR's actual decision is unchanged. What did not hold: "the library becomes AOT- and trim-compatible" and "can ship trim-annotated and publish ahead-of-time without warnings," both in the sections below, claimed more than compile-time discovery alone delivers. Pipeline behaviors are still registered as open generics closed at dispatch time over a value-type response, which Native AOT cannot do regardless of how the handler is found. [ADR-0016](0016-trim-compatible-not-aot-compatible.md) has the full story and the corrected claim: trim-compatible today, Native AOT deferred.
+
 ## Context
 
 Handler registration is currently runtime assembly scanning: `AddInterlocutor()` reflects over one or more assemblies, finds types implementing the handler interfaces, and registers them. This has three costs. A missing handler is discovered on the first request that needs it, not at build time. Two handlers that both match a request are silently resolved however DI's last-registration-wins happens to fall out, not reported as an error. And runtime reflection over public types is exactly the pattern that ahead-of-time compilation and trimming cannot verify - it is a standing obstacle to shipping an AOT- and trim-clean library, which the incumbent mediator libraries in this space are not.

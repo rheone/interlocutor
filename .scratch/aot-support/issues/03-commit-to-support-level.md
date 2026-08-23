@@ -1,7 +1,7 @@
 # 03 - Commit to a support level and a container promise
 
 Type: grilling
-Status: open
+Status: resolved
 Blocked by: 01, 02
 
 ## Question
@@ -37,4 +37,17 @@ them. Invoke `/grilling` and `/domain-modeling`.
 
 ## Answer
 
-_Pending._
+**Decided: stay on Option A (trim-compatible, "on the fly") as the shipped support level. Defer Option B
+(a generated closed-registration catalog for true Native AOT) as a scoped, well-understood future effort -
+not committed to now, not abandoned either.**
+
+If Option B is ever pursued, it must be built as an **opt-in mode alongside** today's mechanism, never as
+its replacement - registering both an open-generic and a closed descriptor for the same service type
+re-triggers the exact AOT guard closed registration exists to avoid, so a real coexistence design has to
+switch between the two per compilation, not add one on top of the other. This preserves
+[ADR-0015](../../docs/adr/0015-pipeline-composition-behind-interlocutorpipelinebuilder.md)'s runtime-configurable
+pipeline for every consumer who isn't specifically publishing Native AOT, rather than trading it away the
+way martinothamar/Mediator did to ship the same capability.
+
+Full reasoning, all three options (A, B, and the A-and-B hybrid) documented in depth, and what's proven
+versus still a proposal for each: [ADR-0016](../../docs/adr/0016-trim-compatible-not-aot-compatible.md).

@@ -1,7 +1,7 @@
 # 06 - What `documentation/trim-and-aot-support.md` promises consumers
 
 Type: grilling
-Status: open
+Status: resolved
 Blocked by: 03
 
 ## Question
@@ -31,4 +31,32 @@ in `aspnetcore-integration.md`. See the house style section of `CLAUDE.md`.
 
 ## Answer
 
-_Pending._
+Written: [`documentation/trim-and-aot-support.md`](../../documentation/trim-and-aot-support.md).
+
+- **The promise, stated plainly.** Trim-compatible, verified end to end, on every container tested. Not
+  Native AOT - and stated as a hard "does not work" rather than an unsupported-but-maybe-fine gap, because
+  that is what was verified.
+- **The failure mode.** Documented explicitly and up front, in its own paragraph: attempting `PublishAot=true`
+  produces a clean, warning-free build that then fails every dispatch at runtime. No build-time diagnostic
+  exists for this today - that would require the library to detect at compile time that a consumer intends
+  to publish ahead-of-time, which nothing in the shipped decision (Option A) adds. A consumer discovers the
+  gap by attempting the publish and running the result, exactly as this session discovered it. Making that
+  failure a build-time diagnostic instead is exactly the kind of consumer-facing improvement Option B's
+  generator work would deliver alongside true support - not something to bolt onto Option A alone.
+- **What the consumer must do.** Turned out to be **less** than anticipated when this ticket was written.
+  The anticipated burden (a `JsonSerializerContext`, an EF Core compiled model, schema creation avoiding
+  design-time model building) was scoped against `PublishAot`, which the shipped decision does not support -
+  those specific costs were prototyped in the sample, found to belong to Native AOT specifically, and
+  reverted once the decision landed on trim-compatibility only. What actually remains for a trim consumer:
+  register a `JsonSerializerContext` for minimal API bodies (System.Text.Json's own trimming requirement,
+  not one this library adds), and resolve any `RequiresUnreferencedCode` warning if they call the optional
+  scanning fallback. Both are documented in the shipped file's "Publishing trimmed" and "Known limitations"
+  sections.
+- **The runtime-scanning fallback's price.** Documented in its own section: genuinely unsafe to trim by
+  design (that is the point of calling it), every entry point carries `RequiresUnreferencedCode` so a
+  trimmed publish that calls one gets a named warning rather than a silent removal, and none of it runs
+  unless a consumer explicitly opts in.
+
+House style followed: no citation to `docs/adr/` anywhere in the shipped file - the reasoning (value-type
+generics, no JIT under Native AOT) is stated as fact, not attributed to ADR-0016. No HTTP status codes
+appear; the only status-code-adjacent content is a generic mention of `ProblemDetails`, which names no code.

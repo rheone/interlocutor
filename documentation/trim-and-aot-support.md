@@ -3,28 +3,82 @@
 > [!IMPORTANT]
 > **Interlocutor is trim-compatible. It is not currently compatible with ahead-of-time compilation.**
 > Every shipping package is marked trimmable and builds clean under trim analysis, and a trimmed
-> application dispatches correctly. Publishing ahead-of-time compiled does **not** work today.
+> application dispatches correctly - verified end to end, not just at the analyzer level. Publishing
+> ahead-of-time compiled (`PublishAot=true`) does **not** work: it produces a warning-free build that then
+> fails every dispatch at runtime.
 
-> [!WARNING]
-> The reason is structural, not an oversight. A response type is a `readonly union` - a value type - and
-> pipeline behaviors are registered as open generics closed over that response type by the container at
-> dispatch time. Value-type generic instantiations are not shared the way reference-type ones are, so
-> closing `IPipelineBehavior<TRequest, TResponse>` over a union needs a just-in-time compiler. A trimmed
-> application still has one; an ahead-of-time compiled application does not. This affects every container,
-> not one in particular.
+## Why ahead-of-time compilation doesn't work yet
 
-> [!NOTE]
-> **TBD**: The remaining sections below are unwritten pending a decision on the support level to commit to.
-> Write them from actual implemented behavior, not speculation.
+A response is a compiler-generated union type (`OperationOutcome<TSuccess, ...>` and its arities), which is
+always a value type. Pipeline behaviors are registered as open generics
+(`IPipelineBehavior<TRequest, TResponse>`) and closed over the concrete request/response pair by the
+container the first time a matching request is dispatched.
 
-## Expected content (once unblocked)
+Closing a generic type over a value type argument the runtime has never seen before needs a just-in-time
+compiler to synthesize the new code. A trimmed, self-contained publish still has one. An ahead-of-time
+compiled publish does not - every instantiation has to already exist in the binary before the process
+starts. This is a property of the .NET runtime, not a quirk of one dependency injection container:
+Microsoft.Extensions.DependencyInjection fails loudly and immediately with a clear exception; other
+containers that close open generics the same way hit the identical wall, later and less clearly.
 
-- Trim-safety guarantees Interlocutor makes
-- AOT compatibility requirements and opt-ins
-- Cost of the runtime-scanning fallback
-- Metadata annotations and preservation
-- Publishing trimmed/AOT applications
-- Known limitations and workarounds
+This is why the failure mode matters as much as the fact: attempting `PublishAot=true` today does not
+produce a warning at build time. It produces a clean build that crashes on the first request. If you are
+evaluating Interlocutor for a Native AOT deployment, stop at trimming for now - see Known limitations below.
+
+## Trim-safety guarantees
+
+Every shipping package (`Interlocutor.Abstractions`, `Interlocutor.AspNetCore`, `Interlocutor.CommonKernel`,
+`Interlocutor.DependencyInjection.Microsoft`, `Interlocutor.DependencyInjection.Autofac`,
+`Interlocutor.EntityFrameworkCore`, `Interlocutor.FluentValidation`, `Interlocutor.NHibernate`) is marked
+trimmable and builds clean under trim analysis. Compile-time handler discovery means the default dispatch
+path performs no runtime reflection at all - no `Assembly.GetTypes()`, no `Activator.CreateInstance` over a
+dynamically-discovered type - so trimming the assemblies a compiled application doesn't actually use is
+safe.
+
+A handful of call sites are still genuinely reflective by design - notification fan-out across a
+notification's base-type hierarchy, and the failure-case-to-HTTP-status mapping that dispatches on a
+failure's runtime type - and are documented as safe under trimming specifically because every type they
+close over is a reference type, which the trimmer keeps reachable through the application's own ordinary
+use of it.
+
+## The runtime scanning fallback, and what it costs
+
+`ScanAssembly`/`ScanAssemblies`/`ScanAssemblyContaining<TMarker>`/`ScanEntryAssembly`, `AddTypeMatch`, and
+`InterlocutorStartupValidation.ValidateHandlerRegistrations` are the one part of the library that is
+genuinely unsafe to trim, because they exist specifically to discover types reflectively - the point of
+calling them. Every one of these methods carries a `RequiresUnreferencedCode` annotation, so a trimmed
+publish that actually calls one produces a build warning naming exactly which call is at risk, rather than a
+silent trim that might remove the very handler the scan was supposed to find.
+
+None of these methods run unless a consumer explicitly calls one. A bare `AddInterlocutor()` with only
+`AddGeneratedRegistrations()` and explicit `AddHandler`/`AddBehavior` calls never reflects at all, and
+carries none of this cost.
+
+## Publishing trimmed
+
+```bash
+dotnet publish -c Release -p:PublishTrimmed=true -r <your-runtime-identifier> --self-contained
+```
+
+Every dispatch path exercised by ordinary usage - typed `Send`/`Publish` calls, pipeline behaviors,
+notification fan-out, the ASP.NET Core outcome mapping - is verified working under this publish mode. If
+your application also calls one of the runtime scanning methods above, resolve the `RequiresUnreferencedCode`
+warning it produces before trusting the trimmed output for that path: either keep the assembly it scans
+un-trimmed, or move that registration to compile-time discovery instead.
+
+## Known limitations
+
+- **No Native AOT support today.** See "Why ahead-of-time compilation doesn't work yet" above. There is no
+  workaround that keeps the library's pipeline-behavior composition working under `PublishAot=true`.
+- **JSON serialization for HTTP bodies still needs your own attention under trimming.** `ToActionResult()`
+  and `ToMinimalApiResult()` serialize the outcome's success or failure body through whatever
+  `System.Text.Json` configuration your application supplies. Under trimming, register a source-generated
+  `JsonSerializerContext` covering every type your endpoints actually return - including failure bodies like
+  `ProblemDetails` - the same way any trimmed ASP.NET Core minimal API application would.
+- **A store integration's own trim/AOT support is out of Interlocutor's control.** `Interlocutor.EntityFrameworkCore`
+  and `Interlocutor.NHibernate` are trim-compatible themselves, but the store library underneath your
+  `DbContext`/session mapping has its own trimming story - consult that library's own documentation for what
+  it requires (for example, EF Core's compiled models).
 
 ## Links
 

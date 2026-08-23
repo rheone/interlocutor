@@ -88,7 +88,6 @@ Use all five GitHub alert types purposefully:
 
 Some topics remain TBD until related infrastructure work completes:
 
-- **Trim & AOT support** - blocked on ticket 17 (Trim and AOT hardening)
 - **Sample app walkthrough** - blocked on ticket 18 (Sample application)
 
 These sections are written as TBD placeholders per the alert convention above, so nothing is forgotten.

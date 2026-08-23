@@ -1,4 +1,17 @@
-Status: ready-for-agent
+Status: wontfix (superseded - scope narrowed, see .scratch/aot-support/map.md)
+
+> **Superseded.** This ticket's brief assumed full Native AOT ("publish ahead-of-time compiled, with no trim
+> warnings") was reachable once compile-time discovery and the dispatch switch landed. It wasn't: pipeline
+> behaviors are still closed by the container over a value-type response at dispatch time, which Native AOT
+> structurally cannot do regardless of how the handler was found - see
+> [ADR-0016](../../docs/adr/0016-trim-compatible-not-aot-compatible.md) for the full evidence, including a
+> genuine native-compiled binary crashing on every dispatch. The narrower, honest scope shipped instead:
+> every package marked trim-compatible (not AOT-compatible), the runtime scanning fallback and startup
+> validation annotated per this ticket's own acceptance criteria, and the sample verified running correctly
+> under a trimmed publish end to end. Native AOT is deferred as a scoped future effort, not abandoned - see
+> the map's Decisions-so-far for the hybrid design it should target if picked up. Closing this ticket rather
+> than leaving it open against acceptance criteria (a clean AOT publish, an executing CI gate for it) that
+> the shipped decision explicitly does not meet.
 
 ## Labels
 

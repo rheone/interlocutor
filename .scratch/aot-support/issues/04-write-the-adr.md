@@ -1,7 +1,7 @@
 # 04 - Write the ADR and reconcile ADR-0008's standing AOT claim
 
 Type: task
-Status: open
+Status: resolved
 Blocked by: 03
 
 ## Question
@@ -30,4 +30,23 @@ the write-up.
 
 ## Answer
 
-_Pending._
+Written as [ADR-0016: Trim-Compatible Now, Native AOT Deferred](../../docs/adr/0016-trim-compatible-not-aot-compatible.md).
+
+**Relationship to ADR-0008: narrower qualification, not supersession.** ADR-0008's actual decision -
+moving handler discovery to compile time, per-assembly modules, the generated dispatch switch, build-time
+missing/ambiguous-handler diagnostics - is entirely unaffected and still Accepted. Only its Consequences'
+"AOT- and trim-compatible" claim and its Decision's "publish ahead-of-time without warnings" claim were
+wrong, because pipeline behaviors are closed by the container at dispatch time regardless of how the
+handler itself was found - a different mechanism from the one ADR-0008 actually changed. A full
+supersession would have implied the whole decision was being replaced, which it was not.
+
+Followed the exact precedent already in this repo: ADR-0003 carries a `Status: Superseded by ADR-0008` line
+plus a short pointer note explaining precisely what changed and what didn't. ADR-0008 now carries the same
+shape - a pointer note atop the file, status left as `Accepted` since the decision itself stands, naming
+ADR-0016 as the correction and stating in one sentence what was wrong.
+
+Added to [docs/README.md](../../docs/README.md)'s ADR index under a new "Deployment: trimming & Native AOT"
+theme, since none of the existing themes (result modeling, pipeline & behaviors, handler discovery &
+dispatch, DI registration, mediator lifecycle, notifications, HTTP integration) fit a decision about
+publish-time guarantees. ADR-0008's own index entry was corrected in the same pass - it carried the
+identical overstated claim.

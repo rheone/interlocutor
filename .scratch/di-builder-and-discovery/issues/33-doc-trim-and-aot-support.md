@@ -1,6 +1,15 @@
-Status: needs-triage (blocked)
+Status: wontfix (already implemented - see .scratch/aot-support/map.md)
 
 > **Amendment** - this ticket instructed citing ADR-0008 directly in the shipped `documentation/trim-and-aot-support.md` `## Links` list. That instruction is superseded: `documentation/` files must state design rationale as fact and must never cite or link to `docs/adr/`, `docs/PRD.md`, or other `docs/` paths - see the house convention added in ticket 36. The shipped file has been corrected by ticket 36 (link redirected sideways to `handler-selection-and-dispatch.md`). No action needed here; historical context only.
+
+> **Unblocked and shipped.** Ticket 17 (its blocker) landed with a narrower scope than originally briefed -
+> trim-compatible, not Native AOT - and `documentation/trim-and-aot-support.md` is written accordingly:
+> trim-safety guarantees, why ahead-of-time compilation doesn't work today and what it looks like when it
+> fails, the runtime-scanning fallback's cost, and publishing instructions. All four items this ticket's
+> acceptance criteria named are covered. See `.scratch/aot-support/issues/06-consumer-documentation-promise.md`
+> for the reasoning behind what shipped versus what this ticket anticipated (a compiled EF Core model and
+> hand-written schema DDL were prototyped, found to belong to Native AOT specifically, and dropped once the
+> decision landed on trim only).
 
 ## Labels
 

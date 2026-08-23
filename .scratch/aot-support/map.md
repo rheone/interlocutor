@@ -53,6 +53,24 @@ effort grew out of; `33-doc-trim-and-aot-support.md` is its blocked documentatio
 
 <!-- one line per resolved ticket: gist plus link -->
 
+- [Commit to a support level and container promise](issues/03-commit-to-support-level.md) - stay on Option
+  A (trim-compatible, "on the fly") as the shipped level; defer Option B (generated closed-registration
+  catalog) as a scoped future effort. If B is ever built, it must coexist with A as an opt-in mode, not
+  replace it - registering both open and closed descriptors for the same service type re-triggers the AOT
+  guard closed registration exists to avoid, so a real hybrid switches per compilation rather than adding.
+  Full reasoning in [ADR-0016](../../docs/adr/0016-trim-compatible-not-aot-compatible.md).
+- [Write the ADR and reconcile ADR-0008's standing AOT claim](issues/04-write-the-adr.md) - written as
+  [ADR-0016](../../docs/adr/0016-trim-compatible-not-aot-compatible.md), a narrower correction rather than a
+  full supersession - ADR-0008's actual decision (compile-time discovery) is untouched and still Accepted;
+  only its AOT claim was wrong. ADR-0008 now carries a pointer note, following the same precedent already
+  used for ADR-0003. Indexed in `docs/README.md` under a new "Deployment: trimming & Native AOT" theme.
+- [What `documentation/trim-and-aot-support.md` promises consumers](issues/06-consumer-documentation-promise.md) -
+  written. The promise: trim-compatible and verified end to end; Native AOT explicitly does not work, and
+  the failure mode (clean build, crashes at runtime, no build-time diagnostic today) is stated up front. The
+  consumer burden anticipated when this ticket was opened - a compiled EF Core model, hand-written schema
+  DDL - turned out to belong to Native AOT specifically and was reverted once the decision landed on trim
+  only; what remains is smaller (a `JsonSerializerContext` for minimal APIs, resolving any scanning-fallback
+  warning).
 - [Prototype: does closed-generic behavior registration survive real dispatch?](issues/02-closed-registration-prototype.md) -
   yes, the generator's existing constraint machinery (`HandlerTypeAnalyzer.BuildConstraints`,
   `GenericConstraintSnapshotBuilder`, `GenericConstraintChecker.Satisfies`) generalizes to behaviors
@@ -88,27 +106,28 @@ wait for **Commit to a support level and container promise**:
 
 ## Not yet specified
 
-- What becomes of `di-builder-and-discovery` ticket 17 (trim and AOT hardening) and ticket 33 (its
-  documentation counterpart) once this map lands - closed as superseded, redefined, or left to consume the ADR.
-- **If a reference-type outcome is chosen:** the migration across `Interlocutor.CommonKernel`, the AspNetCore
-  outcome mapping, every test, and the docs. Almost certainly several tickets; too coarse to slice until the
-  option is actually chosen.
-- **If generated closed registration is chosen:** the effect on generator incrementality and caching, which
-  interacts with `di-builder-and-discovery` ticket 53 (generator pipeline full incrementality).
+- **If Option B is picked up later:** the effect on generator incrementality and caching, which interacts
+  with `di-builder-and-discovery` ticket 53 (generator pipeline full incrementality); the actual coexistence
+  wiring (behavior discovery, the cross product, catalog emission, both translators, `Mediator` rewiring);
+  and the container-level configuration surface a consumer would use to opt into it. None of this is sharp
+  enough to ticket while B remains deferred rather than committed.
 - Whether the notification fan-out path has the same value-type problem. Notification handlers return `Task`
   rather than an `OperationOutcome`, so probably not - but this is reasoning, not evidence, and it has not
   been checked. Note that `INotification` carries no `class` constraint, so a struct notification is legal
   and would face the same instantiation problem.
-- Whether the behavior-catalog shape proposed for option (B) is workable at all. The research is explicit
-  that it is **a proposal, not a validated design** - it reconciles generator-visible behavior composition
-  with [ADR-0015](../../docs/adr/0015-pipeline-composition-behind-interlocutorpipelinebuilder.md)'s runtime
-  builder, and nobody has tried it. Sharpen into a ticket only once ticket 03 has chosen a direction.
 - The combinatorial size of a (behavior x request) catalog - an estimated risk, not a measured one.
 - Whether closed-generic registration measurably changes dispatch cost, and whether this library wants a
   benchmark suite at all.
 
 ## Out of scope
 
+- **Option C, a reference-type `OperationOutcome`.** Rejected in [ADR-0016](../../docs/adr/0016-trim-compatible-not-aot-compatible.md):
+  the C# `union` feature this design depends on has no reference-type form in the pinned SDK, so this would
+  mean abandoning unions for a hand-written hierarchy, reversing
+  [ADR-0001](../../docs/adr/0001-use-csharp-15-unions-for-result-types.md) and losing compiler-verified
+  exhaustiveness, to solve a problem the Option A/B hybrid solves without touching the type system. Worth
+  revisiting only if a reference-type union form ships in a future C# version - unconfirmed whether one is
+  even planned.
 - The AOT readiness of Entity Framework Core and NHibernate themselves. Upstream; we can document what a
   consumer must do (compiled models, migration bundles) but cannot fix it here.
 - Blazor WebAssembly, iOS, and other AOT-mandatory platform targets. Different runtime constraints, and no
