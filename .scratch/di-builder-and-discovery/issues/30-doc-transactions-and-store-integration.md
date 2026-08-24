@@ -1,3 +1,5 @@
+> **Status: done** - merged in `a05405b` (tickets 28-32 landed together in this commit).
+
 > **Amendment** - this ticket instructed citing ADR-0011 and `docs/PRD.md` §9.2 directly in the shipped `documentation/transactions-and-store-integration.md` prose. That instruction is superseded: `documentation/` files must state design rationale as fact and must never cite or link to `docs/adr/`, `docs/PRD.md`, or other `docs/` paths - see the house convention added in ticket 36. The shipped file has been corrected by ticket 36. No action needed here; historical context only.
 
 ## Labels

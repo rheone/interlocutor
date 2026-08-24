@@ -1,5 +1,6 @@
 namespace Interlocutor.DependencyInjection.Abstractions;
 
+using System.Diagnostics.CodeAnalysis;
 using Interlocutor.Abstractions;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
@@ -61,6 +62,14 @@ public sealed class RootScopeGuardedMediator(IMediator inner, IRootScopeDetector
     }
 
     /// <inheritdoc/>
+    [RequiresUnreferencedCode(
+        "May run the runtime-typed dispatch fallback when no generated dispatcher is registered - see "
+            + "documentation/trim-and-aot-support.md."
+    )]
+    [RequiresDynamicCode(
+        "May run the runtime-typed dispatch fallback when no generated dispatcher is registered - see "
+            + "documentation/trim-and-aot-support.md."
+    )]
     public Task<IOperationOutcome> Send(object request, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -75,6 +84,15 @@ public sealed class RootScopeGuardedMediator(IMediator inner, IRootScopeDetector
         ArgumentNullException.ThrowIfNull(notification);
         this.EnsureNotRootScope(notification.GetType());
         return inner.Publish(notification, ct);
+    }
+
+    /// <inheritdoc/>
+    public Task Publish<TNotification>(TNotification notification, PublishStrategy strategy, CancellationToken ct = default)
+        where TNotification : INotification
+    {
+        ArgumentNullException.ThrowIfNull(notification);
+        this.EnsureNotRootScope(notification.GetType());
+        return inner.Publish(notification, strategy, ct);
     }
 
     /// <summary>

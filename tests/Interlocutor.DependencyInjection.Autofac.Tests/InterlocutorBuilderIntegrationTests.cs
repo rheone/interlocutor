@@ -17,28 +17,103 @@ public class InterlocutorBuilderIntegrationTests
     [Fact]
     public void BareBuilder_RegistersMediatorAndHandlers_ButZeroBehaviors()
     {
+        // Arrange
         var containerBuilder = new ContainerBuilder();
-
         containerBuilder.AddInterlocutor(builder => builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly));
 
+        // Act
         var container = containerBuilder.Build();
 
+        // Assert
         Assert.NotNull(container.ResolveOptional<IMediator>());
         Assert.NotNull(container.ResolveOptional<IQueryHandler<SampleQuery, OperationOutcome>>());
         Assert.Empty(container.Resolve<IEnumerable<IPipelineBehavior<SampleQuery, OperationOutcome>>>());
     }
 
     [Fact]
-    public void AddAuthorizationBehavior_DoesNotOrphanAuditSink()
+    public void AddInterlocutor_WithValidateOnBuild_ThrowsAggregatingEveryProblem_WhenTheConfigurationHasAny()
     {
+        // Arrange
         var containerBuilder = new ContainerBuilder();
 
-        containerBuilder.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).AddAuthorizationBehavior()
+        // Act
+        var exception = Assert.Throws<InterlocutorRegistrationValidationException>(() =>
+            containerBuilder.AddInterlocutor(builder =>
+                builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).ValidateOnBuild()
+            )
         );
 
+        // Assert
+        Assert.Contains(
+            exception.Report.Problems,
+            p =>
+                p.Kind == RegistrationProblemKind.UnhandledRequestType
+                && p.Description.Contains(nameof(UnhandledValidationQuery))
+        );
+    }
+
+    [Fact]
+    public void AddInterlocutor_WithoutValidateOnBuild_DoesNotThrow_EvenWithAnUnhandledRequestType()
+    {
+        // Arrange
+        var containerBuilder = new ContainerBuilder();
+
+        // Act
+        var exception = Record.Exception(() =>
+            containerBuilder.AddInterlocutor(builder =>
+                builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly)
+            )
+        );
+
+        // Assert
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void AddInterlocutor_WithLoggerFactoryRegistered_LogsTheRegistrationReport()
+    {
+        // Arrange
+        var containerBuilder = new ContainerBuilder();
+        using var recordingFactory = new RecordingLoggerFactory();
+        containerBuilder.RegisterInstance<ILoggerFactory>(recordingFactory).ExternallyOwned();
+        containerBuilder.AddInterlocutor(builder => builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly));
+
+        // Act
+        using var container = containerBuilder.Build();
+
+        // Assert
+        var logger = Assert.Single(recordingFactory.CreatedLoggers);
+        var message = Assert.Single(logger.Messages);
+        Assert.Contains("Interlocutor registration report", message);
+    }
+
+    [Fact]
+    public void AddInterlocutor_WithoutLoggerFactoryRegistered_DoesNotThrow()
+    {
+        // Arrange
+        var containerBuilder = new ContainerBuilder();
+        containerBuilder.AddInterlocutor(builder => builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly));
+
+        // Act
+        var exception = Record.Exception(() => containerBuilder.Build());
+
+        // Assert
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void AddAuthorizationBehavior_DoesNotOrphanAuditSink()
+    {
+        // Arrange
+        var containerBuilder = new ContainerBuilder();
+        containerBuilder.AddInterlocutor(builder =>
+            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).Pipeline.AddAuthorizationBehavior()
+        );
+
+        // Act
         var container = containerBuilder.Build();
 
+        // Assert
         Assert.Null(container.ResolveOptional<IAuditSink>());
         Assert.NotNull(container.ResolveOptional<IPolicyEvaluator>());
     }
@@ -46,36 +121,43 @@ public class InterlocutorBuilderIntegrationTests
     [Fact]
     public void ConsumerRegistration_BeforeBuilderCall_Wins()
     {
+        // Arrange
         var containerBuilder = new ContainerBuilder();
         containerBuilder.RegisterType<RecordingAuditSink>().As<IAuditSink>().InstancePerLifetimeScope();
-
         containerBuilder.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).AddAuditingBehavior()
+            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).Pipeline.AddAuditingBehavior()
         );
 
+        // Act
         var container = containerBuilder.Build();
+
+        // Assert
         Assert.IsType<RecordingAuditSink>(container.Resolve<IAuditSink>());
     }
 
     [Fact]
     public void OverrideAuditSink_AfterAddAuditingBehavior_Wins()
     {
+        // Arrange
         var containerBuilder = new ContainerBuilder();
-
         containerBuilder.AddInterlocutor(builder =>
             builder
                 .ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly)
-                .AddAuditingBehavior()
+                .Pipeline.AddAuditingBehavior()
                 .OverrideAuditSink<RecordingAuditSink>()
         );
 
+        // Act
         var container = containerBuilder.Build();
+
+        // Assert
         Assert.IsType<RecordingAuditSink>(container.Resolve<IAuditSink>());
     }
 
     [Fact]
     public async Task BehaviorExecutionOrder_MatchesBuilderCallOrder_ObservedAtRuntime()
     {
+        // Arrange
         var containerBuilder = new ContainerBuilder();
         var executionLog = new List<string>();
         containerBuilder.RegisterInstance(executionLog).SingleInstance();
@@ -83,7 +165,7 @@ public class InterlocutorBuilderIntegrationTests
         containerBuilder.AddInterlocutor(builder =>
             builder
                 .ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly)
-                .AddBehavior(typeof(RecordingBehavior<,>.First))
+                .Pipeline.AddBehavior(typeof(RecordingBehavior<,>.First))
                 .AddBehavior(typeof(RecordingBehavior<,>.Second))
         );
 
@@ -92,14 +174,17 @@ public class InterlocutorBuilderIntegrationTests
         using var scope = container.BeginLifetimeScope();
         var mediator = scope.Resolve<IMediator>();
 
+        // Act
         await mediator.Send(new SampleQuery(), TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.Equal(["first-before", "second-before", "second-after", "first-after"], executionLog);
     }
 
     [Fact]
     public async Task SameBehaviorRegisteredTwice_ExecutesTwice()
     {
+        // Arrange
         var containerBuilder = new ContainerBuilder();
         var executionLog = new List<string>();
         containerBuilder.RegisterInstance(executionLog).SingleInstance();
@@ -107,7 +192,7 @@ public class InterlocutorBuilderIntegrationTests
         containerBuilder.AddInterlocutor(builder =>
             builder
                 .ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly)
-                .AddBehavior(typeof(RecordingBehavior<,>.First))
+                .Pipeline.AddBehavior(typeof(RecordingBehavior<,>.First))
                 .AddBehavior(typeof(RecordingBehavior<,>.First))
         );
 
@@ -116,23 +201,27 @@ public class InterlocutorBuilderIntegrationTests
         using var scope = container.BeginLifetimeScope();
         var mediator = scope.Resolve<IMediator>();
 
+        // Act
         await mediator.Send(new SampleQuery(), TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.Equal(["first-before", "first-before", "first-after", "first-after"], executionLog);
     }
 
     [Fact]
     public void UseRecommendedChain_RegistersLoggingAuditingAndAuthorizationBehaviors()
     {
+        // Arrange
         var containerBuilder = new ContainerBuilder();
         containerBuilder.RegisterGeneric(typeof(NullLogger<>)).As(typeof(ILogger<>));
 
         containerBuilder.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).UseRecommendedChain()
+            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).Pipeline.UseRecommendedChain()
         );
 
         var container = containerBuilder.Build();
 
+        // Act
         // AuthorizationBehavior<TRequest,TResponse> only ever short-circuits meaningfully for a response
         // shaped OperationOutcome<TSuccess, Forbidden> (it needs a Forbidden case to construct on denial), so
         // it's resolved against AuthorizableQuery (not the plain-OperationOutcome SampleQuery every other test
@@ -145,6 +234,7 @@ public class InterlocutorBuilderIntegrationTests
             .Select(b => b.GetType())
             .ToList();
 
+        // Assert
         Assert.Contains(behaviors, t => t.Name.StartsWith("LoggingBehavior"));
         Assert.Contains(behaviors, t => t.Name.StartsWith("AuditingBehavior"));
         Assert.Contains(behaviors, t => t.Name.StartsWith("AuthorizationBehavior"));
@@ -153,6 +243,7 @@ public class InterlocutorBuilderIntegrationTests
     [Fact]
     public async Task StageHost_WithShortCircuitingDelegateStage_SkipsHandlerAndReturnsShortCircuitResponseUnchanged()
     {
+        // Arrange
         var containerBuilder = new ContainerBuilder();
         containerBuilder.RegisterGeneric(typeof(NullLogger<>)).As(typeof(ILogger<>));
 
@@ -164,7 +255,7 @@ public class InterlocutorBuilderIntegrationTests
         containerBuilder.AddInterlocutor(builder =>
             builder
                 .ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly)
-                .AddStage<ShortCircuitQuery, OperationOutcome>(
+                .Pipeline.AddStage<ShortCircuitQuery, OperationOutcome>(
                     (request, ct) => Task.FromResult(StageResult<OperationOutcome>.ShortCircuit(declined)),
                     null
                 )
@@ -180,8 +271,77 @@ public class InterlocutorBuilderIntegrationTests
         // observing it from outside the stage host can tell it was short-circuited.
         var result = await mediator.Send(new ShortCircuitQuery(), TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.Equal(declined, result);
         Assert.False(handlerRan);
+    }
+
+    [Fact]
+    public void AddCancellationBehavior_ResolvesWithoutThrowing_UnderAutofac()
+    {
+        // The exact open-generic-resolution failure mode documented on AuthorizationBehavior's remarks and
+        // fixed once before (audit-followups/13): a behavior whose constrained TRequest/TResponse shape
+        // throws from Autofac's open-generic substitution instead of simply resolving. Registering and
+        // resolving against a closed generic that satisfies the constraints is the only way to prove this.
+
+        // Arrange
+        var containerBuilder = new ContainerBuilder();
+        containerBuilder.AddInterlocutor(builder =>
+            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).Pipeline.AddCancellationBehavior()
+        );
+
+        var container = containerBuilder.Build();
+        using var scope = container.BeginLifetimeScope();
+
+        // Act
+        var behaviors = scope
+            .Resolve<IEnumerable<IPipelineBehavior<CancellableQuery, OperationOutcome<string, Cancelled>>>>()
+            .ToList();
+
+        // Assert
+        Assert.Contains(behaviors, b => b.GetType().Name.StartsWith("CancellationBehavior"));
+    }
+
+    [Fact]
+    public void AddTimeoutBehavior_ResolvesWithoutThrowing_UnderAutofac()
+    {
+        // Arrange
+        var containerBuilder = new ContainerBuilder();
+        containerBuilder.AddInterlocutor(builder =>
+            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).Pipeline.AddTimeoutBehavior()
+        );
+
+        var container = containerBuilder.Build();
+        using var scope = container.BeginLifetimeScope();
+
+        // Act
+        var behaviors = scope
+            .Resolve<IEnumerable<IPipelineBehavior<TimeBoundQuery, OperationOutcome<string, Timeout>>>>()
+            .ToList();
+
+        // Assert
+        Assert.Contains(behaviors, b => b.GetType().Name.StartsWith("TimeoutBehavior"));
+    }
+
+    [Fact]
+    public void AddRateLimitedBehavior_ResolvesWithoutThrowing_UnderAutofac()
+    {
+        // Arrange
+        var containerBuilder = new ContainerBuilder();
+        containerBuilder.AddInterlocutor(builder =>
+            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).Pipeline.AddRateLimitedBehavior()
+        );
+
+        var container = containerBuilder.Build();
+        using var scope = container.BeginLifetimeScope();
+
+        // Act
+        var behaviors = scope
+            .Resolve<IEnumerable<IPipelineBehavior<ThrottledQuery, OperationOutcome<string, RateLimited>>>>()
+            .ToList();
+
+        // Assert
+        Assert.Contains(behaviors, b => b.GetType().Name.StartsWith("RateLimitedBehavior"));
     }
 
     private sealed record SampleQuery : IQuery<OperationOutcome>;
@@ -190,6 +350,39 @@ public class InterlocutorBuilderIntegrationTests
     {
         public Task<OperationOutcome> Handle(SampleQuery query, CancellationToken ct) =>
             Task.FromResult(default(OperationOutcome));
+    }
+
+    /// <summary>Deliberately has no handler, so ValidateOnBuild() tests have a deterministic problem to find.</summary>
+    private sealed record UnhandledValidationQuery : IQuery<OperationOutcome>;
+
+    private sealed record CancellableQuery : IQuery<OperationOutcome<string, Cancelled>>, ICancellable;
+
+    private sealed class CancellableQueryHandler : IQueryHandler<CancellableQuery, OperationOutcome<string, Cancelled>>
+    {
+        public Task<OperationOutcome<string, Cancelled>> Handle(CancellableQuery query, CancellationToken ct) =>
+            Task.FromResult<OperationOutcome<string, Cancelled>>("ok");
+    }
+
+    private sealed record TimeBoundQuery : IQuery<OperationOutcome<string, Timeout>>, IHasTimeout
+    {
+        public TimeSpan Budget => TimeSpan.FromSeconds(30);
+    }
+
+    private sealed class TimeBoundQueryHandler : IQueryHandler<TimeBoundQuery, OperationOutcome<string, Timeout>>
+    {
+        public Task<OperationOutcome<string, Timeout>> Handle(TimeBoundQuery query, CancellationToken ct) =>
+            Task.FromResult<OperationOutcome<string, Timeout>>("ok");
+    }
+
+    private sealed record ThrottledQuery : IQuery<OperationOutcome<string, RateLimited>>, IRateLimited
+    {
+        public string LimitKey => "test-limit";
+    }
+
+    private sealed class ThrottledQueryHandler : IQueryHandler<ThrottledQuery, OperationOutcome<string, RateLimited>>
+    {
+        public Task<OperationOutcome<string, RateLimited>> Handle(ThrottledQuery query, CancellationToken ct) =>
+            Task.FromResult<OperationOutcome<string, RateLimited>>("ok");
     }
 
     private sealed record AuthorizableQuery : IQuery<OperationOutcome<string, Forbidden>>, IAuditableRequest, IRequiresPolicy
@@ -250,5 +443,40 @@ public class InterlocutorBuilderIntegrationTests
                 return result;
             }
         }
+    }
+
+    /// <summary>An <see cref="ILoggerFactory"/> whose loggers record every formatted message they receive.</summary>
+    private sealed class RecordingLoggerFactory : ILoggerFactory
+    {
+        public List<RecordingLogger> CreatedLoggers { get; } = [];
+
+        public void AddProvider(ILoggerProvider provider) { }
+
+        public ILogger CreateLogger(string categoryName)
+        {
+            var logger = new RecordingLogger();
+            this.CreatedLoggers.Add(logger);
+            return logger;
+        }
+
+        public void Dispose() { }
+    }
+
+    private sealed class RecordingLogger : ILogger
+    {
+        public List<string> Messages { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state)
+            where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(
+            LogLevel logLevel,
+            EventId eventId,
+            TState state,
+            Exception? exception,
+            Func<TState, Exception?, string> formatter
+        ) => this.Messages.Add(formatter(state, exception));
     }
 }

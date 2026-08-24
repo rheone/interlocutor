@@ -1,0 +1,13 @@
+# Normalize line endings; let git decide text vs binary by default.
+* text=auto eol=lf
+
+# Windows-only files genuinely need CRLF.
+*.sln text eol=crlf
+*.slnx text eol=lf
+*.ps1 text eol=crlf
+
+# Treat these as binary -- never run diff/merge text filters on them.
+*.png binary
+*.jpg binary
+*.dll binary
+*.nupkg binary

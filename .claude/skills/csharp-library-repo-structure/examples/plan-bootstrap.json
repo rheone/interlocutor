@@ -1,0 +1,104 @@
+{
+  "$note": "Sample bootstrap plan for a new library repo. This is the JSON that apply_plan.py consumes. Generate real plans programmatically; this is an illustrative example only.",
+  "actions": [
+    {
+      "action": "run",
+      "command": "dotnet new slnx -n MyLib",
+      "cwd": ".",
+      "reason": "Create solution file (.slnx format)"
+    },
+    {
+      "action": "run",
+      "command": "dotnet new classlib -n MyLib -o src/MyLib -f net8.0;net9.0;net10.0",
+      "cwd": ".",
+      "reason": "Create class library project"
+    },
+    {
+      "action": "run",
+      "command": "dotnet new xunit -n MyLib.Tests -o src/MyLib.Tests",
+      "cwd": ".",
+      "reason": "Create xUnit test project"
+    },
+    {
+      "action": "run",
+      "command": "dotnet sln MyLib.slnx add src/MyLib/MyLib.csproj src/MyLib.Tests/MyLib.Tests.csproj",
+      "cwd": ".",
+      "reason": "Add projects to solution"
+    },
+    {
+      "action": "run",
+      "command": "dotnet add src/MyLib.Tests/MyLib.Tests.csproj reference src/MyLib/MyLib.csproj",
+      "cwd": ".",
+      "reason": "Add test-to-library project reference"
+    },
+    {
+      "action": "run",
+      "command": "dotnet restore --use-lock-file src/",
+      "cwd": ".",
+      "reason": "Generate lock files"
+    },
+    {
+      "action": "create_from_template",
+      "template": "gitignore.tmpl",
+      "dest": ".gitignore",
+      "skip_if_exists": true,
+      "reason": "Root .gitignore"
+    },
+    {
+      "action": "create_from_template",
+      "template": "gitattributes.tmpl",
+      "dest": ".gitattributes",
+      "skip_if_exists": true,
+      "reason": "Git line-ending normalization"
+    },
+    {
+      "action": "create_from_template",
+      "template": "editorconfig.tmpl",
+      "dest": ".editorconfig",
+      "skip_if_exists": true,
+      "reason": "Editor/IDE settings"
+    },
+    {
+      "action": "create_from_template",
+      "template": "global.json.tmpl",
+      "dest": "global.json",
+      "skip_if_exists": true,
+      "reason": "Pin SDK version"
+    },
+    {
+      "action": "create_from_template",
+      "template": "Directory.Build.props.tmpl",
+      "dest": "src/Directory.Build.props",
+      "skip_if_exists": true,
+      "reason": "Shared MSBuild properties"
+    },
+    {
+      "action": "create_from_template",
+      "template": "Directory.Build.targets.tmpl",
+      "dest": "src/Directory.Build.targets",
+      "skip_if_exists": true,
+      "reason": "Shared MSBuild targets"
+    },
+    {
+      "action": "create_from_template",
+      "template": "Directory.Packages.props.tmpl",
+      "dest": "src/Directory.Packages.props",
+      "skip_if_exists": true,
+      "reason": "Central package management"
+    },
+    {
+      "action": "create_from_template",
+      "template": "README.md.tmpl",
+      "dest": "README.md",
+      "skip_if_exists": true,
+      "reason": "Project readme"
+    },
+    {
+      "action": "create_from_template",
+      "template": "dotnet-tools.json.tmpl",
+      "dest": ".config/dotnet-tools.json",
+      "skip_if_exists": true,
+      "reason": "Local .NET tools manifest"
+    }
+  ]
+}

@@ -9,6 +9,10 @@ source: https://mermaid.js.org/syntax/swimlanes.html
 last_verified: 2026-08-09
 plugin_required: false
 gitlab_compatible: false
+github_compatible: true
+vscode_compatible: unknown
+obsidian_compatible: unknown
+notion_compatible: unknown
 ---
 
 # Swimlanes
@@ -139,14 +143,6 @@ Three lanes - one lane (`reviewer`) uses a separate internal id and display labe
 
 ## Beta/experimental caveats
 Swimlanes is new as of v11.16.0; the source documentation itself carries an explicit warning that its syntax may evolve in future versions. Confirm the target Mermaid runtime is v11.16.0 or later before delivering a swimlane diagram - on older pinned versions this diagram type does not exist and will fail to parse. The doc's rendered examples use the "Neo" look and "Redux" theme, but that is cosmetic-only: swimlanes render fine under whatever look/theme is otherwise configured.
-
-## Platform compatibility
-
-**GitLab:** Likely *not* yet supported - GitLab.com documents supporting Mermaid version 10 (checked 2026-08-15, [source](https://docs.gitlab.com/user/markdown/#diagrams-and-flowcharts)), and this type was introduced in v11.16.0, after that line. GitLab's pinned version moves independently of this skill and may have caught up since - reconfirm against the source before assuming this is still accurate.
-
-**GitHub:** Unconfirmed either way - GitHub's own docs don't publish an exhaustive list of supported Mermaid diagram types (they name "flowcharts, sequence diagrams, pie charts and more" as examples, not a complete list), and community reports on which newer types render are inconsistent/contradictory. Don't promise this type renders on GitHub without testing it there directly (e.g. a scratch gist or PR comment).
-
-**VS Code / Obsidian / Notion / similar:** Depends entirely on that specific tool's own bundled or extension-provided Mermaid version, which updates independently of this skill's pin and of every other tool in this list - there is no single answer here. As a beta diagram type, editor/notes-app Mermaid bundles need to be relatively recent to support it - more likely to be missing on tools that update infrequently. Confirm in the specific target tool before relying on this type there.
 
 ## Further reading
 - https://mermaid.js.org/syntax/swimlanes.html

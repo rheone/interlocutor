@@ -1,7 +1,7 @@
 namespace Interlocutor.Abstractions.Notifications;
 
 using System.Diagnostics;
-using Interlocutor.Abstractions.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 /// <summary>Dispatches a notification to all registered handlers concurrently using <see cref="Task.WhenAll(System.Collections.Generic.IEnumerable{System.Threading.Tasks.Task})"/>.</summary>
 /// <typeparam name="TNotification">The notification type. Must implement <see cref="INotification"/>.</typeparam>
@@ -12,7 +12,9 @@ using Interlocutor.Abstractions.Diagnostics;
 /// when handlers are independent and order doesn't matter - it maximizes throughput at the cost of all-or-nothing failure semantics.
 /// </para>
 /// </remarks>
-internal sealed class ParallelNotificationHandlerWrapper<TNotification> : NotificationHandlerWrapper
+internal sealed class ParallelNotificationHandlerWrapper<
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.Interfaces)] TNotification
+> : NotificationHandlerWrapper
     where TNotification : INotification
 {
     /// <summary>
@@ -25,10 +27,7 @@ internal sealed class ParallelNotificationHandlerWrapper<TNotification> : Notifi
     /// <returns>A task that completes when all handlers complete or any handler throws.</returns>
     public override Task Handle(object notification, IServiceProvider services, CancellationToken ct, Activity? activity = null)
     {
-        var typedNotification = (TNotification)notification;
-        var handlers = services.GetServices<INotificationHandler<TNotification>>().ToArray();
-
-        activity?.SetTag(MediatorActivitySource.HandlerTypeTag, string.Join(",", handlers.Select(h => h.GetType().FullName)));
+        var (typedNotification, handlers) = ResolveHandlers<TNotification>(notification, services, activity);
 
         // Launch all handlers concurrently via Task.WhenAll. This maximizes throughput when handlers are
         // independent. If any handler throws, all tasks are awaited and exceptions are aggregated into

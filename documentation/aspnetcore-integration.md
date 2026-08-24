@@ -72,7 +72,21 @@ app.MapDelete("/api/orders/{id}", async (int id, ISender mediator, CancellationT
 
 ## Status Code Mapping
 
-Each outcome case type maps to an HTTP status code:
+Each outcome case type maps to an HTTP status code. `ToActionResult()` inspects the outcome's active case at runtime and dispatches on its type - the same reflective, reference-type-only mechanism `IOutcomeCaseRegistry` uses elsewhere, so it stays trim-safe (see [Trim & AOT Support](trim-and-aot-support.md)):
+
+```mermaid
+flowchart TD
+    Outcome["IOperationOutcome from mediator.Send()"] --> IsSuccess{"Success case?"}
+    IsSuccess -->|"yes, has payload"| Ok200["200 OK<br/>body: success payload (JSON)"]
+    IsSuccess -->|"yes, unit Success"| Ok200Empty["200 OK<br/>body: empty"]
+    IsSuccess -->|"no - inspect failure case type"| CaseType{"Failure case type"}
+    CaseType -->|"ValidationError"| Bad400["400 Bad Request<br/>ValidationProblemDetails"]
+    CaseType -->|"NotFound"| NotFound404["404 Not Found<br/>body: empty"]
+    CaseType -->|"Forbidden"| Forbidden403["403 Forbidden<br/>body: empty, reason logged server-side"]
+    CaseType -->|"Conflict"| Conflict409["409 Conflict<br/>ProblemDetails"]
+    CaseType -->|"Failure (generic)"| Error500["500 Internal Server Error<br/>ProblemDetails"]
+    CaseType -->|"a type IOperationOutcomeMapper<br/>doesn't recognize"| Custom["Falls through to a registered<br/>custom IOperationOutcomeMapper, if any"]
+```
 
 | Outcome Case | HTTP Status | Body | Details |
 |--------------|-------------|------|---------|

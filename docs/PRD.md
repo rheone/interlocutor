@@ -32,14 +32,14 @@ Before this library, "what can go wrong" for a given handler was implicit - disc
 
 | Package | Contents | Dependencies |
 |---------|----------|-------------|
-| `Interlocutor.CommonKernel` | `OperationOutcome<T>`, `OperationOutcome`, `Failure`, `Success`, `PagedResult<T>` - pure data types | .NET BCL only |
+| `Interlocutor.CommonKernel` | `OperationOutcome<T>`, `OperationOutcome`, `Failure`, `Success` - pure data types | .NET BCL only |
 | `Interlocutor.Abstractions` | `IQuery<T>`, `ICommand<T>`, `ICommand`, marker interfaces, handler contracts, `IPipelineBehavior`, `IMediator`, `Mediator`, `ResourceCommandHandler`, `StartupValidation`, built-in pipeline behaviors (Logging, Auditing, Authorization, PipelineStage) | `Interlocutor.CommonKernel` |
 | `Interlocutor.AspNetCore` | `ToActionResult()` HTTP mapping | `Interlocutor.CommonKernel`, ASP.NET Core |
 | `Interlocutor.DependencyInjection.Microsoft` | Assembly-scanning `AddInterlocutor()` for MS DI | `Interlocutor.Abstractions` |
 | `Interlocutor.DependencyInjection.Autofac` | Assembly-scanning `AddInterlocutor()` for Autofac | `Interlocutor.Abstractions` |
 | `Interlocutor.EntityFrameworkCore` | `TransactionBehavior<TRequest,TResponse,TContext>` for EF Core | `Interlocutor.Abstractions` |
 | `Interlocutor.NHibernate` | `TransactionBehavior<TRequest,TResponse>` for NHibernate | `Interlocutor.Abstractions` |
-| `Interlocutor.FluentValidation` | `ValidationBehavior` and `BulkItemValidationBehavior` | `Interlocutor.Abstractions` |
+| `Interlocutor.FluentValidation` | `ValidationBehavior` | `Interlocutor.Abstractions` |
 
 ## 6. Type catalog
 
@@ -62,10 +62,8 @@ Before this library, "what can go wrong" for a given handler was implicit - disc
 | `IQuery<TResponse>` | Marker for queries returning `OperationOutcome<TResponse>` |
 | `ICommand<TResponse>` | Marker for commands returning `OperationOutcome<TResponse>` |
 | `ICommand` | Marker for void commands returning `OperationOutcome` |
-| `IEnumerableQuery<TItem>` | Query returning `IReadOnlyList<TItem>` |
-| `IEnumerableCommand<TResponseItem>` | Command returning `IReadOnlyList<TResponseItem>` |
-| `IBulkCommand<TItem, TResponseItem>` | Bulk command with per-item validation |
-| `IPagedQuery<TItem>` | Paged query with `Page`/`PageSize` contract |
+
+There are no shipped `IEnumerableQuery<T>`, `IEnumerableCommand<T>`, `IBulkCommand<T, T>`, or `IPagedQuery<T>` marker interfaces. A query or command that returns a list, a paged result, or does per-item bulk validation is expressed with the three markers above plus a consumer-defined response type - see `documentation/glossary.md`'s `PagedResult<T>` entry for the paging shape as one example of that pattern.
 
 ## 8. Handler contracts
 
@@ -88,7 +86,6 @@ All behaviors implement `IPipelineBehavior<TRequest,TResponse>` and compose via 
 | `AuditingBehavior` | `Interlocutor.Abstractions` | - | Via `IAuditableRequest` + `IAuditSink` |
 | `PipelineStageBehavior` | `Interlocutor.Abstractions` | - | Aggregates `IPipelineStage` pre/post hooks |
 | `ValidationBehavior` | `Interlocutor.FluentValidation` | `ValidationFailed` | FluentValidation, short-circuits before handler |
-| `BulkItemValidationBehavior` | `Interlocutor.FluentValidation` | `ValidationFailed` | Per-item validation for `IBulkCommand` |
 | `TransactionBehavior` (EF Core) | `Interlocutor.EntityFrameworkCore` | - | Commit on success, rollback on Failure |
 | `TransactionBehavior` (NHibernate) | `Interlocutor.NHibernate` | - | Same semantics |
 
@@ -184,7 +181,7 @@ The bootstrap PRD was written before several features were implemented. Below is
 | IRequestContextAccessor (#15) | ✅ | `RequestContextAccessor` + interface |
 | Package version pinning (#01) | ✅ | `Directory.Packages.props` with CPM |
 | README (#02) | ✅ | `README.md` |
-| PascalCase naming (#06) | ✅ | `PagedResult<T>(IReadOnlyList<T> Items, ...)` |
+| PascalCase naming (#06) | ✅ | `OperationOutcome<T>`, `ValidationErrors`, and the rest of the result-type vocabulary |
 
 All features listed as gaps in bootstrap §12 are now implemented.
 

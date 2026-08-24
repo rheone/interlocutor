@@ -1,3 +1,5 @@
+> **Status: done** - merged in `fcece03`.
+
 ## Labels
 
 ready-for-agent

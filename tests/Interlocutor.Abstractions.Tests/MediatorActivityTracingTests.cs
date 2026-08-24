@@ -26,13 +26,17 @@ public class MediatorActivityTracingTests
     [Fact]
     public async Task Send_Query_WithListener_StartsActivityTaggedWithRequestAndHandlerType()
     {
+        // Arrange
         var captured = new ConcurrentBag<Activity>();
         using var listener = CreateListener(captured);
         ActivitySource.AddActivityListener(listener);
 
         var mediator = CreateMediator();
+
+        // Act
         await mediator.Send(new TracingSuccessQuery(21), CancellationToken.None);
 
+        // Assert
         var activity = SingleFor<TracingSuccessQuery>(captured);
         Assert.Equal(typeof(TracingSuccessQueryHandler).FullName, activity.GetTagItem(MediatorActivitySource.HandlerTypeTag));
 
@@ -45,6 +49,7 @@ public class MediatorActivityTracingTests
     [Fact]
     public async Task Send_VoidCommand_WithSuccessOutcome_TagsOutcomeAsSuccess()
     {
+        // Arrange
         var captured = new ConcurrentBag<Activity>();
         using var listener = CreateListener(captured);
         ActivitySource.AddActivityListener(listener);
@@ -55,8 +60,10 @@ public class MediatorActivityTracingTests
         var provider = services.BuildServiceProvider();
         var mediator = provider.GetRequiredService<IMediator>();
 
+        // Act
         await mediator.Send<OperationOutcome>(new TracingSuccessCommand(), CancellationToken.None);
 
+        // Assert
         var activity = SingleFor<TracingSuccessCommand>(captured);
         Assert.Equal(typeof(TracingSuccessCommandHandler).FullName, activity.GetTagItem(MediatorActivitySource.HandlerTypeTag));
         Assert.Equal("Success", activity.GetTagItem(MediatorActivitySource.OutcomeTag));
@@ -66,13 +73,17 @@ public class MediatorActivityTracingTests
     [Fact]
     public async Task Send_Query_WithFailureOutcome_TagsOutcomeWithoutErrorStatus()
     {
+        // Arrange
         var captured = new ConcurrentBag<Activity>();
         using var listener = CreateListener(captured);
         ActivitySource.AddActivityListener(listener);
 
         var mediator = CreateMediator();
+
+        // Act
         await mediator.Send(new TracingFailingQuery(), CancellationToken.None);
 
+        // Assert
         var activity = SingleFor<TracingFailingQuery>(captured);
         Assert.Equal("Failure", activity.GetTagItem(MediatorActivitySource.OutcomeTag));
         Assert.NotEqual(ActivityStatusCode.Error, activity.Status);
@@ -81,15 +92,19 @@ public class MediatorActivityTracingTests
     [Fact]
     public async Task Send_Query_WhenHandlerThrows_RecordsErrorStatusAndStillStopsActivity()
     {
+        // Arrange
         var captured = new ConcurrentBag<Activity>();
         using var listener = CreateListener(captured);
         ActivitySource.AddActivityListener(listener);
 
         var mediator = CreateMediator();
+
+        // Act
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             mediator.Send(new TracingThrowingQuery(), CancellationToken.None)
         );
 
+        // Assert
         var activity = SingleFor<TracingThrowingQuery>(captured);
         Assert.Equal(ActivityStatusCode.Error, activity.Status);
 
@@ -101,6 +116,7 @@ public class MediatorActivityTracingTests
     [Fact]
     public async Task Send_NestedDispatch_ChildActivityParentsToOuterActivity()
     {
+        // Arrange
         var captured = new ConcurrentBag<Activity>();
         using var listener = CreateListener(captured);
         ActivitySource.AddActivityListener(listener);
@@ -112,8 +128,10 @@ public class MediatorActivityTracingTests
         var provider = services.BuildServiceProvider();
         var mediator = provider.GetRequiredService<IMediator>();
 
+        // Act
         await mediator.Send(new TracingOuterQuery(), CancellationToken.None);
 
+        // Assert
         var outer = SingleFor<TracingOuterQuery>(captured);
         var inner = SingleFor<TracingInnerQuery>(captured);
         Assert.Equal(outer.Id, inner.ParentId);
@@ -122,6 +140,7 @@ public class MediatorActivityTracingTests
     [Fact]
     public async Task Publish_WithListener_StartsActivityTaggedWithRequestAndHandlerTypes()
     {
+        // Arrange
         var captured = new ConcurrentBag<Activity>();
         using var listener = CreateListener(captured);
         ActivitySource.AddActivityListener(listener);
@@ -132,8 +151,10 @@ public class MediatorActivityTracingTests
         var provider = services.BuildServiceProvider();
         var mediator = provider.GetRequiredService<IMediator>();
 
+        // Act
         await mediator.Publish(new TracingNotification("hi"), CancellationToken.None);
 
+        // Assert
         var activity = SingleFor<TracingNotification>(captured);
         Assert.Contains(
             typeof(TracingNotificationHandler).FullName!,
@@ -144,24 +165,28 @@ public class MediatorActivityTracingTests
     [Fact]
     public async Task Send_Query_WithNoListener_ActivityCurrentStaysNull()
     {
-        // No ActivityListener attached to MediatorActivitySource.Name - the mechanism's built-in cheap path.
+        // Arrange - No ActivityListener attached to MediatorActivitySource.Name, the mechanism's built-in cheap path.
         var mediator = CreateMediator();
 
+        // Act
         await mediator.Send(new TracingSuccessQuery(21), CancellationToken.None);
 
+        // Assert
         Assert.Null(Activity.Current);
     }
 
     [Fact]
     public async Task Send_Query_WithNoListener_HasListenersReturnsFalse()
     {
+        // Arrange
         var mediator = CreateMediator();
 
+        // Act
         await mediator.Send(new TracingSuccessQuery(21), CancellationToken.None);
 
-        // Nothing in this test attached an ActivityListener to MediatorActivitySource.Name, so the source itself
-        // reports no listeners - the condition StartActivity checks internally to short-circuit before any
-        // allocation or string formatting happens.
+        // Assert - Nothing in this test attached an ActivityListener to MediatorActivitySource.Name, so the
+        // source itself reports no listeners - the condition StartActivity checks internally to short-circuit
+        // before any allocation or string formatting happens.
         using var probe = new ActivitySource(MediatorActivitySource.Name);
         Assert.False(probe.HasListeners());
     }
@@ -172,6 +197,7 @@ public class MediatorActivityTracingTests
         // MediatorActivitySource-based tracing lives in Mediator itself; LoggingBehavior is a separate, opt-in
         // IPipelineBehavior with its own ILogger-based mechanism. Neither shares state with the other, so
         // registering both must not suppress or alter either one's output for the same dispatch.
+        // Arrange
         var captured = new ConcurrentBag<Activity>();
         using var listener = CreateListener(captured);
         ActivitySource.AddActivityListener(listener);
@@ -189,9 +215,10 @@ public class MediatorActivityTracingTests
         var provider = services.BuildServiceProvider();
         var mediator = provider.GetRequiredService<IMediator>();
 
+        // Act
         await mediator.Send(new TracingSuccessQuery(21), CancellationToken.None);
 
-        // The Activity-based tracing still fired, tagged as normal...
+        // Assert - The Activity-based tracing still fired, tagged as normal...
         var activity = SingleFor<TracingSuccessQuery>(captured);
         Assert.Equal(typeof(TracingSuccessQueryHandler).FullName, activity.GetTagItem(MediatorActivitySource.HandlerTypeTag));
 

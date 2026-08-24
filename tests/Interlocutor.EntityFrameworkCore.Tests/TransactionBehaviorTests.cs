@@ -10,6 +10,7 @@ public class TransactionBehaviorTests
     [Fact]
     public async Task ExternalStoreRequest_SkipsTransaction_EvenThoughAlsoTransactional()
     {
+        // Arrange
         var db = new Lazy<Microsoft.EntityFrameworkCore.DbContext>(() =>
             throw new InvalidOperationException("Should not be resolved")
         );
@@ -20,6 +21,7 @@ public class TransactionBehaviorTests
         >(db);
         var handled = false;
 
+        // Act
         var result = await behavior.Handle(
             new RequestClaimingBothTransactionMarkers(1),
             () =>
@@ -30,6 +32,7 @@ public class TransactionBehaviorTests
             CancellationToken.None
         );
 
+        // Assert
         Assert.True(handled);
         Assert.Equal("done", result.Value);
     }
@@ -37,6 +40,7 @@ public class TransactionBehaviorTests
     [Fact]
     public void TRequest_Constraint_RejectsNonTransactionalRequestAtCompileTime()
     {
+        // Arrange
         // A request that implements neither marker cannot close TransactionBehavior<,,>'s TRequest parameter
         // at all - proven here via reflection (the same MakeGenericType mechanism both Microsoft DI and
         // Autofac use internally to decide whether an open generic registration applies), since the compiler
@@ -47,6 +51,7 @@ public class TransactionBehaviorTests
         var response = typeof(OperationOutcome<string, Failure>);
         var context = typeof(Microsoft.EntityFrameworkCore.DbContext);
 
+        // Act & Assert
         var ex = Assert.Throws<ArgumentException>(() =>
             openGeneric.MakeGenericType(nonTransactionalRequest, response, context)
         );

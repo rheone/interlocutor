@@ -1,6 +1,6 @@
 # Builder & Registration
 
-How to register Interlocutor with dependency injection. Handlers are discovered at compile time by a source generator - there's no runtime reflection scan - and the pipeline is empty until you explicitly compose it; nothing runs by default.
+How to register Interlocutor with dependency injection. Handlers can be discovered two ways - by scanning assemblies at runtime (`ScanAssembly` and friends), or additively by consuming compile-time source-generator output (`AddGeneratedRegistrations`) - and the pipeline is empty until you explicitly compose it; nothing runs by default.
 
 ## The Builder
 
@@ -11,14 +11,14 @@ How to register Interlocutor with dependency injection. Handlers are discovered 
 services.AddInterlocutor(builder =>
 {
     builder.ScanAssembly(typeof(Program).Assembly);
-    builder.UseRecommendedChain();
+    builder.Pipeline.UseRecommendedChain();
 });
 
 // Autofac - same builder delegate
 containerBuilder.AddInterlocutor(builder =>
 {
     builder.ScanAssembly(typeof(Program).Assembly);
-    builder.UseRecommendedChain();
+    builder.Pipeline.UseRecommendedChain();
 });
 ```
 
@@ -44,7 +44,7 @@ services.AddInterlocutor(builder =>
 
 ## Assembly Scanning
 
-Handlers, pipeline stages, and notifications are discovered by scanning one or more assemblies:
+Handlers and notifications are discovered by scanning one or more assemblies at runtime - this is a reflection-based scan (`assembly.GetTypes()`), not the source generator:
 
 ```csharp
 services.AddInterlocutor(builder =>
@@ -64,13 +64,49 @@ services.AddInterlocutor(builder =>
 });
 ```
 
-The source generator looks for:
+Each scanned assembly is inspected independently - scanning one assembly does not automatically pull in handlers from assemblies it references. If your handlers live across several assemblies, scan each one explicitly (as above), or list several with `ScanAssemblies(...)`.
+
+Runtime scanning looks for:
 
 - `IQueryHandler<TQuery, TResponse>` implementations → registered as scoped
 - `ICommandHandler<TCommand, TResponse>` implementations → registered as scoped
 - `ICommandHandler<TCommand>` (void) implementations → registered as scoped
 - `INotificationHandler<TNotification>` implementations → registered as scoped
-- `IPipelineStage<TRequest, TResponse>` implementations → auto-discovered and aggregated by `PipelineStageBehavior`
+
+`ScanAssembly`, `ScanAssemblyContaining<TMarker>`, and `ScanEntryAssembly` each take an optional `RegistrationLifetime`, applied to every handler that assembly yields; `ScanAssemblies` has a `RegistrationLifetime` overload for the same, since a `params` array forces the lifetime to come first. All default to scoped.
+
+```csharp
+builder.ScanAssembly(typeof(MyDomainModel).Assembly, RegistrationLifetime.Singleton);
+```
+
+`IPipelineStage<TRequest, TResponse>` registration is separate - stages are registered explicitly via `InterlocutorPipelineBuilder.AddStage` (`builder.Pipeline.AddStage`), not discovered by scanning.
+
+### Registering a Single Handler
+
+`AddHandler` registers one handler implementation type directly, without scanning - the manual escape hatch for handlers, mirroring `AddBehavior`'s shape:
+
+```csharp
+builder.AddHandler(typeof(CreateOrderHandler));
+builder.AddHandler(typeof(GenericAuditHandler<>), RegistrationLifetime.Singleton); // open generic
+```
+
+An `AddHandler` call takes precedence over a duplicate discovered by scanning in the same configuration - it replaces, rather than duplicates, the scanned registration for that (service type, implementation type) pair.
+
+### Registering by Predicate
+
+`AddTypeMatch` registers every candidate type found while scanning that a predicate matches, as a handler or a behavior:
+
+```csharp
+builder.ScanAssembly(typeof(Program).Assembly);
+builder.AddTypeMatch(
+    t => t.Namespace == "MyApp.Audit",
+    TypeMatchTarget.Handler,
+    except: t => t == typeof(LegacyAuditHandler),
+    name: "audit-handlers"
+);
+```
+
+Matching zero types is legal and silent by default; pass `require: true` to record that this rule must match at least one type - `ValidateOnBuild()` (below) is what actually enforces it. This is strictly additive to marker-interface-based behavior scoping (`ITransactionalRequest`, `IAuditableRequest`, `IRequiresPolicy`, `IExternalStoreRequest`) - both mechanisms work independently and simultaneously.
 
 ## Pipeline Behaviors
 
@@ -82,132 +118,118 @@ services.AddInterlocutor(builder =>
     builder.ScanAssembly(typeof(Program).Assembly);
 
     // Explicitly compose your pipeline
-    builder.AddBehavior(typeof(LoggingBehavior<,>));
-    builder.AddBehavior(typeof(AuditingBehavior<,>));
-    builder.AddBehavior(typeof(ValidationBehavior<,>));
-    builder.AddBehavior(typeof(TransactionBehavior<,>));
+    builder.Pipeline.AddLoggingBehavior();
+    builder.Pipeline.AddAuditingBehavior();
+    builder.Pipeline.AddValidationBehavior();     // no-op if Interlocutor.FluentValidation isn't referenced
+    builder.Pipeline.AddTransactionBehavior();    // no-op if neither store package is referenced
 
-    // Or use the documented recommended chain as sugar
-    // builder.UseRecommendedChain();
+    // Or use the documented recommended chain as sugar - it calls exactly these five, in this order
+    // builder.Pipeline.UseRecommendedChain();
 });
 ```
 
 See [pipeline-and-behaviors.md](pipeline-and-behaviors.md) for the full rationale of the recommended chain and how to compose your own.
 
+> [!IMPORTANT]
+> Every pipeline-composition method - `AddBehavior`, the named `Add*Behavior` methods, `UseRecommendedChain`, `AddStage`/`AddStageHost`, and the behavior-dependency `Override*` methods below other than `OverrideRequestContextAccessor` - lives on `InterlocutorPipelineBuilder`, reachable only through `InterlocutorBuilder.Pipeline`. This is a deliberate breaking change from an earlier revision where those methods lived directly on `InterlocutorBuilder`: `.Pipeline` keeps "what runs in what order" a self-contained concern, with one canonical home for its documentation, separate from `InterlocutorBuilder`'s own assembly-scanning and ambient-default responsibilities.
+
 ## Dependency Defaults
 
-Some behaviors and features need service registrations (an `IAuditSink`, a `IPolicyEvaluator`, an `IRequestContextAccessor`). The builder can register defaults, but your own registrations (made before the builder is applied) always take precedence:
+Some behaviors need service registrations of their own (an `IAuditSink`, an `IPolicyEvaluator`, an `IRequestContextAccessor`). The named `Add*Behavior` methods try-add a reasonable default for whatever that behavior depends on - your own registration, made before the builder is applied, always wins:
 
 ```csharp
-// ✅ Your registration wins - no default is registered
+// ✅ Your registration wins - the behavior's own try-add default never overrides it
 services.AddSingleton<IAuditSink, MyAuditSink>();
 services.AddInterlocutor(builder =>
 {
     builder.ScanAssembly(typeof(Program).Assembly);
-    builder.AddBehavior(typeof(AuditingBehavior<,>));
-    // MyAuditSink is used, no default is registered
-});
-
-// ✅ Builder's default is used
-services.AddInterlocutor(builder =>
-{
-    builder.ScanAssembly(typeof(Program).Assembly);
-    builder.AddBehavior(typeof(AuditingBehavior<,>));
-    builder.DefaultAuditSink = new MyAuditSink();  // Falls back if not already registered
-});
-
-// ✅ Override your own registration
-services.AddSingleton<IAuditSink, MyAuditSink>();
-services.AddInterlocutor(builder =>
-{
-    builder.ScanAssembly(typeof(Program).Assembly);
-    builder.AddBehavior(typeof(AuditingBehavior<,>));
-    builder.OverrideAuditSink = new OtherAuditSink();  // This one wins
+    builder.Pipeline.AddAuditingBehavior();
+    // MyAuditSink is used - AddAuditingBehavior's own default was never applied
 });
 ```
+
+If you need a dependency's registration to win regardless of call order - overriding even a registration made after the builder ran - use the matching `Override*` method instead of a plain service registration:
+
+```csharp
+services.AddSingleton<IAuditSink, MyAuditSink>();
+services.AddInterlocutor(builder =>
+{
+    builder.ScanAssembly(typeof(Program).Assembly);
+    builder.Pipeline.AddAuditingBehavior();
+    builder.Pipeline.OverrideAuditSink<OtherAuditSink>();  // This one wins, regardless of order
+});
+```
+
+`Pipeline.OverrideAuditSink<TSink>()`, `Pipeline.OverridePolicyEvaluator<TEvaluator>()`, and `Pipeline.OverrideOutcomeDescriber<TDescriber>()` are generic methods on `InterlocutorPipelineBuilder`, each constrained to the interface they override - there is no settable `Default*`/`Override*` property. `OverrideRequestContextAccessor<TAccessor>()` is the one exception: it stays directly on `InterlocutorBuilder` itself, since `IRequestContextAccessor` is ambient infrastructure rather than a pipeline-behavior dependency.
 
 ## Cross-Assembly Aggregation
 
-When handlers live in a separate assembly, Interlocutor still discovers them - each assembly emits its own generated handler module, and the application-level generator aggregates all of them:
-
-```
-src/
-  MyApp.Domain/
-    Handlers/
-      GetUserHandler.cs (IQueryHandler<GetUser, ...>)
-    MyApp.Domain.csproj
-
-  MyApp.Application/
-    Program.cs
-    MyApp.Application.csproj (references MyApp.Domain)
-```
-
-The generator:
-
-1. **MyApp.Domain** emits a module registering `GetUserHandler` (and any other handlers in that assembly).
-2. **MyApp.Application** (the entry point) emits a module that discovers and aggregates the module from MyApp.Domain.
-
-Aggregation follows project references transitively, so scanning the entry assembly alone is sufficient regardless of how many referenced assemblies contain handlers:
-
-```mermaid
-graph TD
-    classDef scan fill:#ADD8E6,color:#0b2530,stroke:#4a90a4,stroke-width:1px;
-    classDef generated fill:#90EE90,color:#0b2e0b,stroke:#2f9e44,stroke-width:1px;
-    classDef sink fill:#FFB6C6,color:#3a0b17,stroke:#c2185b,stroke-width:1px;
-
-    subgraph Domain["MyApp.Domain assembly"]
-        Handler["GetUserHandler<br/>IQueryHandler&lt;GetUser,...&gt;"]
-        DomainModule["Generated module:<br/>MyApp.Domain handlers"]
-        Handler --> DomainModule
-    end
-
-    subgraph App["MyApp.Application assembly (entry point)"]
-        Scan["builder.ScanEntryAssembly()"]
-        AppModule["Generated module:<br/>discovers + aggregates<br/>referenced assembly modules"]
-        Scan --> AppModule
-    end
-
-    DomainModule -.->|"project reference"| AppModule
-    AppModule --> Container["DI Container<br/>all handlers registered"]
-
-    class Scan scan
-    class DomainModule,AppModule generated
-    class Container sink
-```
-
-You just need to scan the entry assembly:
-
-```csharp
-// Program.cs (MyApp.Application)
-services.AddInterlocutor(builder =>
-{
-    builder.ScanEntryAssembly();  // Recursively discovers handlers in referenced assemblies
-    builder.UseRecommendedChain();
-});
-```
-
-No separate configuration for "also scan this assembly" - the generator follows project references automatically.
-
 > [!NOTE]
-> Runtime assembly scanning fallback - disabled by default and only active if you explicitly opt into the legacy scanning mode - exists for the plugin scenario where handler assemblies are loaded dynamically after startup. See [Trim & AOT support](trim-and-aot-support.md) for details.
+> Aggregation is explicit, not transitive. Scanning or registering one assembly never pulls in handlers from assemblies it references - each assembly that contains handlers reaches the builder its own `ScanAssembly`/`AddGeneratedRegistrations` call. This is the permanent design, not a stopgap: it keeps "what got registered" fully explainable from the builder delegate alone, without a hidden dependency-closure walk.
 
-## Startup Validation
-
-Missing handler registrations fail at startup (container build time), not on the first request:
+If handlers live in more than one assembly, scan each of them:
 
 ```csharp
-public record GetUser(int UserId) : IQuery<OperationOutcome<UserDto, NotFound>>;
-
-// If no IQueryHandler<GetUser, OperationOutcome<UserDto, NotFound>> is registered,
-// AddInterlocutor throws InvalidOperationException at startup.
+// Program.cs (MyApp.Application), handlers also live in MyApp.Domain
 services.AddInterlocutor(builder =>
 {
     builder.ScanAssembly(typeof(Program).Assembly);
-    // If GetUserHandler is missing, exception here, not on the first request
+    builder.ScanAssembly(typeof(MyApp.Domain.SomeHandler).Assembly);
+    builder.Pipeline.UseRecommendedChain();
 });
 ```
 
-This applies to every `IQuery<T>`, `ICommand<T>`, and `ICommand` discovered in scanned assemblies. If a handler type exists but no implementation is registered, you'll know before the application starts.
+If you're using the compile-time generator instead of runtime scanning, each assembly's own generated registrations module is added the same way, once per assembly:
+
+```csharp
+services.AddInterlocutor(builder =>
+{
+    builder.AddGeneratedRegistrations(Interlocutor.Generated.InterlocutorGeneratedRegistrations.Registrations);
+    // A referenced assembly's own generated module is added the same way, explicitly.
+});
+```
+
+## Inspecting What Was Registered
+
+`InterlocutorBuilder.DescribeRegistrations()` returns a structured, container-neutral `RegistrationReport` - every accumulated registration with its provenance (`Scanned`, `Explicit`, or `Matched`, plus which rule for `Matched`), every optional-package probe that found nothing (`AddValidationBehavior`/`AddTransactionBehavior` when `Interlocutor.FluentValidation`/`.EntityFrameworkCore`/`.NHibernate` aren't referenced), and, once `ValidateOnBuild()` is configured, every validation problem found. Call it at any time; `Format()`/`ToString()` render it as text:
+
+```csharp
+services.AddInterlocutor(builder =>
+{
+    builder.ScanAssembly(typeof(Program).Assembly);
+    var report = builder.DescribeRegistrations();
+    Console.WriteLine(report.Format());
+});
+```
+
+If the application has already registered `ILoggerFactory` before `AddInterlocutor()` runs, both DI packages log the formatted report automatically at that point - additive, never required.
+
+## Startup Validation
+
+`AddInterlocutor` does not validate that every discovered request type has a registered handler unless you opt in - it otherwise only accumulates and translates registrations, both for runtime scanning and for generated registrations. Three separate mechanisms exist for catching a missing handler, none of them automatic:
+
+- **A build-time diagnostic from the source generator** (`INTERLOC001`) fires as a compiler warning when a request type has no matching handler *in the same compilation* - default severity `Warning`, escalatable to a build error via `.editorconfig` (`dotnet_diagnostic.INTERLOC001.severity = error`). This only sees what the compiler sees; it can't know about handlers registered through runtime scanning of an assembly outside the current compilation.
+- **`InterlocutorBuilder.ValidateOnBuild()`**, checked entirely from the accumulated registration list - no live container needed - the moment `AddInterlocutor()` is called:
+
+  ```csharp
+  services.AddInterlocutor(builder =>
+  {
+      builder.ScanAssembly(typeof(Program).Assembly);
+      builder.ValidateOnBuild();
+  });
+  ```
+
+  Besides an unhandled query/command type, it also catches a required `AddTypeMatch` rule that matched nothing, and two registrations of the same (service type, implementation type) pair at conflicting lifetimes. Every problem found is aggregated into one `InterlocutorRegistrationValidationException`, thrown from `AddInterlocutor()` before it mutates the container at all - carrying the same `RegistrationReport` `DescribeRegistrations()` returns, with `Problems` populated.
+- **An explicit, opt-in runtime check**, made once your container is built: `IServiceProvider.ValidateHandlerRegistrations(params Assembly[])`. It reflects over the given assemblies, derives each request type's expected handler contract, and throws `InvalidOperationException` - naming every missing registration in one message - if any are absent. Unlike `ValidateOnBuild()`, this needs a live container, so it can also catch what a registration-list-only check cannot (this method's own scope is otherwise the same query/command check as `ValidateOnBuild()`).
+
+```csharp
+var provider = services.BuildServiceProvider();
+
+// Opt in explicitly - AddInterlocutor above did not do this for you.
+provider.ValidateHandlerRegistrations(typeof(Program).Assembly);
+```
+
+Call this once at startup (after building your provider/container) if you want missing-handler detection before the first request, rather than discovering it the first time a request with no handler is dispatched.
 
 ## Microsoft.Extensions.DependencyInjection
 
@@ -218,11 +240,13 @@ var builder = WebApplication.CreateBuilder();
 builder.Services.AddInterlocutor(interlocutor =>
 {
     interlocutor.ScanAssembly(typeof(Program).Assembly);
-    interlocutor.UseRecommendedChain();
+    interlocutor.Pipeline.UseRecommendedChain();
 });
 
 var app = builder.Build();
-// App starts; if handlers are missing or ambiguous, exception is thrown here
+
+// Optional - see Startup Validation above. Missing handlers are not caught automatically.
+app.Services.ValidateHandlerRegistrations(typeof(Program).Assembly);
 ```
 
 ## Autofac
@@ -236,11 +260,13 @@ var containerBuilder = new ContainerBuilder();
 containerBuilder.AddInterlocutor(interlocutor =>
 {
     interlocutor.ScanAssembly(typeof(Program).Assembly);
-    interlocutor.UseRecommendedChain();
+    interlocutor.Pipeline.UseRecommendedChain();
 });
 
 var container = containerBuilder.Build();
-// App starts; if handlers are missing or ambiguous, exception is thrown here
+
+// Optional - see Startup Validation above. Missing handlers are not caught automatically.
+container.Resolve<IServiceProvider>().ValidateHandlerRegistrations(typeof(Program).Assembly);
 ```
 
 The builder produces container-neutral `InterlocutorRegistration` records. Both Microsoft DI and Autofac extensions translate those into their respective service descriptors / module registrations.
@@ -256,14 +282,14 @@ See [mediator-lifetimes-and-scope.md](mediator-lifetimes-and-scope.md) for the r
 
 ## Verifying Your Registration
 
-After registration, verify handlers can be resolved:
+Missing handlers are **not** caught automatically at container-build time (see Startup Validation above) - either call `ValidateHandlerRegistrations` explicitly, or verify by resolving:
 
 ```csharp
 using var scope = serviceProvider.CreateScope();
 var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-// If a handler is missing, GetRequiredService throws before you dispatch
+// If a handler is missing, GetRequiredService throws when you actually dispatch it
 var result = await mediator.Send(new GetUser(1), cancellationToken);
 ```
 
-This is optional - missing handlers already failed at startup. But it's a sanity check if you're debugging registration issues.
+`ValidateHandlerRegistrations` is the cheaper option if you want to know about *every* missing handler at once, before the first request - resolving `IMediator` and dispatching only surfaces one missing handler at a time, on first use.

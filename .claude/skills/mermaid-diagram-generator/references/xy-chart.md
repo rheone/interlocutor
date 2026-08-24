@@ -9,6 +9,10 @@ source: https://mermaid.js.org/syntax/xyChart.html
 last_verified: 2026-08-09
 plugin_required: false
 gitlab_compatible: true
+github_compatible: true
+vscode_compatible: unknown
+obsidian_compatible: unknown
+notion_compatible: unknown
 ---
 
 # XY Chart
@@ -71,9 +75,9 @@ xychart
     x-axis "Month" [jan, feb, mar, apr, may, jun]
     y-axis "Downloads (k)" 0 --> 120
     bar [15, 28, 34, 41, 52, 60]
-    line [20 "Beta", 35, 48, 55 "GA", 90, 110 "v2.0"]
+    line [20, 35, 48, 55, 90, 110]
 ```
-A bar series (monthly download counts) and a line series (a running trend) share one chart; the line series labels three of its six points (`Beta`, `GA`, `v2.0`) while leaving the rest unlabeled, and a frontmatter config block sets custom dimensions, a two-color palette, a custom title color, outside-the-bar data labels, and nested `xAxis`/`yAxis` sub-config under `xychart:`.
+A bar series (monthly download counts) and a line series (a running trend) share one chart, and a frontmatter config block sets custom dimensions, a two-color palette, a custom title color, outside-the-bar data labels, and nested `xAxis`/`yAxis` sub-config under `xychart:`. Note the line series deliberately uses plain values - per-point quoted labels (e.g. `20 "Beta"`) are a Mermaid >= 11.16.0 feature and are omitted here so the example stays portable (see "Common pitfalls").
 
 ## Escaping & special characters
 - A title, axis title, or category value that is a single word needs no quotes; any value containing a space must be wrapped in double quotes, or the parser will misread the extra words as separate tokens.
@@ -87,19 +91,12 @@ A bar series (monthly download counts) and a line series (a running trend) share
 - [ ] Are multi-word titles, axis titles, and category labels wrapped in double quotes?
 - [ ] Is the y-axis strictly numeric - categorical values are only valid on the x-axis?
 - [ ] If relying on per-point line labels, are they only on a `line` series (they render but are silently dropped on `bar`)?
+- [ ] Are per-point line labels avoided unless the target renderer is confirmed Mermaid >= 11.16.0? On older versions (e.g. GitLab's Mermaid v10 pin) `line [20 "Beta", ...]` is a hard parse error (`Expecting 'SQUARE_BRACES_END', 'COMMA', got 'STR'`), not a silent no-op - use plain values to stay portable.
 - [ ] Is `showDataLabel` (and `showDataLabelOutsideBar` if used) actually turned on in config - data labels are off by default?
 - [ ] Does `plotColorPalette` list enough colors for every series, in the order series are declared?
 
 ## Beta/experimental caveats
-XY Chart requires Mermaid v10.6.0 or later; this base version was not stated on the doc page itself and is cross-referenced from the mermaid-js/mermaid GitHub release notes ("Add new chart xychart"). Two features layered on afterward are version-gated and should be called out explicitly when relied on: bar data labels (`showDataLabel`/`showDataLabelOutsideBar`) require v11.14.0+, and per-point line labels require v11.16.0+ - using either against an older pinned Mermaid version will silently do nothing rather than error. Note also that the canonical keyword confirmed on the current doc page is plain `xychart`, not `xychart-beta` (the `-beta` form is still accepted as a legacy alias per the diagram detector in the mermaid-js/mermaid source, but isn't what the docs themselves use).
-
-## Platform compatibility
-
-**GitLab:** Likely compatible - GitLab.com documents supporting Mermaid version 10 (checked 2026-08-15, [source](https://docs.gitlab.com/user/markdown/#diagrams-and-flowcharts)), and this type was introduced in v10.6.0, at or before that line. GitLab's pinned version moves independently of this skill - reconfirm against the source before depending on it for anything long-lived.
-
-**GitHub:** Unconfirmed either way - GitHub's own docs don't publish an exhaustive list of supported Mermaid diagram types (they name "flowcharts, sequence diagrams, pie charts and more" as examples, not a complete list), and community reports on which newer types render are inconsistent/contradictory. Don't promise this type renders on GitHub without testing it there directly (e.g. a scratch gist or PR comment).
-
-**VS Code / Obsidian / Notion / similar:** Depends entirely on that specific tool's own bundled or extension-provided Mermaid version, which updates independently of this skill's pin and of every other tool in this list - there is no single answer here. As a beta diagram type, editor/notes-app Mermaid bundles need to be relatively recent to support it - more likely to be missing on tools that update infrequently. Confirm in the specific target tool before relying on this type there.
+XY Chart requires Mermaid v10.6.0 or later; this base version was not stated on the doc page itself and is cross-referenced from the mermaid-js/mermaid GitHub release notes ("Add new chart xychart"). Two features layered on afterward are version-gated and should be called out explicitly when relied on: bar data labels (`showDataLabel`/`showDataLabelOutsideBar`) require v11.14.0+ and silently do nothing against an older pinned Mermaid version, while per-point line labels require v11.16.0+ and fail with a hard parse error (`Expecting 'SQUARE_BRACES_END', 'COMMA', got 'STR'`) rather than degrading gracefully - so default to plain values and only emit `20 "Beta"` when the user confirms the target renderer is 11.16.0+. Note also that the canonical keyword confirmed on the current doc page is plain `xychart`, not `xychart-beta` (the `-beta` form is still accepted as a legacy alias per the diagram detector in the mermaid-js/mermaid source, but isn't what the docs themselves use).
 
 ## Further reading
 - https://mermaid.js.org/syntax/xyChart.html

@@ -37,7 +37,7 @@ services.AddInterlocutor(builder =>
     // This example uses the library's documented recommended chain:
     // Logging → Auditing → Authorization → Validation → Transaction
     // (See documentation/pipeline-and-behaviors.md for the full rationale.)
-    builder.UseRecommendedChain();
+    builder.Pipeline.UseRecommendedChain();
 });
 ```
 
@@ -84,26 +84,35 @@ var message = result switch
 
 | Package | Purpose |
 |---------|---------|
-| `Interlocutor.CommonKernel` | Result types: `OperationOutcome<...>` unions and failure cases (`Success`, `NotFound`, `Forbidden`, `Conflict`, `ValidationError`, `Failure`). Zero dependencies. |
-| `Interlocutor.Abstractions` | Core: `IMediator`, `ISender`, `IPublisher`; handler interfaces; pipeline behaviors (`LoggingBehavior`, `AuthorizationBehavior`, `AuditingBehavior`); marker interfaces for opt-in concerns. |
+| `Interlocutor.CommonKernel` | Result types. `IOperationOutcome` is the extension point every handler response implements - see [messages-and-result-types.md](documentation/messages-and-result-types.md) for the full walkthrough. `OperationOutcome<...>` unions and their failure cases (`Success`, `NotFound`, `Forbidden`, `Conflict`, `ValidationError`, `Failure`) are the library's own built-in implementation of it. Zero dependencies. |
+| `Interlocutor.Abstractions` | Core: `IMediator`, `ISender`, `IPublisher`; handler interfaces; pipeline behaviors (`LoggingBehavior`, `AuthorizationBehavior`, `AuditingBehavior`, plus the opt-in `CancellationBehavior`, `TimeoutBehavior`, and `RateLimitedBehavior`, which have no prescribed position in the chain); marker interfaces for opt-in concerns. |
+| `Interlocutor.DependencyInjection.Abstractions` | Container-neutral registration model shared by the two DI packages below - `InterlocutorBuilder`, `InterlocutorPipelineBuilder`, `RegistrationReport`. Pulled in transitively; not referenced directly by most consumers. |
 | `Interlocutor.DependencyInjection.Microsoft` | Builder-based registration for Microsoft.Extensions.DependencyInjection. |
 | `Interlocutor.DependencyInjection.Autofac` | Builder-based registration for Autofac. |
 | `Interlocutor.AspNetCore` | `ToActionResult()` - maps result types to HTTP responses. ASP.NET Core only. |
 | `Interlocutor.EntityFrameworkCore` | `TransactionBehavior` for EF Core `DbContext`. |
 | `Interlocutor.NHibernate` | `TransactionBehavior` for NHibernate `ISession`. |
 | `Interlocutor.FluentValidation` | `ValidationBehavior` - automatic request validation via FluentValidation. |
+| `Interlocutor.Persistence.Abstractions` | Optional, opt-in `IUnitOfWork`/`IDomainRepository<TEntity, TKey>` persistence abstraction - see [persistence-abstraction.md](documentation/persistence-abstraction.md). Zero ORM dependency. |
+| `Interlocutor.Persistence.EntityFrameworkCore` | EF Core implementation of the persistence abstraction. |
+| `Interlocutor.Persistence.NHibernate` | NHibernate implementation of the persistence abstraction. |
+| `Interlocutor.Generator` | The Roslyn incremental source generator behind compile-time handler discovery - see [handler-selection-and-dispatch.md](documentation/handler-selection-and-dispatch.md). A `PrivateAssets="all"` analyzer reference pulled in by `Interlocutor.Abstractions`; it never ships in your build output. |
 
-`Interlocutor.CommonKernel` has zero dependencies; every other package builds on `Interlocutor.Abstractions`, directly or transitively:
+`Interlocutor.CommonKernel` has zero dependencies; every other package builds on `Interlocutor.Abstractions`, directly or transitively. `Interlocutor.Generator` rides along as an analyzer on `Interlocutor.Abstractions` rather than a normal dependency edge, so it's omitted below. The `Interlocutor.Persistence.*` packages build on `Interlocutor.Persistence.Abstractions` instead, which itself builds only on `Interlocutor.Abstractions` - independently adoptable from `Interlocutor.EntityFrameworkCore`/`Interlocutor.NHibernate`:
 
 ```mermaid
 flowchart TD
     CommonKernel["Interlocutor.CommonKernel<br/>(zero dependencies)"] --> Abstractions["Interlocutor.Abstractions"]
+    Abstractions --> DIAbstractions["Interlocutor.DependencyInjection.Abstractions"]
+    DIAbstractions --> DIMicrosoft["Interlocutor.DependencyInjection.Microsoft"]
+    DIAbstractions --> DIAutofac["Interlocutor.DependencyInjection.Autofac"]
     Abstractions --> AspNetCore["Interlocutor.AspNetCore"]
-    Abstractions --> DIMicrosoft["Interlocutor.DependencyInjection.Microsoft"]
-    Abstractions --> DIAutofac["Interlocutor.DependencyInjection.Autofac"]
     Abstractions --> EFCore["Interlocutor.EntityFrameworkCore"]
     Abstractions --> NHibernate["Interlocutor.NHibernate"]
     Abstractions --> FluentValidation["Interlocutor.FluentValidation"]
+    Abstractions --> PersistenceAbstractions["Interlocutor.Persistence.Abstractions"]
+    PersistenceAbstractions --> PersistenceEFCore["Interlocutor.Persistence.EntityFrameworkCore"]
+    PersistenceAbstractions --> PersistenceNHibernate["Interlocutor.Persistence.NHibernate"]
 ```
 
 ## Deeper dive

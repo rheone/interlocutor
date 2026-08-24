@@ -4,10 +4,10 @@
   </PropertyGroup>
   <!-- Roslynator -->
   <ItemGroup>
-    <PackageVersion Include="Roslynator.Analyzers" Version="4.16.0" />
-    <PackageVersion Include="Roslynator.CodeAnalysis.Analyzers" Version="4.16.0" />
+    <PackageVersion Include="Roslynator.Analyzers" Version="5.0.0" />
+    <PackageVersion Include="Roslynator.CodeAnalysis.Analyzers" Version="5.0.0" />
     <PackageVersion Include="Roslynator.CodeFixes" Version="4.15.0" />
-    <PackageVersion Include="Roslynator.Formatting.Analyzers" Version="4.16.0" />
+    <PackageVersion Include="Roslynator.Formatting.Analyzers" Version="5.0.0" />
     <PackageVersion Include="Roslynator.Refactorings" Version="4.15.0" />
   </ItemGroup>
   <!-- StyleCop -->
@@ -20,12 +20,24 @@
   <ItemGroup>
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="11.0.0-preview.6.26359.118" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="11.0.0-preview.6.26359.118" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="11.0.0-preview.6.26359.118" />
-    <PackageVersion Include="Microsoft.Extensions.Logging" Version="11.0.0-preview.6.26359.118" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="11.0.0-preview.7.26381.103" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="11.0.0-preview.7.26381.103" />
+    <!-- Test-only: in-memory ASP.NET Core test host for AspNetCore.Tests' manual sanity-check host. -->
+    <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="11.0.0-preview.7.26381.103" />
   </ItemGroup>
   <!-- Entity Framework Core -->
   <ItemGroup>
-    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="11.0.0-preview.6.26359.118" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="11.0.0-preview.7.26381.103" />
+    <!-- An in-memory Sqlite database gives both TransactionBehavior tests (Interlocutor.EntityFrameworkCore.Tests)
+         and the sample application (Interlocutor.Sample.Handlers) a real ADO.NET transaction to commit/roll
+         back against, which the relational-agnostic base package alone cannot provide. -->
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="11.0.0-preview.7.26381.103" />
+    <!-- Design-time only (PrivateAssets="all" everywhere it's referenced): generates the sample's compiled
+         model (dotnet ef dbcontext optimize). EF Core's own model-validation pass reflectively constructs a
+         value comparer per property type via Activator.CreateInstance, which trimming removes when nothing
+         else statically references it - a compiled model bakes that step in at build time instead. See
+         documentation/trim-and-aot-support.md's "Known limitations". -->
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="11.0.0-preview.7.26381.103" />
   </ItemGroup>
   <!-- FluentValidation -->
   <ItemGroup>
@@ -42,9 +54,9 @@
   </ItemGroup>
   <!-- xUnit v3 + MTP test packages -->
   <ItemGroup>
-    <PackageVersion Include="xunit.v3" Version="3.2.2" />
-    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
-    <PackageVersion Include="Microsoft.Testing.Platform" Version="1.9.1" />
+    <PackageVersion Include="xunit.v3" Version="4.0.0" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0" />
+    <PackageVersion Include="Microsoft.Testing.Platform" Version="2.3.3" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
     <PackageVersion Include="coverlet.collector" Version="10.0.1" />
   </ItemGroup>
@@ -59,8 +71,8 @@
   </ItemGroup>
   <!-- Roslyn (source generator) -->
   <ItemGroup>
-    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.14.0" />
-    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="5.9.0" />
   </ItemGroup>
   <!-- Source Link -->
   <ItemGroup>

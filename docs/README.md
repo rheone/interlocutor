@@ -31,8 +31,15 @@ Immutable once accepted - a changed decision gets a new ADR that supersedes the 
 
 **Handler discovery & dispatch** - how a request finds its handler
 - [ADR-0003](adr/0003-mediator-as-service-locator.md) - Mediator as Service Locator - No Internal Handler Registry: *(superseded by [ADR-0008](adr/0008-compile-time-handler-discovery.md))* the original runtime-resolution design.
-- [ADR-0008](adr/0008-compile-time-handler-discovery.md) - Compile-Time Handler Discovery via Source Generator: a Roslyn generator emits registration and dispatch code, replacing runtime reflection - enables build-time diagnostics and AOT/trim compatibility.
+- [ADR-0008](adr/0008-compile-time-handler-discovery.md) - Compile-Time Handler Discovery via Source Generator: a Roslyn generator emits registration and dispatch code, replacing runtime reflection - enables build-time diagnostics and trim compatibility. *(its AOT half corrected by [ADR-0016](adr/0016-trim-compatible-not-aot-compatible.md))*
 - [ADR-0010](adr/0010-dispatch-scope-fan-out-open-generics-ambiguity.md) - Dispatch Scope - Notification Fan-Out, Open Generics, and Build-Error Ambiguity: closed handlers beat open generic ones, ambiguous matches fail the build, and notification fan-out is contravariant (deliberately different from query/command dispatch).
+
+**Deployment: trimming & Native AOT** - what publish modes the library actually supports
+- [ADR-0016](adr/0016-trim-compatible-not-aot-compatible.md) - Trim-Compatible Now, Native AOT Deferred: the library is trim-compatible and verified working under a trimmed publish on every supported container, but not Native AOT - closing an open-generic pipeline behavior over a value-type response needs a JIT that Native AOT does not have. Documents the evidence, the rejected reference-type-outcome fix, and the opt-in-catalog design a future Native AOT effort should build toward rather than replacing today's mechanism outright.
+
+**DI registration & configuration** - how the builder decides what gets registered
+- [ADR-0014](adr/0014-di-builder-matching-registration-and-build-validation.md) - DI Builder Extension - Explicit Handler Lifetime, Type-Matching Registration, and Opt-In Build Validation: scan methods gain an explicit lifetime parameter, a new type-matching mechanism registers handlers/behaviors by predicate rather than only by contract interface, and an opt-in `ValidateOnBuild()` checks the registration list itself and reports one aggregated failure instead of a first-failure-only exception.
+- [ADR-0015](adr/0015-pipeline-composition-behind-interlocutorpipelinebuilder.md) - Pipeline Composition Lives Behind `InterlocutorBuilder.Pipeline`, Not On `InterlocutorBuilder` Itself: every pipeline-composition method moves exclusively onto `InterlocutorPipelineBuilder`, reachable only via the new `.Pipeline` property, ending the doubled documentation and duplicated test matrix left by ticket 40's forwarding-method shape.
 
 **Mediator interface & lifecycle** - the shape and lifetime of the mediator itself
 - [ADR-0006](adr/0006-interface-segregation-mediator.md) - Interface Segregation for Mediator: `ISender`/`IPublisher`/`IMediator` are split so a consumer depends only on the capability it actually uses.

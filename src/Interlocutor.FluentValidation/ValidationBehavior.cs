@@ -1,7 +1,7 @@
 namespace Interlocutor.FluentValidation;
 
-using System.Reflection;
 using Interlocutor.Abstractions.Pipeline;
+using Interlocutor.Abstractions.Pipeline.Cases;
 using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 
@@ -22,21 +22,18 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// <para>
 /// <typeparamref name="TResponse"/> is constrained only to <see cref="IOperationOutcome"/>, not decomposed
 /// into a success-type parameter with <see cref="ValidationErrors"/> pinned as the failure case - for exactly
-/// the reason, and via exactly the same <see cref="UnionCaseFactory"/> mechanism,
-/// <see cref="AuthorizationBehavior{TRequest, TResponse}"/>'s remarks describe in full: the decomposed shape
-/// broke Microsoft.Extensions.DependencyInjection's open-generic resolution outright.
+/// the reason <see cref="AuthorizationBehavior{TRequest, TResponse}"/>'s remarks describe in full: the
+/// decomposed shape broke Microsoft.Extensions.DependencyInjection's open-generic resolution outright.
+/// Constructing the <see cref="ValidationErrors"/> case of an unconstrained <typeparamref name="TResponse"/>
+/// is delegated to an injected <see cref="IOutcomeCaseRegistry"/> rather than performed reflectively inline,
+/// so a consumer with a hand-rolled, non-union <see cref="IOperationOutcome"/> implementation can register a
+/// custom factory for it instead of being limited to compiler-generated unions.
 /// </para>
 /// </remarks>
 public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TResponse : IOperationOutcome
 {
-    // Resolved once per closed TResponse - see AuthorizationBehavior's identical field for the full
-    // rationale. Null when TResponse has no constructor accepting a single ValidationErrors argument.
-    private static readonly ConstructorInfo? ValidationErrorsConstructor = UnionCaseFactory.FindCaseConstructor<
-        TResponse,
-        ValidationErrors
-    >();
-
+    private readonly IOutcomeCaseRegistry caseRegistry;
     private readonly IEnumerable<global::FluentValidation.IValidator<TRequest>> validators;
 
     /// <summary>
@@ -45,9 +42,17 @@ public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<
     /// <param name="validators">The set of FluentValidation validators to validate the request.
     /// If this collection is empty, validation is skipped and the request is forwarded directly
     /// to the next pipeline stage.</param>
-    public ValidationBehavior(IEnumerable<global::FluentValidation.IValidator<TRequest>> validators)
+    /// <param name="caseRegistry">
+    /// Constructs the <see cref="ValidationErrors"/> case of <typeparamref name="TResponse"/> when validation
+    /// fails.
+    /// </param>
+    public ValidationBehavior(
+        IEnumerable<global::FluentValidation.IValidator<TRequest>> validators,
+        IOutcomeCaseRegistry caseRegistry
+    )
     {
         this.validators = validators;
+        this.caseRegistry = caseRegistry;
     }
 
     /// <summary>
@@ -91,20 +96,14 @@ public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<
 
         // Validation failed - create ValidationErrors aggregate with all messages (de-duplicated)
         // and return immediately without invoking the handler.
-        return ConstructValidationErrorsResponse(new ValidationErrors(errorMessages));
+        return this.ConstructValidationErrorsResponse(new ValidationErrors(errorMessages));
     }
 
-    private static TResponse ConstructValidationErrorsResponse(ValidationErrors errors)
-    {
-        if (ValidationErrorsConstructor is null)
-        {
-            throw new InvalidOperationException(
-                $"ValidationBehavior<{typeof(TRequest).Name}, {typeof(TResponse).Name}> found validation errors, "
-                    + $"but {typeof(TResponse).Name} has no {nameof(ValidationErrors)} case to construct. Use a "
-                    + $"response type with a {nameof(ValidationErrors)} case."
-            );
-        }
-
-        return UnionCaseFactory.Invoke<TResponse, ValidationErrors>(ValidationErrorsConstructor, errors);
-    }
+    private TResponse ConstructValidationErrorsResponse(ValidationErrors errors) =>
+        this.caseRegistry.ConstructOrThrow<TResponse, ValidationErrors>(
+            errors,
+            $"ValidationBehavior<{typeof(TRequest).Name}, {typeof(TResponse).Name}>",
+            "found validation errors",
+            $"Use a response type with a {nameof(ValidationErrors)} case"
+        );
 }

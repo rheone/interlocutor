@@ -1,0 +1,45 @@
+name: publish
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        working-directory: src
+        run: dotnet restore --locked-mode
+
+      - name: Build
+        working-directory: src
+        run: dotnet build --no-restore -c Release
+
+      - name: Test
+        working-directory: src
+        run: dotnet test --no-build -c Release
+
+      - name: Pack
+        working-directory: src
+        run: dotnet pack -c Release -o ../artifacts
+
+      # Smoke test the actual package before it ever reaches NuGet.org --
+      # this is the whole point of having smoke tests at all.
+      - name: Smoke test the packed artifact
+        if: ${{ hashFiles('smoketests/**') != '' }}
+        run: |
+          mkdir -p smoketests/{{LibraryName}}.SmokeTests/feed
+          cp artifacts/*.nupkg smoketests/{{LibraryName}}.SmokeTests/feed/
+          cd smoketests/{{LibraryName}}.SmokeTests
+          bash run-smoke-tests.sh
+
+      - name: Push to NuGet.org
+        run: dotnet nuget push artifacts/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate

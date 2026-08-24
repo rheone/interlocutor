@@ -1,3 +1,5 @@
+> **Status: done** - merged in `a05405b` (tickets 28-32 landed together in this commit).
+
 ## Labels
 
 ready-for-agent

@@ -4,7 +4,7 @@ When reporting information to me, be extremely concise and sacrifice grammar for
 
 ## Conventions
 
-- Source files should contain only one top-level public type, and the file name should match the type name. The exception is simple record or struct types with the name name, which may include their custom member implementations (such as equality, formatting, or operator overrides) in the same file.
+- Source files should contain only one top-level public type, and the file name should match the type name. The exception is simple record or struct types with the name name, which may include their custom member implementations (such as equality, formatting, or operator overrides) in the same file. For member ordering, partial-class splitting, generic-arity file naming, and region grouping, use the `csharp-code-organization` skill.
 
 ## Common Practices
 

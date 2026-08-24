@@ -69,8 +69,8 @@ repos:
         args:
           # Ignore common false positives and API names
           # (AtLeast/AtMost are Moq/JustMock call-verification methods,
-          # statics is a common .NET term).
-          - --ignore-words-list=fo,ect,atleast,atmost,statics
+          # statics is a common .NET term, ShouldBe is a Shouldly assertion method).
+          - --ignore-words-list=fo,ect,atleast,atmost,statics,shouldbe
 
           # Also check filenames.
           - --check-filenames

@@ -1,7 +1,7 @@
 namespace Interlocutor.Abstractions.Pipeline;
 
-using System.Reflection;
 using Interlocutor.Abstractions.Markers;
+using Interlocutor.Abstractions.Pipeline.Cases;
 using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 
@@ -37,14 +37,12 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </para>
 /// <para>
 /// The trade-off: constructing the <see cref="Forbidden"/> case of an unconstrained <typeparamref name="TResponse"/>
-/// can't be done at compile time, so it's done reflectively - via the constructor the C# union feature
-/// generates for each case type (<c>TResponse</c>'s constructor accepting a <see cref="Forbidden"/>), resolved
-/// once per closed <typeparamref name="TResponse"/> and cached in a <see langword="static readonly"/> field (a
-/// distinct field per generic instantiation, the same mechanism this project already uses elsewhere for
-/// resolving generic members once - see <see cref="Interlocutor.Abstractions.Mediator"/>'s runtime-typed-dispatch caches). A
-/// <typeparamref name="TResponse"/> with no <see cref="Forbidden"/> case throws a clear, named exception the
-/// first time authorization is actually denied for it - a configuration mistake (pairing
-/// <see cref="IRequiresPolicy"/> with a response shape that can't express denial), not a silent failure.
+/// can't be done at compile time, so it's delegated to <see cref="IOutcomeCaseRegistry"/> - the same
+/// construction/extraction extension point every hand-rolled, non-union <see cref="IOperationOutcome"/>
+/// implementation participates in. A <typeparamref name="TResponse"/> with no <see cref="Forbidden"/> case
+/// throws a clear, named exception the first time authorization is actually denied for it - a configuration
+/// mistake (pairing <see cref="IRequiresPolicy"/> with a response shape that can't express denial), not a
+/// silent failure.
 /// </para>
 /// <para>
 /// Because <typeparamref name="TRequest"/> is constrained to <see cref="IRequiresPolicy"/>, both Microsoft
@@ -52,19 +50,11 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// - the container never even attempts to construct this behavior for it.
 /// </para>
 /// </remarks>
-public class AuthorizationBehavior<TRequest, TResponse>(IPolicyEvaluator policyEvaluator)
+public class AuthorizationBehavior<TRequest, TResponse>(IPolicyEvaluator policyEvaluator, IOutcomeCaseRegistry caseRegistry)
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequiresPolicy
     where TResponse : IOperationOutcome
 {
-    // Resolved once per closed TResponse - C# generates a distinct static field per generic instantiation,
-    // so this costs nothing beyond the first Handle call for a given TResponse. Null when TResponse has no
-    // constructor accepting a single Forbidden argument, i.e. no Forbidden case at all.
-    private static readonly ConstructorInfo? ForbiddenConstructor = UnionCaseFactory.FindCaseConstructor<
-        TResponse,
-        Forbidden
-    >();
-
     /// <summary>
     /// Handles the request, evaluating the authorization policy and short-circuiting with <see cref="Forbidden"/>
     /// if it fails.
@@ -92,17 +82,11 @@ public class AuthorizationBehavior<TRequest, TResponse>(IPolicyEvaluator policyE
         return await next();
     }
 
-    private static TResponse ConstructForbiddenResponse(Forbidden forbidden)
-    {
-        if (ForbiddenConstructor is null)
-        {
-            throw new InvalidOperationException(
-                $"AuthorizationBehavior<{typeof(TRequest).Name}, {typeof(TResponse).Name}> denied a request, "
-                    + $"but {typeof(TResponse).Name} has no {nameof(Forbidden)} case to construct. A request "
-                    + $"implementing {nameof(IRequiresPolicy)} must use a response type with a {nameof(Forbidden)} case."
-            );
-        }
-
-        return UnionCaseFactory.Invoke<TResponse, Forbidden>(ForbiddenConstructor, forbidden);
-    }
+    private TResponse ConstructForbiddenResponse(Forbidden forbidden) =>
+        caseRegistry.ConstructOrThrow<TResponse, Forbidden>(
+            forbidden,
+            $"AuthorizationBehavior<{typeof(TRequest).Name}, {typeof(TResponse).Name}>",
+            "denied a request",
+            $"A request implementing {nameof(IRequiresPolicy)} must use a response type with a {nameof(Forbidden)} case"
+        );
 }

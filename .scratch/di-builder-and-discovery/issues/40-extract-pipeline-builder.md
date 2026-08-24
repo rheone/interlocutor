@@ -1,3 +1,5 @@
+> **Status: done** - merged in `a7c096b` (extract pipeline composition into dedicated builder).
+
 ## Labels
 
 ready-for-agent
@@ -17,11 +19,18 @@ From the developer's perspective:
 
 ## Acceptance criteria
 
-- [ ] Pipeline composition (behaviors, stages, recommended chain) is implemented in a dedicated builder type, separate from `InterlocutorBuilder`'s discovery/defaults responsibilities
-- [ ] Every existing `InterlocutorBuilder` pipeline method signature remains source-compatible - no consumer code (including `documentation/` examples) needs to change
-- [ ] Existing tests for `InterlocutorBuilder`'s pipeline behavior continue to pass, plus new tests for the extracted type in isolation
-- [ ] `documentation/builder-and-registration.md` reflects the change (or explicitly notes the public surface is unchanged)
-- [ ] `dotnet build` and `dotnet test` pass for the whole solution
+- [x] Pipeline composition (behaviors, stages, recommended chain) is implemented in a dedicated builder type, separate from `InterlocutorBuilder`'s discovery/defaults responsibilities
+- [x] Every existing `InterlocutorBuilder` pipeline method signature remains source-compatible - no consumer code (including `documentation/` examples) needs to change
+- [x] Existing tests for `InterlocutorBuilder`'s pipeline behavior continue to pass, plus new tests for the extracted type in isolation
+- [x] `documentation/builder-and-registration.md` reflects the change (or explicitly notes the public surface is unchanged)
+- [x] `dotnet build` and `dotnet test` pass for the whole solution
+
+## Notes
+
+- The new type is `Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder` (`src/Interlocutor.DependencyInjection.Abstractions/InterlocutorPipelineBuilder.cs`). It owns the actual `_behaviors`/`_stages`/`_stageFactories` list state; `InterlocutorBuilder` holds a private `InterlocutorPipelineBuilder` instance and every pipeline method on `InterlocutorBuilder` is now a thin wrapper delegating to it.
+- **Ticket drift resolved**: by the time this ticket was picked up, `InterlocutorBuilder` had grown three more pipeline methods beyond the ticket's original enumeration - `AddCancellationBehavior`, `AddTimeoutBehavior`, `AddRateLimitedBehavior` - plus their `Override*` siblings `OverrideTimeoutPolicy`, `OverrideRateLimiter`, `OverrideOutcomeCaseRegistry`. All three `Add*Behavior` methods moved to `InterlocutorPipelineBuilder` alongside the rest (same treatment as the ticket's original six). The three `Override*` methods were judged to belong on `InterlocutorPipelineBuilder` too, not `InterlocutorBuilder`: unlike `OverrideAuditSink`/`OverridePolicyEvaluator`/`OverrideRequestContextAccessor`/`OverrideOutcomeDescriber` (which override infrastructure defaults used broadly - request context, logging/auditing description), `OverrideTimeoutPolicy`/`OverrideRateLimiter`/`OverrideOutcomeCaseRegistry` each override a dependency of one specific pipeline behavior (`TimeoutBehavior`, `RateLimitedBehavior`, and the outcome-case-registry consumers respectively), so they read as pipeline concerns, not general infrastructure. `InterlocutorBuilder`'s own copies of these three methods still exist and keep compiling exactly as before - they now delegate to the pipeline builder's versions.
+- The two builders share one `Dictionary<Type, InterlocutorRegistration>` defaults instance (constructed by `InterlocutorBuilder`, passed to `InterlocutorPipelineBuilder` via an `internal` constructor) so that a pipeline default an `Add*Behavior` call try-adds and an infrastructure `Override*` call on `InterlocutorBuilder` targeting the same service type are always the same dictionary entry, regardless of call order - preserving the existing "override wins regardless of order" tests without change.
+- New isolated tests: `tests/Interlocutor.DependencyInjection.Abstractions.Tests/InterlocutorPipelineBuilderTests.cs`, constructing `InterlocutorPipelineBuilder` directly (not through `InterlocutorBuilder`).
 
 ## Blocked by
 

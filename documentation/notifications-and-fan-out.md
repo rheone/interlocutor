@@ -67,29 +67,35 @@ await mediator.Publish(new OrderShipped(123, "TRACK-456"));
 
 ## Execution Order
 
-Handlers run in **unspecified order by default**. If a specific order is required, use relative ordering attributes:
+Handlers run in **unspecified order** by default - no test in this repository, and none of your own, should depend on the order two independent handlers happen to run in.
+
+> [!IMPORTANT]
+> Keep notification handlers independent of one another. If one handler's outcome must influence another's, that's a signal the dependent step belongs in the originating command handler (or a follow-up command) rather than in a second notification handler.
+
+For the rare genuine ordering need, declare it relative to another handler rather than reaching for a numeric priority:
 
 ```csharp
-// Run after the email handler
-[RunAfter(typeof(OrderShippedEmailHandler))]
-public class OrderShippedSmsHandler : INotificationHandler<OrderShipped>
+public class ReserveInventoryHandler : INotificationHandler<OrderCreated>
 {
-    /* ... */
+    public async Task Handle(OrderCreated notification, CancellationToken ct) =>
+        await this.inventory.ReserveAsync(notification.OrderId, ct);
 }
 
-// Run before the SMS handler
-[RunBefore(typeof(OrderShippedSmsHandler))]
-public class OrderShippedWebhookHandler : INotificationHandler<OrderShipped>
+// Must run after inventory is reserved - a compiler-checked reference to the handler type, not a magic number.
+[NotificationHandlerRunAfter(typeof(ReserveInventoryHandler))]
+public class SendConfirmationEmailHandler : INotificationHandler<OrderCreated>
 {
-    /* ... */
+    public async Task Handle(OrderCreated notification, CancellationToken ct) =>
+        await this.email.SendConfirmationAsync(notification.OrderId, ct);
 }
-
-// Publish - handlers run in: Email → Webhook → SMS (per the attributes above)
-await mediator.Publish(new OrderShipped(123, "TRACK-456"));
 ```
 
-> [!TIP]
-> Reach for these attributes only when you genuinely need one handler to run before another. By default, keep handlers independent and unordered.
+`NotificationHandlerRunBeforeAttribute` is the mirror image - declare it on the predecessor instead of the successor when that reads more naturally at the call site. Both are compiler-checked - the named type must exist and be a discovered `INotificationHandler<>` implementation, or the build fails - topologically sorted at build time, and apply more than once to declare more than one predecessor/successor. Handlers with no ordering attribute, and named by none, stay unranked and keep their otherwise-unspecified order.
+
+> [!WARNING]
+> A cycle in the declared run-after/run-before relationships is a build error (`INTERLOC004`), naming every handler type involved - there is no runtime fallback for an order that cannot be computed.
+
+Only reach for this when two specific handlers genuinely cannot be made independent - it is an escape hatch, not the default way to sequence notification work.
 
 ## Publish Strategies
 
@@ -143,18 +149,10 @@ catch (InvalidOperationException ex)
 All handlers run concurrently. All exceptions are aggregated:
 
 ```csharp
-// Same handlers, but with Parallel strategy
-// Specify in the builder:
-services.AddInterlocutor(builder =>
-{
-    // ... register handlers ...
-    builder.SetPublishStrategy(PublishStrategy.Parallel);
-});
-
-// Now when you publish:
+// Same handlers, but with Parallel strategy - pass it explicitly per call:
 try
 {
-    await mediator.Publish(new SomeRequest());
+    await mediator.Publish(new SomeRequest(), PublishStrategy.Parallel);
 }
 catch (AggregateException ex)
 {
@@ -164,6 +162,9 @@ catch (AggregateException ex)
     // Handler3 also ran
 }
 ```
+
+> [!NOTE]
+> The strategy overload is exposed on `IPublisher` itself, so a consumer coding against `IPublisher` (rather than the wider `IMediator`) can still choose `Parallel` per call. There is no builder-level way to change the default strategy for every `Publish` call; each call site chooses explicitly.
 
 ### Which Strategy to Use
 
@@ -237,6 +238,20 @@ await mediator.Publish(new OrderShipped(123, "TRACK-789"));
 ```
 
 This is different from query/command dispatch, where a closed handler beats an open generic (single handler). Notifications support true contravariant fan-out so multiple interested parties can react to a base event.
+
+### Catch-all Handlers
+
+Subscribing to `INotification` itself - the base marker interface, not a domain-specific base type like `DomainEvent` above - is legal and receives every notification published anywhere in the process:
+
+```csharp
+public class ProcessWideAuditSink : INotificationHandler<INotification>
+{
+    public async Task Handle(INotification notification, CancellationToken ct) =>
+        await this.auditLog.RecordAsync(notification, ct);
+}
+```
+
+This is useful for a process-wide audit sink, but subscribing to everything is easy to do by accident (a typo'd generic constraint, for instance). The generator reports an informational diagnostic (`INTERLOC003`) naming any handler implementing `INotificationHandler<INotification>`, so it reads as a deliberate choice in build output rather than a silent surprise.
 
 ## Pattern: Notification + Command
 
@@ -324,7 +339,7 @@ With Parallel strategy, all handlers run regardless:
 // Handler1, Handler2 (throws), and Handler3 all run concurrently
 // If Handler2 threw, an AggregateException is raised with that error inside
 // But Handler1 and Handler3 still ran
-await mediator.Publish(new SomeEvent());
+await mediator.Publish(new SomeEvent(), PublishStrategy.Parallel);
 ```
 
 Consider whether partial failure is acceptable:

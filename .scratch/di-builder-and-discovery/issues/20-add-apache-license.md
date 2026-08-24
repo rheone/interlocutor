@@ -1,3 +1,5 @@
+> **Status: done** - merged in `8f32b56` (combined with ticket 21's work in the same commit).
+
 ## Labels
 
 ready-for-agent

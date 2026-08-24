@@ -23,12 +23,14 @@ No solution-level build/test scripts exist beyond the `dotnet` CLI - there's no 
 
 **Package layering** (`src/`), enforced by `tests/Interlocutor.Architecture.Tests/DependencyTests.cs` via NetArchTest - changes that violate these boundaries fail CI:
 
-- `Interlocutor.CommonKernel` - zero-dependency result types (`OperationOutcome<...>` unions, `Failure`/`NotFound`/`Forbidden`/`Conflict`/`ValidationError`/`Success`, `PagedResult<T>`). Must never depend on any other Interlocutor package.
+- `Interlocutor.CommonKernel` - zero-dependency result types (`OperationOutcome<...>` unions, `Failure`/`NotFound`/`Forbidden`/`Conflict`/`ValidationError`/`Success`). `PagedResult<T>` is not a shipped type here - it's a consumer-defined success-case type, per `documentation/glossary.md`. This remains true of `Interlocutor.CommonKernel` specifically; the optional `Interlocutor.Persistence.Abstractions` package's `Page<T>` is a different package's vocabulary for a different concern (repository return shape, not `OperationOutcome` success-case shape). Must never depend on any other Interlocutor package.
 - `Interlocutor.Abstractions` - mediator core (`IMediator`/`ISender`/`IPublisher`), handler contracts (`IQueryHandler`, `ICommandHandler`, `ResourceCommandHandler`), pipeline behaviors (`LoggingBehavior`, `AuthorizationBehavior`, `AuditingBehavior`, `PipelineStageBehavior`), marker interfaces (`ITransactionalRequest`, `IAuditableRequest`, `IRequiresPolicy`, `IExternalStoreRequest`). Depends only on CommonKernel + framework DI/Logging abstractions - must never depend on AspNetCore or the store-specific packages.
 - `Interlocutor.AspNetCore` - HTTP mapping (`ToActionResult()`), web-framework integrations for Abstractions interfaces (e.g., `AspNetCoreRequestContextAccessor`). Depends on CommonKernel and Abstractions, but never on store-specific or validation packages.
-- `Interlocutor.DependencyInjection.Microsoft` / `.Autofac` - assembly-scanning `AddInterlocutor()` registration per container.
+- `Interlocutor.DependencyInjection.Microsoft` / `.Autofac` - assembly-scanning `AddInterlocutor()` registration per container. Also carry the opt-in `AddInterlocutorUnitOfWork`/`AddInterlocutorRepository` persistence registration extensions; both depend only on `Interlocutor.Persistence.Abstractions` (zero ORM dependency), never on either `Interlocutor.Persistence.*` implementation package.
 - `Interlocutor.EntityFrameworkCore` / `Interlocutor.NHibernate` - store-specific `TransactionBehavior`; each must depend on Abstractions.
-- `Interlocutor.FluentValidation` - `ValidationBehavior` / `BulkItemValidationBehavior` (currently mid-migration - see commented-out assertion in `DependencyTests.cs`).
+- `Interlocutor.FluentValidation` - `ValidationBehavior`; `DependencyTests.cs` asserts it depends on Abstractions.
+- `Interlocutor.Persistence.Abstractions` - optional, opt-in persistence abstraction (`IUnitOfWork`, `IDomainRepository<TEntity, TKey>`, `Page<T>`, `SortCriterion<TEntity>`). Zero ORM dependency; depends only on Abstractions.
+- `Interlocutor.Persistence.EntityFrameworkCore` / `Interlocutor.Persistence.NHibernate` - store-specific implementations of the persistence abstraction; each must depend on `Interlocutor.Persistence.Abstractions` and must not depend on each other.
 
 Each `src/*` project has a matching `tests/*.Tests` project (xunit.v3, NSubstitute for mocking). `tests/Interlocutor.Architecture.Tests` is not per-package - it asserts the cross-package dependency rules above; add to it, not a per-package test project, when introducing a new package or changing what depends on what.
 
@@ -38,10 +40,24 @@ Each `src/*` project has a matching `tests/*.Tests` project (xunit.v3, NSubstitu
 
 ## Conventions (from AGENTS.md)
 
-- One top-level public type per file, filename matches type name - except simple record/struct types, which may keep custom equality/formatting/operator members in the same file.
+- One top-level public type per file, filename matches type name - except simple record/struct types, which may keep custom equality/formatting/operator members in the same file. For member ordering, partial-class splitting, generic-arity file naming, and region grouping, use the `csharp-code-organization` skill.
 - Rich XML doc comments on all public members (doc-warning suppressions in `Directory.Build.props` are there so undocumented code doesn't break the build, not license to skip docs on new code).
 - Value-added inline comments only - don't narrate obvious logic.
 - Conventional commits (`feat:`, `fix:`, `chore:`...), imperative mood, subject <72 chars.
+
+## Agent skills
+
+### Issue tracker
+
+Local markdown - issues live as files under `.scratch/<feature>/`. No PR triage. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` and one `docs/adr/` at the repo root. See `docs/agents/domain.md`.
 
 ## Code style enforcement
 
@@ -51,7 +67,7 @@ StyleCop + Roslynator analyzers run on every build (`Directory.Build.props`); `.
 
 Every documentation file in this directory follows these conventions:
 
-### GitHub Alerts
+### GitHub Markdown Alerts
 
 Use all five GitHub alert types purposefully:
 
@@ -74,7 +90,6 @@ Use all five GitHub alert types purposefully:
 
 Some topics remain TBD until related infrastructure work completes:
 
-- **Trim & AOT support** - blocked on ticket 17 (Trim and AOT hardening)
 - **Sample app walkthrough** - blocked on ticket 18 (Sample application)
 
 These sections are written as TBD placeholders per the alert convention above, so nothing is forgotten.

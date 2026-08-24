@@ -23,29 +23,35 @@ public class BehaviorSubsetConstraintTests
     [Fact]
     public void AuditingBehavior_NeverResolves_ForRequestWithoutMarker()
     {
+        // Arrange
         var containerBuilder = NewContainerBuilder();
         containerBuilder.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).AddAuditingBehavior()
+            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).Pipeline.AddAuditingBehavior()
         );
 
+        // Act
         var container = containerBuilder.Build();
 
+        // Assert
         Assert.Empty(container.Resolve<IEnumerable<IPipelineBehavior<PlainCommand, OperationOutcome<string, Forbidden>>>>());
     }
 
     [Fact]
     public void AuditingBehavior_Resolves_ForRequestWithMarker()
     {
+        // Arrange
         var containerBuilder = NewContainerBuilder();
         containerBuilder.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).AddAuditingBehavior()
+            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).Pipeline.AddAuditingBehavior()
         );
 
+        // Act
         var container = containerBuilder.Build();
-
         var resolved = container
             .Resolve<IEnumerable<IPipelineBehavior<AuditableCommand, OperationOutcome<string, Forbidden>>>>()
             .ToList();
+
+        // Assert
         Assert.Single(resolved);
         Assert.IsType<AuditingBehavior<AuditableCommand, OperationOutcome<string, Forbidden>>>(resolved[0]);
     }
@@ -53,29 +59,35 @@ public class BehaviorSubsetConstraintTests
     [Fact]
     public void AuthorizationBehavior_NeverResolves_ForRequestWithoutMarker()
     {
+        // Arrange
         var containerBuilder = NewContainerBuilder();
         containerBuilder.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).AddAuthorizationBehavior()
+            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).Pipeline.AddAuthorizationBehavior()
         );
 
+        // Act
         var container = containerBuilder.Build();
 
+        // Assert
         Assert.Empty(container.Resolve<IEnumerable<IPipelineBehavior<PlainCommand, OperationOutcome<string, Forbidden>>>>());
     }
 
     [Fact]
     public void AuthorizationBehavior_Resolves_ForRequestWithMarker()
     {
+        // Arrange
         var containerBuilder = NewContainerBuilder();
         containerBuilder.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).AddAuthorizationBehavior()
+            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).Pipeline.AddAuthorizationBehavior()
         );
 
+        // Act
         var container = containerBuilder.Build();
-
         var resolved = container
             .Resolve<IEnumerable<IPipelineBehavior<PolicyCommand, OperationOutcome<string, Forbidden>>>>()
             .ToList();
+
+        // Assert
         Assert.Single(resolved);
         Assert.IsType<AuthorizationBehavior<PolicyCommand, OperationOutcome<string, Forbidden>>>(resolved[0]);
     }
@@ -83,11 +95,16 @@ public class BehaviorSubsetConstraintTests
     [Fact]
     public void RelativeOrder_AgainstUnconstrainedLoggingBehavior_IsPreserved()
     {
+        // Arrange
         var containerBuilder = NewContainerBuilder();
         containerBuilder.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).AddLoggingBehavior().AddAuditingBehavior()
+            builder
+                .ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly)
+                .Pipeline.AddLoggingBehavior()
+                .AddAuditingBehavior()
         );
 
+        // Act
         var container = containerBuilder.Build();
 
         // AuditableCommand satisfies AuditingBehavior's constraint: both behaviors resolve, in registration order.
@@ -95,7 +112,6 @@ public class BehaviorSubsetConstraintTests
             .Resolve<IEnumerable<IPipelineBehavior<AuditableCommand, OperationOutcome<string, Forbidden>>>>()
             .Select(b => b.GetType().Name)
             .ToList();
-        Assert.Equal(["LoggingBehavior`2", "AuditingBehavior`2"], auditableChain);
 
         // PlainCommand does not satisfy AuditingBehavior's constraint: only the unconstrained LoggingBehavior
         // resolves, at the same relative position - filtering one entry out of the list doesn't reorder the rest.
@@ -103,21 +119,26 @@ public class BehaviorSubsetConstraintTests
             .Resolve<IEnumerable<IPipelineBehavior<PlainCommand, OperationOutcome<string, Forbidden>>>>()
             .Select(b => b.GetType().Name)
             .ToList();
+
+        // Assert
+        Assert.Equal(["LoggingBehavior`2", "AuditingBehavior`2"], auditableChain);
         Assert.Equal(["LoggingBehavior`2"], plainChain);
     }
 
     [Fact]
     public void ThreeRequestTypes_DrawDifferentSubsetsFromSameRegistrationList()
     {
+        // Arrange
         var containerBuilder = NewContainerBuilder();
         containerBuilder.AddInterlocutor(builder =>
             builder
                 .ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly)
-                .AddLoggingBehavior()
+                .Pipeline.AddLoggingBehavior()
                 .AddAuditingBehavior()
                 .AddAuthorizationBehavior()
         );
 
+        // Act
         var container = containerBuilder.Build();
 
         // AuditableCommand: satisfies IAuditableRequest but not IRequiresPolicy -> logging + auditing only.
@@ -125,7 +146,6 @@ public class BehaviorSubsetConstraintTests
             .Resolve<IEnumerable<IPipelineBehavior<AuditableCommand, OperationOutcome<string, Forbidden>>>>()
             .Select(b => b.GetType().Name)
             .ToList();
-        Assert.Equal(["LoggingBehavior`2", "AuditingBehavior`2"], auditableChain);
 
         // PolicyCommand: satisfies IRequiresPolicy (and the Forbidden response shape) but not IAuditableRequest
         // -> logging + authorization only. Drawn from the exact same registration list as the other two chains.
@@ -133,26 +153,35 @@ public class BehaviorSubsetConstraintTests
             .Resolve<IEnumerable<IPipelineBehavior<PolicyCommand, OperationOutcome<string, Forbidden>>>>()
             .Select(b => b.GetType().Name)
             .ToList();
-        Assert.Equal(["LoggingBehavior`2", "AuthorizationBehavior`2"], policyChain);
 
         // PlainCommand: satisfies neither marker -> logging only.
         var plainChain = container
             .Resolve<IEnumerable<IPipelineBehavior<PlainCommand, OperationOutcome<string, Forbidden>>>>()
             .Select(b => b.GetType().Name)
             .ToList();
+
+        // Assert
+        Assert.Equal(["LoggingBehavior`2", "AuditingBehavior`2"], auditableChain);
+        Assert.Equal(["LoggingBehavior`2", "AuthorizationBehavior`2"], policyChain);
         Assert.Equal(["LoggingBehavior`2"], plainChain);
     }
 
     [Fact]
     public void ConstrainedBehaviorRegisteredTwice_ResolvesTwiceForMatchingRequest_NoneForNonMatching()
     {
+        // Arrange
         var containerBuilder = NewContainerBuilder();
         containerBuilder.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).AddAuditingBehavior().AddAuditingBehavior()
+            builder
+                .ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly)
+                .Pipeline.AddAuditingBehavior()
+                .AddAuditingBehavior()
         );
 
+        // Act
         var container = containerBuilder.Build();
 
+        // Assert
         Assert.Equal(
             2,
             container.Resolve<IEnumerable<IPipelineBehavior<AuditableCommand, OperationOutcome<string, Forbidden>>>>().Count()

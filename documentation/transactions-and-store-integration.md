@@ -55,15 +55,16 @@ public record SetUserPreferences(int UserId, Dictionary<string, object> Prefs)
 
 ## EntityFramework Core Integration
 
-Register the EF Core `TransactionBehavior`:
+`Interlocutor.EntityFrameworkCore`'s `TransactionBehavior<TRequest, TResponse, TContext>` is generic over the `DbContext` type too (arity 3), unlike NHibernate's (arity 2, below) - `ISession` isn't generic, so it doesn't need that third parameter. Register it with `AddTransactionBehavior()`, which probes for whichever store package is referenced and closes it correctly:
 
 ```csharp
 services.AddInterlocutor(builder =>
 {
     builder.ScanAssembly(typeof(Program).Assembly);
 
-    // Add the transaction behavior (requires DbContext in DI)
-    builder.AddBehavior(typeof(TransactionBehavior<,>));
+    // Add the transaction behavior (requires DbContext in DI) - see the Autofac/Microsoft DI
+    // note below before using this under Microsoft.Extensions.DependencyInjection.
+    builder.Pipeline.AddTransactionBehavior();
 });
 
 // DbContext must be registered as scoped (usually already is)
@@ -72,6 +73,28 @@ services.AddDbContext<AppDbContext>(
     ServiceLifetime.Scoped
 );
 ```
+
+> [!WARNING]
+> **Under Microsoft.Extensions.DependencyInjection specifically, `AddTransactionBehavior()` currently throws at container-build time when `Interlocutor.EntityFrameworkCore` is referenced** - `services.AddScoped(typeof(IPipelineBehavior<,>), typeof(TransactionBehavior<,,>))` fails because Microsoft DI requires an open generic implementation's arity to match its service interface's arity exactly, and `TransactionBehavior<,,>`'s extra `TContext` parameter breaks that. Autofac's generic registration doesn't have this restriction, so `AddTransactionBehavior()` works there unmodified today.
+>
+> Until this is fixed, register a small subclass under Microsoft DI that closes `TContext` over your own `DbContext` type, then register that subclass through the general-purpose `AddBehavior` escape hatch instead of `AddTransactionBehavior()`:
+>
+> ```csharp
+> // Closes TContext over AppDbContext, bringing the arity back down to 2
+> internal sealed class AppTransactionBehavior<TRequest, TResponse>(
+>     Lazy<AppDbContext> context,
+>     IOutcomeClassifier classifier,
+>     IResponseOutcomeDescriber? describer = null
+> ) : TransactionBehavior<TRequest, TResponse, AppDbContext>(context, classifier, describer);
+>
+> services.AddInterlocutor(builder =>
+> {
+>     builder.ScanAssembly(typeof(Program).Assembly);
+>     builder.Pipeline.AddBehavior(typeof(AppTransactionBehavior<,>));  // not AddTransactionBehavior()
+> });
+> ```
+>
+> This is the same pattern the runnable sample under [`samples/Interlocutor.Sample.WebApi`](../samples/Interlocutor.Sample.WebApi/SampleTransactionBehavior.cs) uses, verified against a real `ServiceProvider`.
 
 The behavior will inject `Lazy<AppDbContext>` and resolve it only when needed:
 
@@ -99,7 +122,7 @@ public class CreateOrderHandler : ICommandHandler<CreateOrder, OperationOutcome<
 
 ## NHibernate Integration
 
-Register the NHibernate `TransactionBehavior`:
+Register the NHibernate `TransactionBehavior` the same way - `AddTransactionBehavior()` works unmodified here on both Microsoft DI and Autofac, since `ISession` isn't generic and the behavior stays arity 2:
 
 ```csharp
 services.AddInterlocutor(builder =>
@@ -107,7 +130,7 @@ services.AddInterlocutor(builder =>
     builder.ScanAssembly(typeof(Program).Assembly);
 
     // Add the transaction behavior (requires ISession factory in DI)
-    builder.AddBehavior(typeof(TransactionBehavior<,>));
+    builder.Pipeline.AddTransactionBehavior();
 });
 
 // NHibernate session factory must be registered

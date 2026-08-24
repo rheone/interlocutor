@@ -1,0 +1,39 @@
+## .NET build output
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+*.suo
+*.dbmk
+*.dbproj.user
+
+## IDE
+.vs/
+.idea/
+*.swp
+
+## Test / benchmark output
+TestResults/
+BenchmarkDotNet.Artifacts/
+*.trx
+mono_crash.*.json
+*.dmp
+
+## NuGet packages produced locally (never the canonical artifact)
+*.nupkg
+*.snupkg
+smoketests/**/feed/
+
+## Agent / machine-local
+.claude/
+.opencode/
+.agents/
+
+## OS cruft
+.DS_Store
+Thumbs.db
+
+## Docs build output (only relevant if docs/ uses Sphinx or DocFX)
+docs/_build/
+docs/api/

@@ -35,13 +35,16 @@ public class RuntimeTypedDispatchTests
     [Fact]
     public async Task Send_ObjectQuery_DispatchesToRegisteredHandler()
     {
+        // Arrange
         var sender = CreateSender(services =>
             services.AddSingleton<IQueryHandler<TestQuery, OperationOutcome<int, Failure>>, TestQueryHandler>()
         );
-
         object request = new TestQuery(21);
+
+        // Act
         var outcome = await sender.Send(request, CancellationToken.None);
 
+        // Assert
         Assert.IsAssignableFrom<IOperationOutcome>(outcome);
         var union = Assert.IsAssignableFrom<IUnion>(outcome);
         Assert.Equal(42, Assert.IsType<int>(union.Value));
@@ -50,13 +53,16 @@ public class RuntimeTypedDispatchTests
     [Fact]
     public async Task Send_ObjectValueCommand_DispatchesToRegisteredHandler()
     {
+        // Arrange
         var sender = CreateSender(services =>
             services.AddSingleton<ICommandHandler<GreetCommand, OperationOutcome<string, Failure>>, GreetCommandHandler>()
         );
-
         object request = new GreetCommand("Ada");
+
+        // Act
         var outcome = await sender.Send(request, CancellationToken.None);
 
+        // Assert
         var union = Assert.IsAssignableFrom<IUnion>(outcome);
         Assert.Equal("Hello Ada", Assert.IsType<string>(union.Value));
     }
@@ -64,13 +70,16 @@ public class RuntimeTypedDispatchTests
     [Fact]
     public async Task Send_ObjectUnitCommand_DispatchesToRegisteredHandler()
     {
+        // Arrange
         var sender = CreateSender(services =>
             services.AddSingleton<IVoidCommandHandler<TestVoidCommand, OperationOutcome>, TestVoidHandler>()
         );
-
         object request = new TestVoidCommand("test");
+
+        // Act
         var outcome = await sender.Send(request, CancellationToken.None);
 
+        // Assert
         var union = Assert.IsAssignableFrom<IUnion>(outcome);
         Assert.IsType<Success>(union.Value);
     }
@@ -78,16 +87,18 @@ public class RuntimeTypedDispatchTests
     [Fact]
     public async Task Send_ObjectResult_IsPatternMatchableForFailure_WithoutKnowingConcreteType()
     {
+        // Arrange
         var sender = CreateSender(services =>
             services.AddSingleton<IQueryHandler<FailingQuery, OperationOutcome<int, Failure>>, FailingQueryHandler>()
         );
-
         object request = new FailingQuery();
+
+        // Act
         var outcome = await sender.Send(request, CancellationToken.None);
 
-        // The caller here only has IOperationOutcome - no generic arguments, no knowledge of the concrete
-        // OperationOutcome<TSuccess, TFailure> shape. IUnion.Value is the union's case value, and case types
-        // (Failure, Success, plain data) can still be pattern-matched from it.
+        // Assert - The caller here only has IOperationOutcome - no generic arguments, no knowledge of the
+        // concrete OperationOutcome<TSuccess, TFailure> shape. IUnion.Value is the union's case value, and
+        // case types (Failure, Success, plain data) can still be pattern-matched from it.
         var isFailure = outcome switch
         {
             IUnion { Value: Failure failure } => failure.Reason == "boom",
@@ -101,14 +112,17 @@ public class RuntimeTypedDispatchTests
     [Fact]
     public async Task Send_UnregisteredQueryType_ThrowsHandlerNotRegisteredExceptionNamingTheType()
     {
+        // Arrange - Assigned through an `object` variable first: UnregisteredQuery statically implements
+        // IQuery<T>, so passing it directly would let overload resolution pick the strongly-typed generic
+        // Send<TResponse> overload instead of the runtime-typed Send(object, ...) overload this test means
+        // to exercise.
         var sender = CreateSender(services => { });
-
-        // Assigned through an `object` variable first: UnregisteredQuery statically implements IQuery<T>, so
-        // passing it directly would let overload resolution pick the strongly-typed generic Send<TResponse>
-        // overload instead of the runtime-typed Send(object, ...) overload this test means to exercise.
         object request = new UnregisteredQuery(1);
+
+        // Act
         var ex = await Assert.ThrowsAsync<HandlerNotRegisteredException>(() => sender.Send(request, CancellationToken.None));
 
+        // Assert
         Assert.Equal(typeof(UnregisteredQuery), ex.RequestType);
         Assert.Contains(nameof(UnregisteredQuery), ex.Message);
     }
@@ -116,11 +130,14 @@ public class RuntimeTypedDispatchTests
     [Fact]
     public async Task Send_UnregisteredVoidCommandType_ThrowsHandlerNotRegisteredExceptionNamingTheType()
     {
+        // Arrange
         var sender = CreateSender(services => { });
-
         object request = new UnregisteredVoidCommand();
+
+        // Act
         var ex = await Assert.ThrowsAsync<HandlerNotRegisteredException>(() => sender.Send(request, CancellationToken.None));
 
+        // Assert
         Assert.Equal(typeof(UnregisteredVoidCommand), ex.RequestType);
         Assert.Contains(nameof(UnregisteredVoidCommand), ex.Message);
     }
@@ -128,20 +145,25 @@ public class RuntimeTypedDispatchTests
     [Fact]
     public async Task Send_ObjectThatIsNotARequest_ThrowsDistinctUnsupportedRequestTypeException()
     {
+        // Arrange
         var sender = CreateSender(services => { });
 
+        // Act
         var ex = await Assert.ThrowsAsync<UnsupportedRequestTypeException>(() =>
             sender.Send("just a string, not a request", CancellationToken.None)
         );
 
+        // Assert
         Assert.Equal(typeof(string), ex.RequestType);
     }
 
     [Fact]
     public async Task Send_NullRequest_ThrowsArgumentNullException()
     {
+        // Arrange
         var sender = CreateSender(services => { });
 
+        // Act & Assert
         await Assert.ThrowsAsync<ArgumentNullException>(() => sender.Send(null!, CancellationToken.None));
     }
 

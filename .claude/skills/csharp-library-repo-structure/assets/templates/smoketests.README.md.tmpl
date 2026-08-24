@@ -1,0 +1,21 @@
+# {{LibraryName}} Smoke Tests
+
+These smoke tests validate the **published NuGet package** (not a project
+reference). They catch packaging bugs that unit tests can't -- missing files,
+broken assembly references, incorrect TFMs.
+
+## How it works
+
+1. `dotnet pack` the library to `feed/` (gitignored)
+2. Restore `ConsumerProj/` against the local feed
+3. Build + run the consumer, which exercises the full public API surface
+
+## Run locally
+
+```bash
+# Bash / macOS / Linux
+./run-smoke-tests.sh
+
+# Windows PowerShell
+./run-smoke-tests.ps1
+```

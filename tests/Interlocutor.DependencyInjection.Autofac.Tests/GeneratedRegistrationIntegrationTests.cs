@@ -18,6 +18,7 @@ public sealed class GeneratedRegistrationIntegrationTests
     [Fact]
     public async Task GeneratedRegistration_ResolvesHandlerWithConstructorDependency_AndDispatchesSuccessfully()
     {
+        // Arrange
         var containerBuilder = new ContainerBuilder();
         containerBuilder.RegisterType<Greeter>().As<IGreeter>().SingleInstance();
 
@@ -25,7 +26,13 @@ public sealed class GeneratedRegistrationIntegrationTests
         // compile-time discovered module - proving the generated path works on its own, not merely
         // alongside runtime scanning.
         containerBuilder.AddInterlocutor(builder =>
-            builder.AddGeneratedRegistrations(Interlocutor.Generated.InterlocutorGeneratedRegistrations.Registrations)
+            builder.AddGeneratedRegistrations(
+                Interlocutor
+                    .Generated
+                    .Interlocutor_DependencyInjection_Autofac_Tests
+                    .InterlocutorGeneratedRegistrations
+                    .Registrations
+            )
         );
 
         var container = containerBuilder.Build();
@@ -33,8 +40,10 @@ public sealed class GeneratedRegistrationIntegrationTests
         await using var scope = container.BeginLifetimeScope();
         var mediator = scope.Resolve<IMediator>();
 
+        // Act
         var result = await mediator.Send(new GeneratedQuery(), TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.Equal("hi from Autofac", result.Value);
     }
 

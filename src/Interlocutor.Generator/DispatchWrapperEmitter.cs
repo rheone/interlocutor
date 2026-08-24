@@ -66,10 +66,20 @@ internal static class DispatchWrapperEmitter
         return builder.ToString();
     }
 
+    /// <summary>
+    /// Builds the unqualified class name <see cref="Emit"/> gives <paramref name="handler"/>'s wrapper - shared
+    /// with <see cref="RequestDispatchSwitchEmitter"/> so the generated type switch can call the exact same
+    /// wrapper class this emitter produces, without either emitter re-deriving the other's naming scheme.
+    /// </summary>
+    /// <param name="handler">The handler to name a wrapper class for.</param>
+    /// <returns>The wrapper class's unqualified name, unique within <see cref="GeneratedNamespace"/>.</returns>
+    public static string GetWrapperClassName(HandlerModel handler) =>
+        $"{IdentifierSanitizer.ToIdentifier(handler.HandlerTypeName)}_{handler.Kind}_Dispatch";
+
     /// <summary>Emits one wrapper class for a query, command, or void-command handler.</summary>
     private static void EmitWrapper(StringBuilder builder, HandlerModel handler)
     {
-        var className = $"{IdentifierSanitizer.ToIdentifier(handler.HandlerTypeName)}_{handler.Kind}_Dispatch";
+        var className = GetWrapperClassName(handler);
         var requestType = handler.RequestTypeName;
         var responseType = handler.ResponseTypeName!;
         var behaviorType = $"global::Interlocutor.Abstractions.Pipeline.IPipelineBehavior<{requestType}, {responseType}>";

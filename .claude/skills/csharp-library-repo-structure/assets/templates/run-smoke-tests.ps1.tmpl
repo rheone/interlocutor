@@ -1,0 +1,15 @@
+$ErrorActionPreference = "Stop"
+Set-Location $PSScriptRoot
+
+Write-Host "Building and packing {{LibraryName}}..."
+Push-Location ../../src/{{LibraryName}}
+dotnet pack -c Release -o ../../smoketests/{{LibraryName}}.SmokeTests/feed
+Pop-Location
+
+Write-Host "Restoring ConsumerProj against the local feed..."
+Push-Location ConsumerProj
+dotnet restore --force --no-cache
+dotnet run -c Release
+Pop-Location
+
+Write-Host "Smoke test passed."

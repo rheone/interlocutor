@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <packageSources>
+    <!-- Local feed populated by `dotnet pack` -- checked first so the
+         smoke test consumes the freshly built package, not whatever is
+         cached or published on nuget.org. -->
+    <clear />
+    <add key="local-smoke-feed" value="./feed" />
+    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+  </packageSources>
+</configuration>

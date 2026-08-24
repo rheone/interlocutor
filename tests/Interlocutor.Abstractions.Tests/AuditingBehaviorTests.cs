@@ -1,5 +1,6 @@
 namespace Interlocutor.Abstractions.Tests;
 
+using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Markers;
 using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Queries;
@@ -190,5 +191,61 @@ public class AuditingBehaviorTests
         // Assert
         Assert.Null(result);
         await sink.Received(1).RecordAsync(Arg.Any<AuditEntry>(), CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task Handle_WithContextAccessorReportingUser_PopulatesUserIdInAuditEntry()
+    {
+        // Arrange
+        var sink = Substitute.For<IAuditSink>();
+        var contextAccessor = Substitute.For<IRequestContextAccessor>();
+        contextAccessor.Context.Returns(new RequestContext { UserId = "user-42" });
+        var behavior = new AuditingBehavior<AuditableQuery, string>(sink, contextAccessor: contextAccessor);
+        var request = new AuditableQuery("test");
+        var next = () => Task.FromResult("response");
+
+        // Act
+        var result = await behavior.Handle(request, next, CancellationToken.None);
+
+        // Assert - the response is unaffected, and UserId flows through end-to-end from the accessor.
+        Assert.Equal("response", result);
+        await sink.Received(1).RecordAsync(Arg.Is<AuditEntry>(e => e.UserId == "user-42"), CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task Handle_WithContextAccessorReportingNoUser_LeavesUserIdNull()
+    {
+        // Arrange - accessor is registered but has no context populated (e.g. an anonymous request).
+        var sink = Substitute.For<IAuditSink>();
+        var contextAccessor = Substitute.For<IRequestContextAccessor>();
+        contextAccessor.Context.Returns((RequestContext?)null);
+        var behavior = new AuditingBehavior<AuditableQuery, string>(sink, contextAccessor: contextAccessor);
+        var request = new AuditableQuery("test");
+        var next = () => Task.FromResult("response");
+
+        // Act
+        var result = await behavior.Handle(request, next, CancellationToken.None);
+
+        // Assert - no exception, auditing still succeeds, UserId stays null.
+        Assert.Equal("response", result);
+        await sink.Received(1).RecordAsync(Arg.Is<AuditEntry>(e => e.UserId == null), CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task Handle_WithNoContextAccessorRegistered_LeavesUserIdNull()
+    {
+        // Arrange - no IRequestContextAccessor supplied at all (the default for the constructor's optional
+        // parameter), mirroring a consumer that never registered one.
+        var sink = Substitute.For<IAuditSink>();
+        var behavior = new AuditingBehavior<AuditableQuery, string>(sink);
+        var request = new AuditableQuery("test");
+        var next = () => Task.FromResult("response");
+
+        // Act
+        var result = await behavior.Handle(request, next, CancellationToken.None);
+
+        // Assert - no exception, auditing still succeeds, UserId stays null.
+        Assert.Equal("response", result);
+        await sink.Received(1).RecordAsync(Arg.Is<AuditEntry>(e => e.UserId == null), CancellationToken.None);
     }
 }

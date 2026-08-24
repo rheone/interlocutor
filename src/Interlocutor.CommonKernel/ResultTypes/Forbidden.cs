@@ -14,4 +14,11 @@ namespace Interlocutor.CommonKernel.ResultTypes;
 /// Provide a <paramref name="Reason"/> for logging/debugging, but avoid exposing policy details to callers for security.
 /// </para>
 /// </remarks>
-public readonly record struct Forbidden(string? Reason = null);
+public readonly record struct Forbidden(string? Reason = null)
+{
+    /// <summary>
+    /// Returns a human-readable representation of this outcome.
+    /// </summary>
+    /// <returns><c>"Forbidden"</c> when <see cref="Reason"/> is <see langword="null"/>; otherwise <c>"Forbidden: {Reason}"</c>.</returns>
+    public override string ToString() => this.Reason is null ? "Forbidden" : $"Forbidden: {this.Reason}";
+}

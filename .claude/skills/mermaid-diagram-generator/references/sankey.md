@@ -9,6 +9,10 @@ source: https://mermaid.js.org/syntax/sankey.html
 last_verified: 2026-08-09
 plugin_required: false
 gitlab_compatible: true
+github_compatible: true
+vscode_compatible: true
+obsidian_compatible: unknown
+notion_compatible: unknown
 ---
 
 # Sankey
@@ -111,14 +115,6 @@ A frontmatter `config` block sets link coloring, node alignment, outlined labels
 
 ## Beta/experimental caveats
 Mermaid's own docs label Sankey "an experimental diagram" whose CSV-like syntax is expected to be extended over time - treat generated Sankey diagrams as more likely than stable types to need a syntax tweak on a future Mermaid upgrade. Requires Mermaid v10.3.0 or later; `labelStyle`, `nodeWidth`, `nodePadding`, and `nodeColors` additionally require v11.15.0+. Note: the legacy keyword `sankey-beta` is still accepted (cross-checked against the diagram detector in the mermaid-js/mermaid source, not stated on the doc page itself) - the current canonical keyword shown in every example on the doc page is plain `sankey`, without the `-beta` suffix.
-
-## Platform compatibility
-
-**GitLab:** Likely compatible - GitLab.com documents supporting Mermaid version 10 (checked 2026-08-15, [source](https://docs.gitlab.com/user/markdown/#diagrams-and-flowcharts)), and this type was introduced in v10.3.0, at or before that line. GitLab's pinned version moves independently of this skill - reconfirm against the source before depending on it for anything long-lived.
-
-**GitHub:** Unconfirmed either way - GitHub's own docs don't publish an exhaustive list of supported Mermaid diagram types (they name "flowcharts, sequence diagrams, pie charts and more" as examples, not a complete list), and community reports on which newer types render are inconsistent/contradictory. Don't promise this type renders on GitHub without testing it there directly (e.g. a scratch gist or PR comment).
-
-**VS Code / Obsidian / Notion / similar:** Depends entirely on that specific tool's own bundled or extension-provided Mermaid version, which updates independently of this skill's pin and of every other tool in this list - there is no single answer here. As a beta diagram type, editor/notes-app Mermaid bundles need to be relatively recent to support it - more likely to be missing on tools that update infrequently. Confirm in the specific target tool before relying on this type there.
 
 ## Further reading
 - https://mermaid.js.org/syntax/sankey.html

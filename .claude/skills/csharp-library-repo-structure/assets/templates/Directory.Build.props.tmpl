@@ -1,0 +1,33 @@
+<Project>
+
+  <PropertyGroup>
+    <TargetFrameworks>{{TargetFrameworks}}</TargetFrameworks>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Authors>{{Author}}</Authors>
+    <PackageLicenseExpression>{{License}}</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/{{GitHubOrg}}/{{GitHubRepo}}</RepositoryUrl>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <!-- Flip to true once the codebase is clean (don't let new warnings slip in unnoticed). -->
+    <TreatWarningsAsErrors Condition="'$(Configuration)' == 'Release'">false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <!-- Restore lock files for repeatable builds; commit packages.lock.json per project. -->
+  <PropertyGroup>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+  </PropertyGroup>
+
+</Project>

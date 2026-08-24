@@ -1,0 +1,43 @@
+# Agent instructions for {{LibraryName}}
+
+This file is the canonical source of instructions for AI coding agents
+working in this repo (Claude, Copilot, etc). `CLAUDE.md` is a thin pointer
+to this file -- update conventions here, not there.
+
+## Repo shape
+
+`src/` holds the library, its unit tests, and benchmarks. `smoketests/`
+validates the published package. `docs/design/` holds maintainer-facing
+design docs (PRD, ADRs). See `docs/design/adr/0001-record-architecture-decisions.md`
+for why the repo is laid out this way.
+
+## Conventions
+
+- Public API surface is the product -- treat every public member as a
+  compatibility commitment. Prefer `internal` until an API is proven out.
+- Partial-class files segregate interface implementations, e.g.
+  `Type.cs`, `Type.Factory.cs`, `Type.IComparable.cs`, `Type.Operators.cs`.
+  Follow this pattern for new types rather than one large file.
+- No logical-layer folders inside the library (no `Services/`, `Models/`,
+  `Core/`). Sub-directories are for cross-cutting concerns only.
+- Unit tests mirror the library 1:1 -- a test for `Foo.cs` lives in a test
+  file with a matching name, so either side can be found from the other.
+
+## Build & verify
+
+```bash
+cd src && dotnet build && dotnet test
+```
+
+Run this before considering a change complete. CI also runs CodeQL and a
+smoke test against the packed `.nupkg` -- a change can pass unit tests and
+still fail packaging, so don't skip the smoke test step for changes that
+touch `.csproj` files or public API shape.
+
+## Things not to do
+
+- Don't hand-edit `.slnx` files -- use `dotnet sln add/remove`.
+- Don't hand-edit `packages.lock.json` -- regenerate via
+  `dotnet restore --use-lock-file`.
+- Don't add new top-level folders without updating
+  `docs/design/adr/` to record why.

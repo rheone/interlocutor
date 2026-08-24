@@ -28,9 +28,37 @@ internal static class WellKnownTypeNames
     /// <summary>The open generic notification-handler contract, <c>INotificationHandler&lt;TNotification&gt;</c>.</summary>
     public const string NotificationHandler = "Interlocutor.Abstractions.Notifications.INotificationHandler`1";
 
+    /// <summary>The base notification marker interface, <c>INotification</c>.</summary>
+    public const string Notification = "Interlocutor.Abstractions.Notifications.INotification";
+
+    /// <summary>The relative-ordering attribute, <c>NotificationHandlerRunAfterAttribute</c>.</summary>
+    public const string NotificationHandlerRunAfter =
+        "Interlocutor.Abstractions.Notifications.NotificationHandlerRunAfterAttribute";
+
+    /// <summary>The relative-ordering attribute, <c>NotificationHandlerRunBeforeAttribute</c>.</summary>
+    public const string NotificationHandlerRunBefore =
+        "Interlocutor.Abstractions.Notifications.NotificationHandlerRunBeforeAttribute";
+
     /// <summary>The open generic pipeline-behavior contract, <c>IPipelineBehavior&lt;TRequest, TResponse&gt;</c>.</summary>
     public const string PipelineBehavior = "Interlocutor.Abstractions.Pipeline.IPipelineBehavior`2";
 
     /// <summary>The base outcome marker interface, <c>IOperationOutcome</c>.</summary>
     public const string OperationOutcome = "Interlocutor.CommonKernel.IOperationOutcome";
+
+    /// <summary>The open-generic-handler-ambiguity escape hatch, <c>HandlerOverrideAttribute</c>.</summary>
+    public const string HandlerOverride = "Interlocutor.Abstractions.Core.HandlerOverrideAttribute";
+
+    /// <summary>
+    /// The assembly-level attribute identifying a referenced assembly's generated registration module
+    /// (ticket 12), <c>InterlocutorGeneratedModuleAttribute</c>.
+    /// </summary>
+    public const string GeneratedModuleAttribute =
+        "Interlocutor.DependencyInjection.Abstractions.InterlocutorGeneratedModuleAttribute";
+
+    /// <summary>
+    /// The assembly-level attribute restating one referenced assembly's handler shape for the missing-handler
+    /// diagnostic (ticket 12), <c>InterlocutorGeneratedHandlerAttribute</c>.
+    /// </summary>
+    public const string GeneratedHandlerAttribute =
+        "Interlocutor.DependencyInjection.Abstractions.InterlocutorGeneratedHandlerAttribute";
 }

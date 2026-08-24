@@ -1,5 +1,6 @@
 namespace Interlocutor.Abstractions.Pipeline;
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 /// <summary>
@@ -40,6 +41,15 @@ public static class UnionCaseFactory
     /// <typeparamref name="TResponse"/> and cache it in a <see langword="static readonly"/> field - a distinct
     /// field per generic instantiation, so the cost is paid at most once per response shape actually used.
     /// </returns>
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2090:RequiresUnreferencedCode",
+        Justification = "TResponse is always a union type the caller's own code constructs or pattern-matches "
+            + "on elsewhere (a compile-time OperationOutcome<...> instantiation), so the trimmer already keeps "
+            + "its compiler-generated case constructors reachable independent of this reflective lookup. "
+            + "Requiring DynamicallyAccessedMembers(PublicConstructors) here would be viral across every "
+            + "pipeline behavior generic over TResponse - see documentation/trim-and-aot-support.md."
+    )]
     public static ConstructorInfo? FindCaseConstructor<TResponse, TCase>() => typeof(TResponse).GetConstructor([typeof(TCase)]);
 
     /// <summary>

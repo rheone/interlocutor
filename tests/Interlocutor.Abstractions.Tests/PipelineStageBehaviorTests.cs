@@ -274,6 +274,7 @@ public class PipelineStageBehaviorTests
         // behavior like logging or auditing - must receive the short-circuit response exactly as it would
         // any handler-produced response. It has no way to ask "was this short-circuited?"; it can only see
         // the TResponse value that came back from calling next(), which is PipelineStageBehavior.Handle.
+        // Arrange
         var callOrder = new List<string>();
         var shortCircuitResponse = new OperationOutcome<TestResponse, Failure>(new Failure("declined"));
         var stage = new ShortCircuitingStage("S1", callOrder, shortCircuitResponse);
@@ -287,6 +288,7 @@ public class PipelineStageBehaviorTests
 
         var request = new TestRequest();
 
+        // Act
         var result = await outerBehavior.Handle(
             request,
             () =>
@@ -302,6 +304,7 @@ public class PipelineStageBehaviorTests
             CancellationToken.None
         );
 
+        // Assert
         Assert.False(handlerRan);
         Assert.Equal(shortCircuitResponse, result);
         Assert.True(outerBehavior.ObservedResponse);

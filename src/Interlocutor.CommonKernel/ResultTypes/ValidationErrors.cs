@@ -2,7 +2,7 @@ namespace Interlocutor.CommonKernel.ResultTypes;
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
+using Interlocutor.CommonKernel.ResultTypes.Internal;
 
 /// <summary>
 /// Represents an immutable failure consisting of one or more distinct validation error messages,
@@ -24,7 +24,7 @@ using System.Collections.Immutable;
 /// </remarks>
 public readonly record struct ValidationErrors
 {
-    private readonly ImmutableArray<ValidationError> _errors;
+    private readonly DistinctItemSet<ValidationError> _errors;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ValidationErrors"/> struct from the specified validation errors.
@@ -37,14 +37,11 @@ public readonly record struct ValidationErrors
     /// <exception cref="ArgumentException"><paramref name="errors"/> contains no elements.</exception>
     public ValidationErrors(IEnumerable<ValidationError> errors)
     {
-        ArgumentNullException.ThrowIfNull(errors);
-
-        this._errors = [.. errors.Distinct()];
-
-        if (this._errors.IsEmpty)
-        {
-            throw new ArgumentException("At least one validation error is required.", nameof(errors));
-        }
+        this._errors = new DistinctItemSet<ValidationError>(
+            errors,
+            "At least one validation error is required.",
+            nameof(errors)
+        );
     }
 
     /// <summary>
@@ -75,7 +72,7 @@ public readonly record struct ValidationErrors
     /// rather than throwing. This permits the pipeline to pass a default response value when a handler has not yet
     /// produced one. Explicitly constructing this type with an empty sequence still throws.
     /// </remarks>
-    public int Count => this._errors.IsDefault ? 0 : this._errors.Length;
+    public int Count => this._errors.Count;
 
     /// <summary>
     /// Gets the distinct set of validation errors, in the order they were first encountered.
@@ -89,7 +86,7 @@ public readonly record struct ValidationErrors
     /// rather than throwing. This permits the pipeline to pass a default response value when a handler has not yet
     /// produced one. Explicitly constructing this type with an empty sequence still throws.
     /// </remarks>
-    public IReadOnlyList<ValidationError> Items => this._errors.IsDefault ? [] : this._errors;
+    public IReadOnlyList<ValidationError> Items => this._errors.Items;
 
     /// <summary>
     /// Gets the distinct set of validation errors, in the order they were first encountered.
@@ -113,7 +110,18 @@ public readonly record struct ValidationErrors
     /// rather than throwing. This permits the pipeline to pass a default response value when a handler has not yet
     /// produced one. Explicitly constructing this type with an empty sequence still throws.
     /// </remarks>
-    public IReadOnlyList<string> Messages => this._errors.IsDefault ? [] : [.. this._errors.Select(e => e.Message).Distinct()];
+    public IReadOnlyList<string> Messages => this.Items.Count == 0 ? [] : [.. this.Items.Select(e => e.Message).Distinct()];
+
+    /// <summary>
+    /// Returns a human-readable representation of this validation error set.
+    /// </summary>
+    /// <returns>
+    /// <c>"ValidationErrors"</c> when this instance is the default value (empty); otherwise
+    /// <c>"ValidationErrors: {messages joined by ", "}"</c>. Joins <see cref="Messages"/> rather than each item's
+    /// own <see cref="ValidationError.ToString"/>, to avoid a doubled "ValidationErrors: ValidationError: ..." prefix.
+    /// </returns>
+    public override string ToString() =>
+        this.Messages.Count == 0 ? "ValidationErrors" : $"ValidationErrors: {string.Join(", ", this.Messages)}";
 }
 
 /// <summary>
@@ -129,13 +137,12 @@ public readonly record struct ValidationErrors
 public readonly record struct ValidationErrors<TErrorCode>
     where TErrorCode : notnull, IEquatable<TErrorCode>
 {
-    private readonly ImmutableArray<ValidationError<TErrorCode>> _errors;
-    private readonly ImmutableArray<string> _uniqueMessages;
-    private readonly ImmutableArray<TErrorCode> _uniqueErrorCodes;
+    private readonly DistinctItemSet<ValidationError<TErrorCode>> _errors;
+    private readonly DistinctItemSet<string> _uniqueMessages;
+    private readonly DistinctItemSet<TErrorCode> _uniqueErrorCodes;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="ValidationErrors{TErrorCode}"/> struct.
-    /// Initializes a new instance of the <see cref="ValidationErrors{TErrorCode}"/> class from the specified
+    /// Initializes a new instance of the <see cref="ValidationErrors{TErrorCode}"/> struct from the specified
     /// validation errors.
     /// </summary>
     /// <param name="errors">
@@ -146,24 +153,20 @@ public readonly record struct ValidationErrors<TErrorCode>
     /// <exception cref="ArgumentException"><paramref name="errors"/> contains no elements.</exception>
     public ValidationErrors(IEnumerable<ValidationError<TErrorCode>> errors)
     {
-        ArgumentNullException.ThrowIfNull(errors);
-
-        this._errors = [.. errors.Distinct()];
-
-        if (this._errors.IsEmpty)
-        {
-            throw new ArgumentException("At least one validation error is required.", nameof(errors));
-        }
+        this._errors = new DistinctItemSet<ValidationError<TErrorCode>>(
+            errors,
+            "At least one validation error is required.",
+            nameof(errors)
+        );
 
         // Computed once here, rather than on every property access, and each preserves the order
         // in which the corresponding message/error code was first encountered in _errors.
-        this._uniqueMessages = [.. this._errors.Select(e => e.Message).Distinct()];
-        this._uniqueErrorCodes = [.. this._errors.Select(e => e.ErrorCode).Distinct()];
+        this._uniqueMessages = new DistinctItemSet<string>(this._errors.Items.Select(e => e.Message), "unreachable");
+        this._uniqueErrorCodes = new DistinctItemSet<TErrorCode>(this._errors.Items.Select(e => e.ErrorCode), "unreachable");
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="ValidationErrors{TErrorCode}"/> struct.
-    /// Initializes a new instance of the <see cref="ValidationErrors{TErrorCode}"/> class from the specified
+    /// Initializes a new instance of the <see cref="ValidationErrors{TErrorCode}"/> struct from the specified
     /// message and error code tuples.
     /// </summary>
     /// <param name="errors">
@@ -182,8 +185,7 @@ public readonly record struct ValidationErrors<TErrorCode>
         ) { }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="ValidationErrors{TErrorCode}"/> struct.
-    /// Initializes a new instance of the <see cref="ValidationErrors{TErrorCode}"/> class from a single
+    /// Initializes a new instance of the <see cref="ValidationErrors{TErrorCode}"/> struct from a single
     /// message and error code pair.
     /// </summary>
     /// <param name="message">The validation error message.</param>
@@ -200,7 +202,7 @@ public readonly record struct ValidationErrors<TErrorCode>
     /// rather than throwing. This permits the pipeline to pass a default response value when a handler has not yet
     /// produced one. Explicitly constructing this type with an empty sequence still throws.
     /// </remarks>
-    public int Count => this._errors.IsDefault ? 0 : this._errors.Length;
+    public int Count => this._errors.Count;
 
     /// <summary>
     /// Gets the number of distinct validation error messages, irrespective of error code.
@@ -211,7 +213,7 @@ public readonly record struct ValidationErrors<TErrorCode>
     /// rather than throwing. This permits the pipeline to pass a default response value when a handler has not yet
     /// produced one. Explicitly constructing this type with an empty sequence still throws.
     /// </remarks>
-    public int UniqueErrorCount => this._uniqueMessages.IsDefault ? 0 : this._uniqueMessages.Length;
+    public int UniqueErrorCount => this._uniqueMessages.Count;
 
     /// <summary>
     /// Gets the number of distinct error codes present in the original validation errors.
@@ -222,7 +224,7 @@ public readonly record struct ValidationErrors<TErrorCode>
     /// rather than throwing. This permits the pipeline to pass a default response value when a handler has not yet
     /// produced one. Explicitly constructing this type with an empty sequence still throws.
     /// </remarks>
-    public int UniqueErrorCodeCount => this._uniqueErrorCodes.IsDefault ? 0 : this._uniqueErrorCodes.Length;
+    public int UniqueErrorCodeCount => this._uniqueErrorCodes.Count;
 
     /// <summary>
     /// Gets the distinct set of validation errors, each with its message and error code, in the order
@@ -237,7 +239,7 @@ public readonly record struct ValidationErrors<TErrorCode>
     /// rather than throwing. This permits the pipeline to pass a default response value when a handler has not yet
     /// produced one. Explicitly constructing this type with an empty sequence still throws.
     /// </remarks>
-    public IReadOnlyList<ValidationError<TErrorCode>> Items => this._errors.IsDefault ? [] : this._errors;
+    public IReadOnlyList<ValidationError<TErrorCode>> Items => this._errors.Items;
 
     /// <summary>
     /// Gets the distinct set of validation errors, each with its message and error code, in the order
@@ -263,7 +265,7 @@ public readonly record struct ValidationErrors<TErrorCode>
     /// rather than throwing. This permits the pipeline to pass a default response value when a handler has not yet
     /// produced one. Explicitly constructing this type with an empty sequence still throws.
     /// </remarks>
-    public IReadOnlyList<string> Messages => this._uniqueMessages.IsDefault ? [] : this._uniqueMessages;
+    public IReadOnlyList<string> Messages => this._uniqueMessages.Items;
 
     /// <summary>
     /// Gets the distinct set of error codes present in the original validation errors, in the order
@@ -278,5 +280,17 @@ public readonly record struct ValidationErrors<TErrorCode>
     /// rather than throwing. This permits the pipeline to pass a default response value when a handler has not yet
     /// produced one. Explicitly constructing this type with an empty sequence still throws.
     /// </remarks>
-    public IReadOnlyList<TErrorCode> ErrorCodes => this._uniqueErrorCodes.IsDefault ? [] : this._uniqueErrorCodes;
+    public IReadOnlyList<TErrorCode> ErrorCodes => this._uniqueErrorCodes.Items;
+
+    /// <summary>
+    /// Returns a human-readable representation of this validation error set.
+    /// </summary>
+    /// <returns>
+    /// <c>"ValidationErrors"</c> when this instance is the default value (empty); otherwise
+    /// <c>"ValidationErrors: {messages joined by ", "}"</c>. Joins <see cref="Messages"/> rather than each item's
+    /// own <see cref="ValidationError{TErrorCode}.ToString"/>, to avoid a doubled
+    /// "ValidationErrors: ValidationError: ..." prefix.
+    /// </returns>
+    public override string ToString() =>
+        this.Messages.Count == 0 ? "ValidationErrors" : $"ValidationErrors: {string.Join(", ", this.Messages)}";
 }

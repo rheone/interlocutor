@@ -1,3 +1,5 @@
+> **Status: done** - merged in `19622a1` (replace reflection-based runtime dispatch with generated switch).
+
 ## Labels
 
 ready-for-agent
@@ -14,12 +16,12 @@ A request type the generator did not see - reachable when runtime scanning is of
 
 ## Acceptance criteria
 
-- [ ] Runtime-typed dispatch is backed by a generated type switch
-- [ ] Every behavior asserted in ticket 09 still holds, unchanged from the caller's perspective
-- [ ] No reflection remains on the dispatch path when runtime scanning is off
-- [ ] A request type the generator did not see produces the same named exception
-- [ ] The reflection implementation still serves the runtime scanning fallback
-- [ ] Generator tests cover the emitted switch, including the zero-handler and single-handler cases
+- [x] Runtime-typed dispatch is backed by a generated type switch
+- [x] Every behavior asserted in ticket 09 still holds, unchanged from the caller's perspective
+- [x] No reflection remains on the dispatch path when runtime scanning is off
+- [x] A request type the generator did not see produces the same named exception
+- [x] The reflection implementation still serves the runtime scanning fallback
+- [x] Generator tests cover the emitted switch, including the zero-handler and single-handler cases
 
 ## Blocked by
 
