@@ -1,0 +1,8 @@
+using BenchmarkDotNet.Running;
+
+// Discovers and runs every [MemoryDiagnoser]-annotated benchmark class in
+// this assembly. Run with `dotnet run -c Release` -- BenchmarkDotNet
+// refuses to run meaningful benchmarks in a Debug build.
+BenchmarkSwitcher.FromAssembly(typeof(Program).Assembly).Run(args);
+
+internal class Program { }

@@ -1,0 +1,12 @@
+{
+  "$note": "Sample vars.json for template substitution. Fill in real values before running apply_plan.py --execute.",
+  "LibraryName": "MyLib",
+  "Author": "Jane Doe",
+  "GitHubOrg": "my-org",
+  "GitHubRepo": "my-lib",
+  "License": "Apache-2.0",
+  "Year": "2026",
+  "TargetFrameworks": "net8.0;net9.0;net10.0",
+  "DotnetSdkVersion": "10.0.100",
+  "DotnetRollForward": "latestFeature"
+}

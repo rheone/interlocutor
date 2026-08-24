@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")"
+
+echo "Building and packing {{LibraryName}}..."
+(cd ../../src/{{LibraryName}} && dotnet pack -c Release -o ../../smoketests/{{LibraryName}}.SmokeTests/feed)
+
+echo "Restoring ConsumerProj against the local feed..."
+(cd ConsumerProj && dotnet restore --force --no-cache && dotnet run -c Release)
+
+echo "Smoke test passed."

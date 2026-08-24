@@ -1,0 +1,67 @@
+{
+  "$note": "Sample output from scan_repo.py on a real (messy) repo. Shows what the JSON report looks like.",
+  "library_name": "MyLib",
+  "active_groups": [
+    "agent_files",
+    "benchmarks",
+    "husky"
+  ],
+  "missing": [
+    {
+      "path": "CODE_OF_CONDUCT.md",
+      "type": "file",
+      "group": null,
+      "template": "CODE_OF_CONDUCT.md.tmpl",
+      "resolved_path": "CODE_OF_CONDUCT.md"
+    },
+    {
+      "path": "SECURITY.md",
+      "type": "file",
+      "group": null,
+      "template": "SECURITY.md.tmpl",
+      "resolved_path": "SECURITY.md"
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "type": "file",
+      "group": null,
+      "template": "CONTRIBUTING.md.tmpl",
+      "resolved_path": "CONTRIBUTING.md"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "type": "file",
+      "group": null,
+      "template": "CHANGELOG.md.tmpl",
+      "resolved_path": "CHANGELOG.md"
+    },
+    {
+      "path": ".github/pull_request_template.md",
+      "type": "file",
+      "group": null,
+      "template": "pull_request_template.md.tmpl",
+      "resolved_path": ".github/pull_request_template.md"
+    }
+  ],
+  "present_count": 28,
+  "committed_artifacts": [
+    "src/MyLib/bin/Debug/net9.0/MyLib.dll",
+    "src/MyLib.Tests/obj/project.assets.json"
+  ],
+  "casing_issues": [
+    {
+      "path": "src/tests",
+      "issue": "project folders under src/ should be PascalCase"
+    }
+  ],
+  "uncategorized_root_files": [
+    {
+      "path": "TODO.md",
+      "reason": "not in manifest"
+    },
+    {
+      "path": "scratch-notes.txt",
+      "reason": "looks like a scratch/session/handoff file"
+    }
+  ]
+}

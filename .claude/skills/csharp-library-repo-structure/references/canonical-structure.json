@@ -1,0 +1,95 @@
+{
+  "$schema_note": "Single source of truth for the canonical .NET library repo layout. Paths use {{LibraryName}} as a placeholder for the PascalCase library name. group is null for always-required entries, or one of the optional_groups keys below. template points to a file under assets/templates/ used to stub the entry; null means Claude should author content inline following SKILL.md guidance (usually because it's short or must be project-specific).",
+
+  "optional_groups": {
+    "benchmarks": "BenchmarkDotNet project under src/",
+    "smoketests": "Package-consumption smoke tests under smoketests/",
+    "husky": ".husky/ pre-commit hooks (dotnet format, lint)",
+    "pre_commit": ".pre-commit-config.yaml + dictionary.dic (codespell, markdownlint, trailing-whitespace)",
+    "agent_files": "AGENTS.md / CLAUDE.md and related agent-tooling conventions",
+    "multi_project": "Split library into LibraryName + LibraryName.Abstractions"
+  },
+
+  "entries": [
+    { "path": "README.md", "type": "file", "group": null, "template": "README.md.tmpl" },
+    { "path": "LICENSE", "type": "file", "group": null, "template": null, "note": "Full license text depends on chosen license; fetch/author at bootstrap time, never stub partially." },
+    { "path": "SECURITY.md", "type": "file", "group": null, "template": "SECURITY.md.tmpl" },
+    { "path": "CONTRIBUTING.md", "type": "file", "group": null, "template": "CONTRIBUTING.md.tmpl" },
+    { "path": "CODE_OF_CONDUCT.md", "type": "file", "group": null, "template": "CODE_OF_CONDUCT.md.tmpl" },
+    { "path": "CHANGELOG.md", "type": "file", "group": null, "template": "CHANGELOG.md.tmpl" },
+    { "path": "HUMANS.md", "type": "file", "group": null, "template": "HUMANS.md.tmpl" },
+
+    { "path": "AGENTS.md", "type": "file", "group": "agent_files", "template": "AGENTS.md.tmpl" },
+    { "path": "CLAUDE.md", "type": "file", "group": "agent_files", "template": "CLAUDE.md.tmpl", "note": "Must stay a thin pointer to AGENTS.md, never a forked duplicate." },
+    { "path": ".claude/", "type": "dir", "group": "agent_files", "template": null, "note": "Machine/user-local claude agent settings. Must be gitignored, never templated into version control." },
+    { "path": ".opencode/", "type": "dir", "group": "agent_files", "template": null, "note": "Machine/user-local opencode agent settings. Must be gitignored, never templated into version control." },
+    { "path": ".agents/", "type": "dir", "group": "agent_files", "template": null, "note": "Machine/user-local generic agent settings. Must be gitignored, never templated into version control." },
+
+    { "path": "docs/design/PRD.md", "type": "file", "group": null, "template": null, "note": "Project-specific; create empty skeleton with headings only if missing." },
+    { "path": "docs/design/ROADMAP.md", "type": "file", "group": null, "template": null },
+    { "path": "docs/design/adr/0001-record-architecture-decisions.md", "type": "file", "group": null, "template": "adr-0001.md.tmpl" },
+
+    { "path": ".github/dependabot.yml", "type": "file", "group": null, "template": "dependabot.yml.tmpl" },
+    { "path": ".github/pull_request_template.md", "type": "file", "group": null, "template": "pull_request_template.md.tmpl" },
+    { "path": ".github/CODEOWNERS", "type": "file", "group": null, "template": "CODEOWNERS.tmpl" },
+    { "path": ".github/ISSUE_TEMPLATE/bug_report.md", "type": "file", "group": null, "template": "issue_templates/bug_report.md.tmpl" },
+    { "path": ".github/ISSUE_TEMPLATE/feature_request.md", "type": "file", "group": null, "template": "issue_templates/feature_request.md.tmpl" },
+    { "path": ".github/workflows/build.yml", "type": "file", "group": null, "template": "workflows/build.yml.tmpl" },
+    { "path": ".github/workflows/codeql.yml", "type": "file", "group": null, "template": "workflows/codeql.yml.tmpl" },
+    { "path": ".github/workflows/publish.yml", "type": "file", "group": null, "template": "workflows/publish.yml.tmpl" },
+    { "path": ".github/workflows/dependency-review.yml", "type": "file", "group": null, "template": "workflows/dependency-review.yml.tmpl" },
+    { "path": ".github/codeql/codeql-config.yml", "type": "file", "group": null, "template": "codeql/codeql-config.yml.tmpl" },
+
+    { "path": ".husky/pre-commit", "type": "file", "group": "husky", "template": "husky/pre-commit.tmpl" },
+    { "path": ".husky/task-runner.json", "type": "file", "group": "husky", "template": "husky/task-runner.json.tmpl" },
+
+    { "path": ".pre-commit-config.yaml", "type": "file", "group": "pre_commit", "template": "pre-commit-config.yaml.tmpl" },
+    { "path": "dictionary.dic", "type": "file", "group": "pre_commit", "template": "dictionary.dic.tmpl" },
+
+    { "path": ".config/dotnet-tools.json", "type": "file", "group": null, "template": "dotnet-tools.json.tmpl" },
+    { "path": ".editorconfig", "type": "file", "group": null, "template": "editorconfig.tmpl" },
+    { "path": ".gitattributes", "type": "file", "group": null, "template": "gitattributes.tmpl" },
+    { "path": ".gitignore", "type": "file", "group": null, "template": "gitignore.tmpl" },
+    { "path": ".csharpierrc.json", "type": "file", "group": null, "template": "csharpierrc.json.tmpl" },
+    { "path": "stylecop.json", "type": "file", "group": null, "template": "stylecop.json.tmpl" },
+
+    { "path": "{{LibraryName}}.slnx", "type": "file", "group": null, "template": null, "note": "Generate with `dotnet new slnx` + `dotnet sln add`, never hand-author. See SKILL.md." },
+    { "path": "global.json", "type": "file", "group": null, "template": "global.json.tmpl" },
+    { "path": "src/Directory.Build.props", "type": "file", "group": null, "template": "Directory.Build.props.tmpl" },
+    { "path": "src/Directory.Build.targets", "type": "file", "group": null, "template": "Directory.Build.targets.tmpl" },
+    { "path": "src/Directory.Packages.props", "type": "file", "group": null, "template": "Directory.Packages.props.tmpl" },
+    { "path": "src/.editorconfig", "type": "file", "group": null, "template": null, "note": "Only needed if source-level rules genuinely differ from root .editorconfig; otherwise omit (don't create a near-duplicate)." },
+
+    { "path": "src/{{LibraryName}}/{{LibraryName}}.csproj", "type": "file", "group": null, "template": null, "note": "Generate with `dotnet new classlib`, never hand-author." },
+    { "path": "src/{{LibraryName}}/packages.lock.json", "type": "file", "group": null, "template": null, "note": "Generated by `dotnet restore --use-lock-file`; never hand-author." },
+
+    { "path": "src/{{LibraryName}}.Abstractions/{{LibraryName}}.Abstractions.csproj", "type": "file", "group": "multi_project", "template": null },
+
+    { "path": "src/{{LibraryName}}.Tests/{{LibraryName}}.Tests.csproj", "type": "file", "group": null, "template": null, "note": "Generate with `dotnet new xunit|nunit|mstest` per user's chosen test framework." },
+
+    { "path": "src/{{LibraryName}}.Benchmarks/{{LibraryName}}.Benchmarks.csproj", "type": "file", "group": "benchmarks", "template": null, "note": "Generate with `dotnet new console`, then add BenchmarkDotNet package reference." },
+    { "path": "src/{{LibraryName}}.Benchmarks/Program.cs", "type": "file", "group": "benchmarks", "template": "BenchmarksProgram.cs.tmpl" },
+    { "path": "src/{{LibraryName}}.Benchmarks/run-benchmarks.sh", "type": "file", "group": "benchmarks", "template": "run-benchmarks.sh.tmpl" },
+    { "path": "src/{{LibraryName}}.Benchmarks/run-benchmarks.ps1", "type": "file", "group": "benchmarks", "template": "run-benchmarks.ps1.tmpl" },
+
+    { "path": "smoketests/{{LibraryName}}.SmokeTests/README.md", "type": "file", "group": "smoketests", "template": "smoketests.README.md.tmpl" },
+    { "path": "smoketests/{{LibraryName}}.SmokeTests/nuget.config", "type": "file", "group": "smoketests", "template": "smoketests.nuget.config.tmpl" },
+    { "path": "smoketests/{{LibraryName}}.SmokeTests/run-smoke-tests.sh", "type": "file", "group": "smoketests", "template": "run-smoke-tests.sh.tmpl" },
+    { "path": "smoketests/{{LibraryName}}.SmokeTests/run-smoke-tests.ps1", "type": "file", "group": "smoketests", "template": "run-smoke-tests.ps1.tmpl" },
+    { "path": "smoketests/{{LibraryName}}.SmokeTests/ConsumerProj/ConsumerProj.csproj", "type": "file", "group": "smoketests", "template": null, "note": "Generate with `dotnet new console`; add PackageReference to the local feed version." },
+    { "path": "smoketests/{{LibraryName}}.SmokeTests/feed/", "type": "dir", "group": "smoketests", "template": null, "note": "MUST be gitignored. Holds the built .nupkg consumed during smoke testing." }
+  ],
+
+  "never_commit_patterns": [
+    "bin/", "obj/", ".vs/", "*.user", "*.suo",
+    "TestResults/", "BenchmarkDotNet.Artifacts/",
+    "*.nupkg", "*.snupkg",
+    "mono_crash.*.json", "*.dmp",
+    "smoketests/**/feed/",
+    ".claude/", ".opencode/", ".agents/"
+  ],
+
+  "casing_rule": "Repo-management wrapper folders (src, docs, smoketests, scripts, references) are lowercase. Actual .NET project folders and their namespaces are PascalCase and match the .csproj/assembly name exactly (e.g. src/{{LibraryName}}.Tests, not src/tests).",
+
+  "root_allowlist_note": "Any root-level *.md or loose scratch file not in this manifest (e.g. session logs, handoff notes, '*.old.md' copies) should be flagged to the user as uncategorized rather than silently moved, deleted, or left in place. Durable content belongs in CHANGELOG.md, docs/design/, or git history -- not as loose root files."
+}

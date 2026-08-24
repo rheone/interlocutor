@@ -1,0 +1,42 @@
+<Project>
+
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+
+  <!-- Analyzers (shared across library + tests) -->
+  <ItemGroup>
+    <!-- <PackageVersion Include="StyleCop.Analyzers" Version="1.1.118" /> -->
+    <!-- <PackageVersion Include="Roslynator.Analyzers" Version="4.15.0" /> -->
+    <!-- <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.27.0" /> -->
+    <!-- <PackageVersion Include="AsyncFixer" Version="2.1.0" /> -->
+    <!-- <PackageVersion Include="Microsoft.VisualStudio.Threading.Analyzers" Version="18.7.23" /> -->
+  </ItemGroup>
+
+  <!-- Library -->
+  <ItemGroup>
+    <!-- <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.300" /> -->
+    <!-- netstandard2.0 only: <PackageVersion Include="Microsoft.Bcl.HashCode" Version="6.0.0" /> -->
+  </ItemGroup>
+
+  <!-- Tests -->
+  <ItemGroup>
+    <!-- Required: <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.7.0" /> -->
+    <!-- net48 only: <PackageVersion Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" /> -->
+    <!-- xUnit: <PackageVersion Include="xunit.v3" Version="3.2.2" /> -->
+    <!-- xUnit: <PackageVersion Include="xunit.analyzers" Version="1.27.0" /> -->
+    <!-- xUnit: <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" /> -->
+    <!-- NSubstitute: <PackageVersion Include="NSubstitute" Version="5.3.0" /> -->
+    <!-- NSubstitute: <PackageVersion Include="NSubstitute.Analyzers.CSharp" Version="1.0.17" /> -->
+    <!-- Coverage: <PackageVersion Include="coverlet.collector" Version="6.0.0" /> -->
+    <!-- FluentAssertions: <PackageVersion Include="FluentAssertions" Version="8.0.0" /> -->
+    <!-- AutoFixture: <PackageVersion Include="AutoFixture" Version="4.18.0" /> -->
+  </ItemGroup>
+
+  <!-- Benchmarks -->
+  <ItemGroup>
+    <!-- <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" /> -->
+  </ItemGroup>
+
+</Project>

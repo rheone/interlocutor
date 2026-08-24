@@ -1,0 +1,7 @@
+{
+  "$note": "Sample moves.json for audit_paths.py. Maps old repo-relative paths to new paths after a refactor's git_mv actions. Used with --rewrite-map.",
+  "MyLib.Tests/MyLib.Tests.csproj": "src/MyLib.Tests/MyLib.Tests.csproj",
+  "MyLib.Tests/MathTests.cs": "src/MyLib.Tests/MathTests.cs",
+  "MyLib.Tests/UtilitiesTests.cs": "src/MyLib.Tests/UtilitiesTests.cs",
+  "MyLib.Tests/packages.lock.json": "src/MyLib.Tests/packages.lock.json"
+}
