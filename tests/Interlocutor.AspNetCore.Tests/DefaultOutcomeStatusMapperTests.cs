@@ -14,33 +14,80 @@ public class DefaultOutcomeStatusMapperTests
     private readonly DefaultOutcomeStatusMapper mapper = new();
 
     [Fact]
-    public void Map_WithNotFound_Returns404() =>
-        Assert.Equal(StatusCodes.Status404NotFound, this.mapper.Map(new NotFound("missing")).StatusCode);
+    public void Map_WithNotFound_Returns404()
+    {
+        // Arrange
+        var notFound = new NotFound("missing");
+
+        // Act
+        var mapping = this.mapper.Map(notFound);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status404NotFound, mapping.StatusCode);
+    }
 
     [Fact]
-    public void Map_WithNotFoundGeneric_Returns404() =>
-        Assert.Equal(
-            StatusCodes.Status404NotFound,
-            this.mapper.Map(new NotFound<int>(typeof(string), 1, "missing")).StatusCode
-        );
+    public void Map_WithNotFoundGeneric_Returns404()
+    {
+        // Arrange
+        var notFound = new NotFound<int>(typeof(string), 1, "missing");
+
+        // Act
+        var mapping = this.mapper.Map(notFound);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status404NotFound, mapping.StatusCode);
+    }
 
     [Fact]
-    public void Map_WithForbidden_Returns403() =>
-        Assert.Equal(StatusCodes.Status403Forbidden, this.mapper.Map(new Forbidden("denied")).StatusCode);
+    public void Map_WithForbidden_Returns403()
+    {
+        // Arrange
+        var forbidden = new Forbidden("denied");
+
+        // Act
+        var mapping = this.mapper.Map(forbidden);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status403Forbidden, mapping.StatusCode);
+    }
 
     [Fact]
-    public void Map_WithConflict_Returns409() =>
-        Assert.Equal(StatusCodes.Status409Conflict, this.mapper.Map(new Conflict("stale", "conflict.code")).StatusCode);
+    public void Map_WithConflict_Returns409()
+    {
+        // Arrange
+        var conflict = new Conflict("stale", "conflict.code");
+
+        // Act
+        var mapping = this.mapper.Map(conflict);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status409Conflict, mapping.StatusCode);
+    }
 
     [Fact]
-    public void Map_WithValidationErrors_Returns422() =>
-        Assert.Equal(StatusCodes.Status422UnprocessableEntity, this.mapper.Map(new ValidationErrors("required")).StatusCode);
+    public void Map_WithValidationErrors_Returns422()
+    {
+        // Arrange
+        var validationErrors = new ValidationErrors("required");
+
+        // Act
+        var mapping = this.mapper.Map(validationErrors);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status422UnprocessableEntity, mapping.StatusCode);
+    }
 
     [Fact]
     public void Map_WithCancelled_Returns499NoBody()
     {
-        var mapping = this.mapper.Map(new Cancelled("caller went away"));
+        // Arrange
+        var cancelled = new Cancelled("caller went away");
 
+        // Act
+        var mapping = this.mapper.Map(cancelled);
+
+        // Assert
         Assert.Equal(StatusCodes.Status499ClientClosedRequest, mapping.StatusCode);
         Assert.Null(mapping.Body);
     }
@@ -48,8 +95,13 @@ public class DefaultOutcomeStatusMapperTests
     [Fact]
     public void Map_WithTimeout_Returns408()
     {
-        var mapping = this.mapper.Map(new Timeout(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2), "downstream slow"));
+        // Arrange
+        var timeout = new Timeout(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2), "downstream slow");
 
+        // Act
+        var mapping = this.mapper.Map(timeout);
+
+        // Assert
         Assert.Equal(StatusCodes.Status408RequestTimeout, mapping.StatusCode);
         var problemDetails = Assert.IsType<ProblemDetails>(mapping.Body);
         Assert.Equal("downstream slow", problemDetails.Detail);
@@ -58,8 +110,13 @@ public class DefaultOutcomeStatusMapperTests
     [Fact]
     public void Map_WithRateLimited_Returns429()
     {
-        var mapping = this.mapper.Map(new RateLimited("per-user", TimeSpan.FromSeconds(30), "slow down"));
+        // Arrange
+        var rateLimited = new RateLimited("per-user", TimeSpan.FromSeconds(30), "slow down");
 
+        // Act
+        var mapping = this.mapper.Map(rateLimited);
+
+        // Assert
         Assert.Equal(StatusCodes.Status429TooManyRequests, mapping.StatusCode);
         var problemDetails = Assert.IsType<ProblemDetails>(mapping.Body);
         Assert.Equal("slow down", problemDetails.Detail);
@@ -68,10 +125,14 @@ public class DefaultOutcomeStatusMapperTests
     [Fact]
     public void Map_WithFailure_Returns400NotServerError()
     {
-        // See the remarks on DefaultOutcomeStatusMapper.MapFailure: a plain Failure is an expected outcome,
-        // not an unhandled exception, so it must not surface as a 5xx server error.
-        var mapping = this.mapper.Map(new Failure("expected domain failure"));
+        // Arrange - see the remarks on DefaultOutcomeStatusMapper.MapFailure: a plain Failure is an expected
+        // outcome, not an unhandled exception, so it must not surface as a 5xx server error.
+        var failure = new Failure("expected domain failure");
 
+        // Act
+        var mapping = this.mapper.Map(failure);
+
+        // Assert
         Assert.Equal(StatusCodes.Status400BadRequest, mapping.StatusCode);
         Assert.True(mapping.StatusCode < 500);
     }
@@ -79,8 +140,13 @@ public class DefaultOutcomeStatusMapperTests
     [Fact]
     public void Map_WithFailures_Returns400NotServerError()
     {
-        var mapping = this.mapper.Map(new Failures([new Failure("one"), new Failure("two")]));
+        // Arrange
+        var failures = new Failures([new Failure("one"), new Failure("two")]);
 
+        // Act
+        var mapping = this.mapper.Map(failures);
+
+        // Assert
         Assert.Equal(StatusCodes.Status400BadRequest, mapping.StatusCode);
         Assert.True(mapping.StatusCode < 500);
     }
@@ -88,31 +154,41 @@ public class DefaultOutcomeStatusMapperTests
     [Fact]
     public void Map_WithUnrecognizedCustomFailureType_Returns500()
     {
-        var mapping = this.mapper.Map(new CustomRateLimited(TimeSpan.FromSeconds(1)));
+        // Arrange
+        var customFailure = new CustomRateLimited(TimeSpan.FromSeconds(1));
 
+        // Act
+        var mapping = this.mapper.Map(customFailure);
+
+        // Assert
         Assert.Equal(StatusCodes.Status500InternalServerError, mapping.StatusCode);
     }
 
     [Fact]
     public void Map_WithCustomFailureType_ViaDerivedMapper_IsOverridable()
     {
+        // Arrange
         var rateLimitAwareMapper = new RateLimitAwareOutcomeStatusMapper();
 
+        // Act
         var mapping = rateLimitAwareMapper.Map(new CustomRateLimited(TimeSpan.FromSeconds(1)));
 
+        // Assert
         Assert.Equal(StatusCodes.Status429TooManyRequests, mapping.StatusCode);
     }
 
     [Fact]
     public void Map_WithNotFoundGeneric_ViaDerivedMapper_IsOverridable()
     {
-        // NotFound<TId> can't be pattern-matched directly (it's an open generic case type), so it needs its own
-        // override point - MapNotFoundGeneric - distinct from MapUnrecognized. This proves a consumer can change
-        // just that case without reimplementing the reflection that detects it.
+        // Arrange - NotFound<TId> can't be pattern-matched directly (it's an open generic case type), so it
+        // needs its own override point - MapNotFoundGeneric - distinct from MapUnrecognized. This proves a
+        // consumer can change just that case without reimplementing the reflection that detects it.
         var entityAwareMapper = new EntityNameIncludingOutcomeStatusMapper();
 
+        // Act
         var mapping = entityAwareMapper.Map(new NotFound<int>(typeof(string), 42, "missing"));
 
+        // Assert
         Assert.Equal(StatusCodes.Status404NotFound, mapping.StatusCode);
         Assert.Equal("String/42", mapping.Body);
     }
@@ -125,55 +201,68 @@ public class DefaultOutcomeStatusMapperTests
     [Fact]
     public void Map_AcrossFiveArityOutcome_WithNotFoundCase_Returns404()
     {
+        // Arrange
         OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationErrors> outcome = new(new NotFound("missing"));
 
+        // Act
         var mapping = this.mapper.Map(outcome.GetValue()!);
 
+        // Assert
         Assert.Equal(StatusCodes.Status404NotFound, mapping.StatusCode);
     }
 
     [Fact]
     public void Map_AcrossFiveArityOutcome_WithForbiddenCase_Returns403()
     {
+        // Arrange
         OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationErrors> outcome = new(new Forbidden("denied"));
 
+        // Act
         var mapping = this.mapper.Map(outcome.GetValue()!);
 
+        // Assert
         Assert.Equal(StatusCodes.Status403Forbidden, mapping.StatusCode);
     }
 
     [Fact]
     public void Map_AcrossFiveArityOutcome_WithConflictCase_Returns409()
     {
+        // Arrange
         OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationErrors> outcome = new(
             new Conflict("stale", "conflict.code")
         );
 
+        // Act
         var mapping = this.mapper.Map(outcome.GetValue()!);
 
+        // Assert
         Assert.Equal(StatusCodes.Status409Conflict, mapping.StatusCode);
     }
 
     [Fact]
     public void Map_AcrossFiveArityOutcome_WithValidationErrorsCase_Returns422()
     {
+        // Arrange
         OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationErrors> outcome = new(
             new ValidationErrors("required")
         );
 
+        // Act
         var mapping = this.mapper.Map(outcome.GetValue()!);
 
+        // Assert
         Assert.Equal(StatusCodes.Status422UnprocessableEntity, mapping.StatusCode);
     }
 
     [Fact]
     public void Map_AcrossFiveArityOutcome_WithSuccessCase_IsNotMappedAsFailure()
     {
-        // The success case is never handed to the mapper in production - ResultExtensions branches on
-        // IsSuccess before calling Map - but proving it round-trips through GetValue() confirms the
+        // Arrange - the success case is never handed to the mapper in production - ResultExtensions branches
+        // on IsSuccess before calling Map - but proving it round-trips through GetValue() confirms the
         // multi-arity outcome itself distinguishes the success case from all four failure cases correctly.
         OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationErrors> outcome = new("ok");
 
+        // Act & Assert
         Assert.True(outcome.IsSuccess);
         Assert.Equal("ok", outcome.GetValue());
     }

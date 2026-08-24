@@ -25,6 +25,7 @@ public sealed class PersistenceRegistrationTests : IDisposable
     [Fact]
     public async Task UnitOfWorkAndRepository_ResolveScoped_SharingOneDbContextInstance_WithinOneScope()
     {
+        // Arrange
         var builder = new ContainerBuilder();
         builder.Register(_ => new DbContextOptionsBuilder<TestDbContext>().UseSqlite(this.connection).Options).SingleInstance();
         builder.RegisterType<TestDbContext>().AsSelf().InstancePerLifetimeScope();
@@ -45,12 +46,10 @@ public sealed class PersistenceRegistrationTests : IDisposable
 
         await using var scope = container.BeginLifetimeScope();
 
+        // Act
         var unitOfWork = scope.Resolve<IUnitOfWork>();
         var repository = scope.Resolve<IDomainRepository<Widget, int>>();
         var contextFromContainer = scope.Resolve<TestDbContext>();
-
-        Assert.IsType<EntityFrameworkUnitOfWork<TestDbContext>>(unitOfWork);
-        Assert.IsType<EntityFrameworkRepository<Widget, int, TestDbContext>>(repository);
 
         // The repository's Query escape hatch reads through DbSet<Widget> - proving it and the container's
         // own resolved TestDbContext agree confirms IUnitOfWork, the repository, and a plain DbContext
@@ -58,12 +57,16 @@ public sealed class PersistenceRegistrationTests : IDisposable
         contextFromContainer.Widgets.Add(new Widget { Name = "shared" });
         await contextFromContainer.SaveChangesAsync(TestContext.Current.CancellationToken);
 
+        // Assert
+        Assert.IsType<EntityFrameworkUnitOfWork<TestDbContext>>(unitOfWork);
+        Assert.IsType<EntityFrameworkRepository<Widget, int, TestDbContext>>(repository);
         Assert.Equal(["shared"], repository.Query.Select(w => w.Name));
     }
 
     [Fact]
     public async Task UnitOfWorkAndRepository_ResolveDifferentContextInstances_AcrossSeparateScopes()
     {
+        // Arrange
         var builder = new ContainerBuilder();
         builder.Register(_ => new DbContextOptionsBuilder<TestDbContext>().UseSqlite(this.connection).Options).SingleInstance();
         builder.RegisterType<TestDbContext>().AsSelf().InstancePerLifetimeScope();
@@ -78,12 +81,46 @@ public sealed class PersistenceRegistrationTests : IDisposable
         await using var firstScope = container.BeginLifetimeScope();
         await using var secondScope = container.BeginLifetimeScope();
 
+        // Act
         var firstContext = firstScope.Resolve<TestDbContext>();
         var secondContext = secondScope.Resolve<TestDbContext>();
 
+        // Assert
         // InstancePerLifetimeScope, not SingleInstance: two independent scopes never share the underlying
         // DbContext.
         Assert.NotSame(firstContext, secondContext);
+    }
+
+    // Auto Generated, verify expected behavior:
+    [Fact]
+    public void AddInterlocutorUnitOfWork_NullFactory_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var builder = new ContainerBuilder();
+
+        // Act
+        var exception = Assert.Throws<ArgumentNullException>(() =>
+            builder.AddInterlocutorUnitOfWork<EntityFrameworkUnitOfWork<TestDbContext>>(null!)
+        );
+
+        // Assert
+        Assert.Equal("implementationFactory", exception.ParamName);
+    }
+
+    // Auto Generated, verify expected behavior:
+    [Fact]
+    public void AddInterlocutorRepository_NullFactory_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var builder = new ContainerBuilder();
+
+        // Act
+        var exception = Assert.Throws<ArgumentNullException>(() =>
+            builder.AddInterlocutorRepository<Widget, int, EntityFrameworkRepository<Widget, int, TestDbContext>>(null!)
+        );
+
+        // Assert
+        Assert.Equal("implementationFactory", exception.ParamName);
     }
 
     public void Dispose() => this.connection.Dispose();

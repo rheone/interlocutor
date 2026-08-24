@@ -62,6 +62,7 @@ public sealed class CrossAssemblyContainerResolutionTests
     [Fact]
     public async Task MicrosoftDependencyInjection_ResolvesAndDispatches_ToAHandlerDeclaredOnlyInTheReferencedLibrary()
     {
+        // Arrange
         var app = BuildAggregatedApp("MicrosoftDI");
 
         var services = new ServiceCollection();
@@ -72,16 +73,19 @@ public sealed class CrossAssemblyContainerResolutionTests
         // Dispatch must happen from a real scope, never the root provider directly - see ADR-0011.
         using var scope = provider.CreateScope();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-
         var request = app.CreateRequest();
+
+        // Act
         var outcome = await mediator.Send(request, TestContext.Current.CancellationToken);
 
+        // Assert
         AssertSuccessfulGreeting(outcome);
     }
 
     [Fact]
     public async Task Autofac_ResolvesAndDispatches_ToAHandlerDeclaredOnlyInTheReferencedLibrary()
     {
+        // Arrange
         var app = BuildAggregatedApp("Autofac");
 
         var containerBuilder = new ContainerBuilder();
@@ -92,10 +96,12 @@ public sealed class CrossAssemblyContainerResolutionTests
         // Dispatch must happen from a real lifetime scope, never the root container directly - see ADR-0011.
         await using var scope = container.BeginLifetimeScope();
         var mediator = scope.Resolve<IMediator>();
-
         var request = app.CreateRequest();
+
+        // Act
         var outcome = await mediator.Send(request, TestContext.Current.CancellationToken);
 
+        // Assert
         AssertSuccessfulGreeting(outcome);
     }
 

@@ -11,8 +11,10 @@ public sealed class PageTests
     [InlineData(25, 10, 3)]
     public void TotalPageCount_IsCeilingOfTotalCountOverPageSize(int totalCount, int pageSize, int expected)
     {
+        // Arrange
         var page = new Page<string>(Items: [], PageNumber: 1, PageSize: pageSize, TotalCount: totalCount);
 
+        // Act & Assert
         Assert.Equal(expected, page.TotalPageCount);
     }
 }

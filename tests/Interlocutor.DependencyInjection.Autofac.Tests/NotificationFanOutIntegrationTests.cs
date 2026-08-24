@@ -17,6 +17,7 @@ public class NotificationFanOutIntegrationTests
     [Fact]
     public async Task Publish_DerivedEvent_InvokesHandlerRegisteredForBaseType()
     {
+        // Arrange
         var containerBuilder = new ContainerBuilder();
         containerBuilder.RegisterType<InvocationRecorder>().AsSelf().InstancePerLifetimeScope();
         containerBuilder.AddInterlocutor(builder => builder.ScanAssembly(typeof(NotificationFanOutIntegrationTests).Assembly));
@@ -25,8 +26,10 @@ public class NotificationFanOutIntegrationTests
         using var scope = container.BeginLifetimeScope();
         var mediator = scope.Resolve<IMediator>();
 
+        // Act
         await mediator.Publish(new OrderCreated(1), TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.True(scope.Resolve<InvocationRecorder>().Invoked);
     }
 

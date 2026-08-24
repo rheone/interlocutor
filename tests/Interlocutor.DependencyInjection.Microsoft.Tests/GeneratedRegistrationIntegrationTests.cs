@@ -24,6 +24,7 @@ public sealed class GeneratedRegistrationIntegrationTests
     [Fact]
     public async Task GeneratedRegistration_ResolvesHandlerWithConstructorDependency_AndDispatchesSuccessfully()
     {
+        // Arrange
         var services = new ServiceCollection();
         services.AddSingleton<IGreeter, Greeter>();
 
@@ -45,14 +46,17 @@ public sealed class GeneratedRegistrationIntegrationTests
         using var scope = provider.CreateScope();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
+        // Act
         var result = await mediator.Send(new GeneratedQuery(), TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.Equal("hi from Microsoft DI", result.Value);
     }
 
     [Fact]
     public async Task GeneratedRegistration_WithMultipleBehaviors_ExecutesBehaviorsInCorrectOrder()
     {
+        // Arrange
         var executionOrder = new List<string>();
         var services = new ServiceCollection();
         services.AddSingleton<IGreeter, Greeter>();
@@ -76,8 +80,10 @@ public sealed class GeneratedRegistrationIntegrationTests
         using var scope = provider.CreateScope();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
+        // Act
         var result = await mediator.Send(new GeneratedQuery(), TestContext.Current.CancellationToken);
 
+        // Assert
         // First registered wraps the outermost layer (documented in documentation/pipeline-and-behaviors.md):
         // behaviors registered as 1→2→3 enter in that same order and exit in reverse (3→2→1 on exit).
         // Each behavior records entry and exit to verify the wrap order is correct.

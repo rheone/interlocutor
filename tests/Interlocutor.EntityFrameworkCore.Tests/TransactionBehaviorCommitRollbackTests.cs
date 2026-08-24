@@ -2,10 +2,12 @@ namespace Interlocutor.EntityFrameworkCore.Tests;
 
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Markers;
+using Interlocutor.Abstractions.Pipeline.Classifiers;
 using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using NSubstitute;
 
 /// <summary>
 /// Covers the commit/rollback decision logic of <see cref="TransactionBehavior{TRequest,TResponse,TContext}"/>:
@@ -34,8 +36,10 @@ public sealed class TransactionBehaviorCommitRollbackTests : IDisposable
     [Fact]
     public async Task ClassifiedSuccess_CommitsTransaction_AndPersistsViaSaveChanges()
     {
+        // Arrange
         var behavior = this.CreateBehavior();
 
+        // Act
         var result = await behavior.Handle(
             new TransactionalRequest(1),
             () =>
@@ -46,6 +50,7 @@ public sealed class TransactionBehaviorCommitRollbackTests : IDisposable
             CancellationToken.None
         );
 
+        // Assert
         Assert.True(result.IsSuccess);
 
         // Persistence is verified via a fresh context reading through the same connection, so the assertion
@@ -57,10 +62,12 @@ public sealed class TransactionBehaviorCommitRollbackTests : IDisposable
     [Fact]
     public async Task ClassifiedFailure_RollsBack_WithoutSecondSaveChangesCall_AndReturnsResultUnchanged()
     {
+        // Arrange
         var behavior = this.CreateBehavior();
         var saveChangesCallCount = 0;
         this.context.SaveChangesCalled += () => saveChangesCallCount++;
 
+        // Act
         var result = await behavior.Handle(
             new TransactionalRequest(2),
             () =>
@@ -73,6 +80,7 @@ public sealed class TransactionBehaviorCommitRollbackTests : IDisposable
             CancellationToken.None
         );
 
+        // Assert
         Assert.False(result.IsSuccess);
         var failure = Assert.IsType<Failure>(result.Value);
         Assert.Equal("rejected", failure.Reason);
@@ -85,10 +93,12 @@ public sealed class TransactionBehaviorCommitRollbackTests : IDisposable
     [Fact]
     public async Task SaveChangesThrowing_RollsBackTransaction_AndRethrowsOriginalException()
     {
+        // Arrange
         var thrown = new InvalidOperationException("boom from SaveChangesAsync");
         var behavior = this.CreateBehavior();
         this.context.ThrowOnSaveChanges = thrown;
 
+        // Act
         var actual = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             behavior.Handle(
                 new TransactionalRequest(3),
@@ -101,9 +111,52 @@ public sealed class TransactionBehaviorCommitRollbackTests : IDisposable
             )
         );
 
+        // Assert
         // Same exception instance, not a wrapper (e.g. not a DbUpdateException or AggregateException).
         Assert.Same(thrown, actual);
 
+        await using var verifyContext = this.CreateVerificationContext();
+        Assert.Empty(verifyContext.Widgets);
+    }
+
+    // Auto Generated, verify expected behavior:
+    // Fills a gap the other three tests leave open: they all exercise the *default* classifier, whose
+    // IsFailure decision happens to align with the OperationOutcome's own Success/Failure shape. This test
+    // proves TransactionBehavior<,,> actually asks the injected IOutcomeClassifier - not the outcome's own
+    // shape - by stubbing a classifier that reports failure for a result that is itself Success-shaped, and
+    // confirming that drives a rollback (no persisted row) rather than the commit the outcome shape alone
+    // would suggest. Mirrors Interlocutor.NHibernate.Tests.TransactionBehaviorTests, whose
+    // Handle_RollsBackSession_WhenClassifierReportsFailure test documents the same classifier-authority
+    // contract for the NHibernate sibling of this behavior.
+    [Fact]
+    public async Task Handle_UsesInjectedClassifier_NotOutcomeShape_ToDecideCommitVersusRollback()
+    {
+        // Arrange
+        var classifier = Substitute.For<IOutcomeClassifier>();
+        classifier.IsFailure(Arg.Any<object?>()).Returns(true);
+        var behavior = new TransactionBehavior<TransactionalRequest, OperationOutcome<Success, Failure>, TestDbContext>(
+            new Lazy<TestDbContext>(() => this.context),
+            classifier
+        );
+
+        // Act
+        var result = await behavior.Handle(
+            new TransactionalRequest(4),
+            () =>
+            {
+                this.context.Widgets.Add(new Widget { Name = "should-not-persist" });
+                return Task.FromResult<OperationOutcome<Success, Failure>>(default(Success));
+            },
+            CancellationToken.None
+        );
+
+        // Assert
+        // The outcome itself is still Success-shaped ...
+        Assert.True(result.IsSuccess);
+
+        // ... but the injected classifier said "failure", so TransactionBehavior rolled back instead of
+        // committing and calling SaveChangesAsync - proving the classifier, not the outcome shape, drives
+        // the decision.
         await using var verifyContext = this.CreateVerificationContext();
         Assert.Empty(verifyContext.Widgets);
     }

@@ -31,6 +31,7 @@ public sealed class PipelineOrderingIntegrationTests
     [Fact]
     public async Task UseRecommendedChain_ObservedExecutionOrder_MatchesLoggingAuditingAuthorizationValidationTransaction()
     {
+        // Arrange
         var log = new List<string>();
         var services = new ServiceCollection();
         var transaction = ConfigureSharedDependencies(services, log);
@@ -48,8 +49,10 @@ public sealed class PipelineOrderingIntegrationTests
         using var scope = provider.CreateScope();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
+        // Act
         var sendResult = await mediator.Send(new OrderedRequest(), TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.True(sendResult.IsSuccess);
         await transaction.Received(1).CommitAsync(Arg.Any<CancellationToken>());
 
@@ -73,6 +76,7 @@ public sealed class PipelineOrderingIntegrationTests
         // Authorization and Validation's builder-call order - both of which have a directly observable
         // "entering" side effect - inverts their relative position in the observed log, which the canonical
         // test's exact-sequence assertion would catch immediately.
+        // Arrange
         var log = new List<string>();
         var services = new ServiceCollection();
         ConfigureSharedDependencies(services, log);
@@ -95,8 +99,10 @@ public sealed class PipelineOrderingIntegrationTests
         using var scope = provider.CreateScope();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
+        // Act
         await mediator.Send(new OrderedRequest(), TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.NotEqual(
             ["authorization", "validation", "transaction-begin", "handler", "transaction-commit", "auditing", "logging"],
             log

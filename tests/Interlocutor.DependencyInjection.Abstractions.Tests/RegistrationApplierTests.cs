@@ -16,6 +16,7 @@ public class RegistrationApplierTests
     [Fact]
     public void Apply_DrivesEveryStep_InTheSevenStepOrder()
     {
+        // Arrange
         var builder = new InterlocutorBuilder();
         builder
             .AddHandler(typeof(MarkerHandler))
@@ -50,8 +51,10 @@ public class RegistrationApplierTests
             tryAddDefault: d => steps.Add(("default", d.ImplementationType))
         );
 
+        // Act
         applier.Apply(builder);
 
+        // Assert
         int IndexOf(string category, Type markerType) =>
             steps.FindIndex(s => s.Category == category && s.MarkerType == markerType);
 
@@ -96,6 +99,7 @@ public class RegistrationApplierTests
     [InlineData(RegistrationLifetime.Transient)]
     public void Apply_ForwardsEachRegistrationsLifetime_Unchanged(RegistrationLifetime lifetime)
     {
+        // Arrange
         var builder = new InterlocutorBuilder();
         builder.AddHandler(typeof(MarkerHandler), lifetime);
 
@@ -112,8 +116,10 @@ public class RegistrationApplierTests
             tryAddDefault: _ => { }
         );
 
+        // Act
         applier.Apply(builder);
 
+        // Assert
         Assert.Equal(lifetime, observed);
     }
 
@@ -123,6 +129,7 @@ public class RegistrationApplierTests
     [InlineData(RegistrationLifetime.Transient)]
     public void Apply_ForwardsEachFactoryRegistrationsLifetime_Unchanged(RegistrationLifetime lifetime)
     {
+        // Arrange
         var builder = new InterlocutorBuilder();
         builder.Pipeline.AddStage<MarkerStageFactoryRequest, MarkerStageFactoryResponse>(
             onBefore: (Func<MarkerStageFactoryRequest, CancellationToken, Task<StageResult<MarkerStageFactoryResponse>>>?)null,
@@ -137,8 +144,10 @@ public class RegistrationApplierTests
             tryAddDefault: _ => { }
         );
 
+        // Act
         applier.Apply(builder);
 
+        // Assert
         Assert.Equal(lifetime, observed);
     }
 

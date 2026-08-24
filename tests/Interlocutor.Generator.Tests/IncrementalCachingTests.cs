@@ -48,8 +48,10 @@ public sealed class IncrementalCachingTests
     [Fact]
     public void CompilationInfoStep_ReportsUnchanged_WhenReferenceGraphAndAssemblyNameAreUnchanged()
     {
+        // Act
         var result = GeneratorTestHarness.RunTwiceTrackingSteps(FirstSource, SecondSource);
 
+        // Assert
         var steps = result.Results.Single().TrackedSteps[InterlocutorSourceGenerator.CompilationInfoTrackingName];
 
         Assert.NotEmpty(steps);

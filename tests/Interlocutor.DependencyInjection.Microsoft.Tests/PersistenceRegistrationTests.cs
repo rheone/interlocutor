@@ -25,6 +25,7 @@ public sealed class PersistenceRegistrationTests : IDisposable
     [Fact]
     public async Task UnitOfWorkAndRepository_ResolveScoped_SharingOneDbContextInstance_WithinOneScope()
     {
+        // Arrange
         var services = new ServiceCollection();
         services.AddDbContext<TestDbContext>(
             options => options.UseSqlite(this.connection),
@@ -55,21 +56,23 @@ public sealed class PersistenceRegistrationTests : IDisposable
         var repository = scope.ServiceProvider.GetRequiredService<IDomainRepository<Widget, int>>();
         var contextFromContainer = scope.ServiceProvider.GetRequiredService<TestDbContext>();
 
-        Assert.IsType<EntityFrameworkUnitOfWork<TestDbContext>>(unitOfWork);
-        Assert.IsType<EntityFrameworkRepository<Widget, int, TestDbContext>>(repository);
-
+        // Act
         // The repository's Query escape hatch reads through DbSet<Widget> - proving it and the container's
         // own resolved TestDbContext agree confirms IUnitOfWork, the repository, and a plain DbContext
         // injection all share one scoped instance within this scope.
         contextFromContainer.Widgets.Add(new Widget { Name = "shared" });
         await contextFromContainer.SaveChangesAsync(TestContext.Current.CancellationToken);
 
+        // Assert
+        Assert.IsType<EntityFrameworkUnitOfWork<TestDbContext>>(unitOfWork);
+        Assert.IsType<EntityFrameworkRepository<Widget, int, TestDbContext>>(repository);
         Assert.Equal(["shared"], repository.Query.Select(w => w.Name));
     }
 
     [Fact]
     public async Task UnitOfWorkAndRepository_ResolveDifferentContextInstances_AcrossSeparateScopes()
     {
+        // Arrange
         var services = new ServiceCollection();
         services.AddDbContext<TestDbContext>(
             options => options.UseSqlite(this.connection),
@@ -82,12 +85,14 @@ public sealed class PersistenceRegistrationTests : IDisposable
 
         await using var provider = services.BuildServiceProvider();
 
+        // Act
         await using var firstScope = provider.CreateAsyncScope();
         await using var secondScope = provider.CreateAsyncScope();
 
         var firstContext = firstScope.ServiceProvider.GetRequiredService<TestDbContext>();
         var secondContext = secondScope.ServiceProvider.GetRequiredService<TestDbContext>();
 
+        // Assert
         // Scoped, not singleton: two independent scopes never share the underlying DbContext.
         Assert.NotSame(firstContext, secondContext);
     }

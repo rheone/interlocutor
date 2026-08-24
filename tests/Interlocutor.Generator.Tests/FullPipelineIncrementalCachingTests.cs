@@ -103,14 +103,17 @@ public sealed class FullPipelineIncrementalCachingTests
     [Fact]
     public void FinalPipelineStep_ReportsCachedOrUnchanged_OnAWhitespaceOnlyRebuild()
     {
+        // Act
         var result = GeneratorTestHarness.RunTwiceTrackingStepsWithIncrementalEdit(FirstSource, SecondSource);
 
+        // Assert
         AssertFinalStepCachedOrUnchanged(result);
     }
 
     [Fact]
     public void FinalPipelineStep_ReportsCachedOrUnchanged_WhenAReferencedLibraryChangesNoPublicApiSurface()
     {
+        // Arrange
         const string appSource = "namespace App; public sealed class Nothing;";
 
         var firstLibraryOutput = GeneratorTestHarness.RunAndUpdate(LibrarySource, "Library", null, out _);
@@ -120,8 +123,11 @@ public sealed class FullPipelineIncrementalCachingTests
 
         var secondLibraryOutput = GeneratorTestHarness.RunAndUpdate(LibrarySourceWithChangedBody, "Library", null, out _);
         var secondLibraryReference = GeneratorTestHarness.ToMetadataReference(secondLibraryOutput);
+
+        // Act
         var secondAppResult = GeneratorTestHarness.RunTwiceTrackingSteps(appSource, appSource, [secondLibraryReference]);
 
+        // Assert
         AssertFinalStepCachedOrUnchanged(secondAppResult);
 
         var secondGeneratedSource = GetGeneratedSource(secondAppResult, "InterlocutorGeneratedRegistrations.g.cs");

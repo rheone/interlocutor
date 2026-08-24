@@ -12,6 +12,7 @@ public sealed class MissingHandlerDiagnosticTests
     [Fact]
     public void Query_with_no_handler_reports_missing_handler_diagnostic()
     {
+        // Arrange
         const string source = """
             namespace TestApp;
 
@@ -21,8 +22,10 @@ public sealed class MissingHandlerDiagnosticTests
             public sealed class GetFooQuery : IQuery<OperationOutcome>;
             """;
 
+        // Act
         var result = GeneratorTestHarness.Run(source);
 
+        // Assert
         var diagnostic = Assert.Single(result.Diagnostics);
         Assert.Equal("INTERLOC001", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
@@ -37,6 +40,7 @@ public sealed class MissingHandlerDiagnosticTests
     [Fact]
     public void Command_with_no_handler_reports_missing_handler_diagnostic()
     {
+        // Arrange
         const string source = """
             namespace TestApp;
 
@@ -46,8 +50,10 @@ public sealed class MissingHandlerDiagnosticTests
             public sealed class CreateFooCommand : ICommand<OperationOutcome>;
             """;
 
+        // Act
         var result = GeneratorTestHarness.Run(source);
 
+        // Assert
         var diagnostic = Assert.Single(result.Diagnostics);
         Assert.Equal("INTERLOC001", diagnostic.Id);
         Assert.Contains("TestApp.CreateFooCommand", diagnostic.GetMessage(), StringComparison.Ordinal);
@@ -56,6 +62,7 @@ public sealed class MissingHandlerDiagnosticTests
     [Fact]
     public void Void_command_with_no_handler_reports_missing_handler_diagnostic()
     {
+        // Arrange
         const string source = """
             namespace TestApp;
 
@@ -64,8 +71,10 @@ public sealed class MissingHandlerDiagnosticTests
             public sealed class DeleteFooCommand : ICommand;
             """;
 
+        // Act
         var result = GeneratorTestHarness.Run(source);
 
+        // Assert
         var diagnostic = Assert.Single(result.Diagnostics);
         Assert.Equal("INTERLOC001", diagnostic.Id);
         Assert.Contains("TestApp.DeleteFooCommand", diagnostic.GetMessage(), StringComparison.Ordinal);
@@ -74,6 +83,7 @@ public sealed class MissingHandlerDiagnosticTests
     [Fact]
     public void Query_with_a_matching_handler_reports_no_diagnostic()
     {
+        // Arrange
         const string source = """
             namespace TestApp;
 
@@ -90,14 +100,17 @@ public sealed class MissingHandlerDiagnosticTests
             }
             """;
 
+        // Act
         var result = GeneratorTestHarness.Run(source);
 
+        // Assert
         Assert.Empty(result.Diagnostics);
     }
 
     [Fact]
     public void Void_command_matches_a_handler_regardless_of_the_handlers_chosen_result_type()
     {
+        // Arrange
         const string source = """
             namespace TestApp;
 
@@ -115,8 +128,10 @@ public sealed class MissingHandlerDiagnosticTests
             }
             """;
 
+        // Act
         var result = GeneratorTestHarness.Run(source);
 
+        // Assert
         Assert.Empty(result.Diagnostics);
     }
 
@@ -125,6 +140,7 @@ public sealed class MissingHandlerDiagnosticTests
     {
         // Unlike a query or command, a notification is valid with zero registered handlers - INotification is
         // not tracked as a request marker by the generator at all, so it never enters the missing-handler check.
+        // Arrange
         const string source = """
             namespace TestApp;
 
@@ -133,14 +149,17 @@ public sealed class MissingHandlerDiagnosticTests
             public sealed class FooHappened : INotification;
             """;
 
+        // Act
         var result = GeneratorTestHarness.Run(source);
 
+        // Assert
         Assert.Empty(result.Diagnostics);
     }
 
     [Fact]
     public void Notification_with_one_handler_reports_no_diagnostic()
     {
+        // Arrange
         const string source = """
             namespace TestApp;
 
@@ -156,8 +175,10 @@ public sealed class MissingHandlerDiagnosticTests
             }
             """;
 
+        // Act
         var result = GeneratorTestHarness.Run(source);
 
+        // Assert
         Assert.Empty(result.Diagnostics);
     }
 
@@ -166,6 +187,7 @@ public sealed class MissingHandlerDiagnosticTests
     {
         // Unlike a query or command, zero-or-many is the valid arity for a notification, so multiple concrete
         // handlers for the same notification never trigger INTERLOC002 either.
+        // Arrange
         const string source = """
             namespace TestApp;
 
@@ -186,14 +208,17 @@ public sealed class MissingHandlerDiagnosticTests
             }
             """;
 
+        // Act
         var result = GeneratorTestHarness.Run(source);
 
+        // Assert
         Assert.Empty(result.Diagnostics);
     }
 
     [Fact]
     public void Query_with_two_handlers_reports_duplicate_handler_diagnostic_naming_both()
     {
+        // Arrange
         const string source = """
             namespace TestApp;
 
@@ -215,8 +240,10 @@ public sealed class MissingHandlerDiagnosticTests
             }
             """;
 
+        // Act
         var result = GeneratorTestHarness.Run(source);
 
+        // Assert
         Assert.Equal(2, result.Diagnostics.Length);
         Assert.All(result.Diagnostics, d => Assert.Equal("INTERLOC002", d.Id));
         Assert.All(result.Diagnostics, d => Assert.Contains("TestApp.GetFooQuery", d.GetMessage(), StringComparison.Ordinal));
@@ -227,6 +254,7 @@ public sealed class MissingHandlerDiagnosticTests
     [Fact]
     public void Command_with_two_handlers_reports_duplicate_handler_diagnostic_naming_both()
     {
+        // Arrange
         const string source = """
             namespace TestApp;
 
@@ -248,8 +276,10 @@ public sealed class MissingHandlerDiagnosticTests
             }
             """;
 
+        // Act
         var result = GeneratorTestHarness.Run(source);
 
+        // Assert
         Assert.Equal(2, result.Diagnostics.Length);
         Assert.All(result.Diagnostics, d => Assert.Equal("INTERLOC002", d.Id));
         Assert.All(
@@ -269,6 +299,7 @@ public sealed class MissingHandlerDiagnosticTests
     [Fact]
     public void Consumer_escalates_the_diagnostic_to_an_error_via_the_standard_editorconfig_mechanism()
     {
+        // Arrange
         const string source = """
             namespace TestApp;
 
@@ -294,6 +325,7 @@ public sealed class MissingHandlerDiagnosticTests
             )
         );
 
+        // Act
         _ = driver.RunGeneratorsAndUpdateCompilation(
             escalated,
             out _,
@@ -301,6 +333,7 @@ public sealed class MissingHandlerDiagnosticTests
             TestContext.Current.CancellationToken
         );
 
+        // Assert
         var reported = generatorDiagnostics.Single(d => d.Id == "INTERLOC001");
         Assert.Equal(DiagnosticSeverity.Error, reported.Severity);
     }

@@ -18,22 +18,27 @@ public sealed class DomainRepositoryQueryableExtensionsTests
     [Fact]
     public void ApplyFilter_ReturnsQueryUnchanged_WhenFilterIsNull()
     {
+        // Act
         var result = Widgets.AsQueryable().ApplyFilter(null).ToArray();
 
+        // Assert
         Assert.Equal(Widgets, result);
     }
 
     [Fact]
     public void ApplyFilter_AppliesPredicate_WhenGiven()
     {
+        // Act
         var result = Widgets.AsQueryable().ApplyFilter(w => w.Name == "alpha").ToArray();
 
+        // Assert
         Assert.Equal([Widgets[1], Widgets[2]], result);
     }
 
     [Fact]
     public void ApplySort_ReturnsQueryUnchanged_WhenSortIsNullOrEmpty()
     {
+        // Act & Assert
         Assert.Equal(Widgets, Widgets.AsQueryable().ApplySort(null).ToArray());
         Assert.Equal(Widgets, Widgets.AsQueryable().ApplySort([]).ToArray());
     }
@@ -41,17 +46,36 @@ public sealed class DomainRepositoryQueryableExtensionsTests
     [Fact]
     public void ApplySort_OrdersByPrimaryKey_Ascending()
     {
+        // Act
         var result = Widgets
             .AsQueryable()
             .ApplySort([new SortCriterion<Widget>(w => w.Name, SortDirection.Ascending)])
             .ToArray();
 
+        // Assert
         Assert.Equal(["alpha", "alpha", "beta", "gamma"], result.Select(w => w.Name));
+    }
+
+    // Auto Generated, verify expected behavior:
+    // Covers the Descending branch of the primary (first) sort criterion - the existing tests only
+    // exercised Ascending on the primary key and Descending on a tie-breaking secondary key.
+    [Fact]
+    public void ApplySort_OrdersByPrimaryKey_Descending()
+    {
+        // Act
+        var result = Widgets
+            .AsQueryable()
+            .ApplySort([new SortCriterion<Widget>(w => w.Name, SortDirection.Descending)])
+            .ToArray();
+
+        // Assert
+        Assert.Equal(["gamma", "beta", "alpha", "alpha"], result.Select(w => w.Name));
     }
 
     [Fact]
     public void ApplySort_BreaksTiesWithSecondCriterion()
     {
+        // Act
         var result = Widgets
             .AsQueryable()
             .ApplySort([
@@ -60,6 +84,7 @@ public sealed class DomainRepositoryQueryableExtensionsTests
             ])
             .ToArray();
 
+        // Assert
         // Both "alpha" rows tie on the primary key; the secondary descending Value key breaks the tie.
         Assert.Equal([3, 2, 1, 4], result.Select(w => w.Id));
     }
@@ -67,8 +92,10 @@ public sealed class DomainRepositoryQueryableExtensionsTests
     [Fact]
     public void ApplyPaging_SkipsAndTakes_ForRequestedPage()
     {
+        // Act
         var result = Widgets.AsQueryable().ApplyPaging(pageNumber: 2, pageSize: 2).ToArray();
 
+        // Assert
         Assert.Equal([Widgets[2], Widgets[3]], result);
     }
 
@@ -78,6 +105,7 @@ public sealed class DomainRepositoryQueryableExtensionsTests
     [InlineData(-1, 1)]
     public void ApplyPaging_Throws_WhenPageNumberOrPageSizeIsLessThanOne(int pageNumber, int pageSize)
     {
+        // Act & Assert
         Assert.Throws<ArgumentOutOfRangeException>(() => Widgets.AsQueryable().ApplyPaging(pageNumber, pageSize).ToArray());
     }
 

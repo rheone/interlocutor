@@ -14,6 +14,7 @@ public sealed class HandlerDiagnosticAnalyzerTests
     [Fact]
     public void Request_with_no_handler_anywhere_reports_missing_handler()
     {
+        // Arrange
         const string source = """
             namespace App;
 
@@ -23,8 +24,10 @@ public sealed class HandlerDiagnosticAnalyzerTests
             public sealed class OrphanQuery : IQuery<OperationOutcome>;
             """;
 
+        // Act
         var result = GeneratorTestHarness.Run(source);
 
+        // Assert
         var diagnostic = Assert.Single(result.Diagnostics);
         Assert.Equal("INTERLOC001", diagnostic.Id);
         Assert.Contains("App.OrphanQuery", diagnostic.GetMessage(), StringComparison.Ordinal);
@@ -33,6 +36,7 @@ public sealed class HandlerDiagnosticAnalyzerTests
     [Fact]
     public void Two_handlers_for_the_same_closed_query_reports_duplicate_handler_for_each()
     {
+        // Arrange
         const string source = """
             namespace App;
 
@@ -54,8 +58,10 @@ public sealed class HandlerDiagnosticAnalyzerTests
             }
             """;
 
+        // Act
         var result = GeneratorTestHarness.Run(source);
 
+        // Assert
         Assert.Equal(2, result.Diagnostics.Length);
         Assert.All(result.Diagnostics, d => Assert.Equal("INTERLOC002", d.Id));
         Assert.Contains(result.Diagnostics, d => d.GetMessage().Contains("DuplicatedQueryHandlerA", StringComparison.Ordinal));
@@ -65,6 +71,7 @@ public sealed class HandlerDiagnosticAnalyzerTests
     [Fact]
     public void Notification_handler_subscribing_to_the_base_marker_reports_catch_all_notification_handler()
     {
+        // Arrange
         const string source = """
             namespace App;
 
@@ -78,8 +85,10 @@ public sealed class HandlerDiagnosticAnalyzerTests
             }
             """;
 
+        // Act
         var result = GeneratorTestHarness.Run(source);
 
+        // Assert
         var diagnostic = Assert.Single(result.Diagnostics);
         Assert.Equal("INTERLOC003", diagnostic.Id);
         Assert.Contains("App.CatchAllHandler", diagnostic.GetMessage(), StringComparison.Ordinal);

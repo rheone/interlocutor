@@ -110,6 +110,7 @@ public class CancellationBehaviorTests
         // Cancelled case constructor when cancellation is actually observed. A response shape with no such
         // case (like OperationOutcome<string, NotFound> here) can't express "cancelled" at all, so it must
         // fail loudly and specifically rather than silently succeeding or crashing obscurely.
+        // Arrange
         var behavior = new CancellationBehavior<
             MisshapenCancellableQuery,
             OperationOutcome<string, Interlocutor.CommonKernel.ResultTypes.NotFound>
@@ -122,8 +123,10 @@ public class CancellationBehaviorTests
         Func<Task<OperationOutcome<string, Interlocutor.CommonKernel.ResultTypes.NotFound>>> next = () =>
             throw new OperationCanceledException(ct);
 
+        // Act
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => behavior.Handle(request, next, ct));
 
+        // Assert
         Assert.Contains("Cancelled", ex.Message);
     }
 
@@ -132,6 +135,7 @@ public class CancellationBehaviorTests
     {
         // Proves IOutcomeCaseRegistry is a genuine drop-in for hand-rolled response shapes here too, not
         // just for AuthorizationBehavior's Forbidden case.
+        // Arrange
         var caseRegistry = new OutcomeCaseRegistryBuilder()
             .RegisterFactory<HandRolledOutcome, Cancelled>(HandRolledOutcome.FromCancelled)
             .Build();
@@ -144,8 +148,10 @@ public class CancellationBehaviorTests
 
         Func<Task<HandRolledOutcome>> next = () => throw new OperationCanceledException(ct);
 
+        // Act
         var result = await behavior.Handle(request, next, ct);
 
+        // Assert
         Assert.Equal(typeof(Cancelled), result.CaseType);
         Assert.IsType<Cancelled>(result.CaseValue);
     }

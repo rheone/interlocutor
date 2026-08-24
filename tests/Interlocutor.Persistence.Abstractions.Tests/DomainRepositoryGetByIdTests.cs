@@ -12,12 +12,15 @@ public sealed class DomainRepositoryGetByIdTests
     [Fact]
     public void GetById_ReturnsMatchingEntity_WhenKeyIsPresent()
     {
+        // Arrange
         // GetById is a default interface method - it is only reachable through the interface, not the
         // concrete implementing type, so the fake is deliberately held through its interface here.
         IDomainRepository<Widget, int> repository = new FakeRepository([new Widget(1, "one"), new Widget(2, "two")]);
 
+        // Act
         var result = repository.GetById(2);
 
+        // Assert
         Assert.NotNull(result);
         Assert.Equal("two", result.Name);
     }
@@ -25,10 +28,29 @@ public sealed class DomainRepositoryGetByIdTests
     [Fact]
     public void GetById_ReturnsNull_WhenKeyIsAbsent()
     {
+        // Arrange
         IDomainRepository<Widget, int> repository = new FakeRepository([new Widget(1, "one")]);
 
+        // Act
         var result = repository.GetById(99);
 
+        // Assert
+        Assert.Null(result);
+    }
+
+    // Auto Generated, verify expected behavior:
+    // Boundary case distinct from "key absent among several entities": the underlying Query is empty,
+    // exercising FirstOrDefault against a source with no elements at all.
+    [Fact]
+    public void GetById_ReturnsNull_WhenRepositoryIsEmpty()
+    {
+        // Arrange
+        IDomainRepository<Widget, int> repository = new FakeRepository([]);
+
+        // Act
+        var result = repository.GetById(1);
+
+        // Assert
         Assert.Null(result);
     }
 

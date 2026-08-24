@@ -84,11 +84,15 @@ public sealed class ResultExtensionsHttpHostTests : IAsyncLifetime
     [Fact]
     public async Task Get_UnionSuccessEndpoint_Returns200WithBody()
     {
+        // Arrange - the endpoint and its client are wired up in InitializeAsync.
+
+        // Act
         var response = await this._client.GetAsync(
             new Uri("/union-success", UriKind.Relative),
             TestContext.Current.CancellationToken
         );
 
+        // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("hello from a union", await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
     }
@@ -96,33 +100,45 @@ public sealed class ResultExtensionsHttpHostTests : IAsyncLifetime
     [Fact]
     public async Task Get_UnionNotFoundEndpoint_Returns404()
     {
+        // Arrange - the endpoint and its client are wired up in InitializeAsync.
+
+        // Act
         var response = await this._client.GetAsync(
             new Uri("/union-notfound", UriKind.Relative),
             TestContext.Current.CancellationToken
         );
 
+        // Assert
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]
     public async Task Get_CustomOutcomeSuccessEndpoint_Returns200()
     {
+        // Arrange - the endpoint and its client are wired up in InitializeAsync.
+
+        // Act
         var response = await this._client.GetAsync(
             new Uri("/custom-success", UriKind.Relative),
             TestContext.Current.CancellationToken
         );
 
+        // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]
     public async Task Get_CustomOutcomeConflictEndpoint_Returns409WithProblemDetailsBody()
     {
+        // Arrange - the endpoint and its client are wired up in InitializeAsync.
+
+        // Act
         var response = await this._client.GetAsync(
             new Uri("/custom-conflict", UriKind.Relative),
             TestContext.Current.CancellationToken
         );
 
+        // Assert
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         var body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         Assert.Contains("stale.data", body);

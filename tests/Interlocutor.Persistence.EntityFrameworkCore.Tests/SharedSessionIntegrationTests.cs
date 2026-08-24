@@ -36,6 +36,7 @@ public sealed class SharedSessionIntegrationTests : IDisposable
     [Fact]
     public async Task RepositoryInsert_CommittedByTransactionBehavior_UsingSameLazyContext()
     {
+        // Arrange
         var repository = new EntityFrameworkRepository<Widget, int, TestDbContext>(this.lazyContext, w => w.Id);
         var behavior = new Interlocutor.EntityFrameworkCore.TransactionBehavior<
             TransactionalRequest,
@@ -43,6 +44,7 @@ public sealed class SharedSessionIntegrationTests : IDisposable
             TestDbContext
         >(this.lazyContext);
 
+        // Act
         var result = await behavior.Handle(
             new TransactionalRequest(),
             () =>
@@ -56,6 +58,7 @@ public sealed class SharedSessionIntegrationTests : IDisposable
             CancellationToken.None
         );
 
+        // Assert
         Assert.True(result.IsSuccess);
 
         await using var verify = this.CreateVerificationContext();
@@ -65,12 +68,15 @@ public sealed class SharedSessionIntegrationTests : IDisposable
     [Fact]
     public async Task UnitOfWorkSaveChanges_PersistsRepositoryInsert_WithinSameDispatch()
     {
+        // Arrange
         var repository = new EntityFrameworkRepository<Widget, int, TestDbContext>(this.lazyContext, w => w.Id);
         var unitOfWork = new EntityFrameworkUnitOfWork<TestDbContext>(this.lazyContext);
 
+        // Act
         await repository.InsertAsync(new Widget { Name = "via-unit-of-work" }, TestContext.Current.CancellationToken);
         await unitOfWork.SaveChangesAsync(TestContext.Current.CancellationToken);
 
+        // Assert
         // Reading through the same in-process context (not a fresh one) confirms the insert and the save
         // ran against the identical DbContext instance the Lazy<TestDbContext> hands out.
         Assert.Equal(["via-unit-of-work"], this.context.Widgets.Select(w => w.Name));

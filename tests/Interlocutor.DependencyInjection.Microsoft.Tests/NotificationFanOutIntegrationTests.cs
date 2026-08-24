@@ -15,6 +15,7 @@ public class NotificationFanOutIntegrationTests
     [Fact]
     public async Task Publish_DerivedEvent_InvokesHandlerRegisteredForBaseType()
     {
+        // Arrange
         var services = new ServiceCollection();
         services.AddScoped<InvocationRecorder>();
         services.AddInterlocutor(builder => builder.ScanAssembly(typeof(NotificationFanOutIntegrationTests).Assembly));
@@ -23,8 +24,10 @@ public class NotificationFanOutIntegrationTests
         using var scope = provider.CreateScope();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
+        // Act
         await mediator.Publish(new OrderCreated(1), TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.True(scope.ServiceProvider.GetRequiredService<InvocationRecorder>().Invoked);
     }
 

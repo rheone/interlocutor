@@ -23,6 +23,7 @@ public class RootScopeGuardTests
     [Fact]
     public async Task SingletonCapturingMediatorAtConstruction_ThrowsMediatorResolvedFromRootScopeException_OnDispatch()
     {
+        // Arrange
         var containerBuilder = new ContainerBuilder();
         containerBuilder.AddInterlocutor(builder => builder.ScanAssembly(typeof(RootScopeGuardTests).Assembly));
 
@@ -35,10 +36,12 @@ public class RootScopeGuardTests
         var container = containerBuilder.Build();
         var consumer = container.Resolve<SingletonMediatorConsumer>();
 
+        // Act
         var ex = await Assert.ThrowsAsync<MediatorResolvedFromRootScopeException>(() =>
             consumer.DispatchAsync(TestContext.Current.CancellationToken)
         );
 
+        // Assert
         Assert.Equal(typeof(SharedScopeQuery), ex.RequestType);
         Assert.Contains(nameof(SharedScopeQuery), ex.Message);
         Assert.Contains("scope", ex.Message, StringComparison.OrdinalIgnoreCase);
@@ -47,6 +50,7 @@ public class RootScopeGuardTests
     [Fact]
     public async Task DispatchFromRealLifetimeScope_SharesOneScopedDependencyInstance_BetweenHandlerAndPipelineBehavior()
     {
+        // Arrange
         var containerBuilder = new ContainerBuilder();
         containerBuilder.RegisterType<ScopedThing>().AsSelf().InstancePerLifetimeScope();
         containerBuilder.RegisterType<ScopedDependencyRecorder>().AsSelf().InstancePerLifetimeScope();
@@ -59,8 +63,10 @@ public class RootScopeGuardTests
         using var scope = container.BeginLifetimeScope();
         var mediator = scope.Resolve<IMediator>();
 
+        // Act
         var result = await mediator.Send(new SharedScopeQuery(), TestContext.Current.CancellationToken);
 
+        // Assert
         var recorder = scope.Resolve<ScopedDependencyRecorder>();
         Assert.Equal(2, recorder.RecordedIds.Count);
         Assert.Equal(recorder.RecordedIds[0], recorder.RecordedIds[1]);

@@ -22,20 +22,24 @@ public sealed class NotificationFanOutTests
     [Fact]
     public async Task Publish_DerivedEvent_InvokesHandlerRegisteredForBaseType()
     {
+        // Arrange
         var invoked = false;
         var services = new ServiceCollection();
         services.AddSingleton<INotificationHandler<DomainEvent>>(new RecordingHandler<DomainEvent>(() => invoked = true));
         services.AddSingleton<IMediator, Mediator>();
         var mediator = services.BuildServiceProvider().GetRequiredService<IMediator>();
 
+        // Act
         await mediator.Publish(new OrderCreated(1), CancellationToken.None);
 
+        // Assert
         Assert.True(invoked);
     }
 
     [Fact]
     public async Task Publish_DerivedEvent_InvokesHandlersAtEveryLevel()
     {
+        // Arrange
         var concreteInvoked = false;
         var baseInvoked = false;
         var services = new ServiceCollection();
@@ -46,8 +50,10 @@ public sealed class NotificationFanOutTests
         services.AddSingleton<IMediator, Mediator>();
         var mediator = services.BuildServiceProvider().GetRequiredService<IMediator>();
 
+        // Act
         await mediator.Publish(new OrderCreated(1), CancellationToken.None);
 
+        // Assert
         Assert.True(concreteInvoked);
         Assert.True(baseInvoked);
     }
@@ -55,6 +61,7 @@ public sealed class NotificationFanOutTests
     [Fact]
     public async Task Publish_Event_InvokesHandlerRegisteredForImplementedInterface()
     {
+        // Arrange
         var invoked = false;
         var services = new ServiceCollection();
         services.AddSingleton<INotificationHandler<IAuditableEvent>>(
@@ -63,56 +70,65 @@ public sealed class NotificationFanOutTests
         services.AddSingleton<IMediator, Mediator>();
         var mediator = services.BuildServiceProvider().GetRequiredService<IMediator>();
 
+        // Act
         await mediator.Publish(new AuditedOrderCreated(1), CancellationToken.None);
 
+        // Assert
         Assert.True(invoked);
     }
 
     [Fact]
     public async Task Publish_Event_DoesNotInvokeHandlerForUnrelatedSiblingType()
     {
+        // Arrange
         var invoked = false;
         var services = new ServiceCollection();
         services.AddSingleton<INotificationHandler<OrderCreated>>(new RecordingHandler<OrderCreated>(() => invoked = true));
         services.AddSingleton<IMediator, Mediator>();
         var mediator = services.BuildServiceProvider().GetRequiredService<IMediator>();
 
-        // AuditedOrderCreated is a sibling of OrderCreated (both derive from DomainEvent, neither from the
-        // other) - a handler registered against OrderCreated specifically must not receive it.
+        // Act - AuditedOrderCreated is a sibling of OrderCreated (both derive from DomainEvent, neither from
+        // the other) - a handler registered against OrderCreated specifically must not receive it.
         await mediator.Publish(new AuditedOrderCreated(1), CancellationToken.None);
 
+        // Assert
         Assert.False(invoked);
     }
 
     [Fact]
     public async Task Publish_Event_InvokesCatchAllHandlerRegisteredForBaseNotificationInterface()
     {
+        // Arrange
         var invoked = false;
         var services = new ServiceCollection();
         services.AddSingleton<INotificationHandler<INotification>>(new RecordingHandler<INotification>(() => invoked = true));
         services.AddSingleton<IMediator, Mediator>();
         var mediator = services.BuildServiceProvider().GetRequiredService<IMediator>();
 
+        // Act
         await mediator.Publish(new OrderCreated(1), CancellationToken.None);
 
+        // Assert
         Assert.True(invoked);
     }
 
     [Fact]
     public async Task IPublisher_ExposesStrategyOverload()
     {
+        // Arrange
         var services = new ServiceCollection();
         services.AddSingleton<IMediator, Mediator>();
         IPublisher publisher = services.BuildServiceProvider().GetRequiredService<IMediator>();
 
-        // Compiles and runs only if the strategy overload lives on IPublisher itself, not just on the
-        // concrete Mediator class.
+        // Act & Assert - Compiles and runs only if the strategy overload lives on IPublisher itself, not just
+        // on the concrete Mediator class.
         await publisher.Publish(new OrderCreated(1), PublishStrategy.Parallel, CancellationToken.None);
     }
 
     [Fact]
     public async Task Publish_Sequential_OrdersHandlersByGeneratedRank()
     {
+        // Arrange
         var order = new List<string>();
         var services = new ServiceCollection();
         services.AddSingleton<INotificationHandler<DomainEvent>>(new RecordingHandler<DomainEvent>(() => order.Add("second")));
@@ -129,14 +145,17 @@ public sealed class NotificationFanOutTests
         services.AddSingleton<IMediator, Mediator>();
         var mediator = services.BuildServiceProvider().GetRequiredService<IMediator>();
 
+        // Act
         await mediator.Publish(new OrderCreated(1), CancellationToken.None);
 
+        // Assert
         Assert.Equal(["first", "second"], order);
     }
 
     [Fact]
     public async Task Publish_Sequential_LeavesUnrankedHandlersInResolutionOrder()
     {
+        // Arrange
         var order = new List<string>();
         var services = new ServiceCollection();
         services.AddSingleton<INotificationHandler<OrderCreated>>(new RecordingHandler<OrderCreated>(() => order.Add("a")));
@@ -145,8 +164,10 @@ public sealed class NotificationFanOutTests
         services.AddSingleton<IMediator, Mediator>();
         var mediator = services.BuildServiceProvider().GetRequiredService<IMediator>();
 
+        // Act
         await mediator.Publish(new OrderCreated(1), CancellationToken.None);
 
+        // Assert
         Assert.Equal(["a", "b"], order);
     }
 

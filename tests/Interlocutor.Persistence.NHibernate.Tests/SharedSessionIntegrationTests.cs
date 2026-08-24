@@ -19,6 +19,7 @@ public sealed class SharedSessionIntegrationTests
     [Fact]
     public async Task RepositoryInsert_AndUnitOfWorkFlush_ResolveSameSessionInstance_AsTransactionBehavior()
     {
+        // Arrange
         var session = Substitute.For<ISession>();
         var transaction = Substitute.For<ITransaction>();
         session.BeginTransaction().Returns(transaction);
@@ -32,6 +33,8 @@ public sealed class SharedSessionIntegrationTests
         >(lazySession);
 
         var widget = new Widget();
+
+        // Act
         var result = await behavior.Handle(
             new TransactionalRequest(),
             async () =>
@@ -45,6 +48,7 @@ public sealed class SharedSessionIntegrationTests
             CancellationToken.None
         );
 
+        // Assert
         Assert.True(result.IsSuccess);
         await session.Received(1).SaveAsync(widget, CancellationToken.None);
         await session.Received(1).FlushAsync(CancellationToken.None);

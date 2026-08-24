@@ -50,15 +50,20 @@ public class MediatorTests
     [Fact]
     public async Task Send_Query_ReturnsHandlerResult()
     {
+        // Arrange
         var mediator = CreateMediator<TestQueryHandler>(services => { });
+
+        // Act
         var result = await mediator.Send(new TestQuery(21), CancellationToken.None);
 
+        // Assert
         Assert.Equal(42, result.Value);
     }
 
     [Fact]
     public async Task Send_Query_RunsPipelineBehaviors()
     {
+        // Arrange
         var invoked = false;
         var mediator = CreateMediator<TestQueryHandler>(services =>
         {
@@ -67,13 +72,17 @@ public class MediatorTests
             );
         });
 
+        // Act
         await mediator.Send(new TestQuery(1), CancellationToken.None);
+
+        // Assert
         Assert.True(invoked);
     }
 
     [Fact]
     public async Task Send_Command_RunsPipelineBehaviors()
     {
+        // Arrange
         var invoked = false;
         var mediator = CreateMediator<GreetCommandHandler>(services =>
         {
@@ -82,13 +91,17 @@ public class MediatorTests
             );
         });
 
+        // Act
         await mediator.Send(new GreetCommand("test"), CancellationToken.None);
+
+        // Assert
         Assert.True(invoked);
     }
 
     [Fact]
     public async Task Send_VoidCommand_RunsPipelineBehaviors()
     {
+        // Arrange
         var invoked = false;
         var mediator = CreateMediator<TestVoidHandler>(services =>
         {
@@ -97,16 +110,23 @@ public class MediatorTests
             );
         });
 
+        // Act
         await mediator.Send<OperationOutcome>(new TestVoidCommand("test"), CancellationToken.None);
+
+        // Assert
         Assert.True(invoked);
     }
 
     [Fact]
     public async Task Send_VoidCommand_ReturnsSuccess()
     {
+        // Arrange
         var mediator = CreateMediator<TestVoidHandler>(services => { });
+
+        // Act
         var result = await mediator.Send<OperationOutcome>(new TestVoidCommand("test"), CancellationToken.None);
 
+        // Assert
         var isSuccess = result.Value switch
         {
             Success => true,
@@ -119,6 +139,7 @@ public class MediatorTests
     [Fact]
     public async Task Publish_Sequential_InvokesHandlers()
     {
+        // Arrange
         var invoked = false;
         var services = new ServiceCollection();
         services.AddSingleton<INotificationHandler<TestNotification>>(new TestNotificationHandler(() => invoked = true));
@@ -126,25 +147,30 @@ public class MediatorTests
         var provider = services.BuildServiceProvider();
         var mediator = provider.GetRequiredService<IMediator>();
 
+        // Act
         await mediator.Publish(new TestNotification("hello"), CancellationToken.None);
 
+        // Assert
         Assert.True(invoked);
     }
 
     [Fact]
     public async Task Publish_WithNoHandlers_DoesNotThrow()
     {
+        // Arrange
         var services = new ServiceCollection();
         services.AddSingleton<IMediator, Mediator>();
         var provider = services.BuildServiceProvider();
         var mediator = provider.GetRequiredService<IMediator>();
 
+        // Act & Assert - no handlers registered for TestNotification; publishing must not throw.
         await mediator.Publish(new TestNotification("hello"), CancellationToken.None);
     }
 
     [Fact]
     public async Task Publish_Sequential_StopsOnFailure()
     {
+        // Arrange
         var secondInvoked = false;
         var services = new ServiceCollection();
         services.AddSingleton<INotificationHandler<TestNotification>>(
@@ -155,34 +181,51 @@ public class MediatorTests
         var provider = services.BuildServiceProvider();
         var mediator = provider.GetRequiredService<IMediator>();
 
+        // Act
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             mediator.Publish(new TestNotification("hello"), CancellationToken.None)
         );
 
+        // Assert
         Assert.False(secondInvoked);
     }
 
     [Fact]
-    public async Task Send_Query_CachesWrapper()
+    public async Task Send_Query_ReusedAcrossMultipleDispatches_ReturnsCorrectResultEachTime()
     {
+        // Arrange - the wrapper Mediator builds per closed request type is cached internally; sending the
+        // same query type repeatedly must keep returning a result derived from that specific dispatch's
+        // input, not a stale or shared one.
         var mediator = CreateMediator<TestQueryHandler>(services => { });
-        await mediator.Send(new TestQuery(1), CancellationToken.None);
-        await mediator.Send(new TestQuery(2), CancellationToken.None);
-        await mediator.Send(new TestQuery(3), CancellationToken.None);
-        Assert.True(true);
+
+        // Act
+        var first = await mediator.Send(new TestQuery(1), CancellationToken.None);
+        var second = await mediator.Send(new TestQuery(2), CancellationToken.None);
+        var third = await mediator.Send(new TestQuery(3), CancellationToken.None);
+
+        // Assert
+        Assert.Equal(2, first.Value);
+        Assert.Equal(4, second.Value);
+        Assert.Equal(6, third.Value);
     }
 
     [Fact]
     public async Task Mediator_ImplementsISender()
     {
+        // Arrange
         var mediator = CreateMediator<TestQueryHandler>(services => { });
+
+        // Act & Assert
         Assert.IsAssignableFrom<ISender>(mediator);
     }
 
     [Fact]
     public async Task Mediator_ImplementsIPublisher()
     {
+        // Arrange
         var mediator = CreateMediator<TestQueryHandler>(services => { });
+
+        // Act & Assert
         Assert.IsAssignableFrom<IPublisher>(mediator);
     }
 

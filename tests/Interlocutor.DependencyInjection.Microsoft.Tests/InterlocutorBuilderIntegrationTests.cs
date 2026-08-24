@@ -16,12 +16,15 @@ public class InterlocutorBuilderIntegrationTests
     [Fact]
     public void AddInterlocutor_WithLoggerFactoryRegistered_LogsTheRegistrationReport()
     {
+        // Arrange
         var services = new ServiceCollection();
         using var recordingFactory = new RecordingLoggerFactory();
         services.AddSingleton<ILoggerFactory>(recordingFactory);
 
+        // Act
         services.AddInterlocutor(builder => builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly));
 
+        // Assert
         var logger = Assert.Single(recordingFactory.CreatedLoggers);
         var message = Assert.Single(logger.Messages);
         Assert.Contains("Interlocutor registration report", message);
@@ -30,22 +33,28 @@ public class InterlocutorBuilderIntegrationTests
     [Fact]
     public void AddInterlocutor_WithoutLoggerFactoryRegistered_DoesNotThrow()
     {
+        // Arrange
         var services = new ServiceCollection();
 
+        // Act
         var exception = Record.Exception(() =>
             services.AddInterlocutor(builder => builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly))
         );
 
+        // Assert
         Assert.Null(exception);
     }
 
     [Fact]
     public void BareBuilder_RegistersMediatorAndHandlers_ButZeroBehaviors()
     {
+        // Arrange
         var services = new ServiceCollection();
 
+        // Act
         services.AddInterlocutor(builder => builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly));
 
+        // Assert
         Assert.Contains(services, s => s.ServiceType == typeof(IMediator));
         Assert.Contains(services, s => s.ServiceType == typeof(IQueryHandler<SampleQuery, OperationOutcome>));
         Assert.DoesNotContain(services, s => s.ServiceType == typeof(IPipelineBehavior<,>));
@@ -54,51 +63,59 @@ public class InterlocutorBuilderIntegrationTests
     [Fact]
     public void AddHandler_WithoutScanning_ResolvesThroughARealContainer()
     {
+        // Arrange
         var services = new ServiceCollection();
 
+        // Act
         services.AddInterlocutor(builder => builder.AddHandler(typeof(SampleQueryHandler)));
         using var provider = services.BuildServiceProvider();
         using var scope = provider.CreateScope();
 
+        // Assert
         Assert.NotNull(scope.ServiceProvider.GetService<IQueryHandler<SampleQuery, OperationOutcome>>());
     }
 
     [Fact]
     public void AddHandler_TakesPrecedenceOverScannedDuplicate_ThroughARealContainer()
     {
+        // Arrange
         var services = new ServiceCollection();
 
+        // Act
         services.AddInterlocutor(builder =>
             builder
                 .ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly)
                 .AddHandler(typeof(SampleQueryHandler), RegistrationLifetime.Singleton)
         );
         using var provider = services.BuildServiceProvider();
+        using var firstScope = provider.CreateScope();
+        using var secondScope = provider.CreateScope();
+        var first = firstScope.ServiceProvider.GetRequiredService<IQueryHandler<SampleQuery, OperationOutcome>>();
+        var second = secondScope.ServiceProvider.GetRequiredService<IQueryHandler<SampleQuery, OperationOutcome>>();
 
+        // Assert
         // A single Singleton registration for this handler - not one Scoped copy from scanning plus a
         // second Singleton copy from AddHandler - proves the explicit registration replaced, rather than
         // duplicated, the scanned one.
         var descriptor = Assert.Single(services, s => s.ServiceType == typeof(IQueryHandler<SampleQuery, OperationOutcome>));
         Assert.Equal(ServiceLifetime.Singleton, descriptor.Lifetime);
-
-        using var firstScope = provider.CreateScope();
-        using var secondScope = provider.CreateScope();
-        var first = firstScope.ServiceProvider.GetRequiredService<IQueryHandler<SampleQuery, OperationOutcome>>();
-        var second = secondScope.ServiceProvider.GetRequiredService<IQueryHandler<SampleQuery, OperationOutcome>>();
         Assert.Same(first, second);
     }
 
     [Fact]
     public void AddInterlocutor_WithValidateOnBuild_ThrowsAggregatingEveryProblem_WhenTheConfigurationHasAny()
     {
+        // Arrange
         var services = new ServiceCollection();
 
+        // Act
         var exception = Assert.Throws<InterlocutorRegistrationValidationException>(() =>
             services.AddInterlocutor(builder =>
                 builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).ValidateOnBuild()
             )
         );
 
+        // Assert
         Assert.Contains(
             exception.Report.Problems,
             p =>
@@ -110,38 +127,47 @@ public class InterlocutorBuilderIntegrationTests
     [Fact]
     public void AddInterlocutor_WithValidateOnBuild_LeavesServicesUnmutated_WhenValidationFails()
     {
+        // Arrange
         var services = new ServiceCollection();
 
+        // Act
         Assert.Throws<InterlocutorRegistrationValidationException>(() =>
             services.AddInterlocutor(builder =>
                 builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).ValidateOnBuild()
             )
         );
 
+        // Assert
         Assert.Empty(services);
     }
 
     [Fact]
     public void AddInterlocutor_WithoutValidateOnBuild_DoesNotThrow_EvenWithAnUnhandledRequestType()
     {
+        // Arrange
         var services = new ServiceCollection();
 
+        // Act
         var exception = Record.Exception(() =>
             services.AddInterlocutor(builder => builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly))
         );
 
+        // Assert
         Assert.Null(exception);
     }
 
     [Fact]
     public void AddAuditingBehavior_RegistersAuditSinkDefault_ButAuthorizationBehaviorDoesNotOrphanIt()
     {
+        // Arrange
         var services = new ServiceCollection();
 
+        // Act
         services.AddInterlocutor(builder =>
             builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).Pipeline.AddAuthorizationBehavior()
         );
 
+        // Assert
         Assert.DoesNotContain(services, s => s.ServiceType == typeof(IAuditSink));
         Assert.Contains(services, s => s.ServiceType == typeof(IPolicyEvaluator));
     }
@@ -149,38 +175,45 @@ public class InterlocutorBuilderIntegrationTests
     [Fact]
     public void ConsumerRegistration_BeforeBuilderCall_Wins()
     {
+        // Arrange
         var services = new ServiceCollection();
         services.AddScoped<IAuditSink, RecordingAuditSink>();
 
+        // Act
         services.AddInterlocutor(builder =>
             builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).Pipeline.AddAuditingBehavior()
         );
-
         var provider = services.BuildServiceProvider();
         var sink = provider.GetRequiredService<IAuditSink>();
+
+        // Assert
         Assert.IsType<RecordingAuditSink>(sink);
     }
 
     [Fact]
     public void OverrideAuditSink_AfterAddAuditingBehavior_Wins()
     {
+        // Arrange
         var services = new ServiceCollection();
 
+        // Act
         services.AddInterlocutor(builder =>
             builder
                 .ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly)
                 .Pipeline.AddAuditingBehavior()
                 .OverrideAuditSink<RecordingAuditSink>()
         );
-
         var provider = services.BuildServiceProvider();
         var sink = provider.GetRequiredService<IAuditSink>();
+
+        // Assert
         Assert.IsType<RecordingAuditSink>(sink);
     }
 
     [Fact]
     public async Task BehaviorExecutionOrder_MatchesBuilderCallOrder_ObservedAtRuntime()
     {
+        // Arrange
         var services = new ServiceCollection();
         var executionLog = new List<string>();
         services.AddSingleton(executionLog);
@@ -197,14 +230,17 @@ public class InterlocutorBuilderIntegrationTests
         using var scope = provider.CreateScope();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
+        // Act
         await mediator.Send(new SampleQuery(), TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.Equal(["first-before", "second-before", "second-after", "first-after"], executionLog);
     }
 
     [Fact]
     public async Task SameBehaviorRegisteredTwice_ExecutesTwice()
     {
+        // Arrange
         var services = new ServiceCollection();
         var executionLog = new List<string>();
         services.AddSingleton(executionLog);
@@ -221,25 +257,29 @@ public class InterlocutorBuilderIntegrationTests
         using var scope = provider.CreateScope();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
+        // Act
         await mediator.Send(new SampleQuery(), TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.Equal(["first-before", "first-before", "first-after", "first-after"], executionLog);
     }
 
     [Fact]
     public void UseRecommendedChain_RegistersLoggingAuditingAndAuthorizationBehaviors()
     {
+        // Arrange
         var services = new ServiceCollection();
 
+        // Act
         services.AddInterlocutor(builder =>
             builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).Pipeline.UseRecommendedChain()
         );
-
         var behaviorImplementationTypes = services
             .Where(s => s.ServiceType == typeof(IPipelineBehavior<,>))
             .Select(s => s.ImplementationType)
             .ToList();
 
+        // Assert
         Assert.Contains(typeof(LoggingBehavior<,>), behaviorImplementationTypes);
         Assert.Contains(typeof(AuditingBehavior<,>), behaviorImplementationTypes);
         Assert.Contains(typeof(AuthorizationBehavior<,>), behaviorImplementationTypes);
@@ -255,6 +295,7 @@ public class InterlocutorBuilderIntegrationTests
         // satisfies every marker in the recommended chain (IAuditableRequest, IRequiresPolicy) and carries no
         // FluentValidation validators, so it exercises every fixed behavior on the real send path and must
         // complete without throwing.
+        // Arrange
         var services = new ServiceCollection();
         services.AddLogging();
 
@@ -267,8 +308,10 @@ public class InterlocutorBuilderIntegrationTests
         using var scope = provider.CreateScope();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
+        // Act
         var result = await mediator.Send(new AuthorizableQuery(), TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.Equal("ok", result.Value);
     }
 
@@ -278,6 +321,7 @@ public class InterlocutorBuilderIntegrationTests
         // End-to-end proof that IRequestContextAccessor flows into AuditEntry.UserId: the accessor's
         // Context is set on the same scope a real IMediator.Send dispatches through, using the library's
         // own default IRequestContextAccessor (AmbientRequestContextAccessor) rather than a hand-wired stub.
+        // Arrange
         var services = new ServiceCollection();
         services.AddLogging();
         var sink = new CapturingAuditSink();
@@ -294,8 +338,10 @@ public class InterlocutorBuilderIntegrationTests
         contextAccessor.Context = new RequestContext { UserId = "user-e2e" };
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
+        // Act
         await mediator.Send(new AuditOnlyQuery(), TestContext.Current.CancellationToken);
 
+        // Assert
         var entry = Assert.Single(sink.Entries);
         Assert.Equal("user-e2e", entry.UserId);
     }
@@ -305,6 +351,7 @@ public class InterlocutorBuilderIntegrationTests
     {
         // The anonymous/no-ambient-context case: the default accessor is registered but nothing ever set
         // its Context, matching a request with no authenticated caller. Auditing must still succeed.
+        // Arrange
         var services = new ServiceCollection();
         services.AddLogging();
         var sink = new CapturingAuditSink();
@@ -319,8 +366,10 @@ public class InterlocutorBuilderIntegrationTests
         using var scope = provider.CreateScope();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
+        // Act
         await mediator.Send(new AuditOnlyQuery(), TestContext.Current.CancellationToken);
 
+        // Assert
         var entry = Assert.Single(sink.Entries);
         Assert.Null(entry.UserId);
     }
@@ -328,6 +377,7 @@ public class InterlocutorBuilderIntegrationTests
     [Fact]
     public async Task StageHost_WithTypeRegisteredStage_RunsBeforeAndAfterAroundTheHandler()
     {
+        // Arrange
         var services = new ServiceCollection();
         var executionLog = new List<string>();
         services.AddSingleton(executionLog);
@@ -345,8 +395,10 @@ public class InterlocutorBuilderIntegrationTests
         using var scope = provider.CreateScope();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
+        // Act
         var result = await mediator.Send(new SampleQuery(), TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.Equal(default, result);
         Assert.Equal(["stage-before", "stage-after"], executionLog);
     }
@@ -354,6 +406,7 @@ public class InterlocutorBuilderIntegrationTests
     [Fact]
     public async Task StageHost_WithShortCircuitingDelegateStage_SkipsHandlerAndReturnsShortCircuitResponseUnchanged()
     {
+        // Arrange
         var services = new ServiceCollection();
         var handlerRan = false;
         services.AddSingleton(new HandlerRanFlag(() => handlerRan = true));
@@ -380,6 +433,7 @@ public class InterlocutorBuilderIntegrationTests
         // nothing observing it from outside the stage host can tell it was short-circuited.
         var result = await mediator.Send(new ShortCircuitQuery(), TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.Equal(declined, result);
         Assert.False(handlerRan);
     }
@@ -390,6 +444,7 @@ public class InterlocutorBuilderIntegrationTests
         // Wrapper-level tests (PipelineStageBehaviorTests) cover the after-hook-exception unwind in detail;
         // this proves the same default-swallow behavior holds end-to-end through the real container and
         // mediator, not only against the behavior in isolation.
+        // Arrange
         var services = new ServiceCollection();
         services.AddLogging();
 
@@ -411,7 +466,6 @@ public class InterlocutorBuilderIntegrationTests
         // Act & Assert: dispatch completes normally - the after-hook's exception does not propagate out of
         // Send, matching PipelineStageBehavior's default (non-rethrowing) after-hook exception handling.
         var result = await mediator.Send(new SampleQuery(), TestContext.Current.CancellationToken);
-
         Assert.Equal(default, result);
     }
 
@@ -423,8 +477,10 @@ public class InterlocutorBuilderIntegrationTests
         // throws ArgumentException from Microsoft DI's positional open-generic substitution instead of simply
         // resolving. Registering and resolving against a closed generic that satisfies the constraints is the
         // only way to prove this.
+        // Arrange
         var services = new ServiceCollection();
 
+        // Act
         services.AddInterlocutor(builder =>
             builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).Pipeline.AddCancellationBehavior()
         );
@@ -436,14 +492,17 @@ public class InterlocutorBuilderIntegrationTests
             .ServiceProvider.GetServices<IPipelineBehavior<CancellableQuery, OperationOutcome<string, Cancelled>>>()
             .ToList();
 
+        // Assert
         Assert.Contains(behaviors, b => b.GetType().Name.StartsWith("CancellationBehavior"));
     }
 
     [Fact]
     public void AddTimeoutBehavior_ResolvesWithoutThrowing_UnderMicrosoftDI()
     {
+        // Arrange
         var services = new ServiceCollection();
 
+        // Act
         services.AddInterlocutor(builder =>
             builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).Pipeline.AddTimeoutBehavior()
         );
@@ -455,14 +514,17 @@ public class InterlocutorBuilderIntegrationTests
             .ServiceProvider.GetServices<IPipelineBehavior<TimeBoundQuery, OperationOutcome<string, Timeout>>>()
             .ToList();
 
+        // Assert
         Assert.Contains(behaviors, b => b.GetType().Name.StartsWith("TimeoutBehavior"));
     }
 
     [Fact]
     public void AddRateLimitedBehavior_ResolvesWithoutThrowing_UnderMicrosoftDI()
     {
+        // Arrange
         var services = new ServiceCollection();
 
+        // Act
         services.AddInterlocutor(builder =>
             builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).Pipeline.AddRateLimitedBehavior()
         );
@@ -474,6 +536,7 @@ public class InterlocutorBuilderIntegrationTests
             .ServiceProvider.GetServices<IPipelineBehavior<ThrottledQuery, OperationOutcome<string, RateLimited>>>()
             .ToList();
 
+        // Assert
         Assert.Contains(behaviors, b => b.GetType().Name.StartsWith("RateLimitedBehavior"));
     }
 

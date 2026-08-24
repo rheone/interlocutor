@@ -22,29 +22,35 @@ public class BehaviorSubsetConstraintTests
     [Fact]
     public void AuditingBehavior_NeverResolves_ForRequestWithoutMarker()
     {
+        // Arrange
         var services = NewServices();
         services.AddInterlocutor(builder =>
             builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).Pipeline.AddAuditingBehavior()
         );
 
+        // Act
         var provider = services.BuildServiceProvider();
 
+        // Assert
         Assert.Empty(provider.GetServices<IPipelineBehavior<PlainCommand, OperationOutcome<string, Forbidden>>>());
     }
 
     [Fact]
     public void AuditingBehavior_Resolves_ForRequestWithMarker()
     {
+        // Arrange
         var services = NewServices();
         services.AddInterlocutor(builder =>
             builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).Pipeline.AddAuditingBehavior()
         );
 
+        // Act
         var provider = services.BuildServiceProvider();
-
         var resolved = provider
             .GetServices<IPipelineBehavior<AuditableCommand, OperationOutcome<string, Forbidden>>>()
             .ToList();
+
+        // Assert
         Assert.Single(resolved);
         Assert.IsType<AuditingBehavior<AuditableCommand, OperationOutcome<string, Forbidden>>>(resolved[0]);
     }
@@ -52,13 +58,16 @@ public class BehaviorSubsetConstraintTests
     [Fact]
     public void AuthorizationBehavior_NeverResolves_ForRequestWithoutMarker()
     {
+        // Arrange
         var services = NewServices();
         services.AddInterlocutor(builder =>
             builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).Pipeline.AddAuthorizationBehavior()
         );
 
+        // Act
         var provider = services.BuildServiceProvider();
 
+        // Assert
         Assert.Empty(provider.GetServices<IPipelineBehavior<PlainCommand, OperationOutcome<string, Forbidden>>>());
     }
 
@@ -69,14 +78,17 @@ public class BehaviorSubsetConstraintTests
         // IPipelineBehavior<TRequest,TResponse> (see its own XML remarks for why that shape is load-bearing
         // for Microsoft DI specifically) - a real resolution through a built ServiceProvider, not merely a
         // registration-list check or a MakeGenericType probe.
+        // Arrange
         var services = NewServices();
         services.AddInterlocutor(builder =>
             builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).Pipeline.AddAuthorizationBehavior()
         );
 
+        // Act
         var provider = services.BuildServiceProvider();
-
         var resolved = provider.GetServices<IPipelineBehavior<PolicyCommand, OperationOutcome<string, Forbidden>>>().ToList();
+
+        // Assert
         Assert.Single(resolved);
         Assert.IsType<AuthorizationBehavior<PolicyCommand, OperationOutcome<string, Forbidden>>>(resolved[0]);
     }
@@ -84,6 +96,7 @@ public class BehaviorSubsetConstraintTests
     [Fact]
     public void RelativeOrder_AgainstUnconstrainedLoggingBehavior_IsPreserved()
     {
+        // Arrange
         var services = NewServices();
         services.AddInterlocutor(builder =>
             builder
@@ -92,27 +105,30 @@ public class BehaviorSubsetConstraintTests
                 .AddAuditingBehavior()
         );
 
+        // Act
         var provider = services.BuildServiceProvider();
-
-        // AuditableCommand satisfies AuditingBehavior's constraint: both behaviors resolve, in registration order.
         var auditableChain = provider
             .GetServices<IPipelineBehavior<AuditableCommand, OperationOutcome<string, Forbidden>>>()
             .Select(b => b.GetType().Name)
             .ToList();
-        Assert.Equal(["LoggingBehavior`2", "AuditingBehavior`2"], auditableChain);
-
-        // PlainCommand does not satisfy AuditingBehavior's constraint: only the unconstrained LoggingBehavior
-        // resolves, at the same relative position - filtering one entry out of the list doesn't reorder the rest.
         var plainChain = provider
             .GetServices<IPipelineBehavior<PlainCommand, OperationOutcome<string, Forbidden>>>()
             .Select(b => b.GetType().Name)
             .ToList();
+
+        // Assert
+        // AuditableCommand satisfies AuditingBehavior's constraint: both behaviors resolve, in registration order.
+        Assert.Equal(["LoggingBehavior`2", "AuditingBehavior`2"], auditableChain);
+
+        // PlainCommand does not satisfy AuditingBehavior's constraint: only the unconstrained LoggingBehavior
+        // resolves, at the same relative position - filtering one entry out of the list doesn't reorder the rest.
         Assert.Equal(["LoggingBehavior`2"], plainChain);
     }
 
     [Fact]
     public void ThreeRequestTypes_DrawDifferentSubsetsFromSameRegistrationList()
     {
+        // Arrange
         var services = NewServices();
         services.AddInterlocutor(builder =>
             builder
@@ -122,34 +138,37 @@ public class BehaviorSubsetConstraintTests
                 .AddAuthorizationBehavior()
         );
 
+        // Act
         var provider = services.BuildServiceProvider();
-
-        // AuditableCommand: satisfies IAuditableRequest but not IRequiresPolicy -> logging + auditing only.
         var auditableChain = provider
             .GetServices<IPipelineBehavior<AuditableCommand, OperationOutcome<string, Forbidden>>>()
             .Select(b => b.GetType().Name)
             .ToList();
-        Assert.Equal(["LoggingBehavior`2", "AuditingBehavior`2"], auditableChain);
-
-        // PolicyCommand: satisfies IRequiresPolicy (and the Forbidden response shape) but not IAuditableRequest
-        // -> logging + authorization only. Drawn from the exact same registration list as the other two chains.
         var policyChain = provider
             .GetServices<IPipelineBehavior<PolicyCommand, OperationOutcome<string, Forbidden>>>()
             .Select(b => b.GetType().Name)
             .ToList();
-        Assert.Equal(["LoggingBehavior`2", "AuthorizationBehavior`2"], policyChain);
-
-        // PlainCommand: satisfies neither marker -> logging only.
         var plainChain = provider
             .GetServices<IPipelineBehavior<PlainCommand, OperationOutcome<string, Forbidden>>>()
             .Select(b => b.GetType().Name)
             .ToList();
+
+        // Assert
+        // AuditableCommand: satisfies IAuditableRequest but not IRequiresPolicy -> logging + auditing only.
+        Assert.Equal(["LoggingBehavior`2", "AuditingBehavior`2"], auditableChain);
+
+        // PolicyCommand: satisfies IRequiresPolicy (and the Forbidden response shape) but not IAuditableRequest
+        // -> logging + authorization only. Drawn from the exact same registration list as the other two chains.
+        Assert.Equal(["LoggingBehavior`2", "AuthorizationBehavior`2"], policyChain);
+
+        // PlainCommand: satisfies neither marker -> logging only.
         Assert.Equal(["LoggingBehavior`2"], plainChain);
     }
 
     [Fact]
     public void ConstrainedBehaviorRegisteredTwice_ResolvesTwiceForMatchingRequest_NoneForNonMatching()
     {
+        // Arrange
         var services = NewServices();
         services.AddInterlocutor(builder =>
             builder
@@ -158,8 +177,10 @@ public class BehaviorSubsetConstraintTests
                 .AddAuditingBehavior()
         );
 
+        // Act
         var provider = services.BuildServiceProvider();
 
+        // Assert
         Assert.Equal(
             2,
             provider.GetServices<IPipelineBehavior<AuditableCommand, OperationOutcome<string, Forbidden>>>().Count()
@@ -174,16 +195,19 @@ public class BehaviorSubsetConstraintTests
         // AuthorizationBehavior<TRequest,TResponse> and was fixed for the same reason at the same time (see
         // both types' XML remarks) - proven here the same way, via a real ServiceProvider resolution rather
         // than a registration-list check.
+        // Arrange
         var services = NewServices();
         services.AddInterlocutor(builder =>
             builder.ScanAssembly(typeof(BehaviorSubsetConstraintTests).Assembly).Pipeline.AddValidationBehavior()
         );
 
+        // Act
         var provider = services.BuildServiceProvider();
-
         var resolved = provider
             .GetServices<IPipelineBehavior<PlainCommand, OperationOutcome<string, ValidationErrors>>>()
             .ToList();
+
+        // Assert
         Assert.Single(resolved);
         Assert.IsType<Interlocutor.FluentValidation.ValidationBehavior<
             PlainCommand,

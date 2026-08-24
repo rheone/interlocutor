@@ -16,20 +16,26 @@ public class RegistrationValidatorTests
     [Fact]
     public void ValidateOnBuild_NotConfigured_LeavesProblemsEmpty_EvenWithAnUnhandledRequestType()
     {
+        // Arrange
         var builder = new InterlocutorBuilder();
 
+        // Act
         builder.ScanAssembly(typeof(RegistrationValidatorTests).Assembly);
 
+        // Assert
         Assert.Empty(builder.DescribeRegistrations().Problems);
     }
 
     [Fact]
     public void ValidateOnBuild_DetectsAnUnhandledRequestType()
     {
+        // Arrange
         var builder = new InterlocutorBuilder();
 
+        // Act
         builder.ScanAssembly(typeof(RegistrationValidatorTests).Assembly).ValidateOnBuild();
 
+        // Assert
         Assert.Contains(
             builder.DescribeRegistrations().Problems,
             p => p.Kind == RegistrationProblemKind.UnhandledRequestType && p.Description.Contains(nameof(UnhandledQuery))
@@ -39,13 +45,16 @@ public class RegistrationValidatorTests
     [Fact]
     public void ValidateOnBuild_WithAHandlerRegistered_HasNoUnhandledRequestTypeProblem()
     {
+        // Arrange
         var builder = new InterlocutorBuilder();
 
+        // Act
         builder
             .AddHandler(typeof(HandledByValidateOnBuildTestQueryHandler))
             .ScanAssembly(typeof(RegistrationValidatorTests).Assembly)
             .ValidateOnBuild();
 
+        // Assert
         Assert.DoesNotContain(
             builder.DescribeRegistrations().Problems,
             p => p.Description.Contains(nameof(HandledByValidateOnBuildTestQuery))
@@ -55,26 +64,32 @@ public class RegistrationValidatorTests
     [Fact]
     public void ValidateOnBuild_DetectsAnUnmatchedRequiredTypeMatchRule()
     {
+        // Arrange
         var builder = new InterlocutorBuilder();
 
+        // Act
         builder
             .ScanAssembly(typeof(RegistrationValidatorTests).Assembly)
             .AddTypeMatch(t => t.Name == "NoSuchType", TypeMatchTarget.Handler, require: true)
             .ValidateOnBuild();
 
+        // Assert
         Assert.Contains(builder.DescribeRegistrations().Problems, p => p.Kind == RegistrationProblemKind.UnmatchedRequiredRule);
     }
 
     [Fact]
     public void ValidateOnBuild_SatisfiedRequiredTypeMatchRule_HasNoUnmatchedRuleProblem()
     {
+        // Arrange
         var builder = new InterlocutorBuilder();
 
+        // Act
         builder
             .ScanAssembly(typeof(RegistrationValidatorTests).Assembly)
             .AddTypeMatch(t => t == typeof(SampleQueryHandler), TypeMatchTarget.Handler, require: true)
             .ValidateOnBuild();
 
+        // Assert
         Assert.DoesNotContain(
             builder.DescribeRegistrations().Problems,
             p => p.Kind == RegistrationProblemKind.UnmatchedRequiredRule
@@ -84,14 +99,17 @@ public class RegistrationValidatorTests
     [Fact]
     public void ValidateOnBuild_DetectsConflictingLifetimesForTheSameServiceAndImplementationPair()
     {
+        // Arrange
         var builder = new InterlocutorBuilder();
 
+        // Act
         builder
             .AddHandler(typeof(SampleQueryHandler), RegistrationLifetime.Scoped)
             .AddTypeMatch(t => t == typeof(SampleQueryHandler), TypeMatchTarget.Handler, RegistrationLifetime.Singleton)
             .ScanAssembly(typeof(RegistrationValidatorTests).Assembly)
             .ValidateOnBuild();
 
+        // Assert
         var problem = Assert.Single(
             builder.DescribeRegistrations().Problems,
             p => p.Kind == RegistrationProblemKind.ConflictingLifetime
@@ -102,14 +120,17 @@ public class RegistrationValidatorTests
     [Fact]
     public void ValidateOnBuild_SameServiceAndImplementationAtTheSameLifetime_IsNotAConflict()
     {
+        // Arrange
         var builder = new InterlocutorBuilder();
 
+        // Act
         builder
             .AddTypeMatch(t => t == typeof(SampleQueryHandler), TypeMatchTarget.Handler)
             .AddTypeMatch(t => t == typeof(SampleQueryHandler), TypeMatchTarget.Handler)
             .ScanAssembly(typeof(RegistrationValidatorTests).Assembly)
             .ValidateOnBuild();
 
+        // Assert
         Assert.DoesNotContain(
             builder.DescribeRegistrations().Problems,
             p => p.Kind == RegistrationProblemKind.ConflictingLifetime
@@ -119,8 +140,10 @@ public class RegistrationValidatorTests
     [Fact]
     public void ValidateOnBuild_AggregatesEveryProblemIntoOneReport_NotJustTheFirst()
     {
+        // Arrange
         var builder = new InterlocutorBuilder();
 
+        // Act
         builder
             .ScanAssembly(typeof(RegistrationValidatorTests).Assembly)
             .AddHandler(typeof(SampleQueryHandler), RegistrationLifetime.Scoped)
@@ -128,6 +151,7 @@ public class RegistrationValidatorTests
             .AddTypeMatch(t => t.Name == "NoSuchType", TypeMatchTarget.Handler, require: true)
             .ValidateOnBuild();
 
+        // Assert
         var problems = builder.DescribeRegistrations().Problems;
         Assert.Contains(problems, p => p.Kind == RegistrationProblemKind.UnhandledRequestType);
         Assert.Contains(problems, p => p.Kind == RegistrationProblemKind.UnmatchedRequiredRule);

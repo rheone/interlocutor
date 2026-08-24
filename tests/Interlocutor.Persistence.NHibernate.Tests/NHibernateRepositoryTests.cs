@@ -23,48 +23,61 @@ public sealed class NHibernateRepositoryTests
     [Fact]
     public async Task InsertAsync_ForwardsToSessionSaveAsync_WithSameCancellationToken()
     {
+        // Arrange
         var (repository, session) = CreateRepository();
         var widget = new Widget();
         using var cts = new CancellationTokenSource();
 
+        // Act
         await repository.InsertAsync(widget, cts.Token);
 
+        // Assert
         await session.Received(1).SaveAsync(widget, cts.Token);
     }
 
     [Fact]
     public async Task UpdateAsync_ForwardsToSessionUpdateAsync_WithSameCancellationToken()
     {
+        // Arrange
         var (repository, session) = CreateRepository();
         var widget = new Widget();
         using var cts = new CancellationTokenSource();
 
+        // Act
         await repository.UpdateAsync(widget, cts.Token);
 
+        // Assert
         await session.Received(1).UpdateAsync(widget, cts.Token);
     }
 
     [Fact]
     public async Task DeleteAsync_ForwardsToSessionDeleteAsync_WithSameCancellationToken()
     {
+        // Arrange
         var (repository, session) = CreateRepository();
         var widget = new Widget();
         using var cts = new CancellationTokenSource();
 
+        // Act
         await repository.DeleteAsync(widget, cts.Token);
 
+        // Assert
         await session.Received(1).DeleteAsync(widget, cts.Token);
     }
 
     [Fact]
     public void IdSelector_ReturnsExpressionSuppliedAtConstruction()
     {
+        // Arrange
         Expression<Func<Widget, int>> idSelector = w => w.Id;
+
+        // Act
         var repository = new NHibernateRepository<Widget, int>(
             new Lazy<ISession>(() => Substitute.For<ISession>()),
             idSelector
         );
 
+        // Assert
         Assert.Same(idSelector, repository.IdSelector);
     }
 

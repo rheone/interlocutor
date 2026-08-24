@@ -175,6 +175,7 @@ public class AuthorizationBehaviorTests
         // reflectively from a Forbidden case constructor when authorization is denied. A response shape with
         // no such case (like OperationOutcome<string, NotFound> here) can't express "denied" at all, so
         // denial must fail loudly and specifically rather than silently succeeding or crashing obscurely.
+        // Arrange
         var policyEvaluator = Substitute.For<IPolicyEvaluator>();
         policyEvaluator
             .EvaluateAsync(Arg.Any<string>(), Arg.Any<object>(), Arg.Any<CancellationToken>())
@@ -188,10 +189,12 @@ public class AuthorizationBehaviorTests
         Func<Task<OperationOutcome<string, Interlocutor.CommonKernel.ResultTypes.NotFound>>> next = () =>
             throw new InvalidOperationException("Should not be called");
 
+        // Act
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             behavior.Handle(request, next, CancellationToken.None)
         );
 
+        // Assert
         Assert.Contains("Forbidden", ex.Message);
     }
 
@@ -201,6 +204,7 @@ public class AuthorizationBehaviorTests
         // Proves IOutcomeCaseRegistry is a genuine drop-in for UnionCaseFactory, not just for compiler
         // unions: HandRolledOutcome has no case constructor and no IUnion marker, so DefaultOutcomeCaseRegistry
         // alone could never construct it - it only works here because a custom factory is registered.
+        // Arrange
         var policyEvaluator = Substitute.For<IPolicyEvaluator>();
         policyEvaluator
             .EvaluateAsync(Arg.Any<string>(), Arg.Any<object>(), Arg.Any<CancellationToken>())
@@ -214,8 +218,10 @@ public class AuthorizationBehaviorTests
         var request = new ProtectedHandRolledQuery();
         Func<Task<HandRolledOutcome>> next = () => throw new InvalidOperationException("Should not be called");
 
+        // Act
         var result = await behavior.Handle(request, next, CancellationToken.None);
 
+        // Assert
         Assert.Equal(typeof(Forbidden), result.CaseType);
         var forbidden = Assert.IsType<Forbidden>(result.CaseValue);
         Assert.Contains("CanRead", forbidden.Reason ?? string.Empty);

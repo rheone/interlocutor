@@ -21,11 +21,14 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
     [Fact]
     public async Task Send_Object_Query_DispatchesThroughTheGeneratedSwitch()
     {
+        // Arrange
         var sender = CreateSenderWithGeneratedRegistrationsOnly();
-
         object request = new GeneratedSwitchQuery(21);
+
+        // Act
         var outcome = await sender.Send(request, TestContext.Current.CancellationToken);
 
+        // Assert
         var union = Assert.IsAssignableFrom<System.Runtime.CompilerServices.IUnion>(outcome);
         Assert.Equal(42, Assert.IsType<int>(union.Value));
     }
@@ -33,11 +36,14 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
     [Fact]
     public async Task Send_Object_ValueCommand_DispatchesThroughTheGeneratedSwitch()
     {
+        // Arrange
         var sender = CreateSenderWithGeneratedRegistrationsOnly();
-
         object request = new GeneratedSwitchCommand("Ada");
+
+        // Act
         var outcome = await sender.Send(request, TestContext.Current.CancellationToken);
 
+        // Assert
         var union = Assert.IsAssignableFrom<System.Runtime.CompilerServices.IUnion>(outcome);
         Assert.Equal("Hello Ada", Assert.IsType<string>(union.Value));
     }
@@ -45,11 +51,14 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
     [Fact]
     public async Task Send_Object_UnitCommand_DispatchesThroughTheGeneratedSwitch()
     {
+        // Arrange
         var sender = CreateSenderWithGeneratedRegistrationsOnly();
-
         object request = new GeneratedSwitchVoidCommand();
+
+        // Act
         var outcome = await sender.Send(request, TestContext.Current.CancellationToken);
 
+        // Assert
         var union = Assert.IsAssignableFrom<System.Runtime.CompilerServices.IUnion>(outcome);
         Assert.IsType<Success>(union.Value);
     }
@@ -57,13 +66,16 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
     [Fact]
     public async Task Send_Object_UnregisteredQuery_ThrowsHandlerNotRegisteredExceptionNamingTheType()
     {
+        // Arrange
         var sender = CreateSenderWithGeneratedRegistrationsOnly();
-
         object request = new GeneratedSwitchUnregisteredQuery();
+
+        // Act
         var ex = await Assert.ThrowsAsync<HandlerNotRegisteredException>(() =>
             sender.Send(request, TestContext.Current.CancellationToken)
         );
 
+        // Assert
         Assert.Equal(typeof(GeneratedSwitchUnregisteredQuery), ex.RequestType);
         Assert.Contains(nameof(GeneratedSwitchUnregisteredQuery), ex.Message, StringComparison.Ordinal);
     }
@@ -71,12 +83,15 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
     [Fact]
     public async Task Send_Object_NotARequest_ThrowsDistinctUnsupportedRequestTypeException()
     {
+        // Arrange
         var sender = CreateSenderWithGeneratedRegistrationsOnly();
 
+        // Act
         var ex = await Assert.ThrowsAsync<UnsupportedRequestTypeException>(() =>
             sender.Send("just a string, not a request", TestContext.Current.CancellationToken)
         );
 
+        // Assert
         Assert.Equal(typeof(string), ex.RequestType);
     }
 

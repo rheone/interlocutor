@@ -44,12 +44,15 @@ public sealed class CrossAssemblyAggregationTests
     [Fact]
     public void Application_aggregates_a_directly_referenced_librarys_module_with_no_extra_configuration()
     {
+        // Arrange
         var libraryOutput = GeneratorTestHarness.RunAndUpdate(LibraryASource, "LibraryA", null, out _);
         var libraryReference = GeneratorTestHarness.ToMetadataReference(libraryOutput);
-
         const string appSource = "namespace App; public sealed class Nothing;";
+
+        // Act
         var result = GeneratorTestHarness.Run(appSource, [libraryReference]);
 
+        // Assert
         Assert.Empty(result.Diagnostics);
         var registrationsSource = GetGeneratedSource(result, "InterlocutorGeneratedRegistrations.g.cs");
 
@@ -65,6 +68,7 @@ public sealed class CrossAssemblyAggregationTests
     [Fact]
     public void Three_level_reference_chain_surfaces_library_Bs_module_without_the_app_listing_it()
     {
+        // Arrange
         var libraryBOutput = GeneratorTestHarness.RunAndUpdate(LibraryBSource, "LibraryB", null, out _);
         var libraryBReference = GeneratorTestHarness.ToMetadataReference(libraryBOutput);
 
@@ -75,8 +79,11 @@ public sealed class CrossAssemblyAggregationTests
         // project-to-project reference chain (transitive project references flow as direct assembly
         // references into the final compile) - but never writes any AddGeneratedRegistrations call naming B.
         const string appSource = "namespace App; public sealed class Nothing;";
+
+        // Act
         var result = GeneratorTestHarness.Run(appSource, [libraryAReference, libraryBReference]);
 
+        // Assert
         Assert.Empty(result.Diagnostics);
         var registrationsSource = GetGeneratedSource(result, "InterlocutorGeneratedRegistrations.g.cs");
 
@@ -95,6 +102,7 @@ public sealed class CrossAssemblyAggregationTests
     [Fact]
     public void Diamond_reference_to_the_same_assembly_does_not_duplicate_its_aggregation_call_site()
     {
+        // Arrange
         var libraryBOutput = GeneratorTestHarness.RunAndUpdate(LibraryBSource, "LibraryB", null, out _);
         var libraryBReference = GeneratorTestHarness.ToMetadataReference(libraryBOutput);
 
@@ -105,8 +113,11 @@ public sealed class CrossAssemblyAggregationTests
         // through two distinct paths (App->B directly, and App->A->B), but Compilation.References already
         // de-duplicates by assembly identity, so B's module must be aggregated exactly once.
         const string appSource = "namespace App; public sealed class Nothing;";
+
+        // Act
         var result = GeneratorTestHarness.Run(appSource, [libraryAReference, libraryBReference]);
 
+        // Assert
         var registrationsSource = GetGeneratedSource(result, "InterlocutorGeneratedRegistrations.g.cs");
         var occurrences = CountOccurrences(
             registrationsSource,
@@ -118,6 +129,7 @@ public sealed class CrossAssemblyAggregationTests
     [Fact]
     public void Missing_handler_diagnostic_does_not_fire_when_the_handler_lives_in_a_referenced_assembly()
     {
+        // Arrange
         var libraryOutput = GeneratorTestHarness.RunAndUpdate(LibraryASource, "LibraryA", null, out _);
         var libraryReference = GeneratorTestHarness.ToMetadataReference(libraryOutput);
 
@@ -132,8 +144,10 @@ public sealed class CrossAssemblyAggregationTests
             public sealed class AppOnlyQuery : IQuery<OperationOutcome>;
             """;
 
+        // Act
         var result = GeneratorTestHarness.Run(appSource, [libraryReference]);
 
+        // Assert
         // AppOnlyQuery still has no handler anywhere, so it still gets the diagnostic - proves the check isn't
         // simply disabled once any external module is present.
         var diagnostic = Assert.Single(result.Diagnostics);
@@ -148,18 +162,22 @@ public sealed class CrossAssemblyAggregationTests
         // already proves that pair matches (see MissingHandlerDiagnosticTests for the single-compilation
         // case). The app here declares no request types of its own - it only references LibraryA - so its
         // own generator run must not surface any stale or duplicated diagnostic about LibraryA's internals.
+        // Arrange
         var libraryOutput = GeneratorTestHarness.RunAndUpdate(LibraryASource, "LibraryA", null, out _);
         var libraryReference = GeneratorTestHarness.ToMetadataReference(libraryOutput);
-
         const string appSource = "namespace App; public sealed class Nothing;";
+
+        // Act
         var result = GeneratorTestHarness.Run(appSource, [libraryReference]);
 
+        // Assert
         Assert.Empty(result.Diagnostics);
     }
 
     [Fact]
     public void External_handler_metadata_matches_by_request_and_response_type_name_regardless_of_declaring_assembly()
     {
+        // Arrange
         // Exercises ReferencedModuleDiscovery's matching rule directly: build a compilation that declares only
         // the request half of LibraryA's GetFooQuery/GetFooQueryHandler pair under the exact same
         // fully-qualified name LibraryA's handler was compiled against, and reference LibraryA. If the
@@ -177,8 +195,10 @@ public sealed class CrossAssemblyAggregationTests
             public sealed class GetFooQuery : IQuery<OperationOutcome>;
             """;
 
+        // Act
         var result = GeneratorTestHarness.Run(appSource, [libraryReference]);
 
+        // Assert
         // App.GetFooQuery is a distinct type from LibraryA.GetFooQuery (different namespace, no ambiguity) -
         // it legitimately has no handler anywhere, so the diagnostic is expected here, proving the matching
         // rule keys on the full name (including namespace), not the bare type name alone.
@@ -190,6 +210,7 @@ public sealed class CrossAssemblyAggregationTests
     [Fact]
     public void Out_of_range_handler_kind_in_referenced_metadata_is_rejected_rather_than_misdecoded()
     {
+        // Arrange
         // Simulates a referenced assembly built against a newer generator version that emits a HandlerKind
         // value this generator doesn't know about yet - hand-authored rather than produced by the real
         // generator, since the real generator can only ever emit values it knows about itself.
@@ -230,8 +251,10 @@ public sealed class CrossAssemblyAggregationTests
             public sealed class WeirdRequest : IQuery<OperationOutcome>;
             """;
 
+        // Act
         var result = GeneratorTestHarness.Run(appSource, [libraryReference]);
 
+        // Assert
         var diagnostic = Assert.Single(result.Diagnostics);
         Assert.Equal("INTERLOC001", diagnostic.Id);
         Assert.Contains("App.WeirdRequest", diagnostic.GetMessage(), StringComparison.Ordinal);

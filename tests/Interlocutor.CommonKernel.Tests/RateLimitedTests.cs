@@ -10,8 +10,10 @@ public class RateLimitedTests
     [Fact]
     public void ConstructedWithLimitKeyOnly_OptionalsAreNull()
     {
+        // Arrange & Act
         var rateLimited = new RateLimited("per-user");
 
+        // Assert
         Assert.Equal("per-user", rateLimited.LimitKey);
         Assert.Null(rateLimited.RetryAfter);
         Assert.Null(rateLimited.Message);
@@ -20,8 +22,10 @@ public class RateLimitedTests
     [Fact]
     public void ConstructedWithAllValues_AllPropertiesAreSet()
     {
+        // Arrange & Act
         var rateLimited = new RateLimited("per-user", TimeSpan.FromSeconds(30), "Too many requests");
 
+        // Assert
         Assert.Equal("per-user", rateLimited.LimitKey);
         Assert.Equal(TimeSpan.FromSeconds(30), rateLimited.RetryAfter);
         Assert.Equal("Too many requests", rateLimited.Message);
@@ -30,9 +34,11 @@ public class RateLimitedTests
     [Fact]
     public void SameValues_AreEqual()
     {
+        // Arrange
         var first = new RateLimited("per-user", TimeSpan.FromSeconds(30), "Too many requests");
         var second = new RateLimited("per-user", TimeSpan.FromSeconds(30), "Too many requests");
 
+        // Act & Assert
         Assert.Equal(first, second);
         Assert.True(first == second);
     }
@@ -40,9 +46,11 @@ public class RateLimitedTests
     [Fact]
     public void DifferentLimitKey_AreNotEqual()
     {
+        // Arrange
         var first = new RateLimited("per-user");
         var second = new RateLimited("per-tenant");
 
+        // Act & Assert
         Assert.NotEqual(first, second);
         Assert.True(first != second);
     }
@@ -50,14 +58,26 @@ public class RateLimitedTests
     [Fact]
     public void ToString_WithoutMessage_IncludesLimitKey()
     {
+        // Arrange
         var rateLimited = new RateLimited("per-user");
-        Assert.Equal("RateLimited: per-user", rateLimited.ToString());
+
+        // Act
+        var result = rateLimited.ToString();
+
+        // Assert
+        Assert.Equal("RateLimited: per-user", result);
     }
 
     [Fact]
     public void ToString_WithMessage_IncludesLimitKeyAndMessage()
     {
+        // Arrange
         var rateLimited = new RateLimited("per-user", TimeSpan.FromSeconds(30), "Too many requests");
-        Assert.Equal("RateLimited: per-user, Too many requests", rateLimited.ToString());
+
+        // Act
+        var result = rateLimited.ToString();
+
+        // Assert
+        Assert.Equal("RateLimited: per-user, Too many requests", result);
     }
 }

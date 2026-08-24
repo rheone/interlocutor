@@ -10,8 +10,10 @@ public class HandlerDiscoveryTests
     [Fact]
     public void Discover_FindsQueryHandler_AsScopedHandlerRegistration()
     {
+        // Act
         var registrations = HandlerDiscovery.Discover([typeof(HandlerDiscoveryTests).Assembly]);
 
+        // Assert
         var registration = Assert.Single(registrations, r => r.ImplementationType == typeof(SampleQueryHandler));
 
         Assert.Equal(typeof(IQueryHandler<SampleQuery, OperationOutcome>), registration.ServiceType);
@@ -23,10 +25,12 @@ public class HandlerDiscoveryTests
     [Fact]
     public void Discover_WithPerAssemblyLifetime_AppliesItToEveryMatchFromThatAssembly()
     {
+        // Act
         var registrations = HandlerDiscovery.Discover([
             (typeof(HandlerDiscoveryTests).Assembly, RegistrationLifetime.Singleton),
         ]);
 
+        // Assert
         var registration = Assert.Single(registrations, r => r.ImplementationType == typeof(SampleQueryHandler));
 
         Assert.Equal(RegistrationLifetime.Singleton, registration.Lifetime);
@@ -36,8 +40,10 @@ public class HandlerDiscoveryTests
     [Fact]
     public void Discover_FindsVoidCommandHandler_AndNotificationHandler()
     {
+        // Act
         var registrations = HandlerDiscovery.Discover([typeof(HandlerDiscoveryTests).Assembly]);
 
+        // Assert
         Assert.Contains(
             registrations,
             r =>
@@ -58,16 +64,20 @@ public class HandlerDiscoveryTests
     [Fact]
     public void Discover_IgnoresTypesThatAreNotHandlers()
     {
+        // Act
         var registrations = HandlerDiscovery.Discover([typeof(HandlerDiscoveryTests).Assembly]);
 
+        // Assert
         Assert.DoesNotContain(registrations, r => r.ImplementationType == typeof(NotAHandler));
     }
 
     [Fact]
     public void Discover_FindsCommandHandler_AsScopedHandlerRegistration()
     {
+        // Act
         var registrations = HandlerDiscovery.Discover([typeof(HandlerDiscoveryTests).Assembly]);
 
+        // Assert
         var registration = Assert.Single(registrations, r => r.ImplementationType == typeof(SampleCommandHandler));
 
         Assert.Equal(typeof(ICommandHandler<SampleCommandWithResponse, OperationOutcome>), registration.ServiceType);
@@ -78,8 +88,10 @@ public class HandlerDiscoveryTests
     [Fact]
     public void Discover_FindsTypeImplementingMultipleHandlerContracts_ForEachContract()
     {
+        // Act
         var registrations = HandlerDiscovery.Discover([typeof(HandlerDiscoveryTests).Assembly]);
 
+        // Assert
         var forType = registrations.Where(r => r.ImplementationType == typeof(MultiContractHandler)).ToList();
 
         Assert.Equal(2, forType.Count);
@@ -100,8 +112,10 @@ public class HandlerDiscoveryTests
     [Fact]
     public void Discover_FindsEveryNotificationHandler_WhenMultipleHandlersShareOneNotificationType()
     {
+        // Act
         var registrations = HandlerDiscovery.Discover([typeof(HandlerDiscoveryTests).Assembly]);
 
+        // Assert
         var handlersForNotification = registrations
             .Where(r => r.ServiceType == typeof(INotificationHandler<SharedNotification>))
             .ToList();
@@ -114,6 +128,7 @@ public class HandlerDiscoveryTests
     [Fact]
     public void Discover_FindsOpenGenericHandlerClass_ClosedOverItsOwnTypeParameter()
     {
+        // Act
         // HandlerDiscovery.Discover currently scans every concrete (non-abstract) class, including open
         // generic class definitions. Type.GetInterfaces() on an open generic class still resolves each
         // implemented interface's generic type definition, so an open generic handler class IS discovered
@@ -124,6 +139,7 @@ public class HandlerDiscoveryTests
         // filter out open generics themselves until that ticket lands.
         var registrations = HandlerDiscovery.Discover([typeof(HandlerDiscoveryTests).Assembly]);
 
+        // Assert
         var registration = Assert.Single(registrations, r => r.ImplementationType == typeof(OpenGenericQueryHandler<>));
 
         Assert.True(registration.ImplementationType.IsGenericTypeDefinition);

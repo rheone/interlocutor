@@ -22,6 +22,7 @@ public class RootScopeGuardTests
     [Fact]
     public async Task SingletonCapturingMediatorAtConstruction_ThrowsMediatorResolvedFromRootScopeException_OnDispatch()
     {
+        // Arrange
         var services = new ServiceCollection();
         services.AddInterlocutor(builder => builder.ScanAssembly(typeof(RootScopeGuardTests).Assembly));
 
@@ -33,10 +34,12 @@ public class RootScopeGuardTests
         var provider = services.BuildServiceProvider();
         var consumer = provider.GetRequiredService<SingletonMediatorConsumer>();
 
+        // Act
         var ex = await Assert.ThrowsAsync<MediatorResolvedFromRootScopeException>(() =>
             consumer.DispatchAsync(TestContext.Current.CancellationToken)
         );
 
+        // Assert
         Assert.Equal(typeof(SharedScopeQuery), ex.RequestType);
         Assert.Contains(nameof(SharedScopeQuery), ex.Message);
         Assert.Contains("scope", ex.Message, StringComparison.OrdinalIgnoreCase);
@@ -45,6 +48,7 @@ public class RootScopeGuardTests
     [Fact]
     public async Task DispatchFromRealScope_SharesOneScopedDependencyInstance_BetweenHandlerAndPipelineBehavior()
     {
+        // Arrange
         var services = new ServiceCollection();
         services.AddScoped<ScopedThing>();
         services.AddScoped<ScopedDependencyRecorder>();
@@ -57,9 +61,11 @@ public class RootScopeGuardTests
         using var scope = provider.CreateScope();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
+        // Act
         var result = await mediator.Send(new SharedScopeQuery(), TestContext.Current.CancellationToken);
-
         var recorder = scope.ServiceProvider.GetRequiredService<ScopedDependencyRecorder>();
+
+        // Assert
         Assert.Equal(2, recorder.RecordedIds.Count);
         Assert.Equal(recorder.RecordedIds[0], recorder.RecordedIds[1]);
         Assert.Equal(recorder.RecordedIds[0], Assert.IsAssignableFrom<IUnion>(result).Value);

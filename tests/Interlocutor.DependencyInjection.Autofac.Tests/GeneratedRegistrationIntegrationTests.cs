@@ -18,6 +18,7 @@ public sealed class GeneratedRegistrationIntegrationTests
     [Fact]
     public async Task GeneratedRegistration_ResolvesHandlerWithConstructorDependency_AndDispatchesSuccessfully()
     {
+        // Arrange
         var containerBuilder = new ContainerBuilder();
         containerBuilder.RegisterType<Greeter>().As<IGreeter>().SingleInstance();
 
@@ -39,8 +40,10 @@ public sealed class GeneratedRegistrationIntegrationTests
         await using var scope = container.BeginLifetimeScope();
         var mediator = scope.Resolve<IMediator>();
 
+        // Act
         var result = await mediator.Send(new GeneratedQuery(), TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.Equal("hi from Autofac", result.Value);
     }
 

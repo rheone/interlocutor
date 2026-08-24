@@ -12,70 +12,86 @@ public class OperationOutcomeOfFiveCasesTests
     [Fact]
     public void Construct_FromSuccess_IsSuccessTrue()
     {
+        // Arrange & Act
         var result = new OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationError>("hello");
 
+        // Assert
         Assert.True(result.IsSuccess);
     }
 
     [Fact]
     public void Construct_FromCase2_IsSuccessFalse()
     {
+        // Arrange & Act
         var result = new OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationError>(new NotFound("missing"));
 
+        // Assert
         Assert.False(result.IsSuccess);
     }
 
     [Fact]
     public void Construct_FromCase3_IsSuccessFalse()
     {
+        // Arrange & Act
         var result = new OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationError>(new Forbidden("denied"));
 
+        // Assert
         Assert.False(result.IsSuccess);
     }
 
     [Fact]
     public void Construct_FromCase4_IsSuccessFalse()
     {
+        // Arrange & Act
         var result = new OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationError>(
             new Conflict("stale", "CONFLICT")
         );
 
+        // Assert
         Assert.False(result.IsSuccess);
     }
 
     [Fact]
     public void Construct_FromCase5_IsSuccessFalse()
     {
+        // Arrange & Act
         var result = new OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationError>(
             new ValidationError("Name is required")
         );
 
+        // Assert
         Assert.False(result.IsSuccess);
     }
 
     [Fact]
     public void ImplicitConversion_FromSuccessValue_ProducesSuccessOutcome()
     {
+        // Arrange & Act
         OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationError> result = "hello";
 
+        // Assert
         Assert.True(result.IsSuccess);
     }
 
     [Fact]
     public void ImplicitConversion_FromCase5Value_ProducesCase5Outcome()
     {
+        // Arrange & Act
         OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationError> result = new ValidationError(
             "Name is required"
         );
 
+        // Assert
         Assert.False(result.IsSuccess);
     }
 
     [Fact]
     public void Switch_OverSuccess_MatchesSuccessCase()
     {
+        // Arrange
         OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationError> result = "hello";
 
+        // Act
         var message = result.Value switch
         {
             string success => success,
@@ -86,14 +102,17 @@ public class OperationOutcomeOfFiveCasesTests
             _ => throw new InvalidOperationException("Unreachable"),
         };
 
+        // Assert
         Assert.Equal("hello", message);
     }
 
     [Fact]
     public void Switch_OverCase2_MatchesCase2()
     {
+        // Arrange
         OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationError> result = new NotFound("missing");
 
+        // Act
         var message = result.Value switch
         {
             string success => success,
@@ -104,14 +123,17 @@ public class OperationOutcomeOfFiveCasesTests
             _ => throw new InvalidOperationException("Unreachable"),
         };
 
+        // Assert
         Assert.Equal("missing", message);
     }
 
     [Fact]
     public void Switch_OverCase3_MatchesCase3()
     {
+        // Arrange
         OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationError> result = new Forbidden("denied");
 
+        // Act
         var message = result.Value switch
         {
             string success => success,
@@ -122,14 +144,17 @@ public class OperationOutcomeOfFiveCasesTests
             _ => throw new InvalidOperationException("Unreachable"),
         };
 
+        // Assert
         Assert.Equal("denied", message);
     }
 
     [Fact]
     public void Switch_OverCase4_MatchesCase4()
     {
+        // Arrange
         OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationError> result = new Conflict("stale", "CONFLICT");
 
+        // Act
         var message = result.Value switch
         {
             string success => success,
@@ -140,16 +165,19 @@ public class OperationOutcomeOfFiveCasesTests
             _ => throw new InvalidOperationException("Unreachable"),
         };
 
+        // Assert
         Assert.Equal("stale", message);
     }
 
     [Fact]
     public void Switch_OverCase5_MatchesCase5()
     {
+        // Arrange
         OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationError> result = new ValidationError(
             "Name is required"
         );
 
+        // Act
         var message = result.Value switch
         {
             string success => success,
@@ -160,23 +188,34 @@ public class OperationOutcomeOfFiveCasesTests
             _ => throw new InvalidOperationException("Unreachable"),
         };
 
+        // Assert
         Assert.Equal("Name is required", message);
     }
 
     [Fact]
     public void GetValue_OverSuccess_ReturnsUnderlyingValue()
     {
+        // Arrange
         OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationError> result = "hello";
 
-        Assert.Equal("hello", result.GetValue());
+        // Act
+        var value = result.GetValue();
+
+        // Assert
+        Assert.Equal("hello", value);
     }
 
     [Fact]
     public void GetValue_OverCase5_ReturnsUnderlyingValue()
     {
+        // Arrange
         var validationError = new ValidationError("Name is required");
         OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationError> result = validationError;
 
-        Assert.Equal(validationError, result.GetValue());
+        // Act
+        var value = result.GetValue();
+
+        // Assert
+        Assert.Equal(validationError, value);
     }
 }

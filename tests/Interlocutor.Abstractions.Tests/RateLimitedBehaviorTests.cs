@@ -134,6 +134,7 @@ public class RateLimitedBehaviorTests
         // RateLimited case constructor when the limit is exceeded. A response shape with no such case
         // (like OperationOutcome<string, NotFound> here) can't express "throttled" at all, so throttling
         // must fail loudly and specifically rather than silently succeeding or crashing obscurely.
+        // Arrange
         var rateLimiter = Substitute.For<IRateLimiter>();
         rateLimiter
             .CheckAsync(Arg.Any<string>(), Arg.Any<object>(), Arg.Any<CancellationToken>())
@@ -146,16 +147,19 @@ public class RateLimitedBehaviorTests
         var request = new MisshapenThrottledQuery();
         Func<Task<OperationOutcome<string, NotFound>>> next = () => throw new InvalidOperationException("Should not be called");
 
+        // Act
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             behavior.Handle(request, next, CancellationToken.None)
         );
 
+        // Assert
         Assert.Contains("RateLimited", ex.Message);
     }
 
     [Fact]
     public async Task Handle_UsingDefaultRateLimiter_AlwaysAllows()
     {
+        // Arrange
         var behavior = new RateLimitedBehavior<ThrottledQuery, OperationOutcome<string, RateLimited>>(
             DefaultRateLimiter.Instance,
             DefaultOutcomeCaseRegistry.Instance
@@ -164,14 +168,17 @@ public class RateLimitedBehaviorTests
         Func<Task<OperationOutcome<string, RateLimited>>> next = () =>
             Task.FromResult<OperationOutcome<string, RateLimited>>(new OperationOutcome<string, RateLimited>("success"));
 
+        // Act
         var result = await behavior.Handle(request, next, CancellationToken.None);
 
+        // Assert
         Assert.Equal("success", result.Value);
     }
 
     [Fact]
     public async Task Handle_UsingDelegateRateLimiter_InvokesSuppliedDelegate()
     {
+        // Arrange
         var delegateCalled = false;
         var limiter = new DelegateRateLimiter(
             (limitKey, request, ct) =>
@@ -189,8 +196,10 @@ public class RateLimitedBehaviorTests
         Func<Task<OperationOutcome<string, RateLimited>>> next = () =>
             throw new InvalidOperationException("Should not be called");
 
+        // Act
         var result = await behavior.Handle(request, next, CancellationToken.None);
 
+        // Assert
         Assert.True(delegateCalled);
         var rateLimited = Assert.IsType<RateLimited>(result.Value);
         Assert.Equal(TimeSpan.FromSeconds(5), rateLimited.RetryAfter);

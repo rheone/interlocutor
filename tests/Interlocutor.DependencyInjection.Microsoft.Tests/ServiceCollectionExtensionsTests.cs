@@ -14,10 +14,14 @@ public class ServiceCollectionExtensionsTests
     [Fact]
     public void AddInterlocutor_RegistersMediatorAsScoped()
     {
+        // Arrange
         var services = new ServiceCollection();
-        services.AddInterlocutor(builder => builder.ScanAssembly(typeof(ServiceCollectionExtensionsTests).Assembly));
 
+        // Act
+        services.AddInterlocutor(builder => builder.ScanAssembly(typeof(ServiceCollectionExtensionsTests).Assembly));
         var descriptor = services.FirstOrDefault(s => s.ServiceType == typeof(IMediator));
+
+        // Assert
         Assert.NotNull(descriptor);
         Assert.Equal(ServiceLifetime.Scoped, descriptor!.Lifetime);
     }
@@ -25,30 +29,48 @@ public class ServiceCollectionExtensionsTests
     [Fact]
     public void UseRecommendedChain_RegistersBehaviorsInCanonicalOrder()
     {
+        // Arrange
         var services = new ServiceCollection();
 
+        // Act
         services.AddInterlocutor(builder =>
             builder.ScanAssembly(typeof(ServiceCollectionExtensionsTests).Assembly).Pipeline.UseRecommendedChain()
         );
+        var behaviorImplementationTypes = services
+            .Where(s => s.ServiceType == typeof(IPipelineBehavior<,>))
+            .Select(s => s.ImplementationType!.Name)
+            .ToList();
 
-        var behaviorDescriptors = services.Where(s => s.ServiceType == typeof(IPipelineBehavior<,>)).ToList();
-
-        // Should have at least LoggingBehavior, AuditingBehavior, AuthorizationBehavior
-        Assert.NotEmpty(behaviorDescriptors);
+        // Assert
+        // Registration order must match UseRecommendedChain's documented canonical order (logging, auditing,
+        // authorization, validation, transaction) - not merely contain each behavior.
+        Assert.Equal(
+            [
+                "LoggingBehavior`2",
+                "AuditingBehavior`2",
+                "AuthorizationBehavior`2",
+                "ValidationBehavior`2",
+                "TransactionBehavior`2",
+            ],
+            behaviorImplementationTypes
+        );
     }
 
     [Fact]
     public void OverrideOutcomeDescriber_RegistersOutcomeDescriber()
     {
+        // Arrange
         var services = new ServiceCollection();
 
+        // Act
         services.AddInterlocutor(builder =>
             builder
                 .ScanAssembly(typeof(ServiceCollectionExtensionsTests).Assembly)
                 .Pipeline.OverrideOutcomeDescriber<DefaultResponseOutcomeDescriber>()
         );
-
         var descriptor = services.FirstOrDefault(s => s.ServiceType == typeof(IResponseOutcomeDescriber));
+
+        // Assert
         Assert.NotNull(descriptor);
         Assert.Equal(ServiceLifetime.Singleton, descriptor!.Lifetime);
     }
@@ -56,17 +78,20 @@ public class ServiceCollectionExtensionsTests
     [Fact]
     public void OverrideOutcomeDescriber_AllowsCustomOutcomeDescriber()
     {
+        // Arrange
         var services = new ServiceCollection();
         services.AddSingleton(OutcomeClassifierBuilder.DefaultClassifier);
 
+        // Act
         services.AddInterlocutor(builder =>
             builder
                 .ScanAssembly(typeof(ServiceCollectionExtensionsTests).Assembly)
                 .Pipeline.OverrideOutcomeDescriber<DefaultResponseOutcomeDescriber>()
         );
-
         var provider = services.BuildServiceProvider();
         var describer = provider.GetRequiredService<IResponseOutcomeDescriber>();
+
+        // Assert
         Assert.NotNull(describer);
         Assert.IsType<DefaultResponseOutcomeDescriber>(describer);
     }
@@ -85,6 +110,7 @@ public class ServiceCollectionExtensionsTests
     [Fact]
     public async Task AddBehavior_WithOpenAndClosedGenericImplementations_BothResolveAndExecute()
     {
+        // Arrange
         var executionOrder = new List<string>();
         var services = new ServiceCollection();
         services.AddSingleton(executionOrder);
@@ -100,8 +126,10 @@ public class ServiceCollectionExtensionsTests
         using var scope = provider.CreateScope();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
+        // Act
         var result = await mediator.Send(new RegressionQuery(), TestContext.Current.CancellationToken);
 
+        // Assert
         Assert.Equal(new[] { "open-enter", "closed-enter", "handle", "closed-exit", "open-exit" }, executionOrder);
         Assert.Equal("regression-handled", result.Value);
     }

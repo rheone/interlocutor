@@ -11,6 +11,7 @@ public sealed class NotificationHandlerOrderingTests
     [Fact]
     public void Handler_for_base_notification_interface_reports_catch_all_diagnostic()
     {
+        // Arrange
         const string source = """
             namespace TestApp;
 
@@ -26,8 +27,10 @@ public sealed class NotificationHandlerOrderingTests
             }
             """;
 
+        // Act
         var result = GeneratorTestHarness.Run(source);
 
+        // Assert
         var diagnostic = Assert.Single(result.Diagnostics);
         Assert.Equal("INTERLOC003", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Info, diagnostic.Severity);
@@ -37,6 +40,7 @@ public sealed class NotificationHandlerOrderingTests
     [Fact]
     public void Handler_for_a_concrete_notification_reports_no_catch_all_diagnostic()
     {
+        // Arrange
         const string source = """
             namespace TestApp;
 
@@ -52,14 +56,17 @@ public sealed class NotificationHandlerOrderingTests
             }
             """;
 
+        // Act
         var result = GeneratorTestHarness.Run(source);
 
+        // Assert
         Assert.Empty(result.Diagnostics);
     }
 
     [Fact]
     public void RunAfter_produces_a_rank_lower_than_the_handler_it_names()
     {
+        // Arrange
         const string source = """
             namespace TestApp;
 
@@ -81,8 +88,10 @@ public sealed class NotificationHandlerOrderingTests
             }
             """;
 
+        // Act
         var result = GeneratorTestHarness.Run(source);
 
+        // Assert
         Assert.Empty(result.Diagnostics);
         var orderSource = GetGeneratedSource(result, "InterlocutorGeneratedNotificationOrder.g.cs");
 
@@ -93,6 +102,7 @@ public sealed class NotificationHandlerOrderingTests
     [Fact]
     public void RunBefore_produces_the_same_relative_order_as_the_equivalent_RunAfter()
     {
+        // Arrange
         const string source = """
             namespace TestApp;
 
@@ -114,8 +124,10 @@ public sealed class NotificationHandlerOrderingTests
             }
             """;
 
+        // Act
         var result = GeneratorTestHarness.Run(source);
 
+        // Assert
         Assert.Empty(result.Diagnostics);
         var orderSource = GetGeneratedSource(result, "InterlocutorGeneratedNotificationOrder.g.cs");
 
@@ -126,6 +138,7 @@ public sealed class NotificationHandlerOrderingTests
     [Fact]
     public void Handler_uninvolved_in_any_ordering_relationship_gets_no_rank_entry()
     {
+        // Arrange
         const string source = """
             namespace TestApp;
 
@@ -152,8 +165,10 @@ public sealed class NotificationHandlerOrderingTests
             }
             """;
 
+        // Act
         var result = GeneratorTestHarness.Run(source);
 
+        // Assert
         var orderSource = GetGeneratedSource(result, "InterlocutorGeneratedNotificationOrder.g.cs");
         Assert.DoesNotContain("UnrelatedHandler", orderSource, StringComparison.Ordinal);
     }
@@ -161,6 +176,7 @@ public sealed class NotificationHandlerOrderingTests
     [Fact]
     public void Ordering_cycle_reports_an_error_diagnostic_naming_the_cycle()
     {
+        // Arrange
         const string source = """
             namespace TestApp;
 
@@ -183,8 +199,10 @@ public sealed class NotificationHandlerOrderingTests
             }
             """;
 
+        // Act
         var result = GeneratorTestHarness.Run(source);
 
+        // Assert
         var diagnostic = Assert.Single(result.Diagnostics);
         Assert.Equal("INTERLOC004", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
@@ -195,6 +213,7 @@ public sealed class NotificationHandlerOrderingTests
     [Fact]
     public void RunAfter_naming_a_type_that_is_not_a_notification_handler_reports_an_error_diagnostic()
     {
+        // Arrange
         const string source = """
             namespace TestApp;
 
@@ -213,8 +232,10 @@ public sealed class NotificationHandlerOrderingTests
             }
             """;
 
+        // Act
         var result = GeneratorTestHarness.Run(source);
 
+        // Assert
         var diagnostic = Assert.Single(result.Diagnostics);
         Assert.Equal("INTERLOC005", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
@@ -225,6 +246,7 @@ public sealed class NotificationHandlerOrderingTests
     [Fact]
     public void RunBefore_naming_a_type_that_is_not_a_notification_handler_reports_an_error_diagnostic()
     {
+        // Arrange
         const string source = """
             namespace TestApp;
 
@@ -243,8 +265,10 @@ public sealed class NotificationHandlerOrderingTests
             }
             """;
 
+        // Act
         var result = GeneratorTestHarness.Run(source);
 
+        // Assert
         var diagnostic = Assert.Single(result.Diagnostics);
         Assert.Equal("INTERLOC005", diagnostic.Id);
         Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
@@ -255,6 +279,7 @@ public sealed class NotificationHandlerOrderingTests
     [Fact]
     public void No_ordering_attributes_emits_an_empty_order_table_and_still_compiles()
     {
+        // Arrange
         const string source = """
             namespace TestApp;
 
@@ -270,26 +295,31 @@ public sealed class NotificationHandlerOrderingTests
             }
             """;
 
+        // Act
         var outputCompilation = GeneratorTestHarness.RunAndUpdate(source, out var generatorDiagnostics);
 
+        // Assert
         Assert.Empty(generatorDiagnostics);
         var errors = outputCompilation
             .GetDiagnostics(TestContext.Current.CancellationToken)
             .Where(d => d.Severity == DiagnosticSeverity.Error)
             .ToList();
-        Assert.True(errors.Count == 0, string.Join(Environment.NewLine, errors.Select(e => e.ToString())));
+        Assert.Empty(errors);
     }
 
     [Fact]
     public void Notification_handler_order_provider_is_registered_alongside_the_dispatcher()
     {
+        // Arrange
         const string source = """
             namespace TestApp;
             public sealed class Nothing;
             """;
 
+        // Act
         var result = GeneratorTestHarness.Run(source);
 
+        // Assert
         var registrationsSource = GetGeneratedSource(result, "InterlocutorGeneratedRegistrations.g.cs");
         Assert.Contains(
             "new global::Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration(typeof(global::Interlocutor.Abstractions.Core.IGeneratedNotificationHandlerOrder), typeof(global::Interlocutor.Generated.InterlocutorGeneratedNotificationHandlerOrder), global::Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Singleton, global::Interlocutor.DependencyInjection.Abstractions.RegistrationKind.Dispatcher)",

@@ -34,6 +34,7 @@ public class TransactionBehaviorTests
     [Fact]
     public async Task ExternalStoreRequest_SkipsSession_EvenThoughAlsoTransactional()
     {
+        // Arrange
         var session = new Lazy<ISession>(() => throw new InvalidOperationException("Should not be resolved"));
         var behavior = new NHibernate.TransactionBehavior<
             RequestClaimingBothTransactionMarkers,
@@ -41,6 +42,7 @@ public class TransactionBehaviorTests
         >(session);
         var handled = false;
 
+        // Act
         var result = await behavior.Handle(
             new RequestClaimingBothTransactionMarkers(1),
             () =>
@@ -51,6 +53,7 @@ public class TransactionBehaviorTests
             CancellationToken.None
         );
 
+        // Assert
         Assert.True(handled);
         Assert.Equal("done", result.Value);
     }
@@ -58,6 +61,7 @@ public class TransactionBehaviorTests
     [Fact]
     public void TRequest_Constraint_RejectsNonTransactionalRequestAtCompileTime()
     {
+        // Arrange
         // A request that implements neither marker cannot close TransactionBehavior<,>'s TRequest parameter at
         // all - proven here via reflection (the same MakeGenericType mechanism both Microsoft DI and Autofac
         // use internally to decide whether an open generic registration applies).
@@ -65,9 +69,11 @@ public class TransactionBehaviorTests
         var nonTransactionalRequest = typeof(NonTransactionalRequest);
         var response = typeof(OperationOutcome<string, Failure>);
 
+        // Act & Assert
         var ex = Assert.Throws<ArgumentException>(() => openGeneric.MakeGenericType(nonTransactionalRequest, response));
         Assert.Contains("constraint", ex.Message, StringComparison.OrdinalIgnoreCase);
 
+        // Act & Assert
         // The same closure succeeds once the request satisfies ITransactionalRequest.
         var closed = openGeneric.MakeGenericType(typeof(TransactionalTestRequest), response);
         Assert.NotNull(closed);
@@ -76,14 +82,17 @@ public class TransactionBehaviorTests
     [Fact]
     public async Task Handle_CommitsSession_WhenClassifierReportsSuccess()
     {
+        // Arrange
         var (behavior, session, transaction) = CreateBehavior(classifier: StubClassifier(isFailure: false));
 
+        // Act
         var result = await behavior.Handle(
             new TransactionalTestRequest(1),
             () => Task.FromResult<OperationOutcome<string, Failure>>("done"),
             CancellationToken.None
         );
 
+        // Assert
         Assert.Equal("done", result.Value);
         session.Received(1).BeginTransaction();
         await transaction.Received(1).CommitAsync(CancellationToken.None);
@@ -93,15 +102,18 @@ public class TransactionBehaviorTests
     [Fact]
     public async Task Handle_RollsBackSession_WhenClassifierReportsFailure()
     {
+        // Arrange
         var (behavior, session, transaction) = CreateBehavior(classifier: StubClassifier(isFailure: true));
         var failure = new Failure("something went wrong");
 
+        // Act
         var result = await behavior.Handle(
             new TransactionalTestRequest(1),
             () => Task.FromResult<OperationOutcome<string, Failure>>(failure),
             CancellationToken.None
         );
 
+        // Assert
         Assert.Equal(failure, result.Value);
         session.Received(1).BeginTransaction();
         await transaction.Received(1).RollbackAsync(CancellationToken.None);
@@ -120,10 +132,13 @@ public class TransactionBehaviorTests
         // using-scoped rollback contract as a plain ADO.NET transaction. This test locks in that behavior:
         // the persistence exception propagates unmodified, and the transaction is disposed (not explicitly
         // rolled back) on the way out.
+
+        // Arrange
         var persistenceFailure = new InvalidOperationException("flush failed");
         var (behavior, session, transaction) = CreateBehavior(classifier: StubClassifier(isFailure: false));
         transaction.CommitAsync(Arg.Any<CancellationToken>()).ThrowsAsync(persistenceFailure);
 
+        // Act
         var thrown = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             behavior.Handle(
                 new TransactionalTestRequest(1),
@@ -132,6 +147,7 @@ public class TransactionBehaviorTests
             )
         );
 
+        // Assert
         Assert.Same(persistenceFailure, thrown);
         session.Received(1).BeginTransaction();
         await transaction.Received(1).CommitAsync(CancellationToken.None);
@@ -146,6 +162,7 @@ public class TransactionBehaviorTests
         bool expectedIsFailure
     )
     {
+        // Arrange
         var outcome = makeOutcome();
 
         // Sanity check: confirm the shared default classifier - the exact OutcomeClassifierBuilder.DefaultClassifier
@@ -161,8 +178,10 @@ public class TransactionBehaviorTests
             OperationOutcome<Success, NotFound, Forbidden, Conflict, ValidationErrors, Failure>
         >(new Lazy<ISession>(() => session));
 
+        // Act
         await behavior.Handle(new TransactionalTestRequest(1), () => Task.FromResult(outcome), CancellationToken.None);
 
+        // Assert
         // src/Interlocutor.NHibernate/TransactionBehavior.cs and
         // src/Interlocutor.EntityFrameworkCore/TransactionBehavior.cs both gate commit vs. rollback with the
         // identical `!this.classifier.IsFailure(result)` expression, evaluated against the same shared classifier
