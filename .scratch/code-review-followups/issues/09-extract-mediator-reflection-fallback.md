@@ -4,8 +4,12 @@
 
 **Blocked by:** None - can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The reflection-based dispatch fallback is extracted into its own internal type, with `Mediator` delegating to it only when no generated dispatcher is available
-- [ ] `Mediator`'s public API and observable behavior (including activity tracing around both the generated and reflection paths) are unchanged
-- [ ] Existing tests covering runtime-typed dispatch (ticket 09) and activity tracing (ticket 15) still pass unchanged
+- [x] The reflection-based dispatch fallback is extracted into its own internal type, with `Mediator` delegating to it only when no generated dispatcher is available
+- [x] `Mediator`'s public API and observable behavior (including activity tracing around both the generated and reflection paths) are unchanged
+- [x] Existing tests covering runtime-typed dispatch (ticket 09) and activity tracing (ticket 15) still pass unchanged
+
+## Comments
+
+Verified already implemented: `ReflectionRequestDispatcher` (`Interlocutor.Abstractions/ReflectionRequestDispatcher.cs`) holds the extracted reflection-based fallback; `Mediator.DispatchAsync` delegates to `ReflectionRequestDispatcher.DispatchAsync` only when no generated dispatcher is registered. `dotnet test tests/Interlocutor.Abstractions.Tests` passes (153/153), covering both runtime-typed dispatch and activity tracing.

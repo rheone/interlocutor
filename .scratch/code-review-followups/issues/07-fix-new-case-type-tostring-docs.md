@@ -4,6 +4,10 @@
 
 **Blocked by:** None - can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `Cancelled.ToString()`, `RateLimited.ToString()`, and `Timeout.ToString()` each carry a full `<summary>`/`<returns>` doc block matching the style and specificity of the other case types' `ToString()` docs
+- [x] `Cancelled.ToString()`, `RateLimited.ToString()`, and `Timeout.ToString()` each carry a full `<summary>`/`<returns>` doc block matching the style and specificity of the other case types' `ToString()` docs
+
+## Comments
+
+Verified already implemented: all three types' `ToString()` overrides carry a full `<summary>`/`<returns>` doc block spelling out the exact output format (no `<inheritdoc/>` remains). `dotnet test tests/Interlocutor.CommonKernel.Tests` passes (166/166).

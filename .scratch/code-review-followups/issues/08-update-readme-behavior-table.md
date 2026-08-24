@@ -4,6 +4,10 @@
 
 **Blocked by:** None - can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] README.md's package table for `Interlocutor.Abstractions` mentions `CancellationBehavior`, `TimeoutBehavior`, and `RateLimitedBehavior` alongside the existing three, noting they're opt-in with no prescribed position (consistent with `UseRecommendedChain()`'s unchanged five-behavior order)
+- [x] README.md's package table for `Interlocutor.Abstractions` mentions `CancellationBehavior`, `TimeoutBehavior`, and `RateLimitedBehavior` alongside the existing three, noting they're opt-in with no prescribed position (consistent with `UseRecommendedChain()`'s unchanged five-behavior order)
+
+## Comments
+
+Verified already implemented: README.md's package table row for `Interlocutor.Abstractions` lists `CancellationBehavior`, `TimeoutBehavior`, and `RateLimitedBehavior` alongside the original three, noting "which have no prescribed position in the chain."

@@ -4,7 +4,11 @@
 
 **Blocked by:** None - can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The `DynamicallyAccessedMembers(PublicParameterlessConstructor)` annotation on `TContext` is removed, or a comment explains the actual reflective path it's protecting (if one exists that the review missed)
-- [ ] Trimming/publish verification (per the CI gate added for ADR-0016) still passes
+- [x] The `DynamicallyAccessedMembers(PublicParameterlessConstructor)` annotation on `TContext` is removed, or a comment explains the actual reflective path it's protecting (if one exists that the review missed)
+- [x] Trimming/publish verification (per the CI gate added for ADR-0016) still passes
+
+## Comments
+
+Verified already implemented: no `DynamicallyAccessedMembers` annotation remains on `TContext` in `EntityFrameworkCore.TransactionBehavior`. `dotnet build`/`dotnet test tests/Interlocutor.EntityFrameworkCore.Tests` pass (6/6); full solution build is clean of related warnings.

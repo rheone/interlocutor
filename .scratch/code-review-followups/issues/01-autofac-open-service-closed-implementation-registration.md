@@ -4,8 +4,12 @@
 
 **Blocked by:** None - can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Autofac registers a closed-implementation behavior against an open `IPipelineBehavior<,>` service type without throwing at `Build()` time, producing an equivalent registration to Microsoft DI's for the same input
-- [ ] The incorrect doc comment claiming Autofac needs no such translation is corrected
-- [ ] A test in `Interlocutor.DependencyInjection.Autofac.Tests` exercises `AddTypeMatch`/`MatchedRegistrations` resolving to a closed behavior type and confirms the container builds and resolves correctly (this path currently has no test coverage at all)
+- [x] Autofac registers a closed-implementation behavior against an open `IPipelineBehavior<,>` service type without throwing at `Build()` time, producing an equivalent registration to Microsoft DI's for the same input
+- [x] The incorrect doc comment claiming Autofac needs no such translation is corrected
+- [x] A test in `Interlocutor.DependencyInjection.Autofac.Tests` exercises `AddTypeMatch`/`MatchedRegistrations` resolving to a closed behavior type and confirms the container builds and resolves correctly (this path currently has no test coverage at all)
+
+## Comments
+
+Verified already implemented: `ContainerBuilderExtensions.Apply` calls its own `ResolveServiceType(registration)` for the non-open-generic-implementation branch, mirroring Microsoft DI's translation, with a doc comment explaining both containers need it for the identical reason. `ContainerBuilderExtensionsTests.AddTypeMatch_ClosedBehaviorMatchedAgainstOpenService_BuildsAndResolves` (via `ClosedMatchedBehavior`/`MatchedRequest`) covers the previously-untested path. `dotnet test tests/Interlocutor.DependencyInjection.Autofac.Tests` passes (39/39).

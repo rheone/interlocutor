@@ -4,7 +4,11 @@
 
 **Blocked by:** None - can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Either `TryApplyDefaults` applies the same `ResolveServiceType` translation `Apply` does, or a comment on `TryApplyDefaults` explains why it's safe to skip (mirroring how thoroughly the rest of the file documents container-specific quirks)
-- [ ] Microsoft DI's three separate `RegistrationLifetime` switches are collapsed into one shared helper, matching the pattern already used in `Interlocutor.DependencyInjection.Autofac`
+- [x] Either `TryApplyDefaults` applies the same `ResolveServiceType` translation `Apply` does, or a comment on `TryApplyDefaults` explains why it's safe to skip (mirroring how thoroughly the rest of the file documents container-specific quirks)
+- [x] Microsoft DI's three separate `RegistrationLifetime` switches are collapsed into one shared helper, matching the pattern already used in `Interlocutor.DependencyInjection.Autofac`
+
+## Comments
+
+Verified already implemented, via a larger `RegistrationApplier` (`Interlocutor.DependencyInjection.Abstractions`) refactor shared by both container packages: `TryApplyDefaults`'s `addRegistration`/`tryAddDefault` delegates both call `ResolveServiceType(registration)` identically to `Apply`, so the translation is applied uniformly rather than skipped. Lifetime translation is centralized in a single `ToServiceLifetime`/`CreateDescriptor` pair that every call site (`Apply`, `ApplyFactories`, `TryApplyDefaults`) routes through - one switch, not three. `dotnet test tests/Interlocutor.DependencyInjection.Microsoft.Tests` passes (50/50).
