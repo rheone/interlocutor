@@ -31,7 +31,8 @@ public sealed class GetByIdHandler<
             | DynamicallyAccessedMemberTypes.PublicProperties
             | DynamicallyAccessedMemberTypes.NonPublicProperties
             | DynamicallyAccessedMemberTypes.Interfaces
-    )] TEntity
+    )]
+        TEntity
 >(SampleDbContext db) : IQueryHandler<GetByIdQuery<TEntity>, OperationOutcome<TEntity, NotFound>>
     where TEntity : class
 {
