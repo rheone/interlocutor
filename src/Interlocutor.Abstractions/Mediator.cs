@@ -202,7 +202,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     /// <summary>
     /// Routes <paramref name="request"/> to the compile-time generated type switch when one is registered
     /// (<see cref="IGeneratedRequestDispatcher"/> - ticket 13), or to the reflection-based fallback
-    /// (<see cref="DispatchViaReflectionAsync"/> - ticket 09) otherwise. Factored out of the public
+    /// (<see cref="DispatchAsync"/> - ticket 09) otherwise. Factored out of the public
     /// <see cref="Send(object, CancellationToken)"/> overload so that method can take a synchronous,
     /// allocation-free fast path when activity tracing is unobserved, without this routing logic (and the
     /// async state machine it requires) running on that path.

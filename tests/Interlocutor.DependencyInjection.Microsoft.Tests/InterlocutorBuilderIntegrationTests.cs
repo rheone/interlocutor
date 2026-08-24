@@ -418,7 +418,7 @@ public class InterlocutorBuilderIntegrationTests
             builder
                 .ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly)
                 .Pipeline.AddStage<ShortCircuitQuery, OperationOutcome>(
-                    (request, ct) => Task.FromResult(StageResult<OperationOutcome>.ShortCircuit(declined)),
+                    (_, _) => Task.FromResult(StageResult<OperationOutcome>.ShortCircuit(declined)),
                     null
                 )
                 .AddStageHost()
@@ -453,7 +453,7 @@ public class InterlocutorBuilderIntegrationTests
                 .ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly)
                 .Pipeline.AddStage<SampleQuery, OperationOutcome>(
                     null,
-                    (request, result, ct) => throw new InvalidOperationException("after-hook boom")
+                    (_, _, _) => throw new InvalidOperationException("after-hook boom")
                 )
                 .AddStageHost()
         );

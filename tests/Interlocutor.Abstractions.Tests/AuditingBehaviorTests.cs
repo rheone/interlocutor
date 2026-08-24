@@ -14,11 +14,6 @@ using NSubstitute;
 // instead: see BehaviorSubsetConstraintTests in the DependencyInjection.Microsoft/Autofac test projects.
 public class AuditingBehaviorTests
 {
-    public record AuditableQuery(string Name) : IQuery<OperationOutcome<string, Failure>>, IAuditableRequest
-    {
-        public string ActionName => "Query.Read";
-    }
-
     [Fact]
     public async Task Handle_RecordsAuditEntryForAuditableRequest()
     {
@@ -247,5 +242,10 @@ public class AuditingBehaviorTests
         // Assert - no exception, auditing still succeeds, UserId stays null.
         Assert.Equal("response", result);
         await sink.Received(1).RecordAsync(Arg.Is<AuditEntry>(e => e.UserId == null), CancellationToken.None);
+    }
+
+    public record AuditableQuery(string Name) : IQuery<OperationOutcome<string, Failure>>, IAuditableRequest
+    {
+        public string ActionName => "Query.Read";
     }
 }

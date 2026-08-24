@@ -224,10 +224,14 @@ public static class InterlocutorAutofacExtensions
     /// <param name="report">The already-built report to log.</param>
     private static void TryLogRegistrationReport(ILifetimeScope container, RegistrationReport report)
     {
+        // CA2000 misreads this as a leak: loggerFactory is resolved from the container, not created by this
+        // method, so the container - not this method - owns its lifetime and disposal.
+#pragma warning disable CA2000
         if (!container.TryResolve<ILoggerFactory>(out var loggerFactory))
         {
             return;
         }
+#pragma warning restore CA2000
 
         var logger = loggerFactory.CreateLogger("Interlocutor");
         logger.LogInformation("{Report}", report.Format());

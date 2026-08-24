@@ -14,13 +14,6 @@ using Interlocutor.CommonKernel.ResultTypes;
 // AuthorizationBehavior.
 public class CancellationBehaviorTests
 {
-    public record CancellableQuery(string Name) : IQuery<OperationOutcome<string, Cancelled>>, ICancellable;
-
-    /// <summary>A request implementing <see cref="ICancellable"/> whose response has no <see cref="Cancelled"/> case at all.</summary>
-    public record MisshapenCancellableQuery
-        : IQuery<OperationOutcome<string, Interlocutor.CommonKernel.ResultTypes.NotFound>>,
-            ICancellable;
-
     [Fact]
     public async Task Handle_ReturnsCancelledWhenNextThrowsOperationCanceledExceptionTiedToAmbientToken()
     {
@@ -155,6 +148,13 @@ public class CancellationBehaviorTests
         Assert.Equal(typeof(Cancelled), result.CaseType);
         Assert.IsType<Cancelled>(result.CaseValue);
     }
+
+    public record CancellableQuery(string Name) : IQuery<OperationOutcome<string, Cancelled>>, ICancellable;
+
+    /// <summary>A request implementing <see cref="ICancellable"/> whose response has no <see cref="Cancelled"/> case at all.</summary>
+    public record MisshapenCancellableQuery
+        : IQuery<OperationOutcome<string, Interlocutor.CommonKernel.ResultTypes.NotFound>>,
+            ICancellable;
 
     /// <summary>A request whose response type is a hand-rolled, non-union <see cref="IOperationOutcome"/>.</summary>
     public record CancellableHandRolledQuery : ICancellable;

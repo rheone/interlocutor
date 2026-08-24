@@ -7,8 +7,6 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// <summary>Tests for <see cref="OutcomeClassifierBuilder"/> and the <see cref="IOutcomeClassifier"/> it builds.</summary>
 public class OutcomeClassifierBuilderTests
 {
-    private sealed record CustomFailure(string Reason);
-
     // Auto Generated, verify expected behavior:
     [Theory]
     [InlineData(typeof(Success), false)]
@@ -232,4 +230,6 @@ public class OutcomeClassifierBuilderTests
         // Assert
         Assert.True(isFailure);
     }
+
+    private sealed record CustomFailure(string Reason);
 }

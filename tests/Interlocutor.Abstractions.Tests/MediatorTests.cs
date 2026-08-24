@@ -51,7 +51,7 @@ public class MediatorTests
     public async Task Send_Query_ReturnsHandlerResult()
     {
         // Arrange
-        var mediator = CreateMediator<TestQueryHandler>(services => { });
+        var mediator = CreateMediator<TestQueryHandler>(_ => { });
 
         // Act
         var result = await mediator.Send(new TestQuery(21), CancellationToken.None);
@@ -121,7 +121,7 @@ public class MediatorTests
     public async Task Send_VoidCommand_ReturnsSuccess()
     {
         // Arrange
-        var mediator = CreateMediator<TestVoidHandler>(services => { });
+        var mediator = CreateMediator<TestVoidHandler>(_ => { });
 
         // Act
         var result = await mediator.Send<OperationOutcome>(new TestVoidCommand("test"), CancellationToken.None);
@@ -196,7 +196,7 @@ public class MediatorTests
         // Arrange - the wrapper Mediator builds per closed request type is cached internally; sending the
         // same query type repeatedly must keep returning a result derived from that specific dispatch's
         // input, not a stale or shared one.
-        var mediator = CreateMediator<TestQueryHandler>(services => { });
+        var mediator = CreateMediator<TestQueryHandler>(_ => { });
 
         // Act
         var first = await mediator.Send(new TestQuery(1), CancellationToken.None);
@@ -213,20 +213,20 @@ public class MediatorTests
     public async Task Mediator_ImplementsISender()
     {
         // Arrange
-        var mediator = CreateMediator<TestQueryHandler>(services => { });
+        var mediator = CreateMediator<TestQueryHandler>(_ => { });
 
         // Act & Assert
-        Assert.IsAssignableFrom<ISender>(mediator);
+        Assert.IsType<ISender>(mediator, exactMatch: false);
     }
 
     [Fact]
     public async Task Mediator_ImplementsIPublisher()
     {
         // Arrange
-        var mediator = CreateMediator<TestQueryHandler>(services => { });
+        var mediator = CreateMediator<TestQueryHandler>(_ => { });
 
         // Act & Assert
-        Assert.IsAssignableFrom<IPublisher>(mediator);
+        Assert.IsType<IPublisher>(mediator, exactMatch: false);
     }
 
     private static IMediator CreateMediator<THandler>(Action<ServiceCollection> configure)

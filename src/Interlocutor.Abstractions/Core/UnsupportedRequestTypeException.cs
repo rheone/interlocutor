@@ -27,6 +27,7 @@ public sealed class UnsupportedRequestTypeException : Exception
     }
 
     /// <summary>Gets the runtime type of the object that is not a recognized request shape.</summary>
+    /// <value>The runtime type of the object that is not a recognized request shape.</value>
     public Type RequestType { get; }
 }
 #pragma warning restore RCS1194

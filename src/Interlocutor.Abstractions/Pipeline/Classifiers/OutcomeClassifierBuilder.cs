@@ -24,33 +24,12 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </remarks>
 public sealed class OutcomeClassifierBuilder
 {
-    private static IOutcomeClassifier? _defaultInstance;
     private static readonly object _lockObject = new();
+
+    private static IOutcomeClassifier? _defaultInstance;
 
     private readonly Dictionary<Type, OutcomeClassification> _classifications = new();
     private readonly List<(Func<object?, bool> Predicate, string Label, bool IsFailure)> _predicates = new();
-
-    /// <summary>
-    /// Gets the shared default classifier instance, pre-seeded with all kernel types.
-    /// </summary>
-    /// <value>
-    /// The shared default classifier instance, pre-seeded with all kernel types.
-    /// </value>
-    public static IOutcomeClassifier DefaultClassifier
-    {
-        get
-        {
-            if (_defaultInstance is null)
-            {
-                lock (_lockObject)
-                {
-                    _defaultInstance ??= new OutcomeClassifierBuilder().Build();
-                }
-            }
-
-            return _defaultInstance;
-        }
-    }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="OutcomeClassifierBuilder"/> class.
@@ -81,6 +60,28 @@ public sealed class OutcomeClassifierBuilder
             "ValidationError",
             isFailure: true
         );
+    }
+
+    /// <summary>
+    /// Gets the shared default classifier instance, pre-seeded with all kernel types.
+    /// </summary>
+    /// <value>
+    /// The shared default classifier instance, pre-seeded with all kernel types.
+    /// </value>
+    public static IOutcomeClassifier DefaultClassifier
+    {
+        get
+        {
+            if (_defaultInstance is null)
+            {
+                lock (_lockObject)
+                {
+                    _defaultInstance ??= new OutcomeClassifierBuilder().Build();
+                }
+            }
+
+            return _defaultInstance;
+        }
     }
 
     /// <summary>
@@ -159,7 +160,7 @@ public sealed class OutcomeClassifierBuilder
 
         internal DefaultOutcomeClassifier(
             ImmutableDictionary<Type, OutcomeClassification> classifications,
-            ImmutableList<(Func<object?, bool>, string, bool)> predicates
+            ImmutableList<(Func<object?, bool> Predicate, string Label, bool IsFailure)> predicates
         )
         {
             this._classifications = classifications;

@@ -377,8 +377,8 @@ public class InterlocutorPipelineBuilderTests
 
         // Act
         builder.AddStage<SampleRequest, SampleResponse>(
-            (request, ct) => Task.FromResult(StageResult<SampleResponse>.Continue),
-            (request, response, ct) => Task.CompletedTask
+            (_, _) => Task.FromResult(StageResult<SampleResponse>.Continue),
+            (_, _, _) => Task.CompletedTask
         );
 
         // Assert
@@ -415,7 +415,7 @@ public class InterlocutorPipelineBuilderTests
 
         // Act
         builder.AddStage<SampleRequest, SampleResponse>(
-            (provider, request, ct) =>
+            (provider, _, _) =>
             {
                 observed = provider;
                 return Task.FromResult(StageResult<SampleResponse>.Continue);

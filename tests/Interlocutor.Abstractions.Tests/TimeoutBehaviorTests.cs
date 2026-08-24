@@ -9,8 +9,6 @@ using Interlocutor.CommonKernel.ResultTypes;
 
 public class TimeoutBehaviorTests
 {
-    public record TimeBoundQuery(TimeSpan Budget) : IQuery<OperationOutcome<string, Timeout>>, IHasTimeout;
-
     [Fact]
     public async Task Handle_WhenNextExceedsBudget_ShortCircuitsWithTimeoutCarryingBudgetAndElapsed()
     {
@@ -108,4 +106,6 @@ public class TimeoutBehaviorTests
         var timeout = Assert.IsType<Timeout>(result.Value);
         Assert.Equal(overriddenBudget, timeout.Budget);
     }
+
+    public record TimeBoundQuery(TimeSpan Budget) : IQuery<OperationOutcome<string, Timeout>>, IHasTimeout;
 }

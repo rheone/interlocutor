@@ -256,7 +256,7 @@ public class InterlocutorBuilderIntegrationTests
             builder
                 .ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly)
                 .Pipeline.AddStage<ShortCircuitQuery, OperationOutcome>(
-                    (request, ct) => Task.FromResult(StageResult<OperationOutcome>.ShortCircuit(declined)),
+                    (_, _) => Task.FromResult(StageResult<OperationOutcome>.ShortCircuit(declined)),
                     null
                 )
                 .AddStageHost()

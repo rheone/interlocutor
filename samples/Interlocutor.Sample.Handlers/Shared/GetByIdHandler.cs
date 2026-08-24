@@ -22,6 +22,9 @@ using Microsoft.EntityFrameworkCore;
 /// </remarks>
 /// <typeparam name="TEntity">The entity type this instantiation looks up.</typeparam>
 /// <param name="db">The sample's database context.</param>
+// SA1137 vs. csharpier: csharpier indents the type parameter one level deeper than the attribute annotating
+// it, which SA1137 then flags as inconsistent sibling indentation. Suppressed rather than fighting the formatter.
+#pragma warning disable SA1137
 public sealed class GetByIdHandler<
     [DynamicallyAccessedMembers(
         DynamicallyAccessedMemberTypes.PublicConstructors
@@ -34,6 +37,7 @@ public sealed class GetByIdHandler<
     )]
         TEntity
 >(SampleDbContext db) : IQueryHandler<GetByIdQuery<TEntity>, OperationOutcome<TEntity, NotFound>>
+#pragma warning restore SA1137
     where TEntity : class
 {
     /// <inheritdoc/>

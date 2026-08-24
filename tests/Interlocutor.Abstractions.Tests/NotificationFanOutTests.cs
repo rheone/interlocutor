@@ -4,11 +4,11 @@ using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Notifications;
 using Microsoft.Extensions.DependencyInjection;
 
+public interface IAuditableEvent : INotification;
+
 public record DomainEvent(int AggregateId) : INotification;
 
 public record OrderCreated(int AggregateId) : DomainEvent(AggregateId);
-
-public interface IAuditableEvent : INotification;
 
 public record AuditedOrderCreated(int AggregateId) : DomainEvent(AggregateId), IAuditableEvent;
 

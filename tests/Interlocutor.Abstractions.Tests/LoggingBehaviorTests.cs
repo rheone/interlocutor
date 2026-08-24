@@ -9,8 +9,6 @@ using NSubstitute;
 
 public class LoggingBehaviorTests
 {
-    public record LoggedQuery(int Value) : IQuery<OperationOutcome<int, Failure>>;
-
     [Fact]
     public async Task Handle_LogsRequestTypeAndOutcome()
     {
@@ -146,4 +144,6 @@ public class LoggingBehaviorTests
         // Assert
         Assert.Equal(expectedValue, result);
     }
+
+    public record LoggedQuery(int Value) : IQuery<OperationOutcome<int, Failure>>;
 }

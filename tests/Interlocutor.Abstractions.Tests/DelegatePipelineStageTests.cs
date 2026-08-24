@@ -7,8 +7,6 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// <summary>Tests for <see cref="DelegatePipelineStage{TRequest, TResponse}"/>.</summary>
 public class DelegatePipelineStageTests
 {
-    public record TestRequest;
-
     // Auto Generated, verify expected behavior:
     [Fact]
     public async Task OnBeforeAsync_WithSuppliedDelegate_InvokesIt()
@@ -16,7 +14,7 @@ public class DelegatePipelineStageTests
         // Arrange
         var expected = StageResult<OperationOutcome<string, Failure>>.ShortCircuit(new Failure("declined"));
         var stage = new DelegatePipelineStage<TestRequest, OperationOutcome<string, Failure>>(
-            (request, ct) => Task.FromResult(expected),
+            (_, _) => Task.FromResult(expected),
             onAfter: null
         );
 
@@ -51,7 +49,7 @@ public class DelegatePipelineStageTests
         OperationOutcome<string, Failure>? observedResult = null;
         var stage = new DelegatePipelineStage<TestRequest, OperationOutcome<string, Failure>>(
             onBefore: null,
-            (request, result, ct) =>
+            (request, result, _) =>
             {
                 observedRequest = request;
                 observedResult = result;
@@ -79,4 +77,6 @@ public class DelegatePipelineStageTests
         // Act & Assert - completing without throwing proves the base no-op hook ran.
         await stage.OnAfterAsync(new TestRequest(), "done", CancellationToken.None);
     }
+
+    public record TestRequest;
 }

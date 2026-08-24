@@ -27,7 +27,7 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
         var outcome = await sender.Send(request, TestContext.Current.CancellationToken);
 
         // Assert
-        var union = Assert.IsAssignableFrom<System.Runtime.CompilerServices.IUnion>(outcome);
+        var union = Assert.IsType<System.Runtime.CompilerServices.IUnion>(outcome, exactMatch: false);
         Assert.Equal(42, Assert.IsType<int>(union.Value));
     }
 
@@ -43,7 +43,7 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
         var outcome = await sender.Send(request, TestContext.Current.CancellationToken);
 
         // Assert
-        var union = Assert.IsAssignableFrom<System.Runtime.CompilerServices.IUnion>(outcome);
+        var union = Assert.IsType<System.Runtime.CompilerServices.IUnion>(outcome, exactMatch: false);
         Assert.IsType<Success>(union.Value);
     }
 

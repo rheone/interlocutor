@@ -7,6 +7,8 @@ namespace Interlocutor.DependencyInjection.Abstractions.Tests;
 // display untested in isolation from the builder.
 public class RegistrationReportTests
 {
+    private interface ISampleOpenGenericService<T1, T2>;
+
     [Fact]
     public void Constructor_WithNullRegistrations_ThrowsArgumentNullException()
     {
@@ -149,8 +151,6 @@ public class RegistrationReportTests
         // Assert
         Assert.Contains("Matched by my-rule", text);
     }
-
-    private interface ISampleOpenGenericService<T1, T2>;
 
     private sealed class SampleService;
 

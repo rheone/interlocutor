@@ -26,19 +26,6 @@ using NSubstitute;
 // a real Microsoft DI resolution was attempted (see BehaviorSubsetConstraintTests).
 public class AuthorizationBehaviorTests
 {
-    public record ProtectedQuery(string Name) : IQuery<OperationOutcome<string, Forbidden>>, IRequiresPolicy
-    {
-        public string PolicyName => "CanRead";
-    }
-
-    /// <summary>A request declaring a policy whose response has no <see cref="Forbidden"/> case at all.</summary>
-    public record MisshapenProtectedQuery
-        : IQuery<OperationOutcome<string, Interlocutor.CommonKernel.ResultTypes.NotFound>>,
-            IRequiresPolicy
-    {
-        public string PolicyName => "CanRead";
-    }
-
     [Fact]
     public async Task Handle_AllowsAccessWhenPolicyEvaluatesTrue()
     {
@@ -163,8 +150,10 @@ public class AuthorizationBehaviorTests
         // Act
         await behavior.Handle(request, next, CancellationToken.None);
 
-        // Assert - Request should be passed to evaluator
-        await policyEvaluator.Received(1).EvaluateAsync("CanRead", Arg.Is<object>(r => r == request), CancellationToken.None);
+        // Assert - the exact request instance should be passed to the evaluator, not merely an equal copy.
+        await policyEvaluator
+            .Received(1)
+            .EvaluateAsync("CanRead", Arg.Is<object>(r => ReferenceEquals(r, request)), CancellationToken.None);
     }
 
     [Fact]
@@ -227,6 +216,19 @@ public class AuthorizationBehaviorTests
         Assert.Contains("CanRead", forbidden.Reason ?? string.Empty);
     }
 
+    public record ProtectedQuery(string Name) : IQuery<OperationOutcome<string, Forbidden>>, IRequiresPolicy
+    {
+        public string PolicyName => "CanRead";
+    }
+
+    /// <summary>A request declaring a policy whose response has no <see cref="Forbidden"/> case at all.</summary>
+    public record MisshapenProtectedQuery
+        : IQuery<OperationOutcome<string, Interlocutor.CommonKernel.ResultTypes.NotFound>>,
+            IRequiresPolicy
+    {
+        public string PolicyName => "CanRead";
+    }
+
     /// <summary>A request whose response type is a hand-rolled, non-union <see cref="IOperationOutcome"/>.</summary>
     public record ProtectedHandRolledQuery : IRequiresPolicy
     {
@@ -234,7 +236,7 @@ public class AuthorizationBehaviorTests
     }
 
     /// <summary>A hand-rolled, non-union <see cref="IOperationOutcome"/> implementation - no compiler-generated
-    /// case constructor and no <see cref="IUnion"/> marker, so it can only participate in
+    /// case constructor and no <see cref="System.Runtime.CompilerServices.IUnion"/> marker, so it can only participate in
     /// <see cref="AuthorizationBehavior{TRequest, TResponse}"/> via a custom <see cref="IOutcomeCaseRegistry"/>
     /// registration, never via <see cref="DefaultOutcomeCaseRegistry"/> alone.</summary>
     public sealed class HandRolledOutcome : IOperationOutcome

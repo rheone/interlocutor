@@ -17,11 +17,6 @@ using NSubstitute;
 /// </summary>
 public class AuditingBehaviorAspNetCoreIntegrationTests
 {
-    public record AuditableQuery(string Name) : IQuery<OperationOutcome<string, Failure>>, IAuditableRequest
-    {
-        public string ActionName => "Query.Read";
-    }
-
     [Fact]
     public async Task Handle_WithAuthenticatedHttpContext_PopulatesUserIdFromRealAccessor()
     {
@@ -66,5 +61,10 @@ public class AuditingBehaviorAspNetCoreIntegrationTests
         // Assert - no exception, auditing still succeeds, UserId stays null.
         Assert.Equal("response", result);
         await sink.Received(1).RecordAsync(Arg.Is<AuditEntry>(e => e.UserId == null), CancellationToken.None);
+    }
+
+    public record AuditableQuery(string Name) : IQuery<OperationOutcome<string, Failure>>, IAuditableRequest
+    {
+        public string ActionName => "Query.Read";
     }
 }

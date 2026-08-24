@@ -37,12 +37,17 @@ public sealed class OutcomeCaseNotSupportedException : Exception
     }
 
     /// <summary>Gets the <see cref="Interlocutor.CommonKernel.IOperationOutcome"/> type that could not be constructed or decomposed.</summary>
+    /// <value>The <see cref="Interlocutor.CommonKernel.IOperationOutcome"/> type that could not be constructed or decomposed.</value>
     public Type ResponseType { get; }
 
     /// <summary>
     /// Gets the case type that could not be constructed or extracted, or <see langword="null"/> when the
     /// failure is extraction of an unknown active case rather than construction of a specific one.
     /// </summary>
+    /// <value>
+    /// The case type that could not be constructed or extracted, or <see langword="null"/> when the failure
+    /// is extraction of an unknown active case rather than construction of a specific one.
+    /// </value>
     public Type? CaseType { get; }
 }
 #pragma warning restore RCS1194

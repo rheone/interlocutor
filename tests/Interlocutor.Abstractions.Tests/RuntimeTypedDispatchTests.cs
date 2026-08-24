@@ -45,8 +45,8 @@ public class RuntimeTypedDispatchTests
         var outcome = await sender.Send(request, CancellationToken.None);
 
         // Assert
-        Assert.IsAssignableFrom<IOperationOutcome>(outcome);
-        var union = Assert.IsAssignableFrom<IUnion>(outcome);
+        Assert.IsType<IOperationOutcome>(outcome, exactMatch: false);
+        var union = Assert.IsType<IUnion>(outcome, exactMatch: false);
         Assert.Equal(42, Assert.IsType<int>(union.Value));
     }
 
@@ -63,7 +63,7 @@ public class RuntimeTypedDispatchTests
         var outcome = await sender.Send(request, CancellationToken.None);
 
         // Assert
-        var union = Assert.IsAssignableFrom<IUnion>(outcome);
+        var union = Assert.IsType<IUnion>(outcome, exactMatch: false);
         Assert.Equal("Hello Ada", Assert.IsType<string>(union.Value));
     }
 
@@ -80,7 +80,7 @@ public class RuntimeTypedDispatchTests
         var outcome = await sender.Send(request, CancellationToken.None);
 
         // Assert
-        var union = Assert.IsAssignableFrom<IUnion>(outcome);
+        var union = Assert.IsType<IUnion>(outcome, exactMatch: false);
         Assert.IsType<Success>(union.Value);
     }
 
@@ -116,7 +116,7 @@ public class RuntimeTypedDispatchTests
         // IQuery<T>, so passing it directly would let overload resolution pick the strongly-typed generic
         // Send<TResponse> overload instead of the runtime-typed Send(object, ...) overload this test means
         // to exercise.
-        var sender = CreateSender(services => { });
+        var sender = CreateSender(_ => { });
         object request = new UnregisteredQuery(1);
 
         // Act
@@ -131,7 +131,7 @@ public class RuntimeTypedDispatchTests
     public async Task Send_UnregisteredVoidCommandType_ThrowsHandlerNotRegisteredExceptionNamingTheType()
     {
         // Arrange
-        var sender = CreateSender(services => { });
+        var sender = CreateSender(_ => { });
         object request = new UnregisteredVoidCommand();
 
         // Act
@@ -146,7 +146,7 @@ public class RuntimeTypedDispatchTests
     public async Task Send_ObjectThatIsNotARequest_ThrowsDistinctUnsupportedRequestTypeException()
     {
         // Arrange
-        var sender = CreateSender(services => { });
+        var sender = CreateSender(_ => { });
 
         // Act
         var ex = await Assert.ThrowsAsync<UnsupportedRequestTypeException>(() =>
@@ -161,7 +161,7 @@ public class RuntimeTypedDispatchTests
     public async Task Send_NullRequest_ThrowsArgumentNullException()
     {
         // Arrange
-        var sender = CreateSender(services => { });
+        var sender = CreateSender(_ => { });
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentNullException>(() => sender.Send(null!, CancellationToken.None));

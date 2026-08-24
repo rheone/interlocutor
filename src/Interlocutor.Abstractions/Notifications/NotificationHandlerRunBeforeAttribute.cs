@@ -17,5 +17,6 @@ namespace Interlocutor.Abstractions.Notifications;
 public sealed class NotificationHandlerRunBeforeAttribute(Type handlerType) : Attribute
 {
     /// <summary>Gets the handler type the annotated handler must run before.</summary>
+    /// <value>The handler type the annotated handler must run before.</value>
     public Type HandlerType { get; } = handlerType;
 }

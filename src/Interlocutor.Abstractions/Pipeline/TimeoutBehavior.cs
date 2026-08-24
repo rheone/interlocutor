@@ -31,8 +31,8 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </para>
 /// <para>
 /// <b>Ambient cancellation is not a timeout.</b> The delay this behavior races against observes the ambient
-/// <paramref name="ct" /> as well as the resolved budget, so it can "win" the race for two different reasons:
-/// the budget genuinely elapsed, or <paramref name="ct" /> was cancelled first. Only the former is a
+/// <c>ct</c> as well as the resolved budget, so it can "win" the race for two different reasons:
+/// the budget genuinely elapsed, or <c>ct</c> was cancelled first. Only the former is a
 /// <see cref="Timeout"/> - the latter must propagate as <see cref="OperationCanceledException"/> so a
 /// <c>CancellationBehavior</c> sitting outside this one in the pipeline (per the canonical Logging → Auditing →
 /// Authorization → Validation → Transaction ordering, a cancellation-observing behavior belongs further out

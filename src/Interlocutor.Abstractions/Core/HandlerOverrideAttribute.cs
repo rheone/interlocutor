@@ -26,5 +26,6 @@ namespace Interlocutor.Abstractions.Core;
 public sealed class HandlerOverrideAttribute(Type handlerType) : Attribute
 {
     /// <summary>Gets the handler type the annotated handler overrides.</summary>
+    /// <value>The handler type the annotated handler overrides.</value>
     public Type HandlerType { get; } = handlerType;
 }

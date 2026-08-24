@@ -29,7 +29,7 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
         var outcome = await sender.Send(request, TestContext.Current.CancellationToken);
 
         // Assert
-        var union = Assert.IsAssignableFrom<System.Runtime.CompilerServices.IUnion>(outcome);
+        var union = Assert.IsType<System.Runtime.CompilerServices.IUnion>(outcome, exactMatch: false);
         Assert.Equal(42, Assert.IsType<int>(union.Value));
     }
 
@@ -44,7 +44,7 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
         var outcome = await sender.Send(request, TestContext.Current.CancellationToken);
 
         // Assert
-        var union = Assert.IsAssignableFrom<System.Runtime.CompilerServices.IUnion>(outcome);
+        var union = Assert.IsType<System.Runtime.CompilerServices.IUnion>(outcome, exactMatch: false);
         Assert.Equal("Hello Ada", Assert.IsType<string>(union.Value));
     }
 
@@ -59,7 +59,7 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
         var outcome = await sender.Send(request, TestContext.Current.CancellationToken);
 
         // Assert
-        var union = Assert.IsAssignableFrom<System.Runtime.CompilerServices.IUnion>(outcome);
+        var union = Assert.IsType<System.Runtime.CompilerServices.IUnion>(outcome, exactMatch: false);
         Assert.IsType<Success>(union.Value);
     }
 
@@ -117,8 +117,10 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
         // No `using`/disposal here: this helper's scope must outlive the method for the caller's dispatch
         // call, and each test is small and self-contained enough that leaving the scope for the process to
         // reclaim is preferable to plumbing IDisposable back out through every call site.
+#pragma warning disable CA2000
         var provider = services.BuildServiceProvider();
         var scope = provider.CreateScope();
+#pragma warning restore CA2000
         return scope.ServiceProvider.GetRequiredService<ISender>();
     }
 

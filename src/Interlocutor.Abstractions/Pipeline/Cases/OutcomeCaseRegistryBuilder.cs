@@ -12,7 +12,8 @@ using Interlocutor.CommonKernel;
 /// <remarks>
 /// Registration is needed only for response types that are <b>not</b> compiler-generated <c>union</c>
 /// declarations - e.g. a hand-rolled <see cref="IOperationOutcome"/> implementation with no case constructor
-/// for <see cref="Pipeline.UnionCaseFactory"/> to find reflectively, and no <see cref="IUnion"/> marker for
+/// for <see cref="Pipeline.UnionCaseFactory"/> to find reflectively, and no
+/// <see cref="System.Runtime.CompilerServices.IUnion"/> marker for
 /// <see cref="DefaultOutcomeCaseRegistry"/> to pattern-match. Response types that are compiler-generated
 /// unions work with the default registry unmodified.
 /// </remarks>

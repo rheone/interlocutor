@@ -15,6 +15,11 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </summary>
 public sealed class GeneratedRegistrationIntegrationTests
 {
+    public interface IGreeter
+    {
+        string Greet();
+    }
+
     [Fact]
     public async Task GeneratedRegistration_ResolvesHandlerWithConstructorDependency_AndDispatchesSuccessfully()
     {
@@ -45,11 +50,6 @@ public sealed class GeneratedRegistrationIntegrationTests
 
         // Assert
         Assert.Equal("hi from Autofac", result.Value);
-    }
-
-    public interface IGreeter
-    {
-        string Greet();
     }
 
     public sealed record GeneratedQuery : IQuery<OperationOutcome<string, Failure>>;

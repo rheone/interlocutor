@@ -11,19 +11,6 @@ using Interlocutor.DependencyInjection.Autofac;
 
 public class ContainerBuilderExtensionsTests
 {
-    /// <summary>
-    /// A closed pipeline behavior, matched by <see cref="AddTypeMatch_ClosedBehaviorMatchedAgainstOpenService_BuildsAndResolves"/>
-    /// against the open <see cref="IPipelineBehavior{TRequest,TResponse}"/> service type - the shape ticket 01
-    /// covers: a closed implementation registered against an open Autofac service.
-    /// </summary>
-    private sealed class ClosedMatchedBehavior : IPipelineBehavior<MatchedRequest, OperationOutcome>
-    {
-        public Task<OperationOutcome> Handle(MatchedRequest request, Func<Task<OperationOutcome>> next, CancellationToken ct) =>
-            next();
-    }
-
-    private sealed record MatchedRequest;
-
     [Fact]
     public void AddInterlocutor_RegistersMediator()
     {
@@ -115,4 +102,17 @@ public class ContainerBuilderExtensionsTests
         // Assert
         Assert.Equal("configure", exception.ParamName);
     }
+
+    /// <summary>
+    /// A closed pipeline behavior, matched by <see cref="AddTypeMatch_ClosedBehaviorMatchedAgainstOpenService_BuildsAndResolves"/>
+    /// against the open <see cref="IPipelineBehavior{TRequest,TResponse}"/> service type - the shape ticket 01
+    /// covers: a closed implementation registered against an open Autofac service.
+    /// </summary>
+    private sealed class ClosedMatchedBehavior : IPipelineBehavior<MatchedRequest, OperationOutcome>
+    {
+        public Task<OperationOutcome> Handle(MatchedRequest request, Func<Task<OperationOutcome>> next, CancellationToken ct) =>
+            next();
+    }
+
+    private sealed record MatchedRequest;
 }

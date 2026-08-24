@@ -10,17 +10,6 @@ using NSubstitute;
 
 public class RateLimitedBehaviorTests
 {
-    public record ThrottledQuery(string Name) : IQuery<OperationOutcome<string, RateLimited>>, IRateLimited
-    {
-        public string LimitKey => "per-user";
-    }
-
-    /// <summary>A request declaring a limit key whose response has no <see cref="RateLimited"/> case at all.</summary>
-    public record MisshapenThrottledQuery : IQuery<OperationOutcome<string, NotFound>>, IRateLimited
-    {
-        public string LimitKey => "per-user";
-    }
-
     [Fact]
     public async Task Handle_AllowsRequestWhenWithinLimit()
     {
@@ -181,7 +170,7 @@ public class RateLimitedBehaviorTests
         // Arrange
         var delegateCalled = false;
         var limiter = new DelegateRateLimiter(
-            (limitKey, request, ct) =>
+            (_, _, _) =>
             {
                 delegateCalled = true;
                 return Task.FromResult(new RateLimitResult(IsAllowed: false, RetryAfter: TimeSpan.FromSeconds(5)));
@@ -203,5 +192,16 @@ public class RateLimitedBehaviorTests
         Assert.True(delegateCalled);
         var rateLimited = Assert.IsType<RateLimited>(result.Value);
         Assert.Equal(TimeSpan.FromSeconds(5), rateLimited.RetryAfter);
+    }
+
+    public record ThrottledQuery(string Name) : IQuery<OperationOutcome<string, RateLimited>>, IRateLimited
+    {
+        public string LimitKey => "per-user";
+    }
+
+    /// <summary>A request declaring a limit key whose response has no <see cref="RateLimited"/> case at all.</summary>
+    public record MisshapenThrottledQuery : IQuery<OperationOutcome<string, NotFound>>, IRateLimited
+    {
+        public string LimitKey => "per-user";
     }
 }

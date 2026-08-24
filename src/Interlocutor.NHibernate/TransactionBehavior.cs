@@ -49,8 +49,15 @@ public class TransactionBehavior<TRequest, TResponse>(
     where TRequest : ITransactionalRequest
 {
     private readonly IOutcomeClassifier classifier = classifier ?? OutcomeClassifierBuilder.DefaultClassifier;
+
+    // Accepted for constructor-shape symmetry with LoggingBehavior/AuditingBehavior (which do consume their
+    // own describer for log/audit text) - this behavior does no logging of its own, so the field is currently
+    // unused. Tracked as a follow-up rather than fixed here: removing the constructor parameter is a breaking
+    // API change out of scope for a warnings cleanup.
+#pragma warning disable RCS1213
     private readonly IResponseOutcomeDescriber _describer =
         describer ?? new DefaultResponseOutcomeDescriber(classifier ?? OutcomeClassifierBuilder.DefaultClassifier);
+#pragma warning restore RCS1213
 
     /// <inheritdoc/>
     /// <remarks>
