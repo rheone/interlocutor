@@ -24,6 +24,7 @@
     <Project Path="tests/Interlocutor.DependencyInjection.Abstractions.Tests/Interlocutor.DependencyInjection.Abstractions.Tests.csproj" />
     <Project Path="tests/Interlocutor.Generator.Tests/Interlocutor.Generator.Tests.csproj" />
     <Project Path="tests/Interlocutor.DependencyInjection.Microsoft.Tests/Interlocutor.DependencyInjection.Microsoft.Tests.csproj" />
+    <Project Path="tests/Interlocutor.DependencyInjection.Microsoft.EntityFrameworkCore.Tests/Interlocutor.DependencyInjection.Microsoft.EntityFrameworkCore.Tests.csproj" />
     <Project Path="tests/Interlocutor.DependencyInjection.Autofac.Tests/Interlocutor.DependencyInjection.Autofac.Tests.csproj" />
     <Project Path="tests/Interlocutor.AspNetCore.Tests/Interlocutor.AspNetCore.Tests.csproj" />
     <Project Path="tests/Interlocutor.EntityFrameworkCore.Tests/Interlocutor.EntityFrameworkCore.Tests.csproj" />

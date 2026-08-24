@@ -37,13 +37,59 @@ internal static class GenericUsageAnalyzer
             return null;
         }
 
+        var (requestKind, responseDisplayName) = ClassifyRequestKind(namedType, context.SemanticModel.Compilation);
+
         return new ClosedGenericRequestUsageModel(
             SymbolFormatting.FormatDefinitionKey(namedType),
             SymbolFormatting.Format(namedType),
             namedType.TypeArguments.Select(SymbolFormatting.Format).ToImmutableArray(),
             namedType.TypeArguments.Select(SymbolFormatting.TryGetMetadataName).ToImmutableArray(),
-            genericName.GetLocation()
+            genericName.GetLocation(),
+            requestKind,
+            responseDisplayName
         );
+    }
+
+    /// <summary>
+    /// Whether <paramref name="namedType"/> itself implements <c>IQuery&lt;TResponse&gt;</c> or
+    /// <c>ICommand&lt;TResponse&gt;</c> - recognized here regardless of which assembly declares
+    /// <paramref name="namedType"/>, since the semantic model resolves symbols across the whole reference
+    /// graph even though open generic handler closing itself only spans the current compilation's own syntax
+    /// (see <see cref="OpenGenericHandlerResolver"/>'s remarks and <see cref="InterlocutorDiagnostics.UnresolvedGenericRequestUsage"/>).
+    /// </summary>
+    /// <param name="namedType">The closed generic type usage to classify.</param>
+    /// <param name="compilation">The compilation to resolve the <c>IQuery&lt;&gt;</c>/<c>ICommand&lt;&gt;</c> marker types from.</param>
+    /// <returns>
+    /// The request kind and its marker's own type argument as source text, or <c>(null, null)</c> when
+    /// <paramref name="namedType"/> implements neither marker.
+    /// </returns>
+    private static (RequestKind? Kind, string? ResponseDisplayName) ClassifyRequestKind(
+        INamedTypeSymbol namedType,
+        Compilation compilation
+    )
+    {
+        var queryMarker = compilation.GetTypeByMetadataName(WellKnownTypeNames.Query);
+        var commandMarker = compilation.GetTypeByMetadataName(WellKnownTypeNames.Command);
+
+        foreach (var candidateInterface in namedType.AllInterfaces)
+        {
+            if (!candidateInterface.IsGenericType)
+            {
+                continue;
+            }
+
+            if (SymbolEqualityComparer.Default.Equals(candidateInterface.OriginalDefinition, queryMarker))
+            {
+                return (RequestKind.Query, SymbolFormatting.Format(candidateInterface.TypeArguments[0]));
+            }
+
+            if (SymbolEqualityComparer.Default.Equals(candidateInterface.OriginalDefinition, commandMarker))
+            {
+                return (RequestKind.Command, SymbolFormatting.Format(candidateInterface.TypeArguments[0]));
+            }
+        }
+
+        return (null, null);
     }
 
     /// <summary>Whether <paramref name="type"/> still refers to an open type parameter anywhere in its structure.</summary>

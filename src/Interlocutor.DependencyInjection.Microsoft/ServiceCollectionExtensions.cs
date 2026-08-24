@@ -127,16 +127,54 @@ public static class InterlocutorServiceCollectionExtensions
     /// <see cref="InterlocutorRegistration.ImplementationType"/> is closed; otherwise, the registration's
     /// own <see cref="InterlocutorRegistration.ServiceType"/> unchanged.
     /// </returns>
+    /// <exception cref="InvalidOperationException">
+    /// <see cref="InterlocutorRegistration.ServiceType"/> and <see cref="InterlocutorRegistration.ImplementationType"/>
+    /// are both open generic definitions with a different number of type parameters - a shape
+    /// Microsoft.Extensions.DependencyInjection cannot register at all (it requires an open generic
+    /// implementation to declare exactly as many open type parameters as the service interface it's paired
+    /// with). Thrown here, synchronously during <c>AddInterlocutor</c>, so the failure is immediate and
+    /// actionable instead of a cryptic <see cref="ArgumentException"/> the framework would otherwise throw
+    /// later, lazily, the first time <c>BuildServiceProvider()</c> runs. See
+    /// <see cref="InterlocutorPipelineBuilder.AddTransactionBehavior"/>'s remarks for the concrete case this
+    /// guards (EF Core's arity-3 <c>TransactionBehavior&lt;TRequest,TResponse,TContext&gt;</c> behind the
+    /// arity-2 <see cref="IPipelineBehavior{TRequest,TResponse}"/>) and the documented workaround.
+    /// </exception>
     private static Type ResolveServiceType(InterlocutorRegistration registration)
     {
         var serviceType = registration.ServiceType;
-        if (!serviceType.IsGenericTypeDefinition || registration.ImplementationType.IsGenericTypeDefinition)
+        var implementationType = registration.ImplementationType;
+        if (!serviceType.IsGenericTypeDefinition)
         {
             return serviceType;
         }
 
-        var closedServiceInterface = registration
-            .ImplementationType.GetInterfaces()
+        if (implementationType.IsGenericTypeDefinition)
+        {
+            var serviceArity = serviceType.GetGenericArguments().Length;
+            var implementationArity = implementationType.GetGenericArguments().Length;
+            if (serviceArity != implementationArity)
+            {
+                // The arity marker ("`3") isn't source syntax - strip it so the suggested subclass declaration
+                // in the message reads as real C# the caller can paste, not raw reflection formatting.
+                var implementationTypeBaseName = implementationType.Name.Split('`')[0];
+                throw new InvalidOperationException(
+                    $"Cannot register open generic type '{implementationType.Name}' ({implementationArity} type "
+                        + $"parameter(s)) against open generic service '{serviceType.Name}' ({serviceArity} type "
+                        + "parameter(s)) under Microsoft.Extensions.DependencyInjection: it requires an open "
+                        + "generic implementation to declare exactly as many open type parameters as the service "
+                        + "interface it's registered against. Define a subclass that fixes the extra type "
+                        + "parameter(s) to a concrete type while leaving the rest open - for example, "
+                        + $"`class My{implementationTypeBaseName}<TRequest,TResponse> : "
+                        + $"{implementationTypeBaseName}<TRequest,TResponse,MyConcreteType>` - and register that "
+                        + "subclass via InterlocutorPipelineBuilder.AddBehavior(typeof(...)) instead."
+                );
+            }
+
+            return serviceType;
+        }
+
+        var closedServiceInterface = implementationType
+            .GetInterfaces()
             .FirstOrDefault(candidate => candidate.IsGenericType && candidate.GetGenericTypeDefinition() == serviceType);
 
         return closedServiceInterface ?? serviceType;

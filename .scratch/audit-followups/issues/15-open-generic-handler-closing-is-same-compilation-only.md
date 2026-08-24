@@ -33,18 +33,46 @@ the way `ReferencedModuleDiscovery` already does for closed handlers.
 
 ## Acceptance criteria
 
-- [ ] An open generic handler defined in library assembly A, used only via a closed instantiation in
+- [x] An open generic handler defined in library assembly A, used only via a closed instantiation in
       application assembly B (which references A), closes correctly and resolves at dispatch time - either by
       extending closing to consider referenced assemblies' open-handler and usage information, or by emitting a
       diagnostic when a closed generic request usage has no available handler (closed or open) anywhere in the
-      reference graph, so this fails at build time instead of at first dispatch
-- [ ] A regression test proves the cross-assembly open-generic-handler-closing case end to end (real emitted
-      assemblies, real container, real dispatch - following the pattern `CrossAssemblyContainerResolutionTests`,
-      ticket 54, already established for ordinary closed handlers)
-- [ ] The same-compilation-only case (today's only working case) has no regression
-- [ ] If closing genuinely cannot span assemblies for a structural reason, that constraint is documented on
-      `OpenGenericHandlerResolver`/the open-generic-handlers documentation, and a build-time diagnostic replaces
-      the current silent, first-dispatch-time failure
+      reference graph, so this fails at build time instead of at first dispatch — **Status: resolved via the
+      diagnostic path this criterion itself allows for.** Extending closing to span assemblies (option one)
+      would require serializing `OpenGenericHandlerModel`'s full constraint set - `GenericParameterConstraintModel`
+      entries, checked today via `GenericConstraintSnapshot` built from live `Compilation` symbols - across
+      assembly-level attributes, faithfully enough to re-run `GenericConstraintChecker` in a downstream
+      compilation that never sees library A's syntax. That's a materially larger, higher-risk undertaking than
+      this ticket's scope; the diagnostic path is the one explicitly sanctioned as sufficient by this same
+      bullet and by the ticket's last bullet below. `IQuery<TResponse>`/`ICommand<TResponse>` usage
+      classification in `GenericUsageAnalyzer` resolves across the whole reference graph regardless (Roslyn's
+      semantic model does this for free), so the diagnostic itself is accurate cross-assembly even though
+      closing is not.
+- [x] A regression test proves the cross-assembly gap is now caught at build time - **adjusted from "closes
+      correctly and resolves at dispatch time" to match the diagnostic path actually taken**:
+      `CrossAssemblyOpenGenericHandlerTests.ClosedUsageInApplication_OfOpenHandlerDeclaredOnlyInReferencedLibrary_ReportsUnresolvedGenericRequestUsage`
+      emits a real library assembly (`GeneratorTestHarness.RunAndUpdate`/`ToMetadataReference`, the same
+      pattern `CrossAssemblyContainerResolutionTests` and `CrossAssemblyAggregationTests` use) declaring an
+      open generic handler with no local usage, references it from a separate application compilation with a
+      closed usage only, and asserts `INTERLOC008` (`UnresolvedGenericRequestUsage`) is reported naming the
+      unresolved usage - the same silent gap that previously only surfaced as
+      `HandlerNotRegisteredException` at first dispatch (reproduced directly in
+      `samples/Interlocutor.Sample.WebApi` before that sample worked around it, per this ticket's own
+      description) now fails the build instead.
+- [x] The same-compilation-only case (today's only working case) has no regression -
+      `CrossAssemblyOpenGenericHandlerTests.ClosedUsageInSameCompilationAsOpenHandler_ReportsNoUnresolvedGenericRequestUsageDiagnostic`
+      asserts INTERLOC008 does not fire once a usage resolves locally, and the full pre-existing
+      `OpenGenericHandlerTests` suite (closed-beats-open precedence, constraint checking, `HandlerOverrideAttribute`
+      ambiguity) still passes unchanged. A second, previously-untested regression is now covered too:
+      `OpenGenericHandlerTests.AmbiguousUsage_ReportsOnlyOpenGenericHandlerAmbiguity_NotAlsoUnresolvedGenericRequestUsage`
+      proves a usage left ambiguous between two local open generic handlers (INTERLOC006) is never *also*
+      reported as INTERLOC008 - the `AttemptedUsageDisplayNames` exclusion this ticket's resolution relies on
+      was previously only a code comment's claim, not an asserted test.
+- [x] Closing does not span assemblies, for the structural reason above; documented on
+      `OpenGenericHandlerResolver`'s own remarks (referencing the new diagnostic) and on
+      `InterlocutorDiagnostics.UnresolvedGenericRequestUsage`'s XML docs, which replace the previous silent,
+      first-dispatch-time failure with `INTERLOC008` at build time, escalatable to an error via
+      `.editorconfig` the same way `MissingHandler` (`INTERLOC001`) already is.
 
 ## Blocked by
 

@@ -222,6 +222,26 @@ public sealed class InterlocutorPipelineBuilder
     /// preferring EF Core, if either store-specific package is referenced by the application. A no-op
     /// when neither package is loaded.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// EF Core's <c>TransactionBehavior&lt;TRequest,TResponse,TContext&gt;</c> is generic over the
+    /// application's own <c>DbContext</c> type (<c>TContext</c>), unlike NHibernate's two-parameter
+    /// equivalent. Under Microsoft DI, this method's plain, un-closed registration of that type only works
+    /// when the application references NHibernate instead - Microsoft.Extensions.DependencyInjection
+    /// requires an open generic implementation to declare exactly as many open type parameters as the
+    /// service interface it's paired with, and cannot leave <c>TContext</c> open behind the two-parameter
+    /// <see cref="IPipelineBehavior{TRequest,TResponse}"/>. Calling this method under Microsoft DI once EF
+    /// Core is referenced throws immediately, with an actionable message pointing here (see
+    /// <c>ServiceCollectionExtensions.ResolveServiceType</c>'s exception documentation).
+    /// </para>
+    /// <para>
+    /// Autofac has no such restriction and works with this method unchanged. Under Microsoft DI with EF
+    /// Core, instead define a small subclass that closes <c>TContext</c> over the application's own
+    /// <c>DbContext</c> type while leaving <c>TRequest</c>/<c>TResponse</c> open - for example
+    /// <c>class MyTransactionBehavior&lt;TRequest,TResponse&gt; : TransactionBehavior&lt;TRequest,TResponse,MyDbContext&gt;</c>
+    /// - and register that subclass via <see cref="AddBehavior"/> instead of calling this method.
+    /// </para>
+    /// </remarks>
     /// <returns>This builder, for chaining.</returns>
     [UnconditionalSuppressMessage(
         "Trimming",
@@ -366,9 +386,9 @@ public sealed class InterlocutorPipelineBuilder
     /// <typeparam name="TSink">The replacement <see cref="IAuditSink"/> implementation.</typeparam>
     /// <param name="lifetime">The service lifetime to register the replacement with. Defaults to scoped.</param>
     /// <returns>This builder, for chaining.</returns>
-    public InterlocutorPipelineBuilder OverrideAuditSink<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TSink>(
-        RegistrationLifetime lifetime = RegistrationLifetime.Scoped
-    )
+    public InterlocutorPipelineBuilder OverrideAuditSink<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TSink
+    >(RegistrationLifetime lifetime = RegistrationLifetime.Scoped)
         where TSink : class, IAuditSink
     {
         this.SetDefault(typeof(IAuditSink), typeof(TSink), lifetime);
@@ -385,9 +405,7 @@ public sealed class InterlocutorPipelineBuilder
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorPipelineBuilder OverridePolicyEvaluator<
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TEvaluator
-    >(
-        RegistrationLifetime lifetime = RegistrationLifetime.Scoped
-    )
+    >(RegistrationLifetime lifetime = RegistrationLifetime.Scoped)
         where TEvaluator : class, IPolicyEvaluator
     {
         this.SetDefault(typeof(IPolicyEvaluator), typeof(TEvaluator), lifetime);
@@ -406,9 +424,7 @@ public sealed class InterlocutorPipelineBuilder
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorPipelineBuilder OverrideOutcomeDescriber<
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TDescriber
-    >(
-        RegistrationLifetime lifetime = RegistrationLifetime.Singleton
-    )
+    >(RegistrationLifetime lifetime = RegistrationLifetime.Singleton)
         where TDescriber : class, IResponseOutcomeDescriber
     {
         this.SetDefault(typeof(IResponseOutcomeDescriber), typeof(TDescriber), lifetime);
@@ -425,9 +441,7 @@ public sealed class InterlocutorPipelineBuilder
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorPipelineBuilder OverrideTimeoutPolicy<
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TPolicy
-    >(
-        RegistrationLifetime lifetime = RegistrationLifetime.Scoped
-    )
+    >(RegistrationLifetime lifetime = RegistrationLifetime.Scoped)
         where TPolicy : class, ITimeoutPolicy
     {
         this.SetDefault(typeof(ITimeoutPolicy), typeof(TPolicy), lifetime);
@@ -444,9 +458,7 @@ public sealed class InterlocutorPipelineBuilder
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorPipelineBuilder OverrideRateLimiter<
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TLimiter
-    >(
-        RegistrationLifetime lifetime = RegistrationLifetime.Scoped
-    )
+    >(RegistrationLifetime lifetime = RegistrationLifetime.Scoped)
         where TLimiter : class, IRateLimiter
     {
         this.SetDefault(typeof(IRateLimiter), typeof(TLimiter), lifetime);
@@ -466,9 +478,7 @@ public sealed class InterlocutorPipelineBuilder
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorPipelineBuilder OverrideOutcomeCaseRegistry<
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TRegistry
-    >(
-        RegistrationLifetime lifetime = RegistrationLifetime.Scoped
-    )
+    >(RegistrationLifetime lifetime = RegistrationLifetime.Scoped)
         where TRegistry : class, IOutcomeCaseRegistry
     {
         this.SetDefault(typeof(IOutcomeCaseRegistry), typeof(TRegistry), lifetime);

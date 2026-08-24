@@ -26,12 +26,27 @@ using Microsoft.CodeAnalysis;
 /// soundly checked from a metadata name alone.
 /// </param>
 /// <param name="Location">Where this usage was found, used to anchor diagnostics.</param>
+/// <param name="RequestKind">
+/// Whether the used generic type itself implements <c>IQuery&lt;TResponse&gt;</c> or
+/// <c>ICommand&lt;TResponse&gt;</c> - <see langword="null"/> for a usage of any other generic type (the common
+/// case, since <see cref="GenericUsageAnalyzer"/> runs over every closed generic name in the compilation, not
+/// just request types). Only a non-null usage is a candidate for
+/// <see cref="InterlocutorDiagnostics.UnresolvedGenericRequestUsage"/> (ticket 15's build-time replacement for
+/// the previous silent first-dispatch failure).
+/// </param>
+/// <param name="ResponseDisplayName">
+/// The request marker's own type argument as source text (e.g. <c>TResponse</c> in
+/// <c>IQuery&lt;TResponse&gt;</c>), matching <see cref="HandlerModel.ResponseTypeName"/>'s format so the two
+/// can be compared directly. <see langword="null"/> whenever <see cref="RequestKind"/> is <see langword="null"/>.
+/// </param>
 internal sealed record ClosedGenericRequestUsageModel(
     string RequestDefinitionKey,
     string ClosedRequestDisplayName,
     ImmutableArray<string> TypeArgumentDisplayNames,
     ImmutableArray<string?> TypeArgumentMetadataNames,
-    Location Location
+    Location Location,
+    RequestKind? RequestKind = null,
+    string? ResponseDisplayName = null
 )
 {
     /// <inheritdoc/>
@@ -47,7 +62,9 @@ internal sealed record ClosedGenericRequestUsageModel(
         && this.RequestDefinitionKey == other.RequestDefinitionKey
         && this.ClosedRequestDisplayName == other.ClosedRequestDisplayName
         && this.TypeArgumentDisplayNames.SequenceEqual(other.TypeArgumentDisplayNames)
-        && this.TypeArgumentMetadataNames.SequenceEqual(other.TypeArgumentMetadataNames);
+        && this.TypeArgumentMetadataNames.SequenceEqual(other.TypeArgumentMetadataNames)
+        && this.RequestKind == other.RequestKind
+        && this.ResponseDisplayName == other.ResponseDisplayName;
 
     /// <inheritdoc/>
     public override int GetHashCode()
@@ -67,6 +84,9 @@ internal sealed record ClosedGenericRequestUsageModel(
         {
             hash = (hash * 31) + (name?.GetHashCode() ?? 0);
         }
+
+        hash = (hash * 31) + this.RequestKind.GetHashCode();
+        hash = (hash * 31) + (this.ResponseDisplayName?.GetHashCode() ?? 0);
 
         return hash;
     }

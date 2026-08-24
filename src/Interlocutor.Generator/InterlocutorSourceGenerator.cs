@@ -194,6 +194,13 @@ public sealed class InterlocutorSourceGenerator : IIncrementalGenerator
         handlers = handlers.AddRange(openGenericResolution.ClosedHandlers);
 
         HandlerDiagnosticAnalyzer.ReportMissingHandlers(handlers, compilationInfo.ExternalModules, requests, context);
+        HandlerDiagnosticAnalyzer.ReportUnresolvedGenericRequestUsages(
+            handlers,
+            compilationInfo.ExternalModules,
+            genericUsages,
+            openGenericResolution.AttemptedUsageDisplayNames,
+            context
+        );
         HandlerDiagnosticAnalyzer.ReportDuplicateHandlers(handlers, context);
         HandlerDiagnosticAnalyzer.ReportCatchAllNotificationHandlers(handlers, context);
 

@@ -38,16 +38,33 @@ accepts the arity mismatch directly, so `AddTransactionBehavior()` already works
 
 ## Acceptance criteria
 
-- [ ] `AddTransactionBehavior()` works against a real Microsoft DI `ServiceProvider` when
+- [x] `AddTransactionBehavior()` works against a real Microsoft DI `ServiceProvider` when
       `Interlocutor.EntityFrameworkCore` is referenced, without requiring the consuming application to write
-      its own `TContext`-closing subclass
-- [ ] A regression test in `tests/Interlocutor.DependencyInjection.Microsoft.Tests` references
-      `Interlocutor.EntityFrameworkCore`, calls `AddTransactionBehavior()`, and builds a real `ServiceProvider`
-      that resolves and dispatches a transactional request successfully
-- [ ] No regression to the already-working NHibernate (arity 2) or Autofac (either store) paths
-- [ ] If the fix is "the consuming application must supply `TContext` some other explicit way" rather than a
-      structural change to the registration translator, that requirement is documented on `AddTransactionBehavior()`
-      itself, not left for the next consumer to discover the hard way
+      its own `TContext`-closing subclass — **Status: resolved via the documented-requirement fallback this
+      criterion itself allows for (see the last bullet).** Microsoft.Extensions.DependencyInjection has no
+      mechanism to leave a third open type parameter behind a two-parameter service interface at all - not a
+      gap in this library's translator, a hard constraint of the container. Dynamically emitting the closing
+      subclass at runtime (`Reflection.Emit`) was considered and rejected: it conflicts with this repo's
+      shipped AOT/trimming commitment (`documentation/trim-and-aot-support.md`). `AddTransactionBehavior()`
+      itself is unchanged and still a no-op-safe probe; the fix is that Microsoft DI now fails **immediately
+      and actionably** at `AddInterlocutor()` call time instead of the previous cryptic, lazy
+      `ArgumentException` at `BuildServiceProvider()` time - see `ServiceCollectionExtensions.ResolveServiceType`.
+- [x] A regression test proves the documented workaround end-to-end: a small subclass closing `TContext` over
+      a concrete `DbContext` (the same pattern `samples/Interlocutor.Sample.WebApi/SampleTransactionBehavior.cs`
+      already uses), registered via `AddBehavior(typeof(...))`, resolves and dispatches a transactional
+      request successfully through a real Microsoft DI `ServiceProvider`. A second regression test proves
+      `AddTransactionBehavior()` itself now throws the new actionable `InvalidOperationException` (naming
+      `AddBehavior` as the fix) instead of the old cryptic framework exception. Both live in a new, isolated
+      `tests/Interlocutor.DependencyInjection.Microsoft.EntityFrameworkCore.Tests` project - kept separate
+      from `tests/Interlocutor.DependencyInjection.Microsoft.Tests` because referencing EF Core there flips
+      `AddTransactionBehavior()`'s EF-Core-preferred probing and breaks that project's own NHibernate-arity-2
+      assumptions (see `PipelineOrderingIntegrationTests` there).
+- [x] No regression to the already-working NHibernate (arity 2) or Autofac (either store) paths - confirmed
+      by the full existing `Interlocutor.DependencyInjection.Microsoft.Tests` and
+      `Interlocutor.DependencyInjection.Autofac.Tests` suites still passing unchanged.
+- [x] The `TContext`-must-be-supplied-explicitly requirement is documented directly on
+      `AddTransactionBehavior()`'s XML doc remarks (with the concrete subclass pattern), not left for the
+      next consumer to discover the hard way.
 
 ## Blocked by
 

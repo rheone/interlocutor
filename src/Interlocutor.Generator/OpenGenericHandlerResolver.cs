@@ -27,6 +27,21 @@ using Microsoft.CodeAnalysis;
 /// <see cref="RequestDispatchSwitchEmitter"/>) that handle every other closed handler, so a closed-over-generic
 /// handler is indistinguishable from a hand-written closed handler once resolution completes.
 /// </para>
+/// <para>
+/// This resolution is deliberately same-compilation-only (ticket 15): <see cref="Resolve"/>'s
+/// <c>openHandlers</c> and <c>usages</c> parameters are both discovered purely from the current compilation's
+/// own syntax trees, never from a referenced assembly's metadata the way
+/// <see cref="ReferencedModuleDiscovery"/> aggregates closed handlers. Spanning assemblies would require
+/// serializing <see cref="OpenGenericHandlerModel.Constraints"/> - checked today against live
+/// <c>Compilation</c> symbols via <see cref="GenericConstraintSnapshot"/> - into assembly-level metadata
+/// faithfully enough to re-check constraints in a downstream compilation that never sees the declaring
+/// library's syntax; considered and deliberately not taken, as a materially larger, higher-risk undertaking
+/// than reusing an established, cheaper mechanism. Instead, a closed generic request usage that resolves to
+/// no handler anywhere in the reference graph - not locally, not in a referenced assembly's generated module -
+/// is caught at build time by <see cref="InterlocutorDiagnostics.UnresolvedGenericRequestUsage"/> (see
+/// <see cref="HandlerDiagnosticAnalyzer.ReportUnresolvedGenericRequestUsages"/>), replacing what was
+/// previously a silent gap only surfaced by a runtime <c>HandlerNotRegisteredException</c> at first dispatch.
+/// </para>
 /// </remarks>
 internal static class OpenGenericHandlerResolver
 {
@@ -62,11 +77,19 @@ internal static class OpenGenericHandlerResolver
         var closedResults = ImmutableArray.CreateBuilder<HandlerModel>();
         var reportedAmbiguities = new HashSet<string>(System.StringComparer.Ordinal);
 
+        // Every usage at least one local open generic handler's request definition key matched, whether
+        // resolution succeeded, was left ambiguous, or failed a constraint check - tracked so
+        // HandlerDiagnosticAnalyzer.ReportUnresolvedGenericRequestUsages (ticket 15) never double-reports a
+        // usage OpenGenericHandlerAmbiguity already covers.
+        var attemptedUsageDisplayNames = new HashSet<string>(System.StringComparer.Ordinal);
+
         foreach (var group in openHandlers.GroupBy(static h => h.RequestDefinitionKey))
         {
             var handlersInGroup = group.ToImmutableArray();
             foreach (var usage in dedupedUsages.Where(u => u.RequestDefinitionKey == group.Key))
             {
+                attemptedUsageDisplayNames.Add(usage.ClosedRequestDisplayName);
+
                 if (closedRequestTypeNames.Contains(usage.ClosedRequestDisplayName))
                 {
                     // A closed handler for this exact request already exists - it wins outright, and no
@@ -78,7 +101,11 @@ internal static class OpenGenericHandlerResolver
             }
         }
 
-        return new Result(closedResults.ToImmutable(), diagnostics.ToImmutable());
+        return new Result(
+            closedResults.ToImmutable(),
+            diagnostics.ToImmutable(),
+            attemptedUsageDisplayNames.ToImmutableArray()
+        );
     }
 
     /// <summary>Resolves every open generic handler in <paramref name="handlersInGroup"/> against one discovered closed usage.</summary>
@@ -254,5 +281,15 @@ internal static class OpenGenericHandlerResolver
     /// <summary>The outcome of <see cref="Resolve"/>: every successfully closed handler, plus any diagnostics.</summary>
     /// <param name="ClosedHandlers">One <see cref="HandlerModel"/> per unambiguously resolved open-handler/closed-usage match.</param>
     /// <param name="Diagnostics">Ambiguity and invalid-override-target diagnostics, if any.</param>
-    public sealed record Result(ImmutableArray<HandlerModel> ClosedHandlers, ImmutableArray<Diagnostic> Diagnostics);
+    /// <param name="AttemptedUsageDisplayNames">
+    /// Every usage's <see cref="ClosedGenericRequestUsageModel.ClosedRequestDisplayName"/> at least one local
+    /// open generic handler's request definition key matched, whether or not resolution actually succeeded -
+    /// see <see cref="Resolve"/>'s remarks on why <see cref="HandlerDiagnosticAnalyzer.ReportUnresolvedGenericRequestUsages"/>
+    /// needs this to avoid double-reporting an already-ambiguous usage.
+    /// </param>
+    public sealed record Result(
+        ImmutableArray<HandlerModel> ClosedHandlers,
+        ImmutableArray<Diagnostic> Diagnostics,
+        ImmutableArray<string> AttemptedUsageDisplayNames
+    );
 }

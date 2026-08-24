@@ -201,4 +201,47 @@ internal static class InterlocutorDiagnostics
             + "type that is not a handler - or a handler declared in a different, referenced assembly - can "
             + "never participate in the override it names."
     );
+
+    /// <summary>
+    /// Reported when a closed usage of a generic <c>IQuery&lt;TResponse&gt;</c>/<c>ICommand&lt;TResponse&gt;</c>
+    /// request type resolves to no handler at all - neither a closed handler nor an open generic handler
+    /// closed over it locally (ticket 11), nor a closed handler from an upstream referenced assembly's
+    /// generated module (ticket 12).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Open generic handler closing is same-compilation-only: <see cref="OpenGenericHandlerResolver"/> only
+    /// ever sees open generic handlers and closed usages discovered by <em>this</em> compilation's own syntax
+    /// trees, never a referenced library's. An open generic handler declared in library A, used only via a
+    /// closed instantiation in application B (which references A), is invisible to both sides' own generator
+    /// runs - A's run finished before B exists, and B's run never sees A's syntax, only its metadata. Left
+    /// unresolved, that produced a request no registered handler ever backs, previously discovered only when
+    /// <c>Mediator.Send</c> throws <see cref="Interlocutor.Abstractions.Core.HandlerNotRegisteredException"/>
+    /// at first dispatch. This diagnostic surfaces the same gap at build time instead.
+    /// </para>
+    /// <para>
+    /// Default severity is <see cref="DiagnosticSeverity.Warning"/>, escalated the same way as
+    /// <see cref="MissingHandler"/>:
+    /// <code>
+    /// dotnet_diagnostic.INTERLOC008.severity = error
+    /// </code>
+    /// Move the closed usage into the handler's own assembly (so the same compilation sees both), or add an
+    /// explicit closed handler for it in the consuming project, to resolve.
+    /// </para>
+    /// </remarks>
+    public static readonly DiagnosticDescriptor UnresolvedGenericRequestUsage = new(
+        id: "INTERLOC008",
+        title: "Unresolved generic request usage",
+        messageFormat: "Request usage '{0}' has no matching handler - open generic handler closing only spans "
+            + "the current compilation, so a handler declared in a different referenced assembly cannot close "
+            + "over a usage found only here",
+        category: "Interlocutor.Discovery",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "A closed usage of a generic IQuery<TResponse>/ICommand<TResponse> request type resolved "
+            + "to no handler: not a closed handler, not an open generic handler closed over it in this "
+            + "compilation, and not a closed handler from a referenced assembly's generated module. Open "
+            + "generic handler closing only spans the current compilation's own syntax trees - move the usage "
+            + "into the handler's own assembly, or add an explicit closed handler for it here."
+    );
 }
