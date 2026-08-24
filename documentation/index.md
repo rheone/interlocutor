@@ -23,6 +23,7 @@ The fundamentals of writing a request and getting a response back.
 Registering the library and understanding how a dispatch's scope and context flow.
 
 - [Builder & Registration](builder-and-registration.md) - `InterlocutorBuilder` as the single entry point, assembly scanning, pipeline composition, dependency defaults, cross-assembly aggregation, startup validation.
+- [Dependency Injection Packages](dependency-injection-packages.md) - the container-neutral registration model (`InterlocutorRegistration`, `RegistrationLifetime`, `RegistrationReport`), how `Interlocutor.DependencyInjection.Microsoft` and `.Autofac` each translate it, root-scope detection internals, the persistence registration extensions, and compile-time generated-registration attributes.
 - [Mediator, Lifetimes, Scope & Ambient Context](mediator-lifetimes-and-scope.md) - `ISender`/`IPublisher`/`IMediator` interfaces, why scoped lifetime is non-configurable, the root-scope exception, dispatching correctly from web/background contexts, `IRequestContextAccessor` and `RequestContext`.
 
 ### Cross-cutting features
@@ -35,6 +36,7 @@ Registering the library and understanding how a dispatch's scope and context flo
 - [ASP.NET Core Integration & HTTP Mapping](aspnetcore-integration.md) - the `ToActionResult()` extension, status code mapping, `ValidationProblemDetails` and `ProblemDetails` (RFC 7807), custom mapping, minimal API usage, error handling.
 - [Transactions & Store Integration](transactions-and-store-integration.md) - `Interlocutor.EntityFrameworkCore` and `Interlocutor.NHibernate`, `TransactionBehavior`, the `ITransactionalRequest`/`IExternalStoreRequest` markers, lazy session resolution, commit/rollback semantics, nested dispatch, notifications after commit.
 - [Persistence Abstraction](persistence-abstraction.md) - the optional, opt-in `IUnitOfWork`/`IDomainRepository<TEntity, TKey>` CRUD/paging surface, `Page<T>`, per-container registration, NHibernate session concurrency.
+- [Persistence Implementations](persistence-implementations.md) - what `EntityFrameworkUnitOfWork<TContext>`/`EntityFrameworkRepository<TEntity, TKey, TContext>` and `NHibernateUnitOfWork`/`NHibernateRepository<TEntity, TKey>` actually do underneath the interfaces, the shared filter/sort/paging query-composition helpers, and the behavioral differences between the two stores.
 - [Trim & AOT Support](trim-and-aot-support.md) - what "trim-compatible, not yet Native AOT-compatible" means in practice, the runtime-scanning trim cost, publishing trimmed, known limitations.
 
 ### Testing
