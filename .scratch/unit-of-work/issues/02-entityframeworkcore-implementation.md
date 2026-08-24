@@ -1,4 +1,4 @@
-Status: needs-triage
+Status: closed (implemented)
 
 ## Labels
 
@@ -25,3 +25,7 @@ New project `src/Interlocutor.Persistence.EntityFrameworkCore/Interlocutor.Persi
 ## Blocked by
 
 01
+
+## Comments
+
+Verified already implemented (commit 024a606): `EntityFrameworkUnitOfWork<TContext>` and `EntityFrameworkRepository<TEntity,TKey,TContext>` exist, resolved via `Lazy<TContext>`. `dotnet test tests/Interlocutor.Persistence.EntityFrameworkCore.Tests` passes (14/14).

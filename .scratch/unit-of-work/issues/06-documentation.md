@@ -1,4 +1,4 @@
-Status: needs-triage
+Status: closed (implemented)
 
 ## Labels
 
@@ -20,3 +20,7 @@ ready-for-agent
 ## Blocked by
 
 None hard - best done once the API from 01-04 is stable, but can start drafting earlier.
+
+## Comments
+
+Verified already implemented: `documentation/persistence-abstraction.md` and `documentation/persistence-implementations.md` exist; `CLAUDE.md` and `documentation/glossary.md`'s Pagination section both carry the coordinated clarifying note about `Page<T>` being a different package's vocabulary; `README.md`'s package-layering table and diagram include the three new packages. No internal design-record citations found in the new docs.

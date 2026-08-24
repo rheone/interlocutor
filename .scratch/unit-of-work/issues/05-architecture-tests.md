@@ -1,4 +1,4 @@
-Status: needs-triage
+Status: closed (implemented)
 
 ## Labels
 
@@ -21,3 +21,7 @@ Add `NetArchTest` rules to `tests/Interlocutor.Architecture.Tests/DependencyTest
 ## Blocked by
 
 01
+
+## Comments
+
+Verified already implemented: `DependencyTests.cs` has `PersistenceAbstractions_ShouldNotDependOnAspnetcoreStoreValidationOrDependencyInjectionPackages`, `PersistenceEntityFrameworkCore_ShouldDependOnPersistenceAbstractions_AndNotOnPersistenceNHibernate`, and `PersistenceNHibernate_ShouldDependOnPersistenceAbstractions_AndNotOnPersistenceEntityFrameworkCore`. `dotnet test tests/Interlocutor.Architecture.Tests` passes (12/12).

@@ -1,4 +1,4 @@
-Status: needs-triage
+Status: closed (implemented)
 
 ## Labels
 
@@ -26,3 +26,7 @@ New project `src/Interlocutor.Persistence.NHibernate/Interlocutor.Persistence.NH
 ## Blocked by
 
 01
+
+## Comments
+
+Verified already implemented (commit 024a606): `NHibernateUnitOfWork` and `NHibernateRepository<TEntity,TKey>` exist, resolved via `Lazy<ISession>`. `dotnet test tests/Interlocutor.Persistence.NHibernate.Tests` passes (7/7).

@@ -1,4 +1,4 @@
-Status: needs-triage
+Status: closed (implemented)
 
 ## Labels
 
@@ -33,3 +33,7 @@ Types (per [ADR-0017](../../../docs/adr/0017-optional-persistence-abstraction-re
 ## Blocked by
 
 None - can start immediately.
+
+## Comments
+
+Verified already implemented (commit 024a606): `Interlocutor.Persistence.Abstractions` project builds with zero ORM/container dependency; `IUnitOfWork`, `IDomainRepository<TEntity,TKey>`, `SortCriterion`, `SortDirection`, and `Page<T>` all exist with XML docs. `dotnet test tests/Interlocutor.Persistence.Abstractions.Tests` passes (18/18). `dotnet csharpier check` is clean on this project.
