@@ -5,6 +5,8 @@ using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Pipeline.Classifiers;
 using Interlocutor.CommonKernel.ResultTypes;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 /// <summary>
 /// Wraps transactional request handler execution in an EF Core database transaction.
@@ -20,7 +22,21 @@ using Microsoft.EntityFrameworkCore;
 /// <param name="db">Lazy factory for the <typeparamref name="TContext"/> instance that provides database access.</param>
 /// <param name="classifier">The outcome classifier used to determine success vs. failure for rollback decisions.</param>
 /// <param name="describer">Optional custom describer for converting response outcomes to human-readable strings for logging. Defaults to default classifier-based describer.</param>
+/// <param name="logger">
+/// Optional logger for a debug-level line recording the commit/rollback decision. Defaults to
+/// <see cref="NullLogger{T}.Instance"/> when not supplied via DI. See the "Diagnostics" remarks section below
+/// for how this differs from <see cref="LoggingBehavior{TRequest,TResponse}"/>.
+/// </param>
 /// <remarks>
+/// <para>
+/// <b>Diagnostics:</b> this behavior emits one <see cref="LogLevel.Debug"/> line per invocation, naming
+/// whether it committed or rolled back and the <paramref name="describer"/>-rendered outcome that drove that
+/// decision. This is not a duplicate of <see cref="LoggingBehavior{TRequest,TResponse}"/>'s
+/// <see cref="LogLevel.Information"/> line: <c>LoggingBehavior</c> reports the pipeline's final response and
+/// knows nothing about the transaction; this line reports the <see cref="IOutcomeClassifier"/> verdict that
+/// this behavior itself acted on to decide commit versus rollback, which stays useful even when this
+/// behavior is registered without <c>LoggingBehavior</c> at all.
+/// </para>
 /// <para>
 /// This behavior opens an <see cref="Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction"/> before invoking
 /// the next handler in the pipeline. After the handler completes successfully, it persists pending changes
@@ -46,21 +62,19 @@ using Microsoft.EntityFrameworkCore;
 public class TransactionBehavior<TRequest, TResponse, TContext>(
     Lazy<TContext> db,
     IOutcomeClassifier? classifier = null,
-    IResponseOutcomeDescriber? describer = null
+    IResponseOutcomeDescriber? describer = null,
+    ILogger<TransactionBehavior<TRequest, TResponse, TContext>>? logger = null
 ) : IPipelineBehavior<TRequest, TResponse>
     where TRequest : ITransactionalRequest
     where TContext : DbContext
 {
     private readonly IOutcomeClassifier classifier = classifier ?? OutcomeClassifierBuilder.DefaultClassifier;
 
-    // Accepted for constructor-shape symmetry with LoggingBehavior/AuditingBehavior (which do consume their
-    // own describer for log/audit text) - this behavior does no logging of its own, so the field is currently
-    // unused. Tracked as a follow-up rather than fixed here: removing the constructor parameter is a breaking
-    // API change out of scope for a warnings cleanup.
-#pragma warning disable RCS1213
     private readonly IResponseOutcomeDescriber describer =
         describer ?? new DefaultResponseOutcomeDescriber(classifier ?? OutcomeClassifierBuilder.DefaultClassifier);
-#pragma warning restore RCS1213
+
+    private readonly ILogger<TransactionBehavior<TRequest, TResponse, TContext>> logger =
+        logger ?? NullLogger<TransactionBehavior<TRequest, TResponse, TContext>>.Instance;
 
     /// <inheritdoc/>
     /// <remarks>
@@ -119,12 +133,22 @@ public class TransactionBehavior<TRequest, TResponse, TContext>(
             // All changes persisted successfully. Committing the transaction makes all the SaveChangesAsync
             // changes durable and atomic.
             await transaction.CommitAsync(ct);
+            this.logger.LogDebug(
+                "Committed transaction for {RequestType} with outcome {Outcome}",
+                typeof(TRequest).Name,
+                this.describer.Describe(result)
+            );
         }
         else
         {
             // Outcome classified as failure (not an exception). This is an expected business outcome, not a bug,
             // so rollback any accumulated changes to keep the database consistent with the business decision.
             await transaction.RollbackAsync(ct);
+            this.logger.LogDebug(
+                "Rolled back transaction for {RequestType} with outcome {Outcome}",
+                typeof(TRequest).Name,
+                this.describer.Describe(result)
+            );
         }
 
         return result;

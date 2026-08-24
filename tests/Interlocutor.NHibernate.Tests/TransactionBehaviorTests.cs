@@ -7,6 +7,7 @@ using Interlocutor.Abstractions.Pipeline.Classifiers;
 using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 using Interlocutor.NHibernate;
+using Microsoft.Extensions.Logging;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
@@ -200,6 +201,72 @@ public class TransactionBehaviorTests
         }
     }
 
+    [Fact]
+    public async Task Handle_LogsDebugCommitLine_WhenClassifierReportsSuccess()
+    {
+        // Arrange
+        var session = Substitute.For<ISession>();
+        var transaction = Substitute.For<ITransaction>();
+        session.BeginTransaction().Returns(transaction);
+        var logger = new CapturingLogger<TransactionBehavior<TransactionalTestRequest, OperationOutcome<string, Failure>>>();
+        // "done" is a bare string, not one of the kernel's registered Success/Failure case types, so the
+        // *default* classifier would fail-close it as a failure (see OutcomeClassifierBuilder's fail-closed
+        // policy for unregistered types) - an explicit success-reporting classifier is required here, exactly
+        // like Handle_CommitsSession_WhenClassifierReportsSuccess above.
+        var behavior = new TransactionBehavior<TransactionalTestRequest, OperationOutcome<string, Failure>>(
+            new Lazy<ISession>(() => session),
+            StubClassifier(isFailure: false),
+            logger: logger
+        );
+
+        // Act
+        await behavior.Handle(
+            new TransactionalTestRequest(1),
+            () => Task.FromResult<OperationOutcome<string, Failure>>("done"),
+            CancellationToken.None
+        );
+
+        // Assert
+        // Confirms the commit/rollback diagnostic (ticket 06 follow-up) fires at Debug, distinct from
+        // LoggingBehavior's Information-level line - see the XML remarks on TransactionBehavior for why
+        // the two aren't duplicates. Checking the message text (not just the level) proves the wording is
+        // commit-specific, not just a Debug line that happened to fire.
+        var entry = Assert.Single(logger.Entries, e => e.Level == LogLevel.Debug);
+        Assert.Contains("Committed", entry.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("Rolled back", entry.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Handle_LogsDebugRollbackLine_WhenClassifierReportsFailure()
+    {
+        // Arrange
+        var session = Substitute.For<ISession>();
+        var transaction = Substitute.For<ITransaction>();
+        session.BeginTransaction().Returns(transaction);
+        var logger = new CapturingLogger<TransactionBehavior<TransactionalTestRequest, OperationOutcome<string, Failure>>>();
+        // Failure is one of the kernel's registered case types, so the *default* classifier - unlike the
+        // "done" bare string in the commit-line test above - already reports it as a failure with label
+        // "Failure" without needing a stub classifier; using the real default classifier here also lets the
+        // describer produce real label text for the assertion below.
+        var behavior = new TransactionBehavior<TransactionalTestRequest, OperationOutcome<string, Failure>>(
+            new Lazy<ISession>(() => session),
+            logger: logger
+        );
+
+        // Act
+        await behavior.Handle(
+            new TransactionalTestRequest(1),
+            () => Task.FromResult<OperationOutcome<string, Failure>>(new Failure("boom")),
+            CancellationToken.None
+        );
+
+        // Assert
+        var entry = Assert.Single(logger.Entries, e => e.Level == LogLevel.Debug);
+        Assert.Contains("Rolled back", entry.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("Committed", entry.Message, StringComparison.Ordinal);
+        Assert.Contains("Failure", entry.Message, StringComparison.Ordinal);
+    }
+
     private static IOutcomeClassifier StubClassifier(bool isFailure)
     {
         var classifier = Substitute.For<IOutcomeClassifier>();
@@ -240,4 +307,28 @@ public class TransactionBehaviorTests
         : ICommand<OperationOutcome<string, Failure>>,
             ITransactionalRequest,
             IExternalStoreRequest;
+
+    /// <summary>
+    /// Minimal <see cref="ILogger{TCategoryName}"/> fake that records every <see cref="Log"/> call - used
+    /// instead of <c>Substitute.For&lt;ILogger&lt;...&gt;&gt;()</c> because that requires proxying a closed
+    /// generic over the private nested <see cref="TransactionalTestRequest"/> type, which Castle DynamicProxy
+    /// refuses without an <c>InternalsVisibleTo</c> grant.
+    /// </summary>
+    private sealed class CapturingLogger<T> : ILogger<T>
+    {
+        public List<(LogLevel Level, string Message)> Entries { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state)
+            where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(
+            LogLevel logLevel,
+            EventId eventId,
+            TState state,
+            Exception? exception,
+            Func<TState, Exception?, string> formatter
+        ) => this.Entries.Add((logLevel, formatter(state, exception)));
+    }
 }

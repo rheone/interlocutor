@@ -7,6 +7,7 @@ using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using NSubstitute;
 
 /// <summary>
@@ -161,6 +162,63 @@ public sealed class TransactionBehaviorCommitRollbackTests : IDisposable
         Assert.Empty(verifyContext.Widgets);
     }
 
+    [Fact]
+    public async Task Handle_LogsDebugCommitLine_WhenClassifierReportsSuccess()
+    {
+        // Arrange
+        // A hand-rolled fake rather than Substitute.For<ILogger<...>>: NSubstitute/Castle DynamicProxy cannot
+        // proxy a closed generic over TransactionalRequest, a private nested test type, without granting the
+        // dynamic proxy assembly InternalsVisibleTo access - a fake sidesteps that entirely.
+        var logger =
+            new CapturingLogger<TransactionBehavior<TransactionalRequest, OperationOutcome<Success, Failure>, TestDbContext>>();
+        var behavior = new TransactionBehavior<TransactionalRequest, OperationOutcome<Success, Failure>, TestDbContext>(
+            new Lazy<TestDbContext>(() => this.context),
+            logger: logger
+        );
+
+        // Act
+        await behavior.Handle(
+            new TransactionalRequest(5),
+            () => Task.FromResult<OperationOutcome<Success, Failure>>(default(Success)),
+            CancellationToken.None
+        );
+
+        // Assert
+        // Confirms the commit/rollback diagnostic (ticket 06 follow-up) fires at Debug, distinct from
+        // LoggingBehavior's Information-level line - see the XML remarks on TransactionBehavior for why
+        // the two aren't duplicates. Checking the message text (not just the level) proves the describer's
+        // output actually reaches the line and that commit vs. rollback wording isn't swapped.
+        var entry = Assert.Single(logger.Entries, e => e.Level == LogLevel.Debug);
+        Assert.Contains("Committed", entry.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("Rolled back", entry.Message, StringComparison.Ordinal);
+        Assert.Contains("Success", entry.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Handle_LogsDebugRollbackLine_WhenClassifierReportsFailure()
+    {
+        // Arrange
+        var logger =
+            new CapturingLogger<TransactionBehavior<TransactionalRequest, OperationOutcome<Success, Failure>, TestDbContext>>();
+        var behavior = new TransactionBehavior<TransactionalRequest, OperationOutcome<Success, Failure>, TestDbContext>(
+            new Lazy<TestDbContext>(() => this.context),
+            logger: logger
+        );
+
+        // Act
+        await behavior.Handle(
+            new TransactionalRequest(6),
+            () => Task.FromResult<OperationOutcome<Success, Failure>>(new Failure("rejected")),
+            CancellationToken.None
+        );
+
+        // Assert
+        var entry = Assert.Single(logger.Entries, e => e.Level == LogLevel.Debug);
+        Assert.Contains("Rolled back", entry.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("Committed", entry.Message, StringComparison.Ordinal);
+        Assert.Contains("Failure", entry.Message, StringComparison.Ordinal);
+    }
+
     public void Dispose()
     {
         this.context.Dispose();
@@ -214,5 +272,29 @@ public sealed class TransactionBehaviorCommitRollbackTests : IDisposable
         public int Id { get; set; }
 
         public string Name { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// Minimal <see cref="ILogger{TCategoryName}"/> fake that records every <see cref="Log"/> call - used
+    /// instead of <c>Substitute.For&lt;ILogger&lt;...&gt;&gt;()</c> because that requires proxying a closed
+    /// generic over the private nested <see cref="TransactionalRequest"/> type, which Castle DynamicProxy
+    /// refuses without an <c>InternalsVisibleTo</c> grant.
+    /// </summary>
+    private sealed class CapturingLogger<T> : ILogger<T>
+    {
+        public List<(LogLevel Level, string Message)> Entries { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state)
+            where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(
+            LogLevel logLevel,
+            EventId eventId,
+            TState state,
+            Exception? exception,
+            Func<TState, Exception?, string> formatter
+        ) => this.Entries.Add((logLevel, formatter(state, exception)));
     }
 }

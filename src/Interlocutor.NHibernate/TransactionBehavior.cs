@@ -5,6 +5,8 @@ using Interlocutor.Abstractions.Markers;
 using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Pipeline.Classifiers;
 using Interlocutor.CommonKernel.ResultTypes;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 /// <summary>
 /// Wraps transactional request handler execution in an NHibernate database transaction.
@@ -19,7 +21,21 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// <param name="session">Lazy factory for the NHibernate <see cref="ISession"/> instance that provides the database transaction.</param>
 /// <param name="classifier">The outcome classifier used to determine success vs. failure for rollback decisions.</param>
 /// <param name="describer">Optional custom describer for converting response outcomes to human-readable strings for logging. Defaults to default classifier-based describer.</param>
+/// <param name="logger">
+/// Optional logger for a debug-level line recording the commit/rollback decision. Defaults to
+/// <see cref="NullLogger{T}.Instance"/> when not supplied via DI. See the "Diagnostics" remarks section below
+/// for how this differs from <see cref="LoggingBehavior{TRequest,TResponse}"/>.
+/// </param>
 /// <remarks>
+/// <para>
+/// <b>Diagnostics:</b> this behavior emits one <see cref="LogLevel.Debug"/> line per invocation, naming
+/// whether it committed or rolled back and the <paramref name="describer"/>-rendered outcome that drove that
+/// decision. This is not a duplicate of <see cref="LoggingBehavior{TRequest,TResponse}"/>'s
+/// <see cref="LogLevel.Information"/> line: <c>LoggingBehavior</c> reports the pipeline's final response and
+/// knows nothing about the transaction; this line reports the <see cref="IOutcomeClassifier"/> verdict that
+/// this behavior itself acted on to decide commit versus rollback, which stays useful even when this
+/// behavior is registered without <c>LoggingBehavior</c> at all.
+/// </para>
 /// <para>
 /// This behavior begins an <see cref="ITransaction"/> on the NHibernate <see cref="ISession"/> before invoking
 /// the next handler in the pipeline. If the handler completes successfully, the transaction is committed,
@@ -44,20 +60,18 @@ using Interlocutor.CommonKernel.ResultTypes;
 public class TransactionBehavior<TRequest, TResponse>(
     Lazy<ISession> session,
     IOutcomeClassifier? classifier = null,
-    IResponseOutcomeDescriber? describer = null
+    IResponseOutcomeDescriber? describer = null,
+    ILogger<TransactionBehavior<TRequest, TResponse>>? logger = null
 ) : IPipelineBehavior<TRequest, TResponse>
     where TRequest : ITransactionalRequest
 {
     private readonly IOutcomeClassifier classifier = classifier ?? OutcomeClassifierBuilder.DefaultClassifier;
 
-    // Accepted for constructor-shape symmetry with LoggingBehavior/AuditingBehavior (which do consume their
-    // own describer for log/audit text) - this behavior does no logging of its own, so the field is currently
-    // unused. Tracked as a follow-up rather than fixed here: removing the constructor parameter is a breaking
-    // API change out of scope for a warnings cleanup.
-#pragma warning disable RCS1213
-    private readonly IResponseOutcomeDescriber _describer =
+    private readonly IResponseOutcomeDescriber describer =
         describer ?? new DefaultResponseOutcomeDescriber(classifier ?? OutcomeClassifierBuilder.DefaultClassifier);
-#pragma warning restore RCS1213
+
+    private readonly ILogger<TransactionBehavior<TRequest, TResponse>> logger =
+        logger ?? NullLogger<TransactionBehavior<TRequest, TResponse>>.Instance;
 
     /// <inheritdoc/>
     /// <remarks>
@@ -101,12 +115,22 @@ public class TransactionBehavior<TRequest, TResponse>(
             // and then commits the transaction, making all changes durable and atomic. Unlike EF Core, NHibernate
             // doesn't require an explicit SaveChanges call - flushing happens automatically on commit.
             await transaction.CommitAsync(ct);
+            this.logger.LogDebug(
+                "Committed transaction for {RequestType} with outcome {Outcome}",
+                typeof(TRequest).Name,
+                this.describer.Describe(result)
+            );
         }
         else
         {
             // Outcome classified as failure (not an exception). This is an expected business outcome, not a bug,
             // so rollback any unflushed changes to keep the database consistent with the business decision.
             await transaction.RollbackAsync(ct);
+            this.logger.LogDebug(
+                "Rolled back transaction for {RequestType} with outcome {Outcome}",
+                typeof(TRequest).Name,
+                this.describer.Describe(result)
+            );
         }
 
         return result;
