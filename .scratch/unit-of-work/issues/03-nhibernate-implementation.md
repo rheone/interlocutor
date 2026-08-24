@@ -16,12 +16,12 @@ New project `src/Interlocutor.Persistence.NHibernate/Interlocutor.Persistence.NH
 
 ## Acceptance criteria
 
-- [ ] `Interlocutor.Persistence.NHibernate` project exists, builds, references exactly `Interlocutor.Persistence.Abstractions` + `NHibernate`
-- [ ] `IUnitOfWork` and `IDomainRepository<TEntity,TKey>` both have NHibernate implementations
-- [ ] Filter/sort/paging translate through `ISession.Query<TEntity>()`'s LINQ provider, not materialized before filtering
-- [ ] Integration test proves a repository call and a flush through `IUnitOfWork` participate in the same `ISession` instance as `TransactionBehavior` sees for the same dispatch
-- [ ] `dotnet csharpier .` produces no diff
-- [ ] `dotnet build` and `dotnet test` pass for the new test project
+- [x] `Interlocutor.Persistence.NHibernate` project exists, builds, references exactly `Interlocutor.Persistence.Abstractions` + `NHibernate`
+- [x] `IUnitOfWork` and `IDomainRepository<TEntity,TKey>` both have NHibernate implementations
+- [x] Filter/sort/paging translate through `ISession.Query<TEntity>()`'s LINQ provider, not materialized before filtering
+- [x] Integration test proves a repository call and a flush through `IUnitOfWork` participate in the same `ISession` instance as `TransactionBehavior` sees for the same dispatch
+- [x] `dotnet csharpier .` produces no diff
+- [x] `dotnet build` and `dotnet test` pass for the new test project
 
 ## Blocked by
 
