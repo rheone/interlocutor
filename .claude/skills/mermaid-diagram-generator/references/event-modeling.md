@@ -9,6 +9,10 @@ source: https://mermaid.js.org/syntax/eventmodeling.html
 last_verified: 2026-08-09
 plugin_required: false
 gitlab_compatible: false
+github_compatible: false
+vscode_compatible: true
+obsidian_compatible: unknown
+notion_compatible: unknown
 ---
 
 # Event Modeling
@@ -85,14 +89,6 @@ tf 10 rmo OrderConfirmation ->> 07 ->> 09 {order id, total, reserved items}
 
 ## Beta/experimental caveats
 This is Mermaid's newest diagram type (v11.15.0+) and its docs note that the underlying grammar is developed in a separate external DSL project intended to eventually support multiple output targets (e.g. IDE tooling), which signals the syntax is still actively evolving outside the main Mermaid release cadence. Always tell the user this diagram type requires Mermaid v11.15.0 or later (this skill is pinned to 11.16.1, which satisfies that), and that both the compact/relaxed keyword set and the inference/namespace rules are more likely than stable diagram types to change in a future Mermaid release.
-
-## Platform compatibility
-
-**GitLab:** Likely *not* yet supported - GitLab.com documents supporting Mermaid version 10 (checked 2026-08-15, [source](https://docs.gitlab.com/user/markdown/#diagrams-and-flowcharts)), and this type was introduced in v11.15.0, after that line. GitLab's pinned version moves independently of this skill and may have caught up since - reconfirm against the source before assuming this is still accurate.
-
-**GitHub:** Unconfirmed either way - GitHub's own docs don't publish an exhaustive list of supported Mermaid diagram types (they name "flowcharts, sequence diagrams, pie charts and more" as examples, not a complete list), and community reports on which newer types render are inconsistent/contradictory. Don't promise this type renders on GitHub without testing it there directly (e.g. a scratch gist or PR comment).
-
-**VS Code / Obsidian / Notion / similar:** Depends entirely on that specific tool's own bundled or extension-provided Mermaid version, which updates independently of this skill's pin and of every other tool in this list - there is no single answer here. As Mermaid's newest/least-stable diagram types, don't assume support anywhere except a tool pinned to a very recent Mermaid release (or mermaid.live itself) without checking first. Confirm in the specific target tool before relying on this type there.
 
 ## Further reading
 - https://mermaid.js.org/syntax/eventmodeling.html

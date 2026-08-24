@@ -9,6 +9,10 @@ source: https://mermaid.js.org/syntax/entityRelationshipDiagram.html
 last_verified: 2026-08-09
 plugin_required: false
 gitlab_compatible: true
+github_compatible: true
+vscode_compatible: unknown
+obsidian_compatible: unknown
+notion_compatible: unknown
 ---
 
 # Entity Relationship Diagram
@@ -39,7 +43,7 @@ An ER diagram maps the entities (tables, domain objects) in a system and the rel
   - `}o` / `o{` - zero or more (many)
   - `}|` / `|{` - one or more (many)
 - Entity names: unicode allowed; wrap in double quotes if the name contains spaces, e.g. `"Line Item"`.
-- Attribute block: `EntityName { type name key "comment" ... }`, one attribute per line (or comma-separated), where `key` is an optional `PK`, `FK`, or `UK` (comma-separated if an attribute is more than one), and `type` can carry an optional `?` suffix to mark the attribute nullable (v11.16.0+).
+- Attribute block: `EntityName { type name key "comment" ... }`, one attribute per line (or comma-separated), where `key` is an optional `PK`, `FK`, or `UK` (comma-separated if an attribute is more than one). A `type` may carry a `?` suffix to mark the attribute nullable, but **this requires Mermaid >= 11.16.0** - on older versions (e.g. GitLab's Mermaid v10 pin) `date?` throws `Parse error ... Expecting 'ATTRIBUTE_WORD', got '?'`. Prefer a trailing comment (e.g. `date shipped_at "nullable"`) to stay portable across platforms; only use the `?` suffix when the target renderer is known to be 11.16.0+.
 - Aliases: `EntityName["Display Alias"]` shows an alternate label without changing the identifier used in relationship statements.
 - Direction: `TB`, `BT`, `LR`, `RL`.
 - Styling: `style entityId ...`, and `classDef`/`class` for reusable style classes, same as other Mermaid diagram types.
@@ -63,7 +67,7 @@ erDiagram
     ORDER {
         int id PK
         int customer_id FK
-        date? shipped_at "null until fulfilled"
+        date shipped_at "nullable"
         string status
     }
     "LINE ITEM" {
@@ -89,7 +93,7 @@ erDiagram
     ORDER ||--o{ PAYMENT : "paid via"
     CUSTOMER ||--o{ PAYMENT : "billed to"
 ```
-Attribute blocks turn each entity into a mini schema definition; `PK`/`FK`/`UK` markers document keys directly, and the `date?` optional-type suffix flags a nullable column without needing a separate comment.
+Attribute blocks turn each entity into a mini schema definition; `PK`/`FK`/`UK` markers document keys directly, and a trailing comment (`"nullable"`) flags a nullable column without needing the `?` type suffix - deliberately, so the example stays portable to Mermaid versions below 11.16.0 (see the note under "Basic syntax" above).
 
 ## Escaping & special characters
 - Any entity name, attribute name, or relationship label containing a space, punctuation, or reserved character must be double-quoted: `"LINE ITEM"`, `"ordered as"`.
@@ -104,17 +108,10 @@ Attribute blocks turn each entity into a mini schema definition; `PK`/`FK`/`UK` 
 - Omitting quotes around a multi-word entity name or label, which breaks parsing rather than degrading gracefully.
 - Using `--` (identifying) when the relationship is actually optional/non-identifying (`..`), which changes the rendered line style and, in some ER conventions, the implied meaning.
 - Assuming attribute blocks are required - they are optional, and a relationship-only diagram is valid and often clearer for a quick sketch.
+- Using the `?` optional-type suffix (`date?`) on an attribute type without confirming the target renderer is Mermaid >= 11.16.0. On older versions (GitLab's Mermaid v10 pin, some offline tools) this fails with `Parse error ... Expecting 'ATTRIBUTE_WORD', got '?'` rather than degrading gracefully - use a trailing comment to mark nullability instead.
 
 ## Beta/experimental caveats
-The live Mermaid documentation for this diagram type does not carry an explicit "experimental" banner in its prose - ER diagrams have existed in Mermaid since before v10 and are broadly usable. This skill nonetheless tracks the diagram as experimental-tier for planning purposes, so mention to the user that cardinality-notation edge cases and attribute-block formatting (e.g. the `?` optional-type suffix, which only landed in v11.16.0) are newer additions worth double-checking against the currently pinned Mermaid version (11.16.1) before relying on them in a rendered diagram.
-
-## Platform compatibility
-
-**GitLab:** Likely compatible - GitLab.com documents supporting Mermaid version 10 (checked 2026-08-15, [source](https://docs.gitlab.com/user/markdown/#diagrams-and-flowcharts)), and this type was introduced in a pre-v10 release, at or before that line. GitLab's pinned version moves independently of this skill - reconfirm against the source before depending on it for anything long-lived.
-
-**GitHub:** Unconfirmed either way - GitHub's own docs don't publish an exhaustive list of supported Mermaid diagram types (they name "flowcharts, sequence diagrams, pie charts and more" as examples, not a complete list), and community reports on which newer types render are inconsistent/contradictory. Don't promise this type renders on GitHub without testing it there directly (e.g. a scratch gist or PR comment).
-
-**VS Code / Obsidian / Notion / similar:** Depends entirely on that specific tool's own bundled or extension-provided Mermaid version, which updates independently of this skill's pin and of every other tool in this list - there is no single answer here. As Mermaid's newest/least-stable diagram types, don't assume support anywhere except a tool pinned to a very recent Mermaid release (or mermaid.live itself) without checking first. Confirm in the specific target tool before relying on this type there.
+The live Mermaid documentation for this diagram type does not carry an explicit "experimental" banner in its prose - ER diagrams have existed in Mermaid since before v10 and are broadly usable. This skill nonetheless tracks the diagram as experimental-tier for planning purposes, so mention to the user that cardinality-notation edge cases and attribute-block formatting are newer additions worth double-checking against the currently pinned Mermaid version (11.16.1) before relying on them in a rendered diagram. The `?` optional-type suffix is the most fragile of these: it only landed in v11.16.0, so it breaks on any renderer pinned below that (GitLab's Mermaid v10, older mermaid-cli). Default to expressing nullability with a comment and only emit `date?` when the user confirms the target renderer is 11.16.0+.
 
 ## Further reading
 - https://mermaid.js.org/syntax/entityRelationshipDiagram.html

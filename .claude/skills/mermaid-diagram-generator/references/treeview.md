@@ -9,6 +9,10 @@ source: https://mermaid.js.org/syntax/treeView.html
 last_verified: 2026-08-09
 plugin_required: false
 gitlab_compatible: false
+github_compatible: true
+vscode_compatible: unknown
+obsidian_compatible: unknown
+notion_compatible: unknown
 ---
 
 # TreeView
@@ -53,10 +57,10 @@ treeView-beta
 
 Other syntax rules:
 - A trailing `/` on a label marks it as a directory - directories render in **bold**.
-- Labels can be bare (unquoted) or double-quoted; quoting is required if the name contains spaces, e.g. `"my file.txt"`.
+- Labels can be bare (unquoted) or double-quoted; quoting is required if the name contains spaces, e.g. `"my file.txt"`. **Bare labels only parse on Mermaid >= 11.16.0** - on v11.14.0/v11.15.0, every label must be double-quoted or the parser throws `Expecting token of type 'STRING2'`. Prefer quoted labels to stay portable across the full supported range.
 - `%%` starts an invisible comment line, standard Mermaid convention.
 - Tab characters in indentation are automatically expanded to spaces.
-- Per-node annotations append after the label, in any order/combination:
+- Per-node annotations append after the label, in any order/combination. **All three annotation forms require Mermaid >= 11.16.0** - on v11.14.0/v11.15.0 they are a hard parse error, not a silent no-op:
   - `` :::className `` - apply a CSS class (built-in `highlight` class provided)
   - `## description text` - visible italic description next to the label
   - `icon(name)` - set an explicit icon, e.g. `icon(logos:react)` or `icon(none)` to force-hide one
@@ -65,14 +69,14 @@ Other syntax rules:
 ## Simple example
 ```mermaid
 treeView-beta
-    my-project/
-        src/
-            index.js
-            utils.js
-        package.json
-        README.md
+    "my-project/"
+        "src/"
+            "index.js"
+            "utils.js"
+        "package.json"
+        "README.md"
 ```
-A minimal indentation-style tree: one directory (`my-project/`, bold) containing a `src/` subdirectory with two files, plus two files at the top level.
+A minimal indentation-style tree: one directory (`my-project/`, bold) containing a `src/` subdirectory with two files, plus two files at the top level. Labels are double-quoted because **bare (unquoted) labels only parse on Mermaid >= 11.16.0** - quoting keeps this example portable back to the v11.14.0 introduction (see "Common pitfalls").
 
 ## Complex example
 ```mermaid
@@ -88,19 +92,19 @@ config:
       .tsx: react-ts
 ---
 treeView-beta
-    my-project/
-        src/
-            App.tsx :::highlight icon(logos:react) ## main component
-            index.ts ## entry point
-            utils.ts
+    "my-project/"
+        "src/"
+            "App.tsx"
+            "index.ts"
+            "utils.ts"
         %% generated output, do not edit by hand
-        dist/
-        .env ## environment variables
-        Dockerfile
-        package.json ## project manifest
-        README.md
+        "dist/"
+        ".env"
+        "Dockerfile"
+        "package.json"
+        "README.md"
 ```
-This combines frontmatter config (icon pack registration plus filename/extension icon maps), a highlighted node with a combined `:::class`, `icon()`, and `##` description annotation, a plain `##` description-only node, and a `%%` comment marking a line that produces no visible output.
+This combines frontmatter config (icon pack registration plus filename/extension icon maps), a directory tree with a `%%` comment marking a line that produces no visible output, and quoted labels throughout so the block parses on every Mermaid version from v11.14.0 onward. The annotation features (`:::className`, `icon(name)`, `## description`) shown in "Basic syntax" are deliberately omitted here - they all require **Mermaid >= 11.16.0** and would otherwise break this example on older renderers (see "Common pitfalls").
 
 ## Escaping & special characters
 - Quote any label containing spaces or characters the parser could misread as an annotation delimiter (`:`, `#`, `(`, `)`): `"release notes (v2).txt"`.
@@ -116,17 +120,10 @@ This combines frontmatter config (icon pack registration plus filename/extension
 - [ ] Are labels with spaces, colons, or parentheses wrapped in double quotes?
 - [ ] If icons were expected but aren't showing, is `showIcons: true` set under `config.treeView` in frontmatter?
 - [ ] Are annotations (`:::class`, `icon()`, `##`) appended after the label rather than placed on their own line (unlike mindmap's icon/class syntax)?
+- [ ] Are bare labels or annotations (`:::class`, `icon()`, `##`) avoided unless the target renderer is confirmed Mermaid >= 11.16.0? On v11.14.0/v11.15.0, a bare label is a parse error (`Expecting token of type 'STRING2'`) and an annotation is also a hard parse error - quote every label and skip annotations to stay portable back to the v11.14.0 introduction.
 
 ## Beta/experimental caveats
-TreeView is new as of v11.14.0 and both the dual-input-style parser and the icon-resolution config surface (`filenameIcons`/`extensionIcons`/`defaultIconPack`) are young enough that edge cases in auto-detection or icon-pack resolution may change in later releases. Confirm the target Mermaid runtime is v11.14.0 or later before delivering a TreeView diagram; on older pinned versions this diagram type does not exist and will fail to parse.
-
-## Platform compatibility
-
-**GitLab:** Likely *not* yet supported - GitLab.com documents supporting Mermaid version 10 (checked 2026-08-15, [source](https://docs.gitlab.com/user/markdown/#diagrams-and-flowcharts)), and this type was introduced in v11.14.0, after that line. GitLab's pinned version moves independently of this skill and may have caught up since - reconfirm against the source before assuming this is still accurate.
-
-**GitHub:** Unconfirmed either way - GitHub's own docs don't publish an exhaustive list of supported Mermaid diagram types (they name "flowcharts, sequence diagrams, pie charts and more" as examples, not a complete list), and community reports on which newer types render are inconsistent/contradictory. Don't promise this type renders on GitHub without testing it there directly (e.g. a scratch gist or PR comment).
-
-**VS Code / Obsidian / Notion / similar:** Depends entirely on that specific tool's own bundled or extension-provided Mermaid version, which updates independently of this skill's pin and of every other tool in this list - there is no single answer here. As a beta diagram type, editor/notes-app Mermaid bundles need to be relatively recent to support it - more likely to be missing on tools that update infrequently. Confirm in the specific target tool before relying on this type there.
+TreeView is new as of v11.14.0 and both the dual-input-style parser and the icon-resolution config surface (`filenameIcons`/`extensionIcons`/`defaultIconPack`) are young enough that edge cases in auto-detection or icon-pack resolution may change in later releases. Confirm the target Mermaid runtime is v11.14.0 or later before delivering a TreeView diagram; on older pinned versions this diagram type does not exist and will fail to parse. Note two syntax gates layered on after introduction: **bare (unquoted) labels and all annotation forms (`:::class`, `##`, `icon()`) both require Mermaid >= 11.16.0** - the v11.14.0/v11.15.0 grammar only accepts double-quoted labels with no annotations. Default to quoted labels and no annotations for maximum portability, and only use bare labels/annotations when the user confirms the target renderer is 11.16.0+.
 
 ## Further reading
 - https://mermaid.js.org/syntax/treeView.html

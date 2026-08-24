@@ -9,6 +9,10 @@ source: https://mermaid.js.org/syntax/wardley.html
 last_verified: 2026-08-09
 plugin_required: false
 gitlab_compatible: false
+github_compatible: true
+vscode_compatible: true
+obsidian_compatible: unknown
+notion_compatible: unknown
 ---
 
 # Wardley
@@ -111,14 +115,6 @@ Custom evolution stage boundaries are defined up front; components carry build/b
 
 ## Beta/experimental caveats
 Wardley diagrams are beta as of v11.14.0; component/link/decorator grammar and config option names may still change in minor releases. When delivering this diagram type, note it requires Mermaid v11.14.0 or later and that flow-link tokens (`+>`, `+<>`, `+'label'>`) in particular are newer, less-common syntax worth spot-checking against the target renderer.
-
-## Platform compatibility
-
-**GitLab:** Likely *not* yet supported - GitLab.com documents supporting Mermaid version 10 (checked 2026-08-15, [source](https://docs.gitlab.com/user/markdown/#diagrams-and-flowcharts)), and this type was introduced in v11.14.0, after that line. GitLab's pinned version moves independently of this skill and may have caught up since - reconfirm against the source before assuming this is still accurate.
-
-**GitHub:** Unconfirmed either way - GitHub's own docs don't publish an exhaustive list of supported Mermaid diagram types (they name "flowcharts, sequence diagrams, pie charts and more" as examples, not a complete list), and community reports on which newer types render are inconsistent/contradictory. Don't promise this type renders on GitHub without testing it there directly (e.g. a scratch gist or PR comment).
-
-**VS Code / Obsidian / Notion / similar:** Depends entirely on that specific tool's own bundled or extension-provided Mermaid version, which updates independently of this skill's pin and of every other tool in this list - there is no single answer here. As a beta diagram type, editor/notes-app Mermaid bundles need to be relatively recent to support it - more likely to be missing on tools that update infrequently. Confirm in the specific target tool before relying on this type there.
 
 ## Further reading
 - https://mermaid.js.org/syntax/wardley.html

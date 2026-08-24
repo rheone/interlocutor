@@ -9,6 +9,10 @@ source: https://mermaid.js.org/syntax/block.html
 last_verified: 2026-08-09
 plugin_required: false
 gitlab_compatible: true
+github_compatible: true
+vscode_compatible: true
+obsidian_compatible: unknown
+notion_compatible: unknown
 ---
 
 # Block
@@ -92,14 +96,6 @@ A three-column grid places `Frontend` and `Backend` with a block arrow between t
 
 ## Beta/experimental caveats
 Requires Mermaid v10.8.0 or later; this version was not stated on the doc page itself and is cross-referenced from the mermaid-js/mermaid GitHub release notes ("Adding new diagram type - Block Diagram"). The doc page itself carries no explicit "experimental" warning banner (unlike Sankey/Treemap), but block diagrams remain newer and less battle-tested than flowchart/sequence - expect possible shape or layout-option changes on future upgrades. Note that the canonical keyword confirmed across every example on the current doc page is plain `block`, not `block-beta` (the `-beta` form is still accepted as a legacy alias per the diagram detector in the mermaid-js/mermaid source, but isn't what the docs themselves use).
-
-## Platform compatibility
-
-**GitLab:** Likely compatible - GitLab.com documents supporting Mermaid version 10 (checked 2026-08-15, [source](https://docs.gitlab.com/user/markdown/#diagrams-and-flowcharts)), and this type was introduced in v10.8.0, at or before that line. GitLab's pinned version moves independently of this skill - reconfirm against the source before depending on it for anything long-lived.
-
-**GitHub:** Unconfirmed either way - GitHub's own docs don't publish an exhaustive list of supported Mermaid diagram types (they name "flowcharts, sequence diagrams, pie charts and more" as examples, not a complete list), and community reports on which newer types render are inconsistent/contradictory. Don't promise this type renders on GitHub without testing it there directly (e.g. a scratch gist or PR comment).
-
-**VS Code / Obsidian / Notion / similar:** Depends entirely on that specific tool's own bundled or extension-provided Mermaid version, which updates independently of this skill's pin and of every other tool in this list - there is no single answer here. As a beta diagram type, editor/notes-app Mermaid bundles need to be relatively recent to support it - more likely to be missing on tools that update infrequently. Confirm in the specific target tool before relying on this type there.
 
 ## Further reading
 - https://mermaid.js.org/syntax/block.html

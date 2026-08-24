@@ -9,6 +9,10 @@ source: https://mermaid.js.org/syntax/zenuml.html
 last_verified: 2026-08-09
 plugin_required: true
 gitlab_compatible: true
+github_compatible: false
+vscode_compatible: true
+obsidian_compatible: unknown
+notion_compatible: unknown
 ---
 
 # ZenUML
@@ -120,14 +124,6 @@ This nests a sync call inside a `try/catch/finally` block, mixes a creation mess
 The mermaid docs describe ZenUML as using "experimental lazy loading & async rendering features which could change in the future," and - more fundamentally - it is an *external* diagram type shipped in its own package, not bundled with mermaid core. Any environment that doesn't explicitly load and register `@mermaid-js/mermaid-zenuml` will fail to render a `zenuml` block even though the syntax itself is valid. Confirm plugin support before promising ZenUML output in a given tool.
 
 This skill's own validator (`tools/validate-mermaid.mjs`) registers `@mermaid-js/mermaid-zenuml@0.2.3` (confirmed compatible with the pinned `mermaid@11.16.1` via its `peerDependencies`) before checking the examples below, so both examples on this page are exercised by `--mode parse`, not skipped. That only confirms the *grammar* parses under jsdom, though - `--mode render` (real browser) doesn't register the plugin yet, so full SVG rendering of ZenUML is still unverified by this skill's tooling. The guidance above about confirming plugin registration in your own target renderer still applies - this skill validating its own examples doesn't mean every consuming tool has the plugin loaded.
-
-## Platform compatibility
-
-**GitLab:** Likely compatible - GitLab.com documents supporting Mermaid version 10 (checked 2026-08-15, [source](https://docs.gitlab.com/user/markdown/#diagrams-and-flowcharts)), and this type was introduced in v10.2.0, at or before that line. GitLab's pinned version moves independently of this skill - reconfirm against the source before depending on it for anything long-lived.
-
-**GitHub:** Unconfirmed either way - GitHub's own docs don't publish an exhaustive list of supported Mermaid diagram types (they name "flowcharts, sequence diagrams, pie charts and more" as examples, not a complete list), and community reports on which newer types render are inconsistent/contradictory. Don't promise this type renders on GitHub without testing it there directly (e.g. a scratch gist or PR comment).
-
-**VS Code / Obsidian / Notion / similar:** Depends entirely on that specific tool's own bundled or extension-provided Mermaid version, which updates independently of this skill's pin and of every other tool in this list - there is no single answer here. As a stable, long-established diagram type, editor/notes-app Mermaid bundles are more likely (but not guaranteed) to be current enough to support it. Confirm in the specific target tool before relying on this type there.
 
 ## Further reading
 

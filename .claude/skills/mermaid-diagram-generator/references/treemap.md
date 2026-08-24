@@ -9,6 +9,10 @@ source: https://mermaid.js.org/syntax/treemap.html
 last_verified: 2026-08-09
 plugin_required: false
 gitlab_compatible: false
+github_compatible: true
+vscode_compatible: unknown
+obsidian_compatible: unknown
+notion_compatible: unknown
 ---
 
 # Treemap
@@ -94,14 +98,6 @@ A three-level hierarchy (Company Budget → department → line item) is combine
 
 ## Beta/experimental caveats
 Mermaid's own docs flag treemap as "a new diagram type" whose syntax "may evolve in future versions" - expect possible breaking changes to node/leaf grammar or config option names on future Mermaid upgrades. Requires Mermaid v11.8.0 or later (this version was not stated on the doc page itself; it's cross-referenced from the mermaid-js/mermaid GitHub release notes, where treemap first appears as "Adding support for the new diagram type nested treemap"). Note that as of this writing, the docs also mention a Sunburst (radial hierarchy) diagram as a planned-but-unreleased alternative - don't offer it as an option.
-
-## Platform compatibility
-
-**GitLab:** Likely *not* yet supported - GitLab.com documents supporting Mermaid version 10 (checked 2026-08-15, [source](https://docs.gitlab.com/user/markdown/#diagrams-and-flowcharts)), and this type was introduced in v11.8.0, after that line. GitLab's pinned version moves independently of this skill and may have caught up since - reconfirm against the source before assuming this is still accurate.
-
-**GitHub:** Unconfirmed either way - GitHub's own docs don't publish an exhaustive list of supported Mermaid diagram types (they name "flowcharts, sequence diagrams, pie charts and more" as examples, not a complete list), and community reports on which newer types render are inconsistent/contradictory. Don't promise this type renders on GitHub without testing it there directly (e.g. a scratch gist or PR comment).
-
-**VS Code / Obsidian / Notion / similar:** Depends entirely on that specific tool's own bundled or extension-provided Mermaid version, which updates independently of this skill's pin and of every other tool in this list - there is no single answer here. As a beta diagram type, editor/notes-app Mermaid bundles need to be relatively recent to support it - more likely to be missing on tools that update infrequently. Confirm in the specific target tool before relying on this type there.
 
 ## Further reading
 - https://mermaid.js.org/syntax/treemap.html

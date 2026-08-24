@@ -9,6 +9,10 @@ source: https://mermaid.js.org/syntax/mindmap.html
 last_verified: 2026-08-09
 plugin_required: false
 gitlab_compatible: true
+github_compatible: true
+vscode_compatible: true
+obsidian_compatible: unknown
+notion_compatible: unknown
 ---
 
 # Mindmap
@@ -135,14 +139,6 @@ This combines five node shapes (circle root, square, rounded, cloud, bang), a cl
 ## Beta/experimental caveats
 
 The overall outline/shape syntax is stable, but the mermaid docs explicitly call icon integration (`::icon()`) the still-experimental piece - behavior there may change across releases even though the rest of the syntax won't.
-
-## Platform compatibility
-
-**GitLab:** Likely compatible - GitLab.com documents supporting Mermaid version 10 (checked 2026-08-15, [source](https://docs.gitlab.com/user/markdown/#diagrams-and-flowcharts)), and this type was introduced in v9.2.0, at or before that line. GitLab's pinned version moves independently of this skill - reconfirm against the source before depending on it for anything long-lived.
-
-**GitHub:** Unconfirmed either way - GitHub's own docs don't publish an exhaustive list of supported Mermaid diagram types (they name "flowcharts, sequence diagrams, pie charts and more" as examples, not a complete list), and community reports on which newer types render are inconsistent/contradictory. Don't promise this type renders on GitHub without testing it there directly (e.g. a scratch gist or PR comment).
-
-**VS Code / Obsidian / Notion / similar:** Depends entirely on that specific tool's own bundled or extension-provided Mermaid version, which updates independently of this skill's pin and of every other tool in this list - there is no single answer here. As a stable, long-established diagram type, editor/notes-app Mermaid bundles are more likely (but not guaranteed) to be current enough to support it. Confirm in the specific target tool before relying on this type there.
 
 ## Further reading
 
