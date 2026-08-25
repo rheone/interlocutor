@@ -1,7 +1,5 @@
 > **Status: done** - implemented on the `improvements` branch (commit `e75e815`): `CrossAssemblyContainerResolutionTests` exercises real `Microsoft.Extensions.DependencyInjection` and Autofac containers against a handler declared only in a referenced library assembly. `GeneratorTestHarness` gained `EmitAndLoadAssembly` - compiles and emits a real in-memory PE via `Compilation.Emit`, loads it via `Assembly.Load`, and repeats for an app assembly referencing the library's real PE - simulating a genuine project reference rather than an in-memory `Compilation` reference. Ticket 12's "Container coverage gap" comment is closed out.
 
-Status: ready-for-agent
-
 ## Labels
 
 ready-for-agent
