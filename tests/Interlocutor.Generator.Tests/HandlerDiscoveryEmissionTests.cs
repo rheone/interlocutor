@@ -27,8 +27,10 @@ public sealed class HandlerDiscoveryEmissionTests
         """;
 
     [Fact]
-    public void Discovers_query_handler_and_produces_no_diagnostics()
+    public void HandlerDiscovery_QueryHandler_ProducesNoDiagnostics_Test()
     {
+        // Arrange
+        // (no separate setup; uses class fixtures or direct act/assert)
         // Act
         var result = GeneratorTestHarness.Run(SingleQueryHandlerSource);
 
@@ -38,8 +40,10 @@ public sealed class HandlerDiscoveryEmissionTests
     }
 
     [Fact]
-    public void Registration_module_emits_a_registration_built_from_typeof_only()
+    public void RegistrationModule_HandlerDiscovered_EmitsTypeofOnly_Test()
     {
+        // Arrange
+        // (no separate setup; uses class fixtures or direct act/assert)
         // Act
         var result = GeneratorTestHarness.Run(SingleQueryHandlerSource);
 
@@ -80,8 +84,10 @@ public sealed class HandlerDiscoveryEmissionTests
     }
 
     [Fact]
-    public void Dispatch_wrapper_resolves_handler_from_the_container_and_never_constructs_it_directly()
+    public void DispatchWrapper_HandlerResolution_ResolvesFromContainer_Test()
     {
+        // Arrange
+        // (no separate setup; uses class fixtures or direct act/assert)
         // Act
         var result = GeneratorTestHarness.Run(SingleQueryHandlerSource);
 
@@ -106,8 +112,10 @@ public sealed class HandlerDiscoveryEmissionTests
     }
 
     [Fact]
-    public void Emitted_code_compiles_cleanly_alongside_the_source_it_was_generated_from()
+    public void GeneratedCode_WithSourceHandler_CompilesCleanly_Test()
     {
+        // Arrange
+        // (no separate setup; uses class fixtures or direct act/assert)
         // Act
         var outputCompilation = GeneratorTestHarness.RunAndUpdate(SingleQueryHandlerSource, out var generatorDiagnostics);
 
@@ -122,7 +130,7 @@ public sealed class HandlerDiscoveryEmissionTests
     }
 
     [Fact]
-    public void No_handlers_still_registers_the_generated_dispatcher()
+    public void RegistrationModule_NoHandlers_RegistersDispatcher_Test()
     {
         // Arrange
         // No handler registrations, but the registration module is never truly empty (ticket 13): the

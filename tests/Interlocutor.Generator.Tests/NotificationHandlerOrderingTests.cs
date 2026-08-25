@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis;
 public sealed class NotificationHandlerOrderingTests
 {
     [Fact]
-    public void Handler_for_base_notification_interface_reports_catch_all_diagnostic()
+    public void CatchAllDiagnostic_BaseNotificationInterface_Reports_Test()
     {
         // Arrange
         const string source = """
@@ -38,7 +38,7 @@ public sealed class NotificationHandlerOrderingTests
     }
 
     [Fact]
-    public void Handler_for_a_concrete_notification_reports_no_catch_all_diagnostic()
+    public void ConcreteNotificationHandler_Standard_ProducesNoDiagnostic_Test()
     {
         // Arrange
         const string source = """
@@ -64,7 +64,7 @@ public sealed class NotificationHandlerOrderingTests
     }
 
     [Fact]
-    public void RunAfter_produces_a_rank_lower_than_the_handler_it_names()
+    public void HandlerOrdering_RunAfter_ProducesLowerRank_Test()
     {
         // Arrange
         const string source = """
@@ -100,7 +100,7 @@ public sealed class NotificationHandlerOrderingTests
     }
 
     [Fact]
-    public void RunBefore_produces_the_same_relative_order_as_the_equivalent_RunAfter()
+    public void HandlerOrdering_RunBefore_EquivalentToRunAfter_Test()
     {
         // Arrange
         const string source = """
@@ -136,7 +136,7 @@ public sealed class NotificationHandlerOrderingTests
     }
 
     [Fact]
-    public void Handler_uninvolved_in_any_ordering_relationship_gets_no_rank_entry()
+    public void HandlerOrdering_UnrelatedHandler_NoRankEntry_Test()
     {
         // Arrange
         const string source = """
@@ -174,7 +174,7 @@ public sealed class NotificationHandlerOrderingTests
     }
 
     [Fact]
-    public void Ordering_cycle_reports_an_error_diagnostic_naming_the_cycle()
+    public void OrderingValidation_Cycle_ReportsErrorNamingBoth_Test()
     {
         // Arrange
         const string source = """
@@ -211,7 +211,7 @@ public sealed class NotificationHandlerOrderingTests
     }
 
     [Fact]
-    public void RunAfter_naming_a_type_that_is_not_a_notification_handler_reports_an_error_diagnostic()
+    public void OrderingValidation_RunAfterInvalidType_ReportsError_Test()
     {
         // Arrange
         const string source = """
@@ -244,7 +244,7 @@ public sealed class NotificationHandlerOrderingTests
     }
 
     [Fact]
-    public void RunBefore_naming_a_type_that_is_not_a_notification_handler_reports_an_error_diagnostic()
+    public void OrderingValidation_RunBeforeInvalidType_ReportsError_Test()
     {
         // Arrange
         const string source = """
@@ -277,7 +277,7 @@ public sealed class NotificationHandlerOrderingTests
     }
 
     [Fact]
-    public void No_ordering_attributes_emits_an_empty_order_table_and_still_compiles()
+    public void OrderingEmission_NoAttributes_EmitsEmptyTableAndCompiles_Test()
     {
         // Arrange
         const string source = """
@@ -308,7 +308,7 @@ public sealed class NotificationHandlerOrderingTests
     }
 
     [Fact]
-    public void Notification_handler_order_provider_is_registered_alongside_the_dispatcher()
+    public void OrderProvider_Registration_RegisteredAlongsideDispatcher_Test()
     {
         // Arrange
         const string source = """

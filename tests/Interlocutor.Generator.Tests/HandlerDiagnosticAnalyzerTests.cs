@@ -12,7 +12,7 @@ namespace Interlocutor.Generator.Tests;
 public sealed class HandlerDiagnosticAnalyzerTests
 {
     [Fact]
-    public void Request_with_no_handler_anywhere_reports_missing_handler()
+    public void MissingHandlerDiagnostic_OrphanRequest_Reports_Test()
     {
         // Arrange
         const string source = """
@@ -34,7 +34,7 @@ public sealed class HandlerDiagnosticAnalyzerTests
     }
 
     [Fact]
-    public void Two_handlers_for_the_same_closed_query_reports_duplicate_handler_for_each()
+    public void DuplicateHandlerDiagnostic_MultipleHandlersSameRequest_ReportsBoth_Test()
     {
         // Arrange
         const string source = """
@@ -69,7 +69,7 @@ public sealed class HandlerDiagnosticAnalyzerTests
     }
 
     [Fact]
-    public void Notification_handler_subscribing_to_the_base_marker_reports_catch_all_notification_handler()
+    public void CatchAllNotificationDiagnostic_BaseMarkerSubscription_Reports_Test()
     {
         // Arrange
         const string source = """

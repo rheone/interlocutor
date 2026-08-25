@@ -50,7 +50,7 @@ public sealed class CrossAssemblyOpenGenericHandlerTests
         """;
 
     [Fact]
-    public void ClosedUsageInApplication_OfOpenHandlerDeclaredOnlyInReferencedLibrary_ReportsUnresolvedGenericRequestUsage()
+    public void ClosedUsageInApplication_OfOpenHandlerDeclaredOnlyInReferencedLibrary_ReportsUnresolvedGenericRequestUsage_Test()
     {
         // Arrange
         // LibraryA never itself uses GenericQuery<T> with a concrete type argument, so its own generator run
@@ -70,8 +70,9 @@ public sealed class CrossAssemblyOpenGenericHandlerTests
     }
 
     [Fact]
-    public void ClosedUsageInSameCompilationAsOpenHandler_ReportsNoUnresolvedGenericRequestUsageDiagnostic()
+    public void ClosedUsageInSameCompilationAsOpenHandler_ReportsNoUnresolvedGenericRequestUsageDiagnostic_Test()
     {
+        // Arrange
         // Regression check: the working same-compilation case (ticket 11) must not start reporting
         // INTERLOC008 once a usage is actually resolved locally.
         // Act

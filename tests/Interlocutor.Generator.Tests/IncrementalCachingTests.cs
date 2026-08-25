@@ -46,8 +46,10 @@ public sealed class IncrementalCachingTests
     private const string SecondSource = FirstSource + "\n// a trailing comment, nothing else\n";
 
     [Fact]
-    public void CompilationInfoStep_ReportsUnchanged_WhenReferenceGraphAndAssemblyNameAreUnchanged()
+    public void CompilationInfoStep_ReportsUnchanged_WhenReferenceGraphAndAssemblyNameAreUnchanged_Test()
     {
+        // Arrange
+        // (no separate setup; uses class fixtures or direct act/assert)
         // Act
         var result = GeneratorTestHarness.RunTwiceTrackingSteps(FirstSource, SecondSource);
 

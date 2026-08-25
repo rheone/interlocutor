@@ -28,8 +28,12 @@ public class DependencyTests
         typeof(Interlocutor.Persistence.NHibernate.NHibernateUnitOfWork).Assembly;
 
     [Fact]
-    public void CommonKernel_ShouldNotDependOnOtherInterlocutorPackages()
+    public void CommonKernel_ReferencedAssembly_HasNoDependencyOnOtherInterlocutorPackages_Test()
     {
+        // Arrange
+        // (static class-level assembly references serve as fixture)
+
+        // Act
         var result = Types
             .InAssembly(CommonKernelAssembly)
             .ShouldNot()
@@ -42,12 +46,17 @@ public class DependencyTests
             )
             .GetResult();
 
+        // Assert
         Assert.True(result.IsSuccessful, string.Join(", ", result.FailingTypeNames ?? []));
     }
 
     [Fact]
-    public void Abstractions_ShouldNotDependOnAspnetcoreOrExamplePackages()
+    public void Abstractions_ReferencedAssembly_HasNoDependencyOnAspnetcoreOrExamplePackages_Test()
     {
+        // Arrange
+        // (static class-level assembly references serve as fixture)
+
+        // Act
         var result = Types
             .InAssembly(AbstractionsAssembly)
             .ShouldNot()
@@ -59,12 +68,17 @@ public class DependencyTests
             ])
             .GetResult();
 
+        // Assert
         Assert.True(result.IsSuccessful, string.Join(", ", result.FailingTypeNames ?? []));
     }
 
     [Fact]
-    public void AspNetCore_ShouldNotDependOnStoreOrValidationPackages()
+    public void AspNetCore_ReferencedAssembly_HasNoDependencyOnStoreOrValidationPackages_Test()
     {
+        // Arrange
+        // (static class-level assembly references serve as fixture)
+
+        // Act
         var result = Types
             .InAssembly(typeof(Interlocutor.AspNetCore.ResultExtensions).Assembly)
             .ShouldNot()
@@ -75,12 +89,17 @@ public class DependencyTests
             ])
             .GetResult();
 
+        // Assert
         Assert.True(result.IsSuccessful, string.Join(", ", result.FailingTypeNames ?? []));
     }
 
     [Fact]
-    public void DependencyInjectionAbstractions_ShouldDependOnlyOnAbstractions()
+    public void DependencyInjectionAbstractions_ReferencedAssembly_DependsOnlyOnAbstractions_Test()
     {
+        // Arrange
+        // (static class-level assembly references serve as fixture)
+
+        // Act
         var result = Types
             .InAssembly(DependencyInjectionAbstractionsAssembly)
             .ShouldNot()
@@ -94,18 +113,25 @@ public class DependencyTests
             )
             .GetResult();
 
+        // Assert
         Assert.True(result.IsSuccessful, string.Join(", ", result.FailingTypeNames ?? []));
 
-        // Assembly-level (rather than per-type) check: the module owns the neutral registration
-        // record alongside plain data types, so not every type references Abstractions directly -
-        // only that the module as a whole depends on it, per the mediator abstractions module.
+        // Act (second check) - assembly-level (rather than per-type): the module owns the neutral
+        // registration record alongside plain data types, so not every type references Abstractions
+        // directly - only that the module as a whole depends on it, per the mediator abstractions module.
         var referencedAssemblyNames = DependencyInjectionAbstractionsAssembly.GetReferencedAssemblies().Select(a => a.Name);
+
+        // Assert (second check)
         Assert.Contains(AbstractionsAssembly.GetName().Name, referencedAssemblyNames);
     }
 
     [Fact]
-    public void ExampleImplementations_ShouldDependOnAbstractions()
+    public void ExampleImplementations_ReferencedAssembly_DependsOnAbstractions_Test()
     {
+        // Arrange
+        // (static class-level assembly references serve as fixture)
+
+        // Act
         var efCoreResult = Types
             .InAssembly(EntityFrameworkCoreAssembly)
             .Should()
@@ -124,14 +150,19 @@ public class DependencyTests
             .HaveDependencyOn("Interlocutor.Abstractions")
             .GetResult();
 
+        // Assert
         Assert.True(efCoreResult.IsSuccessful, "EF Core package should depend on Abstractions");
         Assert.True(fluentResult.IsSuccessful, "FluentValidation package should depend on Abstractions");
         Assert.True(nhibernateResult.IsSuccessful, "NHibernate package should depend on Abstractions");
     }
 
     [Fact]
-    public void DependencyInjectionMicrosoft_ShouldNotDependOnAutofacOrStoreOrValidationPackages()
+    public void DependencyInjectionMicrosoft_ReferencedAssembly_HasNoDependencyOnAutofacOrStoreOrValidationPackages_Test()
     {
+        // Arrange
+        // (static class-level assembly references serve as fixture)
+
+        // Act
         var result = Types
             .InAssembly(DependencyInjectionMicrosoftAssembly)
             .ShouldNot()
@@ -143,12 +174,17 @@ public class DependencyTests
             ])
             .GetResult();
 
+        // Assert
         Assert.True(result.IsSuccessful, string.Join(", ", result.FailingTypeNames ?? []));
     }
 
     [Fact]
-    public void DependencyInjectionAutofac_ShouldNotDependOnMicrosoftOrStoreOrValidationPackages()
+    public void DependencyInjectionAutofac_ReferencedAssembly_HasNoDependencyOnMicrosoftOrStoreOrValidationPackages_Test()
     {
+        // Arrange
+        // (static class-level assembly references serve as fixture)
+
+        // Act
         var result = Types
             .InAssembly(DependencyInjectionAutofacAssembly)
             .ShouldNot()
@@ -160,36 +196,51 @@ public class DependencyTests
             ])
             .GetResult();
 
+        // Assert
         Assert.True(result.IsSuccessful, string.Join(", ", result.FailingTypeNames ?? []));
     }
 
     [Fact]
-    public void EntityFrameworkCore_ShouldNotDependOnNHibernateOrFluentValidation()
+    public void EntityFrameworkCore_ReferencedAssembly_HasNoDependencyOnNHibernateOrFluentValidation_Test()
     {
+        // Arrange
+        // (static class-level assembly references serve as fixture)
+
+        // Act
         var result = Types
             .InAssembly(EntityFrameworkCoreAssembly)
             .ShouldNot()
             .HaveDependencyOnAny(["Interlocutor.NHibernate", "Interlocutor.FluentValidation"])
             .GetResult();
 
+        // Assert
         Assert.True(result.IsSuccessful, string.Join(", ", result.FailingTypeNames ?? []));
     }
 
     [Fact]
-    public void NHibernate_ShouldNotDependOnEntityFrameworkCoreOrFluentValidation()
+    public void NHibernate_ReferencedAssembly_HasNoDependencyOnEntityFrameworkCoreOrFluentValidation_Test()
     {
+        // Arrange
+        // (static class-level assembly references serve as fixture)
+
+        // Act
         var result = Types
             .InAssembly(NHibernateAssembly)
             .ShouldNot()
             .HaveDependencyOnAny(["Interlocutor.EntityFrameworkCore", "Interlocutor.FluentValidation"])
             .GetResult();
 
+        // Assert
         Assert.True(result.IsSuccessful, string.Join(", ", result.FailingTypeNames ?? []));
     }
 
     [Fact]
-    public void PersistenceAbstractions_ShouldNotDependOnAspnetcoreStoreValidationOrDependencyInjectionPackages()
+    public void PersistenceAbstractions_ReferencedAssembly_HasNoDependencyOnAspnetcoreStoreValidationOrDependencyInjectionPackages_Test()
     {
+        // Arrange
+        // (static class-level assembly references serve as fixture)
+
+        // Act
         var result = Types
             .InAssembly(PersistenceAbstractionsAssembly)
             .ShouldNot()
@@ -205,12 +256,17 @@ public class DependencyTests
             ])
             .GetResult();
 
+        // Assert
         Assert.True(result.IsSuccessful, string.Join(", ", result.FailingTypeNames ?? []));
     }
 
     [Fact]
-    public void PersistenceEntityFrameworkCore_ShouldDependOnPersistenceAbstractions_AndNotOnPersistenceNHibernate()
+    public void PersistenceEntityFrameworkCore_ShouldDependOnPersistenceAbstractions_AndNotOnPersistenceNHibernate_Test()
     {
+        // Arrange
+        // (static class-level assembly references serve as fixture)
+
+        // Act
         var dependsOnAbstractionsResult = Types
             .InAssembly(PersistenceEntityFrameworkCoreAssembly)
             .Should()
@@ -223,6 +279,7 @@ public class DependencyTests
             .HaveDependencyOn("Interlocutor.Persistence.NHibernate")
             .GetResult();
 
+        // Assert
         Assert.True(
             dependsOnAbstractionsResult.IsSuccessful,
             "Persistence.EntityFrameworkCore should depend on Persistence.Abstractions"
@@ -234,8 +291,12 @@ public class DependencyTests
     }
 
     [Fact]
-    public void PersistenceNHibernate_ShouldDependOnPersistenceAbstractions_AndNotOnPersistenceEntityFrameworkCore()
+    public void PersistenceNHibernate_ShouldDependOnPersistenceAbstractions_AndNotOnPersistenceEntityFrameworkCore_Test()
     {
+        // Arrange
+        // (static class-level assembly references serve as fixture)
+
+        // Act
         var dependsOnAbstractionsResult = Types
             .InAssembly(PersistenceNHibernateAssembly)
             .Should()
@@ -248,6 +309,7 @@ public class DependencyTests
             .HaveDependencyOn("Interlocutor.Persistence.EntityFrameworkCore")
             .GetResult();
 
+        // Assert
         Assert.True(
             dependsOnAbstractionsResult.IsSuccessful,
             "Persistence.NHibernate should depend on Persistence.Abstractions"
