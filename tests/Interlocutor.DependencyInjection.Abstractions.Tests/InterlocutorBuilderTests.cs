@@ -492,6 +492,19 @@ public class InterlocutorBuilderTests
     }
 
     [Fact]
+    public void DescribeRegistrations_WithEveryScannedTypeLoadingSuccessfully_HasEmptyTypeLoadFailures()
+    {
+        // Arrange
+        var builder = new InterlocutorBuilder();
+
+        // Act
+        builder.ScanAssembly(typeof(InterlocutorBuilderTests).Assembly);
+
+        // Assert
+        Assert.Empty(builder.DescribeRegistrations().TypeLoadFailures);
+    }
+
+    [Fact]
     public void Pipeline_IsNeverNull()
     {
         // Arrange & Act

@@ -27,11 +27,17 @@ public sealed class RegistrationReport
     /// <param name="stageFactories">Every accumulated delegate-backed stage registration.</param>
     /// <param name="skipped">Every registration deliberately not made, and why.</param>
     /// <param name="problems">Every validation problem found, empty until <see cref="InterlocutorBuilder.ValidateOnBuild"/> populates it.</param>
+    /// <param name="typeLoadFailures">
+    /// Every type that failed to load while scanning, and why. Unlike <paramref name="problems"/>, populated
+    /// regardless of whether <see cref="InterlocutorBuilder.ValidateOnBuild"/> was called - a type load
+    /// failure is discovered as a side effect of scanning itself, not an opt-in check. Defaults to empty.
+    /// </param>
     public RegistrationReport(
         IReadOnlyList<InterlocutorRegistration> registrations,
         IReadOnlyList<InterlocutorFactoryRegistration> stageFactories,
         IReadOnlyList<SkippedRegistration> skipped,
-        IReadOnlyList<RegistrationProblem> problems
+        IReadOnlyList<RegistrationProblem> problems,
+        IReadOnlyList<TypeLoadFailure>? typeLoadFailures = null
     )
     {
         ArgumentNullException.ThrowIfNull(registrations);
@@ -43,6 +49,7 @@ public sealed class RegistrationReport
         this.StageFactories = stageFactories;
         this.Skipped = skipped;
         this.Problems = problems;
+        this.TypeLoadFailures = typeLoadFailures ?? [];
     }
 
     /// <summary>
@@ -67,6 +74,14 @@ public sealed class RegistrationReport
     /// </summary>
     /// <value>Every validation problem found.</value>
     public IReadOnlyList<RegistrationProblem> Problems { get; }
+
+    /// <summary>
+    /// Gets every type that failed to load while scanning an assembly, and why - non-fatal, since scanning
+    /// continues past it. Empty when every scanned type loaded successfully, regardless of whether
+    /// <see cref="InterlocutorBuilder.ValidateOnBuild"/> was ever called.
+    /// </summary>
+    /// <value>Every type that failed to load while scanning, and why.</value>
+    public IReadOnlyList<TypeLoadFailure> TypeLoadFailures { get; }
 
     /// <summary>Renders this report as human-readable text, suitable for logging or console output.</summary>
     /// <returns>The formatted report.</returns>
@@ -114,6 +129,15 @@ public sealed class RegistrationReport
             foreach (var problem in this.Problems)
             {
                 text.AppendLine($"    [{problem.Kind}] {problem.Description}");
+            }
+        }
+
+        if (this.TypeLoadFailures.Count > 0)
+        {
+            text.AppendLine($"  Type load failures ({this.TypeLoadFailures.Count}):");
+            foreach (var failure in this.TypeLoadFailures)
+            {
+                text.AppendLine($"    {failure.AssemblyName}: {failure.Detail}");
             }
         }
 

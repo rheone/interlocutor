@@ -57,6 +57,15 @@ public static class HandlerDiscovery
     /// per <c>Scan*</c> call rather than accepting the blanket <see cref="RegistrationLifetime.Scoped"/> default.
     /// </summary>
     /// <param name="assembliesToScan">The assemblies to scan, each paired with the lifetime to register its matches at.</param>
+    /// <param name="extraContracts">
+    /// Additional open-generic contracts, alongside the built-in handler contracts, to check every scanned
+    /// type against - <see cref="InterlocutorBuilder.RequireUniqueClosure"/>'s consumer-supplied contracts.
+    /// <see langword="null"/> or empty checks only the built-in handler contracts.
+    /// </param>
+    /// <param name="failures">
+    /// When given, receives one <see cref="TypeLoadFailure"/> per type that failed to load in any scanned
+    /// assembly - scanning continues past it rather than aborting. See <see cref="AssemblyTypeScanner.GetLoadableTypes"/>.
+    /// </param>
     /// <returns>
     /// One <see cref="InterlocutorRegistration"/> per matching handler interface a type implements, each
     /// with <see cref="RegistrationKind.Handler"/> and <see cref="RegistrationProvenance.Scanned"/>, at the
@@ -68,7 +77,9 @@ public static class HandlerDiscovery
             + "documentation/trim-and-aot-support.md."
     )]
     public static IReadOnlyList<InterlocutorRegistration> Discover(
-        IEnumerable<(Assembly Assembly, RegistrationLifetime Lifetime)> assembliesToScan
+        IEnumerable<(Assembly Assembly, RegistrationLifetime Lifetime)> assembliesToScan,
+        IReadOnlyList<Type>? extraContracts = null,
+        ICollection<TypeLoadFailure>? failures = null
     )
     {
         var registrations = new List<InterlocutorRegistration>();
@@ -78,9 +89,9 @@ public static class HandlerDiscovery
         // registration must map to the exact interface (with specific type parameters) the mediator queries.
         foreach (var (assembly, lifetime) in assembliesToScan)
         {
-            foreach (var type in assembly.GetTypes().Where(IsCandidateType))
+            foreach (var type in AssemblyTypeScanner.GetLoadableTypes(assembly, failures).Where(IsCandidateType))
             {
-                registrations.AddRange(DescribeHandler(type, lifetime, RegistrationProvenance.Scanned));
+                registrations.AddRange(DescribeHandler(type, lifetime, RegistrationProvenance.Scanned, extraContracts));
             }
         }
 
@@ -106,6 +117,11 @@ public static class HandlerDiscovery
     /// </param>
     /// <param name="lifetime">The service lifetime to record on every registration produced.</param>
     /// <param name="provenance">The provenance to record on every registration produced.</param>
+    /// <param name="extraContracts">
+    /// Additional open-generic contracts, alongside the built-in handler contracts, to check
+    /// <paramref name="handlerImplementationType"/> against - <see cref="InterlocutorBuilder.RequireUniqueClosure"/>'s
+    /// consumer-supplied contracts. <see langword="null"/> or empty checks only the built-in handler contracts.
+    /// </param>
     /// <returns>
     /// One <see cref="InterlocutorRegistration"/> per matching handler interface <paramref name="handlerImplementationType"/>
     /// implements, or an empty list when it implements none.
@@ -115,14 +131,21 @@ public static class HandlerDiscovery
     internal static IReadOnlyList<InterlocutorRegistration> DescribeHandler(
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type handlerImplementationType,
         RegistrationLifetime lifetime,
-        RegistrationProvenance provenance
+        RegistrationProvenance provenance,
+        IReadOnlyList<Type>? extraContracts = null
     )
     {
         var registrations = new List<InterlocutorRegistration>();
 
         foreach (var iface in handlerImplementationType.GetInterfaces())
         {
-            if (iface.IsGenericType && HandlerContracts.Contains(iface.GetGenericTypeDefinition()))
+            if (
+                iface.IsGenericType
+                && (
+                    HandlerContracts.Contains(iface.GetGenericTypeDefinition())
+                    || (extraContracts?.Contains(iface.GetGenericTypeDefinition()) ?? false)
+                )
+            )
             {
                 registrations.Add(
                     new InterlocutorRegistration(

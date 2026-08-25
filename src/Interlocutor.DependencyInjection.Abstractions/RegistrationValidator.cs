@@ -28,6 +28,11 @@ internal static class RegistrationValidator
     /// <param name="registrations">Every registration accumulated so far, as <see cref="InterlocutorBuilder.DescribeRegistrations"/> assembled it.</param>
     /// <param name="candidates">Every candidate type found while scanning, as <see cref="InterlocutorBuilder"/> assembled it.</param>
     /// <param name="matchRules">Every predicate-based type-matching rule added via <see cref="InterlocutorBuilder.AddTypeMatch"/>.</param>
+    /// <param name="uniqueClosureContracts">
+    /// Every open-generic contract expected to have at most one implementation per closed instantiation -
+    /// the three built-in single-winner handler contracts plus any a consumer opted in via
+    /// <see cref="InterlocutorBuilder.RequireUniqueClosure"/>.
+    /// </param>
     /// <returns>Every problem found.</returns>
     [RequiresUnreferencedCode(
         "Reflects over every candidate type's implemented interfaces with Type.GetInterfaces() and closes "
@@ -41,7 +46,8 @@ internal static class RegistrationValidator
     public static List<RegistrationProblem> ComputeProblems(
         IReadOnlyList<InterlocutorRegistration> registrations,
         IReadOnlyList<Type> candidates,
-        IReadOnlyList<TypeMatchRule> matchRules
+        IReadOnlyList<TypeMatchRule> matchRules,
+        IReadOnlyList<Type> uniqueClosureContracts
     )
     {
         var problems = new List<RegistrationProblem>();
@@ -108,6 +114,40 @@ internal static class RegistrationValidator
                     new RegistrationProblem(
                         RegistrationProblemKind.ConflictingLifetime,
                         $"{group.Key.ServiceType.Name} -> {group.Key.ImplementationType.Name} is registered at conflicting lifetimes: {string.Join(", ", lifetimes)}."
+                    )
+                );
+            }
+        }
+
+        // More than one distinct implementation type closing the same instantiation of a single-winner
+        // contract - the built-in query/command/void-command handler contracts, plus any consumer contract
+        // opted in via InterlocutorBuilder.RequireUniqueClosure. INotificationHandler<> is never in
+        // uniqueClosureContracts, so fan-out to many notification handlers is never flagged here.
+        foreach (
+            var group in registrations
+                .Where(r =>
+                    r.Kind == RegistrationKind.Handler
+                    && r.ServiceType.IsGenericType
+                    && uniqueClosureContracts.Contains(r.ServiceType.GetGenericTypeDefinition())
+                )
+                .GroupBy(r => r.ServiceType)
+        )
+        {
+            var distinctImplementations = group.DistinctBy(r => r.ImplementationType).ToList();
+            if (distinctImplementations.Count > 1)
+            {
+                var conflicts = string.Join(
+                    ", ",
+                    distinctImplementations.Select(r =>
+                        r.MatchedByRule is null
+                            ? r.ImplementationType.Name
+                            : $"{r.ImplementationType.Name} (matched by {r.MatchedByRule})"
+                    )
+                );
+                problems.Add(
+                    new RegistrationProblem(
+                        RegistrationProblemKind.AmbiguousClosure,
+                        $"{group.Key.Name} has {distinctImplementations.Count} conflicting implementations: {conflicts}."
                     )
                 );
             }

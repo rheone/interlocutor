@@ -126,6 +126,50 @@ public class RegistrationReportTests
     }
 
     [Fact]
+    public void Constructor_WithNoTypeLoadFailuresArgument_DefaultsToEmpty()
+    {
+        // Act
+        var report = new RegistrationReport([], [], [], []);
+
+        // Assert
+        Assert.Empty(report.TypeLoadFailures);
+    }
+
+    [Fact]
+    public void Format_IncludesTypeLoadFailures_WhenPresent()
+    {
+        // Arrange
+        var report = new RegistrationReport(
+            [],
+            [],
+            [],
+            [],
+            [new TypeLoadFailure("SomeAssembly", "Could not load type 'Foo'.")]
+        );
+
+        // Act
+        var text = report.Format();
+
+        // Assert
+        Assert.Contains("Type load failures (1):", text);
+        Assert.Contains("SomeAssembly", text);
+        Assert.Contains("Could not load type 'Foo'.", text);
+    }
+
+    [Fact]
+    public void Format_WithNoTypeLoadFailures_OmitsThatSection()
+    {
+        // Arrange
+        var report = new RegistrationReport([], [], [], []);
+
+        // Act
+        var text = report.Format();
+
+        // Assert
+        Assert.DoesNotContain("Type load failures", text);
+    }
+
+    [Fact]
     public void Format_IncludesMatchedByRule_WhenPresent()
     {
         // Arrange
