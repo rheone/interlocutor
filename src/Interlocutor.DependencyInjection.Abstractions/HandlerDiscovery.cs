@@ -110,9 +110,9 @@ public static class HandlerDiscovery
     /// One <see cref="InterlocutorRegistration"/> per matching handler interface <paramref name="handlerImplementationType"/>
     /// implements, or an empty list when it implements none.
     /// </returns>
+    // .All, not just .Interfaces: this flows straight into an InterlocutorRegistration, whose
+    // ImplementationType itself demands .All (see that record's remarks).
     internal static IReadOnlyList<InterlocutorRegistration> DescribeHandler(
-        // .All, not just .Interfaces: this flows straight into an InterlocutorRegistration, whose
-        // ImplementationType itself demands .All (see that record's remarks).
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type handlerImplementationType,
         RegistrationLifetime lifetime,
         RegistrationProvenance provenance

@@ -11,3 +11,4 @@ INTERLOC004 | Interlocutor.Discovery | Error | Notification handler ordering cyc
 INTERLOC005 | Interlocutor.Discovery | Error | Notification handler ordering reference is not a handler
 INTERLOC006 | Interlocutor.Discovery | Error | Ambiguous open generic handlers for request type
 INTERLOC007 | Interlocutor.Discovery | Error | Handler override reference is not a handler
+INTERLOC008 | Interlocutor.Discovery | Warning | Unresolved generic request usage

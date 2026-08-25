@@ -216,7 +216,7 @@ internal static class InterlocutorDiagnostics
     /// closed instantiation in application B (which references A), is invisible to both sides' own generator
     /// runs - A's run finished before B exists, and B's run never sees A's syntax, only its metadata. Left
     /// unresolved, that produced a request no registered handler ever backs, previously discovered only when
-    /// <c>Mediator.Send</c> throws <see cref="Interlocutor.Abstractions.Core.HandlerNotRegisteredException"/>
+    /// <c>Mediator.Send</c> throws <c>Interlocutor.Abstractions.Core.HandlerNotRegisteredException</c>
     /// at first dispatch. This diagnostic surfaces the same gap at build time instead.
     /// </para>
     /// <para>
