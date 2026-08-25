@@ -1,3 +1,5 @@
+> **Status: done** - merged in `36c1416` (RegistrationProblemKind.AmbiguousClosure check + InterlocutorBuilder.Eject).
+
 ## Labels
 
 ready-for-agent
@@ -14,16 +16,16 @@ ready-for-agent
 
 ## Acceptance criteria
 
-- [ ] Two different implementation types closing the same `ICommandHandler<,>` (or `IQueryHandler<,>`/`IVoidCommandHandler<,>`) closed interface is reported as an `AmbiguousClosure` problem when `ValidateOnBuild()` is configured, aggregated alongside any other problems in the same `InterlocutorRegistrationValidationException`
-- [ ] The problem message names the closed service interface and every conflicting implementation type
-- [ ] Two `INotificationHandler<>` implementations for the same notification type is never reported as ambiguous
-- [ ] The same implementation type discovered twice for the same closed interface (e.g. scan + `AddHandler` for the identical pair) is not reported as ambiguous
-- [ ] `Eject(typeof(LosingHandler))` removes `LosingHandler` from `Handlers` and clears the `AmbiguousClosure` problem for its closed interface, leaving the other candidate registered
-- [ ] `Eject<TImplementation>()` behaves identically to the `Type`-based overload
-- [ ] Calling `Eject` more than once accumulates ejected types rather than replacing the list
-- [ ] An `AddHandler` call for one of two conflicting candidates does not, by itself, clear the `AmbiguousClosure` problem for the other candidate
-- [ ] Without `ValidateOnBuild()` configured, no ambiguity check runs, consistent with every other check in `RegistrationValidator`
-- [ ] `dotnet build` and `dotnet test` pass for the whole solution
+- [x] Two different implementation types closing the same `ICommandHandler<,>` (or `IQueryHandler<,>`/`IVoidCommandHandler<,>`) closed interface is reported as an `AmbiguousClosure` problem when `ValidateOnBuild()` is configured, aggregated alongside any other problems in the same `InterlocutorRegistrationValidationException`
+- [x] The problem message names the closed service interface and every conflicting implementation type
+- [x] Two `INotificationHandler<>` implementations for the same notification type is never reported as ambiguous
+- [x] The same implementation type discovered twice for the same closed interface (e.g. scan + `AddHandler` for the identical pair) is not reported as ambiguous
+- [x] `Eject(typeof(LosingHandler))` removes `LosingHandler` from `Handlers` and clears the `AmbiguousClosure` problem for its closed interface, leaving the other candidate registered
+- [x] `Eject<TImplementation>()` behaves identically to the `Type`-based overload
+- [x] Calling `Eject` more than once accumulates ejected types rather than replacing the list
+- [x] An `AddHandler` call for one of two conflicting candidates does not, by itself, clear the `AmbiguousClosure` problem for the other candidate
+- [x] Without `ValidateOnBuild()` configured, no ambiguity check runs, consistent with every other check in `RegistrationValidator`
+- [x] `dotnet build` and `dotnet test` pass for the whole solution
 
 ## Blocked by
 

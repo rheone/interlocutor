@@ -1,3 +1,5 @@
+> **Status: done** - merged in `36c1416` (AssemblyTypeScanner.GetLoadableTypes + RegistrationReport.TypeLoadFailures).
+
 ## Labels
 
 ready-for-agent
@@ -12,10 +14,10 @@ Every scan path (`HandlerDiscovery.Discover`, `InterlocutorBuilder.CandidateType
 
 ## Acceptance criteria
 
-- [ ] Scanning an assembly with one unloadable type still registers handlers/behaviors/closures for every other, loadable type in that assembly
-- [ ] The failure is surfaced with the offending assembly's name and the loader exception detail for each type that failed, discoverable via `RegistrationReport`
-- [ ] Scanning an assembly where every type loads successfully is unaffected - no behavior change, no new report entries
-- [ ] `dotnet build` and `dotnet test` pass for the whole solution
+- [x] Scanning an assembly with one unloadable type still registers handlers/behaviors/closures for every other, loadable type in that assembly
+- [x] The failure is surfaced with the offending assembly's name and the loader exception detail for each type that failed, discoverable via `RegistrationReport`
+- [x] Scanning an assembly where every type loads successfully is unaffected - no behavior change, no new report entries
+- [x] `dotnet build` and `dotnet test` pass for the whole solution
 
 ## Blocked by
 
