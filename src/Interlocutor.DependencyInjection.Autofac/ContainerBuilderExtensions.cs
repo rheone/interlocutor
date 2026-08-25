@@ -52,7 +52,7 @@ public static class InterlocutorAutofacExtensions
     /// options-based overload, no bare assembly-scanning overload, and no entry-assembly convenience
     /// overload; all configuration flows through <paramref name="configure"/>.
     /// <see cref="InterlocutorBuilder.Defaults"/> entries are translated with Autofac's <c>IfNotRegistered</c>
-    /// try-add equivalent (see <see cref="TryApplyDefault"/>), so a consumer's own registration of
+    /// try-add equivalent (see <see cref="Translate"/>), so a consumer's own registration of
     /// <see cref="IAuditSink"/>, <see cref="IPolicyEvaluator"/>, <see cref="IRequestContextAccessor"/>, or
     /// <see cref="IResponseOutcomeDescriber"/> - made before this call - always wins; the builder's own
     /// <c>Override*</c> methods cover winning when that registration is made after.
@@ -77,13 +77,13 @@ public static class InterlocutorAutofacExtensions
         }
 
         var applier = new RegistrationApplier(
-            addRegistration: registration => Apply(builder, registration),
+            addRegistration: registration => Translate(builder, registration, tryAdd: false),
             addFactory: registration =>
-                ApplyLifetime(
+                SetLifetime(
                     builder.Register(c => registration.Factory(c.Resolve<IServiceProvider>())).As(registration.ServiceType),
                     registration.Lifetime
                 ),
-            tryAddDefault: registration => TryApplyDefault(builder, registration)
+            tryAddDefault: registration => Translate(builder, registration, tryAdd: true)
         );
         applier.Apply(interlocutorBuilder);
 
@@ -122,26 +122,38 @@ public static class InterlocutorAutofacExtensions
     }
 
     /// <summary>
-    /// Translates one container-neutral <see cref="InterlocutorRegistration"/> into an Autofac registration,
-    /// using <c>InstancePerLifetimeScope</c> as the Autofac equivalent of <see cref="RegistrationLifetime.Scoped"/>.
+    /// Translates one container-neutral <see cref="InterlocutorRegistration"/> into an Autofac registration -
+    /// the single translation both the <see cref="RegistrationApplier"/> <c>addRegistration</c> and
+    /// <c>tryAddDefault</c> callbacks share, differing only in whether Autofac's <c>IfNotRegistered</c>
+    /// try-add guard applies.
     /// </summary>
     /// <param name="builder">The Autofac <see cref="ContainerBuilder"/> to register services into.</param>
     /// <param name="registration">The container-neutral registration to translate.</param>
-    private static void Apply(ContainerBuilder builder, InterlocutorRegistration registration)
+    /// <param name="tryAdd">
+    /// Whether to guard the registration with Autofac's <c>IfNotRegistered</c> - <see langword="true"/> for
+    /// <see cref="InterlocutorBuilder.Defaults"/> entries, so a consumer's own registration of the same
+    /// service type, made before this call, is left untouched.
+    /// </param>
+    private static void Translate(ContainerBuilder builder, InterlocutorRegistration registration, bool tryAdd)
     {
         // Open generic implementation types (e.g. IPipelineBehavior<,> behaviors) require
         // RegisterGeneric; closed types (e.g. discovered handlers) require RegisterType.
         if (registration.ImplementationType.IsGenericTypeDefinition)
         {
-            ApplyLifetime(
-                builder.RegisterGeneric(registration.ImplementationType).As(registration.ServiceType),
+            var registrationBuilder = builder.RegisterGeneric(registration.ImplementationType).As(registration.ServiceType);
+            SetLifetime(
+                tryAdd ? registrationBuilder.IfNotRegistered(registration.ServiceType) : registrationBuilder,
                 registration.Lifetime
             );
         }
         else
         {
-            ApplyLifetime(
-                builder.RegisterType(registration.ImplementationType).As(ResolveServiceType(registration)),
+            // The try-add (Defaults) path registers against the service type as-is - defaults never have
+            // the closed-implementation-behind-open-service-type mismatch ResolveServiceType exists for.
+            var serviceType = tryAdd ? registration.ServiceType : ResolveServiceType(registration);
+            var registrationBuilder = builder.RegisterType(registration.ImplementationType).As(serviceType);
+            SetLifetime(
+                tryAdd ? registrationBuilder.IfNotRegistered(registration.ServiceType) : registrationBuilder,
                 registration.Lifetime
             );
         }
@@ -184,37 +196,6 @@ public static class InterlocutorAutofacExtensions
     }
 
     /// <summary>
-    /// Translates one container-neutral <see cref="InterlocutorRegistration"/> from <see cref="InterlocutorBuilder.Defaults"/>
-    /// into an Autofac registration guarded by <c>IfNotRegistered</c> - Autofac's try-add equivalent - so an
-    /// application's own registration of the same service type, made before this call runs, is left untouched.
-    /// </summary>
-    /// <param name="builder">The Autofac <see cref="ContainerBuilder"/> to register services into.</param>
-    /// <param name="registration">The try-add-able default registration to translate.</param>
-    private static void TryApplyDefault(ContainerBuilder builder, InterlocutorRegistration registration)
-    {
-        if (registration.ImplementationType.IsGenericTypeDefinition)
-        {
-            ApplyLifetime(
-                builder
-                    .RegisterGeneric(registration.ImplementationType)
-                    .As(registration.ServiceType)
-                    .IfNotRegistered(registration.ServiceType),
-                registration.Lifetime
-            );
-        }
-        else
-        {
-            ApplyLifetime(
-                builder
-                    .RegisterType(registration.ImplementationType)
-                    .As(registration.ServiceType)
-                    .IfNotRegistered(registration.ServiceType),
-                registration.Lifetime
-            );
-        }
-    }
-
-    /// <summary>
     /// Logs <see cref="InterlocutorBuilder.DescribeRegistrations"/>'s formatted report once the container
     /// finishes building, but only when the application has registered <see cref="ILoggerFactory"/> -
     /// additive, never required to use the report. A container that never registered one is silently
@@ -242,7 +223,7 @@ public static class InterlocutorAutofacExtensions
     /// </summary>
     /// <param name="registrationBuilder">The in-progress Autofac registration to configure.</param>
     /// <param name="lifetime">The container-neutral lifetime to translate.</param>
-    private static void ApplyLifetime<TActivatorData, TRegistrationStyle>(
+    private static void SetLifetime<TActivatorData, TRegistrationStyle>(
         IRegistrationBuilder<object, TActivatorData, TRegistrationStyle> registrationBuilder,
         RegistrationLifetime lifetime
     )
