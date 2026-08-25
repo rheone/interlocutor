@@ -43,6 +43,6 @@ Registering the library and understanding how a dispatch's scope and context flo
 
 - [Testing Handlers & Pipelines](testing.md) - unit testing handlers by mocking dependencies, integration testing pipeline composition, testing behaviors & stages, DI startup validation, in-memory databases, best practices.
 
-### Coming soon
+### Worked example
 
-- [Sample app walkthrough](sample-app-walkthrough.md) - [!NOTE] **TBD** - the runnable sample under `samples/` exists; this guided tour of it hasn't been written yet.
+- [Sample App Walkthrough](sample-app-walkthrough.md) - a guided tour of the runnable sample under `samples/`: query/command/generic handlers, cross-assembly discovery, an explicitly composed pipeline with a short-circuiting stage, a multi-subscriber notification, and transport conversion at the edge.

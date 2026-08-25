@@ -88,8 +88,4 @@ Use all five GitHub alert types purposefully:
 
 ## TBD sections
 
-Some topics remain TBD until related infrastructure work completes:
-
-- **Sample app walkthrough** - blocked on ticket 18 (Sample application)
-
-These sections are written as TBD placeholders per the alert convention above, so nothing is forgotten.
+No documentation sections are currently blocked on pending infrastructure work. TBD placeholders are written per the alert convention above whenever one is needed, so nothing is forgotten.

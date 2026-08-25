@@ -1,4 +1,4 @@
-Status: needs-triage (blocked)
+> **Status: done** - `documentation/sample-app-walkthrough.md` written against the actual `samples/` code (ticket 18 shipped, unblocking this one). Replaces the TBD placeholder; `documentation/index.md` moved the link out of "Coming soon" into a new "Worked example" section.
 
 ## Labels
 
@@ -15,15 +15,15 @@ Cover, once unblocked:
 
 ## Acceptance criteria
 
-- [ ] Walkthrough references the actual sample application code from ticket 18, not a reconstructed example
-- [ ] Every piece the sample demonstrates (per ticket 18's acceptance criteria) has a corresponding explanation here
-- [ ] The explicit-composition-over-recommended-chain choice is explained
-- [ ] Follows house conventions from ticket 21
+- [x] Walkthrough references the actual sample application code from ticket 18, not a reconstructed example
+- [x] Every piece the sample demonstrates (per ticket 18's acceptance criteria) has a corresponding explanation here
+- [x] The explicit-composition-over-recommended-chain choice is explained
+- [x] Follows house conventions from ticket 21
 
 ## Blocked by
 
 21 - Establish documentation/ directory; retire CONTEXT.md (done)
-18 - Sample application (still open - see that ticket's triage notes)
+18 - Sample application (done)
 
 ## Comments
 
