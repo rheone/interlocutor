@@ -1,7 +1,6 @@
 namespace Interlocutor.DependencyInjection.Autofac.Tests;
 
 using global::Autofac;
-using Interlocutor.Abstractions;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Queries;

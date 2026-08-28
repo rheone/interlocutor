@@ -1,7 +1,6 @@
 namespace Interlocutor.DependencyInjection.Microsoft.Tests;
 
 using global::Microsoft.Extensions.DependencyInjection;
-using Interlocutor.Abstractions;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Queries;
@@ -117,10 +116,9 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
         // No `using`/disposal here: this helper's scope must outlive the method for the caller's dispatch
         // call, and each test is small and self-contained enough that leaving the scope for the process to
         // reclaim is preferable to plumbing IDisposable back out through every call site.
-#pragma warning disable CA2000
         var provider = services.BuildServiceProvider();
         var scope = provider.CreateScope();
-#pragma warning restore CA2000
+
         return scope.ServiceProvider.GetRequiredService<ISender>();
     }
 

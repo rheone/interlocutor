@@ -1,3 +1,5 @@
+> **Status: done** - merged in `c013ae3`.
+
 # 12 - InterlocutorBuilder DI wiring for all new/migrated behaviors
 
 > **Triage note** - re-triaged from `ready-for-agent`, then resolved and moved back. The original draft asserted a new 8-behavior canonical order for `UseRecommendedChain()` (Cancellation → Logging → RateLimited → Timeout → Auditing → Authorization → Validation → Transaction) backed by one line of rationale, which would have changed the same ADR-0009-deliberated, shipped rationale (`UseRecommendedChain()`'s XML doc) without equivalent scrutiny. **Maintainer decision:** no prescribed order for the three new behaviors - ordering them is up to the consuming developer. `UseRecommendedChain()` stays exactly as it is today (the existing 5-behavior Logging → Auditing → Authorization → Validation → Transaction chain, unchanged); the three new `Add*Behavior()` methods are added as freestanding builder methods the consumer composes in whatever order they choose, same as any other non-recommended-chain behavior. Scope below updated accordingly.

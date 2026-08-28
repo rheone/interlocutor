@@ -1,3 +1,5 @@
+> **Status: done** - merged in `feac415`.
+
 ## Labels
 
 ready-for-agent

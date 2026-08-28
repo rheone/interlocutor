@@ -22,18 +22,22 @@ public class AuditingBehaviorTests
         var behavior = new AuditingBehavior<AuditableQuery, string>(sink);
         var request = new AuditableQuery("test");
         var response = "success";
-        var next = () => Task.FromResult(response);
+        Task<string> Next()
+        {
+            return Task.FromResult(response);
+        }
 
         // Act
-        var result = await behavior.Handle(request, next, CancellationToken.None);
+        var result = await behavior.Handle(request, Next, CancellationToken.None);
 
         // Assert
         Assert.Equal("success", result);
         await sink.Received(1)
             .RecordAsync(
                 Arg.Is<AuditEntry>(e =>
-                    e.ActionName == "Query.Read" && e.RequestType == typeof(AuditableQuery).Name && e.Outcome == "String" // The response type name
-                ),
+                    e.ActionName == "Query.Read" && e.RequestType == typeof(AuditableQuery).Name && e.Outcome == "String"
+                ) // The response type name
+                ,
                 CancellationToken.None
             );
     }
@@ -45,10 +49,13 @@ public class AuditingBehaviorTests
         var sink = Substitute.For<IAuditSink>();
         var behavior = new AuditingBehavior<AuditableQuery, string>(sink);
         var request = new AuditableQuery("test");
-        var next = () => Task.FromResult("response");
+        static Task<string> Next()
+        {
+            return Task.FromResult("response");
+        }
 
         // Act
-        await behavior.Handle(request, next, CancellationToken.None);
+        await behavior.Handle(request, Next, CancellationToken.None);
 
         // Assert
         await sink.Received(1).RecordAsync(Arg.Is<AuditEntry>(e => e.ActionName == "Query.Read"), CancellationToken.None);
@@ -61,10 +68,13 @@ public class AuditingBehaviorTests
         var sink = Substitute.For<IAuditSink>();
         var behavior = new AuditingBehavior<AuditableQuery, string>(sink);
         var request = new AuditableQuery("test");
-        var next = () => Task.FromResult("response");
+        static Task<string> Next()
+        {
+            return Task.FromResult("response");
+        }
 
         // Act
-        await behavior.Handle(request, next, CancellationToken.None);
+        await behavior.Handle(request, Next, CancellationToken.None);
 
         // Assert
         await sink.Received(1).RecordAsync(Arg.Is<AuditEntry>(e => e.RequestType == "AuditableQuery"), CancellationToken.None);
@@ -78,10 +88,13 @@ public class AuditingBehaviorTests
         var behavior = new AuditingBehavior<AuditableQuery, Failure>(sink);
         var request = new AuditableQuery("test");
         var response = new Failure("Operation failed");
-        var next = () => Task.FromResult(response);
+        Task<Failure> Next()
+        {
+            return Task.FromResult(response);
+        }
 
         // Act
-        await behavior.Handle(request, next, CancellationToken.None);
+        await behavior.Handle(request, Next, CancellationToken.None);
 
         // Assert
         await sink.Received(1).RecordAsync(Arg.Is<AuditEntry>(e => e.Outcome == "Failure"), CancellationToken.None);
@@ -121,11 +134,15 @@ public class AuditingBehaviorTests
         var sink = Substitute.For<IAuditSink>();
         var behavior = new AuditingBehavior<AuditableQuery, string>(sink);
         var request = new AuditableQuery("test");
-        var next = () => Task.FromResult("response");
+        static Task<string> Next()
+        {
+            return Task.FromResult("response");
+        }
+
         var beforeCall = DateTime.UtcNow;
 
         // Act
-        await behavior.Handle(request, next, CancellationToken.None);
+        await behavior.Handle(request, Next, CancellationToken.None);
 
         var afterCall = DateTime.UtcNow;
 
@@ -145,10 +162,13 @@ public class AuditingBehaviorTests
         var behavior = new AuditingBehavior<AuditableQuery, string>(sink);
         var request = new AuditableQuery("test");
         var expectedResponse = "my-response";
-        var next = () => Task.FromResult(expectedResponse);
+        Task<string> Next()
+        {
+            return Task.FromResult(expectedResponse);
+        }
 
         // Act
-        var result = await behavior.Handle(request, next, CancellationToken.None);
+        var result = await behavior.Handle(request, Next, CancellationToken.None);
 
         // Assert
         Assert.Equal(expectedResponse, result);
@@ -162,7 +182,10 @@ public class AuditingBehaviorTests
         var behavior = new AuditingBehavior<AuditableQuery, int>(sink);
         var request = new AuditableQuery("test");
         var expectedValue = 42;
-        Task<int> Next() => Task.FromResult(expectedValue);
+        Task<int> Next()
+        {
+            return Task.FromResult(expectedValue);
+        }
 
         // Act
         var result = await behavior.Handle(request, Next, CancellationToken.None);
@@ -178,10 +201,13 @@ public class AuditingBehaviorTests
         var sink = Substitute.For<IAuditSink>();
         var behavior = new AuditingBehavior<AuditableQuery, string?>(sink);
         var request = new AuditableQuery("test");
-        var next = () => Task.FromResult<string?>(null);
+        static Task<string?> Next()
+        {
+            return Task.FromResult<string?>(null);
+        }
 
         // Act
-        var result = await behavior.Handle(request, next, CancellationToken.None);
+        var result = await behavior.Handle(request, Next, CancellationToken.None);
 
         // Assert
         Assert.Null(result);
@@ -197,10 +223,13 @@ public class AuditingBehaviorTests
         contextAccessor.Context.Returns(new RequestContext { UserId = "user-42" });
         var behavior = new AuditingBehavior<AuditableQuery, string>(sink, contextAccessor: contextAccessor);
         var request = new AuditableQuery("test");
-        var next = () => Task.FromResult("response");
+        static Task<string> Next()
+        {
+            return Task.FromResult("response");
+        }
 
         // Act
-        var result = await behavior.Handle(request, next, CancellationToken.None);
+        var result = await behavior.Handle(request, Next, CancellationToken.None);
 
         // Assert - the response is unaffected, and UserId flows through end-to-end from the accessor.
         Assert.Equal("response", result);
@@ -216,10 +245,13 @@ public class AuditingBehaviorTests
         contextAccessor.Context.Returns((RequestContext?)null);
         var behavior = new AuditingBehavior<AuditableQuery, string>(sink, contextAccessor: contextAccessor);
         var request = new AuditableQuery("test");
-        var next = () => Task.FromResult("response");
+        static Task<string> Next()
+        {
+            return Task.FromResult("response");
+        }
 
         // Act
-        var result = await behavior.Handle(request, next, CancellationToken.None);
+        var result = await behavior.Handle(request, Next, CancellationToken.None);
 
         // Assert - no exception, auditing still succeeds, UserId stays null.
         Assert.Equal("response", result);
@@ -234,10 +266,13 @@ public class AuditingBehaviorTests
         var sink = Substitute.For<IAuditSink>();
         var behavior = new AuditingBehavior<AuditableQuery, string>(sink);
         var request = new AuditableQuery("test");
-        var next = () => Task.FromResult("response");
+        static Task<string> Next()
+        {
+            return Task.FromResult("response");
+        }
 
         // Act
-        var result = await behavior.Handle(request, next, CancellationToken.None);
+        var result = await behavior.Handle(request, Next, CancellationToken.None);
 
         // Assert - no exception, auditing still succeeds, UserId stays null.
         Assert.Equal("response", result);

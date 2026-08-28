@@ -24,11 +24,13 @@ public class RateLimitedBehaviorTests
             DefaultOutcomeCaseRegistry.Instance
         );
         var request = new ThrottledQuery("test");
-        Func<Task<OperationOutcome<string, RateLimited>>> next = () =>
-            Task.FromResult<OperationOutcome<string, RateLimited>>(new OperationOutcome<string, RateLimited>("success"));
+        static Task<OperationOutcome<string, RateLimited>> Next()
+        {
+            return Task.FromResult<OperationOutcome<string, RateLimited>>(new OperationOutcome<string, RateLimited>("success"));
+        }
 
         // Act
-        var result = await behavior.Handle(request, next, CancellationToken.None);
+        var result = await behavior.Handle(request, Next, CancellationToken.None);
 
         // Assert
         Assert.Equal("success", result.Value);
@@ -49,11 +51,13 @@ public class RateLimitedBehaviorTests
             DefaultOutcomeCaseRegistry.Instance
         );
         var request = new ThrottledQuery("test");
-        Func<Task<OperationOutcome<string, RateLimited>>> next = () =>
+        static Task<OperationOutcome<string, RateLimited>> Next()
+        {
             throw new InvalidOperationException("Handler should not be called");
+        }
 
         // Act
-        var result = await behavior.Handle(request, next, CancellationToken.None);
+        var result = await behavior.Handle(request, Next, CancellationToken.None);
 
         // Assert - Should return RateLimited instead of calling next
         var rateLimited = Assert.IsType<RateLimited>(result.Value);
@@ -76,11 +80,13 @@ public class RateLimitedBehaviorTests
             DefaultOutcomeCaseRegistry.Instance
         );
         var request = new ThrottledQuery("test");
-        Func<Task<OperationOutcome<string, RateLimited>>> next = () =>
+        static Task<OperationOutcome<string, RateLimited>> Next()
+        {
             throw new InvalidOperationException("Should not be called");
+        }
 
         // Act
-        var result = await behavior.Handle(request, next, CancellationToken.None);
+        var result = await behavior.Handle(request, Next, CancellationToken.None);
 
         // Assert
         var rateLimited = Assert.IsType<RateLimited>(result.Value);
@@ -103,14 +109,14 @@ public class RateLimitedBehaviorTests
         var request = new ThrottledQuery("test");
         var nextCalled = false;
 
-        Func<Task<OperationOutcome<string, RateLimited>>> next = () =>
+        Task<OperationOutcome<string, RateLimited>> Next()
         {
             nextCalled = true;
             return Task.FromResult<OperationOutcome<string, RateLimited>>(new OperationOutcome<string, RateLimited>("success"));
-        };
+        }
 
         // Act
-        await behavior.Handle(request, next, CancellationToken.None);
+        await behavior.Handle(request, Next, CancellationToken.None);
 
         // Assert - next should not be called
         Assert.False(nextCalled);
@@ -134,11 +140,14 @@ public class RateLimitedBehaviorTests
             DefaultOutcomeCaseRegistry.Instance
         );
         var request = new MisshapenThrottledQuery();
-        Func<Task<OperationOutcome<string, NotFound>>> next = () => throw new InvalidOperationException("Should not be called");
+        static Task<OperationOutcome<string, NotFound>> Next()
+        {
+            throw new InvalidOperationException("Should not be called");
+        }
 
         // Act
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            behavior.Handle(request, next, CancellationToken.None)
+            behavior.Handle(request, Next, CancellationToken.None)
         );
 
         // Assert
@@ -154,11 +163,13 @@ public class RateLimitedBehaviorTests
             DefaultOutcomeCaseRegistry.Instance
         );
         var request = new ThrottledQuery("test");
-        Func<Task<OperationOutcome<string, RateLimited>>> next = () =>
-            Task.FromResult<OperationOutcome<string, RateLimited>>(new OperationOutcome<string, RateLimited>("success"));
+        static Task<OperationOutcome<string, RateLimited>> Next()
+        {
+            return Task.FromResult<OperationOutcome<string, RateLimited>>(new OperationOutcome<string, RateLimited>("success"));
+        }
 
         // Act
-        var result = await behavior.Handle(request, next, CancellationToken.None);
+        var result = await behavior.Handle(request, Next, CancellationToken.None);
 
         // Assert
         Assert.Equal("success", result.Value);
@@ -182,11 +193,13 @@ public class RateLimitedBehaviorTests
             DefaultOutcomeCaseRegistry.Instance
         );
         var request = new ThrottledQuery("test");
-        Func<Task<OperationOutcome<string, RateLimited>>> next = () =>
+        static Task<OperationOutcome<string, RateLimited>> Next()
+        {
             throw new InvalidOperationException("Should not be called");
+        }
 
         // Act
-        var result = await behavior.Handle(request, next, CancellationToken.None);
+        var result = await behavior.Handle(request, Next, CancellationToken.None);
 
         // Assert
         Assert.True(delegateCalled);

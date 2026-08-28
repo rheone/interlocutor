@@ -38,10 +38,10 @@ public record TestNotification(string Message) : INotification;
 
 public class TrackingBehavior<TRequest, TResponse>(Action track) : IPipelineBehavior<TRequest, TResponse>
 {
-    public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         track();
-        return await next();
+        return next();
     }
 }
 
@@ -155,7 +155,7 @@ public class MediatorTests
     }
 
     [Fact]
-    public async Task Publish_WithNoHandlers_DoesNotThrow()
+    public Task Publish_WithNoHandlers_DoesNotThrow()
     {
         // Arrange
         var services = new ServiceCollection();
@@ -164,7 +164,7 @@ public class MediatorTests
         var mediator = provider.GetRequiredService<IMediator>();
 
         // Act & Assert - no handlers registered for TestNotification; publishing must not throw.
-        await mediator.Publish(new TestNotification("hello"), CancellationToken.None);
+        return mediator.Publish(new TestNotification("hello"), CancellationToken.None);
     }
 
     [Fact]

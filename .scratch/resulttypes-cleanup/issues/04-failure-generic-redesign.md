@@ -1,3 +1,5 @@
+> **Status: done** - merged in `bf77119`.
+
 # 04 - Failure/Failure&lt;TErrorCode&gt;/Failures/Failures&lt;TErrorCode&gt; redesign
 
 ## Labels

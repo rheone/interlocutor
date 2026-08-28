@@ -1,6 +1,8 @@
+> **Status: done** - resolved via maintainer-confirmed deliberate edit (commit `024a606`), verified 2026-08-24; see Resolution and Comments below. Label corrected from `wontfix` to reflect that this closed as resolved, not as won't-fix.
+
 ## Labels
 
-wontfix
+ready-for-agent
 
 ## What to build
 

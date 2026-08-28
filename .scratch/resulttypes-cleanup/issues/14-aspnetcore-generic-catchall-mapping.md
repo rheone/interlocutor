@@ -1,3 +1,5 @@
+> **Status: done** - merged in `7f9257f`.
+
 # 14 - AspNetCore generic catch-all mapping via IOutcomeCaseRegistry
 
 ## Labels

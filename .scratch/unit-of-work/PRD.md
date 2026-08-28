@@ -1,6 +1,6 @@
 # PRD: Optional Persistence Abstraction - Domain Repository and Unit of Work
 
-Status: ready-for-agent
+Status: done - all 6 issues closed (implemented)
 
 Design decisions for this feature are recorded in [ADR-0017](../../docs/adr/0017-optional-persistence-abstraction-repository-and-unit-of-work.md). Background research is in [research.md](research.md). This PRD exists to break ADR-0017 into implementation issues; it does not re-derive the reasoning in the ADR.
 

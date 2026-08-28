@@ -1,3 +1,5 @@
+> **Status: done** - merged in `d8ac3ce`.
+
 # 13 - AspNetCore arity 3-6 mapping + new failure-case handling
 
 ## Labels

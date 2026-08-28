@@ -1,3 +1,5 @@
+> **Status: done** - merged in `341bbec`.
+
 # 06 - Uniform ToString() for existing case types
 
 ## Labels

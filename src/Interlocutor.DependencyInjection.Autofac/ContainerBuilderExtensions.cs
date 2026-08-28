@@ -236,7 +236,6 @@ public static class InterlocutorAutofacExtensions
             case RegistrationLifetime.Transient:
                 registrationBuilder.InstancePerDependency();
                 break;
-            case RegistrationLifetime.Scoped:
             default:
                 registrationBuilder.InstancePerLifetimeScope();
                 break;

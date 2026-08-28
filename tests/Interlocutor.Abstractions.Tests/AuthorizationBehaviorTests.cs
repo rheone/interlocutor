@@ -40,11 +40,13 @@ public class AuthorizationBehaviorTests
             DefaultOutcomeCaseRegistry.Instance
         );
         var request = new ProtectedQuery("test");
-        Func<Task<OperationOutcome<string, Forbidden>>> next = () =>
-            Task.FromResult<OperationOutcome<string, Forbidden>>(new OperationOutcome<string, Forbidden>("success"));
+        static Task<OperationOutcome<string, Forbidden>> Next()
+        {
+            return Task.FromResult<OperationOutcome<string, Forbidden>>(new OperationOutcome<string, Forbidden>("success"));
+        }
 
         // Act
-        var result = await behavior.Handle(request, next, CancellationToken.None);
+        var result = await behavior.Handle(request, Next, CancellationToken.None);
 
         // Assert
         Assert.Equal("success", result.Value);
@@ -65,11 +67,13 @@ public class AuthorizationBehaviorTests
             DefaultOutcomeCaseRegistry.Instance
         );
         var request = new ProtectedQuery("test");
-        Func<Task<OperationOutcome<string, Forbidden>>> next = () =>
+        static Task<OperationOutcome<string, Forbidden>> Next()
+        {
             throw new InvalidOperationException("Handler should not be called");
+        }
 
         // Act
-        var result = await behavior.Handle(request, next, CancellationToken.None);
+        var result = await behavior.Handle(request, Next, CancellationToken.None);
 
         // Assert - Should return Forbidden instead of calling next
         Assert.IsType<Forbidden>(result.Value);
@@ -90,11 +94,13 @@ public class AuthorizationBehaviorTests
             DefaultOutcomeCaseRegistry.Instance
         );
         var request = new ProtectedQuery("test");
-        Func<Task<OperationOutcome<string, Forbidden>>> next = () =>
+        static Task<OperationOutcome<string, Forbidden>> Next()
+        {
             throw new InvalidOperationException("Should not be called");
+        }
 
         // Act
-        var result = await behavior.Handle(request, next, CancellationToken.None);
+        var result = await behavior.Handle(request, Next, CancellationToken.None);
 
         // Assert
         var forbidden = Assert.IsType<Forbidden>(result.Value);
@@ -117,14 +123,14 @@ public class AuthorizationBehaviorTests
         var request = new ProtectedQuery("test");
         var nextCalled = false;
 
-        Func<Task<OperationOutcome<string, Forbidden>>> next = () =>
+        Task<OperationOutcome<string, Forbidden>> Next()
         {
             nextCalled = true;
             return Task.FromResult<OperationOutcome<string, Forbidden>>(new OperationOutcome<string, Forbidden>("success"));
-        };
+        }
 
         // Act
-        await behavior.Handle(request, next, CancellationToken.None);
+        await behavior.Handle(request, Next, CancellationToken.None);
 
         // Assert - next should not be called
         Assert.False(nextCalled);
@@ -144,11 +150,13 @@ public class AuthorizationBehaviorTests
             DefaultOutcomeCaseRegistry.Instance
         );
         var request = new ProtectedQuery("test-value");
-        Func<Task<OperationOutcome<string, Forbidden>>> next = () =>
-            Task.FromResult<OperationOutcome<string, Forbidden>>(new OperationOutcome<string, Forbidden>("success"));
+        static Task<OperationOutcome<string, Forbidden>> Next()
+        {
+            return Task.FromResult<OperationOutcome<string, Forbidden>>(new OperationOutcome<string, Forbidden>("success"));
+        }
 
         // Act
-        await behavior.Handle(request, next, CancellationToken.None);
+        await behavior.Handle(request, Next, CancellationToken.None);
 
         // Assert - the exact request instance should be passed to the evaluator, not merely an equal copy.
         await policyEvaluator
@@ -175,12 +183,14 @@ public class AuthorizationBehaviorTests
             OperationOutcome<string, Interlocutor.CommonKernel.ResultTypes.NotFound>
         >(policyEvaluator, DefaultOutcomeCaseRegistry.Instance);
         var request = new MisshapenProtectedQuery();
-        Func<Task<OperationOutcome<string, Interlocutor.CommonKernel.ResultTypes.NotFound>>> next = () =>
+        static Task<OperationOutcome<string, NotFound>> Next()
+        {
             throw new InvalidOperationException("Should not be called");
+        }
 
         // Act
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            behavior.Handle(request, next, CancellationToken.None)
+            behavior.Handle(request, Next, CancellationToken.None)
         );
 
         // Assert
@@ -205,10 +215,13 @@ public class AuthorizationBehaviorTests
 
         var behavior = new AuthorizationBehavior<ProtectedHandRolledQuery, HandRolledOutcome>(policyEvaluator, caseRegistry);
         var request = new ProtectedHandRolledQuery();
-        Func<Task<HandRolledOutcome>> next = () => throw new InvalidOperationException("Should not be called");
+        static Task<HandRolledOutcome> Next()
+        {
+            throw new InvalidOperationException("Should not be called");
+        }
 
         // Act
-        var result = await behavior.Handle(request, next, CancellationToken.None);
+        var result = await behavior.Handle(request, Next, CancellationToken.None);
 
         // Assert
         Assert.Equal(typeof(Forbidden), result.CaseType);

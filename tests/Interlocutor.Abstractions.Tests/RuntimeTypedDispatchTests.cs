@@ -158,13 +158,13 @@ public class RuntimeTypedDispatchTests
     }
 
     [Fact]
-    public async Task Send_NullRequest_ThrowsArgumentNullException()
+    public Task Send_NullRequest_ThrowsArgumentNullException()
     {
         // Arrange
         var sender = CreateSender(_ => { });
 
         // Act & Assert
-        await Assert.ThrowsAsync<ArgumentNullException>(() => sender.Send(null!, CancellationToken.None));
+        return Assert.ThrowsAsync<ArgumentNullException>(() => sender.Send(null!, CancellationToken.None));
     }
 
     private static ISender CreateSender(Action<ServiceCollection> configure)

@@ -1,3 +1,5 @@
+> **Status: done** - merged in `7c80f85`.
+
 # 10 - TimeoutBehavior + IHasTimeout + ITimeoutPolicy
 
 ## Labels
