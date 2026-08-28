@@ -3,6 +3,7 @@ namespace Interlocutor.Abstractions.Tests;
 using System.Runtime.CompilerServices;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
+using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Queries;
 using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
@@ -48,6 +49,68 @@ public class RuntimeTypedDispatchTests
         Assert.IsType<IOperationOutcome>(outcome, exactMatch: false);
         var union = Assert.IsType<IUnion>(outcome, exactMatch: false);
         Assert.Equal(42, Assert.IsType<int>(union.Value));
+    }
+
+    [Fact]
+    public async Task Send_ObjectQuery_MatchedByOverrideRule_RunsOnlyDeclaredBehaviors()
+    {
+        // Arrange - proves ticket 04's guarantee: the runtime-typed dispatch path (used for scenarios like
+        // outbox replay, where the request's static type isn't known at the call site) resolves an
+        // overridden pipeline identically to the ordinary typed Send<TResponse> path, since both call
+        // PipelineChainResolver.ResolveChain.
+        var executed = new List<string>();
+        var sender = CreateSender(services =>
+        {
+            services.AddSingleton<IQueryHandler<TestQuery, OperationOutcome<int, Failure>>, TestQueryHandler>();
+            services.AddSingleton<IPipelineBehavior<TestQuery, OperationOutcome<int, Failure>>>(
+                new DroppedTrackingBehavior<TestQuery, OperationOutcome<int, Failure>>(executed.Add)
+            );
+            services.AddSingleton<IPipelineBehavior<TestQuery, OperationOutcome<int, Failure>>>(
+                new KeptTrackingBehavior<TestQuery, OperationOutcome<int, Failure>>(executed.Add)
+            );
+            services.AddSingleton<IPipelineOverrideRegistry>(
+                new FakeOverrideRegistry(t =>
+                    t == typeof(TestQuery) ? [typeof(KeptTrackingBehavior<TestQuery, OperationOutcome<int, Failure>>)] : null
+                )
+            );
+        });
+        object request = new TestQuery(21);
+
+        // Act
+        await sender.Send(request, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(["kept"], executed);
+    }
+
+    [Fact]
+    public async Task Send_ObjectQuery_UnmatchedByOverrideRule_RunsGeneralPurposeBaselineUnaffected()
+    {
+        // Arrange - proves ticket 04's other guarantee: a registry is present, but its only rule targets a
+        // different request type, so this request's runtime-typed dispatch must draw from the unaffected
+        // general-purpose baseline, identical to today's behavior.
+        var executed = new List<string>();
+        var sender = CreateSender(services =>
+        {
+            services.AddSingleton<IQueryHandler<TestQuery, OperationOutcome<int, Failure>>, TestQueryHandler>();
+            services.AddSingleton<IPipelineBehavior<TestQuery, OperationOutcome<int, Failure>>>(
+                new KeptTrackingBehavior<TestQuery, OperationOutcome<int, Failure>>(executed.Add)
+            );
+            services.AddSingleton<IPipelineOverrideRegistry>(
+                new FakeOverrideRegistry(t =>
+                    t == typeof(GreetCommand)
+                        ? [typeof(KeptTrackingBehavior<GreetCommand, OperationOutcome<string, Failure>>)]
+                        : null
+                )
+            );
+        });
+        object request = new TestQuery(21);
+
+        // Act
+        await sender.Send(request, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(["kept"], executed);
     }
 
     [Fact]

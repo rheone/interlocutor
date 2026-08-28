@@ -11,9 +11,10 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// <typeparam name="TResponse">The expected response type.</typeparam>
 /// <remarks>
 /// <para>
-/// Resolves the query handler and all applicable pipeline behaviors from DI, then composes them into a chain
-/// in reverse registration order (innermost-to-outermost). This wrapper is created once per query type and cached
-/// by the mediator to avoid repeated reflection.
+/// Resolves the query handler from DI, resolves the applicable pipeline behavior list via
+/// <see cref="PipelineChainResolver"/> - the general-purpose baseline, or a matched per-request-type
+/// override's declared list - then composes them into a chain in reverse order (innermost-to-outermost).
+/// This wrapper is created once per query type and cached by the mediator to avoid repeated reflection.
 /// </para>
 /// </remarks>
 internal sealed class QueryHandlerWrapper<TQuery, TResponse> : HandlerWrapper<TResponse>
@@ -42,10 +43,11 @@ internal sealed class QueryHandlerWrapper<TQuery, TResponse> : HandlerWrapper<TR
         // Start with the innermost pipeline delegate pointing to the handler itself.
         var pipeline = () => handler.Handle(typedRequest, ct);
 
-        // Wrap the handler with each behavior in reverse registration order so the first-registered behavior
-        // runs first (inbound) and last (outbound), creating an onion-like structure. Each behavior wraps
-        // the previous pipeline, capturing it in a closure.
-        foreach (var behavior in services.GetServices<IPipelineBehavior<TQuery, TResponse>>().Reverse())
+        // Wrap the handler with each behavior in reverse order (baseline registration order, or a matched
+        // override's declared order - see PipelineChainResolver) so the first entry runs first (inbound) and
+        // last (outbound), creating an onion-like structure. Each behavior wraps the previous pipeline,
+        // capturing it in a closure.
+        foreach (var behavior in PipelineChainResolver.ResolveChain<TQuery, TResponse>(services).Reverse())
         {
             var next = pipeline;
             pipeline = () => behavior.Handle(typedRequest, next, ct);

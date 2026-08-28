@@ -19,11 +19,12 @@ using Interlocutor.Abstractions.Queries;
 internal static class RegistrationValidator
 {
     /// <summary>
-    /// Checks <paramref name="registrations"/>, <paramref name="candidates"/>, and <paramref name="matchRules"/>
-    /// for every problem <see cref="InterlocutorBuilder.ValidateOnBuild"/> documents: a query or command request
-    /// type discovered while scanning with no matching handler, a required type-matching rule that matched
-    /// nothing, and two registrations of the same (service type, implementation type) pair at conflicting
-    /// lifetimes.
+    /// Checks <paramref name="registrations"/>, <paramref name="candidates"/>, <paramref name="matchRules"/>,
+    /// and <paramref name="overrideRules"/> for every problem <see cref="InterlocutorBuilder.ValidateOnBuild"/>
+    /// documents: a query or command request type discovered while scanning with no matching handler, a
+    /// required type-matching rule that matched nothing, two registrations of the same (service type,
+    /// implementation type) pair at conflicting lifetimes, and two pipeline override rules matching the same
+    /// request type.
     /// </summary>
     /// <param name="registrations">Every registration accumulated so far, as <see cref="InterlocutorBuilder.DescribeRegistrations"/> assembled it.</param>
     /// <param name="candidates">Every candidate type found while scanning, as <see cref="InterlocutorBuilder"/> assembled it.</param>
@@ -32,6 +33,9 @@ internal static class RegistrationValidator
     /// Every open-generic contract expected to have at most one implementation per closed instantiation -
     /// the three built-in single-winner handler contracts plus any a consumer opted in via
     /// <see cref="InterlocutorBuilder.RequireUniqueClosure"/>.
+    /// </param>
+    /// <param name="overrideRules">
+    /// Every Tier-1 pipeline override rule added via <see cref="InterlocutorPipelineBuilder.OverridePipelineFor"/>.
     /// </param>
     /// <returns>Every problem found.</returns>
     [RequiresUnreferencedCode(
@@ -47,7 +51,8 @@ internal static class RegistrationValidator
         IReadOnlyList<InterlocutorRegistration> registrations,
         IReadOnlyList<Type> candidates,
         IReadOnlyList<TypeMatchRule> matchRules,
-        IReadOnlyList<Type> uniqueClosureContracts
+        IReadOnlyList<Type> uniqueClosureContracts,
+        IReadOnlyList<PipelineOverrideRule> overrideRules
     )
     {
         var problems = new List<RegistrationProblem>();
@@ -153,6 +158,54 @@ internal static class RegistrationValidator
             }
         }
 
+        // Two or more override rules whose predicates both match the same request type - checked only
+        // against candidates that are actually a query, value-returning command, or void command, the same
+        // request-type scope OverridePipelineFor's rules are ever tested against at dispatch time.
+        if (overrideRules.Count > 1)
+        {
+            foreach (var requestType in candidates.Where(IsRequestType))
+            {
+                var matchingRules = overrideRules.Where(rule => rule.Predicate(requestType)).ToList();
+                if (matchingRules.Count > 1)
+                {
+                    problems.Add(
+                        new RegistrationProblem(
+                            RegistrationProblemKind.ConflictingPipelineOverride,
+                            $"{requestType.Name} is matched by {matchingRules.Count} pipeline override rules: "
+                                + $"{string.Join(", ", matchingRules.Select(rule => rule.Name))}."
+                        )
+                    );
+                }
+            }
+        }
+
         return problems;
     }
+
+    /// <summary>
+    /// Tests whether <paramref name="candidate"/> is a request type - a query, a value-returning command, or
+    /// a void command - the same scope a <see cref="PipelineOverrideRule"/> is ever matched against at
+    /// dispatch time. Unlike the narrower <see cref="RegistrationProblemKind.UnhandledRequestType"/> check
+    /// above, this includes the non-generic <see cref="ICommand"/> (void commands): an override rule matches
+    /// on the request's runtime type alone, independent of any declared response type, so a void command is
+    /// just as eligible to be matched - and to conflict - as a query or value-returning command.
+    /// </summary>
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2070:DynamicallyAccessedMembers",
+        Justification = "Only called from ComputeProblems, itself reached solely via the opt-in "
+            + "InterlocutorBuilder.ValidateOnBuild (annotated RequiresUnreferencedCode) - candidate is always "
+            + "one of that call's own scanned candidate types. See documentation/trim-and-aot-support.md."
+    )]
+    private static bool IsRequestType(Type candidate) =>
+        typeof(ICommand).IsAssignableFrom(candidate)
+        || candidate
+            .GetInterfaces()
+            .Any(iface =>
+                iface.IsGenericType
+                && (
+                    iface.GetGenericTypeDefinition() == typeof(IQuery<>)
+                    || iface.GetGenericTypeDefinition() == typeof(ICommand<>)
+                )
+            );
 }

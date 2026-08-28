@@ -31,4 +31,12 @@ public enum RegistrationProblemKind
     /// deliberately never checked - fan-out to many handlers per notification is its whole design.
     /// </summary>
     AmbiguousClosure,
+
+    /// <summary>
+    /// Two or more Tier-1 pipeline override rules added via <see cref="InterlocutorPipelineBuilder.OverridePipelineFor"/>
+    /// matched the same request type - which one should win is never decided silently or by call order.
+    /// There is no precedence-declaration escape hatch; resolve the conflict by narrowing one rule's match
+    /// criteria so the two no longer overlap.
+    /// </summary>
+    ConflictingPipelineOverride,
 }

@@ -7,7 +7,8 @@ using Interlocutor.Abstractions.Pipeline.Cases;
 
 /// <summary>
 /// Container-neutral fluent builder for pipeline composition alone - behaviors, stages, the
-/// recommended-chain sugar, and the try-add/override-able defaults the built-in behaviors depend on.
+/// recommended-chain sugar, per-request-type pipeline overrides, and the try-add/override-able defaults
+/// the built-in behaviors depend on.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -35,11 +36,21 @@ using Interlocutor.Abstractions.Pipeline.Cases;
 /// entry directly, so they win regardless of whether they are called before or after the corresponding
 /// <c>Add*Behavior</c> call in the same chain.
 /// </para>
+/// <para>
+/// <b>Per-request-type overrides (Tier 1) vs. the general-purpose baseline (Tier 2).</b>
+/// <see cref="Behaviors"/> is the general-purpose baseline every request type draws from unless
+/// <see cref="OverridePipelineFor"/> declares an override rule matching it - a full, positively-declared
+/// replacement of the baseline for matched requests, never a merge with or modification of it. See
+/// <see href="../../../docs/adr/0019-per-request-type-pipeline-overrides.md">ADR-0019</see> for the full
+/// rationale.
+/// </para>
 /// </remarks>
 public sealed class InterlocutorPipelineBuilder
 {
     private readonly List<InterlocutorRegistration> _behaviors = [];
     private readonly Dictionary<Type, InterlocutorRegistration> _defaults;
+    private readonly HashSet<Type> _overrideBehaviorTypesRegistered = [];
+    private readonly List<PipelineOverrideRule> _overrideRules = [];
     private readonly List<SkippedRegistration> _skipped = [];
     private readonly List<InterlocutorRegistration> _stages = [];
     private readonly List<InterlocutorFactoryRegistration> _stageFactories = [];
@@ -71,6 +82,12 @@ public sealed class InterlocutorPipelineBuilder
     /// </summary>
     /// <value>The flat, ordered list of pipeline behavior registrations, in builder-call order.</value>
     public IReadOnlyList<InterlocutorRegistration> Behaviors => this._behaviors;
+
+    /// <summary>
+    /// Gets every Tier-1 pipeline override rule added via <see cref="OverridePipelineFor"/>, in call order.
+    /// </summary>
+    /// <value>Every pipeline override rule added so far.</value>
+    public IReadOnlyList<PipelineOverrideRule> OverrideRules => this._overrideRules;
 
     /// <summary>
     /// Gets the try-add-able default registrations this builder has set, one per service type. When
@@ -132,6 +149,97 @@ public sealed class InterlocutorPipelineBuilder
         );
         return this;
     }
+
+    /// <summary>
+    /// Declares a Tier-1 pipeline override: a request type <paramref name="predicate"/> matches gets exactly
+    /// <paramref name="behaviors"/>, in the given order, in place of the general-purpose baseline (Tier 2)
+    /// entirely - a full, positively-declared replacement, never a merge with or modification of it. An
+    /// unmatched request's resolved pipeline is unaffected.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Every entry in <paramref name="behaviors"/> is also registered exactly as an ordinary
+    /// <see cref="AddBehavior"/> call would register it (deduplicated against a behavior type already added
+    /// by an earlier <see cref="OverridePipelineFor"/> call, so declaring the same behavior type in more than
+    /// one override rule does not register it twice), so it is resolvable at dispatch time. There is
+    /// deliberately no complementary "skip"/"exclude" primitive - declaring an override is the only action a
+    /// consumer takes.
+    /// </para>
+    /// <para>
+    /// A request matched by this rule that also structurally satisfies an existing marker interface
+    /// (<c>IAuditableRequest</c>, <c>IRequiresPolicy</c>, etc.) does not run that marker-constrained
+    /// behavior unless <paramref name="behaviors"/> names it explicitly - the matched request's resolved
+    /// pipeline is exactly and only <paramref name="behaviors"/>, enforced once, centrally, at the point
+    /// each dispatch path builds its behavior chain (see <c>Interlocutor.Abstractions.Pipeline.PipelineChainResolver</c>),
+    /// not by asking every behavior to check whether it should yield to an override.
+    /// </para>
+    /// <para>
+    /// Two rules whose predicates both match the same request type are a build-validation error - see
+    /// <see cref="RegistrationProblemKind.ConflictingPipelineOverride"/> - not a silent resolution. There is
+    /// no precedence-declaration escape hatch; narrow one rule's <paramref name="predicate"/> instead.
+    /// </para>
+    /// </remarks>
+    /// <param name="predicate">Tested against a request's runtime type at dispatch time.</param>
+    /// <param name="name">
+    /// A label identifying this rule, used in <see cref="RegistrationProblemKind.ConflictingPipelineOverride"/>
+    /// messages to name which rules conflict.
+    /// </param>
+    /// <param name="behaviors">
+    /// The complete, explicitly-ordered behavior list a matched request resolves instead of the
+    /// general-purpose baseline. Must not be empty.
+    /// </param>
+    /// <returns>This builder, for chaining.</returns>
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2072:DynamicallyAccessedMembers",
+        Justification = "Each entry in behaviors is expected to be a compile-time typeof(...) token from the "
+            + "caller, the same shape AddBehavior's own DynamicallyAccessedMembers-annotated parameter expects "
+            + "directly - IReadOnlyList<Type> cannot itself carry that per-element annotation, so it is "
+            + "re-asserted here rather than on the collection type. See documentation/trim-and-aot-support.md."
+    )]
+    public InterlocutorPipelineBuilder OverridePipelineFor(
+        Func<Type, bool> predicate,
+        string name,
+        IReadOnlyList<Type> behaviors
+    )
+    {
+        ArgumentNullException.ThrowIfNull(predicate);
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        ArgumentNullException.ThrowIfNull(behaviors);
+        if (behaviors.Count == 0)
+        {
+            throw new ArgumentException("An override pipeline must declare at least one behavior.", nameof(behaviors));
+        }
+
+        this._overrideRules.Add(new PipelineOverrideRule(predicate, name, behaviors));
+        foreach (var behaviorType in behaviors)
+        {
+            if (this._overrideBehaviorTypesRegistered.Add(behaviorType))
+            {
+                this.AddBehavior(behaviorType);
+            }
+        }
+
+        return this;
+    }
+
+    /// <summary>
+    /// Declares a Tier-1 pipeline override for exactly <typeparamref name="TRequest"/> - the convenience
+    /// overload of <see cref="OverridePipelineFor(Func{Type,bool},string,IReadOnlyList{Type})"/> for the
+    /// common single-type case. See that overload for the full override semantics.
+    /// </summary>
+    /// <typeparam name="TRequest">The request type this override applies to.</typeparam>
+    /// <param name="name">
+    /// A label identifying this rule, used in <see cref="RegistrationProblemKind.ConflictingPipelineOverride"/>
+    /// messages to name which rules conflict.
+    /// </param>
+    /// <param name="behaviors">
+    /// The complete, explicitly-ordered behavior list <typeparamref name="TRequest"/> resolves instead of
+    /// the general-purpose baseline. Must not be empty.
+    /// </param>
+    /// <returns>This builder, for chaining.</returns>
+    public InterlocutorPipelineBuilder OverridePipelineFor<TRequest>(string name, params Type[] behaviors) =>
+        this.OverridePipelineFor(t => t == typeof(TRequest), name, behaviors);
 
     /// <summary>
     /// Adds <see cref="LoggingBehavior{TRequest,TResponse}"/> at the current position in the chain.

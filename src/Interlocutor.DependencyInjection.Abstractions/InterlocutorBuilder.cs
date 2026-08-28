@@ -515,7 +515,8 @@ public sealed class InterlocutorBuilder
                 registrations,
                 this.CandidateTypesForMatching(typeLoadFailures).ToList(),
                 this._matchRules,
-                [.. BuiltInUniqueClosureContracts, .. this._uniqueClosureContracts]
+                [.. BuiltInUniqueClosureContracts, .. this._uniqueClosureContracts],
+                this._pipeline.OverrideRules
             )
             : [];
 
@@ -539,9 +540,10 @@ public sealed class InterlocutorBuilder
     /// checking the accumulated registration list, with no live container needed, for a query or command
     /// type discovered while scanning with no matching handler, a required type-matching rule
     /// (<see cref="AddTypeMatch"/>) that matched nothing, two registrations of the same (service type,
-    /// implementation type) pair at conflicting lifetimes, and more than one distinct implementation type
-    /// closing the same instantiation of a single-winner contract (<see cref="RequireUniqueClosure"/>).
-    /// When the container translator finds any such problem, it throws a single
+    /// implementation type) pair at conflicting lifetimes, more than one distinct implementation type
+    /// closing the same instantiation of a single-winner contract (<see cref="RequireUniqueClosure"/>), and
+    /// two pipeline override rules (<see cref="InterlocutorPipelineBuilder.OverridePipelineFor"/>) matching
+    /// the same request type. When the container translator finds any such problem, it throws a single
     /// <see cref="InterlocutorRegistrationValidationException"/> carrying every problem found, aggregated
     /// rather than failing on the first.
     /// </summary>
