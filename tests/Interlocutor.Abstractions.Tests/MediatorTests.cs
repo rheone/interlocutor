@@ -3,6 +3,7 @@ namespace Interlocutor.Abstractions.Tests;
 using System.Diagnostics;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
+using Interlocutor.Abstractions.Markers;
 using Interlocutor.Abstractions.Notifications;
 using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Queries;
@@ -36,12 +37,77 @@ public class TestVoidHandler : IVoidCommandHandler<TestVoidCommand, OperationOut
 
 public record TestNotification(string Message) : INotification;
 
+/// <summary>A query that also satisfies <see cref="IAuditableRequest"/> - used to prove the marker-leak-prevention
+/// guarantee: an override rule matching this request excludes a marker-constrained behavior it does not name,
+/// even though the request structurally satisfies that behavior's generic constraint.</summary>
+public record AuditableTestQuery(int Value) : IQuery<OperationOutcome<int, Failure>>, IAuditableRequest
+{
+    public string ActionName => "Test.Action";
+}
+
+public class AuditableTestQueryHandler : IQueryHandler<AuditableTestQuery, OperationOutcome<int, Failure>>
+{
+    public Task<OperationOutcome<int, Failure>> Handle(AuditableTestQuery query, CancellationToken ct) =>
+        Task.FromResult(new OperationOutcome<int, Failure>(query.Value));
+}
+
+/// <summary>A marker-constrained behavior - registered as an open generic, like the library's own
+/// <see cref="AuditingBehavior{TRequest,TResponse}"/> - that would resolve for any <see cref="IAuditableRequest"/>
+/// via the container's ordinary open-generic resolution unless an override rule excludes it.</summary>
+public class MarkerConstrainedTrackingBehavior<TRequest, TResponse>(Action track) : IPipelineBehavior<TRequest, TResponse>
+    where TRequest : IAuditableRequest
+{
+    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+    {
+        track();
+        return next();
+    }
+}
+
 public class TrackingBehavior<TRequest, TResponse>(Action track) : IPipelineBehavior<TRequest, TResponse>
 {
     public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         track();
         return next();
+    }
+}
+
+/// <summary>A tracking behavior an override rule can name to keep in a matched request's resolved chain -
+/// a distinct type from <see cref="DroppedTrackingBehavior{TRequest,TResponse}"/> so
+/// <c>PipelineChainResolver</c>'s type-based matching can tell the two apart.</summary>
+public class KeptTrackingBehavior<TRequest, TResponse>(Action<string> track) : IPipelineBehavior<TRequest, TResponse>
+{
+    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+    {
+        track("kept");
+        return next();
+    }
+}
+
+/// <summary>A tracking behavior registered as part of the general-purpose baseline but never named by an
+/// override rule - used to prove it is excluded once a rule matches. See
+/// <see cref="KeptTrackingBehavior{TRequest,TResponse}"/>.</summary>
+public class DroppedTrackingBehavior<TRequest, TResponse>(Action<string> track) : IPipelineBehavior<TRequest, TResponse>
+{
+    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+    {
+        track("dropped");
+        return next();
+    }
+}
+
+/// <summary>A minimal <see cref="IPipelineOverrideRegistry"/> test double - looks a request type up via
+/// <paramref name="lookup"/> instead of being built from real <c>InterlocutorPipelineBuilder</c> rules, so
+/// these tests exercise <see cref="Mediator"/>'s wiring without depending on
+/// <c>Interlocutor.DependencyInjection.Abstractions</c>.</summary>
+public class FakeOverrideRegistry(Func<Type, IReadOnlyList<Type>?> lookup) : IPipelineOverrideRegistry
+{
+    public bool TryGetOverride(Type requestType, out IReadOnlyList<Type> behaviorTypes)
+    {
+        var found = lookup(requestType);
+        behaviorTypes = found ?? [];
+        return found is not null;
     }
 }
 
@@ -77,6 +143,70 @@ public class MediatorTests
 
         // Assert
         Assert.True(invoked);
+    }
+
+    [Fact]
+    public async Task Send_Query_MatchedByOverrideRule_RunsOnlyDeclaredBehaviors()
+    {
+        // Arrange - two behaviors registered, but the override rule names only "kept"; the general-purpose
+        // baseline behavior ("dropped") must not run for a request the override matches.
+        var executed = new List<string>();
+        var mediator = CreateMediator<TestQueryHandler>(services =>
+        {
+            services.AddSingleton<IPipelineBehavior<TestQuery, OperationOutcome<int, Failure>>>(
+                new DroppedTrackingBehavior<TestQuery, OperationOutcome<int, Failure>>(executed.Add)
+            );
+            services.AddSingleton<IPipelineBehavior<TestQuery, OperationOutcome<int, Failure>>>(
+                new KeptTrackingBehavior<TestQuery, OperationOutcome<int, Failure>>(executed.Add)
+            );
+            services.AddSingleton<IPipelineOverrideRegistry>(
+                new FakeOverrideRegistry(t =>
+                    t == typeof(TestQuery) ? [typeof(KeptTrackingBehavior<TestQuery, OperationOutcome<int, Failure>>)] : null
+                )
+            );
+        });
+
+        // Act
+        await mediator.Send(new TestQuery(1), CancellationToken.None);
+
+        // Assert
+        Assert.Equal(["kept"], executed);
+    }
+
+    [Fact]
+    public async Task Send_Query_MatchedByOverrideRule_DoesNotRunMarkerConstrainedBehaviorItDoesNotName()
+    {
+        // Arrange - AuditableTestQuery structurally satisfies MarkerConstrainedTrackingBehavior's generic
+        // constraint, so the container's ordinary open-generic resolution would normally include it. The
+        // override rule matches this request but declares only KeptTrackingBehavior, so the marker-constrained
+        // behavior must not run.
+        var executed = new List<string>();
+        var services = new ServiceCollection();
+        services.AddSingleton<IQueryHandler<AuditableTestQuery, OperationOutcome<int, Failure>>, AuditableTestQueryHandler>();
+        services.AddSingleton<IPipelineBehavior<AuditableTestQuery, OperationOutcome<int, Failure>>>(
+            new MarkerConstrainedTrackingBehavior<AuditableTestQuery, OperationOutcome<int, Failure>>(() =>
+                executed.Add("marker")
+            )
+        );
+        services.AddSingleton<IPipelineBehavior<AuditableTestQuery, OperationOutcome<int, Failure>>>(
+            new KeptTrackingBehavior<AuditableTestQuery, OperationOutcome<int, Failure>>(executed.Add)
+        );
+        services.AddSingleton<IPipelineOverrideRegistry>(
+            new FakeOverrideRegistry(t =>
+                t == typeof(AuditableTestQuery)
+                    ? [typeof(KeptTrackingBehavior<AuditableTestQuery, OperationOutcome<int, Failure>>)]
+                    : null
+            )
+        );
+        services.AddSingleton<IMediator, Mediator>();
+        var provider = services.BuildServiceProvider();
+        var mediator = provider.GetRequiredService<IMediator>();
+
+        // Act
+        await mediator.Send(new AuditableTestQuery(1), CancellationToken.None);
+
+        // Assert
+        Assert.Equal(["kept"], executed);
     }
 
     [Fact]

@@ -44,6 +44,8 @@ else
 }
 ```
 
+A per-request-type pipeline override (`Pipeline.OverridePipelineFor`) applies uniformly regardless of dispatch path: a request type with a declared override resolves that same override whether it arrives through the ordinary typed `Send<TResponse>` API or through this runtime-typed overload - there is no divergence for a caller who uses both. See [Per-Request-Type Pipeline Overrides](pipeline-and-behaviors.md#per-request-type-pipeline-overrides) for how to declare one.
+
 ## IOperationOutcome Interface
 
 All outcome unions implement `IOperationOutcome`:

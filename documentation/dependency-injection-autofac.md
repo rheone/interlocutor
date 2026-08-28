@@ -81,6 +81,8 @@ containerBuilder.AddInterlocutor(builder =>
 });
 ```
 
+Per-request-type pipeline overrides (`Pipeline.OverridePipelineFor`) work identically under Autofac as under Microsoft DI: the same declaration API, the same resolved pipeline for a matched request, and the same exclusivity guarantee against marker-constrained behaviors it doesn't name. Declaring an override registers its behaviors through the same container-neutral translation every other behavior goes through - there is nothing Autofac-specific to configure. See [Per-Request-Type Pipeline Overrides](pipeline-and-behaviors.md#per-request-type-pipeline-overrides) for the full walkthrough.
+
 ### Registering from an Autofac module
 
 `AddInterlocutor` works identically inside a module's `Load` override - there is no module-specific variant:

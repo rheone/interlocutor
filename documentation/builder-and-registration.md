@@ -219,7 +219,7 @@ If the application has already registered `ILoggerFactory` before `AddInterlocut
   });
   ```
 
-  Besides an unhandled query/command type, it also catches a required `AddTypeMatch` rule that matched nothing, and two registrations of the same (service type, implementation type) pair at conflicting lifetimes. Every problem found is aggregated into one `InterlocutorRegistrationValidationException`, thrown from `AddInterlocutor()` before it mutates the container at all - carrying the same `RegistrationReport` `DescribeRegistrations()` returns, with `Problems` populated.
+  Besides an unhandled query/command type, it also catches a required `AddTypeMatch` rule that matched nothing, two registrations of the same (service type, implementation type) pair at conflicting lifetimes, and two `Pipeline.OverridePipelineFor` rules matching the same request type. Every problem found is aggregated into one `InterlocutorRegistrationValidationException`, thrown from `AddInterlocutor()` before it mutates the container at all - carrying the same `RegistrationReport` `DescribeRegistrations()` returns, with `Problems` populated.
 - **An explicit, opt-in runtime check**, made once your container is built: `IServiceProvider.ValidateHandlerRegistrations(params Assembly[])`. It reflects over the given assemblies, derives each request type's expected handler contract, and throws `InvalidOperationException` - naming every missing registration in one message - if any are absent. Unlike `ValidateOnBuild()`, this needs a live container, so it can also catch what a registration-list-only check cannot (this method's own scope is otherwise the same query/command check as `ValidateOnBuild()`).
 
 ```csharp

@@ -93,6 +93,59 @@ builder.Pipeline.AddUnitOfWorkBehavior();        // 5. Innermost
 - **Validation before transactions** - don't open a database transaction to discover the input was invalid. Catch input errors first.
 - **Transaction innermost** - it wraps only the handler's persistence work. It commits on success and rolls back on any `Failure` outcome, but not when an outer behavior short-circuits (e.g., when authorization denies the request - the caller shouldn't see a rolled-back transaction when they were never authorized to run the command).
 
+## Per-Request-Type Pipeline Overrides
+
+The recommended chain - or whatever chain you compose in its place - is a general-purpose baseline: every request type draws from it unless you declare an override. `OverridePipelineFor` lets a specific request type, or a predicate matching a set of request types, run an independent, explicitly-ordered pipeline **instead of** the baseline entirely - a full, positively-declared replacement, never a merge with or modification of it.
+
+### Worked example: an archival pipeline that skips authorization
+
+Say most of your application uses the recommended chain, but a background archival job dispatches its own commands under a system identity that never carries a user's authorization context - running `AuthorizationBehavior` against it would always deny it. Give the archival command its own pipeline instead of teaching every other request about the exception:
+
+```csharp
+public interface IArchivalRequest;
+
+public sealed record ArchiveOrder(Guid OrderId) : ICommand<OperationOutcome<Success, Failure>>, IArchivalRequest;
+
+public sealed class ArchivalAuditBehavior<TRequest, TResponse>(IAuditSink sink) : IPipelineBehavior<TRequest, TResponse>
+    where TRequest : IArchivalRequest
+{
+    public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+    {
+        var result = await next();
+        await sink.RecordAsync(new AuditEntry("Archival", typeof(TRequest).Name, "Completed", DateTime.UtcNow, null), ct);
+        return result;
+    }
+}
+```
+
+```csharp
+builder.Pipeline
+    .UseRecommendedChain()
+    .OverridePipelineFor<ArchiveOrder>("archive-order-pipeline", typeof(ArchivalAuditBehavior<,>));
+```
+
+`ArchiveOrder` now resolves exactly `ArchivalAuditBehavior<,>` - never `LoggingBehavior`, `AuthorizationBehavior`, `ValidationBehavior`, or the unit-of-work behavior the recommended chain also registers, even though `UseRecommendedChain()` ran first. Every other request type keeps drawing from the recommended chain unaffected.
+
+The `IArchivalRequest` constraint on `ArchivalAuditBehavior<,>` matters beyond `ArchiveOrder`: because `OverridePipelineFor` registers each declared behavior type with the container exactly as an ordinary `AddBehavior` call would, an *unconstrained* override behavior would resolve for every other request type too, via the container's ordinary open-generic resolution - not only the request type(s) the override rule names. Scope an override-specific behavior with a marker interface or a `where TRequest : ...` constraint the same way any unconstrained `AddBehavior` registration already requires.
+
+For matching more than one request type, use the predicate overload instead of the generic convenience one:
+
+```csharp
+builder.Pipeline.OverridePipelineFor(
+    predicate: t => typeof(IArchivalRequest).IsAssignableFrom(t),
+    name: "archival-pipeline",
+    behaviors: [typeof(ArchivalAuditBehavior<,>)]
+);
+```
+
+A request matched by a rule resolves *exactly* the declared list, in the declared order - the first entry runs first (inbound) and last (outbound), same as the baseline's own registration order. There is no "skip" or "exclude" primitive alongside it: declaring an override is the only action you take.
+
+A request that structurally satisfies an existing marker interface (`IAuditableRequest`, `IRequiresPolicy`, and so on) does not run that marker-constrained behavior once an override rule matches it, unless the override names the behavior explicitly - the override's declared list is exhaustive, not additive to whatever the marker would otherwise pull in. This is enforced once, centrally, at the point each dispatch path builds its behavior chain - not by asking every behavior to check whether it should yield to an override.
+
+Two override rules whose predicates both match the same request type are a build-validation error, not a silent resolution - see [Startup Validation](builder-and-registration.md#startup-validation). There is no precedence-declaration escape hatch; resolve a conflict by narrowing one rule's match criteria.
+
+Both dispatch paths - the ordinary typed `Send` API and the runtime-typed path used for scenarios like outbox replay - resolve an override identically; see [Runtime-Typed Dispatch](runtime-typed-dispatch.md).
+
 ## Validation, Authorization & Auditing Behaviors
 
 These three are the main cross-cutting concerns:

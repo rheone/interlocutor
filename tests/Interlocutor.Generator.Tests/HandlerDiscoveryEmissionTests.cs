@@ -105,7 +105,7 @@ public sealed class HandlerDiscoveryEmissionTests
             StringComparison.Ordinal
         );
         Assert.Contains(
-            "services.GetService(typeof(global::System.Collections.Generic.IEnumerable<global::Interlocutor.Abstractions.Pipeline.IPipelineBehavior<global::TestApp.GetFooQuery, global::Interlocutor.CommonKernel.OperationOutcome>>))",
+            "global::Interlocutor.Abstractions.Pipeline.PipelineChainResolver.ResolveChain<global::TestApp.GetFooQuery, global::Interlocutor.CommonKernel.OperationOutcome>(services)",
             dispatchSource,
             StringComparison.Ordinal
         );

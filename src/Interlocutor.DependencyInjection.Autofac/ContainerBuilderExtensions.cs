@@ -87,6 +87,15 @@ public static class InterlocutorAutofacExtensions
         );
         applier.Apply(interlocutorBuilder);
 
+        // Registered unconditionally, even when no override rule was ever declared, so PipelineChainResolver
+        // can resolve it without a null-check for "was AddInterlocutor used at all" - an empty rule set
+        // simply never matches, which is exactly today's unaffected baseline behavior. Constructed
+        // identically to the Microsoft DI package, so a matched request resolves the same pipeline
+        // regardless of container.
+        builder
+            .RegisterInstance(new PipelineOverrideRegistry(interlocutorBuilder.Pipeline.OverrideRules))
+            .As<IPipelineOverrideRegistry>();
+
         // Deferred to a build callback (rather than resolved eagerly here) since only the fully-built
         // container can answer whether the application actually registered an ILoggerFactory - Autofac's
         // registration order is unordered relative to this call, unlike Microsoft DI's IServiceCollection,

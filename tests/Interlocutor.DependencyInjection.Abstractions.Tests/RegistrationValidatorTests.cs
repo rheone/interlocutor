@@ -1,5 +1,6 @@
 namespace Interlocutor.DependencyInjection.Abstractions.Tests;
 
+using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Queries;
 using Interlocutor.CommonKernel;
 
@@ -138,6 +139,48 @@ public class RegistrationValidatorTests
     }
 
     [Fact]
+    public void ValidateOnBuild_DetectsTwoOverrideRulesMatchingTheSameRequestType()
+    {
+        // Arrange
+        var builder = new InterlocutorBuilder();
+
+        // Act
+        builder
+            .ScanAssembly(typeof(RegistrationValidatorTests).Assembly)
+            .Pipeline.OverridePipelineFor<OverriddenQuery>("first-rule", typeof(FirstOverrideBehavior<,>))
+            .OverridePipelineFor<OverriddenQuery>("second-rule", typeof(SecondOverrideBehavior<,>));
+        builder.ValidateOnBuild();
+
+        // Assert
+        var problem = Assert.Single(
+            builder.DescribeRegistrations().Problems,
+            p => p.Kind == RegistrationProblemKind.ConflictingPipelineOverride
+        );
+        Assert.Contains(nameof(OverriddenQuery), problem.Description);
+        Assert.Contains("first-rule", problem.Description);
+        Assert.Contains("second-rule", problem.Description);
+    }
+
+    [Fact]
+    public void ValidateOnBuild_SingleOverrideRuleMatch_HasNoConflictingPipelineOverrideProblem()
+    {
+        // Arrange
+        var builder = new InterlocutorBuilder();
+
+        // Act
+        builder
+            .ScanAssembly(typeof(RegistrationValidatorTests).Assembly)
+            .Pipeline.OverridePipelineFor<OverriddenQuery>("only-rule", typeof(FirstOverrideBehavior<,>));
+        builder.ValidateOnBuild();
+
+        // Assert
+        Assert.DoesNotContain(
+            builder.DescribeRegistrations().Problems,
+            p => p.Kind == RegistrationProblemKind.ConflictingPipelineOverride
+        );
+    }
+
+    [Fact]
     public void ValidateOnBuild_AggregatesEveryProblemIntoOneReport_NotJustTheFirst()
     {
         // Arrange
@@ -178,5 +221,23 @@ public class RegistrationValidatorTests
     {
         public Task<OperationOutcome> Handle(SampleQuery query, CancellationToken ct) =>
             Task.FromResult(default(OperationOutcome));
+    }
+
+    private sealed record OverriddenQuery : IQuery<OperationOutcome>;
+
+    private sealed class OverriddenQueryHandler : IQueryHandler<OverriddenQuery, OperationOutcome>
+    {
+        public Task<OperationOutcome> Handle(OverriddenQuery query, CancellationToken ct) =>
+            Task.FromResult(default(OperationOutcome));
+    }
+
+    private sealed class FirstOverrideBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+    {
+        public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) => next();
+    }
+
+    private sealed class SecondOverrideBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+    {
+        public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) => next();
     }
 }

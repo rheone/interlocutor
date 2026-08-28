@@ -11,9 +11,11 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// <typeparam name="TResult">The <see cref="IOperationOutcome"/>-shaped outcome type produced by the handler.</typeparam>
 /// <remarks>
 /// <para>
-/// Resolves the void command handler and all applicable pipeline behaviors from DI, then composes them into a chain.
-/// This is the wrapper for commands that return only outcomes (not domain data). The outcome type is resolved at call
-/// time based on the caller's type argument, enabling flexible outcome handling without modifying the handler.
+/// Resolves the void command handler from DI, resolves the applicable pipeline behavior list via
+/// <see cref="PipelineChainResolver"/> - the general-purpose baseline, or a matched per-request-type
+/// override's declared list - then composes them into a chain. This is the wrapper for commands that return
+/// only outcomes (not domain data). The outcome type is resolved at call time based on the caller's type
+/// argument, enabling flexible outcome handling without modifying the handler.
 /// </para>
 /// </remarks>
 internal sealed class VoidCommandHandlerWrapper<TCommand, TResult> : VoidHandlerWrapper<TResult>
@@ -42,10 +44,11 @@ internal sealed class VoidCommandHandlerWrapper<TCommand, TResult> : VoidHandler
         // Start with the innermost pipeline delegate pointing to the handler itself.
         Func<Task<TResult>> pipeline = () => handler.Handle(typedRequest, ct);
 
-        // Wrap the handler with each behavior in reverse registration order so the first-registered behavior
-        // runs first (inbound) and last (outbound), creating an onion-like structure. Each behavior wraps
-        // the previous pipeline, capturing it in a closure.
-        foreach (var behavior in services.GetServices<IPipelineBehavior<TCommand, TResult>>().Reverse())
+        // Wrap the handler with each behavior in reverse order (baseline registration order, or a matched
+        // override's declared order - see PipelineChainResolver) so the first entry runs first (inbound) and
+        // last (outbound), creating an onion-like structure. Each behavior wraps the previous pipeline,
+        // capturing it in a closure.
+        foreach (var behavior in PipelineChainResolver.ResolveChain<TCommand, TResult>(services).Reverse())
         {
             var next = pipeline;
             pipeline = () => behavior.Handle(typedRequest, next, ct);

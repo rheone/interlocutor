@@ -16,10 +16,11 @@ using System.Text;
 /// <c>Interlocutor.Abstractions</c>, so generated code in an arbitrary consuming assembly cannot subclass it
 /// without a solution-wide <c>InternalsVisibleTo</c> that would have to name every possible consumer assembly
 /// up front). Instead each wrapper reproduces the same behavior-chain composition
-/// <c>QueryHandlerWrapper{TQuery,TResponse}.Handle</c> performs - resolve the handler, resolve every
-/// <c>IPipelineBehavior&lt;TRequest,TResponse&gt;</c>, fold them around the handler call in reverse
-/// registration order - using only compile-time-known closed types and <see cref="System.IServiceProvider.GetService(System.Type)"/>,
-/// never a further <c>MakeGenericType</c>/<c>Activator.CreateInstance</c> call.
+/// <c>QueryHandlerWrapper{TQuery,TResponse}.Handle</c> performs: resolve the handler, resolve the applicable
+/// behavior list via <c>Interlocutor.Abstractions.Pipeline.PipelineChainResolver.ResolveChain</c> - the same
+/// call the hand-written wrappers make, so a per-request-type pipeline override resolves identically on
+/// both dispatch paths - and fold it around the handler call in reverse order, using only compile-time-known
+/// closed types, never a <c>MakeGenericType</c>/<c>Activator.CreateInstance</c> call.
 /// </para>
 /// <para>
 /// <b>Notification handlers are intentionally not given a dispatch wrapper here.</b> Unlike queries and
@@ -82,7 +83,6 @@ internal static class DispatchWrapperEmitter
         var className = GetWrapperClassName(handler);
         var requestType = handler.RequestTypeName;
         var responseType = handler.ResponseTypeName!;
-        var behaviorType = $"global::Interlocutor.Abstractions.Pipeline.IPipelineBehavior<{requestType}, {responseType}>";
 
         // Plain, XML-escaped <c> text, not <see cref="...">: these fully-qualified names carry generic
         // arguments (angle brackets and commas), which is neither valid cref syntax nor valid raw XML
@@ -122,22 +122,13 @@ internal static class DispatchWrapperEmitter
         );
         builder.AppendLine();
         builder.AppendLine(
-            $"            var behaviors = (global::System.Collections.Generic.IEnumerable<{behaviorType}>?)services.GetService(typeof(global::System.Collections.Generic.IEnumerable<{behaviorType}>));"
+            $"            var behaviorChain = global::Interlocutor.Abstractions.Pipeline.PipelineChainResolver.ResolveChain<{requestType}, {responseType}>(services);"
         );
-        builder.AppendLine($"            var behaviorList = new global::System.Collections.Generic.List<{behaviorType}>();");
-        builder.AppendLine("            if (behaviors is not null)");
-        builder.AppendLine("            {");
-        builder.AppendLine("                foreach (var behavior in behaviors)");
-        builder.AppendLine("                {");
-        builder.AppendLine("                    behaviorList.Add(behavior);");
-        builder.AppendLine("                }");
-        builder.AppendLine("            }");
-        builder.AppendLine();
-        builder.AppendLine("            for (var i = behaviorList.Count - 1; i >= 0; i--)");
+        builder.AppendLine("            for (var i = behaviorChain.Count - 1; i >= 0; i--)");
         builder.AppendLine("            {");
         builder.AppendLine("                var next = pipeline;");
         builder.AppendLine("                {");
-        builder.AppendLine("                    var behavior = behaviorList[i];");
+        builder.AppendLine("                    var behavior = behaviorChain[i];");
         builder.AppendLine("                    pipeline = () => behavior.Handle(request, next, ct);");
         builder.AppendLine("                }");
         builder.AppendLine("            }");

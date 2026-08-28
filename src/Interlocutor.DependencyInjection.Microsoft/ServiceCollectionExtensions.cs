@@ -90,6 +90,11 @@ public static class InterlocutorServiceCollectionExtensions
         applier.Apply(builder);
         TryLogRegistrationReport(services, report);
 
+        // Registered unconditionally, even when no override rule was ever declared, so PipelineChainResolver
+        // can resolve it without a null-check for "was AddInterlocutor used at all" - an empty rule set
+        // simply never matches, which is exactly today's unaffected baseline behavior.
+        services.AddSingleton<IPipelineOverrideRegistry>(new PipelineOverrideRegistry(builder.Pipeline.OverrideRules));
+
         // The real dispatcher is registered under its concrete type, not under IMediator directly, so the
         // root-scope guard (RootScopeGuardedMediator) can wrap it - see ADR-0011. RootServiceProviderMarker
         // is a singleton (see its own remarks for why that makes it a stable root reference); the detector
