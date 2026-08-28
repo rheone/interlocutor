@@ -10,6 +10,10 @@ A suggested reading order - each section builds on the ones above it. Jump strai
 
 - [Glossary](glossary.md) - domain vocabulary used throughout the project. Skim this first; every other doc assumes these terms.
 
+### Tutorial
+
+- [Beginner's Guide: Building a To-Do API](beginners-guide-todo-api.md) - a start-to-finish walkthrough building a small API from an empty project: Autofac DI, NHibernate persistence, the full recommended pipeline chain, both authorization styles, and a multi-subscriber notification. Complements, rather than duplicates, [Sample App Walkthrough](sample-app-walkthrough.md) below, which tours a different (EF Core / Microsoft DI / minimal API) runnable sample.
+
 ### Core concepts
 
 The fundamentals of writing a request and getting a response back.
