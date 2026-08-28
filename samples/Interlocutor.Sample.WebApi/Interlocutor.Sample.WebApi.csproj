@@ -18,7 +18,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Interlocutor.AspNetCore\Interlocutor.AspNetCore.csproj" />
     <ProjectReference Include="..\..\src\Interlocutor.DependencyInjection.Microsoft\Interlocutor.DependencyInjection.Microsoft.csproj" />
-    <ProjectReference Include="..\..\src\Interlocutor.EntityFrameworkCore\Interlocutor.EntityFrameworkCore.csproj" />
+    <ProjectReference Include="..\..\src\Interlocutor.Persistence.EntityFrameworkCore\Interlocutor.Persistence.EntityFrameworkCore.csproj" />
 
     <!-- Normal reference: brings in the handler assembly's types plus the InterlocutorGeneratedModuleAttribute
          that lets this project's own generator run aggregate the handler assembly's generated module too

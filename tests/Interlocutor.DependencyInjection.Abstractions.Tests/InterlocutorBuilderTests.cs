@@ -279,7 +279,7 @@ public class InterlocutorBuilderTests
         // Arrange
         var builder = new InterlocutorBuilder();
 
-        builder.Pipeline.AddTransactionBehavior();
+        builder.Pipeline.AddUnitOfWorkBehavior();
 
         // Act
         var report = builder.DescribeRegistrations();

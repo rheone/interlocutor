@@ -1,0 +1,254 @@
+namespace Interlocutor.Persistence.EntityFrameworkCore.Tests;
+
+using Interlocutor.Abstractions.Commands;
+using Interlocutor.Abstractions.Markers;
+using Interlocutor.Abstractions.Pipeline.Classifiers;
+using Interlocutor.CommonKernel;
+using Interlocutor.CommonKernel.ResultTypes;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+using NSubstitute;
+
+/// <summary>
+/// Covers <see cref="UnitOfWorkBehavior{TRequest,TResponse,TContext}"/>'s begin-on-first-write, eager-begin,
+/// commit/rollback, and <see cref="IExternalStoreRequest"/> opt-out behavior per ADR-0018. Runs against a real,
+/// open Sqlite in-memory connection (not a mocked <see cref="DbContext"/>) so transaction begin/commit/rollback
+/// have real, observable effects.
+/// </summary>
+public sealed class UnitOfWorkBehaviorTests : IDisposable
+{
+    private readonly SqliteConnection connection;
+    private readonly TestDbContext context;
+    private readonly Lazy<TestDbContext> lazyContext;
+
+    public UnitOfWorkBehaviorTests()
+    {
+        this.connection = new SqliteConnection("DataSource=:memory:");
+        this.connection.Open();
+
+        var options = new DbContextOptionsBuilder<TestDbContext>().UseSqlite(this.connection).Options;
+        this.context = new TestDbContext(options);
+        this.context.Database.EnsureCreated();
+        this.lazyContext = new Lazy<TestDbContext>(() => this.context);
+    }
+
+    [Fact]
+    public async Task Handle_DispatchThatNeverWrites_NeverOpensTransaction()
+    {
+        // Arrange
+        var behavior = this.CreateBehavior();
+
+        // Act
+        var result = await behavior.Handle(
+            new PlainRequest(),
+            () => Task.FromResult<OperationOutcome<Success, Failure>>(default(Success)),
+            CancellationToken.None
+        );
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Null(this.context.Database.CurrentTransaction);
+    }
+
+    [Fact]
+    public async Task Handle_WriteStagedDirectlyOnContext_OpensTransactionAndCommitsOnSuccess()
+    {
+        // Arrange
+        var behavior = this.CreateBehavior();
+
+        // Act
+        var result = await behavior.Handle(
+            new PlainRequest(),
+            () =>
+            {
+                // Direct DbContext access, bypassing IUnitOfWork/IDomainRepository entirely - the escape hatch
+                // ADR-0018 requires begin-on-first-write to cover too.
+                this.context.Widgets.Add(new Widget { Name = "direct-write" });
+                return Task.FromResult<OperationOutcome<Success, Failure>>(default(Success));
+            },
+            CancellationToken.None
+        );
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        await using var verify = this.CreateVerificationContext();
+        Assert.Equal(["direct-write"], verify.Widgets.Select(w => w.Name));
+    }
+
+    [Fact]
+    public async Task Handle_ClassifiedFailure_RollsBack_NoRowPersisted()
+    {
+        // Arrange
+        var behavior = this.CreateBehavior();
+
+        // Act
+        var result = await behavior.Handle(
+            new PlainRequest(),
+            () =>
+            {
+                this.context.Widgets.Add(new Widget { Name = "never-persisted" });
+                return Task.FromResult<OperationOutcome<Success, Failure>>(new Failure("rejected"));
+            },
+            CancellationToken.None
+        );
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        await using var verify = this.CreateVerificationContext();
+        Assert.Empty(verify.Widgets);
+    }
+
+    [Fact]
+    public async Task Handle_TransactionalRequest_BeginsEagerly_BeforeHandlerWrites()
+    {
+        // Arrange
+        var behavior = new UnitOfWorkBehavior<TransactionalRequest, OperationOutcome<Success, Failure>, TestDbContext>(
+            this.lazyContext
+        );
+        var transactionOpenBeforeWrite = false;
+
+        // Act
+        await behavior.Handle(
+            new TransactionalRequest(),
+            () =>
+            {
+                // Observed before any write happens - only an eager begin at pipeline start explains a
+                // non-null CurrentTransaction at this point.
+                transactionOpenBeforeWrite = this.context.Database.CurrentTransaction is not null;
+                return Task.FromResult<OperationOutcome<Success, Failure>>(default(Success));
+            },
+            CancellationToken.None
+        );
+
+        // Assert
+        Assert.True(transactionOpenBeforeWrite);
+    }
+
+    [Fact]
+    public async Task Handle_ExternalStoreRequest_NeverOpensLocalTransaction_EvenWhenItWrites()
+    {
+        // Arrange
+        var behavior = new UnitOfWorkBehavior<ExternalStoreRequest, OperationOutcome<Success, Failure>, TestDbContext>(
+            this.lazyContext
+        );
+
+        // Act
+        var result = await behavior.Handle(
+            new ExternalStoreRequest(),
+            async () =>
+            {
+                this.context.Widgets.Add(new Widget { Name = "external" });
+                // A raw SaveChangesAsync call, with no ambient transaction, auto-commits immediately under
+                // EF Core's own per-call implicit transaction - proving this request's write really did skip
+                // this behavior's local transaction machinery, not merely that nothing was staged.
+                await this.context.SaveChangesAsync(CancellationToken.None);
+                return default(Success);
+            },
+            CancellationToken.None
+        );
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        Assert.Null(this.context.Database.CurrentTransaction);
+    }
+
+    [Fact]
+    public async Task Handle_UnitOfWorkCancel_RollsBackImmediately_AndPreservesHandlerOutcome()
+    {
+        // Arrange
+        var unitOfWork = new EntityFrameworkUnitOfWork<TestDbContext>(this.lazyContext);
+        var behavior = this.CreateBehavior();
+
+        // Act
+        var result = await behavior.Handle(
+            new PlainRequest(),
+            async () =>
+            {
+                this.context.Widgets.Add(new Widget { Name = "cancelled" });
+                await unitOfWork.SaveChangesAsync(CancellationToken.None);
+
+                // The handler cancels, then still returns its own Success outcome - Cancel is not a
+                // short-circuit primitive, so the handler retains control of what it returns.
+                await unitOfWork.Cancel(CancellationToken.None);
+                return default(Success);
+            },
+            CancellationToken.None
+        );
+
+        // Assert
+        // The outcome is unchanged - Cancel does not override what the handler returns.
+        Assert.True(result.IsSuccess);
+
+        // But nothing was actually persisted: Cancel rolled back and cleared the change tracker, so the
+        // behavior's end-of-pipeline check found nothing pending and never re-committed.
+        await using var verify = this.CreateVerificationContext();
+        Assert.Empty(verify.Widgets);
+        Assert.Null(this.context.Database.CurrentTransaction);
+    }
+
+    [Fact]
+    public async Task Handle_UsesInjectedClassifier_NotOutcomeShape_ToDecideCommitVersusRollback()
+    {
+        // Arrange
+        var classifier = Substitute.For<IOutcomeClassifier>();
+        classifier.IsFailure(Arg.Any<object?>()).Returns(true);
+        var behavior = new UnitOfWorkBehavior<PlainRequest, OperationOutcome<Success, Failure>, TestDbContext>(
+            this.lazyContext,
+            classifier
+        );
+
+        // Act
+        var result = await behavior.Handle(
+            new PlainRequest(),
+            () =>
+            {
+                this.context.Widgets.Add(new Widget { Name = "should-not-persist" });
+                return Task.FromResult<OperationOutcome<Success, Failure>>(default(Success));
+            },
+            CancellationToken.None
+        );
+
+        // Assert
+        // The outcome itself is still Success-shaped ...
+        Assert.True(result.IsSuccess);
+
+        // ... but the injected classifier said "failure", so the behavior rolled back instead of committing.
+        await using var verify = this.CreateVerificationContext();
+        Assert.Empty(verify.Widgets);
+    }
+
+    public void Dispose()
+    {
+        this.context.Dispose();
+        this.connection.Dispose();
+    }
+
+    private UnitOfWorkBehavior<PlainRequest, OperationOutcome<Success, Failure>, TestDbContext> CreateBehavior() =>
+        new(this.lazyContext);
+
+    private TestDbContext CreateVerificationContext()
+    {
+        var options = new DbContextOptionsBuilder<TestDbContext>().UseSqlite(this.connection).Options;
+        return new TestDbContext(options);
+    }
+
+    private sealed record PlainRequest : ICommand<OperationOutcome<Success, Failure>>;
+
+    private sealed record TransactionalRequest : ICommand<OperationOutcome<Success, Failure>>, ITransactionalRequest;
+
+    private sealed record ExternalStoreRequest : ICommand<OperationOutcome<Success, Failure>>, IExternalStoreRequest;
+
+    private sealed class TestDbContext(DbContextOptions<TestDbContext> options) : DbContext(options)
+    {
+        public DbSet<Widget> Widgets => this.Set<Widget>();
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder) => modelBuilder.Entity<Widget>();
+    }
+
+    private sealed class Widget
+    {
+        public int Id { get; set; }
+
+        public string Name { get; set; } = string.Empty;
+    }
+}

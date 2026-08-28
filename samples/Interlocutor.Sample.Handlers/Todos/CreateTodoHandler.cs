@@ -12,9 +12,10 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// <param name="db">The sample's database context.</param>
 /// <remarks>
 /// Does not call <see cref="Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(CancellationToken)"/>
-/// itself - the EF Core <c>TransactionBehavior</c> does that after this handler returns a success outcome,
-/// as part of committing the transaction <see cref="CreateTodoCommand"/>'s <c>ITransactionalRequest</c>
-/// marker opts it into.
+/// itself - the EF Core <c>UnitOfWorkBehavior</c> does that after this handler returns a success outcome, as
+/// part of committing the transaction it opened. That transaction begins on this method's own write
+/// regardless of <see cref="CreateTodoCommand"/>'s marker; the marker's job is instead making that same
+/// transaction cover <see cref="DuplicateTitleGuardStage"/>'s earlier read too - see its remarks.
 /// </remarks>
 public sealed class CreateTodoHandler(SampleDbContext db)
     : ICommandHandler<CreateTodoCommand, OperationOutcome<TodoItem, ValidationErrors, Conflict>>

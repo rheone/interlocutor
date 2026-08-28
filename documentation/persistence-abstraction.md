@@ -3,39 +3,38 @@
 `Interlocutor.Persistence.Abstractions` is an optional, opt-in CRUD/paging surface - `IUnitOfWork` and `IDomainRepository<TEntity, TKey>` - for handlers that want a narrower, store-agnostic alternative to injecting `Lazy<TContext>`/`Lazy<ISession>` directly. The direct-injection path described in [Transactions & Store Integration](transactions-and-store-integration.md) remains fully supported; nothing here replaces it. This doc covers the interfaces and how to register an implementation; see [Persistence Implementations](persistence-implementations.md) for what each store's concrete implementation actually does underneath them.
 
 > [!IMPORTANT]
-> This is a façade over the same scoped session `TransactionBehavior` already manages, not a second transaction owner. `IUnitOfWork` has no `BeginTransactionAsync`/`CommitAsync`/`RollbackAsync` - transaction begin/commit/rollback stays inside `TransactionBehavior`, driven by `ITransactionalRequest`. See [Transactions & Store Integration](transactions-and-store-integration.md) for how that scoped session lifetime works; this package relies on it rather than re-explaining it.
+> `IUnitOfWork` *is* the transaction owner - not a pure façade over a transaction some other component manages. `SaveChangesAsync` opens a transaction first if one isn't already open; `Cancel` rolls one back immediately. The store-specific `UnitOfWorkBehavior` commits or rolls back automatically at pipeline completion based on the outcome classifier's verdict - see [Transactions & Store Integration](transactions-and-store-integration.md) for how that scoped session lifetime and begin-on-first-write work; this package relies on it rather than re-explaining it.
 
-Both sides - the handler's repository calls and `TransactionBehavior`'s commit/rollback - resolve the *same* lazily-constructed scoped session, never two:
+Both sides - the handler's repository calls and `UnitOfWorkBehavior`'s commit/rollback - resolve the *same* lazily-constructed scoped session, never two:
 
 ```mermaid
 sequenceDiagram
     participant Caller
-    participant Transaction as TransactionBehavior
+    participant Behavior as UnitOfWorkBehavior
     participant Handler
     participant Repo as IDomainRepository<TEntity, TKey>
     participant UoW as IUnitOfWork
     participant Session as Scoped DbContext / ISession
 
-    Caller->>Transaction: dispatch(ITransactionalRequest)
-    activate Transaction
-    Transaction->>Session: resolve (Lazy, first touch)
-    activate Session
-    Transaction->>Handler: next()
+    Caller->>Behavior: dispatch(request)
+    activate Behavior
+    Behavior->>Handler: next()
     activate Handler
     Handler->>Repo: InsertAsync(entity)
-    Repo->>Session: track change (same session)
+    Repo->>Session: track change (same session, no transaction yet)
     Handler->>UoW: SaveChangesAsync()
-    UoW->>Session: SaveChangesAsync / FlushAsync
-    Handler-->>Transaction: outcome
+    UoW->>Session: begin transaction (first write), then SaveChangesAsync / FlushAsync
+    activate Session
+    Handler-->>Behavior: outcome
     deactivate Handler
     alt Success
-        Transaction->>Session: commit
+        Behavior->>Session: commit
     else Failure case
-        Transaction->>Session: rollback
+        Behavior->>Session: rollback
     end
     deactivate Session
-    Transaction-->>Caller: outcome
-    deactivate Transaction
+    Behavior-->>Caller: outcome
+    deactivate Behavior
 ```
 
 ## Package layout
@@ -48,20 +47,21 @@ Three packages, mirroring the `Interlocutor.DependencyInjection.*` split:
 | `Interlocutor.Persistence.EntityFrameworkCore` | `EntityFrameworkUnitOfWork<TContext>`, `EntityFrameworkRepository<TEntity, TKey, TContext>`. |
 | `Interlocutor.Persistence.NHibernate` | `NHibernateUnitOfWork`, `NHibernateRepository<TEntity, TKey>`. |
 
-Taking a dependency on `Interlocutor.Persistence.Abstractions` alone never pulls in EF Core or NHibernate - pick the implementation package matching whichever store `Interlocutor.EntityFrameworkCore`/`Interlocutor.NHibernate` is already configured against.
+Taking a dependency on `Interlocutor.Persistence.Abstractions` alone never pulls in EF Core or NHibernate - pick the implementation package matching whichever store the application is already configured against.
 
 ## `IUnitOfWork`
 
-A single member, `SaveChangesAsync`, forwarding to the underlying scoped session:
+Two members: `SaveChangesAsync` persists pending changes (opening a transaction first if one isn't already open), and `Cancel` rolls back immediately:
 
 ```csharp
 public interface IUnitOfWork
 {
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
+    Task Cancel(CancellationToken cancellationToken = default);
 }
 ```
 
-For EF Core, `SaveChangesAsync` forwards to `DbContext.SaveChangesAsync`. For NHibernate, whose `ISession` already tracks pending changes and flushes them on transaction commit, it forwards to `ISession.FlushAsync` instead.
+For EF Core, `SaveChangesAsync` forwards to `DbContext.SaveChangesAsync`. For NHibernate, whose `ISession` already tracks pending changes and flushes them on transaction commit, it forwards to `ISession.FlushAsync` instead. `Cancel` is a rare-case escape hatch - see [Transactions & Store Integration](transactions-and-store-integration.md#cancel-forcing-a-rollback-without-a-failure-outcome) for when to reach for it.
 
 > [!NOTE]
 > Neither `IUnitOfWork` nor `IDomainRepository<TEntity, TKey>` implements `IAsyncDisposable`. Disposal of the underlying `DbContext`/`ISession` remains the DI container's job, exactly as it is for direct injection.
@@ -117,15 +117,16 @@ public sealed class GetOrderHandler(IDomainRepository<Order, int> orders)
 ```
 
 ```csharp
+// No ITransactionalRequest marker needed here - InsertAsync/SaveChangesAsync below are this dispatch's
+// first write, so UnitOfWorkBehavior opens a transaction for it automatically.
 public sealed class CreateOrderHandler(IDomainRepository<Order, int> orders, IUnitOfWork unitOfWork)
-    : ICommandHandler<CreateOrder, OperationOutcome<int, ValidationError>>,
-      ITransactionalRequest
+    : ICommandHandler<CreateOrder, OperationOutcome<int, ValidationError>>
 {
     public async Task<OperationOutcome<int, ValidationError>> Handle(CreateOrder command, CancellationToken ct)
     {
         var order = new Order(command.CustomerId, command.Items);
         await orders.InsertAsync(order, ct);
-        await unitOfWork.SaveChangesAsync(ct); // TransactionBehavior still owns commit/rollback
+        await unitOfWork.SaveChangesAsync(ct); // UnitOfWorkBehavior still owns commit/rollback
         return order.Id;
     }
 }

@@ -14,4 +14,11 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- UnitOfWorkSaveChangesInterceptor.IsSuppressed is internal - an implementation detail shared with
+         UnitOfWorkBehavior, not part of this package's public API - but UnitOfWorkSaveChangesInterceptorTests
+         exercises the suppression flag directly, in isolation from the behavior that sets it. -->
+    <InternalsVisibleTo Include="Interlocutor.Persistence.EntityFrameworkCore.Tests" />
+  </ItemGroup>
 </Project>

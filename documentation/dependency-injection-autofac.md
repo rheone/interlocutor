@@ -74,7 +74,7 @@ containerBuilder.AddInterlocutor(builder =>
     builder.Pipeline.AddLoggingBehavior();
     builder.Pipeline.AddAuditingBehavior();
     builder.Pipeline.AddValidationBehavior();  // no-op if Interlocutor.FluentValidation isn't referenced
-    builder.Pipeline.AddTransactionBehavior(); // no-op if neither store package is referenced
+    builder.Pipeline.AddUnitOfWorkBehavior(); // no-op if neither store package is referenced
 
     // Or the sugar form - calls exactly the five above, in this order:
     // builder.Pipeline.UseRecommendedChain();
@@ -236,7 +236,7 @@ public sealed class CreateOrderHandler(IDomainRepository<Order, int> orders, IUn
     {
         var order = new Order(command.CustomerId, command.Items);
         await orders.InsertAsync(order, ct);
-        await unitOfWork.SaveChangesAsync(ct); // TransactionBehavior still owns commit/rollback
+        await unitOfWork.SaveChangesAsync(ct); // UnitOfWorkBehavior still owns commit/rollback
         return order.Id;
     }
 }

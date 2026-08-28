@@ -47,7 +47,7 @@ public sealed class EntityFrameworkUnitOfWork<TContext>(Lazy<TContext> context) 
 }
 ```
 
-`SaveChangesAsync` forwards directly to `DbContext.SaveChangesAsync(CancellationToken)`. The constructor takes `Lazy<TContext>`, not `TContext` - the same idiom `Interlocutor.EntityFrameworkCore.TransactionBehavior` uses, so a dispatch that never touches this unit of work never pays for context construction. Registered scoped, matching `TContext`'s own registration lifetime.
+`SaveChangesAsync` begins a transaction first if one isn't already open, then forwards to `DbContext.SaveChangesAsync(CancellationToken)`; `Cancel` rolls back the current transaction (if any) and clears the change tracker. The constructor takes `Lazy<TContext>`, not `TContext` - the same idiom `UnitOfWorkBehavior` uses, so a dispatch that never touches this unit of work never pays for context construction. Registered scoped, matching `TContext`'s own registration lifetime.
 
 ### `EntityFrameworkRepository<TEntity, TKey, TContext>`
 
@@ -98,7 +98,7 @@ public sealed class NHibernateUnitOfWork(Lazy<ISession> session) : IUnitOfWork
 }
 ```
 
-`SaveChangesAsync` forwards to `ISession.FlushAsync(CancellationToken)`, not an EF Core-style change-tracker commit: NHibernate's `ISession` already tracks pending changes and flushes them automatically on transaction commit, so calling this explicitly is for the case where a handler wants pending changes visible to a *subsequent query within the same session*, before the transaction commits. The constructor takes `Lazy<ISession>`, matching `Interlocutor.NHibernate.TransactionBehavior`'s own idiom.
+`SaveChangesAsync` begins a transaction first if one isn't already active, then forwards to `ISession.FlushAsync(CancellationToken)`, not an EF Core-style change-tracker commit: NHibernate's `ISession` already tracks pending changes and flushes them automatically on transaction commit, so calling this explicitly is for the case where a handler wants pending changes visible to a *subsequent query within the same session*, before the transaction commits. `Cancel` rolls back the current transaction (if active) and calls `ISession.Clear()`. The constructor takes `Lazy<ISession>`, matching `UnitOfWorkBehavior`'s own idiom.
 
 ### `NHibernateRepository<TEntity, TKey>`
 
@@ -147,11 +147,11 @@ Both implementations satisfy the identical `IUnitOfWork`/`IDomainRepository<TEnt
 | `Query` backed by | `DbSet<TEntity>` | `ISession.Query<TEntity>()` |
 | Session/context concurrency contract | One `DbContext` instance is not thread-safe for concurrent operations | One `ISession` instance must not be shared across threads or more than one open transaction - see the `[!WARNING]` above |
 
-Neither implementation issues a database round-trip from `InsertAsync`/`UpdateAsync`/`DeleteAsync` themselves - both only stage the change in the session/context's own tracking, deferring the actual write to `SaveChangesAsync` (explicit or via `TransactionBehavior`'s commit). This symmetry is deliberate: a handler written against `IDomainRepository<TEntity, TKey>` behaves identically regardless of which store package is referenced.
+Neither implementation issues a database round-trip from `InsertAsync`/`UpdateAsync`/`DeleteAsync` themselves - both only stage the change in the session/context's own tracking, deferring the actual write to `SaveChangesAsync` (explicit or via `UnitOfWorkBehavior`'s commit). This symmetry is deliberate: a handler written against `IDomainRepository<TEntity, TKey>` behaves identically regardless of which store package is referenced.
 
 ## See Also
 
 - [Persistence Abstraction](persistence-abstraction.md) - the store-agnostic `IUnitOfWork`/`IDomainRepository<TEntity, TKey>` interfaces, `Page<T>`, `SortCriterion<TEntity>`, and how to register an implementation per container.
-- [Transactions & Store Integration](transactions-and-store-integration.md) - `TransactionBehavior`, the same scoped session both a repository and the transaction behavior resolve, and commit/rollback semantics.
+- [Transactions & Store Integration](transactions-and-store-integration.md) - `UnitOfWorkBehavior`, the same scoped session both a repository and the unit-of-work behavior resolve, begin-on-first-write, and commit/rollback semantics.
 - [Dependency Injection Packages](dependency-injection-packages.md) - the `AddInterlocutorUnitOfWork`/`AddInterlocutorRepository` registration extensions these implementations are registered through.
 - [Trim & AOT Support](trim-and-aot-support.md) - the `DynamicallyAccessedMembers` annotation on `EntityFrameworkRepository<TEntity, TKey, TContext>`'s `TEntity` parameter.

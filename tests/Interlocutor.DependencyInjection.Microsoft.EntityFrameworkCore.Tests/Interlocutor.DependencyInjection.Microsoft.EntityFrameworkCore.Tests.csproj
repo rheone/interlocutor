@@ -1,12 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="..\..\src\Interlocutor.DependencyInjection.Microsoft\Interlocutor.DependencyInjection.Microsoft.csproj" />
-    <!-- Deliberately isolated from Interlocutor.DependencyInjection.Microsoft.Tests: AddTransactionBehavior()
+    <!-- Deliberately isolated from Interlocutor.DependencyInjection.Microsoft.Tests: AddUnitOfWorkBehavior()
          prefers EF Core over NHibernate whenever EF Core is referenced in the same assembly, so this
          project exists solely to prove the Microsoft-DI-specific EF Core arity failure (and its documented
-         workaround) without disturbing that project's own NHibernate-arity-2 assumptions - see
-         PipelineOrderingIntegrationTests there and TransactionBehaviorArityTests here. -->
-    <ProjectReference Include="..\..\src\Interlocutor.EntityFrameworkCore\Interlocutor.EntityFrameworkCore.csproj" />
+         workaround), and to cover AddInterlocutorUnitOfWork/AddInterlocutorRepository's EF Core resolution,
+         without disturbing that project's own NHibernate-arity-2 assumptions - see PipelineOrderingIntegrationTests
+         there, UnitOfWorkBehaviorArityTests and PersistenceRegistrationTests here. -->
+    <ProjectReference Include="..\..\src\Interlocutor.Persistence.EntityFrameworkCore\Interlocutor.Persistence.EntityFrameworkCore.csproj" />
   </ItemGroup>
 
   <ItemGroup>

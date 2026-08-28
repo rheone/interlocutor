@@ -1,10 +1,10 @@
 namespace Interlocutor.DependencyInjection.Microsoft.Tests;
 
 using global::FluentValidation;
-using global::NHibernate;
-using global::NSubstitute;
 using global::Microsoft.Extensions.DependencyInjection;
 using global::Microsoft.Extensions.Logging;
+using global::NHibernate;
+using global::NSubstitute;
 using Interlocutor.Abstractions;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
@@ -89,7 +89,7 @@ public sealed class PipelineOrderingIntegrationTests
                 // Swapped: Validation before Authorization, the reverse of UseRecommendedChain's order.
                 .AddValidationBehavior()
                 .AddAuthorizationBehavior()
-                .AddTransactionBehavior()
+                .AddUnitOfWorkBehavior()
                 .OverrideAuditSink<RecordingAuditSink>()
                 .OverridePolicyEvaluator<RecordingPolicyEvaluator>()
         );
@@ -131,16 +131,29 @@ public sealed class PipelineOrderingIntegrationTests
         // configured, and if a When/Do side effect were already attached it would fire during this setup
         // call, polluting the log before the request is even sent.
         var transaction = Substitute.For<ITransaction>();
+        transaction.IsActive.Returns(true);
         transaction.CommitAsync(Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
 
+        // UnitOfWorkBehavior<,> reads ISession.Transaction (not just the BeginTransaction() return value) to
+        // detect whether a transaction is already open - matching real NHibernate, where BeginTransaction()
+        // sets this property as a side effect. transactionBegun tracks that side effect so Transaction only
+        // reports the active transaction after BeginTransaction() has actually run.
+        var transactionBegun = false;
         var session = Substitute.For<ISession>();
         session.BeginTransaction().Returns(transaction);
+        session.Transaction.Returns(_ => transactionBegun ? transaction : null);
 
         transaction.When(t => t.CommitAsync(Arg.Any<CancellationToken>())).Do(_ => log.Add("transaction-commit"));
-        session.When(s => s.BeginTransaction()).Do(_ => log.Add("transaction-begin"));
+        session
+            .When(s => s.BeginTransaction())
+            .Do(_ =>
+            {
+                transactionBegun = true;
+                log.Add("transaction-begin");
+            });
 
         services.AddScoped(_ => session);
-        // NHibernate.TransactionBehavior<,> takes a Lazy<ISession> factory, not ISession directly - Microsoft
+        // NHibernate.UnitOfWorkBehavior<,> takes a Lazy<ISession> factory, not ISession directly - Microsoft
         // DI has no built-in Lazy<T> support, so the factory is registered explicitly.
         services.AddScoped(sp => new Lazy<ISession>(() => sp.GetRequiredService<ISession>()));
         return transaction;
@@ -165,7 +178,7 @@ public sealed class PipelineOrderingIntegrationTests
             log.Add("handler");
             // The success payload must be the kernel's own Success type, not an arbitrary value: the default
             // outcome classifier - which every real behavior in this chain shares - fail-closes on unknown
-            // success types, and TransactionBehavior would (correctly) roll back instead of commit for one.
+            // success types, and UnitOfWorkBehavior would (correctly) roll back instead of commit for one.
             return Task.FromResult<OperationOutcome<Success, Forbidden>>(default(Success));
         }
     }

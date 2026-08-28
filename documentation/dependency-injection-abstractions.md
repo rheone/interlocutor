@@ -89,7 +89,7 @@ Recorded per registration so `DescribeRegistrations()` can explain *why* somethi
 | Type | Purpose |
 | :-- | :-- |
 | `RegistrationReport` | Every accumulated registration with its provenance; every `SkippedRegistration` (an optional-package probe, e.g. `AddValidationBehavior`, that found nothing to register); every `RegistrationProblem` once `ValidateOnBuild()` is configured. `Format()`/`ToString()` render it as text. |
-| `SkippedRegistration` | One optional-package probe that matched nothing - for example `AddTransactionBehavior()` when neither `Interlocutor.EntityFrameworkCore` nor `.NHibernate` is referenced. |
+| `SkippedRegistration` | One optional-package probe that matched nothing - for example `AddUnitOfWorkBehavior()` when neither `Interlocutor.Persistence.EntityFrameworkCore` nor `.Persistence.NHibernate` is referenced. |
 | `RegistrationProblem` / `RegistrationProblemKind` | One `ValidateOnBuild()` finding - an unhandled request type, a required `AddTypeMatch` rule that matched nothing, or two registrations of the same (service type, implementation type) pair at conflicting lifetimes. |
 
 ### Example: printing the report
@@ -108,7 +108,7 @@ Console.WriteLine(report.Format());
 //   LoggingBehavior<,> -> IPipelineBehavior<,> (Scoped, Explicit)
 //   ...
 // Skipped:
-//   AddTransactionBehavior(): no store package referenced
+//   AddUnitOfWorkBehavior(): no store package referenced
 ```
 
 Both `AddInterlocutor` entry points call `DescribeRegistrations()` themselves before applying anything to the container, so a report with `Problems.Count > 0` throws before any registration reaches your `IServiceCollection`/`ContainerBuilder` - see [Validation](#validation) below.

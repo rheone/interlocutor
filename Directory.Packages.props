@@ -28,7 +28,7 @@
   <!-- Entity Framework Core -->
   <ItemGroup>
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="11.0.0-preview.7.26381.103" />
-    <!-- An in-memory Sqlite database gives both TransactionBehavior tests (Interlocutor.EntityFrameworkCore.Tests)
+    <!-- An in-memory Sqlite database gives both UnitOfWorkBehavior tests (Interlocutor.Persistence.EntityFrameworkCore.Tests)
          and the sample application (Interlocutor.Sample.Handlers) a real ADO.NET transaction to commit/roll
          back against, which the relational-agnostic base package alone cannot provide. -->
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="11.0.0-preview.7.26381.103" />

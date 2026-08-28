@@ -36,8 +36,8 @@ public static class PersistenceServiceCollectionExtensions
     /// <remarks>
     /// Registered scoped, matching the underlying <c>DbContext</c>/<c>ISession</c>'s own registration
     /// lifetime, so this unit of work shares the same scoped session as
-    /// <c>Interlocutor.EntityFrameworkCore.TransactionBehavior</c> or
-    /// <c>Interlocutor.NHibernate.TransactionBehavior</c> for the same dispatch.
+    /// the EF Core or NHibernate <c>UnitOfWorkBehavior</c>
+    /// (<c>Interlocutor.Persistence.EntityFrameworkCore</c>/<c>.NHibernate</c>) for the same dispatch.
     /// </remarks>
     public static IServiceCollection AddInterlocutorUnitOfWork<TImplementation>(
         this IServiceCollection services,

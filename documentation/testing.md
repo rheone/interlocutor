@@ -71,14 +71,14 @@ public async Task GetUserHandler_WithNoUser_ReturnsNotFound()
 ## Integration Testing Pipeline Composition
 
 > [!WARNING]
-> The examples below register EF Core's `TransactionBehavior` under Microsoft.Extensions.DependencyInjection via `TestTransactionBehavior<,>`, a subclass closing `TContext` over the test's own `DbContext`, rather than `builder.Pipeline.AddTransactionBehavior()` directly. That's deliberate, not a style choice: `AddTransactionBehavior()` currently throws at container-build time for EF Core under Microsoft DI (it works fine under Autofac). See [Transactions & Store Integration](transactions-and-store-integration.md#entityframework-core-integration) for the full explanation and the same pattern used by the runnable sample.
+> The examples below register EF Core's `UnitOfWorkBehavior` under Microsoft.Extensions.DependencyInjection via `TestUnitOfWorkBehavior<,>`, a subclass closing `TContext` over the test's own `DbContext`, rather than `builder.Pipeline.AddUnitOfWorkBehavior()` directly. That's deliberate, not a style choice: `AddUnitOfWorkBehavior()` currently throws at container-build time for EF Core under Microsoft DI (it works fine under Autofac). See [Transactions & Store Integration](transactions-and-store-integration.md#entityframework-core-integration) for the full explanation and the same pattern used by the runnable sample.
 >
 > ```csharp
-> internal sealed class TestTransactionBehavior<TRequest, TResponse>(
+> internal sealed class TestUnitOfWorkBehavior<TRequest, TResponse>(
 >     Lazy<AppDbContext> context,
 >     IOutcomeClassifier classifier,
 >     IResponseOutcomeDescriber? describer = null
-> ) : TransactionBehavior<TRequest, TResponse, AppDbContext>(context, classifier, describer);
+> ) : UnitOfWorkBehavior<TRequest, TResponse, AppDbContext>(context, classifier, describer);
 > ```
 
 Test that behaviors run in the expected order and handle short-circuiting correctly:
@@ -94,7 +94,7 @@ public async Task PipelineOrder_ValidationBeforeTransaction()
         builder.ScanAssembly(typeof(Program).Assembly);
         builder.Pipeline.AddLoggingBehavior();
         builder.Pipeline.AddValidationBehavior();
-        builder.Pipeline.AddBehavior(typeof(TestTransactionBehavior<,>));  // see warning above
+        builder.Pipeline.AddBehavior(typeof(TestUnitOfWorkBehavior<,>));  // see warning above
     });
 
     services.AddDbContext<TestDbContext>(
@@ -127,7 +127,7 @@ public async Task ShortCircuit_AuthorizationStopsTransaction()
     {
         builder.ScanAssembly(typeof(Program).Assembly);
         builder.Pipeline.AddAuthorizationBehavior();
-        builder.Pipeline.AddBehavior(typeof(TestTransactionBehavior<,>));  // see warning above
+        builder.Pipeline.AddBehavior(typeof(TestUnitOfWorkBehavior<,>));  // see warning above
     });
 
     services.AddDbContext<TestDbContext>(
@@ -234,7 +234,7 @@ public async Task CreateOrder_WithTransaction_RollsBackOnFailure()
     services.AddInterlocutor(builder =>
     {
         builder.ScanAssembly(typeof(Tests).Assembly);
-        builder.Pipeline.AddBehavior(typeof(TestTransactionBehavior<,>));  // see warning above
+        builder.Pipeline.AddBehavior(typeof(TestUnitOfWorkBehavior<,>));  // see warning above
     });
 
     services.AddDbContext<AppDbContext>(

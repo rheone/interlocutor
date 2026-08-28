@@ -20,7 +20,7 @@ Nothing in the mediator, the pipeline, or the DI wiring is hardcoded to one arit
 `IVoidCommandHandler<TCommand,TResult>`, and `IPipelineBehavior<TRequest,TResponse>` are all
 generic over `TResponse`/`TResult` - that type parameter can be `OperationOutcome`, `OperationOutcome<A,B>`,
 `OperationOutcome<A,B,C,D,E>`, or a plain non-`OperationOutcome` type. `IResponseOutcomeDescriber` (used by
-`LoggingBehavior`, `AuditingBehavior`, and `TransactionBehavior`) never inspects which arity
+`LoggingBehavior`, `AuditingBehavior`, and `UnitOfWorkBehavior`) never inspects which arity
 produced a response either - it unwraps the union via `IUnion.Value` and pattern-matches on the
 *case type* (`NotFound`, `Forbidden`, `Conflict`, `ValidationFailure`, `Failure`), so those three
 behaviors work identically no matter which arity you choose.
@@ -42,7 +42,7 @@ using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Queries;
 using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
-using Interlocutor.EntityFrameworkCore;
+using Interlocutor.Persistence.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -58,12 +58,12 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<Order> Orders => Set<Order>();
 }
 
-// TransactionBehavior<TRequest,TResponse,TContext> takes three type parameters against
+// UnitOfWorkBehavior<TRequest,TResponse,TContext> takes three type parameters against
 // IPipelineBehavior<,>'s two, so it can't be registered as an open generic directly. Fixing
 // TContext with a thin subclass restores the 2-parameter shape the DI container needs - this
 // is registered once, in the composition root, and reused by every example below.
-public sealed class AppDbTransactionBehavior<TRequest, TResponse>(Lazy<AppDbContext> db)
-    : TransactionBehavior<TRequest, TResponse, AppDbContext>(db);
+public sealed class AppDbUnitOfWorkBehavior<TRequest, TResponse>(Lazy<AppDbContext> db)
+    : UnitOfWorkBehavior<TRequest, TResponse, AppDbContext>(db);
 ```
 
 ---
@@ -106,7 +106,7 @@ public sealed class DeactivateUserCommandHandler(AppDbContext db) : IVoidCommand
             return new Failure("User is already inactive.");
         }
 
-        // Step 3 - the operation. No SaveChangesAsync here - AppDbTransactionBehavior commits
+        // Step 3 - the operation. No SaveChangesAsync here - AppDbUnitOfWorkBehavior commits
         // once the pipeline returns a non-failure OperationOutcome, because this command is
         // ITransactionalRequest.
         user.IsActive = false;
@@ -139,7 +139,7 @@ services.AddScoped<IQueryHandler<CheckUsernameAvailableQuery, OperationOutcome>,
 // Open-generic - applies to every request in the app, regardless of arity:
 services.AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
 services.AddScoped(typeof(IPipelineBehavior<,>), typeof(AuditingBehavior<,>));
-services.AddScoped(typeof(IPipelineBehavior<,>), typeof(AppDbTransactionBehavior<,>));
+services.AddScoped(typeof(IPipelineBehavior<,>), typeof(AppDbUnitOfWorkBehavior<,>));
 ```
 
 **Call site:**
@@ -205,7 +205,7 @@ public sealed class ApproveTimeOffRequestCommandHandler(AppDbContext db)
         var request = await db.TimeOffRequests.FirstAsync(r => r.Id == command.RequestId, ct);
         request.Status = "Approved";
 
-        // No SaveChangesAsync - AppDbTransactionBehavior commits on a non-failure OperationOutcome.
+        // No SaveChangesAsync - AppDbUnitOfWorkBehavior commits on a non-failure OperationOutcome.
         return new TimeOffRequestDto(request.Id, request.Status);
     }
 }
@@ -338,7 +338,7 @@ public sealed class SubmitPaymentCommandHandler(AppDbContext db, ICurrentUser cu
             return new Conflict(message: "Order has already been paid.", code: "order.already_paid");
         }
 
-        // Step 5 - the operation. No SaveChangesAsync - AppDbTransactionBehavior commits on a
+        // Step 5 - the operation. No SaveChangesAsync - AppDbUnitOfWorkBehavior commits on a
         // non-failure OperationOutcome.
         order.IsPaid = true;
         return new PaymentReceiptDto(order.Id, command.Amount, DateTime.UtcNow);
@@ -396,7 +396,7 @@ services.AddScoped<
     CheckPaymentEligibilityQueryHandler
 >();
 
-// Nothing new needed here - LoggingBehavior, AuditingBehavior, and AppDbTransactionBehavior are
+// Nothing new needed here - LoggingBehavior, AuditingBehavior, and AppDbUnitOfWorkBehavior are
 // already registered open-generic from Example 1 and apply to this 5-arm shape exactly as they
 // do to OperationOutcome and OperationOutcome<TSuccess,TFailure>, with zero changes.
 ```

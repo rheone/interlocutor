@@ -11,9 +11,9 @@ using NSubstitute;
 /// <remarks>
 /// <see cref="NHibernateRepository{TEntity, TKey}.Query"/> is backed by NHibernate's own
 /// <c>ISession.Query&lt;TEntity&gt;()</c> LINQ provider extension method, which resolves session internals
-/// no substitute can stand in for - the same reason <c>Interlocutor.NHibernate.Tests.TransactionBehaviorTests</c>
-/// tests transaction commit/rollback against a substituted <see cref="ISession"/> without exercising real
-/// query execution. Filter/sort/paging composition itself is covered generically, against a plain in-memory
+/// no substitute can stand in for - the same reason <c>UnitOfWorkBehaviorTests</c> tests transaction
+/// commit/rollback against a substituted <see cref="ISession"/> without exercising real query execution.
+/// Filter/sort/paging composition itself is covered generically, against a plain in-memory
 /// <see cref="IQueryable{T}"/>, by <c>Interlocutor.Persistence.Abstractions.Tests.DomainRepositoryQueryableExtensionsTests</c>
 /// and proven to push down to real SQL for one ORM by <c>Interlocutor.Persistence.EntityFrameworkCore.Tests</c>;
 /// both implementations share the identical <see cref="DomainRepositoryQueryableExtensions"/> composition.

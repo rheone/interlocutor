@@ -208,33 +208,36 @@ public class InterlocutorPipelineBuilderTests
     }
 
     [Fact]
-    public void AddTransactionBehavior_WithNHibernateReferenced_AddsNHibernateTransactionBehavior()
+    public void AddUnitOfWorkBehavior_WithNHibernateReferenced_AddsNHibernateUnitOfWorkBehavior()
     {
         // This test project references NHibernate but not EntityFrameworkCore specifically so the NHibernate
-        // path is exercised for real through the public API - AddTransactionBehavior prefers EF Core via `??`
+        // path is exercised for real through the public API - AddUnitOfWorkBehavior prefers EF Core via `??`
         // when both are present, which would otherwise mask a regression in the NHibernate-specific lookup
-        // (NHibernate's TransactionBehavior<TRequest,TResponse> is arity 2, not EF Core's arity-3 shape).
+        // (NHibernate's UnitOfWorkBehavior<TRequest,TResponse> is arity 2, not EF Core's arity-3 shape).
         // Arrange
         var builder = new InterlocutorPipelineBuilder();
 
         // Act
-        builder.AddTransactionBehavior();
+        builder.AddUnitOfWorkBehavior();
 
         // Assert
-        Assert.Contains(builder.Behaviors, r => r.ImplementationType == typeof(Interlocutor.NHibernate.TransactionBehavior<,>));
+        Assert.Contains(
+            builder.Behaviors,
+            r => r.ImplementationType == typeof(Interlocutor.Persistence.NHibernate.UnitOfWorkBehavior<,>)
+        );
     }
 
     [Fact]
-    public void AddTransactionBehavior_WithNHibernateReferenced_RecordsEfCoreProbeAsSkipped()
+    public void AddUnitOfWorkBehavior_WithNHibernateReferenced_RecordsEfCoreProbeAsSkipped()
     {
         // This test project references NHibernate but not EntityFrameworkCore (see its own comment), so
-        // AddTransactionBehavior finds NHibernate but the EF Core probe it tries first genuinely finds
+        // AddUnitOfWorkBehavior finds NHibernate but the EF Core probe it tries first genuinely finds
         // nothing - the real "package not referenced" path, not a contrived one.
         // Arrange
         var builder = new InterlocutorPipelineBuilder();
 
         // Act
-        builder.AddTransactionBehavior();
+        builder.AddUnitOfWorkBehavior();
 
         // Assert
         var skipped = Assert.Single(builder.Skipped);
@@ -281,7 +284,7 @@ public class InterlocutorPipelineBuilderTests
                 typeof(AuditingBehavior<,>),
                 typeof(AuthorizationBehavior<,>),
                 typeof(Interlocutor.FluentValidation.ValidationBehavior<,>),
-                typeof(Interlocutor.NHibernate.TransactionBehavior<,>),
+                typeof(Interlocutor.Persistence.NHibernate.UnitOfWorkBehavior<,>),
             ],
             builder.Behaviors.Select(r => r.ImplementationType)
         );

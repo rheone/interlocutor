@@ -63,8 +63,8 @@ Independent record-struct types, each usable as one case type in an `OperationOu
 
 | Term | Definition |
 |------|------------|
-| **ITransactionalRequest** | Opts a command into the SQL unit-of-work. `TransactionBehavior` begins a transaction, commits on success, rolls back on failure. |
-| **IExternalStoreRequest** | Declares a command is backed by a non-SQL store/API. `TransactionBehavior` never resolves the SQL session for it. |
+| **ITransactionalRequest** | Narrows, rather than opts in - every write already gets a transaction automatically via begin-on-first-write. Forces `UnitOfWorkBehavior` to begin the transaction eagerly, at pipeline start, so an earlier read shares it with a write that follows. |
+| **IExternalStoreRequest** | Declares a command is backed by a non-SQL store/API. `UnitOfWorkBehavior` never opens a local transaction for it, even if it touches the scoped session. |
 | **IAuditableRequest** | Opts a request into auditing. Carries `ActionName` used by `AuditingBehavior`. |
 | **IRequiresPolicy** | Opts a request into non-resource authorization. Carries `PolicyName` evaluated by `AuthorizationBehavior`. |
 | **ICancellable** | Opts a request into cooperative-cancellation reporting. No members - every request already carries its own `CancellationToken` through the pipeline. `CancellationBehavior` converts a cancellation of that token into `Cancelled` for requests implementing this marker. |
@@ -140,8 +140,8 @@ None of these run by default - the pipeline is empty until a builder call adds a
 
 | Term | Definition |
 |------|------------|
-| **Transaction scope** | One logical request = one DI scope = one scoped `DbContext` / `ISession`. `TransactionBehavior` and `ResourceCommandHandler` receive the same scoped session via constructor injection. The mediator never opens its own scope - it borrows the ambient one. |
-| **Lazy resolution** | `TransactionBehavior` uses `Lazy<TContext>` to defer session construction until it's confirmed the request implements `ITransactionalRequest`. Non-transactional requests never resolve the session. |
+| **Transaction scope** | One logical request = one DI scope = one scoped `DbContext` / `ISession`, available for the whole pipeline regardless of transaction state. `UnitOfWorkBehavior` and `ResourceCommandHandler` receive the same scoped session via constructor injection. The mediator never opens its own scope - it borrows the ambient one. `IUnitOfWork` owns that session's transaction: it opens lazily, the first time anything writes (or eagerly, at pipeline start, for a request implementing `ITransactionalRequest`), and is committed or rolled back by `UnitOfWorkBehavior` at pipeline completion. |
+| **Lazy resolution** | `UnitOfWorkBehavior`, `IUnitOfWork`, and `IDomainRepository<T>` all use `Lazy<TContext>`/`Lazy<ISession>` to defer session construction until something actually touches storage. A dispatch that never writes never opens a transaction; one that never touches storage at all never resolves the session. |
 
 ## DI Registration
 
@@ -174,10 +174,8 @@ These are not shipped types. `Interlocutor.CommonKernel` has no opinion about pa
 | **Interlocutor.DependencyInjection.Microsoft** | The builder-based registration entry point for Microsoft.Extensions.DependencyInjection. |
 | **Interlocutor.DependencyInjection.Autofac** | The builder-based registration entry point for Autofac. |
 | **Interlocutor.DependencyInjection.Abstractions** | Container-neutral registration model shared by the two DI packages - `InterlocutorBuilder`, `InterlocutorPipelineBuilder`, `RegistrationReport`. Depends on Abstractions only. |
-| **Interlocutor.EntityFrameworkCore** | `TransactionBehavior` for EF Core `DbContext`. |
-| **Interlocutor.NHibernate** | `TransactionBehavior` for NHibernate `ISession`. |
 | **Interlocutor.FluentValidation** | `ValidationBehavior` for FluentValidation. |
 | **Interlocutor.Persistence.Abstractions** | Optional, opt-in `IUnitOfWork`/`IDomainRepository<TEntity, TKey>` CRUD/paging surface. Zero ORM dependency; depends on Abstractions only - see [Persistence Abstraction](persistence-abstraction.md). |
-| **Interlocutor.Persistence.EntityFrameworkCore** | EF Core implementation of the persistence abstraction. |
-| **Interlocutor.Persistence.NHibernate** | NHibernate implementation of the persistence abstraction. |
+| **Interlocutor.Persistence.EntityFrameworkCore** | EF Core implementation of the persistence abstraction, plus `UnitOfWorkBehavior` for EF Core `DbContext`. |
+| **Interlocutor.Persistence.NHibernate** | NHibernate implementation of the persistence abstraction, plus `UnitOfWorkBehavior` for NHibernate `ISession`. |
 | **Interlocutor.Generator** | The Roslyn incremental source generator behind compile-time handler discovery (ADR-0008). An analyzer reference pulled in by Abstractions; never ships in build output. |

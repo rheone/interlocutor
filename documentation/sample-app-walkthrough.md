@@ -31,7 +31,7 @@ samples/
 │   └── Todos/                        # TodoItem, its commands/queries/handlers, the guard stage, the notification
 └── Interlocutor.Sample.WebApi/       # API layer: minimal API endpoints, DI wiring, EF Core/Sqlite setup
     ├── Program.cs
-    ├── SampleTransactionBehavior.cs
+    ├── SampleUnitOfWorkBehavior.cs
     ├── SampleJsonContext.cs
     └── CompiledModels/               # EF Core compiled model, for the AOT/trim publish story
 ```
@@ -56,7 +56,7 @@ public sealed class GetTodoByIdHandler(SampleDbContext db)
 }
 ```
 
-Two cases, `TodoItem` or `NotFound` - the query never opts into `ITransactionalRequest`, so no `TransactionBehavior` wraps it. A read has nothing to commit or roll back.
+Two cases, `TodoItem` or `NotFound` - the query never writes, so `UnitOfWorkBehavior` never opens a transaction for it. A read has nothing to commit or roll back, and no marker is needed to say so.
 
 ## Command handler example (write request, transaction)
 
@@ -68,9 +68,9 @@ public sealed record CreateTodoCommand(string Title)
         ITransactionalRequest;
 ```
 
-Three cases: `TodoItem` on success, `ValidationErrors` for an empty title, `Conflict` for a duplicate one. [`CreateTodoHandler`](../samples/Interlocutor.Sample.Handlers/Todos/CreateTodoHandler.cs) only has to handle the first two - the duplicate-title case never reaches it, because [`DuplicateTitleGuardStage`](#pipeline-stage-with-short-circuit) rejects it earlier. The handler doesn't call `SaveChangesAsync` itself; committing is the transaction behavior's job, triggered by the `ITransactionalRequest` marker, after the handler returns a success outcome. See [Transactions & Store Integration](transactions-and-store-integration.md) for how that commit/rollback decision is made from the outcome's active case.
+Three cases: `TodoItem` on success, `ValidationErrors` for an empty title, `Conflict` for a duplicate one. [`CreateTodoHandler`](../samples/Interlocutor.Sample.Handlers/Todos/CreateTodoHandler.cs) only has to handle the first two - the duplicate-title case never reaches it, because [`DuplicateTitleGuardStage`](#pipeline-stage-with-short-circuit) rejects it earlier. The handler doesn't call `SaveChangesAsync` itself; committing is `UnitOfWorkBehavior`'s job, after the handler returns a success outcome - the insert alone would already get a transaction with no marker at all. `ITransactionalRequest` here does a narrower job: it makes the stage's duplicate-title read (below) share that same transaction, eagerly begun at pipeline start, instead of one that would otherwise only open on the insert. See [Transactions & Store Integration](transactions-and-store-integration.md) for how that commit/rollback decision is made from the outcome's active case.
 
-[`DeleteTodoCommand`](../samples/Interlocutor.Sample.Handlers/Todos/DeleteTodoCommand.cs) is the sample's unit command - it implements bare `ICommand` (no `<TResponse>`), returning `OperationOutcome<Success, NotFound>` with no domain payload, and is transactional the same way.
+[`DeleteTodoCommand`](../samples/Interlocutor.Sample.Handlers/Todos/DeleteTodoCommand.cs) is the sample's unit command - it implements bare `ICommand` (no `<TResponse>`), returning `OperationOutcome<Success, NotFound>` with no domain payload. It has no preceding read to protect, so it doesn't need `ITransactionalRequest` at all - its delete gets a transaction automatically, the same begin-on-first-write way `CreateTodoCommand`'s insert does.
 
 ## Generic handler example (serves multiple request types)
 
@@ -116,18 +116,18 @@ interlocutor.AddGeneratedRegistrations(
 ```csharp
 interlocutor
     .Pipeline.AddLoggingBehavior()
+    .AddBehavior(typeof(SampleUnitOfWorkBehavior<,>))
     .AddStage<DuplicateTitleGuardStage>()
-    .AddStageHost()
-    .AddBehavior(typeof(SampleTransactionBehavior<,>));
+    .AddStageHost();
 ```
 
-That's deliberate: the sample's point is that a consumer chooses exactly the behaviors their application needs and the order they run in (see [Pipeline & Behavior Composition](pipeline-and-behaviors.md) for the full behavior list and the reasoning behind the recommended order). Logging wraps everything; the guard stage runs ahead of the transaction so a doomed request never opens one; `AddStageHost()` is what actually runs the registered stages, since a stage isn't itself an `IPipelineBehavior`.
+That's deliberate: the sample's point is that a consumer chooses exactly the behaviors their application needs and the order they run in (see [Pipeline & Behavior Composition](pipeline-and-behaviors.md) for the full behavior list and the reasoning behind the recommended order). Logging wraps everything; the unit-of-work behavior wraps the stage host - not the other way around, unlike the library's own recommended chain, which places it innermost - specifically so the guard stage's duplicate-title read and the handler's insert that follows it share one transaction, per `CreateTodoCommand`'s `ITransactionalRequest` marker. `AddStageHost()` is what actually runs the registered stages, since a stage isn't itself an `IPipelineBehavior`.
 
-The transaction behavior is registered as `SampleTransactionBehavior<,>`, not the library's own `TransactionBehavior<,,>`, for a container-mechanics reason worth knowing if you write your own EF Core-backed application: Microsoft.Extensions.DependencyInjection requires an open generic registration's implementation type to leave the *same* number of type parameters open as the service interface it's registered against, so a three-parameter `TransactionBehavior<TRequest, TResponse, TContext>` cannot be registered directly behind two-parameter `IPipelineBehavior<TRequest, TResponse>`. [`SampleTransactionBehavior<TRequest, TResponse>`](../samples/Interlocutor.Sample.WebApi/SampleTransactionBehavior.cs) fixes `TContext` to `SampleDbContext` at compile time and is what actually gets registered.
+The unit-of-work behavior is registered as `SampleUnitOfWorkBehavior<,>`, not the library's own `UnitOfWorkBehavior<,,>`, for a container-mechanics reason worth knowing if you write your own EF Core-backed application: Microsoft.Extensions.DependencyInjection requires an open generic registration's implementation type to leave the *same* number of type parameters open as the service interface it's registered against, so a three-parameter `UnitOfWorkBehavior<TRequest, TResponse, TContext>` cannot be registered directly behind two-parameter `IPipelineBehavior<TRequest, TResponse>`. [`SampleUnitOfWorkBehavior<TRequest, TResponse>`](../samples/Interlocutor.Sample.WebApi/SampleUnitOfWorkBehavior.cs) fixes `TContext` to `SampleDbContext` at compile time and is what actually gets registered.
 
 ## Pipeline stage with short-circuit
 
-[`DuplicateTitleGuardStage`](../samples/Interlocutor.Sample.Handlers/Todos/DuplicateTitleGuardStage.cs) declines a `CreateTodoCommand` whose title already exists, before the handler - and the transaction it would open - ever runs:
+[`DuplicateTitleGuardStage`](../samples/Interlocutor.Sample.Handlers/Todos/DuplicateTitleGuardStage.cs) declines a `CreateTodoCommand` whose title already exists, before the handler ever runs - inside the same transaction as the insert that would otherwise follow it, per the pipeline ordering above:
 
 ```csharp
 public sealed class DuplicateTitleGuardStage(SampleDbContext db)

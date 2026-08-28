@@ -10,9 +10,12 @@ namespace Interlocutor.Abstractions.Markers;
 /// ensures reliable event delivery even if the message broker or external system is temporarily unavailable.
 /// </para>
 /// <para>
-/// Requests implementing <see cref="IExternalStoreRequest"/> are explicitly excluded from local database
-/// transactions (via <see cref="ITransactionalRequest"/>) to prevent nesting or deadlocks. Use this when
-/// your handler manages its own external transaction scope.
+/// A request implementing <see cref="IExternalStoreRequest"/> never has a local transaction opened around it
+/// by the store-specific commit-gate behavior, regardless of whether it happens to touch the scoped
+/// session and regardless of whether it also implements <see cref="ITransactionalRequest"/> - this marker's
+/// meaning and mechanism are unchanged by
+/// <see href="../../../docs/adr/0018-unit-of-work-as-transaction-owner.md">ADR-0018</see>. Use this when your
+/// handler manages its own external transaction scope.
 /// </para>
 /// </remarks>
 public interface IExternalStoreRequest;

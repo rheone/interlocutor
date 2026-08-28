@@ -1,20 +1,25 @@
 namespace Interlocutor.Abstractions.Markers;
 
 /// <summary>
-/// Marks a request that should be executed within a database transaction.
+/// Marks a request whose read(s) and later write(s) must be protected by one eager transaction from pipeline
+/// start, rather than the default lazy, begin-on-first-write transaction every write already gets.
 /// </summary>
 /// <remarks>
 /// <para>
-/// Implement this marker interface on commands/queries when you need all database changes
-/// to be atomically committed or rolled back as a unit. Pipeline behaviors detect this
-/// marker and wrap handler execution in a transaction using the configured ORM
-/// (EF Core, NHibernate).
+/// Per <see href="../../../docs/adr/0018-unit-of-work-as-transaction-owner.md">ADR-0018</see>, this marker no
+/// longer means "this request wants a transaction at all" - every request that writes, through
+/// <c>IDomainRepository</c>, <c>IUnitOfWork</c>, or a directly-injected <c>Lazy&lt;TContext&gt;</c>/
+/// <c>Lazy&lt;ISession&gt;</c>, gets one automatically the first time it writes, with no marker required. This
+/// marker instead forces that transaction to begin eagerly, at pipeline start, instead of waiting for the
+/// first write - for the check-then-act case (for example, confirming a value is still unique immediately
+/// before an insert) where the ordinary begin-on-first-write default would leave a window between the
+/// protective read and the write.
 /// </para>
 /// <para>
-/// Transactional behavior is enforced by the <c>TransactionBehavior</c> implementations in
-/// <c>Interlocutor.EntityFrameworkCore</c> (EF Core) or <c>Interlocutor.NHibernate</c> (NHibernate). Requests are
-/// only wrapped in transactions when they implement <see cref="ITransactionalRequest"/>. Requests implementing
-/// <see cref="IExternalStoreRequest"/> are explicitly excluded to prevent nesting with external transaction scopes.
+/// Enforced by the store-specific commit-gate behavior in <c>Interlocutor.Persistence.EntityFrameworkCore</c>
+/// (EF Core) or <c>Interlocutor.Persistence.NHibernate</c> (NHibernate). Requests implementing
+/// <see cref="IExternalStoreRequest"/> are excluded regardless of whether they also implement this marker -
+/// see <see cref="IExternalStoreRequest"/>'s remarks.
 /// </para>
 /// </remarks>
 public interface ITransactionalRequest;

@@ -74,7 +74,7 @@ Recorded per registration so `DescribeRegistrations()` can explain *why* somethi
 | Type | Purpose |
 | :-- | :-- |
 | `RegistrationReport` | Every accumulated registration with its provenance; every `SkippedRegistration` (an optional-package probe, e.g. `AddValidationBehavior`, that found nothing to register); every `RegistrationProblem` once `ValidateOnBuild()` is configured. `Format()`/`ToString()` render it as text. |
-| `SkippedRegistration` | One optional-package probe that matched nothing - for example `AddTransactionBehavior()` when neither `Interlocutor.EntityFrameworkCore` nor `.NHibernate` is referenced. |
+| `SkippedRegistration` | One optional-package probe that matched nothing - for example `AddUnitOfWorkBehavior()` when neither `Interlocutor.Persistence.EntityFrameworkCore` nor `.Persistence.NHibernate` is referenced. |
 | `RegistrationProblem` / `RegistrationProblemKind` | One `ValidateOnBuild()` finding - an unhandled request type, a required `AddTypeMatch` rule that matched nothing, or two registrations of the same (service type, implementation type) pair at conflicting lifetimes. |
 
 See [Builder & Registration § Inspecting What Was Registered](builder-and-registration.md#inspecting-what-was-registered) and [§ Startup Validation](builder-and-registration.md#startup-validation) for the consumer-facing walkthrough of these.
@@ -129,13 +129,13 @@ Every registration becomes a `ServiceDescriptor` - `services.Add(...)` for `Hand
 `Pipeline.AddBehavior` always records the open `IPipelineBehavior<TRequest, TResponse>` as `ServiceType`, regardless of whether `ImplementationType` is itself open or closed. Microsoft.Extensions.DependencyInjection requires an open generic *service* type to be paired with an open generic *implementation* - a closed implementation registered directly against `IPipelineBehavior<,>` throws at `BuildServiceProvider()` time. `AddInterlocutor` re-pairs a closed implementation with the specific closed `IPipelineBehavior<,>` interface it actually implements, so this never reaches the container in the invalid shape.
 
 > [!WARNING]
-> If a behavior implementation and the service type it's registered against are *both* open generics with a different number of type parameters - for example, EF Core's arity-3 `TransactionBehavior<TRequest, TResponse, TContext>` registered directly against the arity-2 `IPipelineBehavior<TRequest, TResponse>` - `AddInterlocutor` throws `InvalidOperationException` immediately, with a message naming the fix: declare a subclass that closes the extra type parameter and leaves the rest open, then register that subclass via `Pipeline.AddBehavior(typeof(...))` instead.
+> If a behavior implementation and the service type it's registered against are *both* open generics with a different number of type parameters - for example, EF Core's arity-3 `UnitOfWorkBehavior<TRequest, TResponse, TContext>` registered directly against the arity-2 `IPipelineBehavior<TRequest, TResponse>` - `AddInterlocutor` throws `InvalidOperationException` immediately, with a message naming the fix: declare a subclass that closes the extra type parameter and leaves the rest open, then register that subclass via `Pipeline.AddBehavior(typeof(...))` instead.
 >
 > ```csharp
-> class MyTransactionBehavior<TRequest, TResponse>
->     : TransactionBehavior<TRequest, TResponse, MyDbContext> { }
+> class MyUnitOfWorkBehavior<TRequest, TResponse>
+>     : UnitOfWorkBehavior<TRequest, TResponse, MyDbContext> { }
 >
-> builder.Pipeline.AddBehavior(typeof(MyTransactionBehavior<,>));
+> builder.Pipeline.AddBehavior(typeof(MyUnitOfWorkBehavior<,>));
 > ```
 
 ### Registration Report Logging

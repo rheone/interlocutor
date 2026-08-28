@@ -1,13 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="..\..\src\Interlocutor.DependencyInjection.Abstractions\Interlocutor.DependencyInjection.Abstractions.csproj" />
-    <!-- Referenced only so AddValidationBehavior/AddTransactionBehavior's reflection-based package-presence
+    <!-- Referenced only so AddValidationBehavior/AddUnitOfWorkBehavior's reflection-based package-presence
          detection has a real package to find - proves the "wired" path, not just the graceful no-op fallback.
-         NHibernate (not EF Core) specifically, so the NHibernate arity-2 TransactionBehavior<,> resolution is
-         exercised via the real AddTransactionBehavior() call rather than EF Core's arity-3 one shadowing it
-         via AddTransactionBehavior's EF-preferred `??` fallback. -->
+         NHibernate (not EF Core) specifically, so the NHibernate arity-2 UnitOfWorkBehavior<,> resolution is
+         exercised via the real AddUnitOfWorkBehavior() call rather than EF Core's arity-3 one shadowing it
+         via AddUnitOfWorkBehavior's EF-preferred `??` fallback. -->
     <ProjectReference Include="..\..\src\Interlocutor.FluentValidation\Interlocutor.FluentValidation.csproj" />
-    <ProjectReference Include="..\..\src\Interlocutor.NHibernate\Interlocutor.NHibernate.csproj" />
+    <ProjectReference Include="..\..\src\Interlocutor.Persistence.NHibernate\Interlocutor.Persistence.NHibernate.csproj" />
   </ItemGroup>
 
   <ItemGroup>

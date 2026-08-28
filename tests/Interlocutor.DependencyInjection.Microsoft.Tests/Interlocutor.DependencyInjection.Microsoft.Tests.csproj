@@ -4,13 +4,18 @@
     <!-- Referenced so a real ValidationBehavior resolution can be proven through a built ServiceProvider,
          not only a registration-list check - see BehaviorSubsetConstraintTests. -->
     <ProjectReference Include="..\..\src\Interlocutor.FluentValidation\Interlocutor.FluentValidation.csproj" />
-    <!-- Referenced so UseRecommendedChain() wires the real NHibernate TransactionBehavior<,> (arity 2) instead
+    <!-- Referenced so UseRecommendedChain() wires the real NHibernate UnitOfWorkBehavior<,> (arity 2) instead
          of no-op'ing - see PipelineOrderingIntegrationTests, which needs every stage in the canonical chain
          to be the real, shipped implementation, not a stand-in. -->
-    <ProjectReference Include="..\..\src\Interlocutor.NHibernate\Interlocutor.NHibernate.csproj" />
-    <!-- Referenced so AddInterlocutorUnitOfWork/AddInterlocutorRepository can be proven to resolve a real
-         EF Core implementation sharing one scoped DbContext - see PersistenceRegistrationTests. -->
-    <ProjectReference Include="..\..\src\Interlocutor.Persistence.EntityFrameworkCore\Interlocutor.Persistence.EntityFrameworkCore.csproj" />
+    <ProjectReference Include="..\..\src\Interlocutor.Persistence.NHibernate\Interlocutor.Persistence.NHibernate.csproj" />
+    <!-- Deliberately does NOT reference Interlocutor.Persistence.EntityFrameworkCore: that assembly now also
+         hosts the EF Core UnitOfWorkBehavior<,,> (arity 3), and Type.GetType's process-wide assembly search
+         would make AddUnitOfWorkBehavior()'s EF-preferred `??` probe find it the moment the assembly is
+         loaded into this test process - even from a test that never calls AddUnitOfWorkBehavior() itself -
+         breaking every UseRecommendedChain()/PipelineOrderingIntegrationTests assertion in this project that
+         expects the real NHibernate arity-2 UnitOfWorkBehavior<,>. AddInterlocutorUnitOfWork/AddInterlocutorRepository
+         EF Core coverage lives in Interlocutor.DependencyInjection.Microsoft.EntityFrameworkCore.Tests instead,
+         which is already isolated for the same reason - see PersistenceRegistrationTests there. -->
     <!-- Analyzer-only reference: runs Interlocutor.Generator over this project's own compilation so
          GeneratedRegistrationIntegrationTests can dispatch through the real, compile-time discovered
          Interlocutor.Generated.InterlocutorGeneratedRegistrations module instead of runtime scanning. -->
@@ -32,6 +37,5 @@
     </PackageReference>
     <PackageReference Include="NSubstitute" />
     <PackageReference Include="NSubstitute.Analyzers.CSharp" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
   </ItemGroup>
 </Project>

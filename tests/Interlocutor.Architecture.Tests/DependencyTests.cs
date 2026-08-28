@@ -2,6 +2,7 @@ namespace Interlocutor.Architecture.Tests;
 
 using System.Reflection;
 using Interlocutor.Abstractions.Core;
+using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.CommonKernel;
 using NetArchTest.Rules;
 
@@ -15,9 +16,6 @@ public class DependencyTests
         typeof(Interlocutor.DependencyInjection.Microsoft.InterlocutorServiceCollectionExtensions).Assembly;
     private static readonly Assembly DependencyInjectionAutofacAssembly =
         typeof(Interlocutor.DependencyInjection.Autofac.InterlocutorAutofacExtensions).Assembly;
-    private static readonly Assembly EntityFrameworkCoreAssembly =
-        typeof(Interlocutor.EntityFrameworkCore.TransactionBehavior<,,>).Assembly;
-    private static readonly Assembly NHibernateAssembly = typeof(Interlocutor.NHibernate.TransactionBehavior<,>).Assembly;
     private static readonly Assembly FluentValidationAssembly =
         typeof(Interlocutor.FluentValidation.ValidationBehavior<,>).Assembly;
     private static readonly Assembly PersistenceAbstractionsAssembly =
@@ -40,9 +38,9 @@ public class DependencyTests
             .HaveDependencyOnAny(
                 "Interlocutor.Abstractions",
                 "Interlocutor.AspNetCore",
-                "Interlocutor.EntityFrameworkCore",
+                "Interlocutor.Persistence.EntityFrameworkCore",
                 "Interlocutor.FluentValidation",
-                "Interlocutor.NHibernate"
+                "Interlocutor.Persistence.NHibernate"
             )
             .GetResult();
 
@@ -62,9 +60,9 @@ public class DependencyTests
             .ShouldNot()
             .HaveDependencyOnAny([
                 "Interlocutor.AspNetCore",
-                "Interlocutor.EntityFrameworkCore",
+                "Interlocutor.Persistence.EntityFrameworkCore",
                 "Interlocutor.FluentValidation",
-                "Interlocutor.NHibernate",
+                "Interlocutor.Persistence.NHibernate",
             ])
             .GetResult();
 
@@ -83,9 +81,9 @@ public class DependencyTests
             .InAssembly(typeof(Interlocutor.AspNetCore.ResultExtensions).Assembly)
             .ShouldNot()
             .HaveDependencyOnAny([
-                "Interlocutor.EntityFrameworkCore",
+                "Interlocutor.Persistence.EntityFrameworkCore",
                 "Interlocutor.FluentValidation",
-                "Interlocutor.NHibernate",
+                "Interlocutor.Persistence.NHibernate",
             ])
             .GetResult();
 
@@ -107,9 +105,9 @@ public class DependencyTests
                 "Interlocutor.AspNetCore",
                 "Interlocutor.DependencyInjection.Microsoft",
                 "Interlocutor.DependencyInjection.Autofac",
-                "Interlocutor.EntityFrameworkCore",
+                "Interlocutor.Persistence.EntityFrameworkCore",
                 "Interlocutor.FluentValidation",
-                "Interlocutor.NHibernate"
+                "Interlocutor.Persistence.NHibernate"
             )
             .GetResult();
 
@@ -132,28 +130,14 @@ public class DependencyTests
         // (static class-level assembly references serve as fixture)
 
         // Act
-        var efCoreResult = Types
-            .InAssembly(EntityFrameworkCoreAssembly)
-            .Should()
-            .HaveDependencyOn("Interlocutor.Abstractions")
-            .GetResult();
-
         var fluentResult = Types
             .InAssembly(FluentValidationAssembly)
             .Should()
             .HaveDependencyOn("Interlocutor.Abstractions")
             .GetResult();
 
-        var nhibernateResult = Types
-            .InAssembly(NHibernateAssembly)
-            .Should()
-            .HaveDependencyOn("Interlocutor.Abstractions")
-            .GetResult();
-
         // Assert
-        Assert.True(efCoreResult.IsSuccessful, "EF Core package should depend on Abstractions");
         Assert.True(fluentResult.IsSuccessful, "FluentValidation package should depend on Abstractions");
-        Assert.True(nhibernateResult.IsSuccessful, "NHibernate package should depend on Abstractions");
     }
 
     [Fact]
@@ -168,9 +152,9 @@ public class DependencyTests
             .ShouldNot()
             .HaveDependencyOnAny([
                 "Interlocutor.DependencyInjection.Autofac",
-                "Interlocutor.EntityFrameworkCore",
+                "Interlocutor.Persistence.EntityFrameworkCore",
                 "Interlocutor.FluentValidation",
-                "Interlocutor.NHibernate",
+                "Interlocutor.Persistence.NHibernate",
             ])
             .GetResult();
 
@@ -190,44 +174,10 @@ public class DependencyTests
             .ShouldNot()
             .HaveDependencyOnAny([
                 "Interlocutor.DependencyInjection.Microsoft",
-                "Interlocutor.EntityFrameworkCore",
+                "Interlocutor.Persistence.EntityFrameworkCore",
                 "Interlocutor.FluentValidation",
-                "Interlocutor.NHibernate",
+                "Interlocutor.Persistence.NHibernate",
             ])
-            .GetResult();
-
-        // Assert
-        Assert.True(result.IsSuccessful, string.Join(", ", result.FailingTypeNames ?? []));
-    }
-
-    [Fact]
-    public void EntityFrameworkCore_ReferencedAssembly_HasNoDependencyOnNHibernateOrFluentValidation_Test()
-    {
-        // Arrange
-        // (static class-level assembly references serve as fixture)
-
-        // Act
-        var result = Types
-            .InAssembly(EntityFrameworkCoreAssembly)
-            .ShouldNot()
-            .HaveDependencyOnAny(["Interlocutor.NHibernate", "Interlocutor.FluentValidation"])
-            .GetResult();
-
-        // Assert
-        Assert.True(result.IsSuccessful, string.Join(", ", result.FailingTypeNames ?? []));
-    }
-
-    [Fact]
-    public void NHibernate_ReferencedAssembly_HasNoDependencyOnEntityFrameworkCoreOrFluentValidation_Test()
-    {
-        // Arrange
-        // (static class-level assembly references serve as fixture)
-
-        // Act
-        var result = Types
-            .InAssembly(NHibernateAssembly)
-            .ShouldNot()
-            .HaveDependencyOnAny(["Interlocutor.EntityFrameworkCore", "Interlocutor.FluentValidation"])
             .GetResult();
 
         // Assert
@@ -246,10 +196,8 @@ public class DependencyTests
             .ShouldNot()
             .HaveDependencyOnAny([
                 "Interlocutor.AspNetCore",
-                "Interlocutor.EntityFrameworkCore",
                 "Interlocutor.Persistence.EntityFrameworkCore",
                 "Interlocutor.FluentValidation",
-                "Interlocutor.NHibernate",
                 "Interlocutor.Persistence.NHibernate",
                 "Interlocutor.DependencyInjection.Microsoft",
                 "Interlocutor.DependencyInjection.Autofac",
@@ -317,6 +265,52 @@ public class DependencyTests
         Assert.True(
             doesNotDependOnEntityFrameworkCoreResult.IsSuccessful,
             string.Join(", ", doesNotDependOnEntityFrameworkCoreResult.FailingTypeNames ?? [])
+        );
+    }
+
+    [Fact]
+    public void PersistenceEntityFrameworkCore_ReferencedAssembly_ContainsTheEfCoreCommitGateBehavior_Test()
+    {
+        // Per ADR-0018, the EF Core commit-gate behavior (superseding the retired Interlocutor.EntityFrameworkCore
+        // package's TransactionBehavior) ships from this package, not a standalone one - this pins that placement.
+        // Arrange
+        // (static class-level assembly references serve as fixture)
+
+        // Act
+        var implementsPipelineBehavior = PersistenceEntityFrameworkCoreAssembly
+            .GetTypes()
+            .Any(t =>
+                t.Name.StartsWith("UnitOfWorkBehavior", StringComparison.Ordinal)
+                && t.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IPipelineBehavior<,>))
+            );
+
+        // Assert
+        Assert.True(
+            implementsPipelineBehavior,
+            "Interlocutor.Persistence.EntityFrameworkCore should contain an IPipelineBehavior<,> named UnitOfWorkBehavior"
+        );
+    }
+
+    [Fact]
+    public void PersistenceNHibernate_ReferencedAssembly_ContainsTheNHibernateCommitGateBehavior_Test()
+    {
+        // Per ADR-0018, the NHibernate commit-gate behavior (superseding the retired Interlocutor.NHibernate
+        // package's TransactionBehavior) ships from this package, not a standalone one - this pins that placement.
+        // Arrange
+        // (static class-level assembly references serve as fixture)
+
+        // Act
+        var implementsPipelineBehavior = PersistenceNHibernateAssembly
+            .GetTypes()
+            .Any(t =>
+                t.Name.StartsWith("UnitOfWorkBehavior", StringComparison.Ordinal)
+                && t.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IPipelineBehavior<,>))
+            );
+
+        // Assert
+        Assert.True(
+            implementsPipelineBehavior,
+            "Interlocutor.Persistence.NHibernate should contain an IPipelineBehavior<,> named UnitOfWorkBehavior"
         );
     }
 }

@@ -121,7 +121,7 @@ services.AddInterlocutor(builder =>
     builder.Pipeline.AddLoggingBehavior();
     builder.Pipeline.AddAuditingBehavior();
     builder.Pipeline.AddValidationBehavior();     // no-op if Interlocutor.FluentValidation isn't referenced
-    builder.Pipeline.AddTransactionBehavior();    // no-op if neither store package is referenced
+    builder.Pipeline.AddUnitOfWorkBehavior();    // no-op if neither store package is referenced
 
     // Or use the documented recommended chain as sugar - it calls exactly these five, in this order
     // builder.Pipeline.UseRecommendedChain();
@@ -191,7 +191,7 @@ services.AddInterlocutor(builder =>
 
 ## Inspecting What Was Registered
 
-`InterlocutorBuilder.DescribeRegistrations()` returns a structured, container-neutral `RegistrationReport` - every accumulated registration with its provenance (`Scanned`, `Explicit`, or `Matched`, plus which rule for `Matched`), every optional-package probe that found nothing (`AddValidationBehavior`/`AddTransactionBehavior` when `Interlocutor.FluentValidation`/`.EntityFrameworkCore`/`.NHibernate` aren't referenced), and, once `ValidateOnBuild()` is configured, every validation problem found. Call it at any time; `Format()`/`ToString()` render it as text:
+`InterlocutorBuilder.DescribeRegistrations()` returns a structured, container-neutral `RegistrationReport` - every accumulated registration with its provenance (`Scanned`, `Explicit`, or `Matched`, plus which rule for `Matched`), every optional-package probe that found nothing (`AddValidationBehavior`/`AddUnitOfWorkBehavior` when `Interlocutor.FluentValidation`/`Interlocutor.Persistence.EntityFrameworkCore`/`.NHibernate` aren't referenced), and, once `ValidateOnBuild()` is configured, every validation problem found. Call it at any time; `Format()`/`ToString()` render it as text:
 
 ```csharp
 services.AddInterlocutor(builder =>

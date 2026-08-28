@@ -72,7 +72,7 @@ services.AddInterlocutor(builder =>
     builder.Pipeline.AddLoggingBehavior();
     builder.Pipeline.AddAuditingBehavior();
     builder.Pipeline.AddValidationBehavior();  // no-op if Interlocutor.FluentValidation isn't referenced
-    builder.Pipeline.AddTransactionBehavior(); // no-op if neither store package is referenced
+    builder.Pipeline.AddUnitOfWorkBehavior(); // no-op if neither store package is referenced
 
     // Or the sugar form - calls exactly the five above, in this order:
     // builder.Pipeline.UseRecommendedChain();
@@ -96,13 +96,13 @@ Every registration becomes a `ServiceDescriptor` - `services.Add(...)` for `Hand
 `Pipeline.AddBehavior` always records the open `IPipelineBehavior<TRequest, TResponse>` as the service type, regardless of whether the implementation type is itself open or closed. Microsoft.Extensions.DependencyInjection requires an open generic *service* type to be paired with an open generic *implementation* - a closed implementation registered directly against `IPipelineBehavior<,>` throws at `BuildServiceProvider()` time. `AddInterlocutor` re-pairs a closed implementation with the specific closed `IPipelineBehavior<,>` interface it actually implements, so this never reaches the container in the invalid shape.
 
 > [!WARNING]
-> If a behavior implementation and the service type it's registered against are *both* open generics with a different number of type parameters - for example, EF Core's arity-3 `TransactionBehavior<TRequest, TResponse, TContext>` registered directly against the arity-2 `IPipelineBehavior<TRequest, TResponse>` - `AddInterlocutor` throws `InvalidOperationException` immediately, with a message naming the fix: declare a subclass that closes the extra type parameter and leaves the rest open, then register that subclass via `Pipeline.AddBehavior(typeof(...))` instead.
+> If a behavior implementation and the service type it's registered against are *both* open generics with a different number of type parameters - for example, EF Core's arity-3 `UnitOfWorkBehavior<TRequest, TResponse, TContext>` registered directly against the arity-2 `IPipelineBehavior<TRequest, TResponse>` - `AddInterlocutor` throws `InvalidOperationException` immediately, with a message naming the fix: declare a subclass that closes the extra type parameter and leaves the rest open, then register that subclass via `Pipeline.AddBehavior(typeof(...))` instead.
 >
 > ```csharp
-> class MyTransactionBehavior<TRequest, TResponse>
->     : TransactionBehavior<TRequest, TResponse, MyDbContext> { }
+> class MyUnitOfWorkBehavior<TRequest, TResponse>
+>     : UnitOfWorkBehavior<TRequest, TResponse, MyDbContext> { }
 >
-> builder.Pipeline.AddBehavior(typeof(MyTransactionBehavior<,>));
+> builder.Pipeline.AddBehavior(typeof(MyUnitOfWorkBehavior<,>));
 > ```
 
 ### Persistence Registration Extensions
@@ -201,7 +201,7 @@ public sealed class CreateOrderHandler(IDomainRepository<Order, int> orders, IUn
     {
         var order = new Order(command.CustomerId, command.Items);
         await orders.InsertAsync(order, ct);
-        await unitOfWork.SaveChangesAsync(ct); // TransactionBehavior still owns commit/rollback
+        await unitOfWork.SaveChangesAsync(ct); // UnitOfWorkBehavior still owns commit/rollback
         return order.Id;
     }
 }

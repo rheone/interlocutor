@@ -351,7 +351,7 @@ public static class ResultExtensions
     /// the statically known <c>TSuccess</c>/<c>TCaseN</c> type parameters. This overload has no such static
     /// information, so it classifies the extracted case via
     /// <see cref="Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder.DefaultClassifier"/>
-    /// instead - the same classifier <c>AuditingBehavior</c>/<c>TransactionBehavior</c> use to decide
+    /// instead - the same classifier <c>AuditingBehavior</c>/<c>UnitOfWorkBehavior</c> use to decide
     /// commit-vs-rollback. It is fail-closed: a case type it has no registration for is treated as a failure.
     /// The built-in kernel failure types (<c>NotFound</c>, <c>Forbidden</c>, <c>Conflict</c>, ...) and the
     /// bare <see cref="Success"/> marker are pre-registered, so a response built from those classifies

@@ -13,7 +13,7 @@ using Microsoft.EntityFrameworkCore;
 /// <typeparam name="TKey">The entity's key type, used by <see cref="IDomainRepository{TEntity, TKey}.GetById"/>.</typeparam>
 /// <typeparam name="TContext">The <see cref="DbContext"/> type providing database access.</typeparam>
 /// <param name="context">
-/// Lazy factory for the <typeparamref name="TContext"/> instance, matching <c>TransactionBehavior</c>'s own
+/// Lazy factory for the <typeparamref name="TContext"/> instance, matching <c>UnitOfWorkBehavior</c>'s own
 /// <c>Lazy&lt;TContext&gt;</c> idiom so a dispatch that never touches this repository never pays for context
 /// construction.
 /// </param>

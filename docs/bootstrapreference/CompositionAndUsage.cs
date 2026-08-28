@@ -140,26 +140,26 @@ public static class CompositionRoot
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(PagingValidationBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(BulkItemValidationBehavior<,,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(AuthorizationBehavior<,>));
-        // TransactionBehavior<TRequest,TResponse,TContext> takes an extra type
+        // UnitOfWorkBehavior<TRequest,TResponse,TContext> takes an extra type
         // parameter (TContext) versus IPipelineBehavior<TRequest,TResponse>, so
         // it can't be registered against the open IPipelineBehavior<,> contract
-        // directly. AppWidgetTransactionBehavior below closes TContext to this
+        // directly. AppWidgetUnitOfWorkBehavior below closes TContext to this
         // app's AppDbContext so it fits the open-generic registration pattern.
-        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(AppWidgetTransactionBehavior<,>));
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(AppWidgetUnitOfWorkBehavior<,>));
 
         return services;
     }
 }
 
 /// <summary>
-/// Closes the library's <see cref="TransactionBehavior{TRequest,TResponse,TContext}"/>
+/// Closes the library's <see cref="UnitOfWorkBehavior{TRequest,TResponse,TContext}"/>
 /// against this application's <see cref="AppDbContext"/>, so it can be
 /// registered against the two-parameter <see cref="IPipelineBehavior{TRequest,TResponse}"/>
 /// contract the rest of the pipeline expects. This one-line adapter is the
 /// only application-specific glue needed to use the EF Core satellite.
 /// </summary>
-public sealed class AppWidgetTransactionBehavior<TRequest, TResponse>(Lazy<AppDbContext> db)
-    : TransactionBehavior<TRequest, TResponse, AppDbContext>(db);
+public sealed class AppWidgetUnitOfWorkBehavior<TRequest, TResponse>(Lazy<AppDbContext> db)
+    : UnitOfWorkBehavior<TRequest, TResponse, AppDbContext>(db);
 
 /*
  * ---------------------------------------------------------------------------
