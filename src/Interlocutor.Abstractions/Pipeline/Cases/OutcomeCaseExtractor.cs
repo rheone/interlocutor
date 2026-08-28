@@ -1,6 +1,6 @@
 namespace Interlocutor.Abstractions.Pipeline.Cases;
 
-using Interlocutor.CommonKernel;
+using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
 /// Extracts the active case type/value from a <typeparamref name="TResponse"/> for

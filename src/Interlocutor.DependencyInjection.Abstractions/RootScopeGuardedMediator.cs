@@ -6,7 +6,7 @@ using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Notifications;
 using Interlocutor.Abstractions.Queries;
-using Interlocutor.CommonKernel;
+using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
 /// Decorates the library's real <see cref="Mediator"/> with the root-scope guard from ADR-0011: every

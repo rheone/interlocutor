@@ -1,6 +1,6 @@
 namespace Interlocutor.Abstractions.Core;
 
-using Interlocutor.CommonKernel;
+using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
 /// Implemented by <c>Interlocutor.Generator</c>'s emitted type switch - the reflection-free replacement for

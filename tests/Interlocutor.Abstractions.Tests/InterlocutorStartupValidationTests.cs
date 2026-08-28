@@ -1,6 +1,7 @@
 namespace Interlocutor.Abstractions.Tests;
 
 using Interlocutor.Abstractions.Commands;
+using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Queries;
 using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
@@ -21,7 +22,7 @@ public class InterlocutorStartupValidationTests
 {
     // Auto Generated, verify expected behavior:
     [Fact]
-    public void ValidateHandlerRegistrations_AssemblyWithNoConcreteRequestTypes_ReturnsTheSameProviderWithoutThrowing()
+    public void ValidateHandlerRegistrations_AssemblyWithNoConcreteRequestTypes_ReturnsTheSameProviderWithoutThrowing_Test()
     {
         // Arrange - Interlocutor.Abstractions itself declares no concrete IQuery<>/ICommand<> implementations
         // (it's the abstractions library, not application code), so scanning it finds nothing to validate.
@@ -32,7 +33,7 @@ public class InterlocutorStartupValidationTests
 
         // Act
 #pragma warning disable IL2026, IL3050 // reflection-based scan is explicitly opt-in for this startup-only check
-        var result = provider.ValidateHandlerRegistrations(typeof(Interlocutor.Abstractions.Core.IMediator).Assembly);
+        var result = provider.ValidateHandlerRegistrations(typeof(IMediator).Assembly);
 #pragma warning restore IL2026, IL3050
 
         // Assert
@@ -41,7 +42,7 @@ public class InterlocutorStartupValidationTests
 
     // Auto Generated, verify expected behavior:
     [Fact]
-    public void ValidateHandlerRegistrations_MissingHandler_ThrowsInvalidOperationExceptionNamingTheRequestType()
+    public void ValidateHandlerRegistrations_MissingHandler_ThrowsInvalidOperationExceptionNamingTheRequestType_Test()
     {
         // Arrange - no handler registered for StartupValidationCommand.
         var services = new ServiceCollection();
@@ -60,7 +61,7 @@ public class InterlocutorStartupValidationTests
 
     // Auto Generated, verify expected behavior:
     [Fact]
-    public void ValidateHandlerRegistrations_HandlerRegisteredForRequestType_DoesNotReportThatTypeAsMissing()
+    public void ValidateHandlerRegistrations_HandlerRegisteredForRequestType_DoesNotReportThatTypeAsMissing_Test()
     {
         // Arrange - the test assembly also declares many other request types with no handler registered
         // here, so scanning it may still throw for those; what this test asserts is narrower: whichever

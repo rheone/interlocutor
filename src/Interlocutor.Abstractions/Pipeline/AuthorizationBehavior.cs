@@ -2,7 +2,6 @@ namespace Interlocutor.Abstractions.Pipeline;
 
 using Interlocutor.Abstractions.Markers;
 using Interlocutor.Abstractions.Pipeline.Cases;
-using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>

@@ -4,7 +4,7 @@ using System.Diagnostics;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Diagnostics;
 using Interlocutor.Abstractions.Pipeline;
-using Interlocutor.CommonKernel;
+using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>Wraps a query handler, constructing the pipeline chain around it at invocation time.</summary>
 /// <typeparam name="TQuery">The query type.</typeparam>

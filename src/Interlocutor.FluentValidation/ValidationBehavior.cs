@@ -2,7 +2,6 @@ namespace Interlocutor.FluentValidation;
 
 using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Pipeline.Cases;
-using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>

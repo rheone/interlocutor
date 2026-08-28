@@ -1,6 +1,7 @@
 namespace Interlocutor.Abstractions.Commands;
 
 using Interlocutor.CommonKernel;
+using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
 /// Handles a command that produces no data payload - only an outcome.

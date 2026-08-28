@@ -1,6 +1,6 @@
 namespace Interlocutor.Abstractions.Pipeline.Cases;
 
-using Interlocutor.CommonKernel;
+using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
 /// Convenience extensions over <see cref="IOutcomeCaseRegistry"/> for pipeline behaviors that short-circuit a

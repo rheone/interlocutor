@@ -3,7 +3,7 @@ namespace Interlocutor.Abstractions.Pipeline.Cases;
 using System.Collections.Concurrent;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Interlocutor.CommonKernel;
+using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
 /// Zero-config <see cref="IOutcomeCaseRegistry"/> that handles any <see cref="IOperationOutcome"/> which is a

@@ -51,13 +51,25 @@ public static class DomainRepositoryQueryableExtensions
         IOrderedQueryable<TEntity>? ordered = null;
         foreach (var criterion in sort)
         {
-            ordered = ordered is null
-                ? criterion.Direction == SortDirection.Ascending
-                    ? query.OrderBy(criterion.KeySelector)
-                    : query.OrderByDescending(criterion.KeySelector)
-                : criterion.Direction == SortDirection.Ascending
-                    ? ordered.ThenBy(criterion.KeySelector)
-                    : ordered.ThenByDescending(criterion.KeySelector);
+            if (ordered is null)
+            {
+                if (criterion.Direction == SortDirection.Ascending)
+                {
+                    ordered = query.OrderBy(criterion.KeySelector);
+                }
+                else
+                {
+                    ordered = query.OrderByDescending(criterion.KeySelector);
+                }
+            }
+            else if (criterion.Direction == SortDirection.Ascending)
+            {
+                ordered = ordered.ThenBy(criterion.KeySelector);
+            }
+            else
+            {
+                ordered = ordered.ThenByDescending(criterion.KeySelector);
+            }
         }
 
         return ordered!;

@@ -9,7 +9,7 @@ using Interlocutor.Abstractions.Diagnostics;
 using Interlocutor.Abstractions.Notifications;
 using Interlocutor.Abstractions.Pipeline.Classifiers;
 using Interlocutor.Abstractions.Queries;
-using Interlocutor.CommonKernel;
+using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>Default mediator that dispatches queries, commands, and notifications to their registered handlers
 /// through pipeline behaviors. Handler wrapper instances are cached by request type to avoid repeated reflection.</summary>

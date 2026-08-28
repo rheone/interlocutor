@@ -17,6 +17,7 @@ namespace Interlocutor.CommonKernel.ResultTypes;
 /// Provide a <paramref name="Message"/> for additional context, such as which downstream dependency was slow.
 /// </para>
 /// </remarks>
+[Obsolete("May be overkill to include")]
 public readonly record struct Timeout(TimeSpan Budget, TimeSpan Elapsed, string? Message = null)
 {
     /// <summary>

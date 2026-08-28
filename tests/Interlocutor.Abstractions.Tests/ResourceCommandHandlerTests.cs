@@ -4,6 +4,8 @@ using Interlocutor.Abstractions.Commands;
 using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 
+#pragma warning disable SA1402
+
 public record TestCommand(int EntityId) : ICommand<OperationOutcome<string, NotFound, Failure>>;
 
 public class TestEntity

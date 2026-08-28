@@ -7,7 +7,7 @@ using System.Reflection;
 using global::Autofac;
 using global::Microsoft.Extensions.DependencyInjection;
 using Interlocutor.Abstractions.Core;
-using Interlocutor.CommonKernel;
+using Interlocutor.CommonKernel.ResultTypes;
 using Interlocutor.DependencyInjection.Abstractions;
 using Interlocutor.DependencyInjection.Autofac;
 using Interlocutor.DependencyInjection.Microsoft;

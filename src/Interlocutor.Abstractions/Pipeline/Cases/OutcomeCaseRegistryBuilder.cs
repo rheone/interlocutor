@@ -1,7 +1,7 @@
 namespace Interlocutor.Abstractions.Pipeline.Cases;
 
 using System.Collections.Immutable;
-using Interlocutor.CommonKernel;
+using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
 /// Builds an immutable <see cref="IOutcomeCaseRegistry"/>, mirroring <see cref="Classifiers.OutcomeClassifierBuilder"/>'s

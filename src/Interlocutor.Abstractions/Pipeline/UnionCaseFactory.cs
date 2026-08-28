@@ -16,7 +16,7 @@ using System.Reflection;
 /// <c>OperationOutcome&lt;TSuccess, Forbidden&gt;</c>) without breaking Microsoft.Extensions.DependencyInjection's
 /// open-generic resolution - see <see cref="AuthorizationBehavior{TRequest, TResponse}"/>'s remarks for the
 /// full explanation. Both are instead generic directly over <c>TResponse</c>, constrained only to
-/// <see cref="CommonKernel.IOperationOutcome"/>, and use this factory to construct the one case they need.
+/// <see cref="CommonKernel.ResultTypes.IOperationOutcome"/>, and use this factory to construct the one case they need.
 /// </para>
 /// <para>
 /// A union type's compiler-generated constructors are ordinary CLR constructors - one per declared case type,
