@@ -215,11 +215,14 @@ public class DependencyTests
         // (static class-level assembly references serve as fixture)
 
         // Act
-        var dependsOnAbstractionsResult = Types
-            .InAssembly(PersistenceEntityFrameworkCoreAssembly)
-            .Should()
-            .HaveDependencyOn("Interlocutor.Persistence.Abstractions")
-            .GetResult();
+        // Assembly-level (rather than NetArchTest's per-type Should().HaveDependencyOn check): this assembly
+        // also ships UnitOfWorkBehavior and UnitOfWorkSaveChangesInterceptor, neither of which individually
+        // references Interlocutor.Persistence.Abstractions (they only need Interlocutor.Abstractions and EF
+        // Core) - a per-type "every type must reference it" check fails on those two by design, even though
+        // the assembly as a whole correctly depends on Persistence.Abstractions via EntityFrameworkUnitOfWork
+        // and EntityFrameworkRepository. See DependencyInjectionAbstractions_ReferencedAssembly_DependsOnlyOnAbstractions_Test
+        // for the same assembly-level idiom.
+        var referencedAssemblyNames = PersistenceEntityFrameworkCoreAssembly.GetReferencedAssemblies().Select(a => a.Name);
 
         var doesNotDependOnNHibernateResult = Types
             .InAssembly(PersistenceEntityFrameworkCoreAssembly)
@@ -228,10 +231,7 @@ public class DependencyTests
             .GetResult();
 
         // Assert
-        Assert.True(
-            dependsOnAbstractionsResult.IsSuccessful,
-            "Persistence.EntityFrameworkCore should depend on Persistence.Abstractions"
-        );
+        Assert.Contains(PersistenceAbstractionsAssembly.GetName().Name, referencedAssemblyNames);
         Assert.True(
             doesNotDependOnNHibernateResult.IsSuccessful,
             string.Join(", ", doesNotDependOnNHibernateResult.FailingTypeNames ?? [])
@@ -245,11 +245,9 @@ public class DependencyTests
         // (static class-level assembly references serve as fixture)
 
         // Act
-        var dependsOnAbstractionsResult = Types
-            .InAssembly(PersistenceNHibernateAssembly)
-            .Should()
-            .HaveDependencyOn("Interlocutor.Persistence.Abstractions")
-            .GetResult();
+        // Assembly-level, not per-type - see the EF Core counterpart's comment above for why: this assembly
+        // also ships UnitOfWorkBehavior, which doesn't itself reference Interlocutor.Persistence.Abstractions.
+        var referencedAssemblyNames = PersistenceNHibernateAssembly.GetReferencedAssemblies().Select(a => a.Name);
 
         var doesNotDependOnEntityFrameworkCoreResult = Types
             .InAssembly(PersistenceNHibernateAssembly)
@@ -258,10 +256,7 @@ public class DependencyTests
             .GetResult();
 
         // Assert
-        Assert.True(
-            dependsOnAbstractionsResult.IsSuccessful,
-            "Persistence.NHibernate should depend on Persistence.Abstractions"
-        );
+        Assert.Contains(PersistenceAbstractionsAssembly.GetName().Name, referencedAssemblyNames);
         Assert.True(
             doesNotDependOnEntityFrameworkCoreResult.IsSuccessful,
             string.Join(", ", doesNotDependOnEntityFrameworkCoreResult.FailingTypeNames ?? [])
