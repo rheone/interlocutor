@@ -50,7 +50,7 @@ public class ServiceCollectionExtensionsTests
                 "AuditingBehavior`2",
                 "AuthorizationBehavior`2",
                 "ValidationBehavior`2",
-                "TransactionBehavior`2",
+                "UnitOfWorkBehavior`2",
             ],
             behaviorImplementationTypes
         );

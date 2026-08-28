@@ -38,10 +38,10 @@ public record TestNotification(string Message) : INotification;
 
 public class TrackingBehavior<TRequest, TResponse>(Action track) : IPipelineBehavior<TRequest, TResponse>
 {
-    public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         track();
-        return await next();
+        return next();
     }
 }
 
@@ -51,7 +51,7 @@ public class MediatorTests
     public async Task Send_Query_ReturnsHandlerResult()
     {
         // Arrange
-        var mediator = CreateMediator<TestQueryHandler>(services => { });
+        var mediator = CreateMediator<TestQueryHandler>(_ => { });
 
         // Act
         var result = await mediator.Send(new TestQuery(21), CancellationToken.None);
@@ -121,7 +121,7 @@ public class MediatorTests
     public async Task Send_VoidCommand_ReturnsSuccess()
     {
         // Arrange
-        var mediator = CreateMediator<TestVoidHandler>(services => { });
+        var mediator = CreateMediator<TestVoidHandler>(_ => { });
 
         // Act
         var result = await mediator.Send<OperationOutcome>(new TestVoidCommand("test"), CancellationToken.None);
@@ -155,7 +155,7 @@ public class MediatorTests
     }
 
     [Fact]
-    public async Task Publish_WithNoHandlers_DoesNotThrow()
+    public Task Publish_WithNoHandlers_DoesNotThrow()
     {
         // Arrange
         var services = new ServiceCollection();
@@ -164,7 +164,7 @@ public class MediatorTests
         var mediator = provider.GetRequiredService<IMediator>();
 
         // Act & Assert - no handlers registered for TestNotification; publishing must not throw.
-        await mediator.Publish(new TestNotification("hello"), CancellationToken.None);
+        return mediator.Publish(new TestNotification("hello"), CancellationToken.None);
     }
 
     [Fact]
@@ -196,7 +196,7 @@ public class MediatorTests
         // Arrange - the wrapper Mediator builds per closed request type is cached internally; sending the
         // same query type repeatedly must keep returning a result derived from that specific dispatch's
         // input, not a stale or shared one.
-        var mediator = CreateMediator<TestQueryHandler>(services => { });
+        var mediator = CreateMediator<TestQueryHandler>(_ => { });
 
         // Act
         var first = await mediator.Send(new TestQuery(1), CancellationToken.None);
@@ -213,20 +213,20 @@ public class MediatorTests
     public async Task Mediator_ImplementsISender()
     {
         // Arrange
-        var mediator = CreateMediator<TestQueryHandler>(services => { });
+        var mediator = CreateMediator<TestQueryHandler>(_ => { });
 
         // Act & Assert
-        Assert.IsAssignableFrom<ISender>(mediator);
+        Assert.IsType<ISender>(mediator, exactMatch: false);
     }
 
     [Fact]
     public async Task Mediator_ImplementsIPublisher()
     {
         // Arrange
-        var mediator = CreateMediator<TestQueryHandler>(services => { });
+        var mediator = CreateMediator<TestQueryHandler>(_ => { });
 
         // Act & Assert
-        Assert.IsAssignableFrom<IPublisher>(mediator);
+        Assert.IsType<IPublisher>(mediator, exactMatch: false);
     }
 
     private static IMediator CreateMediator<THandler>(Action<ServiceCollection> configure)

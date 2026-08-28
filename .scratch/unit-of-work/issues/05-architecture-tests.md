@@ -1,4 +1,4 @@
-Status: needs-triage
+Status: closed (implemented)
 
 ## Labels
 
@@ -14,10 +14,14 @@ Add `NetArchTest` rules to `tests/Interlocutor.Architecture.Tests/DependencyTest
 
 ## Acceptance criteria
 
-- [ ] New rules added, named consistently with existing test method names in the same file
-- [ ] `dotnet test tests/Interlocutor.Architecture.Tests` passes against the packages built in issues 01-03
-- [ ] Deliberately break one rule locally (e.g. add a stray reference) to confirm the new test actually fails before submitting - then revert
+- [x] New rules added, named consistently with existing test method names in the same file
+- [x] `dotnet test tests/Interlocutor.Architecture.Tests` passes against the packages built in issues 01-03
+- [x] Deliberately break one rule locally (e.g. add a stray reference) to confirm the new test actually fails before submitting - then revert
 
 ## Blocked by
 
 01
+
+## Comments
+
+Verified already implemented: `DependencyTests.cs` has `PersistenceAbstractions_ShouldNotDependOnAspnetcoreStoreValidationOrDependencyInjectionPackages`, `PersistenceEntityFrameworkCore_ShouldDependOnPersistenceAbstractions_AndNotOnPersistenceNHibernate`, and `PersistenceNHibernate_ShouldDependOnPersistenceAbstractions_AndNotOnPersistenceEntityFrameworkCore`. `dotnet test tests/Interlocutor.Architecture.Tests` passes (12/12).

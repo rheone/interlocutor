@@ -9,8 +9,6 @@ using NSubstitute;
 
 public class LoggingBehaviorTests
 {
-    public record LoggedQuery(int Value) : IQuery<OperationOutcome<int, Failure>>;
-
     [Fact]
     public async Task Handle_LogsRequestTypeAndOutcome()
     {
@@ -19,10 +17,13 @@ public class LoggingBehaviorTests
         var behavior = new LoggingBehavior<LoggedQuery, int>(logger);
         var request = new LoggedQuery(42);
         var response = 84;
-        var next = () => Task.FromResult(response);
+        Task<int> Next()
+        {
+            return Task.FromResult(response);
+        }
 
         // Act
-        var result = await behavior.Handle(request, next, CancellationToken.None);
+        var result = await behavior.Handle(request, Next, CancellationToken.None);
 
         // Assert
         Assert.Equal(84, result);
@@ -46,10 +47,13 @@ public class LoggingBehaviorTests
         var behavior = new LoggingBehavior<LoggedQuery, Success>(logger);
         var request = new LoggedQuery(1);
         var response = default(Success);
-        var next = () => Task.FromResult(response);
+        Task<Success> Next()
+        {
+            return Task.FromResult(response);
+        }
 
         // Act
-        await behavior.Handle(request, next, CancellationToken.None);
+        await behavior.Handle(request, Next, CancellationToken.None);
 
         // Assert
         logger
@@ -71,10 +75,13 @@ public class LoggingBehaviorTests
         var behavior = new LoggingBehavior<LoggedQuery, Failure>(logger);
         var request = new LoggedQuery(1);
         var response = new Failure("Operation failed");
-        var next = () => Task.FromResult(response);
+        Task<Failure> Next()
+        {
+            return Task.FromResult(response);
+        }
 
         // Act
-        await behavior.Handle(request, next, CancellationToken.None);
+        await behavior.Handle(request, Next, CancellationToken.None);
 
         // Assert
         logger
@@ -96,7 +103,10 @@ public class LoggingBehaviorTests
         var behavior = new LoggingBehavior<LoggedQuery, int>(logger);
         var request = new LoggedQuery(1);
         var nextException = new InvalidOperationException("Handler failed");
-        Task<int> Next() => throw nextException;
+        Task<int> Next()
+        {
+            throw nextException;
+        }
 
         // Act
         await Assert.ThrowsAsync<InvalidOperationException>(() => behavior.Handle(request, Next, CancellationToken.None));
@@ -120,10 +130,13 @@ public class LoggingBehaviorTests
         var logger = Substitute.For<ILogger<LoggingBehavior<LoggedQuery, int>>>();
         var behavior = new LoggingBehavior<LoggedQuery, int>(logger);
         var request = new LoggedQuery(21);
-        var next = () => Task.FromResult(42);
+        static Task<int> Next()
+        {
+            return Task.FromResult(42);
+        }
 
         // Act
-        var result = await behavior.Handle(request, next, CancellationToken.None);
+        var result = await behavior.Handle(request, Next, CancellationToken.None);
 
         // Assert
         Assert.Equal(42, result);
@@ -138,7 +151,10 @@ public class LoggingBehaviorTests
         var request = new LoggedQuery(99);
         var expectedValue = 198;
 
-        Task<int> Next() => Task.FromResult(expectedValue);
+        Task<int> Next()
+        {
+            return Task.FromResult(expectedValue);
+        }
 
         // Act
         var result = await behavior.Handle(request, Next, CancellationToken.None);
@@ -146,4 +162,6 @@ public class LoggingBehaviorTests
         // Assert
         Assert.Equal(expectedValue, result);
     }
+
+    public record LoggedQuery(int Value) : IQuery<OperationOutcome<int, Failure>>;
 }

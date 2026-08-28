@@ -10,23 +10,24 @@ using Interlocutor.Abstractions.Markers;
 using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
-using Interlocutor.EntityFrameworkCore;
+using Interlocutor.Persistence.EntityFrameworkCore;
 
 /// <summary>
-/// Covers the audit-followups ticket 14 resolution: <c>InterlocutorPipelineBuilder.AddTransactionBehavior()</c>
-/// registers EF Core's arity-3 <see cref="TransactionBehavior{TRequest,TResponse,TContext}"/> against the
-/// arity-2 <see cref="IPipelineBehavior{TRequest,TResponse}"/> unchanged, which
+/// Covers the audit-followups ticket 14 resolution, carried forward under ADR-0018's renamed type:
+/// <c>InterlocutorPipelineBuilder.AddUnitOfWorkBehavior()</c> registers EF Core's arity-3
+/// <see cref="UnitOfWorkBehavior{TRequest,TResponse,TContext}"/> against the arity-2
+/// <see cref="IPipelineBehavior{TRequest,TResponse}"/> unchanged, which
 /// Microsoft.Extensions.DependencyInjection cannot register at all. Since Microsoft DI has no way to leave a
 /// third type parameter open behind a two-parameter service interface, the fix is a clear, immediate failure
 /// plus a documented workaround (a small subclass closing <c>TContext</c>, registered via
 /// <c>InterlocutorPipelineBuilder.AddBehavior</c>) rather than a structural change to the registration
-/// translator - see <c>AddTransactionBehavior</c>'s remarks and <c>ServiceCollectionExtensions.ResolveServiceType</c>'s
+/// translator - see <c>AddUnitOfWorkBehavior</c>'s remarks and <c>ServiceCollectionExtensions.ResolveServiceType</c>'s
 /// exception documentation.
 /// </summary>
-public sealed class TransactionBehaviorArityTests
+public sealed class UnitOfWorkBehaviorArityTests
 {
     [Fact]
-    public void AddTransactionBehavior_WithEfCoreReferenced_ThrowsImmediately_WithActionableGuidance()
+    public void AddUnitOfWorkBehavior_WithEfCoreReferenced_ThrowsImmediately_WithActionableGuidance()
     {
         // Arrange
         var services = new ServiceCollection();
@@ -36,10 +37,10 @@ public sealed class TransactionBehaviorArityTests
         // runs - the whole point of resolving the arity mismatch eagerly instead of leaving Microsoft DI's
         // own late, cryptic ArgumentException to surface it.
         var ex = Assert.Throws<InvalidOperationException>(() =>
-            services.AddInterlocutor(builder => builder.Pipeline.AddTransactionBehavior())
+            services.AddInterlocutor(builder => builder.Pipeline.AddUnitOfWorkBehavior())
         );
 
-        Assert.Contains("TransactionBehavior", ex.Message, StringComparison.Ordinal);
+        Assert.Contains("UnitOfWorkBehavior", ex.Message, StringComparison.Ordinal);
         Assert.Contains("AddBehavior", ex.Message, StringComparison.Ordinal);
     }
 
@@ -57,10 +58,10 @@ public sealed class TransactionBehaviorArityTests
         services.AddInterlocutor(builder =>
             builder
                 .AddHandler(typeof(WidgetCommandHandler))
-                // The documented workaround from AddTransactionBehavior()'s remarks: a subclass closing
+                // The documented workaround from AddUnitOfWorkBehavior()'s remarks: a subclass closing
                 // TContext over the application's own DbContext, registered via the general AddBehavior
-                // escape hatch instead of AddTransactionBehavior() itself.
-                .Pipeline.AddBehavior(typeof(TestDbContextTransactionBehavior<,>))
+                // escape hatch instead of AddUnitOfWorkBehavior() itself.
+                .Pipeline.AddBehavior(typeof(TestDbContextUnitOfWorkBehavior<,>))
         );
 
         await using var provider = services.BuildServiceProvider();
@@ -85,7 +86,7 @@ public sealed class TransactionBehaviorArityTests
         Assert.Equal(["subclassed"], verifyContext.Widgets.Select(w => w.Name));
     }
 
-    private sealed record CreateWidget(string Name) : ICommand<OperationOutcome<Success, Failure>>, ITransactionalRequest;
+    private sealed record CreateWidget(string Name) : ICommand<OperationOutcome<Success, Failure>>;
 
     private sealed class WidgetCommandHandler(TestDbContext context)
         : ICommandHandler<CreateWidget, OperationOutcome<Success, Failure>>
@@ -98,15 +99,14 @@ public sealed class TransactionBehaviorArityTests
     }
 
     /// <summary>
-    /// The exact pattern documented on <c>AddTransactionBehavior</c>'s remarks and demonstrated by
-    /// <c>samples/Interlocutor.Sample.WebApi/SampleTransactionBehavior.cs</c>: closes
-    /// <see cref="TransactionBehavior{TRequest,TResponse,TContext}"/>'s <c>TContext</c> over
+    /// The exact pattern documented on <c>AddUnitOfWorkBehavior</c>'s remarks and demonstrated by
+    /// <c>samples/Interlocutor.Sample.WebApi/SampleUnitOfWorkBehavior.cs</c>: closes
+    /// <see cref="UnitOfWorkBehavior{TRequest,TResponse,TContext}"/>'s <c>TContext</c> over
     /// <see cref="TestDbContext"/>, leaving <c>TRequest</c>/<c>TResponse</c> open so it still registers as a
     /// two-parameter open generic against <see cref="IPipelineBehavior{TRequest,TResponse}"/>.
     /// </summary>
-    private sealed class TestDbContextTransactionBehavior<TRequest, TResponse>(Lazy<TestDbContext> db)
-        : TransactionBehavior<TRequest, TResponse, TestDbContext>(db)
-        where TRequest : ITransactionalRequest;
+    private sealed class TestDbContextUnitOfWorkBehavior<TRequest, TResponse>(Lazy<TestDbContext> db)
+        : UnitOfWorkBehavior<TRequest, TResponse, TestDbContext>(db);
 
     private sealed class Widget
     {

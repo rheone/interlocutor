@@ -4,28 +4,34 @@ set -e
 echo "🔧 Claude Code Development Container Initialization"
 echo "=================================================="
 
-# 1. Git configuration
+# 1. System packages
+echo "✓ Installing ripgrep..."
+if ! command -v rg >/dev/null 2>&1; then
+    sudo apt-get update -y && sudo apt-get install -y ripgrep
+fi
+
+# 2. Git configuration
 echo "✓ Configuring Git..."
 mkdir -p "$(dirname "$GIT_CONFIG_GLOBAL")"
 touch "$GIT_CONFIG_GLOBAL"
 git config --global --add safe.directory "${containerWorkspaceFolder:-.}"
 
-# 2. Claude Code runtime directory
+# 3. Claude Code runtime directory
 echo "✓ Setting up Claude Code runtime..."
 mkdir -p "$CLAUDE_RUNTIME_DIR"
 chmod 755 "$CLAUDE_RUNTIME_DIR"
 
-# 3. Project-local Claude configuration
+# 4. Project-local Claude configuration
 echo "✓ Configuring project-local Claude settings..."
 mkdir -p "$CLAUDE_PROJECT_CONFIG"
 chmod 755 "$CLAUDE_PROJECT_CONFIG"
 
-# 4. Agents configuration
+# 5. Agents configuration
 echo "✓ Setting up agents configuration..."
 mkdir -p "$CLAUDE_AGENTS_CONFIG"
 chmod 755 "$CLAUDE_AGENTS_CONFIG"
 
-# 5. User home Claude configuration (from Windows mount, if available)
+# 6. User home Claude configuration (from Windows mount, if available)
 echo "✓ Linking user-level Claude configuration..."
 if [ -d "/mnt/windows-user/.claude" ]; then
     mkdir -p "$HOME/.claude"
@@ -48,7 +54,7 @@ if [ -d "/mnt/windows-user/.agents" ]; then
     fi
 fi
 
-# 6. Make project .claude and .agents accessible to VSCode
+# 7. Make project .claude and .agents accessible to VSCode
 echo "✓ Configuring project accessibility..."
 # Create symlinks for IDE access if running in VSCode
 if [ -n "$TERM_PROGRAM" ] || [ "$REMOTE_CONTAINERS" = "true" ]; then
@@ -58,7 +64,7 @@ if [ -n "$TERM_PROGRAM" ] || [ "$REMOTE_CONTAINERS" = "true" ]; then
     ln -sf "$CLAUDE_AGENTS_CONFIG" "$HOME/.agents/project-config" 2>/dev/null || true
 fi
 
-# 7. Verify setup
+# 8. Verify setup
 echo ""
 echo "📁 Configuration Status:"
 echo "  • Claude Runtime: $CLAUDE_RUNTIME_DIR"

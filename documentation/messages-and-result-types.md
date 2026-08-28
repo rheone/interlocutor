@@ -342,7 +342,7 @@ Requests can opt into pipeline behaviors via marker interfaces:
 
 | Interface | Used by | Carries |
 |-----------|---------|---------|
-| `ITransactionalRequest` | `TransactionBehavior` | - |
+| `ITransactionalRequest` | `UnitOfWorkBehavior` (forces an eager transaction begin - every write already gets one automatically) | - |
 | `IExternalStoreRequest` | Declares "no SQL session" | - |
 | `IAuditableRequest` | `AuditingBehavior` | `ActionName` |
 | `IRequiresPolicy` | `AuthorizationBehavior` | `PolicyName` |

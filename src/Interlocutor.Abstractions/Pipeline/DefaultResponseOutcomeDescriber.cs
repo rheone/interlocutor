@@ -5,7 +5,7 @@ using Interlocutor.Abstractions.Pipeline.Classifiers;
 /// <summary>
 /// Default <see cref="IResponseOutcomeDescriber"/>. Uses an <see cref="IOutcomeClassifier"/> to
 /// determine failure/success classification and labels. Unwraps compiler-generated unions via
-/// <see cref="IUnion"/> before classification.
+/// <see cref="System.Runtime.CompilerServices.IUnion"/> before classification.
 /// </summary>
 /// <remarks>
 /// <para>

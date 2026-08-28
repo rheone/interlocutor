@@ -1,3 +1,5 @@
+> **Status: done** - merged in `12c6e4d`.
+
 # 08 - Migrate ValidationBehavior to IOutcomeCaseRegistry
 
 ## Labels

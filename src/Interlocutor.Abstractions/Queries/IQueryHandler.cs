@@ -1,6 +1,6 @@
 namespace Interlocutor.Abstractions.Queries;
 
-using Interlocutor.CommonKernel;
+using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
 /// Defines a handler that processes a CQRS query of a specified type and returns a result.

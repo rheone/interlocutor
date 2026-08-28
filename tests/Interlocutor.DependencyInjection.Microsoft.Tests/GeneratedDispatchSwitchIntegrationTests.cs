@@ -1,7 +1,6 @@
 namespace Interlocutor.DependencyInjection.Microsoft.Tests;
 
 using global::Microsoft.Extensions.DependencyInjection;
-using Interlocutor.Abstractions;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Queries;
@@ -29,7 +28,7 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
         var outcome = await sender.Send(request, TestContext.Current.CancellationToken);
 
         // Assert
-        var union = Assert.IsAssignableFrom<System.Runtime.CompilerServices.IUnion>(outcome);
+        var union = Assert.IsType<System.Runtime.CompilerServices.IUnion>(outcome, exactMatch: false);
         Assert.Equal(42, Assert.IsType<int>(union.Value));
     }
 
@@ -44,7 +43,7 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
         var outcome = await sender.Send(request, TestContext.Current.CancellationToken);
 
         // Assert
-        var union = Assert.IsAssignableFrom<System.Runtime.CompilerServices.IUnion>(outcome);
+        var union = Assert.IsType<System.Runtime.CompilerServices.IUnion>(outcome, exactMatch: false);
         Assert.Equal("Hello Ada", Assert.IsType<string>(union.Value));
     }
 
@@ -59,7 +58,7 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
         var outcome = await sender.Send(request, TestContext.Current.CancellationToken);
 
         // Assert
-        var union = Assert.IsAssignableFrom<System.Runtime.CompilerServices.IUnion>(outcome);
+        var union = Assert.IsType<System.Runtime.CompilerServices.IUnion>(outcome, exactMatch: false);
         Assert.IsType<Success>(union.Value);
     }
 
@@ -119,6 +118,7 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
         // reclaim is preferable to plumbing IDisposable back out through every call site.
         var provider = services.BuildServiceProvider();
         var scope = provider.CreateScope();
+
         return scope.ServiceProvider.GetRequiredService<ISender>();
     }
 

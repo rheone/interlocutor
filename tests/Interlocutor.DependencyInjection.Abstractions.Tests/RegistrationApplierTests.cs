@@ -55,8 +55,10 @@ public class RegistrationApplierTests
         applier.Apply(builder);
 
         // Assert
-        int IndexOf(string category, Type markerType) =>
-            steps.FindIndex(s => s.Category == category && s.MarkerType == markerType);
+        int IndexOf(string category, Type markerType)
+        {
+            return steps.FindIndex(s => s.Category == category && s.MarkerType == markerType);
+        }
 
         var handlerIndex = IndexOf("registration", typeof(MarkerHandler));
         var generatedIndex = IndexOf("registration", typeof(MarkerGeneratedHandler));

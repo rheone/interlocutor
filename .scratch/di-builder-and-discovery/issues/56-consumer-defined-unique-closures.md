@@ -1,3 +1,5 @@
+> **Status: done** - merged in `36c1416` (InterlocutorBuilder.RequireUniqueClosure).
+
 ## Labels
 
 ready-for-agent
@@ -12,11 +14,11 @@ Ticket 55 writes the "at most one implementation per closed interface" check gen
 
 ## Acceptance criteria
 
-- [ ] `RequireUniqueClosure(typeof(IMyOpenGenericContract<>))` causes every closed implementation of that contract found while scanning to be registered
-- [ ] Two implementation types closing the same instantiation of a consumer-registered contract is reported as `AmbiguousClosure` under `ValidateOnBuild()`, with the same debug info shape as ticket 55's handler-contract check
-- [ ] `Eject` clears a conflict on a consumer-supplied contract the same way it does for a built-in handler contract
-- [ ] The three built-in handler contracts from ticket 55 continue to be checked without requiring a `RequireUniqueClosure` call for them
-- [ ] `dotnet build` and `dotnet test` pass for the whole solution
+- [x] `RequireUniqueClosure(typeof(IMyOpenGenericContract<>))` causes every closed implementation of that contract found while scanning to be registered
+- [x] Two implementation types closing the same instantiation of a consumer-registered contract is reported as `AmbiguousClosure` under `ValidateOnBuild()`, with the same debug info shape as ticket 55's handler-contract check
+- [x] `Eject` clears a conflict on a consumer-supplied contract the same way it does for a built-in handler contract
+- [x] The three built-in handler contracts from ticket 55 continue to be checked without requiring a `RequireUniqueClosure` call for them
+- [x] `dotnet build` and `dotnet test` pass for the whole solution
 
 ## Blocked by
 

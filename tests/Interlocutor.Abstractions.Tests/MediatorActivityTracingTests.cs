@@ -312,6 +312,7 @@ public class TracingNotificationHandler(Action action) : INotificationHandler<Tr
 }
 
 /// <summary>Minimal <see cref="ILogger{TCategoryName}"/> stub that only records whether it was ever called.</summary>
+/// <typeparam name="T">The category type, matching <see cref="ILogger{TCategoryName}"/>'s own type parameter.</typeparam>
 public sealed class RecordingLogger<T> : ILogger<T>
 {
     public bool LoggedAnything { get; private set; }

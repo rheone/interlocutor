@@ -8,7 +8,7 @@ namespace Interlocutor.Abstractions.Pipeline.Cases;
 /// <see cref="OutcomeCaseRegistryBuilder"/>.
 /// </summary>
 /// <remarks>
-/// This is a configuration mistake (an <see cref="Interlocutor.CommonKernel.IOperationOutcome"/> shape paired
+/// This is a configuration mistake (an <see cref="CommonKernel.ResultTypes.IOperationOutcome"/> shape paired
 /// with a case it can't express, or a hand-rolled outcome type used before its factory/extractor was
 /// registered), not a normal runtime outcome - so it is thrown rather than silently swallowed or reported as
 /// an ordinary "not found" result, mirroring how <see cref="AuthorizationBehavior{TRequest, TResponse}"/>
@@ -23,7 +23,7 @@ namespace Interlocutor.Abstractions.Pipeline.Cases;
 public sealed class OutcomeCaseNotSupportedException : Exception
 {
     /// <summary>Initializes a new instance of the <see cref="OutcomeCaseNotSupportedException"/> class.</summary>
-    /// <param name="responseType">The <see cref="Interlocutor.CommonKernel.IOperationOutcome"/> type that could not be constructed or decomposed.</param>
+    /// <param name="responseType">The <see cref="CommonKernel.ResultTypes.IOperationOutcome"/> type that could not be constructed or decomposed.</param>
     /// <param name="caseType">
     /// The case type that could not be constructed or extracted, or <see langword="null"/> when the failure
     /// is extraction of an unknown active case rather than construction of a specific one.
@@ -36,13 +36,18 @@ public sealed class OutcomeCaseNotSupportedException : Exception
         this.CaseType = caseType;
     }
 
-    /// <summary>Gets the <see cref="Interlocutor.CommonKernel.IOperationOutcome"/> type that could not be constructed or decomposed.</summary>
+    /// <summary>Gets the <see cref="CommonKernel.ResultTypes.IOperationOutcome"/> type that could not be constructed or decomposed.</summary>
+    /// <value>The <see cref="CommonKernel.ResultTypes.IOperationOutcome"/> type that could not be constructed or decomposed.</value>
     public Type ResponseType { get; }
 
     /// <summary>
     /// Gets the case type that could not be constructed or extracted, or <see langword="null"/> when the
     /// failure is extraction of an unknown active case rather than construction of a specific one.
     /// </summary>
+    /// <value>
+    /// The case type that could not be constructed or extracted, or <see langword="null"/> when the failure
+    /// is extraction of an unknown active case rather than construction of a specific one.
+    /// </value>
     public Type? CaseType { get; }
 }
 #pragma warning restore RCS1194

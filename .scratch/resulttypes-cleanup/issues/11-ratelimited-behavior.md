@@ -1,3 +1,5 @@
+> **Status: done** - merged in `4235e8f`.
+
 # 11 - RateLimitedBehavior + IRateLimited + IRateLimiter
 
 ## Labels

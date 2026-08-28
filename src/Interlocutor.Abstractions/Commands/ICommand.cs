@@ -1,6 +1,6 @@
 namespace Interlocutor.Abstractions.Commands;
 
-using Interlocutor.CommonKernel;
+using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
 /// Marks a command that produces a typed response of type <typeparamref name="TResponse"/>.

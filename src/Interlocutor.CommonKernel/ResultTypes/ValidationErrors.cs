@@ -1,5 +1,7 @@
 namespace Interlocutor.CommonKernel.ResultTypes;
 
+#pragma warning disable SA1402 // Allowing multiple types of same name with differet arity
+
 using System;
 using System.Collections.Generic;
 using Interlocutor.CommonKernel.ResultTypes.Internal;

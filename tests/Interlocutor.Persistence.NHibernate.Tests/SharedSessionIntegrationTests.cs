@@ -2,7 +2,6 @@ namespace Interlocutor.Persistence.NHibernate.Tests;
 
 using global::NHibernate;
 using Interlocutor.Abstractions.Commands;
-using Interlocutor.Abstractions.Markers;
 using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 using NSubstitute;
@@ -10,27 +9,35 @@ using NSubstitute;
 /// <summary>
 /// Proves that <see cref="NHibernateUnitOfWork"/> and <see cref="NHibernateRepository{TEntity, TKey}"/>,
 /// resolved from the same <c>Lazy&lt;ISession&gt;</c>, participate in the same <see cref="ISession"/> instance
-/// that <c>Interlocutor.NHibernate.TransactionBehavior{TRequest,TResponse}</c> sees for the same dispatch -
-/// the "same transaction and session" guarantee this package's <see cref="Abstractions.IUnitOfWork"/> façade
-/// relies on rather than re-implementing.
+/// that <see cref="UnitOfWorkBehavior{TRequest,TResponse}"/> sees for the same dispatch - the "same
+/// transaction and session" guarantee this package's <see cref="Abstractions.IUnitOfWork"/> façade relies on
+/// rather than re-implementing.
 /// </summary>
 public sealed class SharedSessionIntegrationTests
 {
     [Fact]
-    public async Task RepositoryInsert_AndUnitOfWorkFlush_ResolveSameSessionInstance_AsTransactionBehavior()
+    public async Task RepositoryInsert_AndUnitOfWorkFlush_ResolveSameSessionInstance_AsUnitOfWorkBehavior()
     {
         // Arrange
         var session = Substitute.For<ISession>();
         var transaction = Substitute.For<ITransaction>();
-        session.BeginTransaction().Returns(transaction);
+        transaction.IsActive.Returns(true);
+        // Transaction only reports the active transaction once BeginTransaction() has actually run - matching
+        // real NHibernate, where BeginTransaction() sets this property as a side effect.
+        var transactionBegun = false;
+        session
+            .BeginTransaction()
+            .Returns(_ =>
+            {
+                transactionBegun = true;
+                return transaction;
+            });
+        session.Transaction.Returns(_ => transactionBegun ? transaction : null);
         var lazySession = new Lazy<ISession>(() => session);
 
         var repository = new NHibernateRepository<Widget, int>(lazySession, w => w.Id);
         var unitOfWork = new NHibernateUnitOfWork(lazySession);
-        var behavior = new global::Interlocutor.NHibernate.TransactionBehavior<
-            TransactionalRequest,
-            OperationOutcome<Success, Failure>
-        >(lazySession);
+        var behavior = new UnitOfWorkBehavior<TransactionalRequest, OperationOutcome<Success, Failure>>(lazySession);
 
         var widget = new Widget();
 
@@ -40,7 +47,7 @@ public sealed class SharedSessionIntegrationTests
             async () =>
             {
                 // Both calls resolve ISession.Value from the exact same Lazy<ISession> instance
-                // TransactionBehavior itself resolves - proving all three share one scoped session.
+                // UnitOfWorkBehavior itself resolves - proving all three share one scoped session.
                 await repository.InsertAsync(widget, CancellationToken.None);
                 await unitOfWork.SaveChangesAsync(CancellationToken.None);
                 return default(Success);
@@ -56,7 +63,7 @@ public sealed class SharedSessionIntegrationTests
         await transaction.Received(1).CommitAsync(CancellationToken.None);
     }
 
-    private sealed record TransactionalRequest : ICommand<OperationOutcome<Success, Failure>>, ITransactionalRequest;
+    private sealed record TransactionalRequest : ICommand<OperationOutcome<Success, Failure>>;
 
     public sealed class Widget
     {

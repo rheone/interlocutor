@@ -12,7 +12,7 @@ using Interlocutor.Persistence.Abstractions;
 /// <typeparam name="TEntity">The entity type this repository reads and writes.</typeparam>
 /// <typeparam name="TKey">The entity's key type, used by <see cref="IDomainRepository{TEntity, TKey}.GetById"/>.</typeparam>
 /// <param name="session">
-/// Lazy factory for the <see cref="ISession"/> instance, matching <c>TransactionBehavior</c>'s own
+/// Lazy factory for the <see cref="ISession"/> instance, matching <c>UnitOfWorkBehavior</c>'s own
 /// <c>Lazy&lt;ISession&gt;</c> idiom so a dispatch that never touches this repository never pays for session
 /// construction.
 /// </param>

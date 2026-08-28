@@ -1,4 +1,4 @@
-namespace Interlocutor.DependencyInjection.Microsoft.Tests;
+namespace Interlocutor.DependencyInjection.Microsoft.EntityFrameworkCore.Tests;
 
 using global::Microsoft.Data.Sqlite;
 using global::Microsoft.EntityFrameworkCore;

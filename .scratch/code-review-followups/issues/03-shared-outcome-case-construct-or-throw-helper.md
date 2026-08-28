@@ -4,8 +4,12 @@
 
 **Blocked by:** None - can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A single shared helper (e.g. an extension method on `IOutcomeCaseRegistry` taking the case value, behavior name, and case name) replaces the five near-identical try/catch/rewrap blocks
-- [ ] All five call sites (`AuthorizationBehavior`, `CancellationBehavior`, `TimeoutBehavior`, `RateLimitedBehavior`, `ValidationBehavior`) use the shared helper and produce the same exception messages as before
-- [ ] Existing tests for all five behaviors still pass unchanged in observed behavior
+- [x] A single shared helper (e.g. an extension method on `IOutcomeCaseRegistry` taking the case value, behavior name, and case name) replaces the five near-identical try/catch/rewrap blocks
+- [x] All five call sites (`AuthorizationBehavior`, `CancellationBehavior`, `TimeoutBehavior`, `RateLimitedBehavior`, `ValidationBehavior`) use the shared helper and produce the same exception messages as before
+- [x] Existing tests for all five behaviors still pass unchanged in observed behavior
+
+## Comments
+
+Verified already implemented: `OutcomeCaseRegistryExtensions.ConstructOrThrow<TResponse, TCase>` (`Interlocutor.Abstractions/Pipeline/Cases`) is the shared helper, and all five call sites (`AuthorizationBehavior`, `CancellationBehavior`, `TimeoutBehavior`, `RateLimitedBehavior` in `Interlocutor.Abstractions`, `ValidationBehavior` in `Interlocutor.FluentValidation`) call it. `dotnet test` passes for `Interlocutor.Abstractions.Tests` (153/153) and `Interlocutor.FluentValidation.Tests` (9/9).

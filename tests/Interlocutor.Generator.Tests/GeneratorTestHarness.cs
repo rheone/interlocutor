@@ -7,7 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Interlocutor.Abstractions.Queries;
-using Interlocutor.CommonKernel;
+using Interlocutor.CommonKernel.ResultTypes;
 using Interlocutor.DependencyInjection.Abstractions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -37,7 +37,11 @@ internal static class GeneratorTestHarness
         StringComparer.Ordinal
     );
 
+    // Deliberately never read: the field exists only to run RegisterResolvingHandler() exactly once, at
+    // static-initialization time, as a module-initializer substitute - not to hold a value.
+#pragma warning disable RCS1213
     private static readonly bool ResolvingHandlerRegistered = RegisterResolvingHandler();
+#pragma warning restore RCS1213
 
     /// <summary>Builds an unaltered <see cref="CSharpCompilation"/> for <paramref name="source"/> with no generator run.</summary>
     /// <param name="source">The C# source to compile.</param>

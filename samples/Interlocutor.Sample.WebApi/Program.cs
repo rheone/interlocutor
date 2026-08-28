@@ -4,6 +4,7 @@ using Interlocutor.AspNetCore;
 using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 using Interlocutor.DependencyInjection.Microsoft;
+using Interlocutor.Persistence.EntityFrameworkCore;
 using Interlocutor.Sample.Handlers;
 using Interlocutor.Sample.Handlers.Shared;
 using Interlocutor.Sample.Handlers.Todos;
@@ -39,12 +40,20 @@ builder.Services.AddSingleton(connection);
 // `dotnet publish -p:PublishTrimmed=true` without this. Regenerate CompiledModels/ whenever SampleDbContext's
 // model changes (see documentation/trim-and-aot-support.md).
 builder.Services.AddDbContext<SampleDbContext>(
-    (sp, options) => options.UseSqlite(sp.GetRequiredService<SqliteConnection>()).UseModel(SampleDbContextModel.Instance)
+    (sp, options) =>
+        options
+            .UseSqlite(sp.GetRequiredService<SqliteConnection>())
+            .UseModel(SampleDbContextModel.Instance)
+            // Per ADR-0018: catches every SaveChanges call - including CreateTodoHandler's own direct
+            // SampleDbContext.Add(...) below - regardless of whether IUnitOfWork/IDomainRepository was used,
+            // so a transaction opens on first write even for that fully-direct access path. Stateless, so one
+            // shared instance is safe here rather than resolving it per scope.
+            .AddInterceptors(new UnitOfWorkSaveChangesInterceptor())
 );
 
-// SampleTransactionBehavior (like the EF Core TransactionBehavior it wraps) takes a Lazy<SampleDbContext> so
-// it can defer resolving the context until it's confirmed the request is transactional - Microsoft DI has no
-// built-in Lazy<T> support, so the factory is registered explicitly.
+// SampleUnitOfWorkBehavior (like the EF Core UnitOfWorkBehavior it wraps) takes a Lazy<SampleDbContext> so it
+// can defer resolving the context until this dispatch actually needs it - Microsoft DI has no built-in
+// Lazy<T> support, so the factory is registered explicitly.
 builder.Services.AddScoped(sp => new Lazy<SampleDbContext>(() => sp.GetRequiredService<SampleDbContext>()));
 
 builder.Services.AddSingleton<ITodoCreationCounter, TodoCreationCounter>();
@@ -70,13 +79,19 @@ builder.Services.AddInterlocutor(interlocutor =>
     // Explicitly composed, not UseRecommendedChain() - the sample's point is that the developer chooses
     // exactly the behaviors this application needs and the order they run in.
     //
-    // AddBehavior(typeof(SampleTransactionBehavior<,>)), not AddTransactionBehavior(): see that type's
-    // remarks for why the raw EF Core TransactionBehavior<,,> can't be registered directly under Microsoft DI.
+    // AddBehavior(typeof(SampleUnitOfWorkBehavior<,>)), not AddUnitOfWorkBehavior(): see that type's remarks
+    // for why the raw EF Core UnitOfWorkBehavior<,,> can't be registered directly under Microsoft DI. Per
+    // ADR-0018, this behavior applies to every request once registered - CreateTodoCommand keeps
+    // ITransactionalRequest not because its own insert needs it (begin-on-first-write already covers that),
+    // but so the eager transaction begins before DuplicateTitleGuardStage's duplicate-title read runs, not
+    // just before the handler's write - registering the unit-of-work behavior outside (before) the stage
+    // host, rather than innermost as the recommended chain would, is what makes that read and the insert that
+    // follows it share one transaction, closing the race a lazy begin would leave open.
     interlocutor
         .Pipeline.AddLoggingBehavior()
+        .AddBehavior(typeof(SampleUnitOfWorkBehavior<,>))
         .AddStage<DuplicateTitleGuardStage>()
-        .AddStageHost()
-        .AddBehavior(typeof(SampleTransactionBehavior<,>));
+        .AddStageHost();
 });
 
 var app = builder.Build();

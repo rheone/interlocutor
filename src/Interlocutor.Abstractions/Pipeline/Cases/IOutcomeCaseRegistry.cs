@@ -1,6 +1,6 @@
 namespace Interlocutor.Abstractions.Pipeline.Cases;
 
-using Interlocutor.CommonKernel;
+using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
 /// Constructs an <see cref="IOperationOutcome"/> response from one of its case values, and extracts the

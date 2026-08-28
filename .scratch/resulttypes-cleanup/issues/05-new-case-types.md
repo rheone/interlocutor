@@ -1,3 +1,5 @@
+> **Status: done** - merged in `0d8893d`.
+
 # 05 - New case types: Cancelled, Timeout, RateLimited
 
 ## Labels

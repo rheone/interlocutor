@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis.CSharp;
 public sealed class MissingHandlerDiagnosticTests
 {
     [Fact]
-    public void Query_with_no_handler_reports_missing_handler_diagnostic()
+    public void MissingHandlerDiagnostic_Query_Reports_Test()
     {
         // Arrange
         const string source = """
@@ -38,7 +38,7 @@ public sealed class MissingHandlerDiagnosticTests
     }
 
     [Fact]
-    public void Command_with_no_handler_reports_missing_handler_diagnostic()
+    public void MissingHandlerDiagnostic_Command_Reports_Test()
     {
         // Arrange
         const string source = """
@@ -60,7 +60,7 @@ public sealed class MissingHandlerDiagnosticTests
     }
 
     [Fact]
-    public void Void_command_with_no_handler_reports_missing_handler_diagnostic()
+    public void MissingHandlerDiagnostic_VoidCommand_Reports_Test()
     {
         // Arrange
         const string source = """
@@ -81,7 +81,7 @@ public sealed class MissingHandlerDiagnosticTests
     }
 
     [Fact]
-    public void Query_with_a_matching_handler_reports_no_diagnostic()
+    public void HandlerMatching_Query_ProducesNoDiagnostic_Test()
     {
         // Arrange
         const string source = """
@@ -108,7 +108,7 @@ public sealed class MissingHandlerDiagnosticTests
     }
 
     [Fact]
-    public void Void_command_matches_a_handler_regardless_of_the_handlers_chosen_result_type()
+    public void HandlerMatching_VoidCommandAnyResult_Matches_Test()
     {
         // Arrange
         const string source = """
@@ -136,7 +136,7 @@ public sealed class MissingHandlerDiagnosticTests
     }
 
     [Fact]
-    public void Notification_with_no_handlers_reports_no_diagnostic()
+    public void Notification_NoHandlers_ProducesNoDiagnostic_Test()
     {
         // Unlike a query or command, a notification is valid with zero registered handlers - INotification is
         // not tracked as a request marker by the generator at all, so it never enters the missing-handler check.
@@ -157,7 +157,7 @@ public sealed class MissingHandlerDiagnosticTests
     }
 
     [Fact]
-    public void Notification_with_one_handler_reports_no_diagnostic()
+    public void Notification_OneHandler_ProducesNoDiagnostic_Test()
     {
         // Arrange
         const string source = """
@@ -183,7 +183,7 @@ public sealed class MissingHandlerDiagnosticTests
     }
 
     [Fact]
-    public void Notification_with_multiple_handlers_reports_no_diagnostic()
+    public void Notification_MultipleHandlers_ProducesNoDiagnostic_Test()
     {
         // Unlike a query or command, zero-or-many is the valid arity for a notification, so multiple concrete
         // handlers for the same notification never trigger INTERLOC002 either.
@@ -216,7 +216,7 @@ public sealed class MissingHandlerDiagnosticTests
     }
 
     [Fact]
-    public void Query_with_two_handlers_reports_duplicate_handler_diagnostic_naming_both()
+    public void DuplicateHandlerDiagnostic_Query_ReportsNamesBoth_Test()
     {
         // Arrange
         const string source = """
@@ -252,7 +252,7 @@ public sealed class MissingHandlerDiagnosticTests
     }
 
     [Fact]
-    public void Command_with_two_handlers_reports_duplicate_handler_diagnostic_naming_both()
+    public void DuplicateHandlerDiagnostic_Command_ReportsNamesBoth_Test()
     {
         // Arrange
         const string source = """
@@ -297,7 +297,7 @@ public sealed class MissingHandlerDiagnosticTests
     }
 
     [Fact]
-    public void Consumer_escalates_the_diagnostic_to_an_error_via_the_standard_editorconfig_mechanism()
+    public void DiagnosticEscalation_EditorConfig_EscalatesViaStandardMechanism_Test()
     {
         // Arrange
         const string source = """

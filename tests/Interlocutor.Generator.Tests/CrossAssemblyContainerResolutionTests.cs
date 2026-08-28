@@ -7,7 +7,7 @@ using System.Reflection;
 using global::Autofac;
 using global::Microsoft.Extensions.DependencyInjection;
 using Interlocutor.Abstractions.Core;
-using Interlocutor.CommonKernel;
+using Interlocutor.CommonKernel.ResultTypes;
 using Interlocutor.DependencyInjection.Abstractions;
 using Interlocutor.DependencyInjection.Autofac;
 using Interlocutor.DependencyInjection.Microsoft;
@@ -60,7 +60,7 @@ public sealed class CrossAssemblyContainerResolutionTests
         """;
 
     [Fact]
-    public async Task MicrosoftDependencyInjection_ResolvesAndDispatches_ToAHandlerDeclaredOnlyInTheReferencedLibrary()
+    public async Task MicrosoftDependencyInjection_ResolvesAndDispatches_ToAHandlerDeclaredOnlyInTheReferencedLibrary_Test()
     {
         // Arrange
         var app = BuildAggregatedApp("MicrosoftDI");
@@ -83,7 +83,7 @@ public sealed class CrossAssemblyContainerResolutionTests
     }
 
     [Fact]
-    public async Task Autofac_ResolvesAndDispatches_ToAHandlerDeclaredOnlyInTheReferencedLibrary()
+    public async Task Autofac_ResolvesAndDispatches_ToAHandlerDeclaredOnlyInTheReferencedLibrary_Test()
     {
         // Arrange
         var app = BuildAggregatedApp("Autofac");

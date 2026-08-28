@@ -68,7 +68,7 @@ public class RootScopeGuardTests
         // Assert
         Assert.Equal(2, recorder.RecordedIds.Count);
         Assert.Equal(recorder.RecordedIds[0], recorder.RecordedIds[1]);
-        Assert.Equal(recorder.RecordedIds[0], Assert.IsAssignableFrom<IUnion>(result).Value);
+        Assert.Equal(recorder.RecordedIds[0], Assert.IsType<IUnion>(result, exactMatch: false).Value);
     }
 
     /// <summary>A scoped service whose identity (<see cref="Id"/>) proves whether two resolutions within the

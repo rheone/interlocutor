@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Architecture review - Interlocutor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+      import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+      mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "loose" });
+    </script>
+    <style>
+      .seam-line { stroke-dasharray: 4 4; }
+      .leak { stroke: #dc2626; }
+      .deep-box { background: linear-gradient(135deg, #0f172a, #1e293b); }
+      .badge-strong { background: #d1fae5; color: #065f46; }
+      .badge-worth { background: #fef3c7; color: #92400e; }
+      .badge-spec { background: #e2e8f0; color: #334155; }
+      .mono { font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+    </style>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <main class="max-w-5xl mx-auto px-6 py-12 space-y-16">
+      <header class="space-y-4 border-b border-slate-200 pb-8">
+        <h1 class="font-serif text-3xl">Architecture review — Interlocutor</h1>
+        <p class="text-sm text-slate-500">2026-08-23 · scope: DI-builder-and-discovery hot spot (highest commit churn) — <span class="mono">InterlocutorBuilder</span>, <span class="mono">InterlocutorPipelineBuilder</span>, the Microsoft/Autofac adapters, the source generator, and <span class="mono">Mediator</span>.</p>
+        <div class="flex flex-wrap gap-6 text-xs uppercase tracking-wider text-slate-500 pt-2">
+          <span class="flex items-center gap-2"><span class="inline-block w-6 h-3 border-2 border-slate-700"></span>module</span>
+          <span class="flex items-center gap-2"><span class="inline-block w-6 h-0 border-t-2 border-dashed border-slate-500"></span>seam</span>
+          <span class="flex items-center gap-2"><span class="inline-block w-6 h-0 border-t-2 border-red-600"></span>leakage</span>
+          <span class="flex items-center gap-2"><span class="inline-block w-6 h-3 deep-box"></span>deep module</span>
+        </div>
+      </header>
+
+      <section id="candidates" class="space-y-16">
+
+        <!-- Candidate 1 -->
+        <article id="c1" class="space-y-4">
+          <div class="flex items-center gap-3 flex-wrap">
+            <h2 class="font-serif text-2xl">Split the validator out of InterlocutorBuilder</h2>
+            <span class="badge-strong text-xs font-semibold px-2 py-1 rounded">Strong</span>
+            <span class="badge-spec text-xs font-semibold px-2 py-1 rounded">in-process</span>
+          </div>
+          <p class="mono text-sm text-slate-600">src/Interlocutor.DependencyInjection.Abstractions/InterlocutorBuilder.cs:242-294, 408-551</p>
+
+          <div class="grid grid-cols-2 gap-6">
+            <div class="rounded-lg border border-slate-200 bg-white p-4 h-80 flex flex-col justify-center gap-3">
+              <p class="text-xs uppercase tracking-wider text-slate-500 text-center">Before</p>
+              <div class="mx-auto w-56 border-2 border-slate-700 rounded">
+                <div class="text-xs uppercase tracking-wider text-center py-1 border-b border-slate-300 bg-slate-50">InterlocutorBuilder — interface</div>
+                <div class="p-3 space-y-1 text-xs mono">
+                  <div>ScanAssembly / AddHandler</div>
+                  <div>AddTypeMatch</div>
+                  <div class="text-red-600">ValidateOnBuild()</div>
+                  <div class="text-red-600">DescribeRegistrations()</div>
+                </div>
+              </div>
+              <div class="mx-auto w-56 border-2 border-red-400 rounded">
+                <div class="text-xs uppercase tracking-wider text-center py-1 border-b border-red-200 bg-red-50">implementation — 675 LOC</div>
+                <div class="p-3 text-xs mono text-slate-600">accumulate registrations<br/><span class="text-red-600">+ ComputeProblems: 3 independent checks, ~75 LOC of reflection</span></div>
+              </div>
+            </div>
+            <div class="rounded-lg border border-slate-200 bg-white p-4 h-80 flex flex-col justify-center gap-3">
+              <p class="text-xs uppercase tracking-wider text-slate-500 text-center">After</p>
+              <div class="mx-auto w-56 border-2 border-slate-700 rounded">
+                <div class="text-xs uppercase tracking-wider text-center py-1 border-b border-slate-300 bg-slate-50">InterlocutorBuilder — interface</div>
+                <div class="p-2 text-xs mono">ScanAssembly / AddHandler / AddTypeMatch</div>
+              </div>
+              <div class="mx-auto w-56 border-2 border-slate-700 rounded deep-box text-white">
+                <div class="text-xs uppercase tracking-wider text-center py-1 border-b border-slate-600">RegistrationValidator — deep</div>
+                <div class="p-2 text-xs mono">ValidateOnBuild() forwards here<br/>one place, one test file</div>
+              </div>
+            </div>
+          </div>
+
+          <p><span class="font-semibold">Problem:</span> ADR-0015 narrowed InterlocutorBuilder's pipeline surface, but the validation engine it gained under ADR-0014 — <span class="mono">ComputeProblems</span> and its three reflection-based checks — regrew the type to 675 lines; the module is shallow again on a different axis.</p>
+          <p><span class="font-semibold">Solution:</span> Move <span class="mono">ComputeProblems</span> and its supporting reads into a dedicated validator module that operates over the accumulated registration list; <span class="mono">ValidateOnBuild()</span> stays a one-line forward, same as <span class="mono">InterlocutorBuilder.Pipeline</span> does today for pipeline composition.</p>
+          <ul class="list-disc list-inside text-sm space-y-1">
+            <li>Locality: validation bugs concentrate in one module, not tangled with accumulation</li>
+            <li>InterlocutorBuilderTests.cs splits the same way InterlocutorPipelineBuilderTests.cs already did</li>
+            <li>Interface shrinks; implementation absorbs the checks</li>
+          </ul>
+          <div class="text-sm bg-amber-50 border border-amber-200 rounded px-3 py-2">
+            Extends, doesn't contradict, ADR-0014 (validation stays registration-list-only) and the intent behind ADR-0015 (narrow InterlocutorBuilder's job) — just applies that same cut to the axis ADR-0015 didn't touch.
+          </div>
+        </article>
+
+        <!-- Candidate 2 -->
+        <article id="c2" class="space-y-4">
+          <div class="flex items-center gap-3 flex-wrap">
+            <h2 class="font-serif text-2xl">Give the Microsoft/Autofac adapters a shared applier seam</h2>
+            <span class="badge-strong text-xs font-semibold px-2 py-1 rounded">Strong</span>
+            <span class="badge-spec text-xs font-semibold px-2 py-1 rounded">ports &amp; adapters</span>
+          </div>
+          <p class="mono text-sm text-slate-600">src/Interlocutor.DependencyInjection.Microsoft/ServiceCollectionExtensions.cs:58-219 · src/Interlocutor.DependencyInjection.Autofac/ContainerBuilderExtensions.cs:61-245</p>
+
+          <div class="rounded-lg border border-slate-200 bg-white p-4">
+            <pre class="mermaid">
+              flowchart LR
+                subgraph MS["Microsoft adapter"]
+                  M1["AddInterlocutor()"] --> M2["Apply / ApplyFactories / TryApplyDefaults"]
+                end
+                subgraph AF["Autofac adapter"]
+                  A1["AddInterlocutor()"] --> A2["Apply / ApplyFactories / TryApplyDefaults"]
+                end
+                R["RegistrationReport\n(one shared model, ADR-0014)"] -.leak.-> M2
+                R -.leak.-> A2
+                classDef leak stroke:#dc2626,stroke-width:2px,stroke-dasharray:4 4;
+                class R leak
+            </pre>
+          </div>
+
+          <p><span class="font-semibold">Problem:</span> ADR-0014 gave both adapters one shared <span class="mono">RegistrationReport</span> — the data stopped duplicating. The order it's applied in (handlers → generated → stages → stage factories → behaviors → matched rules → defaults → root-scope wiring) and the three lifetime-switch translators (<span class="mono">Apply</span>/<span class="mono">ApplyFactories</span>/<span class="mono">TryApplyDefaults</span>) are still hand-copied across two files, kept in sync only by matching comments.</p>
+          <p><span class="font-semibold">Solution:</span> Pull the seven-step ordering into a container-neutral driver that each adapter feeds three small per-registration callbacks (add-handler, add-factory, try-add-default) — the seam two adapters already justify by existing.</p>
+          <ul class="list-disc list-inside text-sm space-y-1">
+            <li>Leverage: one ordering, N adapters (a third container costs three callbacks, not a re-derived sequence)</li>
+            <li>Deletion test passes: removing the duplicated code today would force reconstructing it from the sibling file</li>
+            <li>Six near-identical lifetime switches collapse to one</li>
+          </ul>
+        </article>
+
+        <!-- Candidate 3 -->
+        <article id="c3" class="space-y-4">
+          <div class="flex items-center gap-3 flex-wrap">
+            <h2 class="font-serif text-2xl">Extract the generator's diagnostic algorithms like HandlerTypeAnalyzer already was</h2>
+            <span class="badge-worth text-xs font-semibold px-2 py-1 rounded">Worth exploring</span>
+            <span class="badge-spec text-xs font-semibold px-2 py-1 rounded">in-process</span>
+          </div>
+          <p class="mono text-sm text-slate-600">src/Interlocutor.Generator/InterlocutorSourceGenerator.cs:226-347</p>
+
+          <div class="grid grid-cols-2 gap-6">
+            <div class="rounded-lg border border-slate-200 bg-white p-4 h-72 flex flex-col items-center justify-center gap-2">
+              <p class="text-xs uppercase tracking-wider text-slate-500 mb-1">Before</p>
+              <div class="border-2 border-slate-700 rounded p-3 w-64 text-xs mono space-y-2">
+                <div>InterlocutorSourceGenerator</div>
+                <div class="border border-slate-400 rounded px-2 py-1">Initialize / Execute (glue)</div>
+                <div class="border border-red-400 rounded px-2 py-1 text-red-600">ReportMissingHandlers (~60 LOC)</div>
+                <div class="border border-red-400 rounded px-2 py-1 text-red-600">ReportDuplicateHandlers</div>
+                <div class="border border-red-400 rounded px-2 py-1 text-red-600">ReportCatchAllNotificationHandlers</div>
+              </div>
+              <p class="text-xs text-slate-500">no independent test seam — reachable only through the full pipeline</p>
+            </div>
+            <div class="rounded-lg border border-slate-200 bg-white p-4 h-72 flex flex-col items-center justify-center gap-2">
+              <p class="text-xs uppercase tracking-wider text-slate-500 mb-1">After</p>
+              <div class="border-2 border-slate-700 rounded p-3 w-64 text-xs mono">
+                InterlocutorSourceGenerator<br/><span class="text-slate-500">Initialize / Execute (glue only)</span>
+              </div>
+              <div class="border-2 border-slate-700 rounded deep-box text-white p-3 w-64 text-xs mono">
+                DiagnosticsAnalyzer — deep<br/><span class="text-slate-300">same shape as HandlerTypeAnalyzer</span>
+              </div>
+            </div>
+          </div>
+
+          <p><span class="font-semibold">Problem:</span> the file already extracts real analysis into <span class="mono">HandlerTypeAnalyzer</span>, <span class="mono">GenericUsageAnalyzer</span>, <span class="mono">OpenGenericHandlerResolver</span>, and <span class="mono">NotificationHandlerOrderPlanner</span> — each independently callable and tested. Three more algorithms (missing/duplicate/catch-all handler detection, ~120 of the file's 348 lines) don't follow that pattern; they're private statics reachable only through the full incremental pipeline.</p>
+          <p><span class="font-semibold">Solution:</span> lift the three <span class="mono">Report*</span> methods into a sibling analyzer type, called from <span class="mono">Execute</span> the same way <span class="mono">HandlerTypeAnalyzer.Analyze</span> is.</p>
+          <ul class="list-disc list-inside text-sm space-y-1">
+            <li>Locality: the codebase's own pattern applied consistently</li>
+            <li>Tests hit one interface instead of driving the whole generator pipeline</li>
+          </ul>
+        </article>
+
+        <!-- Candidate 4 -->
+        <article id="c4" class="space-y-4">
+          <div class="flex items-center gap-3 flex-wrap">
+            <h2 class="font-serif text-2xl">Collapse Mediator's three tracing wrappers into one</h2>
+            <span class="badge-worth text-xs font-semibold px-2 py-1 rounded">Worth exploring</span>
+            <span class="badge-spec text-xs font-semibold px-2 py-1 rounded">in-process</span>
+          </div>
+          <p class="mono text-sm text-slate-600">src/Interlocutor.Abstractions/Mediator.cs:155-182, 213-235, 570-591</p>
+
+          <div class="rounded-lg border border-slate-200 bg-white p-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <p class="text-xs uppercase tracking-wider text-slate-500 mb-2 text-center">Before — 3 bands, same skeleton</p>
+                <div class="space-y-1">
+                  <div class="h-10 border-l-4 border-red-400 bg-red-50 flex items-center px-2 text-xs mono">TraceSendAsync — tag, try/catch, SetStatus</div>
+                  <div class="h-10 border-l-4 border-red-400 bg-red-50 flex items-center px-2 text-xs mono">TraceDispatchAsync — same skeleton</div>
+                  <div class="h-10 border-l-4 border-red-400 bg-red-50 flex items-center px-2 text-xs mono">TracePublishAsync — same skeleton, no outcome tag</div>
+                </div>
+              </div>
+              <div>
+                <p class="text-xs uppercase tracking-wider text-slate-500 mb-2 text-center">After — 1 band</p>
+                <div class="h-32 border-l-4 border-slate-700 bg-slate-50 flex items-center px-2 text-xs mono">TraceAsync&lt;T&gt;(tag outcome?) — one skeleton, 3 call sites</div>
+              </div>
+            </div>
+          </div>
+
+          <p><span class="font-semibold">Problem:</span> <span class="mono">TraceSendAsync</span>, <span class="mono">TraceDispatchAsync</span>, and <span class="mono">TracePublishAsync</span> repeat the identical 5-step control-flow skeleton (start Activity, tag request type, try/dispatch/tag outcome, catch/SetStatus/rethrow); a fix to the catch handling needs three edits by hand, in the file the commit history already flags as hottest.</p>
+          <p><span class="font-semibold">Solution:</span> one generic tracing helper parameterized over whether the dispatch produces a taggable <span class="mono">IOperationOutcome</span>; three call sites feed it.</p>
+          <ul class="list-disc list-inside text-sm space-y-1">
+            <li>Locality: one skeleton to fix, not three</li>
+            <li>Same fix applies to the smaller sibling duplication in SequentialNotificationHandlerWrapper / ParallelNotificationHandlerWrapper's shared preamble</li>
+          </ul>
+        </article>
+
+        <!-- Candidate 5 -->
+        <article id="c5" class="space-y-3 opacity-90">
+          <div class="flex items-center gap-3 flex-wrap">
+            <h2 class="font-serif text-xl">Watch: InterlocutorPipelineBuilder is now equally hot</h2>
+            <span class="badge-spec text-xs font-semibold px-2 py-1 rounded">Speculative</span>
+          </div>
+          <p class="mono text-sm text-slate-600">src/Interlocutor.DependencyInjection.Abstractions/InterlocutorPipelineBuilder.cs (671 LOC, 17 commits since ADR-0015 — same churn as InterlocutorBuilder pre-split)</p>
+          <p><span class="font-semibold">Not a candidate today:</span> 21 public mutating methods, but most are legitimate one-line forwards (<span class="mono">AddLoggingBehavior</span> → <span class="mono">AddBehavior</span>). No shallowness yet. Flagging because the growing count of near-identical <span class="mono">Add*Behavior</span>/<span class="mono">Override*</span> pairs, one per built-in behavior, is the same shape that made InterlocutorBuilder the hottest file before ADR-0015 — worth a look next time a behavior is added.</p>
+        </article>
+
+      </section>
+
+      <section id="top-recommendation" class="rounded-xl border-2 border-emerald-600 bg-emerald-50 p-6 space-y-2">
+        <p class="text-xs uppercase tracking-wider text-emerald-700">Top recommendation</p>
+        <h2 class="font-serif text-2xl">Split the validator out of InterlocutorBuilder — <a href="#c1" class="underline">jump to candidate</a></h2>
+        <p>It's the direct sequel to ADR-0015's own reasoning, on the one axis that ADR left untouched. It's Strong, it's small, and it stops InterlocutorBuilder from silently becoming the hottest file again for the same underlying reason.</p>
+      </section>
+    </main>
+  </body>
+</html>

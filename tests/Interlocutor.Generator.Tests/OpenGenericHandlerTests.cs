@@ -43,8 +43,10 @@ public sealed class OpenGenericHandlerTests
         """;
 
     [Fact]
-    public void Open_generic_handler_closes_over_a_discovered_concrete_usage_and_reports_no_diagnostics()
+    public void OpenGenericHandler_ConcreteUsage_ClosesAndProducesNoDiagnostics_Test()
     {
+        // Arrange
+        // (no separate setup; uses class fixtures or direct act/assert)
         // Act
         var result = GeneratorTestHarness.Run(BasicGenericSource);
 
@@ -75,8 +77,10 @@ public sealed class OpenGenericHandlerTests
     }
 
     [Fact]
-    public void Emitted_code_for_a_closed_generic_handler_compiles_cleanly()
+    public void GeneratedCode_ClosedGenericHandler_CompilesCleanly_Test()
     {
+        // Arrange
+        // (no separate setup; uses class fixtures or direct act/assert)
         // Act
         var outputCompilation = GeneratorTestHarness.RunAndUpdate(BasicGenericSource, out var generatorDiagnostics);
 
@@ -91,7 +95,7 @@ public sealed class OpenGenericHandlerTests
     }
 
     [Fact]
-    public void A_second_concrete_usage_closes_the_same_open_handler_a_second_time()
+    public void OpenGenericHandler_MultipleUsages_ClosesMultipleTimes_Test()
     {
         // Arrange
         const string source = """
@@ -153,7 +157,7 @@ public sealed class OpenGenericHandlerTests
     }
 
     [Fact]
-    public void A_request_that_fails_the_handlers_constraint_is_not_closed_and_reports_missing_handler()
+    public void ConstraintValidation_FailingRequest_NotClosedReportsMissing_Test()
     {
         // Arrange
         const string source = """
@@ -201,7 +205,7 @@ public sealed class OpenGenericHandlerTests
     }
 
     [Fact]
-    public void A_closed_handler_takes_precedence_over_a_matching_open_generic_handler()
+    public void HandlerPrecedence_ClosedVsOpen_ClosedWins_Test()
     {
         // Arrange
         const string source = """
@@ -260,7 +264,7 @@ public sealed class OpenGenericHandlerTests
     }
 
     [Fact]
-    public void Two_open_generic_handlers_matching_the_same_request_report_ambiguity_naming_both()
+    public void AmbiguityDetection_MultipleOpenHandlers_ReportsNamingBoth_Test()
     {
         // Arrange
         const string source = """
@@ -324,7 +328,7 @@ public sealed class OpenGenericHandlerTests
     }
 
     [Fact]
-    public void AmbiguousUsage_ReportsOnlyOpenGenericHandlerAmbiguity_NotAlsoUnresolvedGenericRequestUsage()
+    public void AmbiguousUsage_ReportsOnlyOpenGenericHandlerAmbiguity_NotAlsoUnresolvedGenericRequestUsage_Test()
     {
         // Regression for ticket 15: a usage at least one local open generic handler's request definition key
         // matched - even when that match is left ambiguous rather than resolved - must not additionally be
@@ -384,7 +388,7 @@ public sealed class OpenGenericHandlerTests
     }
 
     [Fact]
-    public void HandlerOverrideAttribute_resolves_an_ambiguity_between_two_open_generic_handlers()
+    public void HandlerOverride_AmbiguityResolution_Resolves_Test()
     {
         // Arrange
         const string source = """
@@ -445,7 +449,7 @@ public sealed class OpenGenericHandlerTests
     }
 
     [Fact]
-    public void HandlerOverrideAttribute_naming_a_missing_target_reports_a_build_error()
+    public void HandlerOverrideValidation_MissingTarget_ReportsError_Test()
     {
         // Arrange
         const string source = """
@@ -483,7 +487,7 @@ public sealed class OpenGenericHandlerTests
     }
 
     [Fact]
-    public void HandlerOverrideAttribute_naming_a_type_that_is_not_a_handler_reports_a_build_error()
+    public void HandlerOverrideValidation_InvalidType_ReportsError_Test()
     {
         // Arrange
         const string source = """
@@ -521,7 +525,7 @@ public sealed class OpenGenericHandlerTests
     }
 
     [Fact]
-    public void Moving_the_open_generic_handler_to_a_different_namespace_does_not_change_dispatch()
+    public void NamespaceIsolation_OpenGenericHandler_DispatchUnchanged_Test()
     {
         // Arrange
         const string source = """
@@ -572,7 +576,7 @@ public sealed class OpenGenericHandlerTests
     }
 
     [Fact]
-    public void Closed_generic_handler_with_a_constructor_dependency_resolves_it_from_the_registered_service_type()
+    public void ClosedGenericHandler_ConstructorDependency_ResolvesFromContainer_Test()
     {
         // Arrange
         const string source = """

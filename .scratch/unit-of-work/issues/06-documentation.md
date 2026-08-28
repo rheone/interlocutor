@@ -1,4 +1,4 @@
-Status: needs-triage
+Status: closed (implemented)
 
 ## Labels
 
@@ -12,11 +12,15 @@ ready-for-agent
 
 ## Acceptance criteria
 
-- [ ] New doc exists, every code example compiles against the shipped API (not aspirational)
-- [ ] `CLAUDE.md` and `documentation/glossary.md` pagination sections are updated, not contradicted
-- [ ] No internal design-record citations added to any `documentation/` file (per `CLAUDE.md`'s content rules) - state rationale as fact, don't cite ADR-0017 to justify a design choice inside `documentation/`
-- [ ] Truthfulness check: every claim verified against the actually-shipped `src/Interlocutor.Persistence.*` code from issues 01-04, not carried forward from this PRD/ADR
+- [x] New doc exists, every code example compiles against the shipped API (not aspirational)
+- [x] `CLAUDE.md` and `documentation/glossary.md` pagination sections are updated, not contradicted
+- [x] No internal design-record citations added to any `documentation/` file (per `CLAUDE.md`'s content rules) - state rationale as fact, don't cite ADR-0017 to justify a design choice inside `documentation/`
+- [x] Truthfulness check: every claim verified against the actually-shipped `src/Interlocutor.Persistence.*` code from issues 01-04, not carried forward from this PRD/ADR
 
 ## Blocked by
 
 None hard - best done once the API from 01-04 is stable, but can start drafting earlier.
+
+## Comments
+
+Verified already implemented: `documentation/persistence-abstraction.md` and `documentation/persistence-implementations.md` exist; `CLAUDE.md` and `documentation/glossary.md`'s Pagination section both carry the coordinated clarifying note about `Page<T>` being a different package's vocabulary; `README.md`'s package-layering table and diagram include the three new packages. No internal design-record citations found in the new docs.

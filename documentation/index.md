@@ -10,6 +10,10 @@ A suggested reading order - each section builds on the ones above it. Jump strai
 
 - [Glossary](glossary.md) - domain vocabulary used throughout the project. Skim this first; every other doc assumes these terms.
 
+### Tutorial
+
+- [Beginner's Guide: Building a To-Do API](beginners-guide-todo-api.md) - a start-to-finish walkthrough building a small API from an empty project: Autofac DI, NHibernate persistence, the full recommended pipeline chain, both authorization styles, and a multi-subscriber notification. Complements, rather than duplicates, [Sample App Walkthrough](sample-app-walkthrough.md) below, which tours a different (EF Core / Microsoft DI / minimal API) runnable sample.
+
 ### Core concepts
 
 The fundamentals of writing a request and getting a response back.
@@ -23,6 +27,7 @@ The fundamentals of writing a request and getting a response back.
 Registering the library and understanding how a dispatch's scope and context flow.
 
 - [Builder & Registration](builder-and-registration.md) - `InterlocutorBuilder` as the single entry point, assembly scanning, pipeline composition, dependency defaults, cross-assembly aggregation, startup validation.
+- [Dependency Injection Packages](dependency-injection-packages.md) - the container-neutral registration model (`InterlocutorRegistration`, `RegistrationLifetime`, `RegistrationReport`), how `Interlocutor.DependencyInjection.Microsoft` and `.Autofac` each translate it, root-scope detection internals, the persistence registration extensions, and compile-time generated-registration attributes.
 - [Mediator, Lifetimes, Scope & Ambient Context](mediator-lifetimes-and-scope.md) - `ISender`/`IPublisher`/`IMediator` interfaces, why scoped lifetime is non-configurable, the root-scope exception, dispatching correctly from web/background contexts, `IRequestContextAccessor` and `RequestContext`.
 
 ### Cross-cutting features
@@ -33,14 +38,15 @@ Registering the library and understanding how a dispatch's scope and context flo
 ### Framework & store integration
 
 - [ASP.NET Core Integration & HTTP Mapping](aspnetcore-integration.md) - the `ToActionResult()` extension, status code mapping, `ValidationProblemDetails` and `ProblemDetails` (RFC 7807), custom mapping, minimal API usage, error handling.
-- [Transactions & Store Integration](transactions-and-store-integration.md) - `Interlocutor.EntityFrameworkCore` and `Interlocutor.NHibernate`, `TransactionBehavior`, the `ITransactionalRequest`/`IExternalStoreRequest` markers, lazy session resolution, commit/rollback semantics, nested dispatch, notifications after commit.
+- [Transactions & Store Integration](transactions-and-store-integration.md) - `Interlocutor.Persistence.EntityFrameworkCore` and `Interlocutor.Persistence.NHibernate`'s `UnitOfWorkBehavior`, `IUnitOfWork` as transaction owner, begin-on-first-write, the `ITransactionalRequest`/`IExternalStoreRequest` markers, `Cancel`, commit/rollback semantics, nested dispatch, notifications after commit.
 - [Persistence Abstraction](persistence-abstraction.md) - the optional, opt-in `IUnitOfWork`/`IDomainRepository<TEntity, TKey>` CRUD/paging surface, `Page<T>`, per-container registration, NHibernate session concurrency.
+- [Persistence Implementations](persistence-implementations.md) - what `EntityFrameworkUnitOfWork<TContext>`/`EntityFrameworkRepository<TEntity, TKey, TContext>` and `NHibernateUnitOfWork`/`NHibernateRepository<TEntity, TKey>` actually do underneath the interfaces, the shared filter/sort/paging query-composition helpers, and the behavioral differences between the two stores.
 - [Trim & AOT Support](trim-and-aot-support.md) - what "trim-compatible, not yet Native AOT-compatible" means in practice, the runtime-scanning trim cost, publishing trimmed, known limitations.
 
 ### Testing
 
 - [Testing Handlers & Pipelines](testing.md) - unit testing handlers by mocking dependencies, integration testing pipeline composition, testing behaviors & stages, DI startup validation, in-memory databases, best practices.
 
-### Coming soon
+### Worked example
 
-- [Sample app walkthrough](sample-app-walkthrough.md) - [!NOTE] **TBD** - the runnable sample under `samples/` exists; this guided tour of it hasn't been written yet.
+- [Sample App Walkthrough](sample-app-walkthrough.md) - a guided tour of the runnable sample under `samples/`: query/command/generic handlers, cross-assembly discovery, an explicitly composed pipeline with a short-circuiting stage, a multi-subscriber notification, and transport conversion at the edge.

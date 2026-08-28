@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="..\..\src\Interlocutor.Persistence.EntityFrameworkCore\Interlocutor.Persistence.EntityFrameworkCore.csproj" />
-    <ProjectReference Include="..\..\src\Interlocutor.EntityFrameworkCore\Interlocutor.EntityFrameworkCore.csproj" />
   </ItemGroup>
 
   <ItemGroup>

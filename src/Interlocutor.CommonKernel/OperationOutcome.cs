@@ -2,6 +2,12 @@ namespace Interlocutor.CommonKernel;
 
 using Interlocutor.CommonKernel.ResultTypes;
 
+// RCS1263 ("type parameter could not be found") fires on every <typeparam> tag below even though each name
+// matches the declared generic parameter exactly - Roslynator's analyzer does not resolve type parameter
+// lists on the preview `union` declaration syntax used throughout this file. Suppressed for the whole file
+// rather than renaming parameters that are already correct.
+#pragma warning disable RCS1263
+
 /// <summary>
 /// Represents the outcome of a void operation as one of two possible cases: success with no payload, or failure.
 /// </summary>
@@ -224,3 +230,5 @@ public readonly union OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, T
         _ => null,
     };
 }
+
+#pragma warning restore RCS1263

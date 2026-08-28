@@ -26,7 +26,7 @@ public sealed class NHibernateUnitOfWorkTests
     {
         // Arrange & Act
         // The Lazy<ISession> factory throwing on access proves the session is never constructed just by
-        // building the unit of work - matching TransactionBehavior's own deferred-construction idiom.
+        // building the unit of work - matching UnitOfWorkBehavior's own deferred-construction idiom.
         var exception = Record.Exception(() =>
             new NHibernateUnitOfWork(new Lazy<ISession>(() => throw new InvalidOperationException("Should not be resolved")))
         );

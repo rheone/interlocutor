@@ -279,7 +279,7 @@ public class InterlocutorBuilderTests
         // Arrange
         var builder = new InterlocutorBuilder();
 
-        builder.Pipeline.AddTransactionBehavior();
+        builder.Pipeline.AddUnitOfWorkBehavior();
 
         // Act
         var report = builder.DescribeRegistrations();
@@ -489,6 +489,19 @@ public class InterlocutorBuilderTests
             builder.DescribeRegistrations().Problems,
             p => p.Kind == RegistrationProblemKind.UnhandledRequestType && p.Description.Contains(nameof(UnhandledQuery))
         );
+    }
+
+    [Fact]
+    public void DescribeRegistrations_WithEveryScannedTypeLoadingSuccessfully_HasEmptyTypeLoadFailures()
+    {
+        // Arrange
+        var builder = new InterlocutorBuilder();
+
+        // Act
+        builder.ScanAssembly(typeof(InterlocutorBuilderTests).Assembly);
+
+        // Assert
+        Assert.Empty(builder.DescribeRegistrations().TypeLoadFailures);
     }
 
     [Fact]

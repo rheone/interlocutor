@@ -1,3 +1,5 @@
+> **Status: done** - merged in `1bd5b49`.
+
 # 15 - Documentation pass
 
 ## Labels

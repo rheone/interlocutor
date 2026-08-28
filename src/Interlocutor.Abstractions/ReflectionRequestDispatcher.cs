@@ -7,7 +7,7 @@ using System.Reflection;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Queries;
-using Interlocutor.CommonKernel;
+using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
 /// The runtime-typed dispatch fallback <see cref="Mediator"/> delegates to when no

@@ -1,3 +1,5 @@
+> **Status: done** - merged in `bb3e5d3`.
+
 # 07 - Migrate AuthorizationBehavior to IOutcomeCaseRegistry
 
 ## Labels

@@ -21,5 +21,6 @@ namespace Interlocutor.Abstractions.Notifications;
 public sealed class NotificationHandlerRunAfterAttribute(Type handlerType) : Attribute
 {
     /// <summary>Gets the handler type the annotated handler must run after.</summary>
+    /// <value>The handler type the annotated handler must run after.</value>
     public Type HandlerType { get; } = handlerType;
 }

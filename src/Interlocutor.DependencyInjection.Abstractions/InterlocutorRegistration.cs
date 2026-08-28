@@ -40,8 +40,12 @@ public readonly record struct InterlocutorRegistration(
     // the property's backing field is exactly what a whole-program trim pass (unlike the per-project
     // analyzer) checks - see docs/research/native-aot-and-trimming-options.md §7.2.
     [property: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+    // SA1137 vs. csharpier: csharpier indents a parameter one level deeper than the attribute annotating it,
+    // which SA1137 then flags as inconsistent sibling indentation. Suppressed rather than fighting the formatter.
+#pragma warning disable SA1137
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         Type ImplementationType,
+#pragma warning restore SA1137
     RegistrationLifetime Lifetime,
     RegistrationKind Kind,
     RegistrationProvenance Provenance = RegistrationProvenance.Explicit,

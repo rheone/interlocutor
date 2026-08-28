@@ -1,3 +1,5 @@
+> **Status: done** - merged in `ba20802`.
+
 # 01 - DistinctItemSet + plural-type rewrite
 
 ## Labels

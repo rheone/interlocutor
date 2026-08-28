@@ -50,5 +50,8 @@
       "AGENTS.md",
       "README.md"
     ]
+  },
+  "env": {
+    "ENABLE_LSP_TOOL": "1"
   }
 }

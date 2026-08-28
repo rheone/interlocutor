@@ -3,7 +3,7 @@ namespace Interlocutor.Abstractions.Pipeline.Cases;
 using System.Collections.Concurrent;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Interlocutor.CommonKernel;
+using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
 /// Zero-config <see cref="IOutcomeCaseRegistry"/> that handles any <see cref="IOperationOutcome"/> which is a
@@ -17,15 +17,15 @@ using Interlocutor.CommonKernel;
 /// </remarks>
 public sealed class DefaultOutcomeCaseRegistry : IOutcomeCaseRegistry
 {
-    /// <summary>Gets the shared default registry instance.</summary>
-    /// <value>The shared default registry instance.</value>
-    public static IOutcomeCaseRegistry Instance { get; } = new DefaultOutcomeCaseRegistry();
-
     // Case constructor lookup is resolved reflectively once per (TResponse, TCase) pair and cached here for
     // the lifetime of the process, mirroring UnionCaseFactory's own per-generic-instantiation caching but
     // shared across every closed generic Construct<TResponse, TCase> call rather than requiring a distinct
     // static field per instantiation.
     private static readonly ConcurrentDictionary<(Type Response, Type Case), ConstructorInfo?> ConstructorCache = new();
+
+    /// <summary>Gets the shared default registry instance.</summary>
+    /// <value>The shared default registry instance.</value>
+    public static IOutcomeCaseRegistry Instance { get; } = new DefaultOutcomeCaseRegistry();
 
     /// <inheritdoc/>
     public TResponse Construct<TResponse, TCase>(TCase caseValue)
@@ -33,7 +33,7 @@ public sealed class DefaultOutcomeCaseRegistry : IOutcomeCaseRegistry
     {
         var constructor = ConstructorCache.GetOrAdd(
             (typeof(TResponse), typeof(TCase)),
-            static key => UnionCaseFactory.FindCaseConstructor<TResponse, TCase>()
+            static _ => UnionCaseFactory.FindCaseConstructor<TResponse, TCase>()
         );
 
         if (constructor is null)

@@ -1,4 +1,4 @@
-Status: needs-triage
+Status: closed (implemented)
 
 ## Labels
 
@@ -14,11 +14,15 @@ Wire scoped registration for `IUnitOfWork` and `IDomainRepository<TEntity,TKey>`
 
 ## Acceptance criteria
 
-- [ ] A consumer can opt into the persistence abstraction with one explicit call per container (not part of `AddInterlocutor()`'s implicit defaults)
-- [ ] `IUnitOfWork` and `IDomainRepository<TEntity,TKey>` resolve scoped in both containers
-- [ ] A test in each DI test project (`Interlocutor.DependencyInjection.Microsoft.Tests`, `Interlocutor.DependencyInjection.Autofac.Tests`) proves the resolved `IUnitOfWork` and a resolved `IDomainRepository<TEntity,TKey>` share the same underlying `DbContext`/`ISession` instance within one scope
-- [ ] `dotnet build` and `dotnet test` pass
+- [x] A consumer can opt into the persistence abstraction with one explicit call per container (not part of `AddInterlocutor()`'s implicit defaults)
+- [x] `IUnitOfWork` and `IDomainRepository<TEntity,TKey>` resolve scoped in both containers
+- [x] A test in each DI test project (`Interlocutor.DependencyInjection.Microsoft.Tests`, `Interlocutor.DependencyInjection.Autofac.Tests`) proves the resolved `IUnitOfWork` and a resolved `IDomainRepository<TEntity,TKey>` share the same underlying `DbContext`/`ISession` instance within one scope
+- [x] `dotnet build` and `dotnet test` pass
 
 ## Blocked by
 
 02, 03
+
+## Comments
+
+Verified already implemented: `PersistenceServiceCollectionExtensions.AddInterlocutorUnitOfWork`/`AddInterlocutorRepository` (Microsoft) and `PersistenceContainerBuilderExtensions` (Autofac) exist as opt-in scoped registration, not folded into `AddInterlocutor()`. `PersistenceRegistrationTests` exist in both DI test projects; `dotnet test` passes for both (Microsoft 50/50, Autofac 39/39).

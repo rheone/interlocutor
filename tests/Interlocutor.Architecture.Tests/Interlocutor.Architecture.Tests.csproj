@@ -7,9 +7,7 @@
     <ProjectReference Include="..\..\src\Interlocutor.DependencyInjection.Microsoft\Interlocutor.DependencyInjection.Microsoft.csproj" />
     <ProjectReference Include="..\..\src\Interlocutor.DependencyInjection.Autofac\Interlocutor.DependencyInjection.Autofac.csproj" />
     <ProjectReference Include="..\..\src\Interlocutor.AspNetCore\Interlocutor.AspNetCore.csproj" />
-    <ProjectReference Include="..\..\src\Interlocutor.EntityFrameworkCore\Interlocutor.EntityFrameworkCore.csproj" />
     <ProjectReference Include="..\..\src\Interlocutor.FluentValidation\Interlocutor.FluentValidation.csproj" />
-    <ProjectReference Include="..\..\src\Interlocutor.NHibernate\Interlocutor.NHibernate.csproj" />
     <ProjectReference Include="..\..\src\Interlocutor.Persistence.Abstractions\Interlocutor.Persistence.Abstractions.csproj" />
     <ProjectReference Include="..\..\src\Interlocutor.Persistence.EntityFrameworkCore\Interlocutor.Persistence.EntityFrameworkCore.csproj" />
     <ProjectReference Include="..\..\src\Interlocutor.Persistence.NHibernate\Interlocutor.Persistence.NHibernate.csproj" />

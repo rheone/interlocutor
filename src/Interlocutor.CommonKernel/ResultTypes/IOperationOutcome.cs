@@ -1,4 +1,4 @@
-namespace Interlocutor.CommonKernel;
+namespace Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
 /// Marks a type as a result union representing an operation's outcome.

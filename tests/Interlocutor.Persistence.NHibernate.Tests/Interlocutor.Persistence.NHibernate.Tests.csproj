@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="..\..\src\Interlocutor.Persistence.NHibernate\Interlocutor.Persistence.NHibernate.csproj" />
-    <ProjectReference Include="..\..\src\Interlocutor.NHibernate\Interlocutor.NHibernate.csproj" />
   </ItemGroup>
 
   <ItemGroup>

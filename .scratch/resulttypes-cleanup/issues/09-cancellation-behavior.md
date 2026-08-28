@@ -1,3 +1,5 @@
+> **Status: done** - merged in `4c4aed2`.
+
 # 09 - CancellationBehavior + ICancellable
 
 ## Labels

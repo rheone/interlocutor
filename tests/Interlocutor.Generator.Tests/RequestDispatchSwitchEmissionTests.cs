@@ -27,7 +27,7 @@ public sealed class RequestDispatchSwitchEmissionTests
         """;
 
     [Fact]
-    public void Zero_handlers_emits_a_dispatcher_whose_switch_only_has_a_default_branch()
+    public void DispatchSwitch_NoHandlers_OnlyDefaultBranch_Test()
     {
         // Arrange
         const string source = """
@@ -56,8 +56,10 @@ public sealed class RequestDispatchSwitchEmissionTests
     }
 
     [Fact]
-    public void Single_handler_emits_one_case_dispatching_into_its_wrapper()
+    public void DispatchSwitch_SingleHandler_OneDispatchCase_Test()
     {
+        // Arrange
+        // (no separate setup; uses class fixtures or direct act/assert)
         // Act
         var result = GeneratorTestHarness.Run(SingleQueryHandlerSource);
 
@@ -80,7 +82,7 @@ public sealed class RequestDispatchSwitchEmissionTests
     }
 
     [Fact]
-    public void Request_with_no_matching_handler_emits_a_case_throwing_HandlerNotRegisteredException()
+    public void DispatchSwitch_OrphanRequest_ThrowsHandlerNotFound_Test()
     {
         // Arrange
         const string source = """
@@ -113,7 +115,7 @@ public sealed class RequestDispatchSwitchEmissionTests
     }
 
     [Fact]
-    public void Unregistered_void_command_emits_a_case_throwing_HandlerNotRegisteredException_without_a_handler_type()
+    public void DispatchSwitch_VoidCommandUnregistered_ThrowsWithoutHandlerType_Test()
     {
         // Arrange
         const string source = """
@@ -142,7 +144,7 @@ public sealed class RequestDispatchSwitchEmissionTests
     }
 
     [Fact]
-    public void Void_command_with_a_handler_emits_a_dispatch_case()
+    public void DispatchSwitch_VoidCommandRegistered_EmitsDispatchCase_Test()
     {
         // Arrange
         const string source = """
@@ -172,8 +174,10 @@ public sealed class RequestDispatchSwitchEmissionTests
     }
 
     [Fact]
-    public void Dispatch_switch_never_uses_reflection_apis()
+    public void DispatchSwitch_Implementation_NoReflectionAPIs_Test()
     {
+        // Arrange
+        // (no separate setup; uses class fixtures or direct act/assert)
         // Act
         var result = GeneratorTestHarness.Run(SingleQueryHandlerSource);
 
@@ -188,8 +192,10 @@ public sealed class RequestDispatchSwitchEmissionTests
     }
 
     [Fact]
-    public void Emitted_dispatch_switch_compiles_cleanly_alongside_the_source_it_was_generated_from()
+    public void GeneratedCode_DispatchSwitch_CompilesCleanly_Test()
     {
+        // Arrange
+        // (no separate setup; uses class fixtures or direct act/assert)
         // Act
         var outputCompilation = GeneratorTestHarness.RunAndUpdate(SingleQueryHandlerSource, out var generatorDiagnostics);
 

@@ -29,7 +29,7 @@ evaluating Interlocutor for a Native AOT deployment, stop at trimming for now - 
 
 Every shipping package (`Interlocutor.Abstractions`, `Interlocutor.AspNetCore`, `Interlocutor.CommonKernel`,
 `Interlocutor.DependencyInjection.Microsoft`, `Interlocutor.DependencyInjection.Autofac`,
-`Interlocutor.EntityFrameworkCore`, `Interlocutor.FluentValidation`, `Interlocutor.NHibernate`) is marked
+`Interlocutor.Persistence.EntityFrameworkCore`, `Interlocutor.FluentValidation`, `Interlocutor.Persistence.NHibernate`) is marked
 trimmable and builds clean under trim analysis. Compile-time handler discovery means the default dispatch
 path performs no runtime reflection at all - no `Assembly.GetTypes()`, no `Activator.CreateInstance` over a
 dynamically-discovered type - so trimming the assemblies a compiled application doesn't actually use is
@@ -76,13 +76,13 @@ un-trimmed, or move that registration to compile-time discovery instead.
   `JsonSerializerContext` covering every type your endpoints actually return - including failure bodies like
   `ProblemDetails` - the same way any trimmed ASP.NET Core minimal API application would.
 - **A store integration's own trim/AOT support is out of Interlocutor's control - and for EF Core, it is not
-  optional.** `Interlocutor.EntityFrameworkCore` is trim-compatible itself, but EF Core's normal model
-  building reflectively constructs a value comparer per property type the first time any operation touches
-  the database - not only `EnsureCreated()`/`Migrate()`, any operation - and trimming removes that
+  optional.** `Interlocutor.Persistence.EntityFrameworkCore` is trim-compatible itself, but EF Core's normal
+  model building reflectively constructs a value comparer per property type the first time any operation
+  touches the database - not only `EnsureCreated()`/`Migrate()`, any operation - and trimming removes that
   constructor if nothing else references it, producing a `MissingMethodException` at that point despite a
   clean build. A compiled model (`dotnet ef dbcontext optimize`, then `optionsBuilder.UseModel(...)`) avoids
-  this by building that step in at compile time instead. `Interlocutor.NHibernate` has its own trimming story
-  under NHibernate - consult that library's own documentation.
+  this by building that step in at compile time instead. `Interlocutor.Persistence.NHibernate` has its own
+  trimming story under NHibernate - consult that library's own documentation.
 
 ## Links
 

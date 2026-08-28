@@ -1,6 +1,6 @@
 # PRD: DI Builder, Compile-Time Discovery, and Pipeline Composition
 
-Status: ready-for-agent
+Status: done - all 57 issues closed (done/wontfix/superseded)
 
 ## Problem Statement
 

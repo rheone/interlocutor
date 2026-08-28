@@ -101,8 +101,10 @@ public sealed class FullPipelineIncrementalCachingTests
         """;
 
     [Fact]
-    public void FinalPipelineStep_ReportsCachedOrUnchanged_OnAWhitespaceOnlyRebuild()
+    public void FinalPipelineStep_ReportsCachedOrUnchanged_OnAWhitespaceOnlyRebuild_Test()
     {
+        // Arrange
+        // (no separate setup; uses class fixtures or direct act/assert)
         // Act
         var result = GeneratorTestHarness.RunTwiceTrackingStepsWithIncrementalEdit(FirstSource, SecondSource);
 
@@ -111,7 +113,7 @@ public sealed class FullPipelineIncrementalCachingTests
     }
 
     [Fact]
-    public void FinalPipelineStep_ReportsCachedOrUnchanged_WhenAReferencedLibraryChangesNoPublicApiSurface()
+    public void FinalPipelineStep_ReportsCachedOrUnchanged_WhenAReferencedLibraryChangesNoPublicApiSurface_Test()
     {
         // Arrange
         const string appSource = "namespace App; public sealed class Nothing;";

@@ -1,3 +1,5 @@
+> **Status: done** - merged in `8b144be`.
+
 ## Labels
 
 ready-for-agent

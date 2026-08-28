@@ -42,7 +42,7 @@ public sealed class CrossAssemblyAggregationTests
         """;
 
     [Fact]
-    public void Application_aggregates_a_directly_referenced_librarys_module_with_no_extra_configuration()
+    public void ModuleAggregation_DirectlyReferencedLibrary_DiscoveredWithoutExtraConfiguration_Test()
     {
         // Arrange
         var libraryOutput = GeneratorTestHarness.RunAndUpdate(LibraryASource, "LibraryA", null, out _);
@@ -66,7 +66,7 @@ public sealed class CrossAssemblyAggregationTests
     }
 
     [Fact]
-    public void Three_level_reference_chain_surfaces_library_Bs_module_without_the_app_listing_it()
+    public void ModuleAggregation_TransitiveReferenceChain_SurfacesWithoutDirectReference_Test()
     {
         // Arrange
         var libraryBOutput = GeneratorTestHarness.RunAndUpdate(LibraryBSource, "LibraryB", null, out _);
@@ -100,7 +100,7 @@ public sealed class CrossAssemblyAggregationTests
     }
 
     [Fact]
-    public void Diamond_reference_to_the_same_assembly_does_not_duplicate_its_aggregation_call_site()
+    public void ModuleAggregation_DiamondReference_NoDuplicateCallSite_Test()
     {
         // Arrange
         var libraryBOutput = GeneratorTestHarness.RunAndUpdate(LibraryBSource, "LibraryB", null, out _);
@@ -127,7 +127,7 @@ public sealed class CrossAssemblyAggregationTests
     }
 
     [Fact]
-    public void Missing_handler_diagnostic_does_not_fire_when_the_handler_lives_in_a_referenced_assembly()
+    public void HandlerDiagnostic_ExternalHandler_DoesNotFire_Test()
     {
         // Arrange
         var libraryOutput = GeneratorTestHarness.RunAndUpdate(LibraryASource, "LibraryA", null, out _);
@@ -156,7 +156,7 @@ public sealed class CrossAssemblyAggregationTests
     }
 
     [Fact]
-    public void Referencing_a_library_with_a_fully_matched_request_and_handler_pair_produces_no_diagnostics()
+    public void ModuleAggregation_CompleteRequestHandlerPair_ProducesNoDiagnostics_Test()
     {
         // LibraryA declares GetFooQuery and GetFooQueryHandler together, so LibraryA's own generator run
         // already proves that pair matches (see MissingHandlerDiagnosticTests for the single-compilation
@@ -175,7 +175,7 @@ public sealed class CrossAssemblyAggregationTests
     }
 
     [Fact]
-    public void External_handler_metadata_matches_by_request_and_response_type_name_regardless_of_declaring_assembly()
+    public void HandlerMatching_CrossAssemblyMetadata_MatchesByTypeName_Test()
     {
         // Arrange
         // Exercises ReferencedModuleDiscovery's matching rule directly: build a compilation that declares only
@@ -208,7 +208,7 @@ public sealed class CrossAssemblyAggregationTests
     }
 
     [Fact]
-    public void Out_of_range_handler_kind_in_referenced_metadata_is_rejected_rather_than_misdecoded()
+    public void MetadataValidation_OutOfRangeHandlerKind_RejectedNotMisdecoded_Test()
     {
         // Arrange
         // Simulates a referenced assembly built against a newer generator version that emits a HandlerKind

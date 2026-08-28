@@ -130,7 +130,7 @@ internal static class OpenGenericHandlerResolver
                 .RequestArgumentParameterNames.Zip(usage.TypeArgumentDisplayNames, static (name, arg) => (name, arg))
                 .ToImmutableDictionary(static t => t.name, static t => t.arg, System.StringComparer.Ordinal);
 
-            if (SatisfiesEveryConstraint(handler, substitutions, usage, snapshot))
+            if (SatisfiesEveryConstraint(handler, usage, snapshot))
             {
                 matches.Add(new MatchedHandler(handler, substitutions));
             }
@@ -192,7 +192,6 @@ internal static class OpenGenericHandlerResolver
     /// <summary>Whether every constraint on <paramref name="handler"/>'s own type parameters is satisfied for <paramref name="usage"/>'s type arguments.</summary>
     private static bool SatisfiesEveryConstraint(
         OpenGenericHandlerModel handler,
-        ImmutableDictionary<string, string> substitutions,
         ClosedGenericRequestUsageModel usage,
         GenericConstraintSnapshot snapshot
     )

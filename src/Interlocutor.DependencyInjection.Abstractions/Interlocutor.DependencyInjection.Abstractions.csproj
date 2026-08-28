@@ -10,4 +10,12 @@
   <ItemGroup>
     <ProjectReference Include="..\Interlocutor.Abstractions\Interlocutor.Abstractions.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- AssemblyTypeScanner.ExtractLoadedTypes is internal - genuinely an implementation detail, not part of
+         this package's public builder API - but its ReflectionTypeLoadException handling needs to be
+         exercised directly against a manually-constructed exception rather than requiring a genuinely
+         unloadable assembly on disk. -->
+    <InternalsVisibleTo Include="Interlocutor.DependencyInjection.Abstractions.Tests" />
+  </ItemGroup>
 </Project>

@@ -135,8 +135,8 @@ public static class InterlocutorServiceCollectionExtensions
     /// with). Thrown here, synchronously during <c>AddInterlocutor</c>, so the failure is immediate and
     /// actionable instead of a cryptic <see cref="ArgumentException"/> the framework would otherwise throw
     /// later, lazily, the first time <c>BuildServiceProvider()</c> runs. See
-    /// <see cref="InterlocutorPipelineBuilder.AddTransactionBehavior"/>'s remarks for the concrete case this
-    /// guards (EF Core's arity-3 <c>TransactionBehavior&lt;TRequest,TResponse,TContext&gt;</c> behind the
+    /// <see cref="InterlocutorPipelineBuilder.AddUnitOfWorkBehavior"/>'s remarks for the concrete case this
+    /// guards (EF Core's arity-3 <c>UnitOfWorkBehavior&lt;TRequest,TResponse,TContext&gt;</c> behind the
     /// arity-2 <see cref="IPipelineBehavior{TRequest,TResponse}"/>) and the documented workaround.
     /// </exception>
     private static Type ResolveServiceType(InterlocutorRegistration registration)

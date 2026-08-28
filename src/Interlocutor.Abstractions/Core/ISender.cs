@@ -3,7 +3,7 @@ namespace Interlocutor.Abstractions.Core;
 using System.Diagnostics.CodeAnalysis;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Queries;
-using Interlocutor.CommonKernel;
+using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>Send-only interface for request/response operations. Exposes Send overloads for queries and commands.</summary>
 /// <remarks>
@@ -37,7 +37,7 @@ public interface ISender
         where TResponse : IOperationOutcome;
 
     /// <summary>Dispatches a void command to its registered handler, returning the outcome through all pipeline behaviors.</summary>
-    /// <typeparam name="TResult">The <see cref="Interlocutor.CommonKernel.IOperationOutcome"/>-shaped outcome type to resolve a handler for.</typeparam>
+    /// <typeparam name="TResult">The <see cref="CommonKernel.ResultTypes.IOperationOutcome"/>-shaped outcome type to resolve a handler for.</typeparam>
     /// <param name="command">The command to dispatch.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>A <see cref="Task{TResult}"/> representing the asynchronous operation.</returns>
@@ -56,7 +56,7 @@ public interface ISender
     /// <param name="ct">The cancellation token.</param>
     /// <returns>
     /// A <see cref="Task{TResult}"/> whose result is the handler's response as an
-    /// <see cref="Interlocutor.CommonKernel.IOperationOutcome"/>. Callers can check
+    /// <see cref="CommonKernel.ResultTypes.IOperationOutcome"/>. Callers can check
     /// <c>IsSuccess</c>-shaped members or pattern-match the union's case value (via
     /// <see cref="System.Runtime.CompilerServices.IUnion"/>) without knowing the concrete outcome type
     /// statically.

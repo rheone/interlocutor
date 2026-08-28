@@ -1,4 +1,4 @@
-Status: needs-triage
+Status: closed (implemented)
 
 ## Labels
 
@@ -15,13 +15,17 @@ New project `src/Interlocutor.Persistence.EntityFrameworkCore/Interlocutor.Persi
 
 ## Acceptance criteria
 
-- [ ] `Interlocutor.Persistence.EntityFrameworkCore` project exists, builds, references exactly `Interlocutor.Persistence.Abstractions` + `Microsoft.EntityFrameworkCore`
-- [ ] `IUnitOfWork` and `IDomainRepository<TEntity,TKey>` both have EF Core implementations
-- [ ] Filter/sort/paging translate to SQL (`Where`/`OrderBy`/`Skip`/`Take` composed on `IQueryable`, not materialized to `IEnumerable` before filtering - verify with a test asserting the generated query, not just the result, per the query-pushdown gotcha flagged in [research.md](../research.md) §2.1)
-- [ ] Integration test (in-memory or SQLite provider) proves a repository call and a `SaveChangesAsync` through `IUnitOfWork` participate in the same `DbContext` instance as `TransactionBehavior` sees for the same dispatch
-- [ ] `dotnet csharpier .` produces no diff
-- [ ] `dotnet build` and `dotnet test` pass for the new test project
+- [x] `Interlocutor.Persistence.EntityFrameworkCore` project exists, builds, references exactly `Interlocutor.Persistence.Abstractions` + `Microsoft.EntityFrameworkCore`
+- [x] `IUnitOfWork` and `IDomainRepository<TEntity,TKey>` both have EF Core implementations
+- [x] Filter/sort/paging translate to SQL (`Where`/`OrderBy`/`Skip`/`Take` composed on `IQueryable`, not materialized to `IEnumerable` before filtering - verify with a test asserting the generated query, not just the result, per the query-pushdown gotcha flagged in [research.md](../research.md) §2.1)
+- [x] Integration test (in-memory or SQLite provider) proves a repository call and a `SaveChangesAsync` through `IUnitOfWork` participate in the same `DbContext` instance as `TransactionBehavior` sees for the same dispatch
+- [x] `dotnet csharpier .` produces no diff
+- [x] `dotnet build` and `dotnet test` pass for the new test project
 
 ## Blocked by
 
 01
+
+## Comments
+
+Verified already implemented (commit 024a606): `EntityFrameworkUnitOfWork<TContext>` and `EntityFrameworkRepository<TEntity,TKey,TContext>` exist, resolved via `Lazy<TContext>`. `dotnet test tests/Interlocutor.Persistence.EntityFrameworkCore.Tests` passes (14/14).

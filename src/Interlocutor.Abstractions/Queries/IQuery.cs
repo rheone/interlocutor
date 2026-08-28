@@ -1,6 +1,6 @@
 namespace Interlocutor.Abstractions.Queries;
 
-using Interlocutor.CommonKernel;
+using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
 /// Marks a type as a CQRS query and defines the type of data produced when the query is handled.

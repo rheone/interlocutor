@@ -43,12 +43,17 @@ public sealed class HandlerNotRegisteredException : Exception
     }
 
     /// <summary>Gets the runtime type of the request that has no registered handler.</summary>
+    /// <value>The runtime type of the request that has no registered handler.</value>
     public Type RequestType { get; }
 
     /// <summary>
     /// Gets the specific closed handler interface that was expected to be registered, or
     /// <see langword="null"/> when no single closed handler interface could be determined.
     /// </summary>
+    /// <value>
+    /// The specific closed handler interface that was expected to be registered, or
+    /// <see langword="null"/> when no single closed handler interface could be determined.
+    /// </value>
     public Type? HandlerType { get; }
 
     private static string BuildMessage(Type requestType, Type? handlerType) =>

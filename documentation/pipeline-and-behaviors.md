@@ -27,7 +27,7 @@ Behaviors run in the order you register them - first registered wraps the outerm
 builder.Pipeline.AddLoggingBehavior();        // Outermost
 builder.Pipeline.AddAuditingBehavior();       //
 builder.Pipeline.AddValidationBehavior();     //
-builder.Pipeline.AddTransactionBehavior();    // Innermost
+builder.Pipeline.AddUnitOfWorkBehavior();     // Innermost
 // Handler executes here
 ```
 
@@ -40,20 +40,19 @@ When a request dispatches:
 
 A behavior's scope (which requests it touches) is controlled by marker interfaces your request implements:
 
-- **`ITransactionalRequest`** - opts in `TransactionBehavior`
 - **`IAuditableRequest`** - opts in `AuditingBehavior` (carries `ActionName`)
 - **`IRequiresPolicy`** - opts in `AuthorizationBehavior` (carries `PolicyName`)
-- **`IExternalStoreRequest`** - explicitly declares "no SQL session for this request"
+- **`IExternalStoreRequest`** - opts a request *out* of `UnitOfWorkBehavior` entirely, even if it touches the scoped session
+- **`ITransactionalRequest`** - does not opt into `UnitOfWorkBehavior` (every request gets it once registered, no marker needed); narrows to "begin the transaction eagerly, at pipeline start" instead of the default lazy begin-on-first-write - see [Transactions & Store Integration](transactions-and-store-integration.md)
 
-A request's actual chain is the registered behavior list, filtered to entries whose generic constraint it satisfies, with relative order preserved.
+A request's actual chain is the registered behavior list, filtered to entries whose generic constraint it satisfies, with relative order preserved. `UnitOfWorkBehavior` is unconstrained, so it's never filtered out by this mechanism.
 
 ```csharp
 public record CreateOrder(int CustomerId, List<OrderItem> Items)
     : ICommand<OperationOutcome<int, ValidationError>>,
-      ITransactionalRequest,    // Runs only TransactionBehavior (if registered)
       IAuditableRequest         // Runs only AuditingBehavior (if registered)
 {
-    // ValidationBehavior runs if registered, regardless of marker - no marker controls it
+    // ValidationBehavior and UnitOfWorkBehavior run if registered, regardless of marker
     public string ActionName => "create_order";
 }
 
@@ -80,7 +79,7 @@ builder.Pipeline.AddLoggingBehavior();           // 1. Outermost
 builder.Pipeline.AddAuditingBehavior();          // 2.
 builder.Pipeline.AddAuthorizationBehavior();     // 3.
 builder.Pipeline.AddValidationBehavior();        // 4.
-builder.Pipeline.AddTransactionBehavior();       // 5. Innermost
+builder.Pipeline.AddUnitOfWorkBehavior();        // 5. Innermost
 ```
 
 ### Why This Order
@@ -166,21 +165,21 @@ var result = await mediator.Send(new TransferFunds(1, 2, 100));
 
 ## Outcome Description & Classification
 
-`LoggingBehavior`, `AuditingBehavior`, and both store-specific `TransactionBehavior` implementations (EF Core and NHibernate) all need to answer the same two questions about a handler's response: *what should this be called in a log line or audit entry*, and *does this represent a failure that a transaction should roll back*. `IResponseOutcomeDescriber` is the shared abstraction that answers both, so the three behaviors classify responses consistently instead of each re-implementing their own success/failure detection.
+`LoggingBehavior`, `AuditingBehavior`, and both store-specific `UnitOfWorkBehavior` implementations (EF Core and NHibernate) all need to answer the same two questions about a handler's response: *what should this be called in a log line or audit entry*, and *does this represent a failure that a transaction should roll back*. `IResponseOutcomeDescriber` is the shared abstraction that answers both, so the three behaviors classify responses consistently instead of each re-implementing their own success/failure detection.
 
 ```csharp
 public interface IResponseOutcomeDescriber
 {
     string Describe(object? response);   // e.g. "Success", "NotFound", "ValidationError"
-    bool IsFailure(object? response);    // true => TransactionBehavior rolls back
+    bool IsFailure(object? response);    // true => UnitOfWorkBehavior rolls back
 }
 ```
 
 - **`LoggingBehavior<TRequest, TResponse>`** calls `Describe()` to log the outcome alongside elapsed time.
 - **`AuditingBehavior<TRequest, TResponse>`** calls `Describe()` to record the outcome on each `AuditEntry`.
-- **`TransactionBehavior`** (both EF Core and NHibernate) calls `IsFailure()` to decide whether to commit or roll back.
+- **`UnitOfWorkBehavior`** (both EF Core and NHibernate) calls `IsFailure()` to decide whether to commit or roll back.
 
-`LoggingBehavior`, `AuditingBehavior`, and both `TransactionBehavior` implementations accept `IResponseOutcomeDescriber` as an *optional* constructor parameter. When nothing is registered in DI, each falls back to its own `DefaultResponseOutcomeDescriber` instance backed by `OutcomeClassifierBuilder.DefaultClassifier` - the shared, pre-seeded classifier described below.
+`LoggingBehavior`, `AuditingBehavior`, and both `UnitOfWorkBehavior` implementations accept `IResponseOutcomeDescriber` as an *optional* constructor parameter. When nothing is registered in DI, each falls back to its own `DefaultResponseOutcomeDescriber` instance backed by `OutcomeClassifierBuilder.DefaultClassifier` - the shared, pre-seeded classifier described below.
 
 > [!IMPORTANT]
 > There is no automatic `IResponseOutcomeDescriber` registration in `InterlocutorBuilder`. Registering one would require also registering a default `IOutcomeClassifier` to keep it resolvable - an orphan dependency the no-default-pipeline design avoids introducing for consumers who never call `OverrideOutcomeDescriber`. The optional-parameter fallback covers everyone else.
@@ -243,7 +242,7 @@ public sealed class PaymentOutcomeDescriber : IResponseOutcomeDescriber
 }
 ```
 
-Then wire it in with `OverrideOutcomeDescriber<TDescriber>()` as shown above. `LoggingBehavior`, `AuditingBehavior`, and `TransactionBehavior` now describe and classify `PaymentApproved`/`PaymentDeclined`/`PaymentGatewayError` correctly instead of falling back to the fail-closed default - a response you never registered would otherwise log as its raw type name and force a rollback even when it's a genuine success.
+Then wire it in with `OverrideOutcomeDescriber<TDescriber>()` as shown above. `LoggingBehavior`, `AuditingBehavior`, and `UnitOfWorkBehavior` now describe and classify `PaymentApproved`/`PaymentDeclined`/`PaymentGatewayError` correctly instead of falling back to the fail-closed default - a response you never registered would otherwise log as its raw type name and force a rollback even when it's a genuine success.
 
 ## Cancellation, Timeout & Rate Limiting Behaviors
 
@@ -379,7 +378,7 @@ sequenceDiagram
     participant Auditing as AuditingBehavior
     participant Authorization as AuthorizationBehavior
     participant Validation as ValidationBehavior
-    participant Transaction as TransactionBehavior
+    participant Transaction as UnitOfWorkBehavior
     participant Handler
 
     Caller->>Logging: dispatch(request)

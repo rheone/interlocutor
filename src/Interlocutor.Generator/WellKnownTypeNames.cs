@@ -43,7 +43,7 @@ internal static class WellKnownTypeNames
     public const string PipelineBehavior = "Interlocutor.Abstractions.Pipeline.IPipelineBehavior`2";
 
     /// <summary>The base outcome marker interface, <c>IOperationOutcome</c>.</summary>
-    public const string OperationOutcome = "Interlocutor.CommonKernel.IOperationOutcome";
+    public const string OperationOutcome = "Interlocutor.CommonKernel.ResultTypes.IOperationOutcome";
 
     /// <summary>The open-generic-handler-ambiguity escape hatch, <c>HandlerOverrideAttribute</c>.</summary>
     public const string HandlerOverride = "Interlocutor.Abstractions.Core.HandlerOverrideAttribute";

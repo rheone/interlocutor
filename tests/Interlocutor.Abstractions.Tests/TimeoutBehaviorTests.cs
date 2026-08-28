@@ -9,8 +9,6 @@ using Interlocutor.CommonKernel.ResultTypes;
 
 public class TimeoutBehaviorTests
 {
-    public record TimeBoundQuery(TimeSpan Budget) : IQuery<OperationOutcome<string, Timeout>>, IHasTimeout;
-
     [Fact]
     public async Task Handle_WhenNextExceedsBudget_ShortCircuitsWithTimeoutCarryingBudgetAndElapsed()
     {
@@ -21,14 +19,14 @@ public class TimeoutBehaviorTests
             DefaultOutcomeCaseRegistry.Instance
         );
         var request = new TimeBoundQuery(budget);
-        Func<Task<OperationOutcome<string, Timeout>>> next = async () =>
+        static async Task<OperationOutcome<string, Timeout>> Next()
         {
             await Task.Delay(TimeSpan.FromMilliseconds(500), CancellationToken.None);
             return new OperationOutcome<string, Timeout>("too slow");
-        };
+        }
 
         // Act
-        var result = await behavior.Handle(request, next, CancellationToken.None);
+        var result = await behavior.Handle(request, Next, CancellationToken.None);
 
         // Assert
         var timeout = Assert.IsType<Timeout>(result.Value);
@@ -55,12 +53,15 @@ public class TimeoutBehaviorTests
 
         using var cts = new CancellationTokenSource();
         var tcs = new TaskCompletionSource<OperationOutcome<string, Timeout>>();
-        Func<Task<OperationOutcome<string, Timeout>>> next = () => tcs.Task; // never completes on its own
+        Task<OperationOutcome<string, Timeout>> Next()
+        {
+            return tcs.Task; // never completes on its own
+        }
 
         cts.CancelAfter(TimeSpan.FromMilliseconds(20));
 
         // Act & Assert
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => behavior.Handle(request, next, cts.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => behavior.Handle(request, Next, cts.Token));
     }
 
     [Fact]
@@ -73,11 +74,13 @@ public class TimeoutBehaviorTests
             DefaultOutcomeCaseRegistry.Instance
         );
         var request = new TimeBoundQuery(budget);
-        Func<Task<OperationOutcome<string, Timeout>>> next = () =>
-            Task.FromResult<OperationOutcome<string, Timeout>>(new OperationOutcome<string, Timeout>("fast enough"));
+        static Task<OperationOutcome<string, Timeout>> Next()
+        {
+            return Task.FromResult<OperationOutcome<string, Timeout>>(new OperationOutcome<string, Timeout>("fast enough"));
+        }
 
         // Act
-        var result = await behavior.Handle(request, next, CancellationToken.None);
+        var result = await behavior.Handle(request, Next, CancellationToken.None);
 
         // Assert
         Assert.Equal("fast enough", result.Value);
@@ -95,17 +98,19 @@ public class TimeoutBehaviorTests
             DefaultOutcomeCaseRegistry.Instance
         );
         var request = new TimeBoundQuery(TimeSpan.FromSeconds(30)); // request declares a much larger budget
-        Func<Task<OperationOutcome<string, Timeout>>> next = async () =>
+        static async Task<OperationOutcome<string, Timeout>> Next()
         {
             await Task.Delay(TimeSpan.FromMilliseconds(500), CancellationToken.None);
             return new OperationOutcome<string, Timeout>("too slow");
-        };
+        }
 
         // Act
-        var result = await behavior.Handle(request, next, CancellationToken.None);
+        var result = await behavior.Handle(request, Next, CancellationToken.None);
 
         // Assert
         var timeout = Assert.IsType<Timeout>(result.Value);
         Assert.Equal(overriddenBudget, timeout.Budget);
     }
+
+    public record TimeBoundQuery(TimeSpan Budget) : IQuery<OperationOutcome<string, Timeout>>, IHasTimeout;
 }

@@ -1,6 +1,5 @@
 namespace Interlocutor.AspNetCore.Tests;
 
-using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>

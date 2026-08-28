@@ -2,10 +2,12 @@ namespace Interlocutor.DependencyInjection.Abstractions;
 
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Markers;
 using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Pipeline.Cases;
+using Interlocutor.Abstractions.Queries;
 
 /// <summary>
 /// Container-neutral fluent builder that is the single configuration surface for Interlocutor -
@@ -85,12 +87,27 @@ using Interlocutor.Abstractions.Pipeline.Cases;
 /// </remarks>
 public sealed class InterlocutorBuilder
 {
+    /// <summary>
+    /// The three mediator handler contracts <see cref="ValidateOnBuild"/>'s <see cref="RegistrationProblemKind.AmbiguousClosure"/>
+    /// check treats as single-winner regardless of whether <see cref="RequireUniqueClosure"/> was ever
+    /// called - <c>INotificationHandler&lt;&gt;</c> is deliberately excluded, since fan-out to many handlers
+    /// per notification is its whole design.
+    /// </summary>
+    private static readonly Type[] BuiltInUniqueClosureContracts =
+    [
+        typeof(IQueryHandler<,>),
+        typeof(ICommandHandler<,>),
+        typeof(IVoidCommandHandler<,>),
+    ];
+
     private readonly List<(Assembly Assembly, RegistrationLifetime Lifetime)> _assembliesToScan = [];
     private readonly Dictionary<Type, InterlocutorRegistration> _defaults;
+    private readonly List<Type> _ejectedImplementationTypes = [];
     private readonly Dictionary<(Type ServiceType, Type ImplementationType), InterlocutorRegistration> _explicitHandlers = [];
     private readonly List<InterlocutorRegistration> _generatedRegistrations = [];
     private readonly List<TypeMatchRule> _matchRules = [];
     private readonly InterlocutorPipelineBuilder _pipeline;
+    private readonly List<Type> _uniqueClosureContracts = [];
     private bool _validateOnBuild;
 
     /// <summary>
@@ -144,6 +161,13 @@ public sealed class InterlocutorBuilder
     public IReadOnlyCollection<InterlocutorRegistration> Defaults => this._defaults.Values;
 
     /// <summary>
+    /// Gets every implementation type added via <see cref="Eject(Type[])"/>/<see cref="Eject{TImplementation}"/>,
+    /// in call order across every call - each call is additive, never a replacement of the accumulated list.
+    /// </summary>
+    /// <value>Every implementation type ejected so far.</value>
+    public IReadOnlyList<Type> EjectedImplementationTypes => this._ejectedImplementationTypes;
+
+    /// <summary>
     /// Gets the pipeline stage registrations added via <see cref="InterlocutorPipelineBuilder.AddStage(Type, RegistrationLifetime)"/>,
     /// each keyed to the closed <see cref="IPipelineStage{TRequest,TResponse}"/> interface it implements.
     /// </summary>
@@ -174,38 +198,21 @@ public sealed class InterlocutorBuilder
     /// An <see cref="AddHandler"/> call for a given (service type, implementation type) pair takes
     /// precedence over a duplicate of that same pair discovered by scanning in the same configuration -
     /// the explicit registration is the one this property yields, not an additional copy alongside it.
-    /// Recomputed on every access, so it always reflects the builder's current configuration.
+    /// Recomputed on every access, so it always reflects the builder's current configuration. Every
+    /// implementation type added via <see cref="Eject(Type[])"/> is excluded entirely - both this property
+    /// and everything that reads it, never merely suppressed from a validation message.
     /// </remarks>
     /// <value>The merged handler registrations, with explicit entries winning over scanned duplicates.</value>
-    [UnconditionalSuppressMessage(
-        "Trimming",
-        "IL2026:RequiresUnreferencedCode",
-        Justification = "HandlerDiscovery.Discover only reflects when ScanAssembly*/ScanAssemblies/"
-            + "ScanAssemblyContaining/ScanEntryAssembly (all annotated RequiresUnreferencedCode) added an "
-            + "assembly; with none configured, AssembliesToScan is empty and the scan loop never runs. See "
-            + "documentation/trim-and-aot-support.md."
-    )]
-    public IReadOnlyList<InterlocutorRegistration> Handlers
-    {
-        get
-        {
-            var merged = new Dictionary<(Type ServiceType, Type ImplementationType), InterlocutorRegistration>();
+    public IReadOnlyList<InterlocutorRegistration> Handlers => this.ComputeHandlers(failures: null);
 
-            foreach (var registration in HandlerDiscovery.Discover(this._assembliesToScan))
-            {
-                merged[(registration.ServiceType, registration.ImplementationType)] = registration;
-            }
-
-            // Explicit registrations are applied last so they overwrite - never duplicate - a scanned entry
-            // for the same (service type, implementation type) pair.
-            foreach (var (key, registration) in this._explicitHandlers)
-            {
-                merged[key] = registration;
-            }
-
-            return [.. merged.Values];
-        }
-    }
+    /// <summary>
+    /// Gets every open-generic contract, alongside the three built-in handler contracts, added via
+    /// <see cref="RequireUniqueClosure"/> for <see cref="ValidateOnBuild"/>'s <see cref="RegistrationProblemKind.AmbiguousClosure"/>
+    /// check to also cover - and, alongside a built-in handler contract, for scanning to register every
+    /// closed implementation of.
+    /// </summary>
+    /// <value>Every consumer-supplied open-generic contract added via <see cref="RequireUniqueClosure"/>.</value>
+    public IReadOnlyList<Type> UniqueClosureContracts => this._uniqueClosureContracts;
 
     /// <summary>
     /// Gets every predicate-based type-matching rule added via <see cref="AddTypeMatch"/>, in call order.
@@ -224,72 +231,7 @@ public sealed class InterlocutorBuilder
     /// and <see cref="RegistrationKind.Behavior"/> entries - this property performs no deduplication of its own.
     /// </remarks>
     /// <value>Every registration produced by a type-matching rule.</value>
-    [UnconditionalSuppressMessage(
-        "Trimming",
-        "IL2026:RequiresUnreferencedCode",
-        Justification = "CandidateTypesForMatching only reflects when AddTypeMatch (annotated "
-            + "RequiresUnreferencedCode) added a rule; with none configured this returns immediately before "
-            + "scanning. See documentation/trim-and-aot-support.md."
-    )]
-    [UnconditionalSuppressMessage(
-        "Trimming",
-        "IL2072:DynamicallyAccessedMembers",
-        Justification = "Same opt-in-only rationale as the IL2026 suppression above - candidate is only ever "
-            + "produced when AddTypeMatch was called."
-    )]
-    public IReadOnlyList<InterlocutorRegistration> MatchedRegistrations
-    {
-        get
-        {
-            var registrations = new List<InterlocutorRegistration>();
-            if (this._matchRules.Count == 0)
-            {
-                return registrations;
-            }
-
-            var candidates = this.CandidateTypesForMatching().ToList();
-            for (var ruleIndex = 0; ruleIndex < this._matchRules.Count; ruleIndex++)
-            {
-                var rule = this._matchRules[ruleIndex];
-                // Falls back to the rule's own position when unnamed, so RegistrationReport.Format can
-                // always distinguish which rule produced a given Matched registration, even when several
-                // rules are configured without names.
-                var ruleLabel = rule.Name ?? $"rule {ruleIndex}";
-
-                foreach (var candidate in candidates)
-                {
-                    if (!rule.Predicate(candidate) || (rule.Except?.Invoke(candidate) ?? false))
-                    {
-                        continue;
-                    }
-
-                    var produced = rule.Target switch
-                    {
-                        TypeMatchTarget.Handler => HandlerDiscovery.DescribeHandler(
-                            candidate,
-                            rule.Lifetime,
-                            RegistrationProvenance.Matched
-                        ),
-                        TypeMatchTarget.Behavior =>
-                        [
-                            new InterlocutorRegistration(
-                                typeof(IPipelineBehavior<,>),
-                                candidate,
-                                rule.Lifetime,
-                                RegistrationKind.Behavior,
-                                RegistrationProvenance.Matched
-                            ),
-                        ],
-                        _ => (IReadOnlyList<InterlocutorRegistration>)[],
-                    };
-
-                    registrations.AddRange(produced.Select(registration => registration with { MatchedByRule = ruleLabel }));
-                }
-            }
-
-            return registrations;
-        }
-    }
+    public IReadOnlyList<InterlocutorRegistration> MatchedRegistrations => this.ComputeMatchedRegistrations(failures: null);
 
     /// <summary>
     /// Adds a predicate-based type-matching rule: every candidate type found while scanning that
@@ -337,18 +279,171 @@ public sealed class InterlocutorBuilder
     }
 
     /// <summary>
+    /// Opts a consumer-supplied open-generic contract into the same "at most one implementation per closed
+    /// instantiation" expectation the three built-in mediator handler contracts (<c>IQueryHandler&lt;,&gt;</c>,
+    /// <c>ICommandHandler&lt;,&gt;</c>, <c>IVoidCommandHandler&lt;,&gt;</c>) already carry - both
+    /// <see cref="ValidateOnBuild"/>'s <see cref="RegistrationProblemKind.AmbiguousClosure"/> check and
+    /// <see cref="Eject(Type[])"/>'s conflict-clearing escape hatch cover it from then on.
+    /// </summary>
+    /// <remarks>
+    /// Every closed implementation of <paramref name="openGenericContract"/> found while scanning is
+    /// registered the same way <see cref="AddHandler"/> registers a handler - reflecting over the
+    /// candidate's implemented interfaces and registering one <see cref="RegistrationKind.Handler"/> entry
+    /// per closed instantiation - not via <see cref="AddTypeMatch"/>'s predicate-based matching, since
+    /// "closes this open generic" is a structural check, not a free-form predicate. Callable more than once,
+    /// additive - each call adds another contract to the checked set.
+    /// </remarks>
+    /// <param name="openGenericContract">The open-generic interface to check for at most one implementation per closed instantiation.</param>
+    /// <returns>This builder, for chaining.</returns>
+    public InterlocutorBuilder RequireUniqueClosure(Type openGenericContract)
+    {
+        ArgumentNullException.ThrowIfNull(openGenericContract);
+        if (!openGenericContract.IsInterface || !openGenericContract.IsGenericTypeDefinition)
+        {
+            throw new ArgumentException(
+                $"{openGenericContract} must be an open generic interface definition (for example, typeof(IMyContract<,>)).",
+                nameof(openGenericContract)
+            );
+        }
+
+        this._uniqueClosureContracts.Add(openGenericContract);
+        return this;
+    }
+
+    /// <summary>
     /// Enumerates every candidate type found while scanning - the same concrete, non-abstract class filter
     /// <see cref="HandlerDiscovery.Discover(IEnumerable{Assembly})"/> applies, but unfiltered by handler
     /// contract, since a type-matching rule's predicate decides relevance instead.
     /// </summary>
+    /// <param name="failures">
+    /// When given, receives one <see cref="TypeLoadFailure"/> per type that failed to load in any scanned
+    /// assembly - scanning continues past it rather than aborting. See <see cref="AssemblyTypeScanner.GetLoadableTypes"/>.
+    /// </param>
     /// <returns>Every candidate type found while scanning.</returns>
     [RequiresUnreferencedCode(
         "Scans every assembly passed to ScanAssembly* with Assembly.GetTypes() - reached only from callers "
             + "already annotated at their own opt-in point (AddTypeMatch, ValidateOnBuild). See "
             + "documentation/trim-and-aot-support.md."
     )]
-    private IEnumerable<Type> CandidateTypesForMatching() =>
-        this._assembliesToScan.SelectMany(entry => entry.Assembly.GetTypes()).Where(HandlerDiscovery.IsCandidateType);
+    private IEnumerable<Type> CandidateTypesForMatching(ICollection<TypeLoadFailure>? failures = null) =>
+        this
+            ._assembliesToScan.SelectMany(entry => AssemblyTypeScanner.GetLoadableTypes(entry.Assembly, failures))
+            .Where(HandlerDiscovery.IsCandidateType);
+
+    /// <summary>
+    /// Computes <see cref="Handlers"/>, optionally recording every <see cref="TypeLoadFailure"/> hit along
+    /// the way - the shared implementation behind the parameterless public property and
+    /// <see cref="DescribeRegistrations"/>, which needs the failures list to populate <see cref="RegistrationReport.TypeLoadFailures"/>.
+    /// </summary>
+    /// <param name="failures">When given, receives one <see cref="TypeLoadFailure"/> per type that failed to load.</param>
+    /// <returns>The merged handler registrations, with explicit entries winning over scanned duplicates and every ejected implementation type excluded.</returns>
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2026:RequiresUnreferencedCode",
+        Justification = "HandlerDiscovery.Discover only reflects when ScanAssembly*/ScanAssemblies/"
+            + "ScanAssemblyContaining/ScanEntryAssembly (all annotated RequiresUnreferencedCode) added an "
+            + "assembly; with none configured, AssembliesToScan is empty and the scan loop never runs. See "
+            + "documentation/trim-and-aot-support.md."
+    )]
+    private IReadOnlyList<InterlocutorRegistration> ComputeHandlers(ICollection<TypeLoadFailure>? failures)
+    {
+        var merged = new Dictionary<(Type ServiceType, Type ImplementationType), InterlocutorRegistration>();
+
+        foreach (var registration in HandlerDiscovery.Discover(this._assembliesToScan, this._uniqueClosureContracts, failures))
+        {
+            merged[(registration.ServiceType, registration.ImplementationType)] = registration;
+        }
+
+        // Explicit registrations are applied last so they overwrite - never duplicate - a scanned entry
+        // for the same (service type, implementation type) pair.
+        foreach (var (key, registration) in this._explicitHandlers)
+        {
+            merged[key] = registration;
+        }
+
+        if (this._ejectedImplementationTypes.Count > 0)
+        {
+            foreach (
+                var key in merged.Keys.Where(k => this._ejectedImplementationTypes.Contains(k.ImplementationType)).ToList()
+            )
+            {
+                merged.Remove(key);
+            }
+        }
+
+        return [.. merged.Values];
+    }
+
+    /// <summary>
+    /// Computes <see cref="MatchedRegistrations"/>, optionally recording every <see cref="TypeLoadFailure"/>
+    /// hit along the way - the shared implementation behind the parameterless public property and
+    /// <see cref="DescribeRegistrations"/>. See <see cref="ComputeHandlers"/> for why this split exists.
+    /// </summary>
+    /// <param name="failures">When given, receives one <see cref="TypeLoadFailure"/> per type that failed to load.</param>
+    /// <returns>Every registration produced by a type-matching rule matching a candidate type found while scanning.</returns>
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2026:RequiresUnreferencedCode",
+        Justification = "CandidateTypesForMatching only reflects when AddTypeMatch (annotated "
+            + "RequiresUnreferencedCode) added a rule; with none configured this returns immediately before "
+            + "scanning. See documentation/trim-and-aot-support.md."
+    )]
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2072:DynamicallyAccessedMembers",
+        Justification = "Same opt-in-only rationale as the IL2026 suppression above - candidate is only ever "
+            + "produced when AddTypeMatch was called."
+    )]
+    private IReadOnlyList<InterlocutorRegistration> ComputeMatchedRegistrations(ICollection<TypeLoadFailure>? failures)
+    {
+        var registrations = new List<InterlocutorRegistration>();
+        if (this._matchRules.Count == 0)
+        {
+            return registrations;
+        }
+
+        var candidates = this.CandidateTypesForMatching(failures).ToList();
+        for (var ruleIndex = 0; ruleIndex < this._matchRules.Count; ruleIndex++)
+        {
+            var rule = this._matchRules[ruleIndex];
+            // Falls back to the rule's own position when unnamed, so RegistrationReport.Format can
+            // always distinguish which rule produced a given Matched registration, even when several
+            // rules are configured without names.
+            var ruleLabel = rule.Name ?? $"rule {ruleIndex}";
+
+            foreach (var candidate in candidates)
+            {
+                if (!rule.Predicate(candidate) || (rule.Except?.Invoke(candidate) ?? false))
+                {
+                    continue;
+                }
+
+                var produced = rule.Target switch
+                {
+                    TypeMatchTarget.Handler => HandlerDiscovery.DescribeHandler(
+                        candidate,
+                        rule.Lifetime,
+                        RegistrationProvenance.Matched
+                    ),
+                    TypeMatchTarget.Behavior =>
+                    [
+                        new InterlocutorRegistration(
+                            typeof(IPipelineBehavior<,>),
+                            candidate,
+                            rule.Lifetime,
+                            RegistrationKind.Behavior,
+                            RegistrationProvenance.Matched
+                        ),
+                    ],
+                    _ => (IReadOnlyList<InterlocutorRegistration>)[],
+                };
+
+                registrations.AddRange(produced.Select(registration => registration with { MatchedByRule = ruleLabel }));
+            }
+        }
+
+        return registrations;
+    }
 
     /// <summary>
     /// Adds handler registrations discovered at compile time by <c>Interlocutor.Generator</c> (ADR-0008),
@@ -405,29 +500,50 @@ public sealed class InterlocutorBuilder
     )]
     public RegistrationReport DescribeRegistrations()
     {
+        var typeLoadFailures = new List<TypeLoadFailure>();
+
         var registrations = new List<InterlocutorRegistration>();
-        registrations.AddRange(this.Handlers);
+        registrations.AddRange(this.ComputeHandlers(typeLoadFailures));
         registrations.AddRange(this._generatedRegistrations);
         registrations.AddRange(this._pipeline.Stages);
         registrations.AddRange(this._pipeline.Behaviors);
         registrations.AddRange(this._defaults.Values);
-        registrations.AddRange(this.MatchedRegistrations);
+        registrations.AddRange(this.ComputeMatchedRegistrations(typeLoadFailures));
 
         var problems = this._validateOnBuild
-            ? RegistrationValidator.ComputeProblems(registrations, this.CandidateTypesForMatching().ToList(), this._matchRules)
+            ? RegistrationValidator.ComputeProblems(
+                registrations,
+                this.CandidateTypesForMatching(typeLoadFailures).ToList(),
+                this._matchRules,
+                [.. BuiltInUniqueClosureContracts, .. this._uniqueClosureContracts]
+            )
             : [];
 
-        return new RegistrationReport(registrations, this._pipeline.StageFactories, this._pipeline.Skipped, problems);
+        // Each scan path above re-enumerates the same configured assemblies independently (Handlers,
+        // MatchedRegistrations, and - only under ValidateOnBuild - the candidate list ComputeProblems needs),
+        // so the same unloadable type can be recorded once per path; TypeLoadFailure's value equality
+        // collapses those back down to one entry per distinct failure.
+        var distinctTypeLoadFailures = typeLoadFailures.Distinct().ToList();
+
+        return new RegistrationReport(
+            registrations,
+            this._pipeline.StageFactories,
+            this._pipeline.Skipped,
+            problems,
+            distinctTypeLoadFailures
+        );
     }
 
     /// <summary>
     /// Opts into <see cref="DescribeRegistrations"/> computing <see cref="RegistrationReport.Problems"/> -
     /// checking the accumulated registration list, with no live container needed, for a query or command
     /// type discovered while scanning with no matching handler, a required type-matching rule
-    /// (<see cref="AddTypeMatch"/>) that matched nothing, and two registrations of the same (service type,
-    /// implementation type) pair at conflicting lifetimes. When the container translator finds any such
-    /// problem, it throws a single <see cref="InterlocutorRegistrationValidationException"/> carrying every
-    /// problem found, aggregated rather than failing on the first.
+    /// (<see cref="AddTypeMatch"/>) that matched nothing, two registrations of the same (service type,
+    /// implementation type) pair at conflicting lifetimes, and more than one distinct implementation type
+    /// closing the same instantiation of a single-winner contract (<see cref="RequireUniqueClosure"/>).
+    /// When the container translator finds any such problem, it throws a single
+    /// <see cref="InterlocutorRegistrationValidationException"/> carrying every problem found, aggregated
+    /// rather than failing on the first.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -556,7 +672,8 @@ public sealed class InterlocutorBuilder
             var registration in HandlerDiscovery.DescribeHandler(
                 handlerImplementationType,
                 lifetime,
-                RegistrationProvenance.Explicit
+                RegistrationProvenance.Explicit,
+                this._uniqueClosureContracts
             )
         )
         {
@@ -581,4 +698,33 @@ public sealed class InterlocutorBuilder
         this._pipeline.SetDefault(typeof(IRequestContextAccessor), typeof(TAccessor), lifetime);
         return this;
     }
+
+    /// <summary>
+    /// Removes one or more implementation types from <see cref="Handlers"/> entirely - the escape hatch for
+    /// clearing a <see cref="RegistrationProblemKind.AmbiguousClosure"/> conflict among candidates
+    /// <see cref="ScanAssembly"/> (or its siblings) found, by dropping every losing candidate rather than
+    /// picking a winner some other way.
+    /// </summary>
+    /// <remarks>
+    /// Callable zero or more times, additive - each call adds to one shared list, never replaces it. An
+    /// ejected implementation type is removed from <see cref="Handlers"/> for every uniqueness-checked
+    /// contract, built-in or consumer-supplied via <see cref="RequireUniqueClosure"/> - not merely
+    /// suppressed from the validation message. An <see cref="AddHandler"/> call for one of several
+    /// conflicting candidates does not, by itself, clear the conflict for the others still found by
+    /// scanning - <see cref="Eject(Type[])"/> is the only way to do that.
+    /// </remarks>
+    /// <param name="implementationTypes">The implementation types to remove from <see cref="Handlers"/>.</param>
+    /// <returns>This builder, for chaining.</returns>
+    public InterlocutorBuilder Eject(params Type[] implementationTypes)
+    {
+        ArgumentNullException.ThrowIfNull(implementationTypes);
+        this._ejectedImplementationTypes.AddRange(implementationTypes);
+        return this;
+    }
+
+    /// <summary>Removes <typeparamref name="TImplementation"/> from <see cref="Handlers"/> entirely. See <see cref="Eject(Type[])"/>.</summary>
+    /// <typeparam name="TImplementation">The implementation type to remove from <see cref="Handlers"/>.</typeparam>
+    /// <returns>This builder, for chaining.</returns>
+    public InterlocutorBuilder Eject<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TImplementation>() =>
+        this.Eject(typeof(TImplementation));
 }

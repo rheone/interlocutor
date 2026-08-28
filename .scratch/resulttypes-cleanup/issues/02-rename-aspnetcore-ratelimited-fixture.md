@@ -1,3 +1,5 @@
+> **Status: done** - merged in `8b76098`.
+
 # 02 - Rename AspNetCore test fixture RateLimited to CustomRateLimited
 
 ## Labels

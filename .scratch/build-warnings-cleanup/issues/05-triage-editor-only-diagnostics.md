@@ -4,9 +4,24 @@
 
 **Blocked by:** None - can start immediately, independent of tickets 01-04.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Every occurrence of the ten listed codes is located and either fixed or has a recorded, deliberate suppression with a reason
-- [ ] Fixes for `S1144`/`RCS1213`/`RCS1163` (unused member/parameter) are verified as genuinely dead - not removing something used via reflection, DI, or a test double
-- [ ] `S2699` fixes add a real assertion rather than just satisfying the rule mechanically
-- [ ] `dotnet build` and `dotnet test` remain clean after the changes
+- [x] Every occurrence of the ten listed codes is located and either fixed or has a recorded, deliberate suppression with a reason
+- [x] Fixes for `S1144`/`RCS1213`/`RCS1163` (unused member/parameter) are verified as genuinely dead - not removing something used via reflection, DI, or a test double
+- [x] `S2699` fixes add a real assertion rather than just satisfying the rule mechanically
+- [x] `dotnet build` and `dotnet test` remain clean after the changes
+
+## Comments
+
+- **`RCS1163` (unused parameter)** - promoted to `warning` in `.editorconfig` temporarily to locate every occurrence, then reverted once located. Found and fixed:
+  - `DefaultOutcomeCaseRegistry.Construct`'s cache-factory lambda didn't use its `key` parameter (the factory closes over `TResponse`/`TCase` directly) - renamed to `_`.
+  - `OpenGenericHandlerResolver.SatisfiesEveryConstraint`'s `substitutions` parameter was genuinely unused inside the method (it does its own positional lookup) - removed from the method and its one call site.
+  - A large set of test-double lambdas/local functions across `Interlocutor.Abstractions.Tests`, `Interlocutor.DependencyInjection.Abstractions.Tests`, `Interlocutor.DependencyInjection.Autofac.Tests`, and `Interlocutor.DependencyInjection.Microsoft.Tests` ignored one or more of their parameters by name (`request`, `ct`, `services`, `result`, `limitKey`) - renamed each to `_` (C# allows repeated discards in a single lambda parameter list).
+- **`RCS1213` (unused field)** - same promote-then-revert approach. Found and fixed:
+  - `GeneratorTestHarness.ResolvingHandlerRegistered` is deliberately never read - it exists only to run `RegisterResolvingHandler()` once at static-init time as a module-initializer substitute. Suppressed with an inline explanation.
+  - `EntityFrameworkCore.TransactionBehavior` and `NHibernate.TransactionBehavior` both carry an `IResponseOutcomeDescriber describer`/`_describer` field that's constructed but never read (unlike `LoggingBehavior`/`AuditingBehavior`, which do consume the same parameter) - genuinely dead, but removing the constructor parameter is a breaking API change out of scope here. Suppressed with an inline explanation and filed as ticket 06 for a follow-up decision (wire it in for real, or remove it as a deliberate breaking change).
+- **`xUnit2032`** - `Assert.IsAssignableFrom<T>(x)` renamed to `Assert.IsType<T>(x, exactMatch: false)` (the analyzer's own recommended replacement) across `MediatorTests`, `RuntimeTypedDispatchTests`, both `GeneratedDispatchSwitchIntegrationTests` (Autofac and Microsoft), and both `RootScopeGuardTests`.
+- **`IDE0053`/`IDE0039`** - promoted to `warning` for detection; zero occurrences found solution-wide. Nothing to fix.
+- **`SA1111`/`SA1009`** - already `Suggestion` severity in `.editorconfig`, as the ticket itself notes; left as-is (below the build's warning threshold is the intended, existing configuration, not an oversight).
+- **`S6966` (sync-over-async)** - no `SonarAnalyzer` package is referenced by the solution (confirmed via `Directory.Packages.props`/`Directory.Build.props`), so this can only ever have come from an IDE-only SonarLint pass with no CLI equivalent to promote. Manually grepped for blocking-on-async patterns (`.Result`, `.Wait()`, `.GetAwaiter().GetResult()`) across `src`/`tests`/`samples`; the only matches are unrelated identifiers/comments (e.g. a property named `Result`). No genuine occurrence found.
+- **`S2699` (assertion completeness)** / **`S1144` (unused private member)** - same no-analyzer situation as `S6966`. Manually reviewed the tests most likely to be flagged (those with no inline `Assert.*` call): every one either delegates to an assertion helper method, asserts via a mocking framework's `.Received(...)` call, or is a deliberate "must not throw" test with a comment stating that intent - not a genuine missing-assertion bug. No unused private member turned up beyond what `RCS1213`/`RCS1163` already caught (Roslynator's unused-member/parameter analyzers cover the same ground `S1144` targets).

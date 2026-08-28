@@ -12,9 +12,18 @@
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `dotnet build` reports zero SA1609, SA1414, SA1214, SA1201, CS1734, CS1574, and SA1618 warnings for `Interlocutor.Abstractions` and `Interlocutor.Abstractions.Tests`
-- [ ] Fixed `cref`/`paramref`/`typeparamref` targets actually resolve to the real member/parameter/type-parameter names (not just silenced)
-- [ ] Member ordering changes don't alter any public API shape - only reordering and doc-comment content change
-- [ ] `dotnet test tests/Interlocutor.Abstractions.Tests/Interlocutor.Abstractions.Tests.csproj` still passes
+- [x] `dotnet build` reports zero SA1609, SA1414, SA1214, SA1201, CS1734, CS1574, and SA1618 warnings for `Interlocutor.Abstractions` and `Interlocutor.Abstractions.Tests`
+- [x] Fixed `cref`/`paramref`/`typeparamref` targets actually resolve to the real member/parameter/type-parameter names (not just silenced)
+- [x] Member ordering changes don't alter any public API shape - only reordering and doc-comment content change
+- [x] `dotnet test tests/Interlocutor.Abstractions.Tests/Interlocutor.Abstractions.Tests.csproj` still passes (153/153)
+
+## Comments
+
+- SA1609: added `<value>` tags to the flagged properties (`HandlerNotRegisteredException`, `UnsupportedRequestTypeException`, `NotificationHandlerRunAfterAttribute`, `NotificationHandlerRunBeforeAttribute`, `HandlerOverrideAttribute`, `OutcomeCaseNotSupportedException`).
+- SA1414: named the tuple elements in `OutcomeClassifierBuilder`'s internal `DefaultOutcomeClassifier` constructor signature (`Predicate`, `Label`, `IsFailure`), matching the already-named tuple used everywhere else in the same type.
+- SA1214/SA1201: reordered `OutcomeClassifierBuilder` (readonly field before the non-readonly field; constructor before the property) and `DefaultOutcomeCaseRegistry` (field before property) to match StyleCop's canonical member order. In the test project, moved nested test-fixture records/classes to the bottom of their class (StyleCop orders class/record/struct nested types after methods) and one nested interface to the top (interfaces order before methods) in `LoggingBehaviorTests`, `AuditingBehaviorTests`, `AuthorizationBehaviorTests`, `CancellationBehaviorTests`, `RateLimitedBehaviorTests`, `TimeoutBehaviorTests`, `DelegatePipelineStageTests`, `OutcomeClassifierBuilderTests`, `NotificationFanOutTests` (top-level types), `AuditingBehaviorAspNetCoreIntegrationTests`, `RegistrationReportTests`, `ContainerBuilderExtensionsTests`, `GeneratedRegistrationIntegrationTests` (the last four are covered by ticket 04's SA1201 list but were the same underlying rule).
+- CS1734: `TimeoutBehavior`'s class-level `<remarks>` used `<paramref name="ct">` outside any member that declares `ct` - changed to `<c>ct</c>`.
+- CS1574: `Mediator.cs`'s doc referenced a since-renamed `DispatchViaReflectionAsync` (now `DispatchAsync`); `OutcomeCaseRegistryBuilder.cs` and `DefaultResponseOutcomeDescriber.cs` referenced the compiler-synthesized `IUnion` without the `System.Runtime.CompilerServices` qualification other files in the same namespace already use; `UnionCaseFactory.cs` referenced `Interlocutor.FluentValidation.ValidationBehavior{TRequest,TResponse}`, a type in a package `Interlocutor.Abstractions` architecturally cannot reference - changed to a `<c>` code span instead of a `cref`.
+- SA1618: added a `<typeparam name="T">` to `MediatorActivityTracingTests`'s `RecordingLogger<T>`.

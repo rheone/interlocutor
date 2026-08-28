@@ -1,3 +1,5 @@
+> **Status: done** - merged in `a5d96ca`.
+
 # 03 - IOutcomeCaseRegistry extension-point
 
 ## Labels

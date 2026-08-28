@@ -1,4 +1,4 @@
-Status: needs-triage
+Status: closed (implemented)
 
 ## Labels
 
@@ -24,12 +24,16 @@ Types (per [ADR-0017](../../../docs/adr/0017-optional-persistence-abstraction-re
 
 ## Acceptance criteria
 
-- [ ] `Interlocutor.Persistence.Abstractions` project exists, builds, has zero ORM/container `PackageReference`
-- [ ] `IUnitOfWork`, `IDomainRepository<TEntity,TKey>`, sort spec type(s), `SortDirection`, and the paging result type all exist with full XML docs
-- [ ] `GetById` is a default interface method built on the `IQueryable<TEntity>` escape hatch; unit tests cover it against a fake in-memory `IQueryable<TEntity>` implementation
-- [ ] `dotnet csharpier .` produces no diff
-- [ ] `dotnet build` and `dotnet test tests/Interlocutor.Persistence.Abstractions.Tests` pass
+- [x] `Interlocutor.Persistence.Abstractions` project exists, builds, has zero ORM/container `PackageReference`
+- [x] `IUnitOfWork`, `IDomainRepository<TEntity,TKey>`, sort spec type(s), `SortDirection`, and the paging result type all exist with full XML docs
+- [x] `GetById` is a default interface method built on the `IQueryable<TEntity>` escape hatch; unit tests cover it against a fake in-memory `IQueryable<TEntity>` implementation
+- [x] `dotnet csharpier .` produces no diff
+- [x] `dotnet build` and `dotnet test tests/Interlocutor.Persistence.Abstractions.Tests` pass
 
 ## Blocked by
 
 None - can start immediately.
+
+## Comments
+
+Verified already implemented (commit 024a606): `Interlocutor.Persistence.Abstractions` project builds with zero ORM/container dependency; `IUnitOfWork`, `IDomainRepository<TEntity,TKey>`, `SortCriterion`, `SortDirection`, and `Page<T>` all exist with XML docs. `dotnet test tests/Interlocutor.Persistence.Abstractions.Tests` passes (18/18). `dotnet csharpier check` is clean on this project.

@@ -1,7 +1,6 @@
 namespace Interlocutor.Persistence.EntityFrameworkCore.Tests;
 
 using Interlocutor.Abstractions.Commands;
-using Interlocutor.Abstractions.Markers;
 using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 using Interlocutor.Persistence.Abstractions;
@@ -11,10 +10,9 @@ using Microsoft.EntityFrameworkCore;
 /// <summary>
 /// Proves that <see cref="EntityFrameworkUnitOfWork{TContext}"/> and
 /// <see cref="EntityFrameworkRepository{TEntity,TKey,TContext}"/>, resolved from the same <c>Lazy&lt;TContext&gt;</c>,
-/// participate in the same <see cref="DbContext"/> instance that
-/// <c>Interlocutor.EntityFrameworkCore.TransactionBehavior{TRequest,TResponse,TContext}</c> sees for the same
-/// dispatch - the "same transaction and session" guarantee this package's <see cref="IUnitOfWork"/> façade
-/// relies on rather than re-implementing.
+/// participate in the same <see cref="DbContext"/> instance that <see cref="UnitOfWorkBehavior{TRequest,TResponse,TContext}"/>
+/// sees for the same dispatch - the "same transaction and session" guarantee this package's <see cref="IUnitOfWork"/>
+/// façade relies on rather than re-implementing.
 /// </summary>
 public sealed class SharedSessionIntegrationTests : IDisposable
 {
@@ -34,15 +32,13 @@ public sealed class SharedSessionIntegrationTests : IDisposable
     }
 
     [Fact]
-    public async Task RepositoryInsert_CommittedByTransactionBehavior_UsingSameLazyContext()
+    public async Task RepositoryInsert_CommittedByUnitOfWorkBehavior_UsingSameLazyContext()
     {
         // Arrange
         var repository = new EntityFrameworkRepository<Widget, int, TestDbContext>(this.lazyContext, w => w.Id);
-        var behavior = new Interlocutor.EntityFrameworkCore.TransactionBehavior<
-            TransactionalRequest,
-            OperationOutcome<Success, Failure>,
-            TestDbContext
-        >(this.lazyContext);
+        var behavior = new UnitOfWorkBehavior<TransactionalRequest, OperationOutcome<Success, Failure>, TestDbContext>(
+            this.lazyContext
+        );
 
         // Act
         var result = await behavior.Handle(
@@ -50,7 +46,7 @@ public sealed class SharedSessionIntegrationTests : IDisposable
             () =>
             {
                 // The repository resolves DbContext.Value from the exact same Lazy<TestDbContext> instance
-                // TransactionBehavior itself resolves - proving both see one shared scoped context.
+                // UnitOfWorkBehavior itself resolves - proving both see one shared scoped context.
                 repository.Query.ToList();
                 this.context.Widgets.Add(new Widget { Name = "shared-session" });
                 return Task.FromResult<OperationOutcome<Success, Failure>>(default(Success));
@@ -80,6 +76,10 @@ public sealed class SharedSessionIntegrationTests : IDisposable
         // Reading through the same in-process context (not a fresh one) confirms the insert and the save
         // ran against the identical DbContext instance the Lazy<TestDbContext> hands out.
         Assert.Equal(["via-unit-of-work"], this.context.Widgets.Select(w => w.Name));
+
+        // The unit of work opened a transaction as part of SaveChangesAsync - not left dangling open past
+        // this call for anyone else to accidentally commit/roll back beyond this test's own scope.
+        Assert.NotNull(this.context.Database.CurrentTransaction);
     }
 
     public void Dispose()
@@ -94,7 +94,7 @@ public sealed class SharedSessionIntegrationTests : IDisposable
         return new TestDbContext(options);
     }
 
-    private sealed record TransactionalRequest : ICommand<OperationOutcome<Success, Failure>>, ITransactionalRequest;
+    private sealed record TransactionalRequest : ICommand<OperationOutcome<Success, Failure>>;
 
     public sealed class Widget
     {

@@ -98,7 +98,7 @@ public sealed class InterlocutorPipelineBuilder
     /// <summary>
     /// Gets every registration this builder deliberately did not make, and why - currently only the
     /// silent optional-package probes behind <see cref="AddValidationBehavior"/> and
-    /// <see cref="AddTransactionBehavior"/> when the corresponding package is not referenced.
+    /// <see cref="AddUnitOfWorkBehavior"/> when the corresponding package is not referenced.
     /// </summary>
     /// <value>Every registration this builder deliberately did not make, and why.</value>
     public IReadOnlyList<SkippedRegistration> Skipped => this._skipped;
@@ -218,13 +218,21 @@ public sealed class InterlocutorPipelineBuilder
     }
 
     /// <summary>
-    /// Adds the EF Core or NHibernate <c>TransactionBehavior</c> at the current position in the chain,
-    /// preferring EF Core, if either store-specific package is referenced by the application. A no-op
-    /// when neither package is loaded.
+    /// Adds the EF Core or NHibernate <c>UnitOfWorkBehavior</c> - the unit-of-work-owned transaction
+    /// commit/rollback gate - at the current position in the chain, preferring EF Core, if either
+    /// store-specific persistence package is referenced by the application. A no-op when neither package is
+    /// loaded.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// EF Core's <c>TransactionBehavior&lt;TRequest,TResponse,TContext&gt;</c> is generic over the
+    /// Per <see href="../../../docs/adr/0018-unit-of-work-as-transaction-owner.md">ADR-0018</see>, this
+    /// behavior applies to every request once registered - no marker is required to participate. It opens a
+    /// transaction lazily the first time anything writes (or eagerly, at pipeline start, for a request
+    /// implementing <c>ITransactionalRequest</c>) and commits or rolls it back automatically based on the
+    /// outcome classifier's verdict.
+    /// </para>
+    /// <para>
+    /// EF Core's <c>UnitOfWorkBehavior&lt;TRequest,TResponse,TContext&gt;</c> is generic over the
     /// application's own <c>DbContext</c> type (<c>TContext</c>), unlike NHibernate's two-parameter
     /// equivalent. Under Microsoft DI, this method's plain, un-closed registration of that type only works
     /// when the application references NHibernate instead - Microsoft.Extensions.DependencyInjection
@@ -238,7 +246,7 @@ public sealed class InterlocutorPipelineBuilder
     /// Autofac has no such restriction and works with this method unchanged. Under Microsoft DI with EF
     /// Core, instead define a small subclass that closes <c>TContext</c> over the application's own
     /// <c>DbContext</c> type while leaving <c>TRequest</c>/<c>TResponse</c> open - for example
-    /// <c>class MyTransactionBehavior&lt;TRequest,TResponse&gt; : TransactionBehavior&lt;TRequest,TResponse,MyDbContext&gt;</c>
+    /// <c>class MyUnitOfWorkBehavior&lt;TRequest,TResponse&gt; : UnitOfWorkBehavior&lt;TRequest,TResponse,MyDbContext&gt;</c>
     /// - and register that subclass via <see cref="AddBehavior"/> instead of calling this method.
     /// </para>
     /// </remarks>
@@ -246,46 +254,51 @@ public sealed class InterlocutorPipelineBuilder
     [UnconditionalSuppressMessage(
         "Trimming",
         "IL2072:DynamicallyAccessedMembers",
-        Justification = "The probed type is Interlocutor.EntityFrameworkCore's or Interlocutor.NHibernate's own "
-            + "TransactionBehavior - found by name only to detect whether the peer package is referenced at "
-            + "all, never to discover a type unknown to the application. A consuming app that references "
-            + "either package already uses its DbContext/ISession types ordinarily elsewhere, which is what "
-            + "keeps this behavior's own members reachable independent of this reflective lookup."
+        Justification = "The probed type is Interlocutor.Persistence.EntityFrameworkCore's or "
+            + "Interlocutor.Persistence.NHibernate's own UnitOfWorkBehavior - found by name only to detect "
+            + "whether the peer package is referenced at all, never to discover a type unknown to the "
+            + "application. A consuming app that references either package already uses its DbContext/ISession "
+            + "types ordinarily elsewhere, which is what keeps this behavior's own members reachable "
+            + "independent of this reflective lookup."
     )]
-    public InterlocutorPipelineBuilder AddTransactionBehavior()
+    public InterlocutorPipelineBuilder AddUnitOfWorkBehavior()
     {
-        // EF Core's TransactionBehavior<TRequest,TResponse,TContext> is arity 3 (generic over the DbContext
-        // type too); NHibernate's TransactionBehavior<TRequest,TResponse> is arity 2 (ISession isn't generic).
+        // EF Core's UnitOfWorkBehavior<TRequest,TResponse,TContext> is arity 3 (generic over the DbContext
+        // type too); NHibernate's UnitOfWorkBehavior<TRequest,TResponse> is arity 2 (ISession isn't generic).
         // NHibernate is only probed - and only reported as skipped - when EF Core isn't found, preserving
         // the original short-circuit: a project referencing neither is silently skipped for both, one
         // referencing only NHibernate is skipped for EF Core alone.
-        var efCoreType = TryGetType("Interlocutor.EntityFrameworkCore.TransactionBehavior`3, Interlocutor.EntityFrameworkCore");
+        var efCoreType = TryGetType(
+            "Interlocutor.Persistence.EntityFrameworkCore.UnitOfWorkBehavior`3, Interlocutor.Persistence.EntityFrameworkCore"
+        );
         Type? nHibernateType = null;
         if (efCoreType is null)
         {
             this._skipped.Add(
                 new SkippedRegistration(
-                    "Interlocutor.EntityFrameworkCore.TransactionBehavior<,,>",
-                    "Interlocutor.EntityFrameworkCore package is not referenced by the application"
+                    "Interlocutor.Persistence.EntityFrameworkCore.UnitOfWorkBehavior<,,>",
+                    "Interlocutor.Persistence.EntityFrameworkCore package is not referenced by the application"
                 )
             );
 
-            nHibernateType = TryGetType("Interlocutor.NHibernate.TransactionBehavior`2, Interlocutor.NHibernate");
+            nHibernateType = TryGetType(
+                "Interlocutor.Persistence.NHibernate.UnitOfWorkBehavior`2, Interlocutor.Persistence.NHibernate"
+            );
             if (nHibernateType is null)
             {
                 this._skipped.Add(
                     new SkippedRegistration(
-                        "Interlocutor.NHibernate.TransactionBehavior<,>",
-                        "Interlocutor.NHibernate package is not referenced by the application"
+                        "Interlocutor.Persistence.NHibernate.UnitOfWorkBehavior<,>",
+                        "Interlocutor.Persistence.NHibernate package is not referenced by the application"
                     )
                 );
             }
         }
 
-        var transactionBehaviorType = efCoreType ?? nHibernateType;
-        if (transactionBehaviorType is not null)
+        var unitOfWorkBehaviorType = efCoreType ?? nHibernateType;
+        if (unitOfWorkBehaviorType is not null)
         {
-            this.AddBehavior(transactionBehaviorType);
+            this.AddBehavior(unitOfWorkBehaviorType);
         }
 
         return this;
@@ -376,7 +389,7 @@ public sealed class InterlocutorPipelineBuilder
             .AddAuditingBehavior()
             .AddAuthorizationBehavior()
             .AddValidationBehavior()
-            .AddTransactionBehavior();
+            .AddUnitOfWorkBehavior();
 
     /// <summary>
     /// Replaces the default <see cref="IAuditSink"/> implementation <see cref="AuditingBehavior{TRequest,TResponse}"/>

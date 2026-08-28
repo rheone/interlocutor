@@ -1,6 +1,6 @@
 namespace Interlocutor.Abstractions.Commands;
 
-using Interlocutor.CommonKernel;
+using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
 /// Handles a command that returns a typed response.
@@ -11,7 +11,7 @@ using Interlocutor.CommonKernel;
 /// <para>
 /// Use this handler for commands that mutate state and return domain data (e.g., <c>CreateUserCommand → UserDto</c>).
 /// For commands that produce only success/failure outcomes (not domain data), use <see cref="IVoidCommandHandler{TCommand, TResult}"/>
-/// instead, which returns an <see cref="Interlocutor.CommonKernel.IOperationOutcome"/> union.
+/// instead, which returns an <see cref="CommonKernel.ResultTypes.IOperationOutcome"/> union.
 /// </para>
 /// <para>
 /// Handlers are registered and discovered by the mediator via DI assembly scanning. Register each handler in
