@@ -15,7 +15,6 @@ using Interlocutor.CommonKernel.ResultTypes.Internal;
 /// Duplicate conflicts are automatically removed, preserving order of first occurrence.
 /// </para>
 /// </remarks>
-[Obsolete("May be overkill to include")]
 public readonly record struct Conflicts
 {
     private readonly DistinctItemSet<Conflict> _conflicts;

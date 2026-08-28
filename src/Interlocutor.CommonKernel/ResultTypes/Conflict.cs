@@ -1,6 +1,5 @@
 namespace Interlocutor.CommonKernel.ResultTypes;
 
-[Obsolete("May be overkill to include")]
 /// <summary>
 /// Represents a conflict error that occurred during command or query execution.
 /// </summary>
