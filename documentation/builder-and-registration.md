@@ -1,6 +1,6 @@
 # Builder & Registration
 
-How to register Interlocutor with dependency injection. Handlers can be discovered two ways - by scanning assemblies at runtime (`ScanAssembly` and friends), or additively by consuming compile-time source-generator output (`AddGeneratedRegistrations`) - and the pipeline is empty until you explicitly compose it; nothing runs by default.
+How to register Interlocutor with dependency injection. Handlers can be discovered two ways - by scanning assemblies at runtime (`ScanAssembly` and friends), or additively by consuming compile-time source-generator output (`AddGeneratedRegistrations`) - and the pipeline is empty until you explicitly compose it; nothing runs by default. See [Extensibility](extensibility.md) for how `AddTypeMatch`, `RequireUniqueClosure`/`Eject`, and the other hooks here fit into the library's broader extension points.
 
 ## The Builder
 

@@ -1,6 +1,6 @@
 # Pipeline & Behavior Composition
 
-The pipeline is the onion/Russian-doll model of cross-cutting concerns that wrap handler execution, and it's empty by default - nothing cross-cutting runs unless you explicitly compose it.
+The pipeline is the onion/Russian-doll model of cross-cutting concerns that wrap handler execution, and it's empty by default - nothing cross-cutting runs unless you explicitly compose it. See [Extensibility](extensibility.md) for how a custom marker interface, behavior, or outcome case fits into the picture end to end.
 
 ## No Default Pipeline
 

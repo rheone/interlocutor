@@ -40,11 +40,15 @@ Registering the library and understanding how a dispatch's scope and context flo
 
 ### Framework & store integration
 
-- [ASP.NET Core Integration & HTTP Mapping](aspnetcore-integration.md) - the `ToActionResult()` extension, status code mapping, `ValidationProblemDetails` and `ProblemDetails` (RFC 7807), custom mapping, minimal API usage, error handling.
+- [ASP.NET Core Integration & HTTP Mapping](aspnetcore-integration.md) - `ToActionResult()`/`ToMinimalApiResult()`, the status-code mapping table, `ProblemDetails` (RFC 7807), custom mapping via `IOutcomeStatusMapper`, error handling.
 - [Transactions & Store Integration](transactions-and-store-integration.md) - `Interlocutor.Persistence.EntityFrameworkCore` and `Interlocutor.Persistence.NHibernate`'s `UnitOfWorkBehavior`, `IUnitOfWork` as transaction owner, begin-on-first-write, the `ITransactionalRequest`/`IExternalStoreRequest` markers, `Cancel`, commit/rollback semantics, nested dispatch, notifications after commit.
 - [Persistence Abstraction](persistence-abstraction.md) - the optional, opt-in `IUnitOfWork`/`IDomainRepository<TEntity, TKey>` CRUD/paging surface, `Page<T>`, per-container registration, NHibernate session concurrency.
 - [Persistence Implementations](persistence-implementations.md) - what `EntityFrameworkUnitOfWork<TContext>`/`EntityFrameworkRepository<TEntity, TKey, TContext>` and `NHibernateUnitOfWork`/`NHibernateRepository<TEntity, TKey>` actually do underneath the interfaces, the shared filter/sort/paging query-composition helpers, and the behavioral differences between the two stores.
 - [Trim & AOT Support](trim-and-aot-support.md) - what "trim-compatible, not yet Native AOT-compatible" means in practice, the runtime-scanning trim cost, publishing trimmed, known limitations.
+
+### Extending the library
+
+- [Extensibility](extensibility.md) - a map of every point where a consumer plugs their own type in: marker interfaces, custom `IPipelineBehavior`/`IPipelineStage`, custom `IOperationOutcome` implementations, predicate-based registration, extending ambiguity checking to your own contracts, and per-request-type pipeline overrides.
 
 ### Testing
 
