@@ -6,7 +6,7 @@ namespace Interlocutor.Persistence.Abstractions;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Per <see href="../../docs/adr/0018-unit-of-work-as-transaction-owner.md">ADR-0018</see>, <see cref="IUnitOfWork"/>
+/// Per <see href="../../maintainer_docs/adr/0018-unit-of-work-as-transaction-owner.md">ADR-0018</see>, <see cref="IUnitOfWork"/>
 /// is the transaction owner - not a pure façade over a transaction some other component manages. The store-specific
 /// commit-gate behavior (<c>Interlocutor.Persistence.EntityFrameworkCore</c>'s or
 /// <c>Interlocutor.Persistence.NHibernate</c>'s <c>UnitOfWorkBehavior</c>) opens a transaction lazily the first

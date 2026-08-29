@@ -58,15 +58,19 @@ Each `src/*` project has a matching `tests/*.Tests` project (xunit.v3, NSubstitu
 
 ### Issue tracker
 
-Local markdown - issues live as files under `.scratch/<feature>/`. No PR triage. See `docs/agents/issue-tracker.md`.
+Local markdown - issues live as files under `.scratch/<feature>/`. No PR triage. See `maintainer_docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
-Default labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+Default labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `maintainer_docs/agents/triage-labels.md`.
 
 ### Domain docs
 
-Single-context: one `CONTEXT.md` and one `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+Single-context: one `CONTEXT.md` and one `maintainer_docs/adr/` at the repo root. See `maintainer_docs/agents/domain.md`.
+
+### Documentation maintenance
+
+Docs are updated in the same iteration as the code change that makes them stale, not batched into a separate later pass. See `maintainer_docs/agents/documentation-maintenance.md`.
 
 ## Code Style Enforcement
 
@@ -74,7 +78,7 @@ StyleCop + Roslynator analyzers run on every build (`Directory.Build.props`); `.
 
 ## House Style Conventions
 
-Every documentation file in this directory follows these conventions:
+Every file in `documentation/` follows these conventions:
 
 ### Content Rules
 
@@ -83,7 +87,8 @@ Every documentation file in this directory follows these conventions:
 - **Diagrams**: inline `​```mermaid` fences only. No standalone `.mmd` files - we don't have reuse-across-docs at scale yet.
 - **HTTP status codes**: only `aspnetcore-integration.md` is permitted to reference HTTP status codes. All other docs link there instead.
 - **Truthfulness**: every code example compiles against the shipped API. Claims are verified against `src/` code, not carried forward from older docs if they've been superseded.
-- **No internal design-record citations**: never cite or link to `docs/adr/`, `docs/PRD.md`, `docs/TODO.md`, or any other `docs/` path to justify a design choice - e.g. don't write "See ADR-0009 for the no-default-pipeline design" or "`docs/PRD.md` §9.2 has the full design." State the rationale itself, as fact, in this doc - the *why* stays, the citation to an internal decision record doesn't. `docs/` is internal maintainer documentation (see [`docs/README.md`](../docs/README.md)); a consumer reading this tree has no reason to open it. If a claim needs a pointer, link sideways to the sibling `documentation/` file that already covers it, never to `docs/`.
+- **No internal design-record citations**: never cite or link to `maintainer_docs/adr/`, `maintainer_docs/PRD.md`, `maintainer_docs/TODO.md`, or any other `maintainer_docs/` path to justify a design choice - e.g. don't write "See ADR-0009 for the no-default-pipeline design" or "`maintainer_docs/PRD.md` §9.2 has the full design." State the rationale itself, as fact, in this doc - the *why* stays, the citation to an internal decision record doesn't. `maintainer_docs/` is internal maintainer documentation (see [`maintainer_docs/README.md`](maintainer_docs/README.md)); a consumer reading this tree has no reason to open it. If a claim needs a pointer, link sideways to the sibling `documentation/` file that already covers it, never to `maintainer_docs/`.
+- **Glossary linking**: the first mention of a term defined in `documentation/glossary.md` within a given file links to its glossary entry. Skip the link on later mentions in the same file, and skip it entirely when the file already explains the term inline in its own context - the glossary is for a reader who hasn't seen the term yet, not a mandatory backlink on every occurrence.
 
 ## TBD sections
 

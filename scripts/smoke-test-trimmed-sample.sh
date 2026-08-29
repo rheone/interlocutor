@@ -5,7 +5,7 @@
 #
 # A build that produces zero trim warnings is not proof the app works: this exact sample built warning-free
 # and crashed on every request the first two times its trim story was checked in this repo (see
-# docs/adr/0016-trim-compatible-not-aot-compatible.md and documentation/trim-and-aot-support.md). This script
+# maintainer_docs/adr/0016-trim-compatible-not-aot-compatible.md and documentation/trim-and-aot-support.md). This script
 # exists so that mistake can't happen silently again - CI must run it, not just publish.
 #
 # Usage: scripts/smoke-test-trimmed-sample.sh <path-to-published-binary> [port]

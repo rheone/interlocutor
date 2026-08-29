@@ -476,7 +476,7 @@ public static class ResultExtensions
             + "ahead-of-time compilation: every case type is a readonly record struct, and value-type generic "
             + "instantiations are not shared, so MakeGenericMethod needs a JIT here. This package is marked "
             + "IsTrimmable, deliberately not IsAotCompatible, for exactly that reason - see "
-            + "docs/research/native-aot-and-trimming-options.md."
+            + "maintainer_docs/research/native-aot-and-trimming-options.md."
     )]
     private static OutcomeHttpMapping InvokeMap(IOutcomeStatusMapper mapper, Type failureType, object? failureValue)
     {

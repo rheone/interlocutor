@@ -3,7 +3,7 @@
     <Description>Container/ORM-neutral persistence abstraction for Interlocutor. Provides IUnitOfWork and IDomainRepository, an optional opt-in CRUD/paging surface over the same scoped session IUnitOfWork owns the transaction for.</Description>
     <!-- Trim-compatible, deliberately NOT IsAotCompatible: OperationOutcome<...> is a value type, so the
          container cannot close IPipelineBehavior<TRequest,TResponse> over it without a JIT. Tracked at
-         .scratch/aot-support/map.md; see docs/research/native-aot-and-trimming-options.md for the evidence. -->
+         .scratch/aot-support/map.md; see maintainer_docs/research/native-aot-and-trimming-options.md for the evidence. -->
     <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 

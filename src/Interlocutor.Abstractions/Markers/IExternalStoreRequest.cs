@@ -14,7 +14,7 @@ namespace Interlocutor.Abstractions.Markers;
 /// by the store-specific commit-gate behavior, regardless of whether it happens to touch the scoped
 /// session and regardless of whether it also implements <see cref="ITransactionalRequest"/> - this marker's
 /// meaning and mechanism are unchanged by
-/// <see href="../../../docs/adr/0018-unit-of-work-as-transaction-owner.md">ADR-0018</see>. Use this when your
+/// <see href="../../../maintainer_docs/adr/0018-unit-of-work-as-transaction-owner.md">ADR-0018</see>. Use this when your
 /// handler manages its own external transaction scope.
 /// </para>
 /// </remarks>

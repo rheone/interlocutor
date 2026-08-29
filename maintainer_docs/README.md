@@ -60,6 +60,7 @@ Immutable once accepted - a changed decision gets a new ADR that supersedes the 
 - [domain.md](agents/domain.md) - how engineering skills consume this repo's domain documentation.
 - [issue-tracker.md](agents/issue-tracker.md) - the local `.scratch/` markdown issue tracker: file layout, ticket format, numbering convention.
 - [triage-labels.md](agents/triage-labels.md) - triage role → label mapping used across `.scratch/` tickets.
+- [documentation-maintenance.md](agents/documentation-maintenance.md) - keeping `documentation/` and `maintainer_docs/` in sync with each code change, instead of batching documentation into a separate pass.
 
 ## Historical: bootstrapreference/
 

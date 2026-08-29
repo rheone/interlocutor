@@ -1,6 +1,6 @@
 # Interlocutor Documentation
 
-This directory contains reference documentation for developers using Interlocutor. If you're building or maintaining *this repository* rather than consuming it as a library, see [docs/README.md](../docs/README.md) instead.
+This directory contains reference documentation for developers using Interlocutor. If you're building or maintaining *this repository* rather than consuming it as a library, see [maintainer_docs/README.md](../maintainer_docs/README.md) instead.
 
 ## Table of contents
 

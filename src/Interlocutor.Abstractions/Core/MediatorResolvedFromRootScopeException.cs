@@ -8,7 +8,7 @@ namespace Interlocutor.Abstractions.Core;
 /// </summary>
 /// <remarks>
 /// <para>
-/// See <see href="../../docs/adr/0011-mediator-scoped-lifetime-and-root-scope-guard.md">ADR-0011</see>. The
+/// See <see href="../../maintainer_docs/adr/0011-mediator-scoped-lifetime-and-root-scope-guard.md">ADR-0011</see>. The
 /// mediator interfaces are registered scoped and non-configurable; the one genuinely dangerous misuse - a
 /// singleton (a background service, a hosted service, a cache) capturing the mediator at construction time -
 /// resolves it from the root provider exactly once and holds onto that instance for the life of the process.

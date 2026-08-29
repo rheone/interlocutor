@@ -3,7 +3,7 @@
     <Description>Container-neutral dependency-injection registration abstractions for Interlocutor. Owns the neutral registration record that the Microsoft DI and Autofac packages translate into their own primitives.</Description>
     <!-- Trim-compatible, deliberately NOT IsAotCompatible: OperationOutcome<...> is a value type, so the
          container cannot close IPipelineBehavior<TRequest,TResponse> over it without a JIT. Tracked at
-         .scratch/aot-support/map.md; see docs/research/native-aot-and-trimming-options.md for the evidence. -->
+         .scratch/aot-support/map.md; see maintainer_docs/research/native-aot-and-trimming-options.md for the evidence. -->
     <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 

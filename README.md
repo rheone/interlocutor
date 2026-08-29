@@ -123,7 +123,7 @@ For people using Interlocutor as a library in their own application:
 
 For contributors and maintainers working on *this repository* - not needed to use the library:
 
-- **[Developer documentation index](docs/README.md)** - Architecture Decision Records, the project PRD, contributor guides, and agent process docs.
+- **[Developer documentation index](maintainer_docs/README.md)** - Architecture Decision Records, the project PRD, contributor guides, and agent process docs.
 
 ## License
 

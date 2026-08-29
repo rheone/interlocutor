@@ -38,7 +38,7 @@ public readonly record struct InterlocutorRegistration(
     // Both targets are required: [property: ...] alone annotates the generated property but leaves the
     // primary constructor's own parameter unannotated, and the constructor body assigning that parameter to
     // the property's backing field is exactly what a whole-program trim pass (unlike the per-project
-    // analyzer) checks - see docs/research/native-aot-and-trimming-options.md §7.2.
+    // analyzer) checks - see maintainer_docs/research/native-aot-and-trimming-options.md §7.2.
     [property: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
     // SA1137 vs. csharpier: csharpier indents a parameter one level deeper than the attribute annotating it,
     // which SA1137 then flags as inconsistent sibling indentation. Suppressed rather than fighting the formatter.
