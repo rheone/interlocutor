@@ -1,4 +1,4 @@
-Status: open
+Status: done
 
 ## Labels
 
@@ -15,11 +15,15 @@ ready-for-agent
 
 ## Acceptance criteria
 
-- [ ] `UpdateTodoTaskCommand`/`UpdateTodoTaskHandler` exist, XML-documented, explain the load/authorize/handle template and point at ticket 09's contrasting authorization style
-- [ ] Unit tests: success, not-found, wrong-owner `Failure`
-- [ ] HTTP integration test: the task's owner can update it; a different authenticated user gets a failure response; a missing task returns not-found
-- [ ] `dotnet build`, `dotnet test`, `dotnet csharpier .` all clean
+- [x] `UpdateTodoTaskCommand`/`UpdateTodoTaskHandler` exist, XML-documented, explain the load/authorize/handle template and point at ticket 09's contrasting authorization style
+- [x] Unit tests: success, not-found, wrong-owner `Failure`
+- [x] HTTP integration test: the task's owner can update it; a different authenticated user gets a failure response; a missing task returns not-found
+- [x] `dotnet build`, `dotnet test`, `dotnet csharpier .` all clean (875/875 solution-wide)
 
 ## Blocked by
 
 05
+
+## Comments
+
+**Third guide-vs-shipped-library gap found** (after ticket 03's classifier registration and ticket 05's `Conflict` argument order): `ResourceCommandHandler<TCommand,TEntity,TSuccess>` does **not** implement `ICommandHandler<TCommand,TResponse>` (confirmed against the shipped source in `src/Interlocutor.Abstractions/Commands/ResourceCommandHandler.cs`, not assumed) - subclassing it alone, exactly as the guide's own Step 7 example shows, is invisible to `ScanAssembly`'s handler discovery. Every dispatch to `UpdateTodoTaskCommand` threw `System.InvalidOperationException: The requested service '...ICommandHandler<UpdateTodoTaskCommand, ...>' has not been registered` until `UpdateTodoTaskHandler`'s own class declaration explicitly added `, ICommandHandler<UpdateTodoTaskCommand, OperationOutcome<TodoTaskDto, NotFound, Failure>>` alongside the `ResourceCommandHandler<...>` base - the base class's own public `Handle` method already matches that interface's signature exactly, so no override body is needed, just the declaration. Documented in the handler's own remarks. This project has only the one `ResourceCommandHandler` subclass, so no other ticket needs this note - but if a future advanced-feature ticket adds another one, it needs the same explicit interface declaration.

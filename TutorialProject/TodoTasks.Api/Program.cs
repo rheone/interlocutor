@@ -11,6 +11,7 @@ using TodoTasks.Api.Domain;
 using TodoTasks.Api.Features.Tasks.CreateTodoTask;
 using TodoTasks.Api.Features.Tasks.GetTodoTaskById;
 using TodoTasks.Api.Features.Tasks.ListTodoTasks;
+using TodoTasks.Api.Features.Tasks.UpdateTodoTask;
 using TodoTasks.Api.Features.Users.CreateUser;
 using TodoTasks.Api.Features.Users.GetUserById;
 using TodoTasks.Api.Infrastructure;
@@ -158,6 +159,7 @@ app.MapGetUserByIdEndpoint();
 app.MapCreateTodoTaskEndpoint();
 app.MapGetTodoTaskByIdEndpoint();
 app.MapListTodoTasksEndpoint();
+app.MapUpdateTodoTaskEndpoint();
 
 app.Run();
 
