@@ -46,11 +46,30 @@
   <!-- NHibernate -->
   <ItemGroup>
     <PackageVersion Include="NHibernate" Version="5.7.0" />
+    <!-- Fluent NHibernate mapping, used by TutorialProject/TodoTasks.Api. -->
+    <PackageVersion Include="FluentNHibernate" Version="3.4.0" />
+    <!-- NHibernate 5.7.0 ships exactly two SQLite drivers - SQLite20Driver (wraps System.Data.SQLite)
+         and CsharpSqliteDriver - and no Microsoft.Data.Sqlite-based one at all (verified against the
+         shipped assembly, not assumed). TutorialProject/TodoTasks.Api's in-memory database needs
+         System.Data.SQLite.Core to pair with NHibernate's own SQLite20Driver. -->
+    <PackageVersion Include="System.Data.SQLite.Core" Version="1.0.119" />
   </ItemGroup>
   <!-- Autofac -->
   <ItemGroup>
     <PackageVersion Include="Autofac" Version="9.3.2" />
     <PackageVersion Include="Autofac.Extensions.DependencyInjection" Version="11.0.2" />
+  </ItemGroup>
+  <!-- ASP.NET Core integration testing (WebApplicationFactory) - used by TodoTasks.Api.Tests' HTTP layer.
+       Pinned to preview.6, matching the actually-installed Microsoft.AspNetCore.App/Microsoft.NETCore.App
+       shared framework (see global.json's SDK pin) - not preview.7 like the other Microsoft.Extensions.*
+       packages above. WebApplicationFactory<Program> boots the real Program.cs, which (unlike the other
+       preview.7-pinned packages' own test usage elsewhere in this repo) actually loads appsettings.json
+       through the file-watching config provider, and preview.7's Microsoft.Extensions.Configuration.Json
+       calls a Microsoft.Extensions.Primitives.ChangeToken.OnChange overload the installed preview.6
+       shared framework doesn't have - a genuine binary mismatch (MissingMethodException at run time, not
+       a build-time error), not a mistake in this project's own code. -->
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="11.0.0-preview.6.26359.118" />
   </ItemGroup>
   <!-- xUnit v3 + MTP test packages -->
   <ItemGroup>
