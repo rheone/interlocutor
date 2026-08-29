@@ -80,9 +80,9 @@ Backlog (`needs-triage`, deferred - do not start until explicitly promoted to `r
 - [ ] **17 - Second custom pipeline behavior (slow-handler warning)**
 - [ ] **18 - Reordered pipeline (Validation before Authorization)**
 
-Discovered during ticket 12, out of scope for this effort (needs a maintainer decision, not mechanical doc-sync work) - not part of the active or backlog lists above:
+Discovered during ticket 12, resolved separately once the maintainer weighed in - not part of the active or backlog lists above:
 
-- [ ] **19 - CI's `trim-compatibility` job still references the deleted `samples/Interlocutor.Sample.WebApi`** - real, currently-broken CI (`dotnet restore samples/Interlocutor.Sample.WebApi` fails), missed by ticket 01's own reference sweep because it lives under `.github/`. See that ticket's own file for why this wasn't fixed inline.
+- [x] **19 - CI's `trim-compatibility` job still references the deleted `samples/Interlocutor.Sample.WebApi`** - real, currently-broken CI (`dotnet restore samples/Interlocutor.Sample.WebApi` fails), missed by ticket 01's own reference sweep because it lives under `.github/`. Maintainer decided against retrofitting trim-compat into `TutorialProject/TodoTasks.Api` (out of scope for this proof-of-concept); resolved by removing the sample-dependent steps and keeping only the analyzer-level check. See that ticket's own file for the full account, including the resulting `documentation/trim-and-aot-support.md` correction.
 
 ## Process notes for whoever resumes this effort
 

@@ -27,7 +27,7 @@ jobs:
         run: dotnet test Interlocutor.slnx -c Release --no-build
 
   trim-compatibility:
-    name: Trim compatibility (the shipped support level - see ADR-0016)
+    name: Trim compatibility (analyzer-level only - see documentation/trim-and-aot-support.md)
     runs-on: ubuntu-24.04
     needs: build-and-test
     steps:
@@ -37,35 +37,19 @@ jobs:
         with:
           global-json-file: global.json
 
-      # A clean build is necessary but not sufficient - see the warning below. This step exists to catch a
-      # *regression* in the per-project trim analyzer as early and cheaply as possible, before the slower
-      # publish-and-run steps below even start. It intentionally does not include IL3xxx (AOT) codes: this
-      # library does not claim AOT compatibility (ADR-0016), so gating on those codes would fail the build
-      # over a promise this repo has explicitly chosen not to make yet.
+      # This is now the only step in this job. It used to be a cheap early gate ahead of a slower
+      # publish-and-run step that actually built and executed a trimmed sample end to end - that step,
+      # and the runnable sample it depended on, are gone (the sample was replaced by
+      # TutorialProject/TodoTasks.Api, which was never built with a trim-compat story in mind and isn't
+      # verified trim-safe - see .scratch/tutorial-project/issues/19-ci-trim-compatibility-job-references-deleted-sample.md
+      # for why this job wasn't simply repointed at it). A clean build here is necessary but not
+      # sufficient: it catches a regression in the per-project trim analyzer, but it does not prove a
+      # trimmed publish actually dispatches correctly at runtime the way the removed step did - see
+      # documentation/trim-and-aot-support.md for the currently-accurate claim about what this repo's
+      # trim-compatibility support actually verifies. It intentionally does not include IL3xxx (AOT)
+      # codes: this library does not claim AOT compatibility, so gating on those codes would fail the
+      # build over a promise this repo has explicitly chosen not to make yet.
       - name: Fail the build on any trim-analyzer regression in the shipping packages
         run: >-
           dotnet build Interlocutor.slnx -c Release
           -warnaserror:IL2026,IL2057,IL2060,IL2067,IL2068,IL2069,IL2070,IL2071,IL2072,IL2075,IL2080,IL2087,IL2090,IL2091
-
-      # Restored separately from publish: passing -p:PublishTrimmed=true directly to `dotnet publish` makes
-      # MSBuild apply it while restoring too, which fails restoring Interlocutor.Generator (netstandard2.0,
-      # analyzer-only - trimming requires .NET Core 3.0+). Restoring first, then publishing with --no-restore,
-      # avoids the RID/trim-aware restore graph walk that trips over it.
-      - name: Restore for the trimmed publish
-        run: dotnet restore samples/Interlocutor.Sample.WebApi -r linux-x64
-
-      - name: Publish the sample trimmed
-        run: >-
-          dotnet publish samples/Interlocutor.Sample.WebApi -c Release -r linux-x64
-          --self-contained --no-restore -p:PublishTrimmed=true
-          -o publish/trimmed-sample
-
-      # The single most important step in this job. A trimmed publish can build with zero analyzer warnings
-      # and still crash on every request - this repo has hit that failure mode twice already (once from the
-      # library's own pipeline composition, once from EF Core's model validation - see
-      # docs/adr/0016-trim-compatible-not-aot-compatible.md and documentation/trim-and-aot-support.md). A
-      # gate that only builds or only publishes proves nothing; this one has to actually run the binary.
-      - name: Run the trimmed publish and smoke-test every dispatch path
-        run: |
-          chmod +x publish/trimmed-sample/Interlocutor.Sample.WebApi
-          ./scripts/smoke-test-trimmed-sample.sh publish/trimmed-sample/Interlocutor.Sample.WebApi

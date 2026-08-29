@@ -2,8 +2,10 @@
 
 > [!IMPORTANT]
 > **Interlocutor is trim-compatible. It is not currently compatible with ahead-of-time compilation.**
-> Every shipping package is marked trimmable and builds clean under trim analysis, and a trimmed
-> application dispatches correctly - verified end to end, not just at the analyzer level. Publishing
+> Every shipping package is marked trimmable and builds clean under trim analysis - CI fails the build on
+> any trim-analyzer regression. A trimmed, self-contained publish has previously been verified end to end
+> (built, published, and actually run against every dispatch path) rather than only at the analyzer level,
+> but that runtime verification is not currently part of CI - see Known limitations below. Publishing
 > ahead-of-time compiled (`PublishAot=true`) does **not** work: it produces a warning-free build that then
 > fails every dispatch at runtime.
 
@@ -61,13 +63,20 @@ dotnet publish -c Release -p:PublishTrimmed=true -r <your-runtime-identifier> --
 ```
 
 Every dispatch path exercised by ordinary usage - typed `Send`/`Publish` calls, pipeline behaviors,
-notification fan-out, the ASP.NET Core outcome mapping - is verified working under this publish mode. If
-your application also calls one of the runtime scanning methods above, resolve the `RequiresUnreferencedCode`
-warning it produces before trusting the trimmed output for that path: either keep the assembly it scans
-un-trimmed, or move that registration to compile-time discovery instead.
+notification fan-out, the ASP.NET Core outcome mapping - has previously been verified working under this
+publish mode, built and actually run, not just built (see the Known limitations note on CI coverage below).
+If your application also calls one of the runtime scanning methods above, resolve the
+`RequiresUnreferencedCode` warning it produces before trusting the trimmed output for that path: either keep
+the assembly it scans un-trimmed, or move that registration to compile-time discovery instead.
 
 ## Known limitations
 
+- **The end-to-end runtime verification is not currently automated in CI.** It previously ran against a
+  dedicated runnable sample project that has since been removed; CI now only fails the build on a
+  trim-analyzer regression (`IL2026` and friends), which catches a large class of trim-unsafe code but does
+  not prove a trimmed publish actually dispatches correctly at runtime the way running one does. Rebuilding
+  that runtime verification is tracked separately and deliberately hasn't been folded into any other
+  in-flight project's scope.
 - **No Native AOT support today.** See "Why ahead-of-time compilation doesn't work yet" above. There is no
   workaround that keeps the library's pipeline-behavior composition working under `PublishAot=true`.
 - **JSON serialization for HTTP bodies still needs your own attention under trimming.** `ToActionResult()`
