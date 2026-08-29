@@ -224,7 +224,11 @@ public sealed class OutcomeClassifierBuilder
     }
 }
 
+#pragma warning disable SA1402 // Allowing this small support type to stay co-located with the builder that owns it
+
 /// <summary>
 /// Describes how an outcome type is classified (success vs. failure, with human-readable label).
 /// </summary>
 internal sealed record class OutcomeClassification(string Label, bool IsFailure);
+
+#pragma warning restore SA1402

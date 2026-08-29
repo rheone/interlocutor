@@ -54,6 +54,9 @@ public class AuditableTestQueryHandler : IQueryHandler<AuditableTestQuery, Opera
 /// <summary>A marker-constrained behavior - registered as an open generic, like the library's own
 /// <see cref="AuditingBehavior{TRequest,TResponse}"/> - that would resolve for any <see cref="IAuditableRequest"/>
 /// via the container's ordinary open-generic resolution unless an override rule excludes it.</summary>
+/// <typeparam name="TRequest">The request type, constrained to <see cref="IAuditableRequest"/> so the container's
+/// open-generic resolution considers this behavior a candidate for any marker-implementing request.</typeparam>
+/// <typeparam name="TResponse">The response type flowing through this behavior unchanged.</typeparam>
 public class MarkerConstrainedTrackingBehavior<TRequest, TResponse>(Action track) : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IAuditableRequest
 {
@@ -87,6 +90,9 @@ public class EjectingQueryHandler : IQueryHandler<TestQuery, OperationOutcome<in
 
 /// <summary>A behavior that ejects before calling <c>next()</c> - the handler (and any behavior further in)
 /// must never run.</summary>
+/// <typeparam name="TRequest">The request type, unconstrained since this behavior never inspects it.</typeparam>
+/// <typeparam name="TResponse">The response type, constrained to <see cref="IOperationOutcome"/> so
+/// <paramref name="response"/> can be ejected via <see cref="Eject.With{TResult}(TResult)"/>.</typeparam>
 public class EjectingBeforeNextBehavior<TRequest, TResponse>(TResponse response) : IPipelineBehavior<TRequest, TResponse>
     where TResponse : IOperationOutcome
 {
@@ -97,6 +103,9 @@ public class EjectingBeforeNextBehavior<TRequest, TResponse>(TResponse response)
 /// <summary>A behavior that always throws a plain <see cref="InvalidOperationException"/> - used to prove the
 /// eject catch added to every composition site is scoped to <see cref="PipelineEjectException{TResponse}"/>
 /// only, and does not swallow an unrelated fault.</summary>
+/// <typeparam name="TRequest">The request type, unconstrained since this behavior never inspects it before
+/// throwing.</typeparam>
+/// <typeparam name="TResponse">The response type, unconstrained since this behavior never produces one.</typeparam>
 public class ThrowingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
 {
     public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
@@ -106,6 +115,9 @@ public class ThrowingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest,
 /// <summary>A behavior that calls <c>next()</c> first, then ejects from its own post-<c>next()</c> logic -
 /// proving the eject is recovered at this behavior's own call site, not only when thrown straight from a
 /// handler.</summary>
+/// <typeparam name="TRequest">The request type, unconstrained since this behavior never inspects it.</typeparam>
+/// <typeparam name="TResponse">The response type, constrained to <see cref="IOperationOutcome"/> so
+/// <paramref name="response"/> can be ejected via <see cref="Eject.With{TResult}(TResult)"/>.</typeparam>
 public class EjectingAfterNextBehavior<TRequest, TResponse>(TResponse response) : IPipelineBehavior<TRequest, TResponse>
     where TResponse : IOperationOutcome
 {
@@ -119,6 +131,9 @@ public class EjectingAfterNextBehavior<TRequest, TResponse>(TResponse response) 
 /// <summary>A tracking behavior an override rule can name to keep in a matched request's resolved chain -
 /// a distinct type from <see cref="DroppedTrackingBehavior{TRequest,TResponse}"/> so
 /// <c>PipelineChainResolver</c>'s type-based matching can tell the two apart.</summary>
+/// <typeparam name="TRequest">The request type, unconstrained - only this behavior's own type identity matters
+/// to the override-rule matching under test.</typeparam>
+/// <typeparam name="TResponse">The response type flowing through this behavior unchanged.</typeparam>
 public class KeptTrackingBehavior<TRequest, TResponse>(Action<string> track) : IPipelineBehavior<TRequest, TResponse>
 {
     public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
@@ -131,6 +146,9 @@ public class KeptTrackingBehavior<TRequest, TResponse>(Action<string> track) : I
 /// <summary>A tracking behavior registered as part of the general-purpose baseline but never named by an
 /// override rule - used to prove it is excluded once a rule matches. See
 /// <see cref="KeptTrackingBehavior{TRequest,TResponse}"/>.</summary>
+/// <typeparam name="TRequest">The request type, unconstrained - only this behavior's own type identity matters
+/// to the override-rule matching under test.</typeparam>
+/// <typeparam name="TResponse">The response type flowing through this behavior unchanged.</typeparam>
 public class DroppedTrackingBehavior<TRequest, TResponse>(Action<string> track) : IPipelineBehavior<TRequest, TResponse>
 {
     public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)

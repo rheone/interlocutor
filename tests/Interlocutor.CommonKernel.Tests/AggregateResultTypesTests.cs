@@ -9,6 +9,8 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </summary>
 public class AggregateResultTypesTests
 {
+    private static readonly string[] Messages = ["Email is required", "Name is required"];
+
     [Fact]
     public void ValidationErrors_DefaultValue_CountIsZero()
     {
@@ -500,8 +502,6 @@ public class AggregateResultTypesTests
         // Arrange & Act & Assert
         Assert.Equal("ValidationErrors", default(ValidationErrors).ToString());
     }
-
-    private static readonly string[] Messages = ["Email is required", "Name is required"];
 
     [Fact]
     public void ValidationErrors_NonEmpty_ToString_JoinsMessages()

@@ -11,6 +11,8 @@ using Interlocutor.CommonKernel.ResultTypes;
 
 public class ServiceCollectionExtensionsTests
 {
+    private static readonly string[] Expected = ["open-enter", "closed-enter", "handle", "closed-exit", "open-exit"];
+
     [Fact]
     public void AddInterlocutor_RegistersMediatorAsScoped()
     {
@@ -95,8 +97,6 @@ public class ServiceCollectionExtensionsTests
         Assert.NotNull(describer);
         Assert.IsType<DefaultResponseOutcomeDescriber>(describer);
     }
-
-    private static readonly string[] Expected = ["open-enter", "closed-enter", "handle", "closed-exit", "open-exit"];
 
     /// <summary>
     /// Regression test for the closed-generic behavior registration defect (ticket

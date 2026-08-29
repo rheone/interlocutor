@@ -5,6 +5,7 @@
 - `src/Interlocutor.Persistence.NHibernate/NHibernateUnitOfWork.cs` (2 occurrences)
 - `src/Interlocutor.Persistence.NHibernate/UnitOfWorkBehavior.cs` (3 occurrences, plus one stale `<see cref="ISession.Transaction"/>` doc-comment reference to update alongside)
 - `tests/TodoTasks.Api.Tests/Persistence/DeleteUserCascadeTests.cs` (1 occurrence - TutorialProject's own persistence test, already runs against a real in-memory NHibernate session, not a mock, so this is a same-kind mechanical fix: calls `.Commit()` directly on the result)
+- `tests/TodoTasks.Api.Tests/Persistence/SyncAwareCompleteTodoTaskRollbackTests.cs` (2 occurrences - same pattern as `DeleteUserCascadeTests.cs` above: a real fixture session, not a mock, one an explicit `.Transaction.Commit()` and one an `Assert.False(session.Transaction is { IsActive: true })` assertion. This file's own comment already flagged `ISession.Transaction` as obsolete and deferred to this ticket rather than picking its own replacement ad hoc)
 
 This ticket is deliberately narrow: it doesn't touch the NSubstitute-mocked `ISession.Transaction` stubs in `tests/Interlocutor.Persistence.NHibernate.Tests/UnitOfWorkBehaviorTests.cs`, `tests/Interlocutor.Persistence.NHibernate.Tests/SharedSessionIntegrationTests.cs`, or `tests/Interlocutor.DependencyInjection.Microsoft.Tests/PipelineOrderingIntegrationTests.cs` - `GetCurrentTransaction()` is a static extension method, not mockable via NSubstitute, so those files can't follow the same fix. See ticket 08, which replaces the mocking approach itself rather than papering over it with a suppression.
 
@@ -12,7 +13,7 @@ This ticket is deliberately narrow: it doesn't touch the NSubstitute-mocked `ISe
 
 **Status:** ready-for-agent
 
-- [ ] `dotnet build` reports zero `CS0618` warnings for `ISession.Transaction` in `src/Interlocutor.Persistence.NHibernate` or `tests/TodoTasks.Api.Tests`
+- [ ] `dotnet build` reports zero `CS0618` warnings for `ISession.Transaction` in `src/Interlocutor.Persistence.NHibernate` or `tests/TodoTasks.Api.Tests` (including both `SyncAwareCompleteTodoTaskRollbackTests.cs` occurrences)
 - [ ] Every production call site (`NHibernateUnitOfWork.cs`, `UnitOfWorkBehavior.cs`) uses `GetCurrentTransaction()` with an explicit null check, preserving the exact same active/inactive-transaction logic as today
 - [ ] The stale `<see cref="ISession.Transaction"/>` doc-comment reference in `UnitOfWorkBehavior.cs` is updated to reference `GetCurrentTransaction()` instead
 - [ ] `dotnet test` passes for `Interlocutor.Persistence.NHibernate.Tests` and `TodoTasks.Api.Tests` with no behavior change (the mocked tests in `Interlocutor.Persistence.NHibernate.Tests` still pass as-is, still stubbing the now-more-obsolete `ISession.Transaction` - ticket 08 replaces them, not this one), and the full solution `dotnet test` remains green

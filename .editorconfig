@@ -493,14 +493,14 @@ dotnet_diagnostic.SA1000.severity = Suggestion   # Keywords should be followed b
 dotnet_diagnostic.SA1003.severity = Suggestion   # Symbols should be spaced correctly
 dotnet_diagnostic.SA1005.severity = Suggestion   # Single-line comments should begin with a space
 dotnet_diagnostic.SA1008.severity = Suggestion   # Opening parenthesis should be spaced correctly
-dotnet_diagnostic.SA1009.severity = Suggestion   # Closing parenthesis should be spaced correctly
+dotnet_diagnostic.SA1009.severity = None         # Closing parenthesis should be spaced correctly - csharpier's wrapped-call formatting can never satisfy this rule
 dotnet_diagnostic.SA1012.severity = Suggestion   # Opening brace should be spaced correctly
 dotnet_diagnostic.SA1013.severity = Suggestion   # Closing brace should be spaced correctly
 dotnet_diagnostic.SA1025.severity = Suggestion   # No multiple consecutive whitespace characters
 dotnet_diagnostic.SA1101.severity = Suggestion   # Prefix local calls with 'this.'
 
 dotnet_diagnostic.SA1108.severity = Suggestion   # Block statements should not contain embedded comments
-dotnet_diagnostic.SA1111.severity = Suggestion   # Closing parenthesis should be on same line as last parameter
+dotnet_diagnostic.SA1111.severity = None         # Closing parenthesis should be on same line as last parameter - csharpier's wrapped-call formatting can never satisfy this rule
 dotnet_diagnostic.SA1116.severity = Suggestion   # Split parameters should begin on line after declaration
 dotnet_diagnostic.SA1118.severity = None         # Parameters should not span multiple lines
 dotnet_diagnostic.SA1123.severity = None         # Do not place #region directives within elements
@@ -596,6 +596,12 @@ dotnet_diagnostic.CS8019.severity = None
 dotnet_diagnostic.SA1600.severity = None	# A C# code element is missing a documentation header.
 dotnet_diagnostic.SA1601.severity = None	# A C# partial element is missing a documentation header.
 dotnet_diagnostic.SA1602.severity = None	# An item within a C# enumeration is missing an Xml documentation header.
+
+# Test fixture files routinely declare several supporting types (records, marker interfaces,
+# handler stubs) ahead of the XxxTests class that uses them - relax the multi-type/file-name-match
+# rules here; both stay fully enforced in src/.
+dotnet_diagnostic.SA1402.severity = None	# File may only contain a single type.
+dotnet_diagnostic.SA1649.severity = None	# File name must match first type name.
 
 # Sonar
 dotnet_diagnostic.S4114.severity = Suggestion   # Methods should not have identical implementations

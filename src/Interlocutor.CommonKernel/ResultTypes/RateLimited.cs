@@ -18,7 +18,6 @@ namespace Interlocutor.CommonKernel.ResultTypes;
 /// mapping to a <c>Retry-After</c> response header) belongs in the ASP.NET Core integration layer, not here.
 /// </para>
 /// </remarks>
-[Obsolete("May be overkill to include")]
 public readonly record struct RateLimited(string LimitKey, TimeSpan? RetryAfter = null, string? Message = null)
 {
     /// <summary>

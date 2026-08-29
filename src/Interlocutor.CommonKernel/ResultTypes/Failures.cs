@@ -2,6 +2,8 @@ namespace Interlocutor.CommonKernel.ResultTypes;
 
 using Interlocutor.CommonKernel.ResultTypes.Internal;
 
+#pragma warning disable SA1402 // Allowing multiple types of same name with differet arity
+
 /// <summary>
 /// Represents an immutable collection of one or more generic failure reasons, with no associated error codes.
 /// </summary>
@@ -198,3 +200,5 @@ public readonly record struct Failures<TErrorCode>
     /// </returns>
     public override string ToString() => this.Reasons.Count == 0 ? "Failures" : $"Failures: {string.Join(", ", this.Reasons)}";
 }
+
+#pragma warning restore SA1402

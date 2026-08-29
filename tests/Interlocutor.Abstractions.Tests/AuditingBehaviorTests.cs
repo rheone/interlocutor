@@ -14,6 +14,8 @@ using NSubstitute;
 // instead: see BehaviorSubsetConstraintTests in the DependencyInjection.Microsoft/Autofac test projects.
 public class AuditingBehaviorTests
 {
+    private static readonly string[] Expected = ["handler", "audit"];
+
     [Fact]
     public async Task Handle_RecordsAuditEntryForAuditableRequest()
     {
@@ -98,8 +100,6 @@ public class AuditingBehaviorTests
         // Assert
         await sink.Received(1).RecordAsync(Arg.Is<AuditEntry>(e => e.Outcome == "Failure"), CancellationToken.None);
     }
-
-    private static readonly string[] Expected = ["handler", "audit"];
 
     [Fact]
     public async Task Handle_RecordsAuditEntryAfterHandlerCompletes()

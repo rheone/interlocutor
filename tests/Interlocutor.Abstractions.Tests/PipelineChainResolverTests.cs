@@ -10,36 +10,6 @@ using Microsoft.Extensions.DependencyInjection;
 /// </summary>
 public class PipelineChainResolverTests
 {
-    private sealed record MarkedRequest;
-
-    private sealed class FakeOverrideRegistry(Func<Type, IReadOnlyList<Type>?> lookup) : IPipelineOverrideRegistry
-    {
-        public bool TryGetOverride(Type requestType, out IReadOnlyList<Type> behaviorTypes)
-        {
-            var found = lookup(requestType);
-            behaviorTypes = found ?? [];
-            return found is not null;
-        }
-    }
-
-    private sealed class AlphaBehavior(List<string> log) : IPipelineBehavior<MarkedRequest, string>
-    {
-        public Task<string> Handle(MarkedRequest request, Func<Task<string>> next, CancellationToken ct)
-        {
-            log.Add("alpha");
-            return next();
-        }
-    }
-
-    private sealed class BetaBehavior(List<string> log) : IPipelineBehavior<MarkedRequest, string>
-    {
-        public Task<string> Handle(MarkedRequest request, Func<Task<string>> next, CancellationToken ct)
-        {
-            log.Add("beta");
-            return next();
-        }
-    }
-
     [Fact]
     public void ResolveChain_NoOverrideRegistryRegistered_ReturnsBaselineInRegistrationOrder()
     {
@@ -134,6 +104,36 @@ public class PipelineChainResolverTests
 
         // Assert
         Assert.Equal([typeof(NamedStringBehavior)], chain.Select(b => b.GetType()));
+    }
+
+    private sealed record MarkedRequest;
+
+    private sealed class FakeOverrideRegistry(Func<Type, IReadOnlyList<Type>?> lookup) : IPipelineOverrideRegistry
+    {
+        public bool TryGetOverride(Type requestType, out IReadOnlyList<Type> behaviorTypes)
+        {
+            var found = lookup(requestType);
+            behaviorTypes = found ?? [];
+            return found is not null;
+        }
+    }
+
+    private sealed class AlphaBehavior(List<string> log) : IPipelineBehavior<MarkedRequest, string>
+    {
+        public Task<string> Handle(MarkedRequest request, Func<Task<string>> next, CancellationToken ct)
+        {
+            log.Add("alpha");
+            return next();
+        }
+    }
+
+    private sealed class BetaBehavior(List<string> log) : IPipelineBehavior<MarkedRequest, string>
+    {
+        public Task<string> Handle(MarkedRequest request, Func<Task<string>> next, CancellationToken ct)
+        {
+            log.Add("beta");
+            return next();
+        }
     }
 
     private sealed class NamedStringBehavior(string name, List<string> log) : IPipelineBehavior<string, string>
