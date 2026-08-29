@@ -96,6 +96,8 @@ public class ServiceCollectionExtensionsTests
         Assert.IsType<DefaultResponseOutcomeDescriber>(describer);
     }
 
+    private static readonly string[] Expected = ["open-enter", "closed-enter", "handle", "closed-exit", "open-exit"];
+
     /// <summary>
     /// Regression test for the closed-generic behavior registration defect (ticket
     /// audit-followups/13): an open-generic implementation (<see cref="OpenGenericBehavior{TRequest,TResponse}"/>)
@@ -130,7 +132,7 @@ public class ServiceCollectionExtensionsTests
         var result = await mediator.Send(new RegressionQuery(), TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.Equal(new[] { "open-enter", "closed-enter", "handle", "closed-exit", "open-exit" }, executionOrder);
+        Assert.Equal(Expected, executionOrder);
         Assert.Equal("regression-handled", result.Value);
     }
 

@@ -15,6 +15,7 @@ public sealed class EntityFrameworkRepositoryTests : IDisposable
     private readonly SqliteConnection connection;
     private readonly TestDbContext context;
     private readonly EntityFrameworkRepository<Widget, int, TestDbContext> repository;
+    private static readonly string[] Expected = ["alpha", "beta"];
 
     public EntityFrameworkRepositoryTests()
     {
@@ -127,7 +128,7 @@ public sealed class EntityFrameworkRepositoryTests : IDisposable
         // Assert
         // No sort was supplied, so ordering is unspecified - assert set membership, not sequence order.
         Assert.Equal(2, result.Count);
-        Assert.Equal(new[] { "alpha", "beta" }, result.Select(w => w.Name).Order());
+        Assert.Equal(Expected, result.Select(w => w.Name).Order());
     }
 
     [Fact]

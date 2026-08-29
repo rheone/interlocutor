@@ -77,11 +77,11 @@ public class TrackingBehavior<TRequest, TResponse>(Action track) : IPipelineBeha
 /// <see cref="Eject"/> works without manually threading the chosen outcome back up through every frame.</summary>
 public class EjectingQueryHandler : IQueryHandler<TestQuery, OperationOutcome<int, Failure>>
 {
-    public Task<OperationOutcome<int, Failure>> Handle(TestQuery query, CancellationToken ct) => this.Inner(query);
+    public Task<OperationOutcome<int, Failure>> Handle(TestQuery query, CancellationToken ct) => Inner(query);
 
-    private Task<OperationOutcome<int, Failure>> Inner(TestQuery query) => this.Deepest(query);
+    private static Task<OperationOutcome<int, Failure>> Inner(TestQuery query) => Deepest(query);
 
-    private Task<OperationOutcome<int, Failure>> Deepest(TestQuery query) =>
+    private static Task<OperationOutcome<int, Failure>> Deepest(TestQuery query) =>
         Task.FromResult(Eject.With<OperationOutcome<int, Failure>>(new Failure($"ejected for {query.Value}")));
 }
 
@@ -396,7 +396,7 @@ public class MediatorTests
     }
 
     [Fact]
-    public async Task Send_Query_NonEjectException_PropagatesUnchanged()
+    public Task Send_Query_NonEjectException_PropagatesUnchanged()
     {
         // Arrange - proves the catch added to every composition site is narrowly scoped to
         // PipelineEjectException<TResponse> only; any other exception must still propagate out of Send.
@@ -408,7 +408,7 @@ public class MediatorTests
         });
 
         // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(() => mediator.Send(new TestQuery(1), CancellationToken.None));
+        return Assert.ThrowsAsync<InvalidOperationException>(() => mediator.Send(new TestQuery(1), CancellationToken.None));
     }
 
     [Fact]

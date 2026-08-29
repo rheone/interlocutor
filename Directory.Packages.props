@@ -47,7 +47,7 @@
   <ItemGroup>
     <PackageVersion Include="NHibernate" Version="5.7.0" />
     <!-- Fluent NHibernate mapping, used by TutorialProject/TodoTasks.Api. -->
-    <PackageVersion Include="FluentNHibernate" Version="3.4.0" />
+    <PackageVersion Include="FluentNHibernate" Version="3.5.0" />
     <!-- NHibernate 5.7.0 ships exactly two SQLite drivers - SQLite20Driver (wraps System.Data.SQLite)
          and CsharpSqliteDriver - and no Microsoft.Data.Sqlite-based one at all (verified against the
          shipped assembly, not assumed). TutorialProject/TodoTasks.Api's in-memory database needs

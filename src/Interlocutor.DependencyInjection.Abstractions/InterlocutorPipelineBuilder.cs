@@ -60,7 +60,7 @@ public sealed class InterlocutorPipelineBuilder
     /// with its own empty defaults catalog.
     /// </summary>
     public InterlocutorPipelineBuilder()
-        : this(new Dictionary<Type, InterlocutorRegistration>()) { }
+        : this([]) { }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="InterlocutorPipelineBuilder"/> class sharing the

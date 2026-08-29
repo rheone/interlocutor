@@ -19,8 +19,8 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </remarks>
 public sealed class OutcomeCaseRegistryBuilder
 {
-    private readonly Dictionary<(Type Response, Type Case), Delegate> _factories = new();
-    private readonly Dictionary<Type, Delegate> _extractors = new();
+    private readonly Dictionary<(Type Response, Type Case), Delegate> _factories = [];
+    private readonly Dictionary<Type, Delegate> _extractors = [];
 
     /// <summary>
     /// Registers a custom factory that constructs a <typeparamref name="TResponse"/> from a

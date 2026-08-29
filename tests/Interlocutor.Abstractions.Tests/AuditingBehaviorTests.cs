@@ -21,8 +21,8 @@ public class AuditingBehaviorTests
         var sink = Substitute.For<IAuditSink>();
         var behavior = new AuditingBehavior<AuditableQuery, string>(sink);
         var request = new AuditableQuery("test");
-        var response = "success";
-        Task<string> Next()
+        const string response = "success";
+        static Task<string> Next()
         {
             return Task.FromResult(response);
         }
@@ -35,9 +35,8 @@ public class AuditingBehaviorTests
         await sink.Received(1)
             .RecordAsync(
                 Arg.Is<AuditEntry>(e =>
-                    e.ActionName == "Query.Read" && e.RequestType == typeof(AuditableQuery).Name && e.Outcome == "String"
-                ) // The response type name
-                ,
+                    e.ActionName == "Query.Read" && e.RequestType == typeof(AuditableQuery).Name && e.Outcome == "String" // The response type name
+                ),
                 CancellationToken.None
             );
     }
@@ -100,6 +99,8 @@ public class AuditingBehaviorTests
         await sink.Received(1).RecordAsync(Arg.Is<AuditEntry>(e => e.Outcome == "Failure"), CancellationToken.None);
     }
 
+    private static readonly string[] Expected = ["handler", "audit"];
+
     [Fact]
     public async Task Handle_RecordsAuditEntryAfterHandlerCompletes()
     {
@@ -124,7 +125,7 @@ public class AuditingBehaviorTests
         await behavior.Handle(request, Next, CancellationToken.None);
 
         // Assert - Handler should be called before audit is recorded
-        Assert.Equal(new[] { "handler", "audit" }, callOrder);
+        Assert.Equal(Expected, callOrder);
     }
 
     [Fact]
@@ -161,8 +162,8 @@ public class AuditingBehaviorTests
         var sink = Substitute.For<IAuditSink>();
         var behavior = new AuditingBehavior<AuditableQuery, string>(sink);
         var request = new AuditableQuery("test");
-        var expectedResponse = "my-response";
-        Task<string> Next()
+        const string expectedResponse = "my-response";
+        static Task<string> Next()
         {
             return Task.FromResult(expectedResponse);
         }
@@ -181,8 +182,8 @@ public class AuditingBehaviorTests
         var sink = Substitute.For<IAuditSink>();
         var behavior = new AuditingBehavior<AuditableQuery, int>(sink);
         var request = new AuditableQuery("test");
-        var expectedValue = 42;
-        Task<int> Next()
+        const int expectedValue = 42;
+        static Task<int> Next()
         {
             return Task.FromResult(expectedValue);
         }

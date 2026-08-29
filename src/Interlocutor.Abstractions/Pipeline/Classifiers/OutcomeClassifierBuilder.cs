@@ -24,12 +24,9 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </remarks>
 public sealed class OutcomeClassifierBuilder
 {
-    private static readonly object _lockObject = new();
-
-    private static IOutcomeClassifier? _defaultInstance;
-
-    private readonly Dictionary<Type, OutcomeClassification> _classifications = new();
-    private readonly List<(Func<object?, bool> Predicate, string Label, bool IsFailure)> _predicates = new();
+    private static readonly Lock _lockObject = new();
+    private readonly Dictionary<Type, OutcomeClassification> _classifications = [];
+    private readonly List<(Func<object?, bool> Predicate, string Label, bool IsFailure)> _predicates = [];
 
     /// <summary>
     /// Initializes a new instance of the <see cref="OutcomeClassifierBuilder"/> class.
@@ -72,15 +69,15 @@ public sealed class OutcomeClassifierBuilder
     {
         get
         {
-            if (_defaultInstance is null)
+            if (field is null)
             {
                 lock (_lockObject)
                 {
-                    _defaultInstance ??= new OutcomeClassifierBuilder().Build();
+                    field ??= new OutcomeClassifierBuilder().Build();
                 }
             }
 
-            return _defaultInstance;
+            return field;
         }
     }
 

@@ -115,9 +115,15 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
 
         // No `using`/disposal here: this helper's scope must outlive the method for the caller's dispatch
         // call, and each test is small and self-contained enough that leaving the scope for the process to
-        // reclaim is preferable to plumbing IDisposable back out through every call site.
+        // reclaim is preferable to plumbing IDisposable back out through every call site. CA2000 flags this
+        // as a leak because it can't see that the ISender returned below is resolved from - and needs to
+        // keep using - this same scope; adding `using` here is NOT a cleanup, it disposes the scope before
+        // the caller ever calls Send, and every test through this helper starts throwing
+        // ObjectDisposedException the moment it does (confirmed by reintroducing it and rerunning the suite).
         var provider = services.BuildServiceProvider();
+#pragma warning disable CA2000
         var scope = provider.CreateScope();
+#pragma warning restore CA2000
 
         return scope.ServiceProvider.GetRequiredService<ISender>();
     }
