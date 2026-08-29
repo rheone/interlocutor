@@ -355,10 +355,12 @@ public class PipelineStageBehaviorTests
         Assert.Equal(expectedResult, result);
     }
 
-    // Minimal test types
+    // Minimal test types - deliberately empty type-identity markers for this test's generic shape, not data holders.
+#pragma warning disable S2094
     public class TestRequest { }
 
     public class TestResponse { }
+#pragma warning restore S2094
 
     private sealed class NoOpStage : PipelineStageBase<TestRequest, OperationOutcome<TestResponse, Failure>>;
 

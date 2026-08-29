@@ -4,8 +4,12 @@
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Every flagged `!` is either removed (confirmed genuinely redundant under nullable reference type analysis) or kept with a recorded reason
-- [ ] `dotnet build` reports zero `S8969` warnings, and no new CS8600-family nullable warnings appear as a result of removing any `!`
-- [ ] `dotnet test` passes for `Interlocutor.Abstractions.Tests` and `Interlocutor.DependencyInjection.Microsoft.Tests`
+- [x] Every flagged `!` is either removed (confirmed genuinely redundant under nullable reference type analysis) or kept with a recorded reason
+- [x] `dotnet build` reports zero `S8969` warnings, and no new CS8600-family nullable warnings appear as a result of removing any `!`
+- [x] `dotnet test` passes for `Interlocutor.Abstractions.Tests` and `Interlocutor.DependencyInjection.Microsoft.Tests`
+
+## Comments
+
+Confirmed all 3 flagged `!` operators are genuinely redundant under nullable flow analysis: `ResourceCommandHandler.DescribeKey`'s `command` parameter is a non-nullable `TCommand` (the compiler treats an unconstrained-nullability generic parameter as non-null from its own non-`?` declaration), and both `ServiceCollectionExtensionsTests.cs` sites follow `Assert.NotNull(descriptor)`, which xunit's `[NotNull]`-attributed signature already lets the compiler narrow past. Removed all three; rebuilt to confirm no new CS8600-family warnings appeared.

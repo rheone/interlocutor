@@ -23,11 +23,7 @@ public sealed class CompleteReopenTodoTaskEndpointTests : IClassFixture<TodoTask
     {
         // Arrange
         using var client = this.factory.CreateClient();
-        var (task, ownerUserId) = await this.CreateTaskAndReturnItsOwnerIdAsync(
-            client,
-            $"owner-{Guid.NewGuid():N}",
-            "Buy milk"
-        );
+        var (task, ownerUserId) = await CreateTaskAndReturnItsOwnerIdAsync(client, $"owner-{Guid.NewGuid():N}", "Buy milk");
         var counter = this.factory.Services.GetRequiredService<ICompletionCounter>();
         var before = counter.CountFor(ownerUserId);
 
@@ -54,7 +50,7 @@ public sealed class CompleteReopenTodoTaskEndpointTests : IClassFixture<TodoTask
     {
         // Arrange
         using var client = this.factory.CreateClient();
-        var task = await this.CreateTaskAsync(client, $"owner-{Guid.NewGuid():N}", "Buy milk");
+        var task = await CreateTaskAsync(client, $"owner-{Guid.NewGuid():N}", "Buy milk");
         await client.PostAsync(
             new Uri($"/todo-tasks/{task.Id}/complete", UriKind.Relative),
             null,
@@ -77,7 +73,7 @@ public sealed class CompleteReopenTodoTaskEndpointTests : IClassFixture<TodoTask
     {
         // Arrange
         using var client = this.factory.CreateClient();
-        var task = await this.CreateTaskAsync(client, $"owner-{Guid.NewGuid():N}", "Buy milk");
+        var task = await CreateTaskAsync(client, $"owner-{Guid.NewGuid():N}", "Buy milk");
         await client.PostAsync(
             new Uri($"/todo-tasks/{task.Id}/complete", UriKind.Relative),
             null,
@@ -102,7 +98,7 @@ public sealed class CompleteReopenTodoTaskEndpointTests : IClassFixture<TodoTask
     {
         // Arrange
         using var client = this.factory.CreateClient();
-        var task = await this.CreateTaskAsync(client, $"owner-{Guid.NewGuid():N}", "Buy milk");
+        var task = await CreateTaskAsync(client, $"owner-{Guid.NewGuid():N}", "Buy milk");
 
         // Act
         using var response = await client.PostAsync(
@@ -115,11 +111,11 @@ public sealed class CompleteReopenTodoTaskEndpointTests : IClassFixture<TodoTask
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
 
-    private async Task<TodoTaskDto> CreateTaskAsync(HttpClient client, string displayName, string title) =>
-        (await this.CreateTaskAndReturnItsOwnerIdAsync(client, displayName, title)).Task;
+    private static async Task<TodoTaskDto> CreateTaskAsync(HttpClient client, string displayName, string title) =>
+        (await CreateTaskAndReturnItsOwnerIdAsync(client, displayName, title)).Task;
 
     /// <summary>Creates a user, authenticates as them, and creates a task - returning both the task and the owner's actual numeric user id (the counter's real key, not the display name).</summary>
-    private async Task<(TodoTaskDto Task, string OwnerUserId)> CreateTaskAndReturnItsOwnerIdAsync(
+    private static async Task<(TodoTaskDto Task, string OwnerUserId)> CreateTaskAndReturnItsOwnerIdAsync(
         HttpClient client,
         string displayName,
         string title

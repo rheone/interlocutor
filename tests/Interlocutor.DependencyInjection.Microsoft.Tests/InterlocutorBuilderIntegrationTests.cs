@@ -30,20 +30,13 @@ public class InterlocutorBuilderIntegrationTests
         Assert.Contains("Interlocutor registration report", message);
     }
 
+    // Both this test and AddInterlocutor_WithoutValidateOnBuild_DoesNotThrow_EvenWithAnUnhandledRequestType
+    // below assert the exact same "scanning the test assembly does not throw" guarantee - one names the
+    // logger-factory absence this test's own "With" sibling above varies, the other names the missing
+    // ValidateOnBuild() call its own "With" sibling further down varies. Routing both through one shared
+    // helper keeps that duplication self-evidently intentional rather than reading as accidental copy-paste.
     [Fact]
-    public void AddInterlocutor_WithoutLoggerFactoryRegistered_DoesNotThrow()
-    {
-        // Arrange
-        var services = new ServiceCollection();
-
-        // Act
-        var exception = Record.Exception(() =>
-            services.AddInterlocutor(builder => builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly))
-        );
-
-        // Assert
-        Assert.Null(exception);
-    }
+    public void AddInterlocutor_WithoutLoggerFactoryRegistered_DoesNotThrow() => AssertScanningTheTestAssemblyDoesNotThrow();
 
     [Fact]
     public void BareBuilder_RegistersMediatorAndHandlers_ButZeroBehaviors()
@@ -142,7 +135,16 @@ public class InterlocutorBuilderIntegrationTests
     }
 
     [Fact]
-    public void AddInterlocutor_WithoutValidateOnBuild_DoesNotThrow_EvenWithAnUnhandledRequestType()
+    public void AddInterlocutor_WithoutValidateOnBuild_DoesNotThrow_EvenWithAnUnhandledRequestType() =>
+        AssertScanningTheTestAssemblyDoesNotThrow();
+
+    /// <summary>
+    /// Shared body for <see cref="AddInterlocutor_WithoutLoggerFactoryRegistered_DoesNotThrow"/> and
+    /// <see cref="AddInterlocutor_WithoutValidateOnBuild_DoesNotThrow_EvenWithAnUnhandledRequestType"/> - both
+    /// assert the same "scanning the test assembly does not throw" guarantee, from two different absence
+    /// scenarios each has its own contrasting sibling test for elsewhere in this file.
+    /// </summary>
+    private static void AssertScanningTheTestAssemblyDoesNotThrow()
     {
         // Arrange
         var services = new ServiceCollection();
@@ -445,7 +447,7 @@ public class InterlocutorBuilderIntegrationTests
     [Fact]
     public async Task StageHost_WithThrowingAfterHook_ExceptionIsSwallowedAndDispatchCompletes()
     {
-        // Wrapper-level tests (PipelineStageBehaviorTests) cover the after-hook-exception unwind in detail;
+        // Wrapper-level tests (PipelineStageBehaviorTests) cover the after-hook-exception unwind in detail -
         // this proves the same default-swallow behavior holds end-to-end through the real container and
         // mediator, not only against the behavior in isolation.
         // Arrange
@@ -546,6 +548,10 @@ public class InterlocutorBuilderIntegrationTests
 
     private sealed record CancellableQuery : IQuery<OperationOutcome<string, Cancelled>>, ICancellable;
 
+    // The four handler classes through AuthorizableQueryHandler below are resolved only via
+    // AddInterlocutor()'s assembly-scanning DI registration - never new'd or typeof'd directly in
+    // this file - so their constructors are invisible to static analysis.
+#pragma warning disable S1144
     private sealed class CancellableQueryHandler : IQueryHandler<CancellableQuery, OperationOutcome<string, Cancelled>>
     {
         public Task<OperationOutcome<string, Cancelled>> Handle(CancellableQuery query, CancellationToken ct) =>
@@ -586,6 +592,7 @@ public class InterlocutorBuilderIntegrationTests
         public Task<OperationOutcome<string, Forbidden>> Handle(AuthorizableQuery query, CancellationToken ct) =>
             Task.FromResult<OperationOutcome<string, Forbidden>>("ok");
     }
+#pragma warning restore S1144
 
     private sealed record SampleQuery : IQuery<OperationOutcome>;
 
@@ -621,6 +628,9 @@ public class InterlocutorBuilderIntegrationTests
         public void MarkHandled() => onHandled();
     }
 
+    // Resolved only via AddInterlocutor()'s assembly-scanning DI registration - never new'd or
+    // typeof'd directly, so this constructor is invisible to static analysis.
+#pragma warning disable S1144
     private sealed class ShortCircuitQueryHandler(HandlerRanFlag flag) : IQueryHandler<ShortCircuitQuery, OperationOutcome>
     {
         public Task<OperationOutcome> Handle(ShortCircuitQuery query, CancellationToken ct)
@@ -629,6 +639,7 @@ public class InterlocutorBuilderIntegrationTests
             return Task.FromResult(default(OperationOutcome));
         }
     }
+#pragma warning restore S1144
 
     private sealed class RecordingAuditSink : IAuditSink
     {
@@ -640,11 +651,15 @@ public class InterlocutorBuilderIntegrationTests
         public string ActionName => "Test.AuditOnly";
     }
 
+    // Resolved only via AddInterlocutor()'s assembly-scanning DI registration - never new'd or
+    // typeof'd directly, so this constructor is invisible to static analysis.
+#pragma warning disable S1144
     private sealed class AuditOnlyQueryHandler : IQueryHandler<AuditOnlyQuery, OperationOutcome>
     {
         public Task<OperationOutcome> Handle(AuditOnlyQuery query, CancellationToken ct) =>
             Task.FromResult(default(OperationOutcome));
     }
+#pragma warning restore S1144
 
     /// <summary>An <see cref="IAuditSink"/> that captures every recorded entry for post-dispatch assertions.</summary>
     private sealed class CapturingAuditSink : IAuditSink

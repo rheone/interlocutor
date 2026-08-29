@@ -83,5 +83,8 @@ public class DelegatePipelineStageTests
         Assert.Null(exception);
     }
 
+    // Deliberately empty: a type-identity marker for this test's generic-constraint shape, not a data holder.
+#pragma warning disable S2094
     public record TestRequest;
+#pragma warning restore S2094
 }

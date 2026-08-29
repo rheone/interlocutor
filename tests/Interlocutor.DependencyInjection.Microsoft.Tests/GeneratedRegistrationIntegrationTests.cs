@@ -101,7 +101,7 @@ public sealed class GeneratedRegistrationIntegrationTests
         public async Task<OperationOutcome<string, Failure>> Handle(
             GeneratedQuery request,
             Func<Task<OperationOutcome<string, Failure>>> next,
-            CancellationToken cancellationToken
+            CancellationToken ct
         )
         {
             _executionOrder.Add("B1-enter");
@@ -120,7 +120,7 @@ public sealed class GeneratedRegistrationIntegrationTests
         public async Task<OperationOutcome<string, Failure>> Handle(
             GeneratedQuery request,
             Func<Task<OperationOutcome<string, Failure>>> next,
-            CancellationToken cancellationToken
+            CancellationToken ct
         )
         {
             _executionOrder.Add("B2-enter");
@@ -139,7 +139,7 @@ public sealed class GeneratedRegistrationIntegrationTests
         public async Task<OperationOutcome<string, Failure>> Handle(
             GeneratedQuery request,
             Func<Task<OperationOutcome<string, Failure>>> next,
-            CancellationToken cancellationToken
+            CancellationToken ct
         )
         {
             _executionOrder.Add("B3-enter");

@@ -25,8 +25,8 @@ public sealed class DeleteTodoTaskEndpointTests : IClassFixture<TodoTasksApiFact
     {
         // Arrange
         using var client = this.factory.CreateClient();
-        await this.AuthenticateAsANewUserAsync(client);
-        var task = await this.CreateTaskAsync(client, "Buy milk");
+        await AuthenticateAsANewUserAsync(client);
+        var task = await CreateTaskAsync(client, "Buy milk");
 
         // Act
         using var response = await client.DeleteAsync(
@@ -50,8 +50,8 @@ public sealed class DeleteTodoTaskEndpointTests : IClassFixture<TodoTasksApiFact
         // to delete it, proving the IRequiresPolicy check runs before the entity ever loads (the task
         // still exists afterward).
         using var authenticatedClient = this.factory.CreateClient();
-        await this.AuthenticateAsANewUserAsync(authenticatedClient);
-        var task = await this.CreateTaskAsync(authenticatedClient, "Buy milk");
+        await AuthenticateAsANewUserAsync(authenticatedClient);
+        var task = await CreateTaskAsync(authenticatedClient, "Buy milk");
 
         using var anonymousClient = this.factory.CreateClient();
 
@@ -75,7 +75,7 @@ public sealed class DeleteTodoTaskEndpointTests : IClassFixture<TodoTasksApiFact
     {
         // Arrange
         using var client = this.factory.CreateClient();
-        await this.AuthenticateAsANewUserAsync(client);
+        await AuthenticateAsANewUserAsync(client);
 
         // Act
         using var response = await client.DeleteAsync(
@@ -87,7 +87,7 @@ public sealed class DeleteTodoTaskEndpointTests : IClassFixture<TodoTasksApiFact
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
-    private async Task AuthenticateAsANewUserAsync(HttpClient client)
+    private static async Task AuthenticateAsANewUserAsync(HttpClient client)
     {
         using var response = await client.PostAsJsonAsync(
             new Uri("/users", UriKind.Relative),
@@ -98,7 +98,7 @@ public sealed class DeleteTodoTaskEndpointTests : IClassFixture<TodoTasksApiFact
         client.DefaultRequestHeaders.Add(DevHeaderAuthenticationHandler.HeaderName, user!.Id.ToString());
     }
 
-    private async Task<TodoTaskDto> CreateTaskAsync(HttpClient client, string title)
+    private static async Task<TodoTaskDto> CreateTaskAsync(HttpClient client, string title)
     {
         using var response = await client.PostAsJsonAsync(
             new Uri("/todo-tasks", UriKind.Relative),

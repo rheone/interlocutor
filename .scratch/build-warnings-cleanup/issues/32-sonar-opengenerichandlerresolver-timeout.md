@@ -4,8 +4,12 @@
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The flagged call either has a real, justified timeout added, or is suppressed with a recorded reason why one isn't needed
-- [ ] `dotnet build` reports zero `S6444` warnings
-- [ ] `dotnet test` passes for `Interlocutor.Generator.Tests`
+- [x] The flagged call either has a real, justified timeout added, or is suppressed with a recorded reason why one isn't needed
+- [x] `dotnet build` reports zero `S6444` warnings
+- [x] `dotnet test` passes for `Interlocutor.Generator.Tests`
+
+## Comments
+
+Confirmed the flagged `Regex.Replace` call in `OpenGenericHandlerResolver.Substitute` operates on compiler-controlled input only: `template` is a short source snippet this generator itself emits, and the pattern is a `\b`-bounded alternation of `Regex.Escape`'d type-parameter names (a compilation's own generic arity) with no nested quantifiers to trigger catastrophic backtracking. Suppressed with that reasoning recorded inline rather than adding a timeout that could never realistically fire.

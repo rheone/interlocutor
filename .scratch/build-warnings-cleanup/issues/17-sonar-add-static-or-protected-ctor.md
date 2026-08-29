@@ -4,8 +4,12 @@
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `dotnet build` reports zero `S1118` warnings
-- [ ] The fix (`static` keyword or `protected` constructor) matches the type's actual intended usage, not just whichever silences the warning fastest
-- [ ] `dotnet test` passes for `TodoTasks.Api.Tests`
+- [x] `dotnet build` reports zero `S1118` warnings
+- [x] The fix (`static` keyword or `protected` constructor) matches the type's actual intended usage, not just whichever silences the warning fastest
+- [x] `dotnet test` passes for `TodoTasks.Api.Tests`
+
+## Comments
+
+The flagged type is the top-level-statements `Program` marker class in `TutorialProject/TodoTasks.Api/Program.cs`, not `TodoTasksSessionFactory` as this ticket's title suggested - the title was wrong, but the ticket body's own file/line reference (`Program.cs(206,22)`) was accurate throughout, and that's what got fixed. `static` doesn't fit: `WebApplicationFactory<Program>` requires its type argument to be an instantiable class. Added an explicit `protected` constructor instead, with a `<remarks>` explaining why `static` was rejected.

@@ -149,9 +149,12 @@ public class PipelineOverrideTests
         Assert.Equal([typeof(FirstOverrideBehavior<,>), typeof(SecondOverrideBehavior<,>)], rule.BehaviorTypes);
     }
 
+    // Deliberately empty: type-identity markers for this test's generic-constraint shape, not data holders.
+#pragma warning disable S2094
     private sealed record SampleRequest;
 
     private sealed record OtherRequest;
+#pragma warning restore S2094
 
     private sealed class FirstOverrideBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     {

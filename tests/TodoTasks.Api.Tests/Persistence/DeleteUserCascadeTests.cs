@@ -81,8 +81,8 @@ public sealed class DeleteUserCascadeTests : IClassFixture<PersistenceFixture>
         // Assert - a brand new session sees the committed state.
         using (var session = this.fixture.OpenSession())
         {
-            Assert.Null(session.Get<User>(deletedUserId));
-            Assert.NotNull(session.Get<User>(untouchedUserId));
+            Assert.Null(await session.GetAsync<User>(deletedUserId, TestContext.Current.CancellationToken));
+            Assert.NotNull(await session.GetAsync<User>(untouchedUserId, TestContext.Current.CancellationToken));
 
             var remainingTasks = session.Query<TodoTask>().ToList();
             Assert.DoesNotContain(remainingTasks, t => t.OwnerId == deletedUserId.ToString());

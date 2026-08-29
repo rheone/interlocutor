@@ -22,10 +22,10 @@ public sealed class SearchTodoTasksHandlerTests : IClassFixture<PersistenceFixtu
         // Arrange - two tasks for the searching owner (one matching, one not) and a same-titled task
         // belonging to a different owner, which must never appear in the results.
         using var session = this.fixture.OpenSession();
-        session.Save(new TodoTask("Buy Milk", "owner-1", null));
-        session.Save(new TodoTask("Walk the dog", "owner-1", null));
-        session.Save(new TodoTask("Buy Milk", "owner-2", null));
-        session.Flush();
+        await session.SaveAsync(new TodoTask("Buy Milk", "owner-1", null), TestContext.Current.CancellationToken);
+        await session.SaveAsync(new TodoTask("Walk the dog", "owner-1", null), TestContext.Current.CancellationToken);
+        await session.SaveAsync(new TodoTask("Buy Milk", "owner-2", null), TestContext.Current.CancellationToken);
+        await session.FlushAsync(TestContext.Current.CancellationToken);
 
         var handler = new SearchTodoTasksHandler(new Lazy<global::NHibernate.ISession>(() => session));
         var query = new SearchTodoTasksQuery("owner-1", "milk"); // Lowercase - proves the match is case-insensitive.
@@ -47,8 +47,8 @@ public sealed class SearchTodoTasksHandlerTests : IClassFixture<PersistenceFixtu
         // previous test already committed a "Buy Milk" row for owner-1. Reusing owner-1 here would make
         // this test's outcome depend on whether that test happened to run first.
         using var session = this.fixture.OpenSession();
-        session.Save(new TodoTask("Walk the dog", "owner-3", null));
-        session.Flush();
+        await session.SaveAsync(new TodoTask("Walk the dog", "owner-3", null), TestContext.Current.CancellationToken);
+        await session.FlushAsync(TestContext.Current.CancellationToken);
 
         var handler = new SearchTodoTasksHandler(new Lazy<global::NHibernate.ISession>(() => session));
         var query = new SearchTodoTasksQuery("owner-3", "milk");

@@ -359,6 +359,10 @@ public class AmbiguousClosureTests
 
     private sealed record ClosureTestNotification : INotification;
 
+    // Both handlers below are discovered only by ScanAssembly()'s reflection-based scan - unlike
+    // ConflictedCommandHandlerA/B above, neither is ever named via typeof() in this file, so Sonar's
+    // static analysis can't see the DI container constructing them and flags the constructors as unused.
+#pragma warning disable S1144 // Resolved only via AddInterlocutor()'s assembly scanning, invisible to static analysis.
     private sealed class FirstClosureTestNotificationHandler : INotificationHandler<ClosureTestNotification>
     {
         public Task Handle(ClosureTestNotification notification, CancellationToken ct) => Task.CompletedTask;
@@ -368,15 +372,21 @@ public class AmbiguousClosureTests
     {
         public Task Handle(ClosureTestNotification notification, CancellationToken ct) => Task.CompletedTask;
     }
+#pragma warning restore S1144
 
+    // Deliberately empty: type-identity markers for this test's generic-constraint shape, not data holders.
+#pragma warning disable S2094
     private sealed record SoleExportItem;
+#pragma warning restore S2094
 
     private sealed class SoleExportStrategy : IClosureTestExportStrategy<SoleExportItem>
     {
         public Task Export(SoleExportItem item, CancellationToken ct) => Task.CompletedTask;
     }
 
+#pragma warning disable S2094
     private sealed record ConflictingExportItem;
+#pragma warning restore S2094
 
     private sealed class FirstConflictingExportStrategy : IClosureTestExportStrategy<ConflictingExportItem>
     {

@@ -38,7 +38,7 @@ public sealed class TodoTasksReadEndpointTests : IClassFixture<TodoTasksApiFacto
     {
         // Arrange
         using var client = this.factory.CreateClient();
-        await this.AuthenticateAsANewUserAsync(client);
+        await AuthenticateAsANewUserAsync(client);
         using var createResponse = await client.PostAsJsonAsync(
             new Uri("/todo-tasks", UriKind.Relative),
             new CreateTodoTaskRequest("Buy milk", null),
@@ -71,7 +71,7 @@ public sealed class TodoTasksReadEndpointTests : IClassFixture<TodoTasksApiFacto
         // shared fixture's other tests created, since /todo-tasks isn't scoped to a caller in the
         // guide's own running example.
         using var client = this.factory.CreateClient();
-        await this.AuthenticateAsANewUserAsync(client);
+        await AuthenticateAsANewUserAsync(client);
         var marker = Guid.NewGuid().ToString("N");
         await client.PostAsJsonAsync(
             new Uri("/todo-tasks", UriKind.Relative),
@@ -101,7 +101,7 @@ public sealed class TodoTasksReadEndpointTests : IClassFixture<TodoTasksApiFacto
     }
 
     /// <summary>Creates a real <see cref="User"/> and attaches the dev-auth header for it.</summary>
-    private async Task AuthenticateAsANewUserAsync(HttpClient client)
+    private static async Task AuthenticateAsANewUserAsync(HttpClient client)
     {
         using var createResponse = await client.PostAsJsonAsync(
             new Uri("/users", UriKind.Relative),

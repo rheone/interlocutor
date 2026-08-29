@@ -155,6 +155,10 @@ public class PipelineOverrideParityTests
 
     private sealed record OverriddenCommand(string Name) : ICommand<OperationOutcome<string, Forbidden>>, IOverrideTarget;
 
+    // The three handler classes below are resolved only via AddInterlocutor()'s assembly-scanning DI
+    // registration - never new'd or typeof'd directly in this file - so their constructors are
+    // invisible to static analysis.
+#pragma warning disable S1144
     private sealed class OverriddenCommandHandler : ICommandHandler<OverriddenCommand, OperationOutcome<string, Forbidden>>
     {
         public Task<OperationOutcome<string, Forbidden>> Handle(OverriddenCommand command, CancellationToken ct) =>
@@ -183,4 +187,5 @@ public class PipelineOverrideParityTests
         public Task<OperationOutcome<string, Forbidden>> Handle(AuditableOverriddenCommand command, CancellationToken ct) =>
             Task.FromResult(new OperationOutcome<string, Forbidden>(command.Name));
     }
+#pragma warning restore S1144
 }

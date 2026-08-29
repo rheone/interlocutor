@@ -12,8 +12,17 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// return a bare DTO - the response must be (or be wrapped in) an outcome union so callers exhaustively
 /// handle every case.
 /// </typeparam>
+/// <remarks>
+/// <typeparamref name="TResponse"/> is a deliberate dispatch marker, not something any member of this
+/// interface needs directly - it lets the mediator's generic <c>Send&lt;TResponse&gt;</c> overload select
+/// the matching handler and pipeline behaviors at compile time. S2326 flags it as "unused" because no
+/// member signature here mentions it, but removing it would erase the compile-time link between a command
+/// and its response type entirely.
+/// </remarks>
+#pragma warning disable S2326
 public interface ICommand<TResponse>
     where TResponse : IOperationOutcome;
+#pragma warning restore S2326
 
 /// <summary>
 /// Marks a command that produces no response data.

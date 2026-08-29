@@ -53,7 +53,7 @@ public sealed class SharedSessionIntegrationTests : IClassFixture<RealSessionFix
         Assert.False(session.GetCurrentTransaction() is { IsActive: true });
 
         using var verifySession = this.fixture.OpenSession();
-        Assert.NotNull(verifySession.Get<Widget>(widget.Id));
+        Assert.NotNull(await verifySession.GetAsync<Widget>(widget.Id, CancellationToken.None));
     }
 
     private sealed record TransactionalRequest : ICommand<OperationOutcome<Success, Failure>>;

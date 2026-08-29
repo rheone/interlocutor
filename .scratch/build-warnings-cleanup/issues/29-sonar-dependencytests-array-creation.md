@@ -4,8 +4,12 @@
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Every flagged array-creation call is simplified to pass its elements directly (confirmed a `params`-compatible overload exists) or kept with a recorded reason
-- [ ] `dotnet build` reports zero `S3878` warnings
-- [ ] `dotnet test` passes for `Interlocutor.Architecture.Tests`
+- [x] Every flagged array-creation call is simplified to pass its elements directly (confirmed a `params`-compatible overload exists) or kept with a recorded reason
+- [x] `dotnet build` reports zero `S3878` warnings
+- [x] `dotnet test` passes for `Interlocutor.Architecture.Tests`
+
+## Comments
+
+Confirmed NetArchTest's `HaveDependencyOnAny` has a `params string[]` overload (verified empirically: the array-literal-free call form compiles). Removed the `[...]` array-literal wrapper at all 5 flagged call sites in `DependencyTests.cs`, passing the dependency names directly as arguments - pure syntax simplification, no behavior change.

@@ -4,9 +4,13 @@
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Every `ToActionResult` overload is adjacent to every other overload in `ResultExtensions.cs`, in a sensible arity order
-- [ ] No behavior changed - this is a pure reordering
-- [ ] `dotnet build` reports zero `S4136` warnings
-- [ ] `dotnet test` passes for `Interlocutor.AspNetCore.Tests`
+- [x] Every `ToActionResult` overload is adjacent to every other overload in `ResultExtensions.cs`, in a sensible arity order
+- [x] No behavior changed - this is a pure reordering
+- [x] `dotnet build` reports zero `S4136` warnings
+- [x] `dotnet test` passes for `Interlocutor.AspNetCore.Tests`
+
+## Comments
+
+`ResultExtensions.cs` had its catch-all `ToActionResult<TResponse>`/`ToMinimalApiResult<TResponse>` overloads separated from their arity-specific dedicated siblings by the other family's entire overload block. Reordered the file (a pure line-range move, verified the file's total line count didn't change) so all 7 `ToActionResult` overloads sit together, followed by all 7 `ToMinimalApiResult` overloads, then the shared private helpers - no logic changed.

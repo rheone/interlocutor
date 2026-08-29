@@ -4,8 +4,12 @@
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The flagged `catch` block either logs the caught exception with full context or rethrows it (preserving the original stack trace via a bare `throw;`, not `throw ex;`) - or carries a recorded reason for why neither applies
-- [ ] `dotnet build` reports zero `S2139` warnings
-- [ ] `dotnet test` passes for `Interlocutor.Abstractions.Tests`
+- [x] The flagged `catch` block either logs the caught exception with full context or rethrows it (preserving the original stack trace via a bare `throw;`, not `throw ex;`) - or carries a recorded reason for why neither applies
+- [x] `dotnet build` reports zero `S2139` warnings
+- [x] `dotnet test` passes for `Interlocutor.Abstractions.Tests`
+
+## Comments
+
+The flagged `catch` in `LoggingBehavior` already logs the caught exception with full context (`logger.LogError(ex, ...)`) and rethrows via a bare `throw;` - the exact "log and rethrow" shape S2139 targets on the theory that a caller further up the stack will log the same exception again. Nothing does: the exception simply propagates out of `Send`/`Publish` to the caller (this repo's own convention - exceptions mean bugs or infra faults, not an outcome the pipeline itself handles), and this catch attaches request-type/timing context no generic upstream handler could reconstruct. Suppressed with that reasoning recorded inline.

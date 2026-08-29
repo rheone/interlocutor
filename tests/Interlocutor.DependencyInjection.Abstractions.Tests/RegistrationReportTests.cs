@@ -7,7 +7,11 @@ namespace Interlocutor.DependencyInjection.Abstractions.Tests;
 // display untested in isolation from the builder.
 public class RegistrationReportTests
 {
+    // T1/T2 are deliberately left unconstrained by any member - this interface exists purely to exercise
+    // RegistrationReport's open-generic type-display formatting, not to define a real contract.
+#pragma warning disable S2326
     private interface ISampleOpenGenericService<T1, T2>;
+#pragma warning restore S2326
 
     [Fact]
     public void Constructor_WithNullRegistrations_ThrowsArgumentNullException()
@@ -196,9 +200,12 @@ public class RegistrationReportTests
         Assert.Contains("Matched by my-rule", text);
     }
 
+    // Deliberately empty: type-identity markers for this test's registration-report formatting, not data holders.
+#pragma warning disable S2094
     private sealed class SampleService;
 
     private sealed class SampleImplementation;
+#pragma warning restore S2094
 
     private sealed class SampleOpenGenericImplementation<T1, T2> : ISampleOpenGenericService<T1, T2>;
 }

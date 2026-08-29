@@ -4,9 +4,13 @@
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `IsExternalInit.cs` is suppressed with a comment noting it's an intentional, standard compiler-polyfill shim
-- [ ] Every other flagged empty type is either removed, given real content, or suppressed with a recorded reason (deliberate identity marker for a generic-constraint/discovery test)
-- [ ] `dotnet build` reports zero `S2094` warnings
-- [ ] `dotnet test` passes for every affected test project
+- [x] `IsExternalInit.cs` is suppressed with a comment noting it's an intentional, standard compiler-polyfill shim
+- [x] Every other flagged empty type is either removed, given real content, or suppressed with a recorded reason (deliberate identity marker for a generic-constraint/discovery test)
+- [x] `dotnet build` reports zero `S2094` warnings
+- [x] `dotnet test` passes for every affected test project
+
+## Comments
+
+`IsExternalInit.cs` suppressed with a comment noting it's the standard netstandard2.0 init/record polyfill shim, recognized by the compiler via its mere presence. Every other flagged empty type (23 sites across `Interlocutor.Abstractions.Tests`, `Interlocutor.DependencyInjection.Abstractions.Tests`, `Interlocutor.DependencyInjection.Autofac.Tests`, `TodoTasks.Api.Tests`) is a deliberate type-identity marker for a generic-constraint, handler-discovery, or negative-case test - verified each is genuinely just an identity marker, not an unfinished scaffold, and suppressed with a one-line reason at each site or contiguous block.

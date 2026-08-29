@@ -25,9 +25,9 @@ public sealed class ClearCompletedTodoTasksEndpointTests : IClassFixture<TodoTas
     {
         // Arrange
         using var client = this.factory.CreateClient();
-        await this.AuthenticateAsANewUserAsync(client);
-        var toComplete = await this.CreateTaskAsync(client, "Buy milk");
-        var toLeaveAlone = await this.CreateTaskAsync(client, "Walk the dog");
+        await AuthenticateAsANewUserAsync(client);
+        var toComplete = await CreateTaskAsync(client, "Buy milk");
+        var toLeaveAlone = await CreateTaskAsync(client, "Walk the dog");
         await client.PostAsync(
             new Uri($"/todo-tasks/{toComplete.Id}/complete", UriKind.Relative),
             null,
@@ -72,7 +72,7 @@ public sealed class ClearCompletedTodoTasksEndpointTests : IClassFixture<TodoTas
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
-    private async Task AuthenticateAsANewUserAsync(HttpClient client)
+    private static async Task AuthenticateAsANewUserAsync(HttpClient client)
     {
         using var response = await client.PostAsJsonAsync(
             new Uri("/users", UriKind.Relative),
@@ -83,7 +83,7 @@ public sealed class ClearCompletedTodoTasksEndpointTests : IClassFixture<TodoTas
         client.DefaultRequestHeaders.Add(DevHeaderAuthenticationHandler.HeaderName, user!.Id.ToString());
     }
 
-    private async Task<TodoTaskDto> CreateTaskAsync(HttpClient client, string title)
+    private static async Task<TodoTaskDto> CreateTaskAsync(HttpClient client, string title)
     {
         using var response = await client.PostAsJsonAsync(
             new Uri("/todo-tasks", UriKind.Relative),

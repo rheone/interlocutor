@@ -4,8 +4,12 @@
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Every flagged parameter name matches its interface declaration exactly
-- [ ] `dotnet build` reports zero `S927` warnings
-- [ ] `dotnet test` passes for `Interlocutor.DependencyInjection.Microsoft.Tests`
+- [x] Every flagged parameter name matches its interface declaration exactly
+- [x] `dotnet build` reports zero `S927` warnings
+- [x] `dotnet test` passes for `Interlocutor.DependencyInjection.Microsoft.Tests`
+
+## Comments
+
+Renamed every flagged `cancellationToken` parameter to `ct` to match `IPipelineBehavior<,>.Handle`'s declared name - 5 sites total across `GeneratedRegistrationIntegrationTests.cs` (3, as this ticket named) and `ServiceCollectionExtensionsTests.cs` (2, per the actual `dotnet build` S927 output - this ticket's own prose attributed all "roughly five" occurrences to the first file alone, but the real split was 3/2 across both). Pure rename, no parameter used in any flagged method body.

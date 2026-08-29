@@ -106,7 +106,7 @@ public sealed class UnitOfWorkBehavior<TRequest, TResponse>(
         // Nothing to finalize if nothing wrote: no transaction was ever opened (pure read, or a request that
         // short-circuited before reaching a write), and nothing is staged either (or IUnitOfWork.Cancel
         // already rolled back and cleared the session) - same "nothing to roll back" outcome as today.
-        if (s.GetCurrentTransaction() is not { IsActive: true } && !s.IsDirty())
+        if (s.GetCurrentTransaction() is not { IsActive: true } && !await s.IsDirtyAsync(ct))
         {
             return result;
         }

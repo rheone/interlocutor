@@ -22,13 +22,12 @@ public sealed class PipelineOverrideRegistry(IReadOnlyList<PipelineOverrideRule>
     /// <inheritdoc/>
     public bool TryGetOverride(Type requestType, out IReadOnlyList<Type> behaviorTypes)
     {
-        foreach (var rule in rules)
+        var match = rules.FirstOrDefault(rule => rule.Predicate(requestType));
+
+        if (match is not null)
         {
-            if (rule.Predicate(requestType))
-            {
-                behaviorTypes = rule.BehaviorTypes;
-                return true;
-            }
+            behaviorTypes = match.BehaviorTypes;
+            return true;
         }
 
         behaviorTypes = [];

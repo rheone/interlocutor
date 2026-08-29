@@ -97,5 +97,7 @@ public sealed class SlowHandlerWarningBehaviorTests
     }
 
     /// <summary>A minimal request type - this behavior is unconstrained, so no Interlocutor marker is needed to exercise it.</summary>
+#pragma warning disable S2094 // Deliberately empty: a type-identity marker, not a data holder.
     public sealed record SlowRequest;
+#pragma warning restore S2094
 }

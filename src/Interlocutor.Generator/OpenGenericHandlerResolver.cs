@@ -271,7 +271,15 @@ internal static class OpenGenericHandlerResolver
 
         var pattern =
             "\\b(" + string.Join("|", substitutions.Keys.OrderByDescending(static k => k.Length).Select(Regex.Escape)) + ")\\b";
+
+        // S6444 wants a timeout to bound unbounded input, but both operands here are compiler-controlled, not
+        // user/network input: template is a short handler-invocation source snippet this generator itself
+        // emits, and the pattern is a \b-bounded alternation of Regex.Escape'd type-parameter names (a
+        // compilation's own generic arity, never large) with no nested quantifiers to trigger catastrophic
+        // backtracking. A timeout here could never realistically fire.
+#pragma warning disable S6444
         return Regex.Replace(template, pattern, match => substitutions[match.Value]);
+#pragma warning restore S6444
     }
 
     /// <summary>One open generic handler successfully unified against one closed usage, with its per-type-parameter substitutions.</summary>

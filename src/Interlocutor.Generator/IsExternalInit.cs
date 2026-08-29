@@ -5,4 +5,6 @@
 namespace System.Runtime.CompilerServices;
 
 /// <summary>Polyfill enabling C# 9 <see langword="init"/> accessors and records on netstandard2.0.</summary>
+#pragma warning disable S2094 // Intentionally empty: the compiler recognizes this type by its mere presence, not any member.
 internal static class IsExternalInit;
+#pragma warning restore S2094

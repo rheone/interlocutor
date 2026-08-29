@@ -183,6 +183,78 @@ public static class ResultExtensions
         };
 
     /// <summary>
+    /// Converts an arbitrary <see cref="IOperationOutcome"/> to an <see cref="IActionResult"/> with the
+    /// appropriate HTTP status code.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Unlike the dedicated arity overloads above, this overload is constrained only to
+    /// <see cref="IOperationOutcome"/>, so it works for a hand-rolled response type as well as any of the
+    /// built-in <c>OperationOutcome</c> union arities. It uses <paramref name="caseRegistry"/> to extract the
+    /// active case at runtime, then dispatches to <paramref name="mapper"/> reflectively for failures - the
+    /// dedicated overloads above dispatch to the same mapper via a compile-time <c>switch</c> instead.
+    /// </para>
+    /// <para>
+    /// The dedicated overloads distinguish success from failure at compile time, via a <c>switch</c> against
+    /// the statically known <c>TSuccess</c>/<c>TCaseN</c> type parameters. This overload has no such static
+    /// information, so it classifies the extracted case via
+    /// <see cref="Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder.DefaultClassifier"/>
+    /// instead - the same classifier <c>AuditingBehavior</c>/<c>UnitOfWorkBehavior</c> use to decide
+    /// commit-vs-rollback. It is fail-closed: a case type it has no registration for is treated as a failure.
+    /// The built-in kernel failure types (<c>NotFound</c>, <c>Forbidden</c>, <c>Conflict</c>, ...) and the
+    /// bare <see cref="Success"/> marker are pre-registered, so a response built from those classifies
+    /// correctly with no extra setup; a hand-rolled response type whose success case carries a different,
+    /// unregistered payload type needs that type registered with a custom <c>IOutcomeClassifier</c> (built via
+    /// <c>OutcomeClassifierBuilder</c>) for this overload to classify it as success rather than failure.
+    /// </para>
+    /// <para>
+    /// C# overload resolution always prefers a dedicated overload over this one for the six built-in union
+    /// arities: a constructed generic formal parameter (e.g. <c>OperationOutcome&lt;TSuccess, TFailure&gt;</c>)
+    /// is more specific than this overload's bare type-parameter formal parameter (<typeparamref name="TResponse"/>),
+    /// so callers get the faster, compile-time-checked path automatically and only pay for reflection when
+    /// this overload is genuinely the only option.
+    /// </para>
+    /// <para>
+    /// <paramref name="caseRegistry"/> has no default value and is declared before <paramref name="mapper"/>
+    /// (which keeps its default), even though it is the second concern conceptually: C# overload resolution
+    /// only prefers a "more specific" candidate over a "less specific" one when every other tie-break,
+    /// including the number of parameters actually supplied, is equal. A three-parameter catch-all with two
+    /// trailing optional parameters is a strictly worse (higher-arity) match than a dedicated overload's
+    /// single optional <c>mapper</c> parameter for a bare <c>result.ToActionResult()</c> call, so the compiler
+    /// cannot get far enough to apply the specificity tie-break at all and reports the call ambiguous instead
+    /// - see the arity-2/arity-5/void overload-resolution regression tests for the failure this parameter
+    /// order avoids. Requiring <paramref name="caseRegistry"/> keeps every dedicated overload's zero- and
+    /// one-argument call shapes resolvable only against the dedicated overload, while this overload remains
+    /// reachable by name (<c>caseRegistry: myRegistry</c>) for the hand-rolled types it exists for.
+    /// </para>
+    /// </remarks>
+    /// <typeparam name="TResponse">The <see cref="IOperationOutcome"/> type to convert.</typeparam>
+    /// <param name="response">The response to convert.</param>
+    /// <param name="caseRegistry">
+    /// The registry used to extract <paramref name="response"/>'s active case. Pass
+    /// <see langword="null"/> (or <see cref="DefaultOutcomeCaseRegistry.Instance"/> explicitly) to use the
+    /// default registry, which handles any compiler-generated union but throws for a hand-rolled
+    /// <see cref="IOperationOutcome"/> implementation unless a custom registry covering it is supplied.
+    /// </param>
+    /// <param name="mapper">
+    /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
+    /// <see cref="DefaultOutcomeStatusMapper"/> is used, preserving the dedicated overloads' status codes.
+    /// </param>
+    /// <returns>An <see cref="OkObjectResult"/> on success, or the mapped error result on failure.</returns>
+    public static IActionResult ToActionResult<TResponse>(
+        this TResponse response,
+        IOutcomeCaseRegistry? caseRegistry,
+        IOutcomeStatusMapper? mapper = null
+    )
+        where TResponse : IOperationOutcome
+    {
+        var (isFailure, caseType, caseValue) = ExtractCase(response, caseRegistry);
+        return isFailure
+            ? InvokeMap(mapper ?? DefaultMapper, caseType, caseValue).ToActionResult()
+            : new OkObjectResult(caseValue);
+    }
+
+    /// <summary>
     /// Converts a <see cref="OperationOutcome{TSuccessResult, TFailureResult}"/> to a minimal API result
     /// with the appropriate HTTP status code.
     /// </summary>
@@ -333,78 +405,6 @@ public static class ResultExtensions
             TCase6 case6 => (mapper ?? DefaultMapper).Map(case6).ToMinimalApiResult(),
             _ => throw new NotImplementedException(),
         };
-
-    /// <summary>
-    /// Converts an arbitrary <see cref="IOperationOutcome"/> to an <see cref="IActionResult"/> with the
-    /// appropriate HTTP status code.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Unlike the dedicated arity overloads above, this overload is constrained only to
-    /// <see cref="IOperationOutcome"/>, so it works for a hand-rolled response type as well as any of the
-    /// built-in <c>OperationOutcome</c> union arities. It uses <paramref name="caseRegistry"/> to extract the
-    /// active case at runtime, then dispatches to <paramref name="mapper"/> reflectively for failures - the
-    /// dedicated overloads above dispatch to the same mapper via a compile-time <c>switch</c> instead.
-    /// </para>
-    /// <para>
-    /// The dedicated overloads distinguish success from failure at compile time, via a <c>switch</c> against
-    /// the statically known <c>TSuccess</c>/<c>TCaseN</c> type parameters. This overload has no such static
-    /// information, so it classifies the extracted case via
-    /// <see cref="Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder.DefaultClassifier"/>
-    /// instead - the same classifier <c>AuditingBehavior</c>/<c>UnitOfWorkBehavior</c> use to decide
-    /// commit-vs-rollback. It is fail-closed: a case type it has no registration for is treated as a failure.
-    /// The built-in kernel failure types (<c>NotFound</c>, <c>Forbidden</c>, <c>Conflict</c>, ...) and the
-    /// bare <see cref="Success"/> marker are pre-registered, so a response built from those classifies
-    /// correctly with no extra setup; a hand-rolled response type whose success case carries a different,
-    /// unregistered payload type needs that type registered with a custom <c>IOutcomeClassifier</c> (built via
-    /// <c>OutcomeClassifierBuilder</c>) for this overload to classify it as success rather than failure.
-    /// </para>
-    /// <para>
-    /// C# overload resolution always prefers a dedicated overload over this one for the six built-in union
-    /// arities: a constructed generic formal parameter (e.g. <c>OperationOutcome&lt;TSuccess, TFailure&gt;</c>)
-    /// is more specific than this overload's bare type-parameter formal parameter (<typeparamref name="TResponse"/>),
-    /// so callers get the faster, compile-time-checked path automatically and only pay for reflection when
-    /// this overload is genuinely the only option.
-    /// </para>
-    /// <para>
-    /// <paramref name="caseRegistry"/> has no default value and is declared before <paramref name="mapper"/>
-    /// (which keeps its default), even though it is the second concern conceptually: C# overload resolution
-    /// only prefers a "more specific" candidate over a "less specific" one when every other tie-break,
-    /// including the number of parameters actually supplied, is equal. A three-parameter catch-all with two
-    /// trailing optional parameters is a strictly worse (higher-arity) match than a dedicated overload's
-    /// single optional <c>mapper</c> parameter for a bare <c>result.ToActionResult()</c> call, so the compiler
-    /// cannot get far enough to apply the specificity tie-break at all and reports the call ambiguous instead
-    /// - see the arity-2/arity-5/void overload-resolution regression tests for the failure this parameter
-    /// order avoids. Requiring <paramref name="caseRegistry"/> keeps every dedicated overload's zero- and
-    /// one-argument call shapes resolvable only against the dedicated overload, while this overload remains
-    /// reachable by name (<c>caseRegistry: myRegistry</c>) for the hand-rolled types it exists for.
-    /// </para>
-    /// </remarks>
-    /// <typeparam name="TResponse">The <see cref="IOperationOutcome"/> type to convert.</typeparam>
-    /// <param name="response">The response to convert.</param>
-    /// <param name="caseRegistry">
-    /// The registry used to extract <paramref name="response"/>'s active case. Pass
-    /// <see langword="null"/> (or <see cref="DefaultOutcomeCaseRegistry.Instance"/> explicitly) to use the
-    /// default registry, which handles any compiler-generated union but throws for a hand-rolled
-    /// <see cref="IOperationOutcome"/> implementation unless a custom registry covering it is supplied.
-    /// </param>
-    /// <param name="mapper">
-    /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
-    /// <see cref="DefaultOutcomeStatusMapper"/> is used, preserving the dedicated overloads' status codes.
-    /// </param>
-    /// <returns>An <see cref="OkObjectResult"/> on success, or the mapped error result on failure.</returns>
-    public static IActionResult ToActionResult<TResponse>(
-        this TResponse response,
-        IOutcomeCaseRegistry? caseRegistry,
-        IOutcomeStatusMapper? mapper = null
-    )
-        where TResponse : IOperationOutcome
-    {
-        var (isFailure, caseType, caseValue) = ExtractCase(response, caseRegistry);
-        return isFailure
-            ? InvokeMap(mapper ?? DefaultMapper, caseType, caseValue).ToActionResult()
-            : new OkObjectResult(caseValue);
-    }
 
     /// <summary>
     /// Converts an arbitrary <see cref="IOperationOutcome"/> to a minimal API result with the appropriate

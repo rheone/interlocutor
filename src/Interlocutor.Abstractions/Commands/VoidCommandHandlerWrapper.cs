@@ -18,7 +18,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// argument, enabling flexible outcome handling without modifying the handler.
 /// </para>
 /// </remarks>
-internal sealed class VoidCommandHandlerWrapper<TCommand, TResult> : VoidHandlerWrapper<TResult>
+internal sealed class VoidCommandHandlerWrapper<TCommand, TResult> : IVoidHandlerWrapper<TResult>
     where TCommand : ICommand
     where TResult : IOperationOutcome
 {
@@ -30,12 +30,7 @@ internal sealed class VoidCommandHandlerWrapper<TCommand, TResult> : VoidHandler
     /// <param name="ct">The cancellation token.</param>
     /// <param name="activity">The activity to tag with the resolved handler type, or <see langword="null"/>.</param>
     /// <returns>The outcome from the handler.</returns>
-    public override Task<TResult> Handle(
-        object request,
-        IServiceProvider services,
-        CancellationToken ct,
-        Activity? activity = null
-    )
+    public Task<TResult> Handle(object request, IServiceProvider services, CancellationToken ct, Activity? activity = null)
     {
         var typedRequest = (TCommand)request;
         var handler = services.GetRequiredService<IVoidCommandHandler<TCommand, TResult>>();

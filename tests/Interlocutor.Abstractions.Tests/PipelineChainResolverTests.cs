@@ -106,7 +106,10 @@ public class PipelineChainResolverTests
         Assert.Equal([typeof(NamedStringBehavior)], chain.Select(b => b.GetType()));
     }
 
+    // Deliberately empty: a type-identity marker for this test's generic-constraint shape, not a data holder.
+#pragma warning disable S2094
     private sealed record MarkedRequest;
+#pragma warning restore S2094
 
     private sealed class FakeOverrideRegistry(Func<Type, IReadOnlyList<Type>?> lookup) : IPipelineOverrideRegistry
     {

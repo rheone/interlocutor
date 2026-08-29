@@ -23,9 +23,9 @@ public sealed class UpdateTodoTaskEndpointTests : IClassFixture<TodoTasksApiFact
     {
         // Arrange
         using var client = this.factory.CreateClient();
-        var user = await this.CreateUserAsync(client);
-        this.Authenticate(client, user);
-        var task = await this.CreateTaskAsync(client, "Buy milk");
+        var user = await CreateUserAsync(client);
+        Authenticate(client, user);
+        var task = await CreateTaskAsync(client, "Buy milk");
 
         // Act
         using var response = await client.PutAsJsonAsync(
@@ -49,12 +49,12 @@ public sealed class UpdateTodoTaskEndpointTests : IClassFixture<TodoTasksApiFact
     {
         // Arrange
         using var client = this.factory.CreateClient();
-        var owner = await this.CreateUserAsync(client);
-        this.Authenticate(client, owner);
-        var task = await this.CreateTaskAsync(client, "Buy milk");
+        var owner = await CreateUserAsync(client);
+        Authenticate(client, owner);
+        var task = await CreateTaskAsync(client, "Buy milk");
 
-        var someoneElse = await this.CreateUserAsync(client);
-        this.Authenticate(client, someoneElse);
+        var someoneElse = await CreateUserAsync(client);
+        Authenticate(client, someoneElse);
 
         // Act
         using var response = await client.PutAsJsonAsync(
@@ -73,8 +73,8 @@ public sealed class UpdateTodoTaskEndpointTests : IClassFixture<TodoTasksApiFact
     {
         // Arrange
         using var client = this.factory.CreateClient();
-        var user = await this.CreateUserAsync(client);
-        this.Authenticate(client, user);
+        var user = await CreateUserAsync(client);
+        Authenticate(client, user);
 
         // Act
         using var response = await client.PutAsJsonAsync(
@@ -87,7 +87,7 @@ public sealed class UpdateTodoTaskEndpointTests : IClassFixture<TodoTasksApiFact
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
-    private async Task<UserDto> CreateUserAsync(HttpClient client)
+    private static async Task<UserDto> CreateUserAsync(HttpClient client)
     {
         using var response = await client.PostAsJsonAsync(
             new Uri("/users", UriKind.Relative),
@@ -97,13 +97,13 @@ public sealed class UpdateTodoTaskEndpointTests : IClassFixture<TodoTasksApiFact
         return (await response.Content.ReadFromJsonAsync<UserDto>(WebJsonOptions, TestContext.Current.CancellationToken))!;
     }
 
-    private void Authenticate(HttpClient client, UserDto user)
+    private static void Authenticate(HttpClient client, UserDto user)
     {
         client.DefaultRequestHeaders.Remove(DevHeaderAuthenticationHandler.HeaderName);
         client.DefaultRequestHeaders.Add(DevHeaderAuthenticationHandler.HeaderName, user.Id.ToString());
     }
 
-    private async Task<TodoTaskDto> CreateTaskAsync(HttpClient client, string title)
+    private static async Task<TodoTaskDto> CreateTaskAsync(HttpClient client, string title)
     {
         using var response = await client.PostAsJsonAsync(
             new Uri("/todo-tasks", UriKind.Relative),

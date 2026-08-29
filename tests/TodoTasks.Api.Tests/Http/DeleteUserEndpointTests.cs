@@ -27,15 +27,15 @@ public sealed class DeleteUserEndpointTests : IClassFixture<TodoTasksApiFactory>
     {
         // Arrange - one user with two tasks, and a second, unrelated user with one task.
         using var client = this.factory.CreateClient();
-        var userToDelete = await this.CreateUserAsync(client);
+        var userToDelete = await CreateUserAsync(client);
         client.DefaultRequestHeaders.Add(DevHeaderAuthenticationHandler.HeaderName, userToDelete.Id.ToString());
-        var firstTask = await this.CreateTaskAsync(client, "Buy milk");
-        var secondTask = await this.CreateTaskAsync(client, "Walk the dog");
+        var firstTask = await CreateTaskAsync(client, "Buy milk");
+        var secondTask = await CreateTaskAsync(client, "Walk the dog");
         client.DefaultRequestHeaders.Remove(DevHeaderAuthenticationHandler.HeaderName);
 
-        var otherUser = await this.CreateUserAsync(client);
+        var otherUser = await CreateUserAsync(client);
         client.DefaultRequestHeaders.Add(DevHeaderAuthenticationHandler.HeaderName, otherUser.Id.ToString());
-        var otherUsersTask = await this.CreateTaskAsync(client, "Ship COBOL");
+        var otherUsersTask = await CreateTaskAsync(client, "Ship COBOL");
         client.DefaultRequestHeaders.Remove(DevHeaderAuthenticationHandler.HeaderName);
 
         // Act - DeleteUserEndpoint is deliberately unauthenticated (see its own remarks), so no header is needed here.
@@ -87,7 +87,7 @@ public sealed class DeleteUserEndpointTests : IClassFixture<TodoTasksApiFactory>
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
-    private async Task<UserDto> CreateUserAsync(HttpClient client)
+    private static async Task<UserDto> CreateUserAsync(HttpClient client)
     {
         using var response = await client.PostAsJsonAsync(
             new Uri("/users", UriKind.Relative),
@@ -97,7 +97,7 @@ public sealed class DeleteUserEndpointTests : IClassFixture<TodoTasksApiFactory>
         return (await response.Content.ReadFromJsonAsync<UserDto>(WebJsonOptions, TestContext.Current.CancellationToken))!;
     }
 
-    private async Task<TodoTaskDto> CreateTaskAsync(HttpClient client, string title)
+    private static async Task<TodoTaskDto> CreateTaskAsync(HttpClient client, string title)
     {
         using var response = await client.PostAsJsonAsync(
             new Uri("/todo-tasks", UriKind.Relative),

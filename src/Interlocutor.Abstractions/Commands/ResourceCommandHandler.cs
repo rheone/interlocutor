@@ -93,5 +93,5 @@ public abstract class ResourceCommandHandler<TCommand, TEntity, TSuccess>
     /// </remarks>
     /// <param name="command">The command being handled.</param>
     /// <returns>An object whose <c>ToString</c> representation describes the entity key.</returns>
-    protected virtual object DescribeKey(TCommand command) => command!;
+    protected virtual object DescribeKey(TCommand command) => command;
 }

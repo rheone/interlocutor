@@ -43,6 +43,9 @@ public class NotificationFanOutIntegrationTests
 
     private sealed record OrderCreated(int AggregateId) : DomainEvent(AggregateId);
 
+    // Resolved only via AddInterlocutor()'s assembly-scanning DI registration - never new'd or
+    // typeof'd directly, so this constructor is invisible to static analysis.
+#pragma warning disable S1144
     private sealed class DomainEventLogger(InvocationRecorder recorder) : INotificationHandler<DomainEvent>
     {
         public Task Handle(DomainEvent notification, CancellationToken ct)
@@ -51,4 +54,5 @@ public class NotificationFanOutIntegrationTests
             return Task.CompletedTask;
         }
     }
+#pragma warning restore S1144
 }

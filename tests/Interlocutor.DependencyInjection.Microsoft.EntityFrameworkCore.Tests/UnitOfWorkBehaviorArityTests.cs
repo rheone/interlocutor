@@ -49,7 +49,7 @@ public sealed class UnitOfWorkBehaviorArityTests
     {
         // Arrange
         using var connection = new SqliteConnection("DataSource=:memory:");
-        connection.Open();
+        await connection.OpenAsync(TestContext.Current.CancellationToken);
 
         var services = new ServiceCollection();
         services.AddDbContext<TestDbContext>(options => options.UseSqlite(connection), contextLifetime: ServiceLifetime.Scoped);
@@ -109,7 +109,11 @@ public sealed class UnitOfWorkBehaviorArityTests
 
     private sealed class Widget
     {
+        // Never read directly by this test's assertions, but EF Core's key-by-convention requires an
+        // Id property to treat this type as having a primary key at all - it's structural, not dead.
+#pragma warning disable S1144
         public int Id { get; set; }
+#pragma warning restore S1144
 
         public string Name { get; set; } = string.Empty;
     }

@@ -26,5 +26,8 @@ public class InterlocutorGeneratedModuleAttributeTests
         Assert.Equal("moduleType", ex.ParamName);
     }
 
+    // Deliberately empty: a type-identity marker standing in for a "module" type, not a data holder.
+#pragma warning disable S2094
     private static class SampleModule;
+#pragma warning restore S2094
 }

@@ -80,25 +80,11 @@ public class AssemblyTypeScannerTests
         Assert.Contains(failures, f => f.Detail.Contains("Second"));
     }
 
-    [Fact]
-    public void ExtractLoadedTypes_WithNoFailuresCollection_StillReturnsTheTypesThatLoaded_WithoutThrowing()
-    {
-        // Arrange
-        var loaded = typeof(AssemblyTypeScannerTests);
-        var ex = new ReflectionTypeLoadException(
-            [loaded, null],
-            [null, new TypeLoadException("Could not load type 'Missing'.")]
-        );
-
-        // Act
-        var types = AssemblyTypeScanner
-            .ExtractLoadedTypes(typeof(AssemblyTypeScannerTests).Assembly, ex, failures: null)
-            .ToList();
-
-        // Assert
-        Assert.Equal([loaded], types);
-    }
-
+    // ExtractLoadedTypes_WithNoFailuresCollection_StillReturnsTheTypesThatLoaded_WithoutThrowing was removed
+    // here: Sonar's S4144 flagged its body as byte-for-byte identical to
+    // ExtractLoadedTypes_ReturnsTheTypesThatLoaded_ContinuingPastTheOnesThatDidNot above (both already pass
+    // failures: null) - accidental duplication, not two genuinely different scenarios, so it verified nothing
+    // that test didn't already cover.
     [Fact]
     public void ExtractLoadedTypes_WithNoLoaderExceptionForAFailedType_FallsBackToAGenericMessage()
     {

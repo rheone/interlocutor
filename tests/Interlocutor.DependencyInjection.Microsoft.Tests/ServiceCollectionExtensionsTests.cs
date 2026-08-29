@@ -25,7 +25,7 @@ public class ServiceCollectionExtensionsTests
 
         // Assert
         Assert.NotNull(descriptor);
-        Assert.Equal(ServiceLifetime.Scoped, descriptor!.Lifetime);
+        Assert.Equal(ServiceLifetime.Scoped, descriptor.Lifetime);
     }
 
     [Fact]
@@ -74,7 +74,7 @@ public class ServiceCollectionExtensionsTests
 
         // Assert
         Assert.NotNull(descriptor);
-        Assert.Equal(ServiceLifetime.Singleton, descriptor!.Lifetime);
+        Assert.Equal(ServiceLifetime.Singleton, descriptor.Lifetime);
     }
 
     [Fact]
@@ -143,7 +143,7 @@ public class ServiceCollectionExtensionsTests
 
         public OpenGenericBehavior(List<string> executionOrder) => this._executionOrder = executionOrder;
 
-        public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken cancellationToken)
+        public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
         {
             this._executionOrder.Add("open-enter");
             var result = await next();
@@ -161,7 +161,7 @@ public class ServiceCollectionExtensionsTests
         public async Task<OperationOutcome<string, Failure>> Handle(
             RegressionQuery request,
             Func<Task<OperationOutcome<string, Failure>>> next,
-            CancellationToken cancellationToken
+            CancellationToken ct
         )
         {
             this._executionOrder.Add("closed-enter");

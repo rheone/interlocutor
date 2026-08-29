@@ -38,14 +38,17 @@ internal static class HandlerDiagnosticAnalyzer
     {
         var sets = BuildHandlerRequestTypeSets(handlers, externalModules);
 
-        foreach (var request in requests)
+        // ImmutableArray<T>.Where resolves to System.Linq.ImmutableArrayExtensions' specialized overload (not
+        // the boxing IEnumerable<T> one), so this stays allocation-free - safe for this generator's hot path.
+        foreach (
+            var request in requests.Where(request =>
+                !sets.HasHandler(request.Kind, request.RequestTypeName, request.ResponseTypeName)
+            )
+        )
         {
-            if (!sets.HasHandler(request.Kind, request.RequestTypeName, request.ResponseTypeName))
-            {
-                context.ReportDiagnostic(
-                    Diagnostic.Create(InterlocutorDiagnostics.MissingHandler, request.Location, request.RequestTypeName)
-                );
-            }
+            context.ReportDiagnostic(
+                Diagnostic.Create(InterlocutorDiagnostics.MissingHandler, request.Location, request.RequestTypeName)
+            );
         }
     }
 

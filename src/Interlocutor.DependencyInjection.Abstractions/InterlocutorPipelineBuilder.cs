@@ -212,12 +212,9 @@ public sealed class InterlocutorPipelineBuilder
         }
 
         this._overrideRules.Add(new PipelineOverrideRule(predicate, name, behaviors));
-        foreach (var behaviorType in behaviors)
+        foreach (var behaviorType in behaviors.Where(behaviorType => this._overrideBehaviorTypesRegistered.Add(behaviorType)))
         {
-            if (this._overrideBehaviorTypesRegistered.Add(behaviorType))
-            {
-                this.AddBehavior(behaviorType);
-            }
+            this.AddBehavior(behaviorType);
         }
 
         return this;

@@ -91,12 +91,15 @@ internal static class NotificationHandlerResolver
             }
         }
 
-        foreach (var candidateInterface in notificationType.GetInterfaces())
+        foreach (
+            var candidateInterface in notificationType
+                .GetInterfaces()
+                .Where(candidateInterface =>
+                    typeof(INotification).IsAssignableFrom(candidateInterface) && seen.Add(candidateInterface)
+                )
+        )
         {
-            if (typeof(INotification).IsAssignableFrom(candidateInterface) && seen.Add(candidateInterface))
-            {
-                yield return candidateInterface;
-            }
+            yield return candidateInterface;
         }
     }
 }

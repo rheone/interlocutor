@@ -87,6 +87,9 @@ public class RootScopeGuardTests
 
     private sealed record SharedScopeQuery : IQuery<OperationOutcome<Guid, Failure>>;
 
+    // Resolved only via AddInterlocutor()'s assembly-scanning DI registration - never new'd or
+    // typeof'd directly, so this constructor is invisible to static analysis.
+#pragma warning disable S1144
     private sealed class SharedScopeQueryHandler(ScopedThing scopedThing, ScopedDependencyRecorder recorder)
         : IQueryHandler<SharedScopeQuery, OperationOutcome<Guid, Failure>>
     {
@@ -96,6 +99,7 @@ public class RootScopeGuardTests
             return Task.FromResult<OperationOutcome<Guid, Failure>>(scopedThing.Id);
         }
     }
+#pragma warning restore S1144
 
     private sealed class RecordingScopedBehavior<TRequest, TResponse>(
         ScopedThing scopedThing,

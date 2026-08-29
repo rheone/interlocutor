@@ -26,7 +26,7 @@ public sealed class CreateTodoTaskEndpointTests : IClassFixture<TodoTasksApiFact
     {
         // Arrange
         using var client = this.factory.CreateClient();
-        await this.AuthenticateAsANewUserAsync(client);
+        await AuthenticateAsANewUserAsync(client);
 
         // Act
         using var response = await client.PostAsJsonAsync(
@@ -65,7 +65,7 @@ public sealed class CreateTodoTaskEndpointTests : IClassFixture<TodoTasksApiFact
     {
         // Arrange
         using var client = this.factory.CreateClient();
-        await this.AuthenticateAsANewUserAsync(client);
+        await AuthenticateAsANewUserAsync(client);
         using var firstResponse = await client.PostAsJsonAsync(
             new Uri("/todo-tasks", UriKind.Relative),
             new CreateTodoTaskRequest("Buy milk", null),
@@ -89,7 +89,7 @@ public sealed class CreateTodoTaskEndpointTests : IClassFixture<TodoTasksApiFact
     {
         // Arrange
         using var client = this.factory.CreateClient();
-        await this.AuthenticateAsANewUserAsync(client);
+        await AuthenticateAsANewUserAsync(client);
 
         // Act
         using var response = await client.PostAsJsonAsync(
@@ -103,7 +103,7 @@ public sealed class CreateTodoTaskEndpointTests : IClassFixture<TodoTasksApiFact
     }
 
     /// <summary>Creates a real <see cref="User"/> and attaches the dev-auth header for it - the "create a user, then act as them" flow this project's caller identity depends on.</summary>
-    private async Task AuthenticateAsANewUserAsync(HttpClient client)
+    private static async Task AuthenticateAsANewUserAsync(HttpClient client)
     {
         using var createResponse = await client.PostAsJsonAsync(
             new Uri("/users", UriKind.Relative),

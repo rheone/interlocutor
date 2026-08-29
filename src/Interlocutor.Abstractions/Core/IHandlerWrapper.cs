@@ -6,12 +6,19 @@ using System.Diagnostics;
 /// <typeparam name="TResponse">The type of the success value produced by the handler.</typeparam>
 /// <remarks>
 /// <para>
-/// This is an internal abstraction used by the mediator to wrap both query and command handlers. Concrete subclasses
-/// (e.g., <c>QueryHandlerWrapper</c>, <c>CommandHandlerWrapper</c>) construct the pipeline behavior chain at invocation time
-/// and delegate to the actual handler implementation.
+/// This is an internal abstraction used by the mediator to wrap both query and command handlers. Concrete
+/// implementations (e.g., <c>QueryHandlerWrapper</c>, <c>CommandHandlerWrapper</c>) construct the pipeline behavior
+/// chain at invocation time and delegate to the actual handler implementation.
+/// </para>
+/// <para>
+/// Was an abstract class before Sonar's S1694 flagged it as interface-shaped (no fields, no non-abstract
+/// members). Converting it was safe: every consumer only ever casts a freshly <see cref="Activator"/>-constructed
+/// instance to this type (see <c>Mediator</c>'s query/command dispatch) and calls <see cref="Handle"/> - no
+/// shared state, no base-class extension point, and no <c>tests/Interlocutor.Architecture.Tests</c> assumption
+/// tied to it being a class. It stays <see langword="internal"/>, so this isn't a public API shape change.
 /// </para>
 /// </remarks>
-internal abstract class HandlerWrapper<TResponse>
+internal interface IHandlerWrapper<TResponse>
 {
     /// <summary>
     /// Executes the handler with the given request, resolving behaviors and the handler from the service provider.
@@ -25,10 +32,5 @@ internal abstract class HandlerWrapper<TResponse>
     /// must stay a no-op so the unlistened dispatch path performs no extra work.
     /// </param>
     /// <returns>The response from the handler.</returns>
-    public abstract Task<TResponse> Handle(
-        object request,
-        IServiceProvider services,
-        CancellationToken ct,
-        Activity? activity = null
-    );
+    Task<TResponse> Handle(object request, IServiceProvider services, CancellationToken ct, Activity? activity = null);
 }

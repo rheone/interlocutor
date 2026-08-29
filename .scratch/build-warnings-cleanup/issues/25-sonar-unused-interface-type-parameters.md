@@ -4,8 +4,12 @@
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Every flagged interface's unused type parameter is confirmed as a deliberate dispatch/discovery marker (suppressed with that reason recorded) or fixed if a genuine unused-parameter bug turns up
-- [ ] `dotnet build` reports zero `S2326` warnings
-- [ ] `dotnet test` passes solution-wide, and `tests/Interlocutor.Architecture.Tests` still passes (this touches core mediator contracts)
+- [x] Every flagged interface's unused type parameter is confirmed as a deliberate dispatch/discovery marker (suppressed with that reason recorded) or fixed if a genuine unused-parameter bug turns up
+- [x] `dotnet build` reports zero `S2326` warnings
+- [x] `dotnet test` passes solution-wide, and `tests/Interlocutor.Architecture.Tests` still passes (this touches core mediator contracts)
+
+## Comments
+
+Confirmed all 5 flagged type parameters are the deliberate marker-generic pattern this ticket anticipated: `ICommand<TResponse>`/`IQuery<TResponse>`'s `TResponse` exists purely so the mediator's generic `Send<TResponse>` overload can select the right handler/pipeline at compile time, and the two test-file interfaces/records (`GenericQuery<T>`, `ISampleOpenGenericService<T1,T2>`) exist purely to exercise open-generic handler discovery and registration-report formatting. Suppressed each with that reasoning recorded - no genuine unused-parameter bug found. `Interlocutor.Architecture.Tests` still passes.

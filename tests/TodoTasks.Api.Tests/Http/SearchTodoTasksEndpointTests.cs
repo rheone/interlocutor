@@ -39,7 +39,7 @@ public sealed class SearchTodoTasksEndpointTests : IClassFixture<TodoTasksApiFac
         // Arrange - a distinguishing marker keeps this test's assertions independent of whatever else
         // the shared fixture's other tests have created for other owners.
         using var client = this.factory.CreateClient();
-        await this.AuthenticateAsANewUserAsync(client);
+        await AuthenticateAsANewUserAsync(client);
         var marker = Guid.NewGuid().ToString("N");
         await client.PostAsJsonAsync(
             new Uri("/todo-tasks", UriKind.Relative),
@@ -74,7 +74,7 @@ public sealed class SearchTodoTasksEndpointTests : IClassFixture<TodoTasksApiFac
         // Arrange
         var marker = Guid.NewGuid().ToString("N");
         using var otherClient = this.factory.CreateClient();
-        await this.AuthenticateAsANewUserAsync(otherClient);
+        await AuthenticateAsANewUserAsync(otherClient);
         await otherClient.PostAsJsonAsync(
             new Uri("/todo-tasks", UriKind.Relative),
             new CreateTodoTaskRequest($"{marker} milk", null),
@@ -82,7 +82,7 @@ public sealed class SearchTodoTasksEndpointTests : IClassFixture<TodoTasksApiFac
         );
 
         using var client = this.factory.CreateClient();
-        await this.AuthenticateAsANewUserAsync(client);
+        await AuthenticateAsANewUserAsync(client);
 
         // Act
         using var response = await client.GetAsync(
@@ -100,7 +100,7 @@ public sealed class SearchTodoTasksEndpointTests : IClassFixture<TodoTasksApiFac
     }
 
     /// <summary>Creates a real <see cref="User"/> and attaches the dev-auth header for it.</summary>
-    private async Task AuthenticateAsANewUserAsync(HttpClient client)
+    private static async Task AuthenticateAsANewUserAsync(HttpClient client)
     {
         using var createResponse = await client.PostAsJsonAsync(
             new Uri("/users", UriKind.Relative),

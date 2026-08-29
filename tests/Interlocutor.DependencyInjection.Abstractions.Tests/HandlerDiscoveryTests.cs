@@ -163,9 +163,16 @@ public class HandlerDiscoveryTests
 
     private sealed record SharedNotification : INotification;
 
+    // T is deliberately left unconstrained by any member - this record exists to prove open-generic
+    // handler discovery (a handler registered for GenericQuery<> closes over whatever T the caller uses).
+#pragma warning disable S2326
     private sealed record GenericQuery<T> : IQuery<OperationOutcome>;
+#pragma warning restore S2326
 
+    // Deliberately empty: a negative-case marker that implements no handler interface, not a data holder.
+#pragma warning disable S2094
     private sealed class NotAHandler;
+#pragma warning restore S2094
 
     private sealed class SampleQueryHandler : IQueryHandler<SampleQuery, OperationOutcome>
     {

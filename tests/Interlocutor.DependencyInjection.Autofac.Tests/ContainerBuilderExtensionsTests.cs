@@ -114,5 +114,8 @@ public class ContainerBuilderExtensionsTests
             next();
     }
 
+    // Deliberately empty: a type-identity marker for this test's generic-constraint shape, not a data holder.
+#pragma warning disable S2094
     private sealed record MatchedRequest;
+#pragma warning restore S2094
 }

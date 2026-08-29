@@ -4,8 +4,12 @@
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Every flagged constructor is either removed (verified genuinely unused, not needed for the test's own shape) or kept with an inline comment recording why it must stay exactly as declared
-- [ ] `dotnet build` reports zero `S1144` warnings
-- [ ] `dotnet test` passes for every affected test project
+- [x] Every flagged constructor is either removed (verified genuinely unused, not needed for the test's own shape) or kept with an inline comment recording why it must stay exactly as declared
+- [x] `dotnet build` reports zero `S1144` warnings
+- [x] `dotnet test` passes for every affected test project
+
+## Comments
+
+S1144 covers more than constructors - it fired on private classes, a private field, and a private property too. Verified each flagged site case by case: ~26 are handler/notification-subscriber classes resolved only via `AddInterlocutor()`'s assembly-scanning DI registration (confirmed several sibling classes in the same files are *not* flagged because they're referenced via `typeof()` elsewhere, which is exactly the DI-vs-static-visibility split this ticket anticipated) - kept, with a `#pragma warning disable S1144` and a one-line reason at each site or wrapped block. `Widget.Id` (3 EF Core test files) is never read directly but is required by EF Core's key-by-convention - kept, same treatment. `GeneratorTestHarness.ResolvingHandlerRegistered` was already documented as deliberately unused (a module-initializer substitute) - extended its existing `RCS1213` pragma to cover `S1144` too. `RealSessionFixture.WidgetMap`'s constructor is invoked only by FluentNHibernate's mapping-assembly scan - same DI-invisible-to-static-analysis shape, kept with a reason.

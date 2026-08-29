@@ -200,7 +200,7 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<RealSessionFixture>
         // Assert
         Assert.True(result.IsSuccess);
         Assert.False(session.GetCurrentTransaction() is { IsActive: true });
-        Assert.False(session.IsDirty());
+        Assert.False(await session.IsDirtyAsync(CancellationToken.None));
         Assert.False(session.Contains(widget)); // Session.Clear() evicted the widget entirely.
 
         // SaveChangesAsync's own flush already sent the insert to the database before Cancel rolled it

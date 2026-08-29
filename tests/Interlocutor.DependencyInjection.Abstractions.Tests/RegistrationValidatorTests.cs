@@ -225,11 +225,13 @@ public class RegistrationValidatorTests
 
     private sealed record OverriddenQuery : IQuery<OperationOutcome>;
 
+#pragma warning disable S1144 // Resolved only via AddInterlocutor()'s assembly scanning, invisible to static analysis.
     private sealed class OverriddenQueryHandler : IQueryHandler<OverriddenQuery, OperationOutcome>
     {
         public Task<OperationOutcome> Handle(OverriddenQuery query, CancellationToken ct) =>
             Task.FromResult(default(OperationOutcome));
     }
+#pragma warning restore S1144
 
     private sealed class FirstOverrideBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     {

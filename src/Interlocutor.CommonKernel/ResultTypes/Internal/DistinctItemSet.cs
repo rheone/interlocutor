@@ -37,7 +37,16 @@ internal readonly record struct DistinctItemSet<TItem>
     /// <exception cref="ArgumentException"><paramref name="items"/> contains no elements.</exception>
     public DistinctItemSet(IEnumerable<TItem> items, string emptyMessage, string? paramName = null)
     {
-        ArgumentNullException.ThrowIfNull(items, paramName);
+        // paramName is a genuine, deliberate override point - each composing type (Conflicts, Failures, ...)
+        // passes its own field name so a thrown exception reports that name instead of this constructor's
+        // own "items" parameter. Passing it through explicitly means ThrowIfNull's own
+        // [CallerArgumentExpression] auto-fill never kicks in (that only applies when the argument is
+        // omitted at the call site), so the "unreachable"-message call sites that don't override it would
+        // otherwise report a null ParamName instead of "items" - the ?? restores that default. S3236
+        // flags any explicit argument here on principle, but omitting it would remove the override entirely.
+#pragma warning disable S3236
+        ArgumentNullException.ThrowIfNull(items, paramName ?? nameof(items));
+#pragma warning restore S3236
 
         this._items = [.. items.Distinct()];
 

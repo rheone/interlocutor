@@ -54,7 +54,7 @@ public sealed class EntityFrameworkRepositoryTests : IDisposable
         await this.context.SaveChangesAsync(TestContext.Current.CancellationToken);
         this.context.ChangeTracker.Clear();
 
-        var tracked = this.context.Widgets.Single();
+        var tracked = await this.context.Widgets.SingleAsync(TestContext.Current.CancellationToken);
         tracked.Name = "modified";
 
         // Act
@@ -63,7 +63,7 @@ public sealed class EntityFrameworkRepositoryTests : IDisposable
 
         // Assert
         await using var verify = this.CreateVerificationContext();
-        Assert.Equal("modified", verify.Widgets.Single().Name);
+        Assert.Equal("modified", (await verify.Widgets.SingleAsync(TestContext.Current.CancellationToken)).Name);
     }
 
     [Fact]
@@ -213,7 +213,9 @@ public sealed class EntityFrameworkRepositoryTests : IDisposable
         // Arrange
         this.context.Widgets.AddRange(new Widget { Name = "first" }, new Widget { Name = "second" });
         await this.context.SaveChangesAsync(TestContext.Current.CancellationToken);
-        var expectedId = this.context.Widgets.Single(w => w.Name == "second").Id;
+        var expectedId = (
+            await this.context.Widgets.SingleAsync(w => w.Name == "second", TestContext.Current.CancellationToken)
+        ).Id;
 
         // Act
         // GetById is a default interface method - reachable only through the interface, not the concrete type.

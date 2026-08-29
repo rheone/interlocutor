@@ -4,8 +4,12 @@
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Every flagged helper method is either made `static` (confirmed it uses no instance state) or kept as an instance method with a recorded reason
-- [ ] `dotnet build` reports zero `S2325` warnings
-- [ ] `dotnet test` passes for `TodoTasks.Api.Tests`
+- [x] Every flagged helper method is either made `static` (confirmed it uses no instance state) or kept as an instance method with a recorded reason
+- [x] `dotnet build` reports zero `S2325` warnings
+- [x] `dotnet test` passes for `TodoTasks.Api.Tests`
+
+## Comments
+
+Confirmed each of the 16 flagged helpers (`AuthenticateAsANewUserAsync`, `CreateTaskAsync`, `CreateUserAsync`, `Authenticate`, `CreateTaskAndReturnItsOwnerIdAsync`) across 9 `TodoTasks.Api.Tests/Http/*Tests.cs` files uses no instance state - all reference only their own parameters and static fields (`WebJsonOptions`). Made all `static`, then removed the now-illegal `this.` qualifier from every call site (the compiler's own CS0176 caught every one); one file (`CompleteReopenTodoTaskEndpointTests.cs`) needed a second, previously-unflagged helper (`CreateTaskAsync`) made `static` too, since it only referenced the newly-static sibling via `this.`.

@@ -64,8 +64,12 @@ public sealed class RealSessionFixture : IDisposable
 
     private sealed class WidgetMap : ClassMap<Widget>
     {
+        // Constructed only by NHibernate's own mapping-assembly scan (ClassMap<T> discovery), never
+        // new'd directly in test code - invisible to static analysis, hence the unused-constructor flag.
+#pragma warning disable S1144
         // Client-generated (see Widget's own remarks for why this - not an identity/auto-increment
         // column - matters to the tests using this fixture).
         public WidgetMap() => this.Id(w => w.Id).GeneratedBy.Guid();
+#pragma warning restore S1144
     }
 }

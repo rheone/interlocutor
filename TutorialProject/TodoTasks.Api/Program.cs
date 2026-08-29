@@ -113,7 +113,7 @@ builder.Host.ConfigureContainer<ContainerBuilder>(containerBuilder =>
     // FluentValidation's own IValidator<T> implementations (CreateUserValidator, and TodoTasks'
     // equivalents once that feature lands) - not something interlocutor.ScanAssembly below covers.
     // interlocutor.Pipeline.UseRecommendedChain()'s AddValidationBehavior() only wires up
-    // ValidationBehavior<,> itself (conditionally, when Interlocutor.FluentValidation is referenced);
+    // ValidationBehavior<,> itself, conditionally, when Interlocutor.FluentValidation is referenced -
     // it deliberately leaves *which* validators exist to ordinary FluentValidation registration,
     // exactly like this - without it, ValidationBehavior finds zero validators for every request and
     // silently skips validation entirely (no error, just nothing enforced), which is worth knowing
@@ -196,11 +196,25 @@ app.MapReopenTodoTaskEndpoint();
 app.MapDeleteTodoTaskEndpoint();
 app.MapClearCompletedTodoTasksEndpoint();
 
-app.Run();
+await app.RunAsync();
 
 /// <summary>
 /// Exposes this file's top-level-statements entry point as a named type so
 /// <c>WebApplicationFactory&lt;Program&gt;</c> (used throughout <c>TodoTasks.Api.Tests</c>' HTTP
 /// integration tests) can host this application in-process.
 /// </summary>
-public partial class Program;
+/// <remarks>
+/// Not <see langword="static"/>: <c>WebApplicationFactory&lt;TEntryPoint&gt;</c> requires its type
+/// argument to be an instantiable class, so this type must stay non-static. The explicit
+/// <see langword="protected"/> constructor instead blocks direct external instantiation while
+/// still satisfying that generic constraint.
+/// </remarks>
+public partial class Program
+{
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Program"/> class. Not callable from outside this
+    /// assembly or a derived type - this class exists only as a type marker for
+    /// <c>WebApplicationFactory&lt;Program&gt;</c>.
+    /// </summary>
+    protected Program() { }
+}

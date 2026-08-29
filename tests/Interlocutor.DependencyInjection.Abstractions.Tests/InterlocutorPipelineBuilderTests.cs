@@ -523,9 +523,12 @@ public class InterlocutorPipelineBuilderTests
         }
     }
 
+    // Deliberately empty: type-identity markers for this test's generic-constraint shape, not data holders.
+#pragma warning disable S2094
     private sealed record SampleRequest;
 
     private sealed record SampleResponse;
+#pragma warning restore S2094
 
     private sealed class SampleStage : IPipelineStage<SampleRequest, SampleResponse>
     {

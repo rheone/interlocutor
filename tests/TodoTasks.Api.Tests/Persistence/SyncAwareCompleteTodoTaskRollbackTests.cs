@@ -28,8 +28,8 @@ public sealed class SyncAwareCompleteTodoTaskRollbackTests : IClassFixture<Persi
         using (var seedSession = this.fixture.OpenSession())
         {
             var task = new TodoTask("Buy milk", "owner-1", null);
-            seedSession.Save(task);
-            seedSession.Flush();
+            await seedSession.SaveAsync(task, TestContext.Current.CancellationToken);
+            await seedSession.FlushAsync(TestContext.Current.CancellationToken);
             taskId = task.Id;
         }
 
@@ -65,7 +65,7 @@ public sealed class SyncAwareCompleteTodoTaskRollbackTests : IClassFixture<Persi
 
         // ...but a brand new session proves the database row itself was never touched.
         using var verifySession = this.fixture.OpenSession();
-        var persisted = verifySession.Get<TodoTask>(taskId);
+        var persisted = await verifySession.GetAsync<TodoTask>(taskId, TestContext.Current.CancellationToken);
         Assert.NotNull(persisted);
         Assert.False(persisted.IsCompleted);
     }
@@ -78,8 +78,8 @@ public sealed class SyncAwareCompleteTodoTaskRollbackTests : IClassFixture<Persi
         using (var seedSession = this.fixture.OpenSession())
         {
             var task = new TodoTask("Buy milk", "owner-1", null);
-            seedSession.Save(task);
-            seedSession.Flush();
+            await seedSession.SaveAsync(task, TestContext.Current.CancellationToken);
+            await seedSession.FlushAsync(TestContext.Current.CancellationToken);
             taskId = task.Id;
         }
 
@@ -102,7 +102,7 @@ public sealed class SyncAwareCompleteTodoTaskRollbackTests : IClassFixture<Persi
 
         // Assert
         using var verifySession = this.fixture.OpenSession();
-        var persisted = verifySession.Get<TodoTask>(taskId);
+        var persisted = await verifySession.GetAsync<TodoTask>(taskId, TestContext.Current.CancellationToken);
         Assert.True(persisted.IsCompleted);
     }
 }

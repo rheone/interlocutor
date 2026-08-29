@@ -56,7 +56,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
         // Look up or create the handler wrapper for this query type. The wrapper composes the pipeline
         // behavior chain at invocation time. Caching by query type avoids expensive reflection for every dispatch.
         var wrapper =
-            (HandlerWrapper<TResponse>)
+            (IHandlerWrapper<TResponse>)
                 QueryWrappers.GetOrAdd(
                     query.GetType(),
                     requestType =>
@@ -81,7 +81,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
         // Look up or create the handler wrapper for this command type. The wrapper composes the pipeline
         // behavior chain at invocation time. Caching by command type avoids expensive reflection for every dispatch.
         var wrapper =
-            (HandlerWrapper<TResponse>)
+            (IHandlerWrapper<TResponse>)
                 CommandWrappers.GetOrAdd(
                     command.GetType(),
                     requestType =>
@@ -104,7 +104,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
         // handled with different outcome shapes depending on what the caller needs (e.g., caller may want
         // just Success/Failure, or may need additional cases like NotFound).
         var wrapper =
-            (VoidHandlerWrapper<TResult>)
+            (IVoidHandlerWrapper<TResult>)
                 VoidCommandWrappers.GetOrAdd(
                     (command.GetType(), typeof(TResult)),
                     key =>
@@ -297,7 +297,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
         var activity = MediatorActivitySource.Source.StartActivity();
 
         // Publish has no IOperationOutcome to tag - notifications return Task, not an outcome, and may fan out
-        // to several handlers - so TraceAsync's generic TResult is a placeholder object? that is always null;
+        // to several handlers - so TraceAsync's generic TResult is a placeholder, always-null nullable object.
         // TraceAsync's own outcome-tagging check is simply a no-op for it. See TraceAsync's remarks.
         return activity is null
             ? wrapper.Handle(notification, services, ct)

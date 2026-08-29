@@ -565,9 +565,12 @@ public class InterlocutorBuilderTests
         public RequestContext? Context { get; set; }
     }
 
+    // Deliberately empty: type-identity markers for this test's generic-constraint shape, not data holders.
+#pragma warning disable S2094
     private sealed record SampleRequest;
 
     private sealed record SampleResponse;
+#pragma warning restore S2094
 
     private sealed class SampleStage : IPipelineStage<SampleRequest, SampleResponse>
     {
@@ -587,5 +590,8 @@ public class InterlocutorBuilderTests
             Task.FromResult(default(OperationOutcome));
     }
 
+    // Deliberately empty: a negative-case marker that implements no handler interface, not a data holder.
+#pragma warning disable S2094
     private sealed class NotAHandler;
+#pragma warning restore S2094
 }

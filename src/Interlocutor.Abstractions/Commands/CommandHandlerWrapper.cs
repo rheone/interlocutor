@@ -18,7 +18,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// to avoid repeated reflection.
 /// </para>
 /// </remarks>
-internal sealed class CommandHandlerWrapper<TCommand, TResponse> : HandlerWrapper<TResponse>
+internal sealed class CommandHandlerWrapper<TCommand, TResponse> : IHandlerWrapper<TResponse>
     where TCommand : ICommand<TResponse>
     where TResponse : IOperationOutcome
 {
@@ -30,12 +30,7 @@ internal sealed class CommandHandlerWrapper<TCommand, TResponse> : HandlerWrappe
     /// <param name="ct">The cancellation token.</param>
     /// <param name="activity">The activity to tag with the resolved handler type, or <see langword="null"/>.</param>
     /// <returns>The response from the handler.</returns>
-    public override Task<TResponse> Handle(
-        object request,
-        IServiceProvider services,
-        CancellationToken ct,
-        Activity? activity = null
-    )
+    public Task<TResponse> Handle(object request, IServiceProvider services, CancellationToken ct, Activity? activity = null)
     {
         var typedRequest = (TCommand)request;
         var handler = services.GetRequiredService<ICommandHandler<TCommand, TResponse>>();

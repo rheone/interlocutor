@@ -158,9 +158,12 @@ public class RegistrationApplierTests
         public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) => next();
     }
 
+    // Deliberately empty: type-identity markers for this test's generic-constraint shape, not data holders.
+#pragma warning disable S2094
     private sealed record MarkerStageFactoryRequest;
 
     private sealed record MarkerStageFactoryResponse;
+#pragma warning restore S2094
 
     private sealed class MarkerStage : IPipelineStage<MarkerStageFactoryRequest, MarkerStageFactoryResponse>
     {

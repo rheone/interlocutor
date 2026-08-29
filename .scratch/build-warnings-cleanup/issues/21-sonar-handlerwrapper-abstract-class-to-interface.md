@@ -4,9 +4,13 @@
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A decision is made and recorded (converted to an interface, or suppressed with a genuine reason) for `HandlerWrapper`
-- [ ] If converted, every consumer (production and test) still compiles and behaves identically - this is a public API surface, so check for breaking-change implications before shipping
-- [ ] `dotnet build` reports zero `S1694` warnings
-- [ ] `dotnet test` passes solution-wide
+- [x] A decision is made and recorded (converted to an interface, or suppressed with a genuine reason) for `HandlerWrapper`
+- [x] If converted, every consumer (production and test) still compiles and behaves identically - this is a public API surface, so check for breaking-change implications before shipping
+- [x] `dotnet build` reports zero `S1694` warnings
+- [x] `dotnet test` passes solution-wide
+
+## Comments
+
+Investigated: both `HandlerWrapper<TResponse>` and its sibling `VoidHandlerWrapper<TResult>` (also flagged) are `internal`, have zero fields and only the one abstract member, and every consumer only casts a freshly `Activator.CreateInstance`-constructed instance to the type before calling `Handle` - no shared state, no extension point, no `Interlocutor.Architecture.Tests` assumption tied to being a class. Converted both to interfaces (`IHandlerWrapper<TResponse>`, `IVoidHandlerWrapper<TResult>`, renamed per this repo's `I`-prefix convention to avoid a new SA1302), updated the three implementers (`QueryHandlerWrapper`, `CommandHandlerWrapper`, `VoidCommandHandlerWrapper`) and `Mediator`'s two casts. Since both types are `internal`, this isn't a public API shape change. Recorded the safety reasoning in each interface's own `<remarks>`.

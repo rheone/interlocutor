@@ -29,7 +29,7 @@ public sealed class TodoTasksControllerTests : IClassFixture<TodoTasksApiFactory
     {
         // Arrange
         using var client = this.factory.CreateClient();
-        await this.AuthenticateAsANewUserAsync(client);
+        await AuthenticateAsANewUserAsync(client);
 
         // Act
         using var response = await client.PostAsJsonAsync(
@@ -52,8 +52,8 @@ public sealed class TodoTasksControllerTests : IClassFixture<TodoTasksApiFactory
     {
         // Arrange - exercises GetById's manual pattern-match over the success case.
         using var client = this.factory.CreateClient();
-        await this.AuthenticateAsANewUserAsync(client);
-        var task = await this.CreateTaskAsync(client, "Buy milk");
+        await AuthenticateAsANewUserAsync(client);
+        var task = await CreateTaskAsync(client, "Buy milk");
 
         // Act
         using var response = await client.GetAsync(
@@ -92,10 +92,10 @@ public sealed class TodoTasksControllerTests : IClassFixture<TodoTasksApiFactory
         // Arrange - a distinguishing title lets this test find its own tasks among the shared fixture's
         // other tests' tasks, since /api/todo-tasks isn't scoped to a caller.
         using var client = this.factory.CreateClient();
-        await this.AuthenticateAsANewUserAsync(client);
+        await AuthenticateAsANewUserAsync(client);
         var marker = Guid.NewGuid().ToString("N");
-        await this.CreateTaskAsync(client, $"{marker}-one");
-        await this.CreateTaskAsync(client, $"{marker}-two");
+        await CreateTaskAsync(client, $"{marker}-one");
+        await CreateTaskAsync(client, $"{marker}-two");
 
         // Act
         using var response = await client.GetAsync(
@@ -117,8 +117,8 @@ public sealed class TodoTasksControllerTests : IClassFixture<TodoTasksApiFactory
     {
         // Arrange
         using var client = this.factory.CreateClient();
-        await this.AuthenticateAsANewUserAsync(client);
-        var task = await this.CreateTaskAsync(client, "Buy milk");
+        await AuthenticateAsANewUserAsync(client);
+        var task = await CreateTaskAsync(client, "Buy milk");
 
         // Act
         using var response = await client.PutAsJsonAsync(
@@ -141,8 +141,8 @@ public sealed class TodoTasksControllerTests : IClassFixture<TodoTasksApiFactory
     {
         // Arrange
         using var client = this.factory.CreateClient();
-        await this.AuthenticateAsANewUserAsync(client);
-        var task = await this.CreateTaskAsync(client, "Buy milk");
+        await AuthenticateAsANewUserAsync(client);
+        var task = await CreateTaskAsync(client, "Buy milk");
 
         // Act
         using var completeResponse = await client.PostAsync(
@@ -177,8 +177,8 @@ public sealed class TodoTasksControllerTests : IClassFixture<TodoTasksApiFactory
     {
         // Arrange
         using var client = this.factory.CreateClient();
-        await this.AuthenticateAsANewUserAsync(client);
-        var task = await this.CreateTaskAsync(client, "Buy milk");
+        await AuthenticateAsANewUserAsync(client);
+        var task = await CreateTaskAsync(client, "Buy milk");
 
         // Act
         using var response = await client.DeleteAsync(
@@ -201,9 +201,9 @@ public sealed class TodoTasksControllerTests : IClassFixture<TodoTasksApiFactory
     {
         // Arrange
         using var client = this.factory.CreateClient();
-        await this.AuthenticateAsANewUserAsync(client);
-        var toComplete = await this.CreateTaskAsync(client, "Buy milk");
-        var toLeaveAlone = await this.CreateTaskAsync(client, "Walk the dog");
+        await AuthenticateAsANewUserAsync(client);
+        var toComplete = await CreateTaskAsync(client, "Buy milk");
+        var toLeaveAlone = await CreateTaskAsync(client, "Walk the dog");
         await client.PostAsync(
             new Uri($"/api/todo-tasks/{toComplete.Id}/complete", UriKind.Relative),
             null,
@@ -232,7 +232,7 @@ public sealed class TodoTasksControllerTests : IClassFixture<TodoTasksApiFactory
         Assert.Equal(HttpStatusCode.OK, incompleteGetResponse.StatusCode);
     }
 
-    private async Task AuthenticateAsANewUserAsync(HttpClient client)
+    private static async Task AuthenticateAsANewUserAsync(HttpClient client)
     {
         using var response = await client.PostAsJsonAsync(
             new Uri("/users", UriKind.Relative),
@@ -243,7 +243,7 @@ public sealed class TodoTasksControllerTests : IClassFixture<TodoTasksApiFactory
         client.DefaultRequestHeaders.Add(DevHeaderAuthenticationHandler.HeaderName, user!.Id.ToString());
     }
 
-    private async Task<TodoTaskDto> CreateTaskAsync(HttpClient client, string title)
+    private static async Task<TodoTaskDto> CreateTaskAsync(HttpClient client, string title)
     {
         using var response = await client.PostAsJsonAsync(
             new Uri("/api/todo-tasks", UriKind.Relative),

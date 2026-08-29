@@ -13,5 +13,12 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// <param name="caseType">The runtime type of the active case.</param>
 /// <param name="caseValue">The active case value.</param>
 /// <returns><see langword="true"/> if the active case was extracted; otherwise, <see langword="false"/>.</returns>
-public delegate bool OutcomeCaseExtractor<TResponse>(TResponse response, out Type caseType, out object? caseValue)
+/// <remarks>
+/// <typeparamref name="TResponse"/> is contravariant: it appears only in the input <paramref name="response"/>
+/// position, never returned, so an extractor written against a base <see cref="IOperationOutcome"/> type can
+/// stand in wherever one for a more derived response type is expected. <see cref="OutcomeCaseRegistryBuilder"/>
+/// still stores and looks up extractors keyed by the exact registered response type, so this is a purely
+/// compile-time widening of what's assignable - it does not change which extractor runs for a given response.
+/// </remarks>
+public delegate bool OutcomeCaseExtractor<in TResponse>(TResponse response, out Type caseType, out object? caseValue)
     where TResponse : IOperationOutcome;

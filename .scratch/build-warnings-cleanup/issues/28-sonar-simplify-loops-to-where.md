@@ -4,8 +4,12 @@
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Every flagged loop is either rewritten using `Where` or kept as a loop with a recorded performance/allocation reason (especially for the generator's own hot paths)
-- [ ] `dotnet build` reports zero `S3267` warnings
-- [ ] `dotnet test` passes for `Interlocutor.Generator.Tests` and the other affected projects
+- [x] Every flagged loop is either rewritten using `Where` or kept as a loop with a recorded performance/allocation reason (especially for the generator's own hot paths)
+- [x] `dotnet build` reports zero `S3267` warnings
+- [x] `dotnet test` passes for `Interlocutor.Generator.Tests` and the other affected projects
+
+## Comments
+
+Rewrote all four flagged loops as `foreach`-over-`Where()`: `NotificationHandlerResolver.NotificationTypeHierarchy` and `InterlocutorPipelineBuilder.OverridePipelineFor` (both filter-then-act shapes), `PipelineOverrideRegistry.TryGetOverride` (rewritten as `FirstOrDefault`, the more idiomatic form for a first-match lookup), and the generator's own `HandlerDiagnosticAnalyzer.ReportMissingHandlers`. For the generator's hot path specifically: confirmed `ImmutableArray<T>.Where` resolves to `System.Linq.ImmutableArrayExtensions`' specialized non-boxing overload (not the general `IEnumerable<T>` one), so the mechanical rewrite carries no allocation regression there - recorded that reasoning inline rather than leaving it as a loop.

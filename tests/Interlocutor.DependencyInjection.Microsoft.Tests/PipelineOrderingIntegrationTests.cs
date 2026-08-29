@@ -165,6 +165,9 @@ public sealed class PipelineOrderingIntegrationTests
         public string PolicyName => "Test.Policy";
     }
 
+    // Resolved only via AddInterlocutor()'s assembly-scanning DI registration - never new'd or
+    // typeof'd directly, so this constructor is invisible to static analysis.
+#pragma warning disable S1144
     private sealed class OrderedRequestHandler(Lazy<ISession> session, List<string> log)
         : ICommandHandler<OrderedRequest, OperationOutcome<Success, Forbidden>>
     {
@@ -185,6 +188,7 @@ public sealed class PipelineOrderingIntegrationTests
             return Task.FromResult<OperationOutcome<Success, Forbidden>>(default(Success));
         }
     }
+#pragma warning restore S1144
 
     /// <summary>A validator whose single always-passing rule records that it ran, proving Validation's inbound side effect.</summary>
     private sealed class RecordingValidator : AbstractValidator<OrderedRequest>

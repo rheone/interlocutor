@@ -346,6 +346,10 @@ public class InterlocutorBuilderIntegrationTests
 
     private sealed record SampleQuery : IQuery<OperationOutcome>;
 
+    // The handler classes through ShortCircuitQueryHandler below are resolved only via
+    // AddInterlocutor()'s assembly-scanning DI registration - never new'd or typeof'd directly in
+    // this file - so their constructors are invisible to static analysis and read as unused.
+#pragma warning disable S1144
     private sealed class SampleQueryHandler : IQueryHandler<SampleQuery, OperationOutcome>
     {
         public Task<OperationOutcome> Handle(SampleQuery query, CancellationToken ct) =>
@@ -413,6 +417,7 @@ public class InterlocutorBuilderIntegrationTests
             return Task.FromResult(default(OperationOutcome));
         }
     }
+#pragma warning restore S1144
 
     private sealed class RecordingAuditSink : IAuditSink
     {

@@ -34,6 +34,13 @@ public class LoggingBehavior<TRequest, TResponse>(
         {
             result = await next();
         }
+        // S2139 wants either logging or rethrowing, not both, on the theory that a caller further up the
+        // stack will log the same exception again. Nothing further out in this pipeline does: the exception
+        // simply propagates out of Send/Publish to the caller (see CLAUDE.md - exceptions here mean bugs or
+        // infra faults, not an expected outcome the pipeline itself handles), and this catch attaches
+        // context - which request type, how long it ran before failing - that no generic upstream handler
+        // could reconstruct. Rethrowing via a bare `throw;` preserves the original stack trace.
+#pragma warning disable S2139
         catch (Exception ex)
         {
             // Handler threw an exception (bug or infrastructure failure, not an expected business outcome).
@@ -47,6 +54,7 @@ public class LoggingBehavior<TRequest, TResponse>(
             );
             throw;
         }
+#pragma warning restore S2139
 
         // Handler completed (with or without a business failure outcome). Log the outcome and elapsed time
         // for monitoring and debugging. The describer converts the response to a human-readable label.

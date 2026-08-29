@@ -58,12 +58,12 @@ public class DependencyTests
         var result = Types
             .InAssembly(AbstractionsAssembly)
             .ShouldNot()
-            .HaveDependencyOnAny([
+            .HaveDependencyOnAny(
                 "Interlocutor.AspNetCore",
                 "Interlocutor.Persistence.EntityFrameworkCore",
                 "Interlocutor.FluentValidation",
-                "Interlocutor.Persistence.NHibernate",
-            ])
+                "Interlocutor.Persistence.NHibernate"
+            )
             .GetResult();
 
         // Assert
@@ -80,11 +80,11 @@ public class DependencyTests
         var result = Types
             .InAssembly(typeof(Interlocutor.AspNetCore.ResultExtensions).Assembly)
             .ShouldNot()
-            .HaveDependencyOnAny([
+            .HaveDependencyOnAny(
                 "Interlocutor.Persistence.EntityFrameworkCore",
                 "Interlocutor.FluentValidation",
-                "Interlocutor.Persistence.NHibernate",
-            ])
+                "Interlocutor.Persistence.NHibernate"
+            )
             .GetResult();
 
         // Assert
@@ -150,12 +150,12 @@ public class DependencyTests
         var result = Types
             .InAssembly(DependencyInjectionMicrosoftAssembly)
             .ShouldNot()
-            .HaveDependencyOnAny([
+            .HaveDependencyOnAny(
                 "Interlocutor.DependencyInjection.Autofac",
                 "Interlocutor.Persistence.EntityFrameworkCore",
                 "Interlocutor.FluentValidation",
-                "Interlocutor.Persistence.NHibernate",
-            ])
+                "Interlocutor.Persistence.NHibernate"
+            )
             .GetResult();
 
         // Assert
@@ -172,12 +172,12 @@ public class DependencyTests
         var result = Types
             .InAssembly(DependencyInjectionAutofacAssembly)
             .ShouldNot()
-            .HaveDependencyOnAny([
+            .HaveDependencyOnAny(
                 "Interlocutor.DependencyInjection.Microsoft",
                 "Interlocutor.Persistence.EntityFrameworkCore",
                 "Interlocutor.FluentValidation",
-                "Interlocutor.Persistence.NHibernate",
-            ])
+                "Interlocutor.Persistence.NHibernate"
+            )
             .GetResult();
 
         // Assert
@@ -194,14 +194,14 @@ public class DependencyTests
         var result = Types
             .InAssembly(PersistenceAbstractionsAssembly)
             .ShouldNot()
-            .HaveDependencyOnAny([
+            .HaveDependencyOnAny(
                 "Interlocutor.AspNetCore",
                 "Interlocutor.Persistence.EntityFrameworkCore",
                 "Interlocutor.FluentValidation",
                 "Interlocutor.Persistence.NHibernate",
                 "Interlocutor.DependencyInjection.Microsoft",
-                "Interlocutor.DependencyInjection.Autofac",
-            ])
+                "Interlocutor.DependencyInjection.Autofac"
+            )
             .GetResult();
 
         // Assert

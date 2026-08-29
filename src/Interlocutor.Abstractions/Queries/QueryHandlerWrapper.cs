@@ -17,7 +17,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// This wrapper is created once per query type and cached by the mediator to avoid repeated reflection.
 /// </para>
 /// </remarks>
-internal sealed class QueryHandlerWrapper<TQuery, TResponse> : HandlerWrapper<TResponse>
+internal sealed class QueryHandlerWrapper<TQuery, TResponse> : IHandlerWrapper<TResponse>
     where TQuery : IQuery<TResponse>
     where TResponse : IOperationOutcome
 {
@@ -29,12 +29,7 @@ internal sealed class QueryHandlerWrapper<TQuery, TResponse> : HandlerWrapper<TR
     /// <param name="ct">The cancellation token.</param>
     /// <param name="activity">The activity to tag with the resolved handler type, or <see langword="null"/>.</param>
     /// <returns>The response from the handler.</returns>
-    public override Task<TResponse> Handle(
-        object request,
-        IServiceProvider services,
-        CancellationToken ct,
-        Activity? activity = null
-    )
+    public Task<TResponse> Handle(object request, IServiceProvider services, CancellationToken ct, Activity? activity = null)
     {
         var typedRequest = (TQuery)request;
         var handler = services.GetRequiredService<IQueryHandler<TQuery, TResponse>>();

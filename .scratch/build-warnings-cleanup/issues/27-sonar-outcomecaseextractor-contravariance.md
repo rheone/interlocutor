@@ -4,8 +4,12 @@
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A decision is made and recorded (added `in` after confirming input-only usage and no consumer impact, or suppressed with a reason `in` doesn't fit)
-- [ ] `dotnet build` reports zero `S3246` warnings
-- [ ] `dotnet test` passes solution-wide, since this is a core pipeline/result-type interface
+- [x] A decision is made and recorded (added `in` after confirming input-only usage and no consumer impact, or suppressed with a reason `in` doesn't fit)
+- [x] `dotnet build` reports zero `S3246` warnings
+- [x] `dotnet test` passes solution-wide, since this is a core pipeline/result-type interface
+
+## Comments
+
+Verified `TResponse` appears only in `OutcomeCaseExtractor<TResponse>`'s input `response` position, never returned - `caseType`/`caseValue` are `Type`/`object?`, unrelated to `TResponse`. `OutcomeCaseRegistryBuilder` stores and casts extractors by the exact registered closed type at runtime regardless of static variance, so marking it `in TResponse` is a pure compile-time widening with no consumer-visible behavior change. Added `in`, with the reasoning recorded in the delegate's own `<remarks>`. Full solution `dotnet test` (including `Interlocutor.Architecture.Tests`) passes.

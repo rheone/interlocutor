@@ -4,8 +4,12 @@
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Every flagged block is either deleted (confirmed dead, not a deliberate example) or kept with an inline explanation for why it's intentional
-- [ ] `dotnet build` reports zero `S125` warnings
-- [ ] `dotnet test` passes solution-wide
+- [x] Every flagged block is either deleted (confirmed dead, not a deliberate example) or kept with an inline explanation for why it's intentional
+- [x] `dotnet build` reports zero `S125` warnings
+- [x] `dotnet test` passes solution-wide
+
+## Comments
+
+All three flagged blocks were prose comments Sonar mis-flagged as commented-out code, not actual dead code - each ended in a semicolon-terminated phrase (`...that is always null;`, `...unwind in detail;`, `...is referenced);`) that parses like a truncated statement. Rephrased each to remove the code-like punctuation (`Mediator.cs`, `InterlocutorBuilderIntegrationTests.cs`, `TutorialProject/TodoTasks.Api/Program.cs`) without changing their meaning - no suppression needed.

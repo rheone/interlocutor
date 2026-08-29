@@ -7,11 +7,16 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// <typeparam name="TResult">The <see cref="IOperationOutcome"/>-shaped outcome type produced by the handler.</typeparam>
 /// <remarks>
 /// <para>
-/// This is an internal abstraction used by the mediator to wrap void command handlers. Concrete subclasses
+/// This is an internal abstraction used by the mediator to wrap void command handlers. Concrete implementations
 /// (e.g., <c>VoidCommandHandlerWrapper</c>) construct the pipeline behavior chain at invocation time.
 /// </para>
+/// <para>
+/// Was an abstract class before Sonar's S1694 flagged it as interface-shaped (no fields, no non-abstract
+/// members) - see <see cref="IHandlerWrapper{TResponse}"/>'s remarks for why converting its sibling was safe;
+/// the same reasoning applies here.
+/// </para>
 /// </remarks>
-internal abstract class VoidHandlerWrapper<TResult>
+internal interface IVoidHandlerWrapper<TResult>
     where TResult : IOperationOutcome
 {
     /// <summary>
@@ -26,10 +31,5 @@ internal abstract class VoidHandlerWrapper<TResult>
     /// must stay a no-op so the unlistened dispatch path performs no extra work.
     /// </param>
     /// <returns>The outcome from the handler.</returns>
-    public abstract Task<TResult> Handle(
-        object request,
-        IServiceProvider services,
-        CancellationToken ct,
-        Activity? activity = null
-    );
+    Task<TResult> Handle(object request, IServiceProvider services, CancellationToken ct, Activity? activity = null);
 }
