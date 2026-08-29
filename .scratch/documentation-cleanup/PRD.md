@@ -1,6 +1,6 @@
 # Documentation Cleanup
 
-Status: in progress - units 01-05 done, 06-11 open, 12 blocked. Running 06-11 straight through per owner's go-ahead; committing after each unit.
+Status: in progress - units 01-06 done, 07-11 open, 12 blocked. Running 07-11 straight through per owner's go-ahead; committing after each unit.
 
 This effort is expected to recur as the codebase evolves (see `maintainer_docs/agents/documentation-maintenance.md`) - this file is the reusable record of scope, decisions, and unit breakdown for re-running it, not a one-shot ticket to close and forget.
 
@@ -59,7 +59,7 @@ Follow-up clarifications from the grilling session that reshaped scope:
 - [x] **03 - Dispatch & registration**: `handler-selection-and-dispatch.md`, `builder-and-registration.md`, the four `dependency-injection-*.md` files (one of which, `dependency-injection-packages.md`, turned out redundant and was deleted).
 - [x] **04 - Pipeline & lifecycle**: `pipeline-and-behaviors.md`, `mediator-lifetimes-and-scope.md`, `notifications-and-fan-out.md`, `runtime-typed-dispatch.md` (the last of these was rebuilt around a nonexistent `IOperationOutcome.IsSuccess`/`.Failure` API).
 - [x] **05 - HTTP & persistence**: `aspnetcore-integration.md` (most-drifted file found so far - wrong mapper type, wrong status codes for `ValidationErrors`/`Failure`, missing `ToMinimalApiResult`), `transactions-and-store-integration.md`, `persistence-abstraction.md`, `persistence-implementations.md`.
-- [ ] **06 - Platform & quality**: `trim-and-aot-support.md`, `testing.md`.
+- [x] **06 - Platform & quality**: `trim-and-aot-support.md` (accurate, no changes), `testing.md` (fixed a `.Value`-narrowing bug and a test contradicting the no-default-validation design).
 - [ ] **07 - Tutorials**: `sample-app-walkthrough.md`, `beginners-guide-todo-api.md` (review-only), move `maintainer_docs/guides/composing-operationoutcome-arities.md` → `documentation/composing-operationoutcome-arities.md`.
 - [ ] **08 - Extensibility**: new `documentation/extensibility.md` - custom marker interfaces, custom `IPipelineBehavior<,>`/`IPipelineStage<,>`, custom `IOperationOutcome` cases, `InterlocutorBuilder.AddTypeMatch`, `InterlocutorPipelineBuilder.OverridePipelineFor`.
 - [ ] **09 - `maintainer_docs/` top level**: `README.md`, `PRD.md`, `TODO.md` post-rename accuracy pass.

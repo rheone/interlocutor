@@ -41,9 +41,8 @@ public async Task GetUserHandler_WithExistingUser_ReturnsUserDto()
     var result = await handler.Handle(new GetUser(1), CancellationToken.None);
 
     // Assert
-    var success = Assert.IsType<OperationOutcome<UserDto, NotFound>>(result);
-    Assert.True(success.IsSuccess);
-    var user = success.Value;
+    Assert.True(result.IsSuccess);
+    var user = Assert.IsType<UserDto>(result.Value);  // .Value is object - narrow it before reading members
     Assert.Equal("Alice", user.Name);
 }
 
@@ -197,26 +196,40 @@ public class LoggingBehaviorTests
 
 ## DI Startup Validation
 
-Verify that all handlers are registered at startup:
+`AddInterlocutor` doesn't validate anything on its own - a missing handler stays undetected until the first dispatch that needs it. Test the opt-in checks explicitly instead of assuming either one runs by default:
 
 ```csharp
 [Fact]
-public void AddInterlocutor_WithMissingHandler_ThrowsOnStartup()
+public void AddInterlocutor_WithValidateOnBuild_ThrowsForMissingHandler()
 {
-    // Arrange: don't register handlers
+    // Arrange: don't register a GetUserHandler anywhere in the scanned assembly
     var services = new ServiceCollection();
 
-    // Act & Assert: building the container should throw because no handler for GetUser
-    var ex = Assert.Throws<InvalidOperationException>(() =>
-    {
+    // Act & Assert: ValidateOnBuild() opts into checking the accumulated registration
+    // list - without it, this would build successfully and only fail on first dispatch.
+    var ex = Assert.Throws<InterlocutorRegistrationValidationException>(() =>
         services.AddInterlocutor(builder =>
         {
-            builder.ScanAssembly(typeof(Program).Assembly);  // But no GetUserHandler registered
-        });
+            builder.ScanAssembly(typeof(GetUser).Assembly);
+            builder.ValidateOnBuild();
+        })
+    );
 
-        var provider = services.BuildServiceProvider();  // Should throw here
-    });
+    Assert.Contains(ex.Report.Problems, p => p.Description.Contains("GetUser"));
+}
 
+[Fact]
+public void ValidateHandlerRegistrations_ThrowsForMissingHandler()
+{
+    // Arrange: same missing-handler scenario, but caught after the container is built instead
+    var services = new ServiceCollection();
+    services.AddInterlocutor(builder => builder.ScanAssembly(typeof(GetUser).Assembly));
+    var provider = services.BuildServiceProvider();
+
+    // Act & Assert
+    var ex = Assert.Throws<InvalidOperationException>(
+        () => provider.ValidateHandlerRegistrations(typeof(GetUser).Assembly)
+    );
     Assert.Contains("GetUser", ex.Message);
 }
 ```
