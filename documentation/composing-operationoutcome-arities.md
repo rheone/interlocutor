@@ -1,5 +1,7 @@
 # Composing commands, queries, and handlers around each `OperationOutcome` arity
 
+Worked examples for choosing an `OperationOutcome` arity for a given command or query. Assumes [Messages, Result Types & Variance](messages-and-result-types.md)'s vocabulary - read that first if `OperationOutcome`, arities, and marker interfaces are new.
+
 `Interlocutor.CommonKernel` declares a family of `IOperationOutcome`-implementing unions, distinguished purely
 by how many outcome shapes ("arms") they carry:
 
@@ -22,7 +24,7 @@ generic over `TResponse`/`TResult` - that type parameter can be `OperationOutcom
 `OperationOutcome<A,B,C,D,E>`, or a plain non-`OperationOutcome` type. `IResponseOutcomeDescriber` (used by
 `LoggingBehavior`, `AuditingBehavior`, and `UnitOfWorkBehavior`) never inspects which arity
 produced a response either - it unwraps the union via `IUnion.Value` and pattern-matches on the
-*case type* (`NotFound`, `Forbidden`, `Conflict`, `ValidationFailure`, `Failure`), so those three
+*case type* (`NotFound`, `Forbidden`, `Conflict`, `ValidationError`, `Failure`), so those three
 behaviors work identically no matter which arity you choose.
 
 The three examples below build a full vertical slice - a command, a query, their handlers, and
@@ -145,9 +147,9 @@ services.AddScoped(typeof(IPipelineBehavior<,>), typeof(AppDbUnitOfWorkBehavior<
 **Call site:**
 
 ```csharp
-var OperationOutcome = await sender.Send<OperationOutcome>(new DeactivateUserCommand(userId), ct);
+var result = await sender.Send<OperationOutcome>(new DeactivateUserCommand(userId), ct);
 
-var response = OperationOutcome.Value switch
+var response = result.Value switch
 {
     Success => Results.NoContent(),
     Failure failure => Results.BadRequest(failure.ToString()),
@@ -167,8 +169,8 @@ directly on the query itself.
 
 Use the 2-arm generic form when there **is** a success payload, but only **one** distinguishable
 failure shape. Picking a well-known `ResultTypes` case as `TFailureResult` - here, `Forbidden` -
-lets a matching pipeline behavior (`AuthorizationBehavior<TRequest,TSuccess>`) short-circuit the
-pipeline generically, before the handler ever runs.
+lets `AuthorizationBehavior<TRequest, TResponse>` short-circuit the pipeline generically, before
+the handler ever runs, for a request implementing `IRequiresPolicy`.
 
 ```csharp
 public sealed class TimeOffRequest
@@ -235,30 +237,25 @@ public sealed class GetTimeOffRequestByIdQueryHandler(AppDbContext db)
 services.AddScoped<ICommandHandler<ApproveTimeOffRequestCommand, OperationOutcome<TimeOffRequestDto, Forbidden>>, ApproveTimeOffRequestCommandHandler>();
 services.AddScoped<IQueryHandler<GetTimeOffRequestByIdQuery, OperationOutcome<TimeOffRequestDto, Forbidden>>, GetTimeOffRequestByIdQueryHandler>();
 
-// AuthorizationBehavior<TRequest,TSuccess> implements IPipelineBehavior<TRequest, OperationOutcome<TSuccess,
-// Forbidden>> - a *constructed* second type argument, not TSuccess directly - so it can't be
-// registered as an open generic (the container has no way to know TSuccess should slot inside
-// OperationOutcome<_, Forbidden> rather than replace the whole parameter). Register it per closed
-// request/response pair instead, once per command or query that uses this exact shape:
-services.AddScoped<
-    IPipelineBehavior<ApproveTimeOffRequestCommand, OperationOutcome<TimeOffRequestDto, Forbidden>>,
-    AuthorizationBehavior<ApproveTimeOffRequestCommand, TimeOffRequestDto>
->();
-services.AddScoped<
-    IPipelineBehavior<GetTimeOffRequestByIdQuery, OperationOutcome<TimeOffRequestDto, Forbidden>>,
-    AuthorizationBehavior<GetTimeOffRequestByIdQuery, TimeOffRequestDto>
->();
+// AuthorizationBehavior<TRequest, TResponse> is an ordinary open-generic behavior, constrained to
+// TRequest : IRequiresPolicy and TResponse : IOperationOutcome - nothing pins TResponse to any
+// particular arity. It constructs its Forbidden short-circuit generically via IOutcomeCaseRegistry,
+// so one open-generic registration covers every request/response shape that implements IRequiresPolicy
+// and has a Forbidden case, regardless of arity:
+services.AddScoped(typeof(IPipelineBehavior<,>), typeof(AuthorizationBehavior<,>));
 
+// Both container packages skip constructing this behavior for a request that doesn't implement
+// IRequiresPolicy, so this single line is all Example 2 needs - no per-command/query registration.
 // Logging, Auditing, and the transaction behavior were already registered open-generic in
-// Example 1 - nothing more to add here for those three.
+// Example 1 - nothing more to add here for those either.
 ```
 
 **Call site:**
 
 ```csharp
-var OperationOutcome = await sender.Send(new ApproveTimeOffRequestCommand(requestId), ct);
+var result = await sender.Send(new ApproveTimeOffRequestCommand(requestId), ct);
 
-var response = OperationOutcome.Value switch
+var response = result.Value switch
 {
     TimeOffRequestDto dto => Results.Ok(dto),
     Forbidden forbidden => Results.Forbid(),
@@ -274,10 +271,13 @@ on the command itself, so it's inferred.
 ## Example 3 - `OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>`: "Submit Payment"
 
 Use the widest generic form for operations with several genuinely distinct outcomes that callers
-need to handle differently. No built-in pipeline behavior matches an arbitrary 5-arm shape (there
-is no `AuthorizationBehavior`-style helper for "success + 4 specific failure arms" - that would
-require a distinct registration for every combination), so multi-step logic that would otherwise
-live in a pipeline behavior is written explicitly in the handler as a sequence of guard clauses.
+need to handle differently. The ownership check below can't move into `AuthorizationBehavior`
+regardless of arity - that behavior only runs *before* the handler, and ownership depends on the
+entity the handler loads. This is the same non-resource-vs-resource distinction covered in
+[Handler Selection & Dispatch § Contrast: Resource vs. Non-Resource Authorization](handler-selection-and-dispatch.md#contrast-resource-vs-non-resource-authorization) -
+`ResourceCommandHandler`'s load-authorize-handle template is the idiomatic place for exactly this
+kind of check; it's written as an inline guard clause here to keep this example self-contained and
+focused on the arity, not the authorization pattern.
 
 ```csharp
 public sealed class Order
@@ -294,7 +294,7 @@ public sealed record PaymentEligibilityDto(Guid OrderId, decimal RemainingBalanc
 // --- Command -------------------------------------------------------------------
 
 public sealed record SubmitPaymentCommand(Guid OrderId, decimal Amount)
-    : ICommand<OperationOutcome<PaymentReceiptDto, NotFound, Forbidden, Conflict, ValidationFailure>>,
+    : ICommand<OperationOutcome<PaymentReceiptDto, NotFound, Forbidden, Conflict, ValidationError>>,
         ITransactionalRequest,
         IAuditableRequest
 {
@@ -302,9 +302,9 @@ public sealed record SubmitPaymentCommand(Guid OrderId, decimal Amount)
 }
 
 public sealed class SubmitPaymentCommandHandler(AppDbContext db, ICurrentUser currentUser)
-    : ICommandHandler<SubmitPaymentCommand, OperationOutcome<PaymentReceiptDto, NotFound, Forbidden, Conflict, ValidationFailure>>
+    : ICommandHandler<SubmitPaymentCommand, OperationOutcome<PaymentReceiptDto, NotFound, Forbidden, Conflict, ValidationError>>
 {
-    public async Task<OperationOutcome<PaymentReceiptDto, NotFound, Forbidden, Conflict, ValidationFailure>> Handle(
+    public async Task<OperationOutcome<PaymentReceiptDto, NotFound, Forbidden, Conflict, ValidationError>> Handle(
         SubmitPaymentCommand command,
         CancellationToken ct
     )
@@ -315,7 +315,7 @@ public sealed class SubmitPaymentCommandHandler(AppDbContext db, ICurrentUser cu
         // here for the same reason authorization is inline below.)
         if (command.Amount <= 0)
         {
-            return new ValidationFailure("Amount must be greater than zero.");
+            return new ValidationError("Amount must be greater than zero.");
         }
 
         // Step 2 - existence
@@ -325,8 +325,10 @@ public sealed class SubmitPaymentCommandHandler(AppDbContext db, ICurrentUser cu
             return new NotFound($"Order {command.OrderId} was not found.");
         }
 
-        // Step 3 - ownership. No IRequiresPolicy/AuthorizationBehavior here: that behavior only
-        // matches OperationOutcome<TSuccess, Forbidden> (2 arms), not this command's 5-arm response.
+        // Step 3 - ownership. No IRequiresPolicy/AuthorizationBehavior here: that's non-resource
+        // authorization, which runs before the handler and can't see the loaded order. Ownership
+        // is a resource-authorization check - depends on the entity above - so it belongs here or
+        // in a ResourceCommandHandler, never in a pre-handler behavior, regardless of arity.
         if (order.OwnerUserId != currentUser.UserId)
         {
             return new Forbidden($"User does not own order {order.Id}.");
@@ -348,19 +350,19 @@ public sealed class SubmitPaymentCommandHandler(AppDbContext db, ICurrentUser cu
 // --- Query: a "dry run" of the same five outcomes -------------------------------
 
 public sealed record CheckPaymentEligibilityQuery(Guid OrderId, decimal Amount)
-    : IQuery<OperationOutcome<PaymentEligibilityDto, NotFound, Forbidden, Conflict, ValidationFailure>>;
+    : IQuery<OperationOutcome<PaymentEligibilityDto, NotFound, Forbidden, Conflict, ValidationError>>;
 
 public sealed class CheckPaymentEligibilityQueryHandler(AppDbContext db, ICurrentUser currentUser)
-    : IQueryHandler<CheckPaymentEligibilityQuery, OperationOutcome<PaymentEligibilityDto, NotFound, Forbidden, Conflict, ValidationFailure>>
+    : IQueryHandler<CheckPaymentEligibilityQuery, OperationOutcome<PaymentEligibilityDto, NotFound, Forbidden, Conflict, ValidationError>>
 {
-    public async Task<OperationOutcome<PaymentEligibilityDto, NotFound, Forbidden, Conflict, ValidationFailure>> Handle(
+    public async Task<OperationOutcome<PaymentEligibilityDto, NotFound, Forbidden, Conflict, ValidationError>> Handle(
         CheckPaymentEligibilityQuery query,
         CancellationToken ct
     )
     {
         if (query.Amount <= 0)
         {
-            return new ValidationFailure("Amount must be greater than zero.");
+            return new ValidationError("Amount must be greater than zero.");
         }
 
         var order = await db.Orders.AsNoTracking().FirstOrDefaultAsync(o => o.Id == query.OrderId, ct);
@@ -388,11 +390,11 @@ public sealed class CheckPaymentEligibilityQueryHandler(AppDbContext db, ICurren
 
 ```csharp
 services.AddScoped<
-    ICommandHandler<SubmitPaymentCommand, OperationOutcome<PaymentReceiptDto, NotFound, Forbidden, Conflict, ValidationFailure>>,
+    ICommandHandler<SubmitPaymentCommand, OperationOutcome<PaymentReceiptDto, NotFound, Forbidden, Conflict, ValidationError>>,
     SubmitPaymentCommandHandler
 >();
 services.AddScoped<
-    IQueryHandler<CheckPaymentEligibilityQuery, OperationOutcome<PaymentEligibilityDto, NotFound, Forbidden, Conflict, ValidationFailure>>,
+    IQueryHandler<CheckPaymentEligibilityQuery, OperationOutcome<PaymentEligibilityDto, NotFound, Forbidden, Conflict, ValidationError>>,
     CheckPaymentEligibilityQueryHandler
 >();
 
@@ -404,21 +406,21 @@ services.AddScoped<
 **Call site:**
 
 ```csharp
-var OperationOutcome = await sender.Send(new SubmitPaymentCommand(orderId, amount), ct);
+var result = await sender.Send(new SubmitPaymentCommand(orderId, amount), ct);
 
-var response = OperationOutcome.Value switch
+var response = result.Value switch
 {
     PaymentReceiptDto receipt => Results.Ok(receipt),
     NotFound => Results.NotFound(),
     Forbidden => Results.Forbid(),
     Conflict conflict => Results.Conflict(conflict),
-    ValidationFailure invalid => Results.BadRequest(invalid.Message),
+    ValidationError invalid => Results.BadRequest(invalid.Message),
     _ => throw new UnreachableException(),
 };
 
 // OperationOutcome<T1..TCase5>.GetValue() is also available for callers that just need an untyped peek
 // at whichever arm is present, without an exhaustive switch - e.g. generic logging:
-object? arm = OperationOutcome.GetValue();
+object? arm = result.GetValue();
 ```
 
 ---
@@ -432,5 +434,6 @@ object? arm = OperationOutcome.GetValue();
 | Failure detail available | `Failure.Reason` / `Failure.ErrorCode` | whatever `TFailureResult` carries | whatever each of `TCase2..TCase5` carries |
 | Dispatch path | `ICommand` + `IVoidCommandHandler<,>`, or `IQuery<OperationOutcome>` | `ICommand<TResponse>` / `IQuery<TResponse>` with `TResponse = OperationOutcome<...>` | same, just a wider `TResponse` |
 | Works with Logging / Auditing / Transaction behaviors | yes, unmodified | yes, unmodified | yes, unmodified |
-| Works with `AuthorizationBehavior<TRequest,TSuccess>` | no (no payload to parameterize `TSuccess` with) | yes, when `TFailureResult = Forbidden` | no - shape mismatch; check inline instead |
+| Works with `AuthorizationBehavior<TRequest, TResponse>` for non-resource (`IRequiresPolicy`) checks | no - `OperationOutcome` has no `Forbidden` case to construct | yes, when `TFailureResult = Forbidden` | yes, if one of `TCase2..TCase5` is `Forbidden` - arity never limits it, only whether a `Forbidden` case exists |
+| Works for resource-dependent checks (ownership, entity state) | n/a | n/a | no, at any arity - always needs `ResourceCommandHandler` or an inline check after loading, never a pre-handler behavior |
 | Best for | outcome-only operations, no payload | one payload, one well-known failure mode | rich operations with several distinguishable outcomes |

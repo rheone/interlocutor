@@ -145,7 +145,7 @@ Anything left unregistered still falls back to `DefaultOutcomeCaseRegistry`, so 
 
 ## Result Types
 
-`Interlocutor.CommonKernel` ships the standard failure case types and outcome unions - these are the standard shapes:
+`Interlocutor.CommonKernel` ships the standard failure case types and outcome unions - these are the standard shapes. See [Composing OperationOutcome Arities](composing-operationoutcome-arities.md) for worked examples of picking between them for a given command or query.
 
 ### Success
 

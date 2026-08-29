@@ -1,4 +1,4 @@
-> **Status: open**
+> **Status: done**
 
 ## Labels
 
@@ -12,7 +12,16 @@ ready-for-agent
 
 ## Acceptance criteria
 
-- [ ] `beginners-guide-todo-api.md` remains a single file
-- [ ] `composing-operationoutcome-arities.md` lives at `documentation/composing-operationoutcome-arities.md`, linked from `documentation/index.md`
-- [ ] No remaining reference to its old `maintainer_docs/guides/` location
-- [ ] No stale language remains in either tutorial file
+- [x] `beginners-guide-todo-api.md` remains a single file
+- [x] `composing-operationoutcome-arities.md` lives at `documentation/composing-operationoutcome-arities.md`, linked from `documentation/index.md`
+- [x] No remaining reference to its old `maintainer_docs/guides/` location (except historical, already-resolved tickets under `.scratch/di-builder-and-discovery/`, left untouched as history)
+- [x] No stale language remains in either tutorial file
+
+## Findings beyond the original scope
+
+- `beginners-guide-todo-api.md` and `sample-app-walkthrough.md` were both verified in depth (the former describes a hypothetical project, the latter a real, compiling sample under `samples/` that's part of the solution build) and found accurate - the guide's "caller-chosen outcome type" section for bare `ICommand` already correctly describes the exact nuance found wrong elsewhere in unit 04. Only one stale reference (`IOperationOutcomeMapper` → `IOutcomeStatusMapper`, from unit 05's rename) needed fixing.
+- `composing-operationoutcome-arities.md` (the moved guide) needed substantial fixes before it was fit to publish as consumer-facing content:
+  - Used a nonexistent `ValidationFailure` type nine times throughout - the real type is `ValidationError`. Renamed throughout.
+  - Every example shadowed the `OperationOutcome` type name with a local variable of the same name (`var OperationOutcome = await sender.Send<OperationOutcome>(...)`) - confusing even where legal. Renamed to `result`.
+  - Example 2's entire "why `AuthorizationBehavior` needs per-closed-pair registration" narrative described a design the source code's own XML docs say was replaced: `AuthorizationBehavior<TRequest, TResponse>` is a plain open-generic behavior today (constrained only to `TRequest : IRequiresPolicy`, `TResponse : IOperationOutcome`), registered once like every other behavior, not the old `AuthorizationBehavior<TRequest, TSuccess>` shape the guide described. Rewrote the composition root and the summary table's claims about which arities it supports.
+  - Example 3 justified its inline ownership check with the same wrong "arity mismatch" reasoning; the real reason is that ownership is resource-dependent authorization (needs the loaded entity), which `AuthorizationBehavior` can never do regardless of arity - fixed to match `handler-selection-and-dispatch.md`'s existing Resource vs. Non-Resource distinction, with a cross-link.

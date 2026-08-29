@@ -6,7 +6,6 @@ This directory contains internal documentation for people building and maintaini
 
 - [Start here](#start-here) - the current spec and open questions
 - [Architecture Decision Records](#architecture-decision-records-adr) - why the library is shaped the way it is, grouped by theme
-- [Contributor guides](#contributor-guides-guides) - worked examples for contributors
 - [Agent process docs](#agent-process-docs-agents) - how agents work this repo's issue tracker and triage
 - [Historical: bootstrapreference/](#historical-bootstrapreference) - superseded, context only
 
@@ -50,10 +49,6 @@ Immutable once accepted - a changed decision gets a new ADR that supersedes the 
 
 **HTTP integration** - where transport concerns are allowed to live
 - [ADR-0012](adr/0012-http-agnostic-core-with-pluggable-mapping.md) - HTTP-Agnostic Core with Pluggable Status Mapping: core result types carry zero HTTP knowledge; `Interlocutor.AspNetCore` owns a pluggable status-code mapper instead.
-
-## Contributor guides ([guides/](guides/))
-
-- [Composing OperationOutcome Arities](guides/composing-operationoutcome-arities.md) - worked examples showing how to pick the right `OperationOutcome` arity (2 through 6 cases) for a given command or query, with the reasoning for each choice.
 
 ## Agent process docs ([agents/](agents/))
 

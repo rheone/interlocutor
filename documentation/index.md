@@ -19,7 +19,8 @@ A suggested reading order - each section builds on the ones above it. Jump strai
 The fundamentals of writing a request and getting a response back.
 
 - [Messages, Result Types & Variance](messages-and-result-types.md) - `IQuery<T>`, `ICommand<T>`, `ICommand`; the `IOperationOutcome` constraint; outcome unions and arities; pattern matching; choosing specific arities; marker interfaces; [!CAUTION] why response-type variance is impossible.
-- [Handler Selection & Dispatch](handler-selection-and-dispatch.md) - compile-time discovery, closed beats open, ambiguity as a build error, resource-based authorization, multiple handlers for notifications, runtime-typed dispatch.
+- [Composing OperationOutcome Arities](composing-operationoutcome-arities.md) - worked examples across three arities (a command, a query, and DI composition root for each) showing how to pick the right shape for a given operation.
+- [Handler Selection & Dispatch](handler-selection-and-dispatch.md) - compile-time discovery, closed beats open, duplicate/ambiguous-handler diagnostics, resource-based authorization, multiple handlers for notifications, runtime-typed dispatch.
 - [Pipeline & Behavior Composition](pipeline-and-behaviors.md) - the no-default-pipeline model, the flat ordered behavior list, the recommended chain with its rationale, validation/authorization/auditing behaviors, pipeline stages & short-circuiting.
 
 ### Wiring it up
