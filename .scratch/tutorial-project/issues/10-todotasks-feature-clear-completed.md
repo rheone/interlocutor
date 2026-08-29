@@ -6,7 +6,7 @@ ready-for-agent
 
 ## What to build
 
-`documentation/beginners-guide-todo-api.md` Step 9's "One more command: no payload, caller-chosen outcome type" sub-section, at `Features/TodoTasks/ClearCompletedTodoTasks/`:
+`documentation/beginners-guide-todo-api.md` Step 9's "One more command: no payload, caller-chosen outcome type" sub-section, at `Features/Tasks/ClearCompletedTodoTasks/` (**not** `Features/TodoTasks/` - see ticket 05's Comments for why):
 
 - **`ClearCompletedTodoTasksCommand`**: bare `ICommand` (no `<TResponse>`), `IAuditableRequest` - as written in the guide.
 - **`ClearCompletedTodoTasksHandler`**: `IVoidCommandHandler<ClearCompletedTodoTasksCommand, OperationOutcome>` - deletes every completed task owned by the caller, one `SaveChangesAsync` - as written in the guide.

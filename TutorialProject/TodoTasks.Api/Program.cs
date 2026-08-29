@@ -8,6 +8,7 @@ using Interlocutor.DependencyInjection.Autofac;
 using Interlocutor.Persistence.NHibernate;
 using Microsoft.AspNetCore.Authentication;
 using TodoTasks.Api.Domain;
+using TodoTasks.Api.Features.Tasks.CreateTodoTask;
 using TodoTasks.Api.Features.Users.CreateUser;
 using TodoTasks.Api.Features.Users.GetUserById;
 using TodoTasks.Api.Infrastructure;
@@ -85,6 +86,9 @@ builder.Host.ConfigureContainer<ContainerBuilder>(containerBuilder =>
         User,
         int
     >(c.Resolve<Lazy<ISession>>(), u => u.Id));
+    containerBuilder.AddInterlocutorRepository<TodoTask, int, NHibernateRepository<TodoTask, int>>(
+        c => new NHibernateRepository<TodoTask, int>(c.Resolve<Lazy<ISession>>(), t => t.Id)
+    );
 
     // FluentValidation's own IValidator<T> implementations (CreateUserValidator, and TodoTasks'
     // equivalents once that feature lands) - not something interlocutor.ScanAssembly below covers.
@@ -149,6 +153,7 @@ app.MapGet(
 // One line per feature endpoint, added as each feature lands - see each Features/**/Map*Endpoint.cs.
 app.MapCreateUserEndpoint();
 app.MapGetUserByIdEndpoint();
+app.MapCreateTodoTaskEndpoint();
 
 app.Run();
 

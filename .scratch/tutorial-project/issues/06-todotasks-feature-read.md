@@ -6,7 +6,7 @@ ready-for-agent
 
 ## What to build
 
-`documentation/beginners-guide-todo-api.md` Step 6's core (not the QueryOver/paging Bonus sub-sections - those are backlog tickets 14/15), at `Features/TodoTasks/GetTodoTaskById/` and `Features/TodoTasks/ListTodoTasks/`:
+`documentation/beginners-guide-todo-api.md` Step 6's core (not the QueryOver/paging Bonus sub-sections - those are backlog tickets 14/15), at `Features/Tasks/GetTodoTaskById/` and `Features/Tasks/ListTodoTasks/` (**not** `Features/TodoTasks/` - that folder name collides with the project's own root namespace `TodoTasks.Api`; see ticket 05's Comments for the compile error this causes and why it was renamed):
 
 - **`GetTodoTaskByIdQuery`**/handler: `IQuery<OperationOutcome<TodoTaskDto, NotFound>>`, as written in the guide. `GET /todo-tasks/{id:int}`.
 - **`ListTodoTasksQuery`**/handler: `IQuery<OperationOutcome<IReadOnlyList<TodoTaskDto>, Failure>>`, `OnlyIncomplete` filter, sorted newest-first, as written in the guide. `GET /todo-tasks?onlyIncomplete=...`.

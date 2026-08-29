@@ -6,7 +6,7 @@ ready-for-agent
 
 ## What to build
 
-`documentation/beginners-guide-todo-api.md` Step 9's core (not the "no payload, caller-chosen outcome type" sub-section - that's ticket 10), at `Features/TodoTasks/DeleteTodoTask/`:
+`documentation/beginners-guide-todo-api.md` Step 9's core (not the "no payload, caller-chosen outcome type" sub-section - that's ticket 10), at `Features/Tasks/DeleteTodoTask/` (**not** `Features/TodoTasks/` - see ticket 05's Comments for why):
 
 - **`DeleteTodoTaskCommand`**/handler: `ICommand<OperationOutcome<Success, NotFound, Forbidden>>`, `IRequiresPolicy` (`PolicyName => "DeleteTodoTask"`), `IAuditableRequest` - as written in the guide.
 - **`Infrastructure/TodoTaskPolicyEvaluator.cs`**: `IPolicyEvaluator`, as written in the guide (checks the caller is authenticated for the `"DeleteTodoTask"` policy; a short comment noting this is a stand-in for a real policy engine, exactly as the guide's own comment says).

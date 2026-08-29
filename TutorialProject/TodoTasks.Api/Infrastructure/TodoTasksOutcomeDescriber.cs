@@ -50,13 +50,13 @@ public sealed class TodoTasksOutcomeDescriber : IResponseOutcomeDescriber
     /// <summary>
     /// The classifier every custom success DTO this project's handlers return must be registered
     /// with, so <c>UnitOfWorkBehavior</c> commits instead of rolling back on a genuine success. Add a
-    /// line here whenever a new feature introduces a new success DTO - <c>TodoTaskDto</c> joins this
-    /// list once that feature lands. Internal, not private: <c>Program.cs</c> registers this same
-    /// instance directly as <see cref="IOutcomeClassifier"/> too - see this type's own remarks for why
-    /// that second registration is required.
+    /// line here whenever a new feature introduces a new success DTO. Internal, not private:
+    /// <c>Program.cs</c> registers this same instance directly as <see cref="IOutcomeClassifier"/>
+    /// too - see this type's own remarks for why that second registration is required.
     /// </summary>
     internal static readonly IOutcomeClassifier Classifier = new OutcomeClassifierBuilder()
         .RegisterSuccessType<UserDto>("UserDto")
+        .RegisterSuccessType<TodoTaskDto>("TodoTaskDto")
         .Build();
 
     /// <inheritdoc/>
