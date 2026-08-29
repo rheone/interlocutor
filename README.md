@@ -125,6 +125,14 @@ For contributors and maintainers working on *this repository* - not needed to us
 
 - **[Developer documentation index](maintainer_docs/README.md)** - Architecture Decision Records, the project PRD, contributor guides, and agent process docs.
 
+## A Note on AI Aid
+
+This project was aided in part by large language models and agentic coding tools in its development. Every line of code and documentation was read, reviewed, and approved by a tired human before it shipped. Nothing here ran on autopilot.
+
+The tooling was used as a speed multiplier, not a replacement for the developer - most of what's here is human-written code, with LLMs brought in for refinement, cleanup, and grinding through the tedious parts. People still build open source for the love of the game, not because a model can. That hasn't changed here.
+
+So if you find a bug, an awkward refactor, a confusing design decision, or a doc that contradicts the code three files over: that's not the model's fault. That's a human, doing what humans do. Blame accordingly.
+
 ## License
 
 Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for details.
