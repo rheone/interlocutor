@@ -1,4 +1,4 @@
-Status: open
+Status: done
 
 ## Labels
 
@@ -15,11 +15,15 @@ ready-for-agent
 
 ## Acceptance criteria
 
-- [ ] `DeleteTodoTaskCommand`/handler/`TodoTaskPolicyEvaluator` exist, XML-documented, cross-reference ticket 07's contrasting style
-- [ ] Unit tests: successful delete, not-found; a policy-evaluator unit test proving it denies when unauthenticated and allows when authenticated for `"DeleteTodoTask"`
-- [ ] HTTP integration test: an authenticated caller can delete an existing task (task is gone afterward, verified via a subsequent `GET` returning not-found); an unauthenticated request is rejected before the handler ever loads the entity (assert the entity still exists afterward, proving the policy check actually ran first)
-- [ ] `dotnet build`, `dotnet test`, `dotnet csharpier .` all clean
+- [x] `DeleteTodoTaskCommand`/handler/`TodoTaskPolicyEvaluator` exist, XML-documented, cross-reference ticket 07's contrasting style
+- [x] Unit tests: successful delete, not-found; a policy-evaluator unit test proving it denies when unauthenticated, allows when authenticated for `"DeleteTodoTask"`, and denies an unrelated policy name
+- [x] HTTP integration test: an authenticated caller can delete an existing task (task is gone afterward, verified via a subsequent `GET` returning not-found); an unauthenticated request is rejected before the handler ever loads the entity (asserted by confirming the task still exists afterward)
+- [x] `dotnet build`, `dotnet test`, `dotnet csharpier .` all clean (896/896 solution-wide)
 
 ## Blocked by
 
 05
+
+## Comments
+
+Minor style note, not a functional finding: `new Success()` (exactly as the guide's own example writes it) trips this repo's `SA1129` ("do not use default value type constructor") since `Success` is a `readonly record struct` - used `default(Success)` instead, matching the pattern this repo's own library tests already use (e.g. `NHibernateRepositoryTests`).

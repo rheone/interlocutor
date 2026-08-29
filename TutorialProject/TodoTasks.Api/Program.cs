@@ -2,6 +2,7 @@ using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using FluentValidation;
 using Interlocutor.Abstractions.Core;
+using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Pipeline.Classifiers;
 using Interlocutor.AspNetCore;
 using Interlocutor.DependencyInjection.Autofac;
@@ -10,6 +11,7 @@ using Microsoft.AspNetCore.Authentication;
 using TodoTasks.Api.Domain;
 using TodoTasks.Api.Features.Tasks.CompleteTodoTask;
 using TodoTasks.Api.Features.Tasks.CreateTodoTask;
+using TodoTasks.Api.Features.Tasks.DeleteTodoTask;
 using TodoTasks.Api.Features.Tasks.GetTodoTaskById;
 using TodoTasks.Api.Features.Tasks.ListTodoTasks;
 using TodoTasks.Api.Features.Tasks.ReopenTodoTask;
@@ -118,6 +120,10 @@ builder.Host.ConfigureContainer<ContainerBuilder>(containerBuilder =>
     // Process-lifetime, not per-request: the whole point is remembering counts across dispatches.
     containerBuilder.RegisterType<InMemoryCompletionCounter>().As<ICompletionCounter>().SingleInstance();
 
+    // AuthorizationBehavior's IRequiresPolicy gate - see DeleteTodoTaskCommand's own remarks for how
+    // this contrasts with UpdateTodoTaskCommand's fine-grained, entity-based check.
+    containerBuilder.RegisterType<TodoTaskPolicyEvaluator>().As<IPolicyEvaluator>().InstancePerLifetimeScope();
+
     containerBuilder.AddInterlocutor(interlocutor =>
     {
         interlocutor.ScanAssembly(typeof(Program).Assembly);
@@ -167,6 +173,7 @@ app.MapListTodoTasksEndpoint();
 app.MapUpdateTodoTaskEndpoint();
 app.MapCompleteTodoTaskEndpoint();
 app.MapReopenTodoTaskEndpoint();
+app.MapDeleteTodoTaskEndpoint();
 
 app.Run();
 
