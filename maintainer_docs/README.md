@@ -19,7 +19,7 @@ This directory contains internal documentation for people building and maintaini
 Immutable once accepted - a changed decision gets a new ADR that supersedes the old one; existing ADRs are never edited to reverse a decision. Grouped by theme below rather than listed in number order, so you can find "why does X work this way" without already knowing which ADR number covers it.
 
 **Result modeling & types** - how outcomes are represented and constrained
-- [ADR-0001](adr/0001-use-csharp-15-unions-for-result-types.md) - Use C# 15 Union Types for Result Modeling: closed unions (`Result<T>`, `Failure`) give compile-time exhaustiveness without a third-party dependency like `OneOf`.
+- [ADR-0001](adr/0001-use-csharp-15-unions-for-result-types.md) - Use C# 15 Union Types for Result Modeling: closed unions (`Result<T>`, `Failure` - renamed to `OperationOutcome<...>` in the shipped API) give compile-time exhaustiveness without a third-party dependency like `OneOf`.
 - [ADR-0004](adr/0004-marker-interfaces-for-cross-cutting.md) - Marker Interfaces for Cross-Cutting Opt-In: a request opts into transactions/auditing/authorization by implementing a marker interface, not by editing a central config list.
 - [ADR-0005](adr/0005-void-command-pipeline-support.md) - Void Command Pipeline Support: commands with no return payload still run through the same behavior pipeline as typed commands, via a dedicated wrapper.
 - [ADR-0013](adr/0013-response-constrained-to-outcome-no-streaming.md) - Response Type Constrained to the Outcome Interface; Streaming Excluded: every response implements `IOperationOutcome`; streaming is deliberately excluded on purpose, not merely unaddressed.
