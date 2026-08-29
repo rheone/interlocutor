@@ -1,0 +1,13 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "dictionaryDefinitions": [
+    {
+      "name": "project-words",
+      "path": "./dictionary.dic",
+      "addWords": false
+    }
+  ],
+  "dictionaries": ["project-words"],
+  "ignorePaths": ["bin/", "obj/", "*.nupkg", "*.dll"]
+}

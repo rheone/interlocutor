@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: done
 
 ## Labels
 
@@ -10,8 +10,8 @@ ready-for-agent
 
 ## Acceptance criteria
 
-- [ ] `PagedTodoTasksDto`/`ListTodoTasksPagedQuery`/handler/endpoint exist, as written in the guide, with unit and HTTP integration test coverage (including a page boundary/last-page-partial-count case)
-- [ ] A code comment explains why `Page<T>` itself isn't returned directly as the outcome's success case (it's repository-return-shape vocabulary, not `OperationOutcome` success-case vocabulary)
+- [x] `PagedTodoTasksDto`/`ListTodoTasksPagedQuery`/handler/endpoint exist, as written in the guide, with unit and HTTP integration test coverage (including a page boundary/last-page-partial-count case)
+- [x] A code comment explains why `Page<T>` itself isn't returned directly as the outcome's success case (it's repository-return-shape vocabulary, not `OperationOutcome` success-case vocabulary)
 
 ## Blocked by
 
@@ -20,3 +20,5 @@ ready-for-agent
 ## Comments
 
 Promoted to `ready-for-agent` via `/to-tickets`, alongside 14, 16-18 - independent of each other, each already a single self-contained vertical slice.
+
+Implemented: `Features/Tasks/ListTodoTasksPaged/{PagedTodoTasksDto,ListTodoTasksPagedQuery,ListTodoTasksPagedHandler,ListTodoTasksPagedEndpoint}.cs`, wired into `Program.cs`. Test coverage: `Unit/Features/Tasks/ListTodoTasksPaged/ListTodoTasksPagedHandlerTests` (NSubstitute-mocked repository, including a last-page-partial-count case) and `Http/ListTodoTasksPagedEndpointTests` (unauthenticated → 401, a real 5-item/2-per-page last-partial-page boundary case end to end). `dotnet build`, `dotnet test` (967/967 solution-wide), `dotnet csharpier .` all clean.
