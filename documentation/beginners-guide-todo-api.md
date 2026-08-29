@@ -9,7 +9,7 @@ This guide is deliberately hands-on rather than a reference - it builds one proj
 - A Minimal API-first ASP.NET Core API (an MVC controller equivalent is shown too) over one `TodoTask` resource: full CRUD, a bare-`ICommand` unit command, a raw-`ISession` query, and a paged query.
 - A pipeline built up behavior by behavior: logging, auditing, policy-based authorization, FluentValidation, and NHibernate-backed transactions - plus how to see exactly what order they run in, and how to add one of your own.
 - Two authorization styles: a coarse policy check (`IRequiresPolicy`) and a fine-grained, entity-based ownership check (`ResourceCommandHandler`).
-- A notification with two independent subscribers, fired after a command commits.
+- A notification with two independent subscribers, and the subtlety in exactly when "after" a command actually means once it's published from inside the handler.
 - Registration wired through Autofac, with callouts showing the Microsoft.Extensions.DependencyInjection equivalent at each step.
 
 ## Before you start
@@ -989,8 +989,11 @@ public sealed class CompleteTodoTaskHandler(
         task.IsCompleted = true;
         await unitOfWork.SaveChangesAsync(ct);
 
-        // Persist first, publish second - the ordering the library recommends. See Transactions
-        // & Store Integration § Transactions with Notifications for why it matters.
+        // Persist first, publish second. This still runs inside the same transaction UnitOfWorkBehavior
+        // hasn't committed yet - it only commits once this method returns - so a subscriber that throws
+        // rolls the completion back too. See Transactions & Store Integration § Transactions with
+        // Notifications for the full mechanism, including the pattern that publishes genuinely after
+        // commit instead.
         await publisher.Publish(new TodoTaskCompletedNotification(task.Id, task.OwnerId, task.Title), ct);
 
         return TodoTaskDto.FromEntity(task);
@@ -1073,7 +1076,7 @@ Register it in the `ConfigureContainer` block:
 containerBuilder.RegisterType<InMemoryCompletionCounter>().As<ICompletionCounter>().SingleInstance();
 ```
 
-Both handlers run **sequentially by default** - if one throws, the other doesn't run. Neither can influence the outcome the caller already received, since the command's own outcome was decided (and its transaction committed) before `Publish` was called. See [Notifications & Fan-out](notifications-and-fan-out.md) for `Parallel` publishing and everything else about multi-subscriber dispatch - this guide only needed the default.
+Both handlers run **sequentially by default** - if one throws, the other doesn't run. Neither can change the outcome value the caller receives, since `TodoTaskDto.FromEntity(task)` above is already the value `Handle` returns regardless of what a subscriber does - but a subscriber that throws *does* still affect the command: `UnitOfWorkBehavior` hasn't committed yet at the point `Publish` is called here (it commits only once `Handle` itself returns), so an exception propagating out of a subscriber unwinds past that commit and the completion rolls back with it. See [Transactions & Store Integration § Transactions with Notifications](transactions-and-store-integration.md#transactions-with-notifications) for the full mechanism, and for the pattern that publishes only once the transaction has genuinely committed (publishing from the caller of `Send`, after it returns, rather than from inside the handler). See [Notifications & Fan-out](notifications-and-fan-out.md) for `Parallel` publishing and everything else about multi-subscriber dispatch - this guide only needed the default.
 
 ### Bonus: forcing a rollback without a failure outcome
 
@@ -1132,7 +1135,7 @@ Not part of the running example above - `CompleteTodoTaskHandler` (Step 8) stays
 
 <summary>Show the multi-repository example</summary>
 
-Suppose completing a task should also leave a permanent, queryable history record - not the same thing as `TodoTaskCompletedNotification`'s subscribers above, which only run *after* this transaction commits and can't roll it back if they fail. A history record that must be atomic with the completion itself - present if and only if the completion itself succeeded - needs to be written through a second repository in the *same* unit of work instead.
+Suppose completing a task should also leave a permanent, queryable history record. `TodoTaskCompletedNotification`'s subscribers above are the wrong tool for this even though they run inside the same transaction too (see the `[!IMPORTANT]` note below the multi-repository handler for why "notification" doesn't mean "decoupled" here) - a history record that must be atomic with the completion itself, present if and only if the completion itself succeeded, needs to be written through a second repository in the *same* unit of work instead, not left to a notification subscriber that could independently fail or be reordered.
 
 **`Domain/TodoTaskActivityLogEntry.cs`**
 
@@ -1236,7 +1239,7 @@ public sealed class CompleteTodoTaskWithActivityLogHandler(
 ```
 
 > [!IMPORTANT]
-> This is the distinction that matters: the activity-log row above is written through a repository *inside* this handler, so it shares this dispatch's transaction - it exists if and only if the task's completion itself was committed. `TodoTaskCompletedNotification`'s subscribers (Step 8) run *after* that same transaction already committed, in their own right, and a failure there never undoes it. Reach for a second repository when a write must be atomic with the rest of the command; reach for a notification when the downstream work is allowed to be independent and best-effort. See [Transactions & Store Integration § Transactions with Notifications](transactions-and-store-integration.md#transactions-with-notifications) for the notification side of that same contrast.
+> This is the distinction that matters: the activity-log row above is written through a repository *inside* this handler, so it shares this dispatch's transaction *by construction* - it exists if and only if the task's completion itself was committed, because both are staged against the same session before the one `SaveChangesAsync` call. `TodoTaskCompletedNotification`'s subscribers (Step 8), called from inside the handler the same way, are not actually decoupled the same way: `UnitOfWorkBehavior` doesn't commit until `Handle` itself returns, so a subscriber failure here still unwinds past that commit and rolls the completion back too - see [Transactions & Store Integration § Transactions with Notifications](transactions-and-store-integration.md#transactions-with-notifications) for why, and for how to publish in a way that's genuinely independent of the command's own transaction. Reach for a second repository when a write must be atomic with the rest of the command; reach for a notification, published from outside the handler, when the downstream work should be allowed to fail independently.
 
 </details>
 

@@ -328,7 +328,7 @@ public record ReserveInventory(int OrderId, List<OrderItem> Items)
 
 ## Transactions with Notifications
 
-When a command publishes a notification, the notification's handlers run **after** the command's transaction commits:
+`UnitOfWorkBehavior` commits or rolls back once the whole dispatch completes - concretely, once the handler's `Handle` method returns to the pipeline (see [UnitOfWorkBehavior](#unitofworkbehavior) above). A `Publish` call made *from inside* `Handle`, before it returns, therefore still runs **inside** the still-open transaction, not after it:
 
 ```csharp
 public class CreateOrderHandler : ICommandHandler<CreateOrder, OperationOutcome<int, Failure>>
@@ -342,10 +342,13 @@ public class CreateOrderHandler : ICommandHandler<CreateOrder, OperationOutcome<
         var context = this.lazyContext.Value;
         var order = new Order { /* ... */ };
         context.Orders.Add(order);
-        await context.SaveChangesAsync(ct);
+        await context.SaveChangesAsync(ct); // Stages the insert; UnitOfWorkBehavior hasn't committed yet.
 
-        // At this point, the transaction commits (UnitOfWorkBehavior)
-        // Then notification handlers run outside the transaction
+        // Still inside the open transaction: UnitOfWorkBehavior only commits after this Handle
+        // method returns. A subscriber that throws here unwinds past UnitOfWorkBehavior's own
+        // commit/rollback check entirely, leaving the transaction open and implicitly rolled back
+        // when the scope disposes - not the "command already committed, notification failure is
+        // safely decoupled" guarantee this might look like at a glance.
         await this.publisher.Publish(new OrderCreated(order.Id, /* ... */), ct);
 
         return order.Id;
@@ -353,6 +356,17 @@ public class CreateOrderHandler : ICommandHandler<CreateOrder, OperationOutcome<
 }
 ```
 
-If a notification handler fails, it **does not roll back the command**. The command already committed. This is correct for the outbox pattern - you want the command to succeed even if downstream handlers fail.
+To genuinely publish *after* the command's transaction has committed, publish from the code that calls `Send`, once that call has returned - not from inside the handler:
 
-If you need to guarantee command + side effect atomicity, use the outbox pattern: publish events *inside* the transaction (as a persisted `Outbox` table row), then process them asynchronously in a separate transaction.
+```csharp
+// In the caller (an endpoint, or another handler) - not inside CreateOrderHandler itself.
+var result = await sender.Send(new CreateOrder(customerId, items), ct);
+if (result.Value is int orderId)
+{
+    // UnitOfWorkBehavior has already committed by the time Send returns, so this genuinely
+    // runs after the command's transaction - a subscriber failure here can never roll it back.
+    await publisher.Publish(new OrderCreated(orderId, /* ... */), ct);
+}
+```
+
+If you need to guarantee command + side effect atomicity instead - the notification must not be lost even if the process crashes between commit and publish - use the outbox pattern: publish events *inside* the transaction (as a persisted `Outbox` table row, using the same session `SaveChangesAsync` above already writes through), then process them asynchronously in a separate transaction.
