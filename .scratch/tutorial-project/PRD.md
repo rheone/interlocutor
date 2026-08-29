@@ -50,6 +50,9 @@ Mid-turn addendum: **implementation should be done on its own worktree.**
 - **Tests**: all three layers - unit tests per handler/validator (NSubstitute-mocked `IDomainRepository`/`IUnitOfWork`, mirrors this repo's own `tests/*.Tests` convention), NHibernate mapping/persistence integration tests against real in-memory SQLite, and full HTTP integration tests via `WebApplicationFactory<Program>` exercising the dev-auth flow end to end.
 - **Docs**: `documentation/sample-app-walkthrough.md` and `CLAUDE.md`'s `samples/` references get rewritten in the same effort (not deferred) - required by this repo's own `maintainer_docs/agents/documentation-maintenance.md` policy, since both currently describe the project being deleted. The beginner's guide's own line ("unlike samples/, there's no runnable project behind it") also needs correcting, since after this effort a runnable project implementing exactly that guide will exist.
 - **Out of scope / not applicable**: `tests/Interlocutor.Architecture.Tests/DependencyTests.cs` - `TutorialProject/TodoTasks.Api` is not a `src/*` package and isn't subject to the package-layering rules that test enforces.
+- **`NHibernateUnitOfWork.SaveChangesAsync` only flushes, never commits**: it begins a transaction (if none is active) and flushes pending changes, but deliberately leaves the actual commit to `UnitOfWorkBehavior` at the end of a real pipeline dispatch (confirmed against the shipped source, see that type's own remarks). Found during ticket 11: a persistence test that calls a handler directly - bypassing the pipeline, to exercise real NHibernate without standing up the whole app - must commit the session's transaction itself (`session.Transaction.Commit()`), or the transaction is silently rolled back on session `Dispose()` and the test's own assertions fail for a misleading reason. Seeding data for such a test should skip `IUnitOfWork` entirely and flush directly on the session outside any transaction (matching `UserMapTests`/`TodoTaskMapTests`'s existing pattern), relying on SQLite's autocommit-outside-a-transaction behavior.
+- **Bare `Success` maps to `200 OK`** through `ToMinimalApiResult()`, not `204 No Content` - confirmed via `DeleteUserEndpointTests` and consistent with `DeleteTodoTaskEndpointTests`. Worth remembering before assuming REST convention over the library's actual mapping.
+- **`DeleteUserCommand` intentionally omits `IAuditableRequest`**: the rest of the Users feature (`CreateUserCommand`) doesn't audit either - only `ITransactionalRequest`, where a race genuinely matters - so ticket 11 stays consistent with that feature's own convention rather than borrowing the Tasks feature's auditing choice. `DELETE /users/{id}` is also unauthenticated (ticket 03's decision), so there's no caller identity here worth auditing against.
 
 ## Ticket checklist
 
@@ -65,7 +68,7 @@ Active (`ready-for-agent`):
 - [x] **08 - TodoTasks feature: Complete/Reopen + notification**
 - [x] **09 - TodoTasks feature: Delete + policy authorization**
 - [x] **10 - TodoTasks feature: ClearCompleted**
-- [ ] **11 - Users feature: Delete (multi-repo cascade)**
+- [x] **11 - Users feature: Delete (multi-repo cascade)**
 - [ ] **12 - Documentation sync**
 
 Backlog (`needs-triage`, deferred - do not start until explicitly promoted to `ready-for-agent`), one per guide Bonus section:
