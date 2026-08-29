@@ -42,13 +42,16 @@ public sealed class SearchTodoTasksHandlerTests : IClassFixture<PersistenceFixtu
     [Fact]
     public async Task Handle_NoTitleContainsTheSubstring_ReturnsAnEmptyList_Test()
     {
-        // Arrange
+        // Arrange - a distinct owner ("owner-3"), not "owner-1"/"owner-2": this fixture's database is
+        // shared for the life of the whole test class (see PersistenceFixture's remarks), and the
+        // previous test already committed a "Buy Milk" row for owner-1. Reusing owner-1 here would make
+        // this test's outcome depend on whether that test happened to run first.
         using var session = this.fixture.OpenSession();
-        session.Save(new TodoTask("Walk the dog", "owner-1", null));
+        session.Save(new TodoTask("Walk the dog", "owner-3", null));
         session.Flush();
 
         var handler = new SearchTodoTasksHandler(new Lazy<global::NHibernate.ISession>(() => session));
-        var query = new SearchTodoTasksQuery("owner-1", "milk");
+        var query = new SearchTodoTasksQuery("owner-3", "milk");
 
         // Act
         var result = await handler.Handle(query, TestContext.Current.CancellationToken);
