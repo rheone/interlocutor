@@ -51,9 +51,9 @@ Independent record-struct types, each usable as one case type in an `OperationOu
 | Term | Definition |
 |------|------------|
 | **Query** | A read request implementing `IQuery<TResponse>`, where `TResponse : IOperationOutcome`. Always returns `OperationOutcome<...>` - the compiler rejects a bare DTO response type. Never writes data. Never participates in transactions. |
-| **Command** | A write request implementing `ICommand<TResponse>` (returns a value, `TResponse : IOperationOutcome`) or `ICommand` (a unit command - no domain data, only an outcome). Returns `OperationOutcome` / `OperationOutcome<...>`. May participate in transactions. |
-| **Unit command** | A command whose handler produces no domain data payload, only success or failure - `ICommand` / `ICommandHandler<TCommand>`. Always returns an outcome; "void" is a misnomer this project no longer uses in prose, since nothing about the return value is actually void. |
-| **Handler** | A class implementing `IQueryHandler<TQuery, TResponse>`, `ICommandHandler<TCommand, TResponse>`, or `ICommandHandler<TCommand>`. Contains the business logic for exactly one request type (or, for an open generic handler, one request family). |
+| **Command** | A write request implementing `ICommand<TResponse>` (returns a value, `TResponse : IOperationOutcome`) or `ICommand` (a unit command - no domain data, only an outcome). May participate in transactions. |
+| **Unit command** | A command whose handler produces no domain data payload, only an outcome - `ICommand` / `IVoidCommandHandler<TCommand, TResult>`. Unlike `ICommand<TResponse>`, the outcome type isn't declared on the command - the caller picks it per dispatch via `ISender.Send<TResult>(ICommand, ...)`'s type argument. "void" is a misnomer this project no longer uses in prose, since nothing about the return value is actually void. |
+| **Handler** | A class implementing `IQueryHandler<TQuery, TResponse>`, `ICommandHandler<TCommand, TResponse>`, or `IVoidCommandHandler<TCommand, TResult>`. Contains the business logic for exactly one request type (or, for an open generic handler, one request family). |
 
 ## Pipeline
 

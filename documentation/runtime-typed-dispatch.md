@@ -27,55 +27,22 @@ var request = JsonSerializer.Deserialize(message.Payload, requestType);
 var result = await mediator.Send(request);  // object, no generic parameter
 ```
 
-The `result` is `IOperationOutcome` - the base interface all outcomes implement. You can inspect it without knowing the concrete outcome shape:
-
-```csharp
-var succeeded = result.IsSuccess;
-var failure = result.Failure;
-
-// Inspect the outcome's success/failure without knowing the concrete type
-if (!succeeded)
-{
-    await outbox.MarkFailedAsync(message.Id);
-}
-else
-{
-    await outbox.DeleteAsync(message.Id);
-}
-```
+The `result` is `IOperationOutcome` - the base interface all outcomes implement, but a bare marker with no members of its own (see below for how to actually inspect it).
 
 A per-request-type pipeline override (`Pipeline.OverridePipelineFor`) applies uniformly regardless of dispatch path: a request type with a declared override resolves that same override whether it arrives through the ordinary typed `Send<TResponse>` API or through this runtime-typed overload - there is no divergence for a caller who uses both. See [Per-Request-Type Pipeline Overrides](pipeline-and-behaviors.md#per-request-type-pipeline-overrides) for how to declare one.
 
 ## IOperationOutcome Interface
 
-All outcome unions implement `IOperationOutcome`:
+All outcome unions implement `IOperationOutcome` - but it's a bare marker with no members of its own:
 
 ```csharp
-public interface IOperationOutcome
-{
-    bool IsSuccess { get; }
-    object? Failure { get; }
-}
+public interface IOperationOutcome;
 ```
 
-When you call runtime-typed `Send(object request)`, you get back an `IOperationOutcome` you can examine:
+That means runtime-typed `Send(object request)`'s `IOperationOutcome` result carries no `IsSuccess`/case member to read directly. Inspecting it without knowing the concrete union type is exactly what [`IOutcomeCaseRegistry`](messages-and-result-types.md#ioperationoutcome-as-an-extension-point) is for - inject it and call `TryGetActiveCase(response, out caseType, out caseValue)`. The Outbox Pattern example below shows the full pattern.
 
-```csharp
-var result = await mediator.Send(request);
-
-// result is IOperationOutcome
-// - result.IsSuccess: true if the result is the success case
-// - result.Failure: the failure value (if IsSuccess is false), or null
-
-if (result.IsSuccess)
-{
-    Console.WriteLine("Success");
-}
-else
-{
-    Console.WriteLine($"Failed: {result.Failure}");
-}
-```
+> [!NOTE]
+> `IOutcomeCaseRegistry` is try-added by several `Pipeline.Add*Behavior()` calls (`AddAuthorizationBehavior`, `AddCancellationBehavior`, `AddTimeoutBehavior`, `AddRateLimitedBehavior`) and by `UseRecommendedChain()`, which includes `AddAuthorizationBehavior`. If your pipeline uses none of those, register `DefaultOutcomeCaseRegistry` yourself, or supply a custom `IOutcomeCaseRegistry` per [messages-and-result-types.md](messages-and-result-types.md#ioperationoutcome-as-an-extension-point).
 
 ## Outbox Pattern Example
 
@@ -120,6 +87,7 @@ public class OutboxProcessor : BackgroundService
         {
             using var scope = this.serviceProvider.CreateScope();
             var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+            var caseRegistry = scope.ServiceProvider.GetRequiredService<IOutcomeCaseRegistry>();
             var outbox = scope.ServiceProvider.GetRequiredService<IOutboxRepository>();
 
             // Fetch pending messages
@@ -136,14 +104,16 @@ public class OutboxProcessor : BackgroundService
                     // Runtime-typed dispatch
                     var result = await mediator.Send(request, ct);
 
-                    // Examine the outcome
-                    if (result.IsSuccess)
+                    // IOperationOutcome is a bare marker - extract the active case to inspect it
+                    caseRegistry.TryGetActiveCase(result, out var caseType, out var caseValue);
+
+                    if (caseType == typeof(Success))
                     {
                         await outbox.MarkProcessedAsync(message.Id, ct);
                     }
                     else
                     {
-                        await outbox.MarkFailedAsync(message.Id, result.Failure, ct);
+                        await outbox.MarkFailedAsync(message.Id, caseValue, ct);
                     }
                 }
                 catch (Exception ex)

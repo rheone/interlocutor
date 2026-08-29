@@ -43,7 +43,7 @@ var result = await mediator.Send(new CreateUser("Alice", "alice@example.com"));
 
 ### ICommand (Unit Command)
 
-Marks a write request with no domain data payload - only success or failure. Returns `OperationOutcome` (the non-generic form, `Success | Failure`).
+Marks a write request with no domain data payload - only an outcome. Unlike `ICommand<TResponse>`, the outcome type isn't declared on the command itself - it's chosen **at the call site** via `Send<TResult>`'s type argument, so the same command can be handled differently depending on what outcome information a given caller needs:
 
 ```csharp
 public record DeleteAllUsers() : ICommand;
@@ -51,10 +51,23 @@ public record DeleteAllUsers() : ICommand;
 public record ClearCache() : ICommand;
 ```
 
+A handler is `IVoidCommandHandler<TCommand, TResult>`, pairing the command with whichever `IOperationOutcome`-shaped result that handler produces - most commonly the non-generic `OperationOutcome` (`Success | Failure`), but any union is legal:
+
+```csharp
+public class ClearCacheHandler : IVoidCommandHandler<ClearCache, OperationOutcome>
+{
+    public async Task<OperationOutcome> Handle(ClearCache command, CancellationToken ct)
+    {
+        await this.cache.ClearAsync(ct);
+        return new Success();
+    }
+}
+```
+
 Dispatch:
 
 ```csharp
-var result = await mediator.Send(new DeleteAllUsers());
+var result = await mediator.Send<OperationOutcome>(new DeleteAllUsers());
 // result is OperationOutcome (Success or Failure)
 ```
 
