@@ -1,10 +1,15 @@
-using System.Data.SQLite;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
+using FluentValidation;
 using Interlocutor.Abstractions.Core;
+using Interlocutor.Abstractions.Pipeline.Classifiers;
 using Interlocutor.AspNetCore;
 using Interlocutor.DependencyInjection.Autofac;
 using Interlocutor.Persistence.NHibernate;
+using TodoTasks.Api.Domain;
+using TodoTasks.Api.Features.Users.CreateUser;
+using TodoTasks.Api.Features.Users.GetUserById;
+using TodoTasks.Api.Infrastructure;
 using TodoTasks.Api.Persistence;
 // Microsoft.NET.Sdk.Web's implicit usings bring in Microsoft.AspNetCore.Http, which has its own
 // ISession (the HTTP session-state abstraction) - completely unrelated to NHibernate's ISession
@@ -26,9 +31,9 @@ builder.Services.AddHttpContextAccessor();
 
 // Built once, before the container exists, exactly like documentation/beginners-guide-todo-api.md
 // Step 4/10 build their own session factory above ConfigureContainer - see TodoTasksSessionFactory's
-// own remarks for why this project's version keeps one connection open rather than a connection string
-// NHibernate would open and close per session.
-var (sqliteConnection, sessionFactory) = TodoTasksSessionFactory.Build();
+// own remarks for the shared-cache-mode mechanism that keeps this project's in-memory database alive
+// across requests (and for why the more "obvious" single-shared-connection approach doesn't work).
+var (anchorConnection, sessionFactory) = TodoTasksSessionFactory.Build();
 
 builder.Host.ConfigureContainer<ContainerBuilder>(containerBuilder =>
 {
@@ -44,29 +49,60 @@ builder.Host.ConfigureContainer<ContainerBuilder>(containerBuilder =>
         .As<IRequestContextAccessor>()
         .InstancePerLifetimeScope();
 
-    // The kept-alive connection and the session factory built against it - see TodoTasksSessionFactory.
-    containerBuilder.RegisterInstance(sqliteConnection).SingleInstance();
+    // The anchor connection is registered purely so its lifetime (and disposal at shutdown) is managed
+    // by the container - nothing resolves it to build a session with. See TodoTasksSessionFactory's
+    // remarks for why it exists (keeping the shared-cache in-memory database alive) and why sessions
+    // deliberately do NOT open against it directly.
+    containerBuilder.RegisterInstance(anchorConnection).SingleInstance();
     containerBuilder.RegisterInstance(sessionFactory).As<ISessionFactory>().SingleInstance();
 
-    // Scoped so the whole dispatch - repository reads, IUnitOfWork writes - shares one session. Every
-    // session opens explicitly against the one kept-alive connection above (WithOptions().Connection(...))
-    // rather than letting NHibernate open and close its own physical connection per session, which would
-    // lose the in-memory database's contents the moment that connection closed.
-    containerBuilder
-        .Register(c => c.Resolve<ISessionFactory>().WithOptions().Connection(c.Resolve<SQLiteConnection>()).OpenSession())
-        .As<ISession>()
-        .InstancePerLifetimeScope();
+    // Scoped so the whole dispatch - repository reads, IUnitOfWork writes - shares one session. Each
+    // session opens its own independent connection the normal NHibernate way (OpenSession(), no forced
+    // connection) - SQLite's shared-cache connection string (see TodoTasksSessionFactory) is what makes
+    // every one of these independent connections see the same in-memory database.
+    containerBuilder.Register(c => c.Resolve<ISessionFactory>().OpenSession()).As<ISession>().InstancePerLifetimeScope();
 
     containerBuilder.AddInterlocutorUnitOfWork(c => new NHibernateUnitOfWork(c.Resolve<Lazy<ISession>>()));
 
     // Each feature registers its own IDomainRepository<TEntity, TKey> here as it lands - see
-    // Features/Users/CreateUser and Features/TodoTasks/CreateTodoTask for the AddInterlocutorRepository
-    // calls this project actually uses, and documentation/beginners-guide-todo-api.md Step 4 for the
-    // shape they follow.
+    // documentation/beginners-guide-todo-api.md Step 4 for the shape every one of these follows. Every
+    // repository below is built over the same scoped Lazy<ISession> as the unit of work above, which is
+    // the actual mechanism behind "one unit of work, many repositories" (see Features/Users/DeleteUser,
+    // an upcoming ticket, for where that's put to real use).
+    containerBuilder.AddInterlocutorRepository<User, int, NHibernateRepository<User, int>>(c => new NHibernateRepository<
+        User,
+        int
+    >(c.Resolve<Lazy<ISession>>(), u => u.Id));
+
+    // FluentValidation's own IValidator<T> implementations (CreateUserValidator, and TodoTasks'
+    // equivalents once that feature lands) - not something interlocutor.ScanAssembly below covers.
+    // interlocutor.Pipeline.UseRecommendedChain()'s AddValidationBehavior() only wires up
+    // ValidationBehavior<,> itself (conditionally, when Interlocutor.FluentValidation is referenced);
+    // it deliberately leaves *which* validators exist to ordinary FluentValidation registration,
+    // exactly like this - without it, ValidationBehavior finds zero validators for every request and
+    // silently skips validation entirely (no error, just nothing enforced), which is worth knowing
+    // before you go looking for why a validator "isn't running."
+    containerBuilder
+        .RegisterAssemblyTypes(typeof(Program).Assembly)
+        .AsClosedTypesOf(typeof(IValidator<>))
+        .InstancePerLifetimeScope();
+
+    // UnitOfWorkBehavior's actual commit/rollback decision reads IOutcomeClassifier specifically, not
+    // IResponseOutcomeDescriber - both need this project's custom success types registered
+    // independently, or the commit decision keeps using the unmodified, fail-closed default even
+    // after OverrideOutcomeDescriber below. See TodoTasksOutcomeDescriber's own remarks - this exact
+    // gap was found and fixed the hard way, not assumed.
+    containerBuilder.RegisterInstance(TodoTasksOutcomeDescriber.Classifier).As<IOutcomeClassifier>().SingleInstance();
 
     containerBuilder.AddInterlocutor(interlocutor =>
     {
         interlocutor.ScanAssembly(typeof(Program).Assembly);
+
+        // Without this, every write handler's genuinely successful custom-DTO outcome (UserDto, and
+        // later TodoTaskDto) would be described incorrectly in logs/audit entries - see
+        // TodoTasksOutcomeDescriber's own remarks for why the library's default classifier can't
+        // recognize a project-specific success type on its own.
+        interlocutor.Pipeline.OverrideOutcomeDescriber<TodoTasksOutcomeDescriber>();
 
         // Logging -> Auditing -> Authorization -> Validation -> Transaction, in that order - see
         // documentation/beginners-guide-todo-api.md Step 2 and documentation/pipeline-and-behaviors.md
@@ -84,8 +120,9 @@ var app = builder.Build();
 // cleanly before any feature endpoint exists to exercise instead.
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
-// Feature endpoints are mapped here as each one lands - see each Features/**/Map*Endpoint(app) extension
-// method, e.g. Features/Users/CreateUser/CreateUserEndpoint.cs.
+// One line per feature endpoint, added as each feature lands - see each Features/**/Map*Endpoint.cs.
+app.MapCreateUserEndpoint();
+app.MapGetUserByIdEndpoint();
 
 app.Run();
 
