@@ -1,4 +1,4 @@
-> **Status: open**
+> **Status: done**
 
 ## Labels
 
@@ -12,5 +12,9 @@ Add an inline `> [!WARNING]` at the point `AuthorizationBehavior` is introduced 
 
 ## Acceptance criteria
 
-- [ ] `DefaultPolicyEvaluator`'s allow-all behavior is stated explicitly, with a warning alert, in `pipeline-and-behaviors.md`
-- [ ] The warning is discoverable from the `AuthorizationBehavior` section without a forward reference the reader has to chase
+- [x] `DefaultPolicyEvaluator`'s allow-all behavior is stated explicitly, with a warning alert, in `pipeline-and-behaviors.md`
+- [x] The warning is discoverable from the `AuthorizationBehavior` section without a forward reference the reader has to chase
+
+## Findings beyond the original scope
+
+Found the same invalid code while adding the warning: `ICommand<Success>` appears three times across `pipeline-and-behaviors.md` (×2: `AuthorizationBehavior`, `AuditingBehavior`) and `transactions-and-store-integration.md` (×1). `Success` doesn't implement `IOperationOutcome` - only the `OperationOutcome`/`OperationOutcome<...>` unions do - so `ICommand<TResponse>`'s `where TResponse : IOperationOutcome` constraint rejects it; none of the three would compile. Fixed all three to `ICommand<OperationOutcome>`. Also fixed `AuditingBehavior`'s "Requires: `IAuditSink` implementation (you register your own)" line, which was wrong the same way `AuthorizationBehavior`'s was - it falls back to a try-added `LoggingAuditSink` default (benign - just logs - unlike `DefaultPolicyEvaluator`), not a hard requirement.

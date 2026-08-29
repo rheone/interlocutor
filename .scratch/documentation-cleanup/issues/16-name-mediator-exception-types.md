@@ -1,4 +1,4 @@
-> **Status: open**
+> **Status: done**
 
 ## Labels
 
@@ -16,5 +16,10 @@ Name each exception type explicitly at its point of description, so a reader can
 
 ## Acceptance criteria
 
-- [ ] All three exception types are named by their actual type in the doc file that already describes when they're thrown
-- [ ] `runtime-typed-dispatch.md`'s error-handling section catches `UnsupportedRequestTypeException`/`HandlerNotRegisteredException` specifically where appropriate, alongside the existing generic handling
+- [x] All three exception types are named by their actual type in the doc file that already describes when they're thrown
+- [x] `runtime-typed-dispatch.md`'s error-handling section catches `UnsupportedRequestTypeException`/`HandlerNotRegisteredException` specifically where appropriate, alongside the existing generic handling
+
+## Findings beyond the original scope
+
+- `mediator-lifetimes-and-scope.md`'s root-scope example was subtly wrong about *when* the guard fires: it implied `GetRequiredService<IMediator>()` itself throws, but the actual `RootScopeGuardedMediator` defers the check to the `Send`/`Publish` call - resolution always succeeds, even from the root provider. Fixed the example and comment placement, not just the exception name.
+- `HandlerNotRegisteredException` only applies to runtime-typed dispatch (`Send(object, ct)`) - typed dispatch (`Send<TResponse>(IQuery<TResponse>, ...)`) surfaces a missing handler as the container's own generic `InvalidOperationException` from `GetRequiredService`, per the exception's own XML remarks drawing that exact distinction. Kept `builder-and-registration.md`'s example correctly generic rather than misnaming it, and cross-linked to where the named exception actually applies.

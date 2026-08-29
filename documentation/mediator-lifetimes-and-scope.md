@@ -100,18 +100,19 @@ var result = await mediator.Send(new CreateOrder(...));
 
 ## Root-Scope Exception & Guard
 
-You cannot use the mediator in the **root DI scope** (the application's main container). The library detects and throws an exception:
+You cannot use the mediator in the **root DI scope** (the application's main container). Resolving `IMediator` from the root provider succeeds - the guard fires on the *dispatch* call itself, throwing `MediatorResolvedFromRootScopeException`:
 
 ```csharp
-// ❌ This throws - root scope violation
-var mediator = serviceProvider.GetRequiredService<IMediator>();
-await mediator.Send(new Query(...));
+var mediator = serviceProvider.GetRequiredService<IMediator>();  // succeeds even from the root provider
+await mediator.Send(new Query(...));  // ❌ throws MediatorResolvedFromRootScopeException here
 
 // ✅ Correct - create a child scope first
 using var scope = serviceProvider.CreateScope();
 var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 await mediator.Send(new Query(...));
 ```
+
+`MediatorResolvedFromRootScopeException.RequestType` carries the runtime type being dispatched when the guard fired, for diagnostics.
 
 ### Why?
 
@@ -405,3 +406,38 @@ public class CreateUserHandler : ICommandHandler<CreateUser, OperationOutcome<in
     }
 }
 ```
+
+## Distributed Tracing
+
+`Mediator` starts one `System.Diagnostics.Activity` span per `Send`/`Publish` call, independent of whether `LoggingBehavior` is also registered - that behavior writes to `ILogger`, this one emits `Activity` spans; neither depends on or shares state with the other. `MediatorActivitySource` (`Interlocutor.Abstractions.Diagnostics`) hosts the stable `ActivitySource` name and tag keys:
+
+```csharp
+public static class MediatorActivitySource
+{
+    public const string Name = "Interlocutor.Mediator";
+    public const string RequestTypeTag = "interlocutor.request_type";
+    public const string HandlerTypeTag = "interlocutor.handler_type";
+    public const string OutcomeTag = "interlocutor.outcome";
+}
+```
+
+Attach a listener to observe dispatch spans - a plain `ActivityListener`:
+
+```csharp
+ActivitySource.AddActivityListener(new ActivityListener
+{
+    ShouldListenTo = source => source.Name == MediatorActivitySource.Name,
+    Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
+    ActivityStarted = activity => Console.WriteLine($"Started: {activity.DisplayName}"),
+    ActivityStopped = activity => Console.WriteLine($"Stopped: {activity.DisplayName}"),
+});
+```
+
+or, with OpenTelemetry:
+
+```csharp
+services.AddOpenTelemetry().WithTracing(tracing => tracing.AddSource(MediatorActivitySource.Name));
+```
+
+> [!NOTE]
+> When nothing is listening, `ActivitySource.StartActivity` returns `null` and every subsequent tagging call in the mediator is guarded on that null reference - the standard `Activity` mechanism's own short-circuit, not something Interlocutor re-implements. Dispatch performs no allocation or string formatting for tracing when unobserved, so this costs nothing in an application that never attaches a listener.

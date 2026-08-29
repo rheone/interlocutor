@@ -51,7 +51,7 @@ Declare a command is backed by a non-SQL store so `UnitOfWorkBehavior` never ope
 ```csharp
 // This command uses a NoSQL store (Redis, MongoDB, etc.)
 public record SetUserPreferences(int UserId, Dictionary<string, object> Prefs)
-    : ICommand<Success>,
+    : ICommand<OperationOutcome>,
       IExternalStoreRequest;  // ← Never gets a local transaction
 
 // UnitOfWorkBehavior sees this marker and skips transaction management entirely

@@ -1,4 +1,4 @@
-> **Status: open**
+> **Status: done**
 
 ## Labels
 
@@ -12,5 +12,11 @@ Add a brief callout in each of the three relevant `pipeline-and-behaviors.md` su
 
 ## Acceptance criteria
 
-- [ ] `DelegateRateLimiter`, `DelegateTimeoutPolicy`, `DelegatePipelineStage<,>` are each shown with a short example
-- [ ] Existing full-class examples are kept, not replaced
+- [x] `DelegateRateLimiter`, `DelegateTimeoutPolicy`, `DelegatePipelineStage<,>` are each shown with a short example
+- [x] Existing full-class examples are kept, not replaced
+
+## Notes
+
+`DelegatePipelineStage<,>`'s own XML doc says it's "the type backing lambda-form stage registration (for example, `InterlocutorPipelineBuilder.AddStage`'s delegate overloads)" - so the idiomatic form is calling `AddStage(onBefore, onAfter)` directly with lambdas, never constructing `DelegatePipelineStage` by name. Documented that way, plus a pointer to the second `IServiceProvider`-receiving overload for stages needing scoped dependencies.
+
+`DelegateRateLimiter`/`DelegateTimeoutPolicy` have no equivalent delegate-friendly builder overload - `OverrideRateLimiter<T>()`/`OverrideTimeoutPolicy<T>()` are type-parameter-based (DI-constructed), which can't work for a type whose constructor takes a `Func`. Documented the correct pattern instead: register the instance directly with the container before `AddInterlocutor()` runs, so the behavior's own try-added default is skipped by existing try-add semantics.

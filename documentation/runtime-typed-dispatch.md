@@ -192,7 +192,10 @@ public class InboxProcessor : BackgroundService
 
 ## Error Handling
 
-If the runtime type cannot be resolved or deserialized, exceptions are thrown:
+Beyond type resolution and deserialization failures, `Send(object, ct)` itself throws two specific, named exceptions (both `Interlocutor.Abstractions.Core`, both carrying a `RequestType` property for diagnostics):
+
+- **`UnsupportedRequestTypeException`** - the deserialized object doesn't implement `IQuery<TResponse>`, `ICommand<TResponse>`, or `ICommand` at all. This means the object was never a request to begin with - a deserialization or caller bug, not a missing registration.
+- **`HandlerNotRegisteredException`** - the object *is* a recognized request shape, but no handler for it is registered. This is the runtime-typed path's equivalent of the generic `InvalidOperationException` typed dispatch throws (see [Builder & Registration § Verifying Your Registration](builder-and-registration.md#verifying-your-registration)) - a specific, named type instead, since an infrastructure caller needs `RequestType` to log which message it couldn't process. It also carries `HandlerType` - the specific closed handler interface expected, or `null` when none could be determined (a unit command, whose result type isn't fixed by the command).
 
 ```csharp
 // ❌ Type doesn't exist
@@ -211,6 +214,16 @@ try
 
     var request = JsonSerializer.Deserialize(message.Payload, requestType);
     var result = await mediator.Send(request, ct);
+}
+catch (UnsupportedRequestTypeException ex)
+{
+    // The payload deserialized fine, but it isn't a request at all - a caller/producer bug
+    await outbox.MarkFailedAsync(message.Id, $"Not a request type: {ex.RequestType}", ct);
+}
+catch (HandlerNotRegisteredException ex)
+{
+    // A recognized request shape, but no handler registered - a deployment/configuration bug
+    await outbox.MarkFailedAsync(message.Id, $"No handler for {ex.RequestType}", ct);
 }
 catch (JsonException ex)
 {

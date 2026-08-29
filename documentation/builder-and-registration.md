@@ -307,7 +307,11 @@ Missing handlers are **not** caught automatically at container-build time (see S
 using var scope = serviceProvider.CreateScope();
 var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-// If a handler is missing, GetRequiredService throws when you actually dispatch it
+// If a handler is missing, dispatch internally calls GetRequiredService<IQueryHandler<...>> and
+// that throws the container's own generic InvalidOperationException - not a named Interlocutor
+// exception type. Runtime-typed dispatch (Send(object, ...)) is different: it checks registration
+// explicitly beforehand and throws a specific HandlerNotRegisteredException instead - see
+// runtime-typed-dispatch.md.
 var result = await mediator.Send(new GetUser(1), cancellationToken);
 ```
 

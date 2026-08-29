@@ -1,4 +1,4 @@
-> **Status: open**
+> **Status: done**
 
 ## Labels
 
@@ -12,6 +12,6 @@ Add a new section - either its own short doc or a subsection of `mediator-lifeti
 
 ## Acceptance criteria
 
-- [ ] `MediatorActivitySource`'s name, tag keys, and relationship to `LoggingBehavior` are documented
-- [ ] A worked example shows attaching a listener/exporter
-- [ ] Linked from `documentation/index.md`
+- [x] `MediatorActivitySource`'s name, tag keys, and relationship to `LoggingBehavior` are documented
+- [x] A worked example shows attaching a listener/exporter (both a plain `ActivityListener` and OpenTelemetry's `AddSource`)
+- [x] Linked from `documentation/index.md` (folded into the existing `mediator-lifetimes-and-scope.md` bullet, since that's where the new "Distributed Tracing" section landed)

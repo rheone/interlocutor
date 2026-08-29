@@ -183,12 +183,12 @@ Enforces policy-based, non-resource authorization. Short-circuits with `Forbidde
 > [!NOTE]
 > Resource-based authorization (needing the loaded entity) is *not* a behavior - it's handled by `ResourceCommandHandler`'s template method. See [handler-selection-and-dispatch.md](handler-selection-and-dispatch.md) for the full picture.
 
-- Requires: nothing (you register your own `IPolicyEvaluator` implementation)
+- Requires: nothing beyond the try-added `IOutcomeCaseRegistry` default (`DefaultOutcomeCaseRegistry`) and `IPolicyEvaluator` default (see the warning below)
 - Marker: `IRequiresPolicy` (carries the `PolicyName` to evaluate)
 - Constraint: `TResponse : IOperationOutcome` (must be able to construct a `Forbidden` case)
 
 ```csharp
-public record DeleteAllUsers() : ICommand<Success>, IRequiresPolicy
+public record DeleteAllUsers() : ICommand<OperationOutcome>, IRequiresPolicy
 {
     public string PolicyName => "AdminOnly";
 }
@@ -197,17 +197,20 @@ public record DeleteAllUsers() : ICommand<Success>, IRequiresPolicy
 var result = await mediator.Send(new DeleteAllUsers());
 ```
 
+> [!WARNING]
+> If no `IPolicyEvaluator` is registered, `AuthorizationBehavior` falls back to the try-added `DefaultPolicyEvaluator` - which **always returns `true`, granting every policy check unconditionally**. That default exists for development and testing, where authorization isn't implemented yet and shouldn't block work; it is not safe for production. Register your own `IPolicyEvaluator` (or `builder.Pipeline.OverridePolicyEvaluator<TEvaluator>()`) before deploying anything that uses `IRequiresPolicy`.
+
 ### AuditingBehavior
 
 Records an audit trail of what ran and its outcome.
 
-- Requires: `IAuditSink` implementation (you register your own)
+- Requires: nothing - falls back to the try-added `LoggingAuditSink` (records via `ILogger`) if you don't register your own `IAuditSink`
 - Marker: `IAuditableRequest` (carries the `ActionName` to record)
 - Constraint: no constraint - can be used with any response type
 
 ```csharp
 public record TransferFunds(int FromAccountId, int ToAccountId, decimal Amount)
-    : ICommand<Success>, IAuditableRequest
+    : ICommand<OperationOutcome>, IAuditableRequest
 {
     public string ActionName => "transfer_funds";
 }
@@ -344,6 +347,17 @@ var result = await mediator.Send(new ExportReport(42));
 > [!WARNING]
 > `TimeoutBehavior` can only *report* a timeout, not enforce one. `IPipelineBehavior<TRequest, TResponse>.Handle`'s `next` parameter is a parameterless delegate - there is no way to hand it a shorter-lived token, so the abandoned work keeps running in the background, unobserved, after the `Timeout` response is returned to the caller. Genuinely aborting in-flight work requires the handler itself to observe the cancellation token.
 
+For simple budget logic that doesn't warrant a named class, `DelegateTimeoutPolicy` wraps a `Func<IHasTimeout, TimeSpan>` directly - register the instance before `AddInterlocutor()` runs so the behavior's own try-added default is skipped:
+
+```csharp
+services.AddSingleton<ITimeoutPolicy>(new DelegateTimeoutPolicy(request => request.Budget * 2));  // double every declared budget
+services.AddInterlocutor(builder =>
+{
+    builder.ScanAssembly(typeof(Program).Assembly);
+    builder.Pipeline.AddTimeoutBehavior();
+});
+```
+
 ### RateLimitedBehavior
 
 Checks a rate limit via `IRateLimiter`, short-circuiting with `RateLimited` if the check disallows the request.
@@ -361,6 +375,16 @@ public record ExportReport(int ReportId)
 
 // builder.Pipeline.AddRateLimitedBehavior();
 var result = await mediator.Send(new ExportReport(42));
+```
+
+Like `DelegateTimeoutPolicy` above, `DelegateRateLimiter` wraps a check function directly, for cases that don't need a full class:
+
+```csharp
+services.AddSingleton<IRateLimiter>(new DelegateRateLimiter(async (limitKey, request, ct) =>
+{
+    var allowed = await myBucket.TryAcquireAsync(limitKey, ct);
+    return new RateLimitResult(allowed, RetryAfter: allowed ? null : TimeSpan.FromSeconds(1));
+}));
 ```
 
 ## Pipeline Stages (IPipelineStage)
@@ -396,6 +420,21 @@ builder.Pipeline.AddStage(typeof(LoggingStage<,>));
 ```
 
 Stages are hosted by `PipelineStageBehavior<TRequest,TResponse>` - an ordinary entry in the behavior list that aggregates all registered stages. Stages run in registration order on the way in, reverse order on the way out, much like behaviors themselves.
+
+For a hook this small, skip the class entirely - `AddStage`'s delegate overload wraps the two lambdas in `DelegatePipelineStage<,>` for you:
+
+```csharp
+builder.Pipeline.AddStage<TRequest, TResponse>(
+    onBefore: (request, ct) =>
+    {
+        logger.LogInformation("Request: {RequestType}", typeof(TRequest).Name);
+        return Task.FromResult(StageResult<TResponse>.Continue);
+    },
+    onAfter: null  // omit either hook for a no-op - matches PipelineStageBase's own default
+);
+```
+
+A second overload takes `IServiceProvider` as the first delegate parameter, for a stage that needs to resolve a scoped dependency rather than capture one at configuration time - see `InterlocutorPipelineBuilder.AddStage`'s XML docs for the exact signature.
 
 ### Short-Circuiting
 

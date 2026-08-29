@@ -31,7 +31,7 @@ Registering the library and understanding how a dispatch's scope and context flo
 - [Dependency Injection: Abstractions & Registration Model](dependency-injection-abstractions.md) - the container-neutral registration model (`InterlocutorRegistration`, `RegistrationLifetime`, `RegistrationReport`), validation mechanisms, and compile-time generated-registration attributes shared by both container packages.
 - [Dependency Injection: Microsoft.Extensions.DependencyInjection](dependency-injection-microsoft.md) - registration, injection, and validation examples for `Interlocutor.DependencyInjection.Microsoft`, plus root-scope detection internals.
 - [Dependency Injection: Autofac](dependency-injection-autofac.md) - the equivalent surface for `Interlocutor.DependencyInjection.Autofac`.
-- [Mediator, Lifetimes, Scope & Ambient Context](mediator-lifetimes-and-scope.md) - `ISender`/`IPublisher`/`IMediator` interfaces, why scoped lifetime is non-configurable, the root-scope exception, dispatching correctly from web/background contexts, `IRequestContextAccessor` and `RequestContext`.
+- [Mediator, Lifetimes, Scope & Ambient Context](mediator-lifetimes-and-scope.md) - `ISender`/`IPublisher`/`IMediator` interfaces, why scoped lifetime is non-configurable, the root-scope exception, dispatching correctly from web/background contexts, `IRequestContextAccessor` and `RequestContext`, distributed tracing via `MediatorActivitySource`.
 
 ### Cross-cutting features
 
