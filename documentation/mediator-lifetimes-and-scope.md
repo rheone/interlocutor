@@ -244,7 +244,18 @@ public sealed record RequestContext
     public string CorrelationId { get; init; } = Guid.NewGuid().ToString();  // auto-generated if not set
     public string? UserId { get; init; }
     public string? TenantId { get; init; }
-    public IReadOnlyDictionary<string, object>? Items { get; init; }
+    public RequestContextItems Items { get; init; } = new();  // always non-null, mutable in place
+}
+```
+
+`Items` is always non-null, and a handler or any pipeline behavior can write into it in place - no `with`-expression record replacement needed, unlike `CorrelationId`/`UserId`/`TenantId`:
+
+```csharp
+contextAccessor.Context?.Items.Set("some-key", "some-value");
+
+if (contextAccessor.Context?.Items.TryGet<string>("some-key", out var value) == true)
+{
+    // ...
 }
 ```
 
@@ -329,8 +340,11 @@ protected override async Task ExecuteAsync(CancellationToken ct)
 }
 ```
 
+> [!NOTE]
+> Each pass through the `while` loop above creates a fresh scope, so each batch gets its own `RequestContext` (and therefore its own `Items`). Within one batch, though, every message in the `foreach` shares that same scope - and the same `Items` bag - since `IRequestContextAccessor` is scoped per DI scope, not per `Send` call. If one message's dispatch should not see `Items` entries another message's dispatch wrote, call `contextAccessor.Context?.Items.Clear()` at the top of the `foreach`, or create a scope per message instead of per batch.
+
 > [!IMPORTANT]
-> `RequestContext` is immutable - you swap it via the property, not modify it:
+> `RequestContext`'s own properties are immutable - swap `CorrelationId`/`UserId`/`TenantId` via the property, not a setter:
 > ```csharp
 > // Create a new context; don't mutate the existing one
 > accessor.Context = new RequestContext
@@ -338,10 +352,10 @@ protected override async Task ExecuteAsync(CancellationToken ct)
 >     CorrelationId = /* ... */,
 >     UserId = /* ... */,
 > };
->
-> // If you need to add Items, create a new record:
-> var oldContext = accessor.Context;
-> accessor.Context = oldContext with { Items = new Dictionary<string, object> { ["key"] = "value" } };
+> ```
+> `Items` is the one exception: write into it in place, from anywhere that can reach `accessor.Context` - no new `RequestContext` needed:
+> ```csharp
+> accessor.Context?.Items.Set("key", "value");
 > ```
 
 ## Registering the Context Accessor

@@ -117,9 +117,27 @@ internal static class DispatchWrapperEmitter
             $"                ?? throw new global::System.InvalidOperationException(\"No handler registered for service type '{handler.ServiceInterfaceName}'.\"));"
         );
         builder.AppendLine();
+
+        // Each closure below is wrapped in a try/catch for PipelineEjectException<TResponse>, mirroring the
+        // hand-written wrappers (QueryHandlerWrapper/CommandHandlerWrapper/VoidCommandHandlerWrapper): a
+        // handler or behavior that calls Eject.With deep in its own call graph returns an ordinary response
+        // at the nearest enclosing Handle call, so nothing further out in the chain ever observes a thrown
+        // exception.
         builder.AppendLine(
-            $"            global::System.Func<global::System.Threading.Tasks.Task<{responseType}>> pipeline = () => handler.Handle(request, ct);"
+            $"            global::System.Func<global::System.Threading.Tasks.Task<{responseType}>> pipeline = async () =>"
         );
+        builder.AppendLine("            {");
+        builder.AppendLine("                try");
+        builder.AppendLine("                {");
+        builder.AppendLine("                    return await handler.Handle(request, ct).ConfigureAwait(false);");
+        builder.AppendLine("                }");
+        builder.AppendLine(
+            $"                catch (global::Interlocutor.Abstractions.Pipeline.PipelineEjectException<{responseType}> eject)"
+        );
+        builder.AppendLine("                {");
+        builder.AppendLine("                    return eject.Response;");
+        builder.AppendLine("                }");
+        builder.AppendLine("            };");
         builder.AppendLine();
         builder.AppendLine(
             $"            var behaviorChain = global::Interlocutor.Abstractions.Pipeline.PipelineChainResolver.ResolveChain<{requestType}, {responseType}>(services);"
@@ -129,7 +147,21 @@ internal static class DispatchWrapperEmitter
         builder.AppendLine("                var next = pipeline;");
         builder.AppendLine("                {");
         builder.AppendLine("                    var behavior = behaviorChain[i];");
-        builder.AppendLine("                    pipeline = () => behavior.Handle(request, next, ct);");
+        builder.AppendLine("                    pipeline = async () =>");
+        builder.AppendLine("                    {");
+        builder.AppendLine("                        try");
+        builder.AppendLine("                        {");
+        builder.AppendLine(
+            "                            return await behavior.Handle(request, next, ct).ConfigureAwait(false);"
+        );
+        builder.AppendLine("                        }");
+        builder.AppendLine(
+            $"                        catch (global::Interlocutor.Abstractions.Pipeline.PipelineEjectException<{responseType}> eject)"
+        );
+        builder.AppendLine("                        {");
+        builder.AppendLine("                            return eject.Response;");
+        builder.AppendLine("                        }");
+        builder.AppendLine("                    };");
         builder.AppendLine("                }");
         builder.AppendLine("            }");
         builder.AppendLine();

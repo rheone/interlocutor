@@ -179,6 +179,25 @@ public class AspNetCoreRequestContextAccessorTests
     }
 
     [Fact]
+    public void Context_CalledTwiceInSameRequest_ReturnsSameInstance_SoItemsStaysStable()
+    {
+        // Arrange - Context is built once per request and cached; otherwise a Set() followed by a later
+        // TryGet() on Items would silently miss, because each .Context access would hand back a different
+        // RequestContext (and therefore a different Items bag).
+        var httpContextAccessor = Substitute.For<IHttpContextAccessor>();
+        httpContextAccessor.HttpContext.Returns(new DefaultHttpContext());
+        var accessor = new AspNetCoreRequestContextAccessor(httpContextAccessor);
+
+        // Act
+        var first = accessor.Context;
+        var second = accessor.Context;
+
+        // Assert
+        Assert.Same(first, second);
+        Assert.Same(first!.Items, second!.Items);
+    }
+
+    [Fact]
     public void Context_Setter_ThrowsNotSupportedException()
     {
         // Arrange

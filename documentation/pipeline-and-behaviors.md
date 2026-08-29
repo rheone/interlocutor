@@ -459,6 +459,35 @@ When a stage short-circuits:
 - Only the after-hooks of stages that already ran (including the one that short-circuited) execute.
 - Behaviors outside the stage host see an ordinary response - they cannot distinguish a short-circuited outcome from a handler-produced one.
 
+## Force-Ejecting From Deep In a Handler or Behavior
+
+`StageResult.ShortCircuit` above is a return-type convention: it only works because `IPipelineStage.OnBeforeAsync` returns `StageResult<TResponse>`, a wrapper with a spare slot for "skip everything and use this response instead." An ordinary `IPipelineBehavior<TRequest,TResponse>.Handle` or a handler's own `Handle` has no such slot - both return `Task<TResponse>` directly - so there's nothing to repurpose the same way.
+
+That's fine when the decision to stop can be made right where `Handle` returns (a behavior can already just not call `next()` and return any response it likes - `AuthorizationBehavior` does exactly this for `Forbidden`). It's not fine when the decision is discovered several method calls deep inside a handler's own logic, and manually threading the chosen outcome back up through every intermediate frame would turn a three-line early exit into a cascade of early returns. `Eject.With` is for that case:
+
+```csharp
+private Task<OperationOutcome<Success, Conflict>> ApplyDiscount(Order order)
+{
+    if (!TryReserveInventory(order))
+    {
+        // Several calls deep in a handler's own logic - hand back the chosen outcome directly rather than
+        // threading it up through every intermediate frame.
+        return Task.FromResult(Eject.With<OperationOutcome<Success, Conflict>>(new Conflict("Inventory already reserved")));
+    }
+
+    return Task.FromResult<OperationOutcome<Success, Conflict>>(new Success());
+}
+```
+
+`Eject.With` throws a `PipelineEjectException<TResponse>` that is caught immediately at the nearest enclosing `Handle` call - every place that composes the behavior chain around a handler (the hand-written command/query wrappers and the source generator's emitted dispatch wrappers alike) wraps each `Handle` call in a matching catch. That means:
+
+- Nothing further out in the chain ever observes an exception - an enclosing behavior's own post-`next()` logic (auditing, logging, a transaction commit/rollback gate) runs exactly as if the ejecting code had returned the chosen response normally.
+- No transaction-gating change is needed alongside this: a unit-of-work commit/rollback gate decides commit versus rollback from the outcome it classifies, not from how that outcome was produced, so an ejected non-success response is rolled back exactly like one returned normally.
+- A behavior or handler can eject with *any* legal case of its response type - there is no dedicated "ejected" case to construct. For an unconstrained generic `TResponse` (typical when authoring a reusable behavior), construct the chosen case via `IOutcomeCaseRegistry.ConstructOrThrow` first, the same way `AuthorizationBehavior` builds `Forbidden`, then pass the result to `Eject.With`.
+
+> [!IMPORTANT]
+> This is unrelated to `CancellationBehavior`/`Cancelled`. Cancellation is cooperative cancellation of the ambient `CancellationToken` - no decision is involved, the caller asked the operation to stop. `Eject.With` is the opposite situation: nothing asked the operation to stop, a developer's own code decided, mid-flight, that the operation is at a dead end and chose to end it.
+
 ## Composition Diagram
 
 A sequence diagram, not a flowchart, is the right shape here: the pipeline isn't two independent passes through the behavior list, it's one call nesting all the way down to the handler and back out. Activation bars below show that nesting directly, and the `alt` block shows what a flowchart of "ingress then egress" can't: a short-circuit skips the remaining inner behaviors and the handler entirely.
