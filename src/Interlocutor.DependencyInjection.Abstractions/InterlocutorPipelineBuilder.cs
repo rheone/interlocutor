@@ -41,7 +41,7 @@ using Interlocutor.Abstractions.Pipeline.Cases;
 /// <see cref="Behaviors"/> is the general-purpose baseline every request type draws from unless
 /// <see cref="OverridePipelineFor"/> declares an override rule matching it - a full, positively-declared
 /// replacement of the baseline for matched requests, never a merge with or modification of it. See
-/// <see href="../../../docs/adr/0019-per-request-type-pipeline-overrides.md">ADR-0019</see> for the full
+/// <see href="../../../maintainer_docs/adr/0019-per-request-type-pipeline-overrides.md">ADR-0019</see> for the full
 /// rationale.
 /// </para>
 /// </remarks>
@@ -333,7 +333,7 @@ public sealed class InterlocutorPipelineBuilder
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Per <see href="../../../docs/adr/0018-unit-of-work-as-transaction-owner.md">ADR-0018</see>, this
+    /// Per <see href="../../../maintainer_docs/adr/0018-unit-of-work-as-transaction-owner.md">ADR-0018</see>, this
     /// behavior applies to every request once registered - no marker is required to participate. It opens a
     /// transaction lazily the first time anything writes (or eagerly, at pipeline start, for a request
     /// implementing <c>ITransactionalRequest</c>) and commits or rolls it back automatically based on the

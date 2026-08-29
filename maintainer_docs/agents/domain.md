@@ -6,7 +6,7 @@ How the engineering skills should consume this repo's domain documentation when 
 
 - **`CONTEXT.md`** at the repo root, or
 - **`CONTEXT-MAP.md`** at the repo root if it exists - it points at one `CONTEXT.md` per context. Read each one relevant to the topic.
-- **`docs/adr/`** - read ADRs that touch the area you're about to work in.
+- **`maintainer_docs/adr/`** - read ADRs that touch the area you're about to work in. (This repo keeps its ADRs under `maintainer_docs/adr/`, not the `docs/adr/` default the domain-modeling skills assume elsewhere - point any such skill at this path explicitly when it runs against this repo.)
 
 If any of these files don't exist, **proceed silently**. Don't flag their absence; don't suggest creating them upfront. The `/domain-modeling` skill (reached via `/grill-with-docs` and `/improve-codebase-architecture`) creates them lazily when terms or decisions actually get resolved.
 

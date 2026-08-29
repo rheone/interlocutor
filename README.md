@@ -86,9 +86,9 @@ var message = result switch
 |---------|---------|
 | `Interlocutor.CommonKernel` | Result types. `IOperationOutcome` is the extension point every handler response implements - see [messages-and-result-types.md](documentation/messages-and-result-types.md) for the full walkthrough. `OperationOutcome<...>` unions and their failure cases (`Success`, `NotFound`, `Forbidden`, `Conflict`, `ValidationError`, `Failure`) are the library's own built-in implementation of it. Zero dependencies. |
 | `Interlocutor.Abstractions` | Core: `IMediator`, `ISender`, `IPublisher`; handler interfaces; pipeline behaviors (`LoggingBehavior`, `AuthorizationBehavior`, `AuditingBehavior`, plus the opt-in `CancellationBehavior`, `TimeoutBehavior`, and `RateLimitedBehavior`, which have no prescribed position in the chain); marker interfaces for opt-in concerns. |
-| `Interlocutor.DependencyInjection.Abstractions` | Container-neutral registration model shared by the two DI packages below - `InterlocutorBuilder`, `InterlocutorPipelineBuilder`, `RegistrationReport` - see [dependency-injection-packages.md](documentation/dependency-injection-packages.md). Pulled in transitively; not referenced directly by most consumers. |
-| `Interlocutor.DependencyInjection.Microsoft` | Builder-based registration for Microsoft.Extensions.DependencyInjection - see [dependency-injection-packages.md](documentation/dependency-injection-packages.md). |
-| `Interlocutor.DependencyInjection.Autofac` | Builder-based registration for Autofac - see [dependency-injection-packages.md](documentation/dependency-injection-packages.md). |
+| `Interlocutor.DependencyInjection.Abstractions` | Container-neutral registration model shared by the two DI packages below - `InterlocutorBuilder`, `InterlocutorPipelineBuilder`, `RegistrationReport` - see [dependency-injection-abstractions.md](documentation/dependency-injection-abstractions.md). Pulled in transitively; not referenced directly by most consumers. |
+| `Interlocutor.DependencyInjection.Microsoft` | Builder-based registration for Microsoft.Extensions.DependencyInjection - see [dependency-injection-microsoft.md](documentation/dependency-injection-microsoft.md). |
+| `Interlocutor.DependencyInjection.Autofac` | Builder-based registration for Autofac - see [dependency-injection-autofac.md](documentation/dependency-injection-autofac.md). |
 | `Interlocutor.AspNetCore` | `ToActionResult()` - maps result types to HTTP responses. ASP.NET Core only. |
 | `Interlocutor.FluentValidation` | `ValidationBehavior` - automatic request validation via FluentValidation. |
 | `Interlocutor.Persistence.Abstractions` | Optional, opt-in `IUnitOfWork`/`IDomainRepository<TEntity, TKey>` persistence abstraction - see [persistence-abstraction.md](documentation/persistence-abstraction.md). Zero ORM dependency. |
@@ -123,7 +123,7 @@ For people using Interlocutor as a library in their own application:
 
 For contributors and maintainers working on *this repository* - not needed to use the library:
 
-- **[Developer documentation index](docs/README.md)** - Architecture Decision Records, the project PRD, contributor guides, and agent process docs.
+- **[Developer documentation index](maintainer_docs/README.md)** - Architecture Decision Records, the project PRD, contributor guides, and agent process docs.
 
 ## License
 

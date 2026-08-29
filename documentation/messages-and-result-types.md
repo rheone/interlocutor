@@ -43,7 +43,7 @@ var result = await mediator.Send(new CreateUser("Alice", "alice@example.com"));
 
 ### ICommand (Unit Command)
 
-Marks a write request with no domain data payload - only success or failure. Returns `OperationOutcome` (the non-generic form, `Success | Failure`).
+Marks a write request with no domain data payload - only an outcome. Unlike `ICommand<TResponse>`, the outcome type isn't declared on the command itself - it's chosen **at the call site** via `Send<TResult>`'s type argument, so the same command can be handled differently depending on what outcome information a given caller needs:
 
 ```csharp
 public record DeleteAllUsers() : ICommand;
@@ -51,10 +51,23 @@ public record DeleteAllUsers() : ICommand;
 public record ClearCache() : ICommand;
 ```
 
+A handler is `IVoidCommandHandler<TCommand, TResult>`, pairing the command with whichever `IOperationOutcome`-shaped result that handler produces - most commonly the non-generic `OperationOutcome` (`Success | Failure`), but any union is legal:
+
+```csharp
+public class ClearCacheHandler : IVoidCommandHandler<ClearCache, OperationOutcome>
+{
+    public async Task<OperationOutcome> Handle(ClearCache command, CancellationToken ct)
+    {
+        await this.cache.ClearAsync(ct);
+        return new Success();
+    }
+}
+```
+
 Dispatch:
 
 ```csharp
-var result = await mediator.Send(new DeleteAllUsers());
+var result = await mediator.Send<OperationOutcome>(new DeleteAllUsers());
 // result is OperationOutcome (Success or Failure)
 ```
 
@@ -132,14 +145,14 @@ Anything left unregistered still falls back to `DefaultOutcomeCaseRegistry`, so 
 
 ## Result Types
 
-Interlocutor.CommonKernel ships the standard failure case types and outcome unions. The exploration guide at `docs/guides/composing-operationoutcome-arities.md` walks through concrete examples; these are the standard shapes:
+`Interlocutor.CommonKernel` ships the standard failure case types and outcome unions - these are the standard shapes. See [Composing OperationOutcome Arities](composing-operationoutcome-arities.md) for worked examples of picking between them for a given command or query.
 
 ### Success
 
-Marker record for unit command success - carries no payload:
+Marker type for unit command success - carries no payload:
 
 ```csharp
-public record Success;
+public readonly record struct Success;
 
 // Use in unit commands
 public record ClearCache() : ICommand;
@@ -159,7 +172,7 @@ public class ClearCacheHandler : ICommandHandler<ClearCache>
 Entity does not exist:
 
 ```csharp
-public record NotFound(string? Message = null);
+public readonly record struct NotFound(string? Message = null);
 
 public record GetUser(int UserId) : IQuery<OperationOutcome<UserDto, NotFound>>;
 
@@ -173,13 +186,13 @@ Assert.NotNull(notFound.Message);
 Authorization denied for a resource:
 
 ```csharp
-public record Forbidden(string? Reason = null);
+public readonly record struct Forbidden(string? Reason = null);
 
 public record DeleteDocument(int DocumentId)
     : ICommand<OperationOutcome<Success, NotFound, Forbidden>>;
 
 var result = await mediator.Send(new DeleteDocument(42));
-var failure = Assert.IsAssignableFrom<Failure>(result.Value);
+var forbidden = Assert.IsType<Forbidden>(result.Value);
 ```
 
 ### ValidationError
@@ -187,21 +200,25 @@ var failure = Assert.IsAssignableFrom<Failure>(result.Value);
 Input validation failure. Produced by `ValidationBehavior` when FluentValidation rules fail:
 
 ```csharp
-public record ValidationError(string Message, string? Code = null);
+public readonly record struct ValidationError(string Message);
 
-// Aggregated
-public record ValidationErrors(IReadOnlyList<ValidationError> Items);
+// With a machine-readable error code
+public readonly record struct ValidationError<TErrorCode>(string Message, TErrorCode ErrorCode)
+    where TErrorCode : notnull, IEquatable<TErrorCode>;
+
+// Aggregated - construct from messages, from ValidationError instances, or from a single message
+var errors = new ValidationErrors(["Email is required", "Password too short"]);
 
 var result = await mediator.Send(new CreateUser("", "bad-email"));
-// result.Value is ValidationError with collected errors
+// result.Value is a ValidationErrors whose .Items/.Messages expose the collected errors
 ```
 
 ### Conflict
 
-State conflict - concurrency, uniqueness violation, invalid transition:
+State conflict - concurrency, uniqueness violation, invalid transition. Both `Message` and `Code` are mandatory - there is no bare form:
 
 ```csharp
-public record Conflict(string Code, string? Message = null);
+public readonly record struct Conflict(string Message, string Code);
 
 public record UpdateProduct(int ProductId, string Name, int Version)
     : ICommand<OperationOutcome<Success, NotFound, Conflict>>;
@@ -237,6 +254,9 @@ var result = await mediator.Send(new BulkDelete([1, 2, 3]));
 ```
 
 ### Cancelled, Timeout & RateLimited
+
+> [!WARNING]
+> `Cancelled`, `Timeout`, and `RateLimited` are marked `[Obsolete("May be overkill to include")]` in `Interlocutor.CommonKernel` and may be removed before this library's first stable release. Using them today produces a compiler warning; using the general `Failure` case instead avoids taking a dependency on a type that might not ship.
 
 Three additional case types cover cross-cutting concerns that opt-in pipeline behaviors (see [pipeline-and-behaviors.md](pipeline-and-behaviors.md)) can short-circuit with:
 
@@ -338,7 +358,7 @@ When a handler's response arity is specific (only the cases it can produce), the
 
 ## Marker Interfaces
 
-Requests can opt into pipeline behaviors via marker interfaces:
+Requests opt into cross-cutting pipeline behavior by implementing a [marker interface](glossary.md#marker-interfaces) - never by editing a central configuration list:
 
 | Interface | Used by | Carries |
 |-----------|---------|---------|
@@ -346,6 +366,9 @@ Requests can opt into pipeline behaviors via marker interfaces:
 | `IExternalStoreRequest` | Declares "no SQL session" | - |
 | `IAuditableRequest` | `AuditingBehavior` | `ActionName` |
 | `IRequiresPolicy` | `AuthorizationBehavior` | `PolicyName` |
+| `ICancellable` | `CancellationBehavior` (see [Cancelled, Timeout & RateLimited](#cancelled-timeout--ratelimited) above) | - |
+| `IHasTimeout` | `TimeoutBehavior` | `Budget` |
+| `IRateLimited` | `RateLimitedBehavior` | `LimitKey` |
 
 A request can implement multiple markers:
 
@@ -368,7 +391,7 @@ See [pipeline-and-behaviors.md](pipeline-and-behaviors.md) for the full behavior
 > [!CAUTION]
 > **Response type variance is impossible and permanent.** This is the single most likely thing a future contributor will attempt and fail at.
 
-The response type parameter appears in **both argument and return position** on `IPipelineBehavior<TRequest, TResponse>` and lives inside a `Task` on handler interfaces:
+The response type parameter appears in **both argument and return position** on a [pipeline behavior](glossary.md#pipeline)'s `IPipelineBehavior<TRequest, TResponse>` and lives inside a `Task` on handler interfaces:
 
 ```csharp
 public interface IPipelineBehavior<TRequest, TResponse>

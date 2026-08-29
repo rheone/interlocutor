@@ -594,7 +594,7 @@ app.MapGet("/todo-tasks/{id:int}/manual", async (int id, ISender sender, Cancell
 ```
 
 > [!WARNING]
-> The trade-off is real: `ToMinimalApiResult()`/`ToActionResult()` guarantee every endpoint in the API maps outcomes to HTTP the same way, verified once, centrally. Switching to a manual `switch` per endpoint means each one is now your own responsibility to keep exhaustive and consistent with the rest of the API - reach for a custom `IOperationOutcomeMapper` (see [ASP.NET Core Integration & HTTP Mapping § Custom HTTP Mapping](aspnetcore-integration.md#custom-http-mapping)) instead if the need for control is API-wide rather than per endpoint.
+> The trade-off is real: `ToMinimalApiResult()`/`ToActionResult()` guarantee every endpoint in the API maps outcomes to HTTP the same way, verified once, centrally. Switching to a manual `switch` per endpoint means each one is now your own responsibility to keep exhaustive and consistent with the rest of the API - reach for a custom `IOutcomeStatusMapper` (see [ASP.NET Core Integration & HTTP Mapping § Custom HTTP Mapping](aspnetcore-integration.md#custom-http-mapping)) instead if the need for control is API-wide rather than per endpoint.
 
 <details>
 

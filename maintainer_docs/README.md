@@ -6,7 +6,6 @@ This directory contains internal documentation for people building and maintaini
 
 - [Start here](#start-here) - the current spec and open questions
 - [Architecture Decision Records](#architecture-decision-records-adr) - why the library is shaped the way it is, grouped by theme
-- [Contributor guides](#contributor-guides-guides) - worked examples for contributors
 - [Agent process docs](#agent-process-docs-agents) - how agents work this repo's issue tracker and triage
 - [Historical: bootstrapreference/](#historical-bootstrapreference) - superseded, context only
 
@@ -20,7 +19,7 @@ This directory contains internal documentation for people building and maintaini
 Immutable once accepted - a changed decision gets a new ADR that supersedes the old one; existing ADRs are never edited to reverse a decision. Grouped by theme below rather than listed in number order, so you can find "why does X work this way" without already knowing which ADR number covers it.
 
 **Result modeling & types** - how outcomes are represented and constrained
-- [ADR-0001](adr/0001-use-csharp-15-unions-for-result-types.md) - Use C# 15 Union Types for Result Modeling: closed unions (`Result<T>`, `Failure`) give compile-time exhaustiveness without a third-party dependency like `OneOf`.
+- [ADR-0001](adr/0001-use-csharp-15-unions-for-result-types.md) - Use C# 15 Union Types for Result Modeling: closed unions (`Result<T>`, `Failure` - renamed to `OperationOutcome<...>` in the shipped API) give compile-time exhaustiveness without a third-party dependency like `OneOf`.
 - [ADR-0004](adr/0004-marker-interfaces-for-cross-cutting.md) - Marker Interfaces for Cross-Cutting Opt-In: a request opts into transactions/auditing/authorization by implementing a marker interface, not by editing a central config list.
 - [ADR-0005](adr/0005-void-command-pipeline-support.md) - Void Command Pipeline Support: commands with no return payload still run through the same behavior pipeline as typed commands, via a dedicated wrapper.
 - [ADR-0013](adr/0013-response-constrained-to-outcome-no-streaming.md) - Response Type Constrained to the Outcome Interface; Streaming Excluded: every response implements `IOperationOutcome`; streaming is deliberately excluded on purpose, not merely unaddressed.
@@ -51,15 +50,12 @@ Immutable once accepted - a changed decision gets a new ADR that supersedes the 
 **HTTP integration** - where transport concerns are allowed to live
 - [ADR-0012](adr/0012-http-agnostic-core-with-pluggable-mapping.md) - HTTP-Agnostic Core with Pluggable Status Mapping: core result types carry zero HTTP knowledge; `Interlocutor.AspNetCore` owns a pluggable status-code mapper instead.
 
-## Contributor guides ([guides/](guides/))
-
-- [Composing OperationOutcome Arities](guides/composing-operationoutcome-arities.md) - worked examples showing how to pick the right `OperationOutcome` arity (2 through 6 cases) for a given command or query, with the reasoning for each choice.
-
 ## Agent process docs ([agents/](agents/))
 
 - [domain.md](agents/domain.md) - how engineering skills consume this repo's domain documentation.
 - [issue-tracker.md](agents/issue-tracker.md) - the local `.scratch/` markdown issue tracker: file layout, ticket format, numbering convention.
 - [triage-labels.md](agents/triage-labels.md) - triage role → label mapping used across `.scratch/` tickets.
+- [documentation-maintenance.md](agents/documentation-maintenance.md) - keeping `documentation/` and `maintainer_docs/` in sync with each code change, instead of batching documentation into a separate pass.
 
 ## Historical: bootstrapreference/
 

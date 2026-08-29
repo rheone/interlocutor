@@ -51,7 +51,7 @@ Declare a command is backed by a non-SQL store so `UnitOfWorkBehavior` never ope
 ```csharp
 // This command uses a NoSQL store (Redis, MongoDB, etc.)
 public record SetUserPreferences(int UserId, Dictionary<string, object> Prefs)
-    : ICommand<Success>,
+    : ICommand<OperationOutcome>,
       IExternalStoreRequest;  // ← Never gets a local transaction
 
 // UnitOfWorkBehavior sees this marker and skips transaction management entirely
@@ -191,12 +191,14 @@ public class CreateOrderHandler : ICommandHandler<CreateOrder, OperationOutcome<
 `IUnitOfWork.Cancel` is a rare-case escape hatch: it rolls back the current transaction immediately and returns control to the caller, without being obligated to also return a classified failure-shaped `OperationOutcome`. It is not a short-circuit primitive - the handler still decides what to return afterward, and the pipeline's commit gate simply finds nothing pending at completion:
 
 ```csharp
-public class ArchiveOrderHandler : ICommandHandler<ArchiveOrder, OperationOutcome<Success>>
+public record ArchiveOrder(int OrderId) : ICommand<OperationOutcome>;
+
+public class ArchiveOrderHandler : ICommandHandler<ArchiveOrder, OperationOutcome>
 {
     private readonly IUnitOfWork unitOfWork;
     private readonly Lazy<AppDbContext> lazyContext;
 
-    public async Task<OperationOutcome<Success>> Handle(ArchiveOrder command, CancellationToken ct)
+    public async Task<OperationOutcome> Handle(ArchiveOrder command, CancellationToken ct)
     {
         var context = this.lazyContext.Value;
         context.Orders.Remove(/* ... */);
@@ -206,11 +208,11 @@ public class ArchiveOrderHandler : ICommandHandler<ArchiveOrder, OperationOutcom
             // Force a rollback of whatever this handler staged, then decide the outcome independently -
             // UnitOfWorkBehavior finds nothing open or pending and does nothing further.
             await this.unitOfWork.Cancel(ct);
-            return default(Success);  // Still reports success: the archive already happened elsewhere.
+            return new Success();  // Still reports success: the archive already happened elsewhere.
         }
 
         await this.unitOfWork.SaveChangesAsync(ct);
-        return default(Success);
+        return new Success();
     }
 }
 ```
@@ -289,12 +291,12 @@ The runnable sample under [`samples/Interlocutor.Sample.WebApi`](../samples/Inte
 If you dispatch from within a command handler (rare, but possible), each dispatch still shares the parent's scoped session:
 
 ```csharp
-public class ComplexOrderHandler : ICommandHandler<CreateComplexOrder, OperationOutcome<int>>
+public class ComplexOrderHandler : ICommandHandler<CreateComplexOrder, OperationOutcome<int, InsufficientStock>>
 {
     private readonly Lazy<AppDbContext> lazyContext;
     private readonly ISender mediator;
 
-    public async Task<OperationOutcome<int>> Handle(
+    public async Task<OperationOutcome<int, InsufficientStock>> Handle(
         CreateComplexOrder command, CancellationToken ct)
     {
         var context = this.lazyContext.Value;
@@ -310,7 +312,7 @@ public class ComplexOrderHandler : ICommandHandler<CreateComplexOrder, Operation
         );
 
         if (!inventoryResult.IsSuccess)
-            return inventoryResult.Failure;  // Same transaction rolls back
+            return (InsufficientStock)inventoryResult.Value!;  // Same transaction rolls back
 
         await context.SaveChangesAsync(ct);
         return order.Id;  // Same transaction commits
@@ -329,12 +331,12 @@ public record ReserveInventory(int OrderId, List<OrderItem> Items)
 When a command publishes a notification, the notification's handlers run **after** the command's transaction commits:
 
 ```csharp
-public class CreateOrderHandler : ICommandHandler<CreateOrder, OperationOutcome<int>>
+public class CreateOrderHandler : ICommandHandler<CreateOrder, OperationOutcome<int, Failure>>
 {
     private readonly Lazy<AppDbContext> lazyContext;
     private readonly IPublisher publisher;
 
-    public async Task<OperationOutcome<int>> Handle(
+    public async Task<OperationOutcome<int, Failure>> Handle(
         CreateOrder command, CancellationToken ct)
     {
         var context = this.lazyContext.Value;

@@ -53,84 +53,100 @@ public class OrdersController : ControllerBase
 
 ## Minimal API
 
-Works the same in minimal APIs:
+Minimal API endpoints use the parallel `ToMinimalApiResult()` extension, returning `IResult` instead of `IActionResult` - same mapping decisions, same `IOutcomeStatusMapper`, different transport type:
 
 ```csharp
 app.MapPost("/api/orders", async (CreateOrderRequest request, ISender mediator, CancellationToken ct) =>
 {
     var command = new CreateOrder(request.CustomerId, request.Items);
-    var result = await this.mediator.Send(command, ct);
-    return result.ToActionResult();  // Same mapping
+    var result = await mediator.Send(command, ct);
+    return result.ToMinimalApiResult();
 });
 
 app.MapDelete("/api/orders/{id}", async (int id, ISender mediator, CancellationToken ct) =>
 {
-    var result = await this.mediator.Send(new DeleteOrder(id), ct);
-    return result.ToActionResult();
+    var result = await mediator.Send(new DeleteOrder(id), ct);
+    return result.ToMinimalApiResult();
 });
 ```
 
 ## Status Code Mapping
 
-Each outcome case type maps to an HTTP status code. `ToActionResult()` inspects the outcome's active case at runtime and dispatches on its type - the same reflective, reference-type-only mechanism `IOutcomeCaseRegistry` uses elsewhere, so it stays trim-safe (see [Trim & AOT Support](trim-and-aot-support.md)):
+Each outcome case maps to an HTTP status code via `IOutcomeStatusMapper.Map<TFailure>(failure)`, which both `ToActionResult()` and `ToMinimalApiResult()` delegate to for every failure case - the success case never reaches the mapper, since `ToActionResult`/`ToMinimalApiResult` handle it directly. The dedicated arity-specific overloads (`OperationOutcome<TSuccess, TFailure>`, `<TSuccess, TCase2, TCase3>`, ...) resolve which case is active via an ordinary `switch` at compile time; only the base-`IOperationOutcome` overload used for runtime-typed dispatch needs `IOutcomeCaseRegistry`'s reflective lookup:
 
 ```mermaid
 flowchart TD
-    Outcome["IOperationOutcome from mediator.Send()"] --> IsSuccess{"Success case?"}
-    IsSuccess -->|"yes, has payload"| Ok200["200 OK<br/>body: success payload (JSON)"]
-    IsSuccess -->|"yes, unit Success"| Ok200Empty["200 OK<br/>body: empty"]
-    IsSuccess -->|"no - inspect failure case type"| CaseType{"Failure case type"}
-    CaseType -->|"ValidationError"| Bad400["400 Bad Request<br/>ValidationProblemDetails"]
-    CaseType -->|"NotFound"| NotFound404["404 Not Found<br/>body: empty"]
-    CaseType -->|"Forbidden"| Forbidden403["403 Forbidden<br/>body: empty, reason logged server-side"]
+    Outcome["OperationOutcome&lt;...&gt; from mediator.Send()"] --> IsSuccess{"Active case?"}
+    IsSuccess -->|"success, has payload"| Ok200["200 OK<br/>body: success payload (JSON)"]
+    IsSuccess -->|"success, unit Success"| NoContent204["204 No Content"]
+    IsSuccess -->|"failure - IOutcomeStatusMapper.Map(failure)"| CaseType{"Failure case type"}
+    CaseType -->|"ValidationErrors"| Unprocessable422["422 Unprocessable Entity<br/>ProblemDetails"]
+    CaseType -->|"NotFound / NotFound&lt;TId&gt;"| NotFound404["404 Not Found<br/>body: message or none"]
+    CaseType -->|"Forbidden"| Forbidden403["403 Forbidden<br/>no body"]
     CaseType -->|"Conflict"| Conflict409["409 Conflict<br/>ProblemDetails"]
-    CaseType -->|"Failure (generic)"| Error500["500 Internal Server Error<br/>ProblemDetails"]
-    CaseType -->|"a type IOperationOutcomeMapper<br/>doesn't recognize"| Custom["Falls through to a registered<br/>custom IOperationOutcomeMapper, if any"]
+    CaseType -->|"Failure / Failures"| Bad400["400 Bad Request<br/>ProblemDetails"]
+    CaseType -->|"Cancelled"| ClientClosed499["499 Client Closed Request<br/>no body"]
+    CaseType -->|"Timeout"| Timeout408["408 Request Timeout<br/>ProblemDetails"]
+    CaseType -->|"RateLimited"| TooMany429["429 Too Many Requests<br/>ProblemDetails"]
+    CaseType -->|"unrecognized (a custom failure type<br/>the default mapper wasn't taught)"| Error500["500 Internal Server Error<br/>body: the failure value itself"]
 ```
 
 | Outcome Case | HTTP Status | Body | Details |
 |--------------|-------------|------|---------|
-| Success (payload) | 200 OK | The success payload (JSON) | For `OperationOutcome<T>`, T is serialized. |
-| Success (no payload) | 200 OK | Empty or omitted | For `OperationOutcome` (unit), no body. |
-| ValidationError | 400 Bad Request | `ValidationProblemDetails` (RFC 7807) | Errors dictionary with field names as keys. |
-| NotFound | 404 Not Found | Empty | No response body. |
-| Forbidden | 403 Forbidden | Empty | Reason is logged server-side, not sent to client. |
-| Conflict | 409 Conflict | `ProblemDetails` (RFC 7807) | Code and message included. |
-| Failure | 500 Internal Server Error | `ProblemDetails` (RFC 7807) | Generic failure mapped as server error. |
+| Success (payload) | 200 OK | The success payload (JSON) | For `OperationOutcome<TSuccess, ...>`, `TSuccess` is serialized. |
+| Success (unit) | 204 No Content | None | For the non-generic `OperationOutcome`. |
+| ValidationErrors | 422 Unprocessable Entity | `ProblemDetails` | `Detail` is every message joined with `"; "` - no per-field errors dictionary, since `ValidationError` carries a message and optional code, not a field name. |
+| NotFound | 404 Not Found | The message, or none | `NotFound<TId>` (the generic form) maps the same way via a separate reflective path. |
+| Forbidden | 403 Forbidden | None | Reason is never sent to the client. |
+| Conflict | 409 Conflict | `ProblemDetails` | `Title` is the conflict code, `Detail` is the message. |
+| Failure | 400 Bad Request | `ProblemDetails` | Deliberately not 500 - `Failure` is an outcome a handler chose to report, not a server fault. An unhandled exception still reaches ASP.NET Core's exception middleware as 500, independently of this mapping. |
+| Failures (aggregate) | 400 Bad Request | `ProblemDetails` | `Detail` is every reason joined with `"; "`. |
+| Cancelled | 499 Client Closed Request | None | Not 400 - the caller withdrew interest before the operation completed, which is neither a malformed request nor a domain failure. |
+| Timeout | 408 Request Timeout | `ProblemDetails` | `Detail` is the message, or `Budget`/`Elapsed` if none was set. |
+| RateLimited | 429 Too Many Requests | `ProblemDetails` | `Detail` is the message, or the `LimitKey`. Does not set a `Retry-After` header - override `MapRateLimited` to add one. |
+| Anything else (a custom failure type) | 500 Internal Server Error | The failure value itself | The default mapper doesn't know this type - supply your own `IOutcomeStatusMapper`, or override `MapUnrecognized`, to map it precisely. |
 
 ## Custom HTTP Mapping
 
-If you need different status codes, implement `IOperationOutcomeMapper` or override the default behavior:
+`IOutcomeStatusMapper` maps one failure case value to an `OutcomeHttpMapping` (a status code and optional body) - it's never invoked for the success case, which `ToActionResult`/`ToMinimalApiResult` handle directly. Two ways to customize it:
+
+**Derive from `DefaultOutcomeStatusMapper` and override just the case you want to change** - each case is a separate protected virtual method:
 
 ```csharp
-// Custom mapper for specific outcome types
-public class CustomMapper : IOperationOutcomeMapper
+public class MyStatusMapper : DefaultOutcomeStatusMapper
 {
-    public IActionResult Map<TResponse>(TResponse outcome)
-        where TResponse : IOperationOutcome
-    {
-        // Inspect outcome.IsSuccess, outcome.Failure, and map however you want
+    // Change only how ValidationErrors maps; every other case keeps the default behavior
+    protected override OutcomeHttpMapping MapValidationErrors(ValidationErrors validationErrors) =>
+        new(StatusCodes.Status400BadRequest, new { errors = validationErrors.Messages });
 
-        if (outcome.IsSuccess)
-        {
-            return new OkObjectResult(/* ... */);
-        }
-
-        var failure = outcome.Failure;
-
-        // Map specific failure types
-        if (failure is CustomConflict conflict)
-        {
-            return new ConflictObjectResult(new { conflict.Code, conflict.Message });
-        }
-
-        // Fall back to default mapping for other cases
-        return DefaultMapper.Map(outcome);
-    }
+    // Add a Retry-After-friendly body for a case the default mapper leaves generic
+    protected override OutcomeHttpMapping MapUnrecognized<TFailure>(TFailure failure) =>
+        failure is CustomConflict conflict
+            ? new(StatusCodes.Status409Conflict, new { conflict.Code, conflict.Message })
+            : base.MapUnrecognized(failure);
 }
+```
 
-// Register your custom mapper
-services.AddSingleton<IOperationOutcomeMapper, CustomMapper>();
+**Or implement `IOutcomeStatusMapper` from scratch** when you want to replace every mapping decision rather than override individual cases:
+
+```csharp
+public class MyStatusMapper : IOutcomeStatusMapper
+{
+    public OutcomeHttpMapping Map<TFailure>(TFailure failure) =>
+        failure switch
+        {
+            CustomConflict conflict => new(StatusCodes.Status409Conflict, new { conflict.Code, conflict.Message }),
+            _ => new DefaultOutcomeStatusMapper().Map(failure),  // fall back to built-in cases
+        };
+}
+```
+
+Pass an instance explicitly per call - there's no DI registration to override, since the mapper is a plain constructor argument on `ToActionResult`/`ToMinimalApiResult`, not resolved from the container:
+
+```csharp
+private static readonly IOutcomeStatusMapper Mapper = new MyStatusMapper();
+
+return result.ToActionResult(Mapper);
 ```
 
 ## Example Responses
@@ -149,24 +165,22 @@ var result = await mediator.Send(new CreateUser("Alice", "alice@example.com"));
 // Body: 42  (the user ID, as plain JSON)
 ```
 
-### ValidationError
+### ValidationErrors
 
 ```csharp
 // Command with invalid data
 var result = await mediator.Send(new CreateUser("", "not-an-email"));
 
-// Response: 400 Bad Request
+// Response: 422 Unprocessable Entity
 // Body:
 // {
-//   "type": "https://tools.ietf.org/html/rfc7231#section-6.5.1",
-//   "title": "One or more validation errors occurred.",
-//   "status": 400,
-//   "errors": {
-//     "Name": ["'Name' must not be empty."],
-//     "Email": ["'Email' is not a valid email address."]
-//   }
+//   "title": "Validation Failed",
+//   "detail": "'Name' must not be empty; 'Email' is not a valid email address.",
+//   "status": 422
 // }
 ```
+
+`ValidationError` carries a message and an optional error code, not a field name, so the default mapping joins every message into `Detail` rather than building a per-field errors dictionary. Override `MapValidationErrors` if you want field-keyed output instead.
 
 ### NotFound
 
@@ -197,17 +211,17 @@ var result = await mediator.Send(new UpdateProduct(1, "New Name", 10));  // Old 
 // Response: 409 Conflict
 // Body:
 // {
-//   "type": "https://tools.ietf.org/html/rfc7231#section-6.5.8",
-//   "title": "Conflict",
-//   "status": 409,
-//   "detail": "Concurrency version mismatch",
-//   "instance": "/api/products/1"
+//   "title": "version_mismatch",
+//   "detail": "The product was modified by another request",
+//   "status": 409
 // }
 ```
 
+`Title` is `Conflict.Code` and `Detail` is `Conflict.Message` - both are mandatory on `Conflict`, so this body's two fields are always present.
+
 ## Problem Details (RFC 7807)
 
-Non-2xx responses follow RFC 7807 `ProblemDetails` format by default. ValidationError uses `ValidationProblemDetails` (extending ProblemDetails with an `errors` dictionary). This is a standard format that API clients can rely on for error parsing.
+Most non-2xx responses carry a plain ASP.NET Core `ProblemDetails` body by default (`Title`, `Detail`, `Status`) - `Forbidden` and `Cancelled` carry no body at all, and an unrecognized custom failure type's body is the failure value itself, not a `ProblemDetails`. There is no `ValidationProblemDetails` (the per-field-errors variant) anywhere in the default mapping, since `ValidationError` doesn't carry a field name to key a dictionary by.
 
 ## Error Handling at the Edge
 
@@ -255,8 +269,9 @@ Unit test your action results:
 public async Task CreateOrder_Valid_Returns200()
 {
     var mediator = new Mock<ISender>();
-    mediator.Setup(m => m.Send(It.IsAny<IQuery<IOperationOutcome>>(), It.IsAny<CancellationToken>()))
-        .ReturnsAsync(new OperationOutcome<int>(42));  // Success with ID 42
+    mediator
+        .Setup(m => m.Send(It.IsAny<ICommand<OperationOutcome<int, ValidationError>>>(), It.IsAny<CancellationToken>()))
+        .ReturnsAsync(new OperationOutcome<int, ValidationError>(42));  // Success with ID 42
 
     var controller = new OrdersController(mediator.Object);
 
@@ -270,13 +285,17 @@ public async Task CreateOrder_Valid_Returns200()
 public async Task DeleteOrder_NotFound_Returns404()
 {
     var mediator = new Mock<ISender>();
-    mediator.Setup(m => m.Send(It.IsAny<ICommand<IOperationOutcome>>(), It.IsAny<CancellationToken>()))
+    mediator
+        .Setup(m => m.Send(It.IsAny<ICommand<OperationOutcome<Success, NotFound>>>(), It.IsAny<CancellationToken>()))
         .ReturnsAsync(new OperationOutcome<Success, NotFound>(new NotFound()));
 
     var controller = new OrdersController(mediator.Object);
 
     var result = await controller.DeleteOrder(999, default);
 
-    Assert.IsType<NotFoundResult>(result);
+    // A NotFound with no Message maps to a bare StatusCodeResult, not NotFoundResult -
+    // OutcomeHttpMapping with a null body always renders as StatusCodeResult(statusCode).
+    var statusResult = Assert.IsType<StatusCodeResult>(result);
+    Assert.Equal(StatusCodes.Status404NotFound, statusResult.StatusCode);
 }
 ```

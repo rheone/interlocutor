@@ -319,35 +319,9 @@ var result = await mediator.Send(new CreateOrder(456, items));
 
 This pattern decouples the command's core logic (create the order) from secondary concerns (inventory, email, analytics). Add a new handler later without touching the command code.
 
-## Error Handling in Notifications
+## Swallowing Handler Failures Deliberately
 
-With Sequential strategy, if a handler throws, subsequent handlers don't run:
-
-```csharp
-public class Handler1 : INotificationHandler<SomeEvent> { /* ... */ }
-public class Handler2 : INotificationHandler<SomeEvent> { throw new Exception("Handler2 failed"); }
-public class Handler3 : INotificationHandler<SomeEvent> { /* ... */ }
-
-// Handler1 runs, Handler2 throws, Handler3 never runs, exception propagates
-await mediator.Publish(new SomeEvent());
-```
-
-With Parallel strategy, all handlers run regardless:
-
-```csharp
-// Same handlers, Parallel strategy
-// Handler1, Handler2 (throws), and Handler3 all run concurrently
-// If Handler2 threw, an AggregateException is raised with that error inside
-// But Handler1 and Handler3 still ran
-await mediator.Publish(new SomeEvent(), PublishStrategy.Parallel);
-```
-
-Consider whether partial failure is acceptable:
-
-- **Sequential**: if one notification handler's failure stops others from running, and you want that, use Sequential.
-- **Parallel**: if handlers are independent and you want all of them to attempt execution even if some fail, use Parallel.
-
-In either case, logging exceptions is essential for debugging:
+The failure semantics for each strategy are covered above under [Publish Strategies](#publish-strategies) - Sequential stops at the first exception, Parallel runs every handler and aggregates. Within either strategy, a handler that wants a failure to never stop or fail the publish at all catches and logs it internally, rather than relying on the strategy's own propagation:
 
 ```csharp
 public class SafeNotificationHandler<T> : INotificationHandler<T> where T : INotification

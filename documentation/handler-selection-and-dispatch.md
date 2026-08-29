@@ -1,6 +1,6 @@
 # Handler Selection & Dispatch
 
-How Interlocutor finds the handler for a request. Handler discovery happens at compile time, and dispatch always resolves to a single unambiguous handler - an ambiguous match is a build error, not a runtime guess.
+How Interlocutor finds the handler for a request. Handler discovery happens at compile time, and an ambiguous match is a build diagnostic, not a runtime guess.
 
 ## Compile-Time Discovery
 
@@ -39,20 +39,22 @@ Given a request, which handler runs? The rules are:
 flowchart TD
     Start["Dispatching a query/command"] --> Closed{"Any closed handler<br/>matches the request type?"}
     Closed -->|"yes, exactly one"| UseClosed["Use that closed handler"]
-    Closed -->|"yes, more than one"| Ambiguous{"Does one handler declare<br/>&#91;OverridesHandler&#93; naming the other?"}
+    Closed -->|"yes, more than one"| DuplicateClosed["Build diagnostic (INTERLOC002):<br/>remove or rename the extra handler -<br/>no override escape hatch here"]
     Closed -->|"no"| Open{"Any open generic<br/>handler matches?"}
 
     Open -->|"yes, exactly one"| UseOpen["Use that open generic handler"]
-    Open -->|"yes, more than one"| Ambiguous
-    Open -->|"no"| NoHandler["No handler found:<br/>build diagnostic"]
+    Open -->|"yes, more than one"| Ambiguous{"Does one handler declare<br/>&#91;HandlerOverride&#93; naming the other?"}
+    Open -->|"no"| NoHandler["No handler found:<br/>build diagnostic (INTERLOC001)"]
 
     Ambiguous -->|"yes"| UseOverride["Use the handler declaring the override"]
-    Ambiguous -->|"no"| BuildError["Build error: ambiguous handler match<br/>(namespace/assembly never break the tie)"]
+    Ambiguous -->|"no"| BuildError["Build error (INTERLOC006): ambiguous<br/>open generic handlers<br/>(namespace/assembly never break the tie)"]
 ```
+
+Two different mechanisms handle the two ambiguity cases, and they're not interchangeable: two closed handlers matching the same request/response pair (`INTERLOC002`) have no override - the fix is to remove or rename one of them. Two open generic handlers closing over the same concrete request type (`INTERLOC006`) do have the `[HandlerOverride]` escape hatch, covered below.
 
 ### Single Handler for Queries & Commands
 
-A query or command dispatch always resolves to **exactly one handler**. If more than one handler could serve the request, it's a build error.
+A query or command dispatch always resolves to **exactly one handler**. Two closed handlers matching the same request/response pair produce `INTERLOC002` (default severity `Warning`, escalatable to an error via `.editorconfig` the same way as `INTERLOC001`) - there's no `[HandlerOverride]` for this case, since it's a straightforward duplicate to remove or rename, not a genuine design ambiguity:
 
 ```csharp
 public record GetUser(int UserId) : IQuery<OperationOutcome<UserDto, NotFound>>;
@@ -60,7 +62,8 @@ public record GetUser(int UserId) : IQuery<OperationOutcome<UserDto, NotFound>>;
 public class GetUserHandler : IQueryHandler<GetUser, OperationOutcome<UserDto, NotFound>>
 { /* ... */ }
 
-// This would be a BUILD ERROR (ambiguous, two handlers match):
+// INTERLOC002: duplicate handler for the same closed request/response pair.
+// Fix by removing or renaming one of them - there is no override for this case.
 public class GetUserHandlerV2 : IQueryHandler<GetUser, OperationOutcome<UserDto, NotFound>>
 { /* ... */ }
 ```
@@ -108,39 +111,34 @@ namespace MyApp.Api.Handlers;
 public class GetUserHandler : IQueryHandler<GetUser, OperationOutcome<UserDto, NotFound>>
 { /* ... */ }
 
-// BUILD ERROR: Two handlers with the same signature, same reason as above.
+// INTERLOC002 again: two handlers with the same signature, same reason as above.
 // Moving one to a different namespace doesn't change the outcome.
 ```
 
-### Ambiguity Is a Build Error (With an Override Escape Hatch)
+### Open Generic Ambiguity Has an Override Escape Hatch
 
-When you need one handler to intentionally supersede another, use the `[OverridesHandler]` attribute:
+Closed beats open generic automatically - that's not an ambiguity, so it never needs an override. The escape hatch exists for the case the previous rule doesn't resolve: **two open generic handlers that both close over the same concrete request type.** Declare which one wins with `[HandlerOverride]`:
 
 ```csharp
-// Open generic
-public class LoggingQueryHandler<TQuery, TResponse>
-    : IQueryHandler<TQuery, TResponse>
-    where TQuery : IQuery<TResponse>
-{ /* logs all queries */ }
+// Both handlers close over GenericQuery<T> for the same T - an unresolved ambiguity
+public class GenericQueryHandlerLosing<T> : IQueryHandler<GenericQuery<T>, OperationOutcome<T, string>>
+    where T : IEntity, new()
+{ /* ... */ }
 
-// Closed - opt out of logging for a specific query
-[OverridesHandler(typeof(LoggingQueryHandler<,>))]
-public class GetSecretDataHandler
-    : IQueryHandler<GetSecretData, OperationOutcome<string, Forbidden>>
-{
-    public async Task<OperationOutcome<string, Forbidden>> Handle(
-        GetSecretData query, CancellationToken ct)
-    { /* no logging */ }
-}
+// Declares it takes precedence over the other - resolves the ambiguity
+[HandlerOverride(typeof(GenericQueryHandlerLosing<>))]
+public class GenericQueryHandlerWinning<T> : IQueryHandler<GenericQuery<T>, OperationOutcome<T, string>>
+    where T : IEntity, new()
+{ /* ... */ }
 
-// When you send GetSecretData, GetSecretDataHandler runs (overrides the generic)
-var result = await mediator.Send(new GetSecretData());
+// When you send GenericQuery<Foo>, GenericQueryHandlerWinning<Foo> runs
+var result = await mediator.Send(new GenericQuery<Foo>());
 ```
 
-Without the attribute, this would be a build error. The attribute is your explicit declaration that this is intentional.
+Without the attribute, this would be a build error naming both handlers. `HandlerType` names the open generic handler being overridden via its own unbound generic type (`typeof(GenericQueryHandlerLosing<>)`), and the attribute can be applied more than once to override several handlers at once. `Interlocutor.Generator` validates at build time that the named type is itself a discovered handler in the same compilation.
 
 > [!IMPORTANT]
-> The `[OverridesHandler]` attribute lives in `Interlocutor.Abstractions`, so handlers take no additional DI dependency to use it.
+> `HandlerOverrideAttribute` lives in `Interlocutor.Abstractions.Core`, so handlers take no additional DI dependency to use it.
 
 ## Resource-Based Authorization
 

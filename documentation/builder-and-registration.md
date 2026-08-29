@@ -1,6 +1,6 @@
 # Builder & Registration
 
-How to register Interlocutor with dependency injection. Handlers can be discovered two ways - by scanning assemblies at runtime (`ScanAssembly` and friends), or additively by consuming compile-time source-generator output (`AddGeneratedRegistrations`) - and the pipeline is empty until you explicitly compose it; nothing runs by default.
+How to register Interlocutor with dependency injection. Handlers can be discovered two ways - by scanning assemblies at runtime (`ScanAssembly` and friends), or additively by consuming compile-time source-generator output (`AddGeneratedRegistrations`) - and the pipeline is empty until you explicitly compose it; nothing runs by default. See [Extensibility](extensibility.md) for how `AddTypeMatch`, `RequireUniqueClosure`/`Eject`, and the other hooks here fit into the library's broader extension points.
 
 ## The Builder
 
@@ -107,6 +107,25 @@ builder.AddTypeMatch(
 ```
 
 Matching zero types is legal and silent by default; pass `require: true` to record that this rule must match at least one type - `ValidateOnBuild()` (below) is what actually enforces it. This is strictly additive to marker-interface-based behavior scoping (`ITransactionalRequest`, `IAuditableRequest`, `IRequiresPolicy`, `IExternalStoreRequest`) - both mechanisms work independently and simultaneously.
+
+## Extending Ambiguity Checking to Your Own Contracts
+
+The three built-in mediator handler contracts (`IQueryHandler<,>`, `ICommandHandler<,>`, `IVoidCommandHandler<>`) are checked for "at most one implementation per closed instantiation" automatically. `RequireUniqueClosure` opts a consumer-supplied open-generic contract into that same check:
+
+```csharp
+builder.ScanAssembly(typeof(Program).Assembly);
+builder.RequireUniqueClosure(typeof(IExportFormatter<>));
+builder.ValidateOnBuild();  // now also reports a conflict if two IExportFormatter<Invoice> implementations exist
+```
+
+Every closed implementation of the given open-generic contract found while scanning is registered the same way `AddHandler` registers a handler. If a genuine conflict shows up - two implementations closing over the same type - `Eject` (or its generic form `Eject<TImplementation>()`) removes specific implementation types from consideration entirely, for both the built-in contracts and anything added via `RequireUniqueClosure`:
+
+```csharp
+builder.RequireUniqueClosure(typeof(IExportFormatter<>));
+builder.Eject<LegacyInvoiceFormatter>();  // drop the losing candidate rather than picking a winner some other way
+```
+
+`Eject` is additive and callable any number of times; an ejected type disappears from `Handlers` for every uniqueness-checked contract, not merely from the validation message.
 
 ## Pipeline Behaviors
 
@@ -288,7 +307,11 @@ Missing handlers are **not** caught automatically at container-build time (see S
 using var scope = serviceProvider.CreateScope();
 var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-// If a handler is missing, GetRequiredService throws when you actually dispatch it
+// If a handler is missing, dispatch internally calls GetRequiredService<IQueryHandler<...>> and
+// that throws the container's own generic InvalidOperationException - not a named Interlocutor
+// exception type. Runtime-typed dispatch (Send(object, ...)) is different: it checks registration
+// explicitly beforehand and throws a specific HandlerNotRegisteredException instead - see
+// runtime-typed-dispatch.md.
 var result = await mediator.Send(new GetUser(1), cancellationToken);
 ```
 

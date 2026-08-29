@@ -11,7 +11,7 @@
          that builds warning-free and then throws on every single dispatch, because the container cannot close
          IPipelineBehavior<TRequest,TResponse> over a value-type OperationOutcome<...> without a JIT. Setting it
          here would re-assert a guarantee the library does not currently hold. See
-         documentation/trim-and-aot-support.md and docs/research/native-aot-and-trimming-options.md. -->
+         documentation/trim-and-aot-support.md and maintainer_docs/research/native-aot-and-trimming-options.md. -->
     <PublishTrimmed>true</PublishTrimmed>
   </PropertyGroup>
 

@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Per <see href="../../../docs/adr/0018-unit-of-work-as-transaction-owner.md">ADR-0018</see>, EF Core's
+/// Per <see href="../../../maintainer_docs/adr/0018-unit-of-work-as-transaction-owner.md">ADR-0018</see>, EF Core's
 /// begin-on-first-write guarantee "falls out for free" because nothing reaches the database before
 /// <c>SaveChanges</c> runs, regardless of how entities were staged - wrapping that one call catches every
 /// write uniformly. This interceptor is that wrap: it fires for <em>every</em> call to the context's

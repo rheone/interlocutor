@@ -11,19 +11,18 @@ Narrow interface for send-only (request/response dispatch). Exposes `Send<TRespo
 ```csharp
 public interface ISender
 {
-    Task<TResponse> Send<TResponse>(
-        IQuery<TResponse> query,
-        CancellationToken cancellationToken = default)
+    Task<TResponse> Send<TResponse>(IQuery<TResponse> query, CancellationToken ct = default)
         where TResponse : IOperationOutcome;
 
-    Task<TResponse> Send<TResponse>(
-        ICommand<TResponse> command,
-        CancellationToken cancellationToken = default)
+    Task<TResponse> Send<TResponse>(ICommand<TResponse> command, CancellationToken ct = default)
         where TResponse : IOperationOutcome;
 
-    Task<OperationOutcome> Send(
-        ICommand command,
-        CancellationToken cancellationToken = default);
+    // Unit ICommand carries no response type of its own - the caller picks it per call via TResult
+    Task<TResult> Send<TResult>(ICommand command, CancellationToken ct = default)
+        where TResult : IOperationOutcome;
+
+    // Runtime-typed dispatch - see runtime-typed-dispatch.md
+    Task<IOperationOutcome> Send(object request, CancellationToken ct = default);
 }
 ```
 
@@ -36,9 +35,13 @@ Narrow interface for publish-only (fire-and-forget notifications). Exposes `Publ
 ```csharp
 public interface IPublisher
 {
-    Task Publish(
-        INotification notification,
-        CancellationToken cancellationToken = default);
+    // Defaults to PublishStrategy.Sequential
+    Task Publish<TNotification>(TNotification notification, CancellationToken ct = default)
+        where TNotification : INotification;
+
+    // Pass PublishStrategy.Parallel explicitly to run every handler concurrently
+    Task Publish<TNotification>(TNotification notification, PublishStrategy strategy, CancellationToken ct = default)
+        where TNotification : INotification;
 }
 ```
 
@@ -97,18 +100,19 @@ var result = await mediator.Send(new CreateOrder(...));
 
 ## Root-Scope Exception & Guard
 
-You cannot use the mediator in the **root DI scope** (the application's main container). The library detects and throws an exception:
+You cannot use the mediator in the **root DI scope** (the application's main container). Resolving `IMediator` from the root provider succeeds - the guard fires on the *dispatch* call itself, throwing `MediatorResolvedFromRootScopeException`:
 
 ```csharp
-// ❌ This throws - root scope violation
-var mediator = serviceProvider.GetRequiredService<IMediator>();
-await mediator.Send(new Query(...));
+var mediator = serviceProvider.GetRequiredService<IMediator>();  // succeeds even from the root provider
+await mediator.Send(new Query(...));  // ❌ throws MediatorResolvedFromRootScopeException here
 
 // ✅ Correct - create a child scope first
 using var scope = serviceProvider.CreateScope();
 var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 await mediator.Send(new Query(...));
 ```
+
+`MediatorResolvedFromRootScopeException.RequestType` carries the runtime type being dispatched when the guard fired, for diagnostics.
 
 ### Why?
 
@@ -232,15 +236,15 @@ app.MapPost("/api/orders", async (CreateOrder command, ISender mediator, Cancell
 ```csharp
 public interface IRequestContextAccessor
 {
-    RequestContext? Context { get; set; }
+    RequestContext? Context { get; set; }  // null if no middleware/caller populated it
 }
 
-public record RequestContext
+public sealed record RequestContext
 {
-    public string? CorrelationId { get; init; }
+    public string CorrelationId { get; init; } = Guid.NewGuid().ToString();  // auto-generated if not set
     public string? UserId { get; init; }
     public string? TenantId { get; init; }
-    public IDictionary<string, object?> Items { get; init; } = new Dictionary<string, object?>();
+    public IReadOnlyDictionary<string, object>? Items { get; init; }
 }
 ```
 
@@ -256,7 +260,8 @@ public class RequestContextMiddleware
 
     public async Task InvokeAsync(HttpContext context, IRequestContextAccessor accessor)
     {
-        // Extract correlation ID from request headers or generate one
+        // RequestContext.CorrelationId auto-generates a new GUID if you don't set one -
+        // set it explicitly here to propagate an inbound header instead
         var correlationId = context.Request.Headers
             .TryGetValue("X-Correlation-ID", out var headerValue)
             ? headerValue.ToString()
@@ -336,7 +341,7 @@ protected override async Task ExecuteAsync(CancellationToken ct)
 >
 > // If you need to add Items, create a new record:
 > var oldContext = accessor.Context;
-> accessor.Context = oldContext with { Items = new Dictionary<string, object?> { ... } };
+> accessor.Context = oldContext with { Items = new Dictionary<string, object> { ["key"] = "value" } };
 > ```
 
 ## Registering the Context Accessor
@@ -401,3 +406,38 @@ public class CreateUserHandler : ICommandHandler<CreateUser, OperationOutcome<in
     }
 }
 ```
+
+## Distributed Tracing
+
+`Mediator` starts one `System.Diagnostics.Activity` span per `Send`/`Publish` call, independent of whether `LoggingBehavior` is also registered - that behavior writes to `ILogger`, this one emits `Activity` spans; neither depends on or shares state with the other. `MediatorActivitySource` (`Interlocutor.Abstractions.Diagnostics`) hosts the stable `ActivitySource` name and tag keys:
+
+```csharp
+public static class MediatorActivitySource
+{
+    public const string Name = "Interlocutor.Mediator";
+    public const string RequestTypeTag = "interlocutor.request_type";
+    public const string HandlerTypeTag = "interlocutor.handler_type";
+    public const string OutcomeTag = "interlocutor.outcome";
+}
+```
+
+Attach a listener to observe dispatch spans - a plain `ActivityListener`:
+
+```csharp
+ActivitySource.AddActivityListener(new ActivityListener
+{
+    ShouldListenTo = source => source.Name == MediatorActivitySource.Name,
+    Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllData,
+    ActivityStarted = activity => Console.WriteLine($"Started: {activity.DisplayName}"),
+    ActivityStopped = activity => Console.WriteLine($"Stopped: {activity.DisplayName}"),
+});
+```
+
+or, with OpenTelemetry:
+
+```csharp
+services.AddOpenTelemetry().WithTracing(tracing => tracing.AddSource(MediatorActivitySource.Name));
+```
+
+> [!NOTE]
+> When nothing is listening, `ActivitySource.StartActivity` returns `null` and every subsequent tagging call in the mediator is guarded on that null reference - the standard `Activity` mechanism's own short-circuit, not something Interlocutor re-implements. Dispatch performs no allocation or string formatting for tracing when unobserved, so this costs nothing in an application that never attaches a listener.

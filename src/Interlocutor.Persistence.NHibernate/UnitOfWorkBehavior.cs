@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 /// <summary>
 /// The NHibernate commit-gate pipeline behavior: commits or rolls back whatever transaction a dispatch
-/// opened, per <see href="../../../docs/adr/0018-unit-of-work-as-transaction-owner.md">ADR-0018</see>'s
+/// opened, per <see href="../../../maintainer_docs/adr/0018-unit-of-work-as-transaction-owner.md">ADR-0018</see>'s
 /// unit-of-work-owned transaction model.
 /// </summary>
 /// <typeparam name="TRequest">

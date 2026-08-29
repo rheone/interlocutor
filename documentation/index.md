@@ -1,6 +1,6 @@
 # Interlocutor Documentation
 
-This directory contains reference documentation for developers using Interlocutor. If you're building or maintaining *this repository* rather than consuming it as a library, see [docs/README.md](../docs/README.md) instead.
+This directory contains reference documentation for developers using Interlocutor. If you're building or maintaining *this repository* rather than consuming it as a library, see [maintainer_docs/README.md](../maintainer_docs/README.md) instead.
 
 ## Table of contents
 
@@ -19,16 +19,19 @@ A suggested reading order - each section builds on the ones above it. Jump strai
 The fundamentals of writing a request and getting a response back.
 
 - [Messages, Result Types & Variance](messages-and-result-types.md) - `IQuery<T>`, `ICommand<T>`, `ICommand`; the `IOperationOutcome` constraint; outcome unions and arities; pattern matching; choosing specific arities; marker interfaces; [!CAUTION] why response-type variance is impossible.
-- [Handler Selection & Dispatch](handler-selection-and-dispatch.md) - compile-time discovery, closed beats open, ambiguity as a build error, resource-based authorization, multiple handlers for notifications, runtime-typed dispatch.
+- [Composing OperationOutcome Arities](composing-operationoutcome-arities.md) - worked examples across three arities (a command, a query, and DI composition root for each) showing how to pick the right shape for a given operation.
+- [Handler Selection & Dispatch](handler-selection-and-dispatch.md) - compile-time discovery, closed beats open, duplicate/ambiguous-handler diagnostics, resource-based authorization, multiple handlers for notifications, runtime-typed dispatch.
 - [Pipeline & Behavior Composition](pipeline-and-behaviors.md) - the no-default-pipeline model, the flat ordered behavior list, the recommended chain with its rationale, validation/authorization/auditing behaviors, pipeline stages & short-circuiting.
 
 ### Wiring it up
 
 Registering the library and understanding how a dispatch's scope and context flow.
 
-- [Builder & Registration](builder-and-registration.md) - `InterlocutorBuilder` as the single entry point, assembly scanning, pipeline composition, dependency defaults, cross-assembly aggregation, startup validation.
-- [Dependency Injection Packages](dependency-injection-packages.md) - the container-neutral registration model (`InterlocutorRegistration`, `RegistrationLifetime`, `RegistrationReport`), how `Interlocutor.DependencyInjection.Microsoft` and `.Autofac` each translate it, root-scope detection internals, the persistence registration extensions, and compile-time generated-registration attributes.
-- [Mediator, Lifetimes, Scope & Ambient Context](mediator-lifetimes-and-scope.md) - `ISender`/`IPublisher`/`IMediator` interfaces, why scoped lifetime is non-configurable, the root-scope exception, dispatching correctly from web/background contexts, `IRequestContextAccessor` and `RequestContext`.
+- [Builder & Registration](builder-and-registration.md) - `InterlocutorBuilder` as the single entry point, assembly scanning, predicate-based registration, extending ambiguity checking to your own open-generic contracts, pipeline composition, dependency defaults, cross-assembly aggregation, startup validation.
+- [Dependency Injection: Abstractions & Registration Model](dependency-injection-abstractions.md) - the container-neutral registration model (`InterlocutorRegistration`, `RegistrationLifetime`, `RegistrationReport`), validation mechanisms, and compile-time generated-registration attributes shared by both container packages.
+- [Dependency Injection: Microsoft.Extensions.DependencyInjection](dependency-injection-microsoft.md) - registration, injection, and validation examples for `Interlocutor.DependencyInjection.Microsoft`, plus root-scope detection internals.
+- [Dependency Injection: Autofac](dependency-injection-autofac.md) - the equivalent surface for `Interlocutor.DependencyInjection.Autofac`.
+- [Mediator, Lifetimes, Scope & Ambient Context](mediator-lifetimes-and-scope.md) - `ISender`/`IPublisher`/`IMediator` interfaces, why scoped lifetime is non-configurable, the root-scope exception, dispatching correctly from web/background contexts, `IRequestContextAccessor` and `RequestContext`, distributed tracing via `MediatorActivitySource`.
 
 ### Cross-cutting features
 
@@ -37,11 +40,15 @@ Registering the library and understanding how a dispatch's scope and context flo
 
 ### Framework & store integration
 
-- [ASP.NET Core Integration & HTTP Mapping](aspnetcore-integration.md) - the `ToActionResult()` extension, status code mapping, `ValidationProblemDetails` and `ProblemDetails` (RFC 7807), custom mapping, minimal API usage, error handling.
+- [ASP.NET Core Integration & HTTP Mapping](aspnetcore-integration.md) - `ToActionResult()`/`ToMinimalApiResult()`, the status-code mapping table, `ProblemDetails` (RFC 7807), custom mapping via `IOutcomeStatusMapper`, error handling.
 - [Transactions & Store Integration](transactions-and-store-integration.md) - `Interlocutor.Persistence.EntityFrameworkCore` and `Interlocutor.Persistence.NHibernate`'s `UnitOfWorkBehavior`, `IUnitOfWork` as transaction owner, begin-on-first-write, the `ITransactionalRequest`/`IExternalStoreRequest` markers, `Cancel`, commit/rollback semantics, nested dispatch, notifications after commit.
 - [Persistence Abstraction](persistence-abstraction.md) - the optional, opt-in `IUnitOfWork`/`IDomainRepository<TEntity, TKey>` CRUD/paging surface, `Page<T>`, per-container registration, NHibernate session concurrency.
 - [Persistence Implementations](persistence-implementations.md) - what `EntityFrameworkUnitOfWork<TContext>`/`EntityFrameworkRepository<TEntity, TKey, TContext>` and `NHibernateUnitOfWork`/`NHibernateRepository<TEntity, TKey>` actually do underneath the interfaces, the shared filter/sort/paging query-composition helpers, and the behavioral differences between the two stores.
 - [Trim & AOT Support](trim-and-aot-support.md) - what "trim-compatible, not yet Native AOT-compatible" means in practice, the runtime-scanning trim cost, publishing trimmed, known limitations.
+
+### Extending the library
+
+- [Extensibility](extensibility.md) - a map of every point where a consumer plugs their own type in: marker interfaces, custom `IPipelineBehavior`/`IPipelineStage`, custom `IOperationOutcome` implementations, predicate-based registration, extending ambiguity checking to your own contracts, and per-request-type pipeline overrides.
 
 ### Testing
 

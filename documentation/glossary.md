@@ -29,9 +29,12 @@ Independent record-struct types, each usable as one case type in an `OperationOu
 | **Forbidden** | Authorization denied for a specific resource. Produced by `ResourceCommandHandler.Authorize()` or `AuthorizationBehavior`. |
 | **Conflict** | State conflict: concurrency, uniqueness violation, or invalid transition. Carries a message and a machine-readable code. Produced by handler code. |
 | **Failure** | The generic fallback case - see Result Types above. |
-| **Cancelled** | Cooperative cancellation of the ambient request, converted from an `OperationCanceledException` rather than letting it propagate as an unexpected fault. Reason-only, matching the shape of `NotFound`/`Forbidden` - a `CancellationToken` carries no queryable reason of its own. Produced by `CancellationBehavior` for requests implementing `ICancellable`. |
-| **Timeout** | A handler exceeded its declared time budget. Carries the `Budget` that was allotted and the `Elapsed` time actually observed, plus an optional message. Produced by `TimeoutBehavior` for requests implementing `IHasTimeout`. Can only report a timeout, not enforce cancellation of the abandoned work - see the pipeline-and-behaviors reference doc. |
-| **RateLimited** | The caller was throttled by a rate limiter. Carries the `LimitKey` identifying which limiter/bucket was hit and an optional `RetryAfter` hint. Produced by `RateLimitedBehavior` for requests implementing `IRateLimited`. |
+| **Cancelled** | Cooperative cancellation of the ambient request, converted from an `OperationCanceledException` rather than letting it propagate as an unexpected fault. Reason-only, matching the shape of `NotFound`/`Forbidden` - a `CancellationToken` carries no queryable reason of its own. Produced by `CancellationBehavior` for requests implementing `ICancellable`. **Obsolete** - see the warning below. |
+| **Timeout** | A handler exceeded its declared time budget. Carries the `Budget` that was allotted and the `Elapsed` time actually observed, plus an optional message. Produced by `TimeoutBehavior` for requests implementing `IHasTimeout`. Can only report a timeout, not enforce cancellation of the abandoned work - see the pipeline-and-behaviors reference doc. **Obsolete** - see the warning below. |
+| **RateLimited** | The caller was throttled by a rate limiter. Carries the `LimitKey` identifying which limiter/bucket was hit and an optional `RetryAfter` hint. Produced by `RateLimitedBehavior` for requests implementing `IRateLimited`. **Obsolete** - see the warning below. |
+
+> [!WARNING]
+> `Cancelled`, `Timeout`, and `RateLimited` are marked `[Obsolete("May be overkill to include")]` in `Interlocutor.CommonKernel` and may be removed before this library's first stable release - see [Messages, Result Types & Variance](messages-and-result-types.md#cancelled-timeout--ratelimited) for the full detail.
 
 ## Result Type Aggregates
 
@@ -48,9 +51,9 @@ Independent record-struct types, each usable as one case type in an `OperationOu
 | Term | Definition |
 |------|------------|
 | **Query** | A read request implementing `IQuery<TResponse>`, where `TResponse : IOperationOutcome`. Always returns `OperationOutcome<...>` - the compiler rejects a bare DTO response type. Never writes data. Never participates in transactions. |
-| **Command** | A write request implementing `ICommand<TResponse>` (returns a value, `TResponse : IOperationOutcome`) or `ICommand` (a unit command - no domain data, only an outcome). Returns `OperationOutcome` / `OperationOutcome<...>`. May participate in transactions. |
-| **Unit command** | A command whose handler produces no domain data payload, only success or failure - `ICommand` / `ICommandHandler<TCommand>`. Always returns an outcome; "void" is a misnomer this project no longer uses in prose, since nothing about the return value is actually void. |
-| **Handler** | A class implementing `IQueryHandler<TQuery, TResponse>`, `ICommandHandler<TCommand, TResponse>`, or `ICommandHandler<TCommand>`. Contains the business logic for exactly one request type (or, for an open generic handler, one request family). |
+| **Command** | A write request implementing `ICommand<TResponse>` (returns a value, `TResponse : IOperationOutcome`) or `ICommand` (a unit command - no domain data, only an outcome). May participate in transactions. |
+| **Unit command** | A command whose handler produces no domain data payload, only an outcome - `ICommand` / `IVoidCommandHandler<TCommand, TResult>`. Unlike `ICommand<TResponse>`, the outcome type isn't declared on the command - the caller picks it per dispatch via `ISender.Send<TResult>(ICommand, ...)`'s type argument. "void" is a misnomer this project no longer uses in prose, since nothing about the return value is actually void. |
+| **Handler** | A class implementing `IQueryHandler<TQuery, TResponse>`, `ICommandHandler<TCommand, TResponse>`, or `IVoidCommandHandler<TCommand, TResult>`. Contains the business logic for exactly one request type (or, for an open generic handler, one request family). |
 
 ## Pipeline
 
@@ -148,9 +151,11 @@ None of these run by default - the pipeline is empty until a builder call adds a
 | Term | Definition |
 |------|------------|
 | **InterlocutorBuilder** | The single container-neutral, fluent configuration entry point passed to `AddInterlocutor`. Owns assembly scanning, explicit handler/type-match registration, and the one ambient infrastructure default (`IRequestContextAccessor`); pipeline composition itself lives on `InterlocutorPipelineBuilder`, reachable via its `Pipeline` property. Accumulates registrations (handlers, behaviors, stages, infrastructure defaults) as `InterlocutorRegistration`/`InterlocutorFactoryRegistration` records; each container-specific package translates the accumulated list into its own registrations. Every mutating method returns the builder (or pipeline builder) itself for chaining. |
-| **InterlocutorPipelineBuilder** | `InterlocutorBuilder.Pipeline`'s type - the sole entry point for pipeline composition: every `Add*Behavior` method, `AddBehavior`, `UseRecommendedChain`, the `AddStage`/`AddStageHost` family, and the behavior-dependency `Override*` methods (`OverrideAuditSink`, `OverridePolicyEvaluator`, `OverrideOutcomeDescriber`, `OverrideTimeoutPolicy`, `OverrideRateLimiter`, `OverrideOutcomeCaseRegistry`). Can also be constructed standalone for testing pipeline composition in isolation from discovery concerns. |
+| **InterlocutorPipelineBuilder** | `InterlocutorBuilder.Pipeline`'s type - the sole entry point for pipeline composition: every `Add*Behavior` method, `AddBehavior`, `UseRecommendedChain`, the `AddStage`/`AddStageHost` family, the behavior-dependency `Override*` methods (`OverrideAuditSink`, `OverridePolicyEvaluator`, `OverrideOutcomeDescriber`, `OverrideTimeoutPolicy`, `OverrideRateLimiter`, `OverrideOutcomeCaseRegistry`), and `OverridePipelineFor` for declaring a per-request-type (or predicate-matched) pipeline that fully replaces the general-purpose one for matched requests. Can also be constructed standalone for testing pipeline composition in isolation from discovery concerns. |
 | **RegistrationLifetime** | Container-neutral lifetime enum (`Singleton`, `Scoped`, `Transient`) used by every builder registration method in place of a container-specific lifetime type. |
-| **RegistrationKind** | Classifies an accumulated registration as `Handler`, `Behavior`, `Default`, or `Stage`. Only `Default`-kind registrations use try-add precedence; the rest are always-add - duplicates are legal. |
+| **RegistrationKind** | Classifies an accumulated registration as `Handler`, `Behavior`, `Stage`, `Dispatcher` (the generator-emitted `IGeneratedRequestDispatcher`, added alongside `Handler` entries when `AddGeneratedRegistrations` is used), or `Default`. Only `Default`-kind registrations use try-add precedence; the rest are always-add - duplicates are legal. |
+| **RequireUniqueClosure** | Opts a consumer-supplied open-generic contract into the same "at most one implementation per closed instantiation" check the three built-in handler contracts already carry, so `ValidateOnBuild` also reports a conflict for it. |
+| **Eject** | Removes one or more implementation types from consideration entirely - the escape hatch for clearing an ambiguous-closure conflict by dropping the losing candidate(s), for both built-in handler contracts and anything added via `RequireUniqueClosure`. |
 
 ## Pagination
 
