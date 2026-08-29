@@ -1,4 +1,4 @@
-Status: open
+Status: done
 
 ## Labels
 
@@ -14,11 +14,15 @@ This is a pure removal ticket - it deliberately leaves `documentation/sample-app
 
 ## Acceptance criteria
 
-- [ ] `samples/` directory no longer exists
-- [ ] `Interlocutor.slnx` has no `/samples/` folder and no reference to either deleted project
-- [ ] `dotnet build` succeeds for the remaining solution
-- [ ] `dotnet test` passes for the remaining solution (no test project referenced either deleted sample)
+- [x] `samples/` directory no longer exists
+- [x] `Interlocutor.slnx` has no `/samples/` folder and no reference to either deleted project
+- [x] `dotnet build` succeeds for the remaining solution
+- [x] `dotnet test` passes for the remaining solution (no test project referenced either deleted sample)
 
 ## Blocked by
 
 None - can start immediately
+
+## Comments
+
+Already implemented in commit `5ffc2f9` ("chore: remove outdated samples/ projects") - both projects and their `<Project Path=...>`/`/samples/` folder entries in `Interlocutor.slnx` were removed there; `grep -c samples Interlocutor.slnx` returns 0. This ticket file was just never flipped from `open` to `done` afterward. One loose end found and fixed while confirming: `samples/Interlocutor.Sample.Handlers/` and `samples/Interlocutor.Sample.WebApi/` still existed on disk as empty directories holding only gitignored, never-tracked `bin`/`obj` build output from before the deletion - harmless locally, invisible to git and any fresh clone, but not what "directory no longer exists" literally promises. Deleted both directories outright.

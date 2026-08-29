@@ -4,9 +4,13 @@
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `.editorconfig` has a test-project-scoped section setting `SA1402` and `SA1649` to `none`
-- [ ] `dotnet build` reports zero `SA1402`/`SA1649` warnings for any `tests/` project
-- [ ] `SA1402`/`SA1649` remain at their current (enforced) severity for every `src/` project - unaffected by the new section
-- [ ] `dotnet test` passes solution-wide with no behavior change
+- [x] `.editorconfig` has a test-project-scoped section setting `SA1402` and `SA1649` to `none`
+- [x] `dotnet build` reports zero `SA1402`/`SA1649` warnings for any `tests/` project
+- [x] `SA1402`/`SA1649` remain at their current (enforced) severity for every `src/` project - unaffected by the new section
+- [x] `dotnet test` passes solution-wide with no behavior change
+
+## Comments
+
+Already implemented in commit `56141a9`. Verified: `.editorconfig`'s test-glob section (`[{**Tests/**Tests.cs,**Tests.**/**Tests.cs}]`) sets `dotnet_diagnostic.SA1402.severity`/`SA1649.severity` to `None`, while the general `[*.{cs,vb,fs}]` section still enforces `SA1649` at `Warning` (line 577) for everything else, including `src/`. A full rebuild reports zero `SA1402`/`SA1649` warnings for any `tests/` project, and `dotnet test` passes solution-wide.

@@ -4,9 +4,13 @@
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `[Obsolete]` attribute removed from `RateLimited` (`src/Interlocutor.CommonKernel/ResultTypes/RateLimited.cs`) and `Timeout` (`src/Interlocutor.CommonKernel/ResultTypes/Timeout.cs`)
-- [ ] No other change to either type's members, docs, or behavior
-- [ ] `dotnet build` reports zero `CS0618` warnings anywhere referencing `RateLimited`/`Timeout`
-- [ ] `dotnet test` passes for `Interlocutor.CommonKernel.Tests` and `Interlocutor.Abstractions.Tests`
+- [x] `[Obsolete]` attribute removed from `RateLimited` (`src/Interlocutor.CommonKernel/ResultTypes/RateLimited.cs`) and `Timeout` (`src/Interlocutor.CommonKernel/ResultTypes/Timeout.cs`)
+- [x] No other change to either type's members, docs, or behavior
+- [x] `dotnet build` reports zero `CS0618` warnings anywhere referencing `RateLimited`/`Timeout`
+- [x] `dotnet test` passes for `Interlocutor.CommonKernel.Tests` and `Interlocutor.Abstractions.Tests`
+
+## Comments
+
+Already implemented in commit `56141a9`. Verified: neither `RateLimited` nor `Timeout` (`src/Interlocutor.CommonKernel/ResultTypes/`) carries an `[Obsolete]` attribute; no other member changed. A full rebuild reports zero `CS0618` warnings referencing either type anywhere in the solution. `Interlocutor.CommonKernel.Tests`/`Interlocutor.Abstractions.Tests` pass.

@@ -11,8 +11,12 @@ All are plain member-ordering violations. Reorder each to the position StyleCop'
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `dotnet build` reports zero `SA1201` warnings for the four files listed above
-- [ ] Only reordering changed - no logic, assertions, or public API shape changed
-- [ ] `dotnet test` passes for the affected test projects
+- [x] `dotnet build` reports zero `SA1201` warnings for the four files listed above
+- [x] Only reordering changed - no logic, assertions, or public API shape changed
+- [x] `dotnet test` passes for the affected test projects
+
+## Comments
+
+Already implemented in commit `56141a9` (the commit's own diff shows `AuditingBehaviorTests.cs`, `PipelineChainResolverTests.cs`, `AggregateResultTypesTests.cs`, and `ServiceCollectionExtensionsTests.cs` all touched, each a pure reordering). A full `dotnet build -t:Rebuild` reports zero `SA1201` warnings for all four files (and solution-wide). Affected test projects pass.

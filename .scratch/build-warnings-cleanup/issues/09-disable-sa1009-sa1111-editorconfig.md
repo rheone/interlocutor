@@ -4,8 +4,12 @@
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `dotnet_diagnostic.SA1009.severity` and `dotnet_diagnostic.SA1111.severity` are set to `none` in `.editorconfig`
-- [ ] `dotnet build` reports zero `SA1009`/`SA1111` diagnostics solution-wide
-- [ ] `dotnet csharpier . --check` (or equivalent) still passes, confirming no residual conflict between the formatter and the analyzer config
+- [x] `dotnet_diagnostic.SA1009.severity` and `dotnet_diagnostic.SA1111.severity` are set to `none` in `.editorconfig`
+- [x] `dotnet build` reports zero `SA1009`/`SA1111` diagnostics solution-wide
+- [x] `dotnet csharpier . --check` (or equivalent) still passes, confirming no residual conflict between the formatter and the analyzer config
+
+## Comments
+
+Already implemented, in commit `56141a9` ("chore: fix mechanical build-warning tickets 09-14,16") - discovered already-done while investigating why this and its siblings still showed `ready-for-agent` despite the code being present; the commit implemented all seven but never flipped their ticket files' Status. Verified against the current tree: `.editorconfig` sets both `dotnet_diagnostic.SA1009.severity` and `dotnet_diagnostic.SA1111.severity` to `None`. A full `dotnet build -t:Rebuild` reports zero `SA1009`/`SA1111` warnings solution-wide, and `dotnet csharpier check .` passes (aside from two pre-existing, unrelated files csharpier's parser can't handle at all - union-type syntax, present before this ticket).

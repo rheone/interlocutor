@@ -4,9 +4,13 @@
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Files renamed to `InterlocutorAutofacExtensions.cs` / `InterlocutorServiceCollectionExtensions.cs` (via `git mv`, preserving history)
-- [ ] No type, namespace, or public API signature changes - rename only
-- [ ] `dotnet build` reports zero `SA1649` for `src/Interlocutor.DependencyInjection.Autofac` and `src/Interlocutor.DependencyInjection.Microsoft`
-- [ ] `dotnet test` passes for both packages' test projects
+- [x] Files renamed to `InterlocutorAutofacExtensions.cs` / `InterlocutorServiceCollectionExtensions.cs` (via `git mv`, preserving history)
+- [x] No type, namespace, or public API signature changes - rename only
+- [x] `dotnet build` reports zero `SA1649` for `src/Interlocutor.DependencyInjection.Autofac` and `src/Interlocutor.DependencyInjection.Microsoft`
+- [x] `dotnet test` passes for both packages' test projects
+
+## Comments
+
+Already implemented in commit `56141a9` (via `git mv`, confirmed by `git log --follow` on both files showing continuous history through the rename). Verified: `src/Interlocutor.DependencyInjection.Autofac/InterlocutorAutofacExtensions.cs` and `src/Interlocutor.DependencyInjection.Microsoft/InterlocutorServiceCollectionExtensions.cs` exist with matching type names; no type/namespace/API signature changed. Zero `SA1649` warnings for either package in a full rebuild; both packages' test projects pass.

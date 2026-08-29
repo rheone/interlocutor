@@ -4,8 +4,12 @@
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `dotnet build` reports zero `SA1618` warnings for `tests/Interlocutor.Abstractions.Tests`
-- [ ] Each added `<typeparam>` tag describes what that type parameter represents in the test double, not boilerplate
-- [ ] `dotnet test tests/Interlocutor.Abstractions.Tests/Interlocutor.Abstractions.Tests.csproj` still passes
+- [x] `dotnet build` reports zero `SA1618` warnings for `tests/Interlocutor.Abstractions.Tests`
+- [x] Each added `<typeparam>` tag describes what that type parameter represents in the test double, not boilerplate
+- [x] `dotnet test tests/Interlocutor.Abstractions.Tests/Interlocutor.Abstractions.Tests.csproj` still passes
+
+## Comments
+
+Already implemented in commit `56141a9`. Verified: `tests/Interlocutor.Abstractions.Tests/MediatorTests.cs` contains 12 `<typeparam>` tags (2 each for the six named generic test-helper behaviors), and a full solution rebuild reports zero `SA1618` warnings for that project. `Interlocutor.Abstractions.Tests` passes (187/187).
