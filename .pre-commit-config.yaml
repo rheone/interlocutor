@@ -67,10 +67,9 @@ repos:
     hooks:
       - id: codespell
         args:
-          # Ignore common false positives and API names
-          # (AtLeast/AtMost are Moq/JustMock call-verification methods,
-          # statics is a common .NET term, ShouldBe is a Shouldly assertion method).
-          - --ignore-words-list=fo,ect,atleast,atmost,statics,shouldbe
+          # Shared word list with the IDE's cSpell extension (see cspell.json) -
+          # false positives and API names go in dictionary.dic, not here.
+          - --ignore-words=dictionary.dic
 
           # Also check filenames.
           - --check-filenames

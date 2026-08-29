@@ -1,10 +1,14 @@
 AddInterlocutor
+atleast
+atmost
 Autofac
 CommandHandlerWrapper
 CommonKernel
 CQRS
 DTO
+ect
 enum
+fo
 HandlerWrapper
 ICollection
 ICommand
@@ -27,7 +31,9 @@ readonly
 ResourceCommandHandler
 ResultExtensions
 Roslynator
+shouldbe
 StartupValidation
+statics
 struct
 TContext
 TEntity
