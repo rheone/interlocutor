@@ -59,7 +59,7 @@ Active (`ready-for-agent`):
 - [x] **03 - Users feature: Create & Get**
 - [x] **04 - Dev/test authentication handler**
 - [x] **05 - TodoTasks feature: Create**
-- [ ] **06 - TodoTasks feature: Read (GetById + List)**
+- [x] **06 - TodoTasks feature: Read (GetById + List)**
 - [ ] **07 - TodoTasks feature: Update**
 - [ ] **08 - TodoTasks feature: Complete/Reopen + notification**
 - [ ] **09 - TodoTasks feature: Delete + policy authorization**

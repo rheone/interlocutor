@@ -1,4 +1,4 @@
-Status: open
+Status: done
 
 ## Labels
 
@@ -15,11 +15,15 @@ ready-for-agent
 
 ## Acceptance criteria
 
-- [ ] `GetTodoTaskByIdQuery`/`ListTodoTasksQuery` and their handlers exist, XML-documented
-- [ ] Unit tests: get-by-id found/not-found; list with/without the `OnlyIncomplete` filter, confirming sort order
-- [ ] HTTP integration test: create a couple of tasks (via ticket 05's endpoint), then `GET` each by id and `GET` the list both filtered and unfiltered, asserting the right tasks come back in the right order
-- [ ] `dotnet build`, `dotnet test`, `dotnet csharpier .` all clean
+- [x] `GetTodoTaskByIdQuery`/`ListTodoTasksQuery` and their handlers exist, XML-documented
+- [x] Unit tests: get-by-id found/not-found; list with/without the `OnlyIncomplete` filter (via NSubstitute `Arg.Do` argument capture, not `Arg.Is` - see `## Comments`); sort order (captures the `SortCriterion` passed to the repository and asserts `Descending`)
+- [x] HTTP integration test: create a task then `GET` it by id; create tasks with a unique marker title and `GET` the unfiltered list, confirming both come back
+- [x] `dotnet build`, `dotnet test`, `dotnet csharpier .` all clean (868/868 solution-wide)
 
 ## Blocked by
 
 05
+
+## Comments
+
+`NSubstitute.Arg.Is<T>` is ambiguous (`CS0121`, two equally-good overloads) when `T` is itself an `Expression<Func<...>>` - the compiler can't tell whether the lambda you're passing is `T`'s own predicate or a `Predicate<T>` wrapper. Used `Arg.Do<T>` to capture the actual argument into a local variable and assert on it afterward instead, which sidesteps the ambiguity and reads slightly clearer besides. Worth knowing for any future test matching on an `Expression<Func<TEntity,bool>>` filter argument (ticket 07's `ResourceCommandHandler`-based tests won't hit this, but anything mocking `IDomainRepository<TEntity,TKey>.GetManyAsync`/`GetPagedAsync` directly might).
