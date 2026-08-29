@@ -1,6 +1,6 @@
 # Sample App Walkthrough
 
-A guided tour of the runnable project under [`TutorialProject/TodoTasks.Api`](../TutorialProject/TodoTasks.Api/) - a single minimal API project that *is* [the Beginner's Guide](beginners-guide-todo-api.md), every "blank" the guide leaves as an exercise filled in: NHibernate against an in-memory SQLite database, FluentValidation, Autofac, one command/query/handler/endpoint set per use case. It's a proof-of-concept, excluded from packaging (`IsPackable=false`) and never released - it exists to be read, run, and tested, not shipped.
+A guided tour of the runnable project under [`TutorialProject/TodoTasks.Api`](../TutorialProject/TodoTasks.Api/) - a minimal API project that *is* [the Beginner's Guide](beginners-guide-todo-api.md), every "blank" the guide leaves as an exercise filled in: NHibernate against an in-memory SQLite database, FluentValidation, Autofac, one command/query/handler/endpoint set per use case. A pair of MVC controllers sit alongside that minimal-API surface as an alternate transport for the same commands/queries/handlers - see "Transport conversion at the edge" below. It's a proof-of-concept, excluded from packaging (`IsPackable=false`) and never released - it exists to be read, run, and tested, not shipped.
 
 If you haven't read [Glossary](glossary.md), [Messages, Result Types & Variance](messages-and-result-types.md), and [Builder & Registration](builder-and-registration.md) yet, do that first - this walkthrough assumes the vocabulary and API shape those establish and shows them applied together rather than re-explaining them.
 
@@ -18,6 +18,7 @@ A to-do list API with two features: **Tasks** (create, look up by id, list, upda
 | `TodoTaskCompletedNotification` with two handlers | A multi-subscriber notification |
 | `DevHeaderAuthenticationHandler` | A minimal `AuthenticationHandler` standing in for real authentication, backed by the Users feature's own repository |
 | `ToMinimalApiResult()` at each endpoint | Transport conversion at the edge |
+| `TodoTasksController`, `UsersController` | An MVC-controller transport for the same handlers, exposed under `/api/`; `TodoTasksController.GetById` pattern-matches the outcome's cases directly instead of calling `ToActionResult()`, a real, compiler-checked example of consuming the union by hand |
 
 Unlike an earlier sample this project replaced, it doesn't demonstrate cross-assembly handler discovery (everything lives in one project) or a hand-composed pipeline (`Program.cs` calls `UseRecommendedChain()` - see [Pipeline & Behaviors](pipeline-and-behaviors.md) for what that chain is) or a pipeline stage that short-circuits (the duplicate-title check here is an ordinary read inside the handler, guarded by `ITransactionalRequest` instead of a `PipelineStageBehavior`-hosted stage). Describing only what this project actually does, rather than carrying those claims forward, is deliberate.
 
@@ -30,13 +31,15 @@ TutorialProject/TodoTasks.Api/
 ├── Infrastructure/             # dev auth handler, policy evaluator, outcome describer, completion counter
 ├── Features/
 │   ├── Tasks/                  # one folder per use case: CreateTodoTask, GetTodoTaskById, ListTodoTasks,
-│   │                           # UpdateTodoTask, CompleteTodoTask, ReopenTodoTask, DeleteTodoTask,
-│   │                           # ClearCompletedTodoTasks
+│   │   │                       # UpdateTodoTask, CompleteTodoTask, ReopenTodoTask, DeleteTodoTask,
+│   │   │                       # ClearCompletedTodoTasks
+│   │   └── TodoTasksController.cs  # MVC-controller transport for the whole domain, under /api/todo-tasks
 │   └── Users/                  # CreateUser, GetUserById, DeleteUser
-└── Program.cs                  # Autofac host, DI wiring, one MapXEndpoint() call per feature
+│       └── UsersController.cs  # MVC-controller transport for the whole domain, under /api/users
+└── Program.cs                  # Autofac host, DI wiring, one MapXEndpoint() call per feature, MapControllers()
 ```
 
-This is vertical-slice structure **by directory within one project**, not one project per slice: every file a use case needs - its command or query, validator (if any), handler, and endpoint mapping - lives together in one folder, e.g. `Features/Tasks/CreateTodoTask/`. `Domain/` and `Persistence/` are the only things shared across slices, because an entity and its mapping genuinely belong to more than one use case at once.
+This is vertical-slice structure **by directory within one project**, not one project per slice: every file a use case needs - its command or query, validator (if any), handler, and endpoint mapping - lives together in one folder, e.g. `Features/Tasks/CreateTodoTask/`. `Domain/` and `Persistence/` are the only things shared across slices, because an entity and its mapping genuinely belong to more than one use case at once. `TodoTasksController`/`UsersController` are the one deliberate exception to "one folder per use case": a controller spans every use case in its domain, so each lives at its domain's root instead of inside a single use-case folder - the same way `Program.cs` itself aggregates across use cases.
 
 `Features/Tasks/` is deliberately not named `Features/TodoTasks/` - a subfolder segment matching the project's own root namespace (`TodoTasks.Api`) breaks C#'s `using`-resolution for every file under it, since a `using` directive inside a namespace block resolves outward and commits to the first matching segment it finds.
 
@@ -198,6 +201,37 @@ app.MapGet(
 
 Handlers never see `IResult`, `HttpContext`, or any other ASP.NET Core type - the mapping happens once, at the endpoint delegate. See [ASP.NET Core Integration & HTTP Mapping](aspnetcore-integration.md) for the case-to-status-code mapping this extension applies.
 
+`TodoTasksController` and `UsersController` expose the same commands/queries/handlers again, under `/api/todo-tasks` and `/api/users` - a second transport living alongside the minimal-API one (the two can't share routes; ASP.NET Core rejects an ambiguous route match between them). Every action but one calls `ToActionResult()`, the MVC counterpart of `ToMinimalApiResult()`:
+
+```csharp
+[HttpGet]
+public async Task<IActionResult> List(bool onlyIncomplete, CancellationToken ct)
+{
+    var result = await sender.Send(new ListTodoTasksQuery(onlyIncomplete), ct);
+    return result.ToActionResult();
+}
+```
+
+`TodoTasksController.GetById` is the deliberate exception - instead of calling `ToActionResult()`, it pattern-matches the outcome's cases directly:
+
+```csharp
+[HttpGet("{id:int}")]
+public async Task<IActionResult> GetById(int id, CancellationToken ct)
+{
+    var result = await sender.Send(new GetTodoTaskByIdQuery(id), ct);
+    return result.Value switch
+    {
+        TodoTaskDto dto => this.Ok(dto),
+        NotFound notFound => this.NotFound(notFound.Message),
+        _ => throw new NotImplementedException(),
+    };
+}
+```
+
+This is a real, compiler-checked exhaustive switch over the union - the same thing `ToActionResult()` does internally, spelled out by hand. `UsersController.GetById` handles the identically-shaped `OperationOutcome<UserDto, NotFound>` union via `ToActionResult()` instead, so the two actions together show both styles applied to the same union shape: manual matching gives one action full control over its response, at the cost of keeping that mapping in sync by hand; `ToActionResult()` centralizes it once for every other action in both controllers.
+
+Neither controller changes anything about the pipeline. Both dispatch through `ISender.Send()` exactly like the minimal-API endpoints do, so the same registered chain (Logging → Auditing → Authorization → Validation → UnitOfWork) runs regardless of which transport a request came in through - see the next section for a `curl` example that shows identical `LoggingBehavior` output for both.
+
 ## Running and testing the project
 
 From the repository root:
@@ -215,6 +249,14 @@ curl http://localhost:5000/todo-tasks/1
 curl -X POST http://localhost:5000/todo-tasks/1/complete -H "X-User-Id: 1"
 curl -X DELETE http://localhost:5000/users/1
 ```
+
+The `/api/` controller surface answers the same requests:
+
+```bash
+curl http://localhost:5000/api/todo-tasks/1
+```
+
+Watch the console for both calls above (`GET /todo-tasks/1` and `GET /api/todo-tasks/1`) - each prints the same `Interlocutor.Abstractions.Pipeline.LoggingBehavior` entry (`Request GetTodoTaskByIdQuery completed with TodoTaskDto in ...ms`), the concrete evidence that dispatching from a controller runs through the identical pipeline as dispatching from a minimal-API endpoint.
 
 `tests/TodoTasks.Api.Tests` (see its own [README](../tests/TodoTasks.Api.Tests/README.md)) covers this project across three layers - unit tests per handler/validator, NHibernate mapping/persistence tests against real in-memory SQLite, and full HTTP integration tests via `WebApplicationFactory<Program>` - run them the normal way:
 

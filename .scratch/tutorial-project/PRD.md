@@ -71,14 +71,14 @@ Active (`ready-for-agent`):
 - [x] **11 - Users feature: Delete (multi-repo cascade)**
 - [x] **12 - Documentation sync**
 
-Backlog (`needs-triage`, deferred - do not start until explicitly promoted to `ready-for-agent`), one per guide Bonus section:
+Backlog, one per guide Bonus section - each independent of the others, each already a single, self-contained tracer-bullet slice (guide section → feature/behavior → tests), all blocked only by ticket 12 (done):
 
-- [ ] **13 - Manual response mapping + MVC controller variant**
-- [ ] **14 - QueryOver title search**
-- [ ] **15 - Paging**
-- [ ] **16 - Cancel-without-failure rollback**
-- [ ] **17 - Second custom pipeline behavior (slow-handler warning)**
-- [ ] **18 - Reordered pipeline (Validation before Authorization)**
+- [x] **13 - Manual response mapping + MVC controller variant** - promoted and completed with expanded scope (full per-domain controller parity, not just one action); see the ticket's own Comments
+- [ ] **14 - QueryOver title search** - promoted to `ready-for-agent`
+- [ ] **15 - Paging** - promoted to `ready-for-agent`
+- [ ] **16 - Cancel-without-failure rollback** - promoted to `ready-for-agent`
+- [ ] **17 - Second custom pipeline behavior (slow-handler warning)** - promoted to `ready-for-agent`
+- [ ] **18 - Reordered pipeline (Validation before Authorization)** - promoted to `ready-for-agent`
 
 Discovered during ticket 12, resolved separately once the maintainer weighed in - not part of the active or backlog lists above:
 

@@ -51,6 +51,15 @@ builder
     );
 builder.Services.AddAuthorization();
 
+// TodoTasksController/UsersController - the MVC-controller twin of this project's minimal-API surface
+// (see those types' own remarks). AddControllersAsServices() routes controller activation through the
+// same Autofac container as every other registration below, instead of Microsoft.Extensions.DI's default
+// activator - without it, constructor injection of ISender/IRequestContextAccessor into a controller
+// would still work (the request IServiceProvider is Autofac-backed either way), but the controller type
+// itself wouldn't be a first-class Autofac registration, which matters if a later feature wants to
+// intercept or decorate it the way this project already can for anything else in the container.
+builder.Services.AddControllers().AddControllersAsServices();
+
 // Built once, before the container exists, exactly like documentation/beginners-guide-todo-api.md
 // Step 4/10 build their own session factory above ConfigureContainer - see TodoTasksSessionFactory's
 // own remarks for the shared-cache-mode mechanism that keeps this project's in-memory database alive
@@ -151,6 +160,10 @@ var app = builder.Build();
 // DevHeaderAuthenticationHandler and populates HttpContext.User for the rest of the pipeline.
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Routes every [ApiController]-attributed controller's actions - TodoTasksController and UsersController,
+// the MVC-controller twin of the minimal-API endpoints mapped below, under /api/todo-tasks and /api/users.
+app.MapControllers();
 
 // A trivially cheap liveness check - also doubles as proof, for TodoTasks.Api.Tests' HTTP fixture,
 // that the whole host (Autofac container, NHibernate schema export, pipeline registration) came up
