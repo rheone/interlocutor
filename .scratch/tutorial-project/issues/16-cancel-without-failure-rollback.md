@@ -1,8 +1,8 @@
-Status: backlog - deferred, do not start until explicitly promoted to ready-for-agent
+Status: ready-for-agent
 
 ## Labels
 
-needs-triage
+ready-for-agent
 
 ## What to build
 
@@ -15,4 +15,8 @@ needs-triage
 
 ## Blocked by
 
-12
+12 (done - this ticket can start immediately)
+
+## Comments
+
+Promoted to `ready-for-agent` via `/to-tickets`, alongside 14-15, 17-18 - independent of each other, each already a single self-contained vertical slice.
