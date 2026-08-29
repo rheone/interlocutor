@@ -180,8 +180,8 @@ public class AggregateResultTypesTests
 
         // Assert
         Assert.Equal(1, conflicts.Count);
-        Assert.Single(conflicts.Items);
-        Assert.Equal(conflict, conflicts.Items[0]);
+        var item = Assert.Single(conflicts.Items);
+        Assert.Equal(conflict, item);
     }
 
     [Fact]
@@ -251,8 +251,8 @@ public class AggregateResultTypesTests
 
         // Assert
         Assert.Equal(1, failures.Count);
-        Assert.Single(failures.Items);
-        Assert.Equal(failure, failures.Items[0]);
+        var item = Assert.Single(failures.Items);
+        Assert.Equal(failure, item);
     }
 
     [Fact]
@@ -424,8 +424,8 @@ public class AggregateResultTypesTests
 
         // Assert
         Assert.Equal(1, failures.Count);
-        Assert.Single(failures.Items);
-        Assert.Equal(failure, failures.Items[0]);
+        var item = Assert.Single(failures.Items);
+        Assert.Equal(failure, item);
     }
 
     [Fact]
@@ -501,11 +501,13 @@ public class AggregateResultTypesTests
         Assert.Equal("ValidationErrors", default(ValidationErrors).ToString());
     }
 
+    private static readonly string[] Messages = ["Email is required", "Name is required"];
+
     [Fact]
     public void ValidationErrors_NonEmpty_ToString_JoinsMessages()
     {
         // Arrange
-        var errors = new ValidationErrors(new[] { "Email is required", "Name is required" });
+        var errors = new ValidationErrors(Messages);
 
         // Act
         var result = errors.ToString();

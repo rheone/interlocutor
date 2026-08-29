@@ -22,6 +22,7 @@ public sealed class SharedSessionIntegrationTests
         var session = Substitute.For<ISession>();
         var transaction = Substitute.For<ITransaction>();
         transaction.IsActive.Returns(true);
+
         // Transaction only reports the active transaction once BeginTransaction() has actually run - matching
         // real NHibernate, where BeginTransaction() sets this property as a side effect.
         var transactionBegun = false;

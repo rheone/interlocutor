@@ -21,7 +21,7 @@ public sealed class SlowHandlerWarningBehaviorTests
     {
         // Arrange
         var behavior = new SlowHandlerWarningBehavior<SlowRequest, string>(this.logger);
-        Task<string> FastHandler() => Task.FromResult("done");
+        static Task<string> FastHandler() => Task.FromResult("done");
 
         // Act
         var result = await behavior.Handle(new SlowRequest(), FastHandler, TestContext.Current.CancellationToken);
@@ -43,7 +43,7 @@ public sealed class SlowHandlerWarningBehaviorTests
     {
         // Arrange - far slower than the 250ms threshold, so the delay wins decisively (no flake).
         var behavior = new SlowHandlerWarningBehavior<SlowRequest, string>(this.logger);
-        async Task<string> SlowHandler()
+        static async Task<string> SlowHandler()
         {
             await Task.Delay(TimeSpan.FromMilliseconds(400), TestContext.Current.CancellationToken);
             return "done";
@@ -75,7 +75,7 @@ public sealed class SlowHandlerWarningBehaviorTests
         // own ingress, not at the dispatch's start.
         var behavior = new SlowHandlerWarningBehavior<SlowRequest, string>(this.logger);
         await Task.Delay(TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken); // Ahead of this behavior - never measured by it.
-        async Task<string> FastHandler()
+        static async Task<string> FastHandler()
         {
             await Task.Delay(TimeSpan.FromMilliseconds(10), TestContext.Current.CancellationToken);
             return "done";

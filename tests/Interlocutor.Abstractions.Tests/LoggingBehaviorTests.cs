@@ -16,8 +16,8 @@ public class LoggingBehaviorTests
         var logger = Substitute.For<ILogger<LoggingBehavior<LoggedQuery, int>>>();
         var behavior = new LoggingBehavior<LoggedQuery, int>(logger);
         var request = new LoggedQuery(42);
-        var response = 84;
-        Task<int> Next()
+        const int response = 84;
+        static Task<int> Next()
         {
             return Task.FromResult(response);
         }
@@ -149,9 +149,9 @@ public class LoggingBehaviorTests
         var logger = Substitute.For<ILogger<LoggingBehavior<LoggedQuery, int>>>();
         var behavior = new LoggingBehavior<LoggedQuery, int>(logger);
         var request = new LoggedQuery(99);
-        var expectedValue = 198;
+        const int expectedValue = 198;
 
-        Task<int> Next()
+        static Task<int> Next()
         {
             return Task.FromResult(expectedValue);
         }
