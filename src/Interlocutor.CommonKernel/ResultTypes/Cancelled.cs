@@ -17,7 +17,6 @@ namespace Interlocutor.CommonKernel.ResultTypes;
 /// .NET, so there is no structured data to preserve beyond an optional caller-supplied description.
 /// </para>
 /// </remarks>
-[Obsolete("May be overkill to include")]
 public readonly record struct Cancelled(string? Reason = null)
 {
     /// <summary>
