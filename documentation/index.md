@@ -26,8 +26,10 @@ The fundamentals of writing a request and getting a response back.
 
 Registering the library and understanding how a dispatch's scope and context flow.
 
-- [Builder & Registration](builder-and-registration.md) - `InterlocutorBuilder` as the single entry point, assembly scanning, pipeline composition, dependency defaults, cross-assembly aggregation, startup validation.
-- [Dependency Injection Packages](dependency-injection-packages.md) - the container-neutral registration model (`InterlocutorRegistration`, `RegistrationLifetime`, `RegistrationReport`), how `Interlocutor.DependencyInjection.Microsoft` and `.Autofac` each translate it, root-scope detection internals, the persistence registration extensions, and compile-time generated-registration attributes.
+- [Builder & Registration](builder-and-registration.md) - `InterlocutorBuilder` as the single entry point, assembly scanning, predicate-based registration, extending ambiguity checking to your own open-generic contracts, pipeline composition, dependency defaults, cross-assembly aggregation, startup validation.
+- [Dependency Injection: Abstractions & Registration Model](dependency-injection-abstractions.md) - the container-neutral registration model (`InterlocutorRegistration`, `RegistrationLifetime`, `RegistrationReport`), validation mechanisms, and compile-time generated-registration attributes shared by both container packages.
+- [Dependency Injection: Microsoft.Extensions.DependencyInjection](dependency-injection-microsoft.md) - registration, injection, and validation examples for `Interlocutor.DependencyInjection.Microsoft`, plus root-scope detection internals.
+- [Dependency Injection: Autofac](dependency-injection-autofac.md) - the equivalent surface for `Interlocutor.DependencyInjection.Autofac`.
 - [Mediator, Lifetimes, Scope & Ambient Context](mediator-lifetimes-and-scope.md) - `ISender`/`IPublisher`/`IMediator` interfaces, why scoped lifetime is non-configurable, the root-scope exception, dispatching correctly from web/background contexts, `IRequestContextAccessor` and `RequestContext`.
 
 ### Cross-cutting features

@@ -1,6 +1,6 @@
 # Documentation Cleanup
 
-Status: in progress - units 01-02 done, 03-11 open, 12 blocked. Paused here for review before continuing (see issue 02's "Findings beyond the original scope" for what the verification pass caught).
+Status: in progress - units 01-03 done, 04-11 open, 12 blocked. Running 04-11 straight through per owner's go-ahead; committing after each unit.
 
 This effort is expected to recur as the codebase evolves (see `maintainer_docs/agents/documentation-maintenance.md`) - this file is the reusable record of scope, decisions, and unit breakdown for re-running it, not a one-shot ticket to close and forget.
 
@@ -56,7 +56,7 @@ Follow-up clarifications from the grilling session that reshaped scope:
 
 - [x] **01 - Infra**: `docs/` → `maintainer_docs/` rename + repo-wide reference fixes; delete stale `src/Interlocutor.EntityFrameworkCore`/`src/Interlocutor.NHibernate` leftover dirs; new CLAUDE.md "Documentation maintenance" section + glossary-linking House Style bullet + `maintainer_docs/agents/documentation-maintenance.md`; this backlog itself.
 - [x] **02 - Core vocabulary**: `documentation/glossary.md`, `documentation/index.md`, `documentation/messages-and-result-types.md`.
-- [ ] **03 - Dispatch & registration**: `handler-selection-and-dispatch.md`, `builder-and-registration.md`, the four `dependency-injection-*.md` files.
+- [x] **03 - Dispatch & registration**: `handler-selection-and-dispatch.md`, `builder-and-registration.md`, the four `dependency-injection-*.md` files (one of which, `dependency-injection-packages.md`, turned out redundant and was deleted).
 - [ ] **04 - Pipeline & lifecycle**: `pipeline-and-behaviors.md`, `mediator-lifetimes-and-scope.md`, `notifications-and-fan-out.md`, `runtime-typed-dispatch.md`.
 - [ ] **05 - HTTP & persistence**: `aspnetcore-integration.md`, `transactions-and-store-integration.md`, `persistence-abstraction.md`, `persistence-implementations.md`.
 - [ ] **06 - Platform & quality**: `trim-and-aot-support.md`, `testing.md`.

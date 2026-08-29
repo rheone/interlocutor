@@ -107,7 +107,7 @@ interlocutor.AddGeneratedRegistrations(
 );
 ```
 
-`Interlocutor.Sample.WebApi`'s own generated registration module aggregates `Interlocutor.Sample.Handlers`' generated module automatically, because the web project references the handler library (see [Builder & Registration](builder-and-registration.md) for how compile-time aggregation across a project reference works, and [Dependency Injection Packages](dependency-injection-packages.md) for the generated-registration attributes underneath it). One `AddGeneratedRegistrations` call, no assembly list anywhere in either project, and every handler in both assemblies is registered.
+`Interlocutor.Sample.WebApi`'s own generated registration module aggregates `Interlocutor.Sample.Handlers`' generated module automatically, because the web project references the handler library (see [Builder & Registration](builder-and-registration.md) for how compile-time aggregation across a project reference works, and [Dependency Injection: Abstractions & Registration Model](dependency-injection-abstractions.md#compile-time-generated-registrations) for the generated-registration attributes underneath it). One `AddGeneratedRegistrations` call, no assembly list anywhere in either project, and every handler in both assemblies is registered.
 
 ## Explicitly composed pipeline (non-default behaviors)
 

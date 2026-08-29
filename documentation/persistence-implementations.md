@@ -153,5 +153,5 @@ Neither implementation issues a database round-trip from `InsertAsync`/`UpdateAs
 
 - [Persistence Abstraction](persistence-abstraction.md) - the store-agnostic `IUnitOfWork`/`IDomainRepository<TEntity, TKey>` interfaces, `Page<T>`, `SortCriterion<TEntity>`, and how to register an implementation per container.
 - [Transactions & Store Integration](transactions-and-store-integration.md) - `UnitOfWorkBehavior`, the same scoped session both a repository and the unit-of-work behavior resolve, begin-on-first-write, and commit/rollback semantics.
-- [Dependency Injection Packages](dependency-injection-packages.md) - the `AddInterlocutorUnitOfWork`/`AddInterlocutorRepository` registration extensions these implementations are registered through.
+- [Dependency Injection: Microsoft.Extensions.DependencyInjection](dependency-injection-microsoft.md) / [Autofac](dependency-injection-autofac.md) - the `AddInterlocutorUnitOfWork`/`AddInterlocutorRepository` registration extensions these implementations are registered through.
 - [Trim & AOT Support](trim-and-aot-support.md) - the `DynamicallyAccessedMembers` annotation on `EntityFrameworkRepository<TEntity, TKey, TContext>`'s `TEntity` parameter.
