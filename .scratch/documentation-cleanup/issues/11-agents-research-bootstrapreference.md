@@ -1,4 +1,4 @@
-> **Status: open**
+> **Status: done**
 
 ## Labels
 
@@ -10,6 +10,10 @@ Link-fix + light accuracy pass over `maintainer_docs/agents/domain.md`, `maintai
 
 ## Acceptance criteria
 
-- [ ] All links in these files resolve post-rename
-- [ ] `research/native-aot-and-trimming-options.md`'s forward-looking content is preserved, not removed
-- [ ] `bootstrapreference/` content is unchanged beyond link fixes
+- [x] All links in these files resolve post-rename (verified programmatically; `bootstrapreference/Union Types.md`'s links to `../proposals/unions` etc. are intentionally external-relative - it's a verbatim copy of a Microsoft docs page, never meant to resolve inside this repo)
+- [x] `research/native-aot-and-trimming-options.md`'s forward-looking content is preserved, not removed - no changes made
+- [x] `bootstrapreference/` content is unchanged beyond link fixes - no changes needed this unit (the one real link fix, ADR-0016's citation, already happened in unit 01)
+
+## Notes
+
+Spot-checked `native-aot-and-trimming-options.md` and the three `agents/*.md` files against every bug pattern found elsewhere this sweep (wrong attribute/type names, `.IsSuccess`/`.Failure` on the bare marker, retired package names) - none present. No edits made; the files were already accurate.

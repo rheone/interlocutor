@@ -1,6 +1,6 @@
 # Documentation Cleanup
 
-Status: in progress - units 01-09 done, 10-11 open, 12 blocked. Running 10-11 straight through per owner's go-ahead; committing after each unit.
+Status: units 01-11 done. Only unit 12 (full API reference) remains, and it's blocked pending the repo owner's go-ahead on scope/format - see its ticket.
 
 This effort is expected to recur as the codebase evolves (see `maintainer_docs/agents/documentation-maintenance.md`) - this file is the reusable record of scope, decisions, and unit breakdown for re-running it, not a one-shot ticket to close and forget.
 
@@ -63,8 +63,8 @@ Follow-up clarifications from the grilling session that reshaped scope:
 - [x] **07 - Tutorials**: `sample-app-walkthrough.md`, `beginners-guide-todo-api.md` (both accurate as written), moved `composing-operationoutcome-arities.md` into `documentation/` after fixing a nonexistent type name and a description of `AuthorizationBehavior` matching a design the source says was already replaced.
 - [x] **08 - Extensibility**: new `documentation/extensibility.md` - custom marker interfaces, custom `IPipelineBehavior<,>`/`IPipelineStage<,>`, custom `IOperationOutcome` cases, `AddTypeMatch`, `RequireUniqueClosure`/`Eject`, `OverridePipelineFor`, plus a table tracing where each hook is invoked.
 - [x] **09 - `maintainer_docs/` top level**: `PRD.md` was the most drifted file in the whole sweep (bootstrap-era types, retired packages, reversed pipeline order, wrong dispatch mechanism) - rewritten end to end; `README.md`/`TODO.md` needed only small fixes.
-- [ ] **10 - `maintainer_docs/adr/*`**: mechanical link-path fixes only (19 files), no content changes.
-- [ ] **11 - `maintainer_docs/agents/*`, `research/`, `bootstrapreference/`**: link fixes + light accuracy pass, preserve historical/forward-looking framing.
+- [x] **10 - `maintainer_docs/adr/*`**: verified all 19 files' links resolve programmatically - none were broken beyond the one ADR-0016 already fixed in unit 01. No content changes.
+- [x] **11 - `maintainer_docs/agents/*`, `research/`, `bootstrapreference/`**: verified against every bug pattern found this sweep - none present. No changes needed.
 - [ ] **12 - Full public API reference** (blocked - see `issues/12-full-api-reference.md`).
 
 ## Known follow-up (found during unit 01, not part of the original scope)

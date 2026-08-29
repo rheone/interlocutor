@@ -1,4 +1,4 @@
-> **Status: open**
+> **Status: done**
 
 ## Labels
 
@@ -10,5 +10,5 @@ Mechanical pass over all 19 files in `maintainer_docs/adr/`: fix any remaining b
 
 ## Acceptance criteria
 
-- [ ] Every link in every ADR resolves to a real file/heading
-- [ ] No ADR's decision content, status, or file count changed
+- [x] Every link in every ADR resolves to a real file/heading - verified programmatically across all 19 files; none were broken (unit 01's rename pass already caught the one real case, ADR-0016)
+- [x] No ADR's decision content, status, or file count changed - no edits made this unit
