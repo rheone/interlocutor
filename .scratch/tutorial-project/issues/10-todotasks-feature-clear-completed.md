@@ -1,4 +1,4 @@
-Status: open
+Status: done
 
 ## Labels
 
@@ -14,11 +14,15 @@ ready-for-agent
 
 ## Acceptance criteria
 
-- [ ] `ClearCompletedTodoTasksCommand`/`ClearCompletedTodoTasksHandler` exist, XML-documented, explain the bare-`ICommand`/caller-chosen-`TResult` mechanism in their own words
-- [ ] Unit test: clears exactly the completed tasks for the given owner, leaves incomplete tasks and other owners' tasks untouched
-- [ ] HTTP integration test: complete a couple of tasks (via ticket 08's endpoint), leave one incomplete, call clear-completed, then list and confirm only the incomplete one remains
-- [ ] `dotnet build`, `dotnet test`, `dotnet csharpier .` all clean
+- [x] `ClearCompletedTodoTasksCommand`/`ClearCompletedTodoTasksHandler` exist, XML-documented, explain the bare-`ICommand`/caller-chosen-`TResult` mechanism in their own words
+- [x] Unit tests: deletes exactly the completed tasks returned by the repository (one `SaveChangesAsync`); no-op when none are completed; the filter expression passed to the repository is proven (by compiling and invoking it) to require both the right owner *and* `IsCompleted`
+- [x] HTTP integration test: complete one task, leave another incomplete, call clear-completed, confirm the completed one is gone (404) and the incomplete one remains (200); a second test confirms unauthenticated calls are rejected
+- [x] `dotnet build`, `dotnet test`, `dotnet csharpier .` all clean (901/901 solution-wide)
 
 ## Blocked by
 
 08
+
+## Comments
+
+`Success` (this handler's only real outcome case) maps to HTTP `204 No Content`, not `200 OK` - my first draft of the HTTP test assumed `200` and failed for that reason alone, not a handler bug. Worth remembering for any future test asserting on a `Success`-only response.

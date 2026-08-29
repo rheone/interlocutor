@@ -9,6 +9,7 @@ using Interlocutor.DependencyInjection.Autofac;
 using Interlocutor.Persistence.NHibernate;
 using Microsoft.AspNetCore.Authentication;
 using TodoTasks.Api.Domain;
+using TodoTasks.Api.Features.Tasks.ClearCompletedTodoTasks;
 using TodoTasks.Api.Features.Tasks.CompleteTodoTask;
 using TodoTasks.Api.Features.Tasks.CreateTodoTask;
 using TodoTasks.Api.Features.Tasks.DeleteTodoTask;
@@ -174,6 +175,7 @@ app.MapUpdateTodoTaskEndpoint();
 app.MapCompleteTodoTaskEndpoint();
 app.MapReopenTodoTaskEndpoint();
 app.MapDeleteTodoTaskEndpoint();
+app.MapClearCompletedTodoTasksEndpoint();
 
 app.Run();
 
