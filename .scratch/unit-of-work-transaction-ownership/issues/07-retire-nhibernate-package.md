@@ -4,8 +4,12 @@
 
 **Blocked by:** 05.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `Interlocutor.NHibernate` project and its test project removed from the solution
-- [ ] No remaining reference to the retired package anywhere in `src/` or `samples/`
-- [ ] Solution builds and the remaining test suite passes with the package gone
+- [x] `Interlocutor.NHibernate` project and its test project removed from the solution
+- [x] No remaining reference to the retired package anywhere in `src/` or `samples/`
+- [x] Solution builds and the remaining test suite passes with the package gone
+
+## Comments
+
+Already implemented in commit `c938568`, same treatment as ticket 06 - `Interlocutor.NHibernate` and its test project were deleted; no remaining reference anywhere in `src/`.
