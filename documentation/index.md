@@ -56,4 +56,4 @@ Registering the library and understanding how a dispatch's scope and context flo
 
 ### Worked example
 
-- [Sample App Walkthrough](sample-app-walkthrough.md) - a guided tour of the runnable sample under `samples/`: query/command/generic handlers, cross-assembly discovery, an explicitly composed pipeline with a short-circuiting stage, a multi-subscriber notification, and transport conversion at the edge.
+- [Sample App Walkthrough](sample-app-walkthrough.md) - a guided tour of `TutorialProject/TodoTasks.Api`, a full runnable implementation of the Beginner's Guide: query/command handlers, fine- and coarse-grained authorization, a multi-repository unit-of-work example, a multi-subscriber notification, and transport conversion at the edge.

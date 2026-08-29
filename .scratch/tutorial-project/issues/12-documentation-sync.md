@@ -1,4 +1,4 @@
-Status: open
+Status: done
 
 ## Labels
 
@@ -17,12 +17,21 @@ Bring the documentation that references the old `samples/` project (deleted in t
 
 ## Acceptance criteria
 
-- [ ] `documentation/sample-app-walkthrough.md` accurately describes `TutorialProject/TodoTasks.Api` as it actually exists after tickets 01-11, with no leftover references to the deleted EF Core sample
-- [ ] `CLAUDE.md`'s `samples/` reference is updated to `TutorialProject/`
-- [ ] `documentation/beginners-guide-todo-api.md`'s "unlike samples/..." note is corrected to reference the new runnable project instead of contradicting its existence
-- [ ] Every code excerpt in the rewritten walkthrough compiles against the actual shipped `TutorialProject/TodoTasks.Api` code
-- [ ] House style respected: no enumerated counts in prose (except closed sets), no HTTP status codes outside `aspnetcore-integration.md`, glossary-linked on first mention, no citations to `maintainer_docs/`
+- [x] `documentation/sample-app-walkthrough.md` accurately describes `TutorialProject/TodoTasks.Api` as it actually exists after tickets 01-11, with no leftover references to the deleted EF Core sample
+- [x] `CLAUDE.md`'s `samples/` reference is updated to `TutorialProject/`
+- [x] `documentation/beginners-guide-todo-api.md`'s "unlike samples/..." note is corrected to reference the new runnable project instead of contradicting its existence
+- [x] Every code excerpt in the rewritten walkthrough compiles against the actual shipped `TutorialProject/TodoTasks.Api` code
+- [x] House style respected: no enumerated counts in prose (except closed sets), no HTTP status codes outside `aspnetcore-integration.md`, glossary-linked on first mention, no citations to `maintainer_docs/`
 
 ## Blocked by
 
 06, 07, 08, 09, 10, 11
+
+## Comments
+
+- Rewrote `documentation/sample-app-walkthrough.md` from scratch against the actual shipped `TutorialProject/TodoTasks.Api` code (read every file it references, not carried forward from the deleted sample's version). Deliberately does **not** claim cross-assembly discovery, an explicitly composed pipeline, or a short-circuiting pipeline stage - none of those exist in this project (one project, `UseRecommendedChain()`, an inline duplicate-title read instead of a stage) - per the House Style truthfulness rule, describing only what actually exists rather than what the old sample happened to demonstrate.
+- Updated `CLAUDE.md`, `documentation/beginners-guide-todo-api.md`'s `[!NOTE]`, `documentation/index.md`'s blurb, both citations in `documentation/transactions-and-store-integration.md` (the EF-arity-workaround citation and the pipeline-stage-ordering citation), the stale doc-comment citation in `tests/Interlocutor.DependencyInjection.Microsoft.EntityFrameworkCore.Tests/UnitOfWorkBehaviorArityTests.cs`, and a dead `.editorconfig` section still targeting the deleted `samples/Interlocutor.Sample.WebApi/CompiledModels/**.cs`. Neither `transactions-and-store-integration.md` citation was re-pointed at `TutorialProject/TodoTasks.Api` (the ticket's own suggested fallback, taken): the EF-arity citation is specifically about a problem NHibernate's two-arity `UnitOfWorkBehavior` doesn't have, and this project has no pipeline-stage example at all - forcing either citation onto this project would misrepresent what it actually demonstrates.
+- Also fixed one genuinely broken reference found while reading the source for the walkthrough: `Domain/TodoTask.cs`'s XML doc cited the pre-rename `Features/TodoTasks/CreateTodoTask/...` path (the folder is `Features/Tasks/...` - see the `PRD.md` Decisions entry on that rename, ticket 05).
+- **Two discoveries were deliberately left unfixed**, both outside this ticket's scope, both filed as new tickets rather than patched inline or silently ignored:
+  - `.github/workflows/ci.yml`'s `trim-compatibility` job still restores/publishes/smoke-tests the deleted `samples/Interlocutor.Sample.WebApi` - real, currently-broken CI, missed by ticket 01's reference sweep because it's under `.github/`. Filed as `.scratch/tutorial-project/issues/19-ci-trim-compatibility-job-references-deleted-sample.md` - needs a maintainer decision (retrofit `TutorialProject/TodoTasks.Api` with its own trim-compat story, or retire the job), not a mechanical repoint.
+  - `documentation/transactions-and-store-integration.md`'s "Transactions with Notifications" example claims `SaveChangesAsync` itself commits the transaction mid-handler, before a `Publish` call later in the same handler runs - this doesn't match `UnitOfWorkBehavior`'s actual shipped commit timing (confirmed against source while building ticket 11: the commit happens after the whole handler, publish call included, returns). `TutorialProject/TodoTasks.Api/Features/Tasks/CompleteTodoTask/CompleteTodoTaskHandler.cs` carries the same likely-inaccurate claim in its own doc-comment. Filed as `.scratch/documentation-cleanup/issues/17-notification-publish-happens-before-commit-not-after.md` - unrelated to the samples/ removal this effort exists to clean up.

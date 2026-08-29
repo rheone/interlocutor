@@ -1,6 +1,6 @@
 # Tutorial Project: TodoTasks.Api
 
-Status: planning complete (grilling + to-tickets), implementation starting. Tracked as issues under `.scratch/tutorial-project/issues/`.
+Status: **complete** - all 12 active tickets (01-12) done, full solution suite green. The guide's own Bonus sections (13-18) remain a deliberate, deferred backlog - do not start without explicit promotion to `ready-for-agent`. Ticket 19 is a real but out-of-scope discovery (broken CI, needs a maintainer decision) - see its own file. Tracked as issues under `.scratch/tutorial-project/issues/`.
 
 This replaces `samples/` with a single, fully-implemented, runnable project that *is* [documentation/beginners-guide-todo-api.md](../../documentation/beginners-guide-todo-api.md) - every "blank" filled in, TDD'd, with the guide's own Bonus sections held back as a deliberate backlog. It is a proof-of-concept only; it will never be released. This file is the living record of scope and decisions - update it as the effort evolves, don't treat it as a one-shot ticket to close and forget.
 
@@ -69,7 +69,7 @@ Active (`ready-for-agent`):
 - [x] **09 - TodoTasks feature: Delete + policy authorization**
 - [x] **10 - TodoTasks feature: ClearCompleted**
 - [x] **11 - Users feature: Delete (multi-repo cascade)**
-- [ ] **12 - Documentation sync**
+- [x] **12 - Documentation sync**
 
 Backlog (`needs-triage`, deferred - do not start until explicitly promoted to `ready-for-agent`), one per guide Bonus section:
 
@@ -79,6 +79,10 @@ Backlog (`needs-triage`, deferred - do not start until explicitly promoted to `r
 - [ ] **16 - Cancel-without-failure rollback**
 - [ ] **17 - Second custom pipeline behavior (slow-handler warning)**
 - [ ] **18 - Reordered pipeline (Validation before Authorization)**
+
+Discovered during ticket 12, out of scope for this effort (needs a maintainer decision, not mechanical doc-sync work) - not part of the active or backlog lists above:
+
+- [ ] **19 - CI's `trim-compatibility` job still references the deleted `samples/Interlocutor.Sample.WebApi`** - real, currently-broken CI (`dotnet restore samples/Interlocutor.Sample.WebApi` fails), missed by ticket 01's own reference sweep because it lives under `.github/`. See that ticket's own file for why this wasn't fixed inline.
 
 ## Process notes for whoever resumes this effort
 

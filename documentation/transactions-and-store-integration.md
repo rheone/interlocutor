@@ -102,7 +102,7 @@ services.AddDbContext<AppDbContext>(
 > });
 > ```
 >
-> This is the same pattern the runnable sample under [`samples/Interlocutor.Sample.WebApi`](../samples/Interlocutor.Sample.WebApi/SampleUnitOfWorkBehavior.cs) uses, verified against a real `ServiceProvider`.
+> This is the pattern to reach for whenever an open generic implementation's arity doesn't match the service interface it's registered against - close the extra parameter in a small subclass, then register the subclass through the general-purpose escape hatch instead of the arity-specific helper.
 
 ### Whole-session protection for direct `DbContext` access
 
@@ -284,7 +284,7 @@ builder.Pipeline
     .AddStageHost();
 ```
 
-The runnable sample under [`samples/Interlocutor.Sample.WebApi`](../samples/Interlocutor.Sample.WebApi/Program.cs) composes its pipeline exactly this way, for exactly this reason - see its `DuplicateTitleGuardStage`.
+Get this ordering wrong and the stage's read runs outside the transaction the handler's write commits inside, defeating the whole reason for combining the two into one transaction in the first place.
 
 ## Nested Scope Behavior
 

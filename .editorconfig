@@ -590,10 +590,6 @@ dotnet_diagnostic.S4457.severity = Warning    # Parameter validation in "async"/
 # AnalyzerId= Microsoft.CodeAnalysis.CSharp  RuleNamespace= Microsoft.CodeAnalysis.CSharp
 dotnet_diagnostic.CS8019.severity = None
 
-# EF Core's `dotnet ef dbcontext optimize` compiled-model output - regenerated on demand, never hand-authored.
-[samples/Interlocutor.Sample.WebApi/CompiledModels/**.cs]
-dotnet_diagnostic.CS1591.severity = None # Missing XML comment for publicly visible type or member
-
 # C# Tests files in Tests projects
 [{**Tests/**Tests.cs,**Tests.**/**Tests.cs}]
 # Reset StyleCop documentation comments

@@ -99,8 +99,7 @@ public sealed class UnitOfWorkBehaviorArityTests
     }
 
     /// <summary>
-    /// The exact pattern documented on <c>AddUnitOfWorkBehavior</c>'s remarks and demonstrated by
-    /// <c>samples/Interlocutor.Sample.WebApi/SampleUnitOfWorkBehavior.cs</c>: closes
+    /// The exact pattern documented on <c>AddUnitOfWorkBehavior</c>'s remarks: closes
     /// <see cref="UnitOfWorkBehavior{TRequest,TResponse,TContext}"/>'s <c>TContext</c> over
     /// <see cref="TestDbContext"/>, leaving <c>TRequest</c>/<c>TResponse</c> open so it still registers as a
     /// two-parameter open generic against <see cref="IPipelineBehavior{TRequest,TResponse}"/>.

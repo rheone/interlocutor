@@ -26,7 +26,7 @@ public class TodoTask
     /// <param name="title">The task's title.</param>
     /// <param name="ownerId">
     /// The authenticated caller's id who owns this task - never trust this from a request body, only
-    /// ever set it from the authenticated caller (see <c>Features/TodoTasks/CreateTodoTask/CreateTodoTaskEndpoint</c>).
+    /// ever set it from the authenticated caller (see <c>Features/Tasks/CreateTodoTask/CreateTodoTaskEndpoint</c>).
     /// </param>
     /// <param name="notes">Optional free-text notes.</param>
     public TodoTask(string title, string ownerId, string? notes)
