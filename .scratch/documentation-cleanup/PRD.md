@@ -1,6 +1,6 @@
 # Documentation Cleanup
 
-Status: units 01-11 done. Only unit 12 (full API reference) remains, and it's blocked pending the repo owner's go-ahead on scope/format - see its ticket.
+Status: units 01-11 done. Unit 12 (full API reference) is blocked pending the repo owner's go-ahead on scope/format. Units 13-16 (documentation-coverage gaps found via a post-sweep API audit) are open.
 
 This effort is expected to recur as the codebase evolves (see `maintainer_docs/agents/documentation-maintenance.md`) - this file is the reusable record of scope, decisions, and unit breakdown for re-running it, not a one-shot ticket to close and forget.
 
@@ -66,6 +66,10 @@ Follow-up clarifications from the grilling session that reshaped scope:
 - [x] **10 - `maintainer_docs/adr/*`**: verified all 19 files' links resolve programmatically - none were broken beyond the one ADR-0016 already fixed in unit 01. No content changes.
 - [x] **11 - `maintainer_docs/agents/*`, `research/`, `bootstrapreference/`**: verified against every bug pattern found this sweep - none present. No changes needed.
 - [ ] **12 - Full public API reference** (blocked - see `issues/12-full-api-reference.md`).
+- [ ] **13 - `DefaultPolicyEvaluator` allow-all warning**: undocumented silent-allow-all default for `AuthorizationBehavior`.
+- [ ] **14 - `MediatorActivitySource`**: undocumented built-in distributed-tracing integration.
+- [ ] **15 - `Delegate*` shortcut types**: `DelegateRateLimiter`/`DelegateTimeoutPolicy`/`DelegatePipelineStage<,>` never shown as an alternative to the full-class form.
+- [ ] **16 - Name the mediator's exception types**: `MediatorResolvedFromRootScopeException`/`HandlerNotRegisteredException`/`UnsupportedRequestTypeException` described only by behavior, never by name.
 
 ## Known follow-up (found during unit 01, not part of the original scope)
 
