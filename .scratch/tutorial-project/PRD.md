@@ -55,7 +55,7 @@ Active (`ready-for-agent`):
 - [x] **01 - Remove the outdated samples/ projects**
 - [x] **02 - Project & test-harness scaffolding**
 - [x] **03 - Users feature: Create & Get**
-- [ ] **04 - Dev/test authentication handler**
+- [x] **04 - Dev/test authentication handler**
 - [ ] **05 - TodoTasks feature: Create**
 - [ ] **06 - TodoTasks feature: Read (GetById + List)**
 - [ ] **07 - TodoTasks feature: Update**

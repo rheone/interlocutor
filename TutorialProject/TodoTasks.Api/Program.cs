@@ -6,6 +6,7 @@ using Interlocutor.Abstractions.Pipeline.Classifiers;
 using Interlocutor.AspNetCore;
 using Interlocutor.DependencyInjection.Autofac;
 using Interlocutor.Persistence.NHibernate;
+using Microsoft.AspNetCore.Authentication;
 using TodoTasks.Api.Domain;
 using TodoTasks.Api.Features.Users.CreateUser;
 using TodoTasks.Api.Features.Users.GetUserById;
@@ -28,6 +29,17 @@ builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory());
 // AspNetCoreRequestContextAccessor (registered below) needs this to read the caller's identity off
 // the current HttpContext.
 builder.Services.AddHttpContextAccessor();
+
+// DevHeaderAuthenticationHandler - a development/testing stand-in for real authentication, never
+// something a real application would ship. See that type's own remarks for the full rationale and
+// for why it populates Identity.Name specifically rather than some other claim.
+builder
+    .Services.AddAuthentication(DevHeaderAuthenticationHandler.SchemeName)
+    .AddScheme<AuthenticationSchemeOptions, DevHeaderAuthenticationHandler>(
+        DevHeaderAuthenticationHandler.SchemeName,
+        options => { }
+    );
+builder.Services.AddAuthorization();
 
 // Built once, before the container exists, exactly like documentation/beginners-guide-todo-api.md
 // Step 4/10 build their own session factory above ConfigureContainer - see TodoTasksSessionFactory's
@@ -115,10 +127,24 @@ builder.Host.ConfigureContainer<ContainerBuilder>(containerBuilder =>
 
 var app = builder.Build();
 
+// Must run before any endpoint that calls RequireAuthorization() - this is what actually invokes
+// DevHeaderAuthenticationHandler and populates HttpContext.User for the rest of the pipeline.
+app.UseAuthentication();
+app.UseAuthorization();
+
 // A trivially cheap liveness check - also doubles as proof, for TodoTasks.Api.Tests' HTTP fixture,
 // that the whole host (Autofac container, NHibernate schema export, pipeline registration) came up
 // cleanly before any feature endpoint exists to exercise instead.
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+
+// A small, permanently-useful diagnostic twin to /health: proves the X-User-Id header actually
+// authenticates end to end (dev-auth handler -> AspNetCoreRequestContextAccessor -> here), without
+// needing a real feature endpoint to exercise the same path.
+app.MapGet(
+        "/health/whoami",
+        (IRequestContextAccessor contextAccessor) => Results.Ok(new { userId = contextAccessor.Context?.UserId })
+    )
+    .RequireAuthorization();
 
 // One line per feature endpoint, added as each feature lands - see each Features/**/Map*Endpoint.cs.
 app.MapCreateUserEndpoint();
