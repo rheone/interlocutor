@@ -62,7 +62,7 @@ Active (`ready-for-agent`):
 - [x] **05 - TodoTasks feature: Create**
 - [x] **06 - TodoTasks feature: Read (GetById + List)**
 - [x] **07 - TodoTasks feature: Update**
-- [ ] **08 - TodoTasks feature: Complete/Reopen + notification**
+- [x] **08 - TodoTasks feature: Complete/Reopen + notification**
 - [ ] **09 - TodoTasks feature: Delete + policy authorization**
 - [ ] **10 - TodoTasks feature: ClearCompleted**
 - [ ] **11 - Users feature: Delete (multi-repo cascade)**

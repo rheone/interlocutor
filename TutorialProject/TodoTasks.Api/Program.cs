@@ -8,9 +8,11 @@ using Interlocutor.DependencyInjection.Autofac;
 using Interlocutor.Persistence.NHibernate;
 using Microsoft.AspNetCore.Authentication;
 using TodoTasks.Api.Domain;
+using TodoTasks.Api.Features.Tasks.CompleteTodoTask;
 using TodoTasks.Api.Features.Tasks.CreateTodoTask;
 using TodoTasks.Api.Features.Tasks.GetTodoTaskById;
 using TodoTasks.Api.Features.Tasks.ListTodoTasks;
+using TodoTasks.Api.Features.Tasks.ReopenTodoTask;
 using TodoTasks.Api.Features.Tasks.UpdateTodoTask;
 using TodoTasks.Api.Features.Users.CreateUser;
 using TodoTasks.Api.Features.Users.GetUserById;
@@ -113,6 +115,9 @@ builder.Host.ConfigureContainer<ContainerBuilder>(containerBuilder =>
     // gap was found and fixed the hard way, not assumed.
     containerBuilder.RegisterInstance(TodoTasksOutcomeDescriber.Classifier).As<IOutcomeClassifier>().SingleInstance();
 
+    // Process-lifetime, not per-request: the whole point is remembering counts across dispatches.
+    containerBuilder.RegisterType<InMemoryCompletionCounter>().As<ICompletionCounter>().SingleInstance();
+
     containerBuilder.AddInterlocutor(interlocutor =>
     {
         interlocutor.ScanAssembly(typeof(Program).Assembly);
@@ -160,6 +165,8 @@ app.MapCreateTodoTaskEndpoint();
 app.MapGetTodoTaskByIdEndpoint();
 app.MapListTodoTasksEndpoint();
 app.MapUpdateTodoTaskEndpoint();
+app.MapCompleteTodoTaskEndpoint();
+app.MapReopenTodoTaskEndpoint();
 
 app.Run();
 
