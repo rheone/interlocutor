@@ -40,17 +40,40 @@ internal sealed class QueryHandlerWrapper<TQuery, TResponse> : HandlerWrapper<TR
         var handler = services.GetRequiredService<IQueryHandler<TQuery, TResponse>>();
         activity?.SetTag(MediatorActivitySource.HandlerTypeTag, handler.GetType().FullName);
 
-        // Start with the innermost pipeline delegate pointing to the handler itself.
-        var pipeline = () => handler.Handle(typedRequest, ct);
+        // Start with the innermost pipeline delegate pointing to the handler itself. Wrapped in a try/catch
+        // for PipelineEjectException so a handler that calls Eject.With deep in its own call graph returns an
+        // ordinary response here - nothing further out in the chain ever observes a thrown exception.
+        Func<Task<TResponse>> pipeline = async () =>
+        {
+            try
+            {
+                return await handler.Handle(typedRequest, ct);
+            }
+            catch (PipelineEjectException<TResponse> eject)
+            {
+                return eject.Response;
+            }
+        };
 
         // Wrap the handler with each behavior in reverse order (baseline registration order, or a matched
         // override's declared order - see PipelineChainResolver) so the first entry runs first (inbound) and
         // last (outbound), creating an onion-like structure. Each behavior wraps the previous pipeline,
-        // capturing it in a closure.
+        // capturing it in a closure. Each wrap gets the same PipelineEjectException catch, so a behavior that
+        // ejects - before or after calling next() - unwinds no further than its own caller in this chain.
         foreach (var behavior in PipelineChainResolver.ResolveChain<TQuery, TResponse>(services).Reverse())
         {
             var next = pipeline;
-            pipeline = () => behavior.Handle(typedRequest, next, ct);
+            pipeline = async () =>
+            {
+                try
+                {
+                    return await behavior.Handle(typedRequest, next, ct);
+                }
+                catch (PipelineEjectException<TResponse> eject)
+                {
+                    return eject.Response;
+                }
+            };
         }
 
         return pipeline();

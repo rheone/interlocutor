@@ -95,7 +95,8 @@ Independent record-struct types, each usable as one case type in an `OperationOu
 | Term | Definition |
 |------|------------|
 | **IRequestContextAccessor** | Scoped ambient context carrying `CorrelationId`, `UserId`, `TenantId`, and `Items` through the request pipeline. |
-| **RequestContext** | Immutable record (readonly, swap via `Context { get; set; }`). Null-safe - if unset, `Context` is null. |
+| **RequestContext** | Immutable record with respect to its own properties - swap `CorrelationId`/`UserId`/`TenantId` via `Context { get; set; }`, not a setter. Null-safe - if unset, `Context` is null. `Items` is the one property that's settable in place - see `RequestContextItems`. |
+| **RequestContextItems** | The mutable, thread-safe key-value bag behind `RequestContext.Items`. A handler or any pipeline behavior writes into it in place (`Set`/`TryGet`) at any point during a dispatch, with no record replacement needed - open-ended by design so a future ambient concern never requires a breaking change to `RequestContext` itself. |
 
 ## Pipeline Behaviors (built-in)
 
@@ -109,6 +110,8 @@ Independent record-struct types, each usable as one case type in an `OperationOu
 | **RateLimitedBehavior** | Checks a rate limit via `IRateLimiter`, short-circuiting with `RateLimited` if it's exceeded, for requests implementing `IRateLimited`. Opt-in, with no prescribed position in the pipeline. |
 | **PipelineStageBehavior** | Single host behavior aggregating all registered `IPipelineStage<TRequest, TResponse>` instances into the behavior chain - it is an ordinary entry in the list, never a second pipeline. |
 | **IPipelineStage<TRequest, TResponse>** | Lightweight pre/post hook interface. Consumers implement `OnBeforeAsync` / `OnAfterAsync` without creating a full `IPipelineBehavior`. `OnBeforeAsync` returns `StageResult<TResponse>`: a stage may short-circuit and decline the request without the handler running. `TRequest` is contravariant. Both hooks default to a no-op via the `PipelineStageBase<TRequest, TResponse>` base class; stages can also be registered as delegates via `InterlocutorPipelineBuilder.AddStage` (reachable via `InterlocutorBuilder.Pipeline`). |
+| **Eject** | Static helper (`Eject.With`) that forces a pipeline dispatch to end immediately with a developer-chosen outcome, from anywhere in a handler's or behavior's own call graph - not a stage, not tied to any marker interface, and unrelated to `CancellationBehavior`/`Cancelled`: cancellation reacts to the caller stopping the operation; `Eject.With` is a developer's own code deciding to stop it. See [Force-Ejecting From Deep In a Handler or Behavior](pipeline-and-behaviors.md#force-ejecting-from-deep-in-a-handler-or-behavior). |
+| **PipelineEjectException<TResponse>** | Internal control-flow signal thrown by `Eject.With` and caught immediately at the nearest enclosing `Handle` call, converting it back into an ordinary response before anything further out in the chain can observe it. Never constructed directly, and never expected to cross back out of a mediator dispatch. |
 
 None of these run by default - the pipeline is empty until a builder call adds a behavior. The library documents a recommended chain (`UseRecommendedChain()`, five behaviors: Logging → Auditing → Authorization → Validation → Transaction) as opt-in sugar with its rationale, never as a default. `CancellationBehavior`, `TimeoutBehavior`, and `RateLimitedBehavior` are ordinary opt-in behaviors outside that chain, with no prescribed position - a consumer composes them wherever suits their application. See the pipeline-and-behaviors reference doc for the full ordering and reasoning.
 

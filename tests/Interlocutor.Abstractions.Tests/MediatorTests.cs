@@ -73,6 +73,49 @@ public class TrackingBehavior<TRequest, TResponse>(Action track) : IPipelineBeha
     }
 }
 
+/// <summary>A query handler that ejects from several method calls deep in its own logic, proving
+/// <see cref="Eject"/> works without manually threading the chosen outcome back up through every frame.</summary>
+public class EjectingQueryHandler : IQueryHandler<TestQuery, OperationOutcome<int, Failure>>
+{
+    public Task<OperationOutcome<int, Failure>> Handle(TestQuery query, CancellationToken ct) => this.Inner(query);
+
+    private Task<OperationOutcome<int, Failure>> Inner(TestQuery query) => this.Deepest(query);
+
+    private Task<OperationOutcome<int, Failure>> Deepest(TestQuery query) =>
+        Task.FromResult(Eject.With<OperationOutcome<int, Failure>>(new Failure($"ejected for {query.Value}")));
+}
+
+/// <summary>A behavior that ejects before calling <c>next()</c> - the handler (and any behavior further in)
+/// must never run.</summary>
+public class EjectingBeforeNextBehavior<TRequest, TResponse>(TResponse response) : IPipelineBehavior<TRequest, TResponse>
+    where TResponse : IOperationOutcome
+{
+    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
+        Task.FromResult(Eject.With(response));
+}
+
+/// <summary>A behavior that always throws a plain <see cref="InvalidOperationException"/> - used to prove the
+/// eject catch added to every composition site is scoped to <see cref="PipelineEjectException{TResponse}"/>
+/// only, and does not swallow an unrelated fault.</summary>
+public class ThrowingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+{
+    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
+        throw new InvalidOperationException("not an eject");
+}
+
+/// <summary>A behavior that calls <c>next()</c> first, then ejects from its own post-<c>next()</c> logic -
+/// proving the eject is recovered at this behavior's own call site, not only when thrown straight from a
+/// handler.</summary>
+public class EjectingAfterNextBehavior<TRequest, TResponse>(TResponse response) : IPipelineBehavior<TRequest, TResponse>
+    where TResponse : IOperationOutcome
+{
+    public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+    {
+        _ = await next();
+        return Eject.With(response);
+    }
+}
+
 /// <summary>A tracking behavior an override rule can name to keep in a matched request's resolved chain -
 /// a distinct type from <see cref="DroppedTrackingBehavior{TRequest,TResponse}"/> so
 /// <c>PipelineChainResolver</c>'s type-based matching can tell the two apart.</summary>
@@ -210,6 +253,73 @@ public class MediatorTests
     }
 
     [Fact]
+    public async Task Send_Query_HandlerEjectsDeepInOwnCallGraph_ReturnsEjectedOutcomeWithoutThrowing()
+    {
+        // Arrange
+        var mediator = CreateMediator<EjectingQueryHandler>(_ => { });
+
+        // Act
+        var result = await mediator.Send(new TestQuery(7), CancellationToken.None);
+
+        // Assert - the dispatch completes normally with the chosen outcome; Eject.With never surfaces as a
+        // thrown exception to this caller.
+        Assert.Equal(new Failure("ejected for 7"), result.Value);
+    }
+
+    [Fact]
+    public async Task Send_Query_OutermostBehaviorEjectsBeforeNext_HandlerNeverRuns()
+    {
+        // Arrange
+        var handlerRan = false;
+        var mediator = CreateMediator<TestQueryHandler>(services =>
+        {
+            services.AddSingleton<IPipelineBehavior<TestQuery, OperationOutcome<int, Failure>>>(
+                new EjectingBeforeNextBehavior<TestQuery, OperationOutcome<int, Failure>>(
+                    new OperationOutcome<int, Failure>(new Failure("dead end"))
+                )
+            );
+            services.AddSingleton<IPipelineBehavior<TestQuery, OperationOutcome<int, Failure>>>(
+                new TrackingBehavior<TestQuery, OperationOutcome<int, Failure>>(() => handlerRan = true)
+            );
+        });
+
+        // Act
+        var result = await mediator.Send(new TestQuery(1), CancellationToken.None);
+
+        // Assert
+        Assert.Equal(new Failure("dead end"), result.Value);
+        Assert.False(handlerRan, "a behavior that ejects before calling next() must skip the handler entirely");
+    }
+
+    [Fact]
+    public async Task Send_Query_InnerBehaviorEjectsAfterNext_OuterBehaviorsPostNextLogicStillRuns()
+    {
+        // Arrange - EjectingAfterNextBehavior calls next() (running the handler and the inner tracking
+        // behavior) and then ejects from its own post-next() logic. An outer TrackingBehavior wraps it and
+        // must still see this as an ordinary returned response, proving its own post-next() logic runs
+        // exactly as if nothing had been thrown.
+        var outerRan = false;
+        var mediator = CreateMediator<TestQueryHandler>(services =>
+        {
+            services.AddSingleton<IPipelineBehavior<TestQuery, OperationOutcome<int, Failure>>>(
+                new TrackingBehavior<TestQuery, OperationOutcome<int, Failure>>(() => outerRan = true)
+            );
+            services.AddSingleton<IPipelineBehavior<TestQuery, OperationOutcome<int, Failure>>>(
+                new EjectingAfterNextBehavior<TestQuery, OperationOutcome<int, Failure>>(
+                    new OperationOutcome<int, Failure>(new Failure("dead end after next"))
+                )
+            );
+        });
+
+        // Act
+        var result = await mediator.Send(new TestQuery(1), CancellationToken.None);
+
+        // Assert
+        Assert.Equal(new Failure("dead end after next"), result.Value);
+        Assert.True(outerRan, "the outer behavior's Handle call must complete normally, not observe an exception");
+    }
+
+    [Fact]
     public async Task Send_Command_RunsPipelineBehaviors()
     {
         // Arrange
@@ -229,6 +339,26 @@ public class MediatorTests
     }
 
     [Fact]
+    public async Task Send_Command_BehaviorEjectsBeforeNext_ReturnsEjectedOutcomeWithoutThrowing()
+    {
+        // Arrange - covers CommandHandlerWrapper's composition site, distinct from QueryHandlerWrapper's.
+        var mediator = CreateMediator<GreetCommandHandler>(services =>
+        {
+            services.AddSingleton<IPipelineBehavior<GreetCommand, OperationOutcome<string, Failure>>>(
+                new EjectingBeforeNextBehavior<GreetCommand, OperationOutcome<string, Failure>>(
+                    new OperationOutcome<string, Failure>(new Failure("dead end"))
+                )
+            );
+        });
+
+        // Act
+        var result = await mediator.Send(new GreetCommand("test"), CancellationToken.None);
+
+        // Assert
+        Assert.Equal(new Failure("dead end"), result.Value);
+    }
+
+    [Fact]
     public async Task Send_VoidCommand_RunsPipelineBehaviors()
     {
         // Arrange
@@ -245,6 +375,40 @@ public class MediatorTests
 
         // Assert
         Assert.True(invoked);
+    }
+
+    [Fact]
+    public async Task Send_VoidCommand_BehaviorEjectsBeforeNext_ReturnsEjectedOutcomeWithoutThrowing()
+    {
+        // Arrange - covers VoidCommandHandlerWrapper's composition site, distinct from the other two wrappers.
+        var mediator = CreateMediator<TestVoidHandler>(services =>
+        {
+            services.AddSingleton<IPipelineBehavior<TestVoidCommand, OperationOutcome>>(
+                new EjectingBeforeNextBehavior<TestVoidCommand, OperationOutcome>(new OperationOutcome(new Failure("dead end")))
+            );
+        });
+
+        // Act
+        var result = await mediator.Send<OperationOutcome>(new TestVoidCommand("test"), CancellationToken.None);
+
+        // Assert
+        Assert.Equal(new Failure("dead end"), result.Value);
+    }
+
+    [Fact]
+    public async Task Send_Query_NonEjectException_PropagatesUnchanged()
+    {
+        // Arrange - proves the catch added to every composition site is narrowly scoped to
+        // PipelineEjectException<TResponse> only; any other exception must still propagate out of Send.
+        var mediator = CreateMediator<TestQueryHandler>(services =>
+        {
+            services.AddSingleton<IPipelineBehavior<TestQuery, OperationOutcome<int, Failure>>>(
+                new ThrowingBehavior<TestQuery, OperationOutcome<int, Failure>>()
+            );
+        });
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(() => mediator.Send(new TestQuery(1), CancellationToken.None));
     }
 
     [Fact]
@@ -366,6 +530,10 @@ public class MediatorTests
         if (typeof(THandler) == typeof(TestQueryHandler))
         {
             services.AddSingleton<IQueryHandler<TestQuery, OperationOutcome<int, Failure>>, TestQueryHandler>();
+        }
+        else if (typeof(THandler) == typeof(EjectingQueryHandler))
+        {
+            services.AddSingleton<IQueryHandler<TestQuery, OperationOutcome<int, Failure>>, EjectingQueryHandler>();
         }
         else if (typeof(THandler) == typeof(GreetCommandHandler))
         {

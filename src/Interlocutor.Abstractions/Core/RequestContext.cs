@@ -1,6 +1,12 @@
 namespace Interlocutor.Abstractions.Core;
 
 /// <summary>Immutable snapshot of request-scoped ambient data.</summary>
+/// <remarks>
+/// Immutable with respect to its own properties - none of them change after construction, so swap them via a
+/// <see langword="with"/> expression, not a setter. <see cref="Items"/> is the one exception worth calling
+/// out: the property itself is still <see langword="init"/>-only, but the <see cref="RequestContextItems"/>
+/// object it refers to is a mutable bag - see that type's remarks.
+/// </remarks>
 public sealed record RequestContext
 {
     /// <summary>Gets a unique identifier for correlating this request across services. Auto-generated if not set.</summary>
@@ -21,9 +27,11 @@ public sealed record RequestContext
     /// </value>
     public string? TenantId { get; init; }
 
-    /// <summary>Gets an arbitrary key-value bag for extension data, or null if not set.</summary>
+    /// <summary>Gets a mutable, thread-safe key-value bag for extension data - always non-null.</summary>
     /// <value>
-    /// An arbitrary key-value bag for extension data, or null if not set.
+    /// A mutable, thread-safe key-value bag for extension data. Handlers and pipeline behaviors write into it
+    /// in place; see <see cref="RequestContextItems"/>'s remarks for the full mutability and granularity
+    /// contract.
     /// </value>
-    public IReadOnlyDictionary<string, object>? Items { get; init; }
+    public RequestContextItems Items { get; init; } = new();
 }

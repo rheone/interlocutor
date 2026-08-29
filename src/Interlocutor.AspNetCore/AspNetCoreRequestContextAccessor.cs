@@ -1,5 +1,6 @@
 namespace Interlocutor.AspNetCore;
 
+using System.Threading;
 using Interlocutor.Abstractions.Core;
 using Microsoft.AspNetCore.Http;
 
@@ -20,11 +21,21 @@ using Microsoft.AspNetCore.Http;
 /// Register this with <c>AddScoped</c> lifetime in the dependency injection container. This implementation
 /// automatically populates the request context during HTTP request processing, before handlers execute.
 /// </para>
+/// <para>
+/// The <see cref="RequestContext"/> returned by <see cref="Context"/> - and therefore its
+/// <see cref="RequestContext.Items"/> bag - is built once per request and cached for the life of this
+/// instance (itself scoped per request), so a value a handler or behavior writes into <c>Items</c> earlier in
+/// the dispatch is still there for one read later in the same request. <see cref="LazyInitializer"/> guards
+/// the one-time build against concurrent first access, for example from a pipeline behavior that fans work
+/// out in parallel.
+/// </para>
 /// </remarks>
 public sealed class AspNetCoreRequestContextAccessor(IHttpContextAccessor httpContextAccessor) : IRequestContextAccessor
 {
     private readonly IHttpContextAccessor _httpContextAccessor =
         httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
+
+    private RequestContext? cached;
 
     /// <inheritdoc/>
     public RequestContext? Context
@@ -37,20 +48,24 @@ public sealed class AspNetCoreRequestContextAccessor(IHttpContextAccessor httpCo
                 return null;
             }
 
-            var correlationId = httpContext.Request.Headers["X-Correlation-ID"].ToString() ?? httpContext.TraceIdentifier;
-
-            var userId = httpContext.User?.Identity?.Name;
-
-            var tenantId =
-                httpContext.Request.Headers["X-Tenant-ID"].ToString() ?? httpContext.User?.FindFirst("tenant_id")?.Value;
-
-            return new RequestContext
-            {
-                CorrelationId = correlationId,
-                UserId = userId,
-                TenantId = tenantId,
-            };
+            return LazyInitializer.EnsureInitialized(ref this.cached, () => BuildContext(httpContext));
         }
         set => throw new NotSupportedException("Cannot set request context on web-backed accessor.");
+    }
+
+    private static RequestContext BuildContext(HttpContext httpContext)
+    {
+        var correlationId = httpContext.Request.Headers["X-Correlation-ID"].ToString() ?? httpContext.TraceIdentifier;
+
+        var userId = httpContext.User?.Identity?.Name;
+
+        var tenantId = httpContext.Request.Headers["X-Tenant-ID"].ToString() ?? httpContext.User?.FindFirst("tenant_id")?.Value;
+
+        return new RequestContext
+        {
+            CorrelationId = correlationId,
+            UserId = userId,
+            TenantId = tenantId,
+        };
     }
 }
