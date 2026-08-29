@@ -32,7 +32,7 @@ public sealed class NHibernateUnitOfWork(Lazy<ISession> session) : IUnitOfWork
     public async Task SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         var s = session.Value;
-        if (s.Transaction is not { IsActive: true })
+        if (s.GetCurrentTransaction() is not { IsActive: true })
         {
             s.BeginTransaction();
         }
@@ -50,7 +50,7 @@ public sealed class NHibernateUnitOfWork(Lazy<ISession> session) : IUnitOfWork
     public async Task Cancel(CancellationToken cancellationToken = default)
     {
         var s = session.Value;
-        if (s.Transaction is { IsActive: true } transaction)
+        if (s.GetCurrentTransaction() is { IsActive: true } transaction)
         {
             await transaction.RollbackAsync(cancellationToken);
         }

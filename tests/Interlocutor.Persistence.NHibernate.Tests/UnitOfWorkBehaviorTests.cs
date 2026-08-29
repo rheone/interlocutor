@@ -11,17 +11,21 @@ using NSubstitute;
 /// <summary>
 /// Covers <see cref="UnitOfWorkBehavior{TRequest,TResponse}"/>'s flush-mode default, begin-on-first-write,
 /// eager-begin, commit/rollback, and <see cref="IExternalStoreRequest"/> opt-out behavior per ADR-0018,
-/// against a substituted <see cref="ISession"/> - the same style as this project's other behavior coverage
-/// (see <see cref="SharedSessionIntegrationTests"/>'s remarks for why <see cref="ISession"/> query execution
-/// itself is covered elsewhere instead).
+/// against a real in-memory <see cref="ISession"/> (see <see cref="RealSessionFixture"/>) - the same style
+/// as this project's other behavior coverage (see <see cref="SharedSessionIntegrationTests"/>'s remarks for
+/// why <see cref="ISession"/> query execution itself is covered elsewhere instead).
 /// </summary>
-public sealed class UnitOfWorkBehaviorTests
+public sealed class UnitOfWorkBehaviorTests : IClassFixture<RealSessionFixture>
 {
+    private readonly RealSessionFixture fixture;
+
+    public UnitOfWorkBehaviorTests(RealSessionFixture fixture) => this.fixture = fixture;
+
     [Fact]
     public async Task Handle_DispatchThatNeverWrites_NeverBeginsTransaction()
     {
         // Arrange
-        var session = Substitute.For<ISession>();
+        using var session = this.fixture.OpenSession();
         var behavior = CreateBehavior(session);
 
         // Act
@@ -33,14 +37,14 @@ public sealed class UnitOfWorkBehaviorTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        session.DidNotReceive().BeginTransaction();
+        Assert.Null(session.GetCurrentTransaction());
     }
 
     [Fact]
     public async Task Handle_SetsFlushModeToCommit_BeforeHandlerRuns()
     {
         // Arrange
-        var session = Substitute.For<ISession>();
+        using var session = this.fixture.OpenSession();
         var behavior = CreateBehavior(session);
         var flushModeWhenHandlerRan = FlushMode.Auto;
 
@@ -65,77 +69,83 @@ public sealed class UnitOfWorkBehaviorTests
     public async Task Handle_WriteStagedDirectlyOnSession_BeginsTransactionAndCommitsOnSuccess()
     {
         // Arrange
-        var (session, transaction) = CreateStubbedSession();
+        using var session = this.fixture.OpenSession();
         var behavior = CreateBehavior(session);
+        var widget = new Widget();
 
         // Act
         var result = await behavior.Handle(
             new PlainRequest(),
-            () =>
+            async () =>
             {
-                // IsDirty() reflects the session's own tracked state regardless of which access path staged
-                // it - a real ISession would report true after a direct Save() the same way.
-                session.IsDirty().Returns(true);
-                return Task.FromResult<OperationOutcome<Success, Failure>>(default(Success));
+                // A direct Save() on the session, not through NHibernateUnitOfWork - IsDirty() reflects
+                // the session's own tracked state regardless of which access path staged it.
+                await session.SaveAsync(widget, CancellationToken.None);
+                return default(Success);
             },
             CancellationToken.None
         );
 
         // Assert
         Assert.True(result.IsSuccess);
-        session.Received(1).BeginTransaction();
-        await transaction.Received(1).CommitAsync(CancellationToken.None);
+        Assert.False(session.GetCurrentTransaction() is { IsActive: true });
+
+        // Committing flushes the pending insert and makes it durable - a real side effect a rollback
+        // never produces, since no INSERT is ever sent in that path (see the failure test below).
+        this.AssertPersisted(widget.Id);
     }
 
     [Fact]
     public async Task Handle_ClassifiedFailure_RollsBack_NotCommit()
     {
         // Arrange
-        var (session, transaction) = CreateStubbedSession();
+        using var session = this.fixture.OpenSession();
         var behavior = CreateBehavior(session);
+        var widget = new Widget();
 
         // Act
         var result = await behavior.Handle(
             new PlainRequest(),
-            () =>
+            async () =>
             {
-                session.IsDirty().Returns(true);
-                return Task.FromResult<OperationOutcome<Success, Failure>>(new Failure("rejected"));
+                await session.SaveAsync(widget, CancellationToken.None);
+                return new Failure("rejected");
             },
             CancellationToken.None
         );
 
         // Assert
         Assert.False(result.IsSuccess);
-        await transaction.Received(1).RollbackAsync(CancellationToken.None);
-        await transaction.DidNotReceive().CommitAsync(Arg.Any<CancellationToken>());
+        Assert.False(session.GetCurrentTransaction() is { IsActive: true });
+
+        // Rolling back never flushes the pending insert - FlushMode.Commit means nothing auto-flushes
+        // beforehand, and RollbackAsync doesn't flush either - so the row never becomes durable.
+        this.AssertNotPersisted(widget.Id);
     }
 
     [Fact]
     public async Task Handle_TransactionalRequest_BeginsEagerly_BeforeHandlerWrites()
     {
         // Arrange
-        var (session, _) = CreateStubbedSession();
+        using var session = this.fixture.OpenSession();
         var behavior = new UnitOfWorkBehavior<TransactionalRequest, OperationOutcome<Success, Failure>>(
             new Lazy<ISession>(() => session)
         );
-        var beginCallsBeforeHandler = 0;
+        var transactionActiveBeforeHandler = false;
 
         // Act
         await behavior.Handle(
             new TransactionalRequest(),
             () =>
             {
-                beginCallsBeforeHandler = session
-                    .ReceivedCalls()
-                    .Count(c => c.GetMethodInfo().Name == nameof(ISession.BeginTransaction));
+                transactionActiveBeforeHandler = session.GetCurrentTransaction() is { IsActive: true };
                 return Task.FromResult<OperationOutcome<Success, Failure>>(default(Success));
             },
             CancellationToken.None
         );
 
         // Assert
-        Assert.Equal(1, beginCallsBeforeHandler);
+        Assert.True(transactionActiveBeforeHandler);
     }
 
     [Fact]
@@ -166,25 +176,22 @@ public sealed class UnitOfWorkBehaviorTests
     public async Task Handle_UnitOfWorkCancel_RollsBackImmediately_AndPreservesHandlerOutcome()
     {
         // Arrange
-        var (session, transaction) = CreateStubbedSession();
+        using var session = this.fixture.OpenSession();
         var unitOfWork = new NHibernateUnitOfWork(new Lazy<ISession>(() => session));
         var behavior = CreateBehavior(session);
+        var widget = new Widget();
 
         // Act
         var result = await behavior.Handle(
             new PlainRequest(),
             async () =>
             {
-                session.IsDirty().Returns(true);
+                await session.SaveAsync(widget, CancellationToken.None);
                 await unitOfWork.SaveChangesAsync(CancellationToken.None);
 
                 // The handler cancels, then still returns its own Success outcome - Cancel is not a
                 // short-circuit primitive, so the handler retains control of what it returns.
                 await unitOfWork.Cancel(CancellationToken.None);
-
-                // Cancel's Session.Clear() resets IsDirty() to false, same as a real session with nothing
-                // pending after a rollback.
-                session.IsDirty().Returns(false);
                 return default(Success);
             },
             CancellationToken.None
@@ -192,67 +199,61 @@ public sealed class UnitOfWorkBehaviorTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        await transaction.Received(1).RollbackAsync(CancellationToken.None);
-        await transaction.DidNotReceive().CommitAsync(Arg.Any<CancellationToken>());
-        session.Received(1).Clear();
+        Assert.False(session.GetCurrentTransaction() is { IsActive: true });
+        Assert.False(session.IsDirty());
+        Assert.False(session.Contains(widget)); // Session.Clear() evicted the widget entirely.
+
+        // SaveChangesAsync's own flush already sent the insert to the database before Cancel rolled it
+        // back - the strongest proof Cancel undid it for real, not just in this session's own tracking.
+        this.AssertNotPersisted(widget.Id);
     }
 
     [Fact]
     public async Task Handle_UsesInjectedClassifier_NotOutcomeShape_ToDecideCommitVersusRollback()
     {
         // Arrange
-        var (session, transaction) = CreateStubbedSession();
+        using var session = this.fixture.OpenSession();
         var classifier = Substitute.For<IOutcomeClassifier>();
         classifier.IsFailure(Arg.Any<object?>()).Returns(true);
         var behavior = new UnitOfWorkBehavior<PlainRequest, OperationOutcome<Success, Failure>>(
             new Lazy<ISession>(() => session),
             classifier
         );
+        var widget = new Widget();
 
         // Act
         var result = await behavior.Handle(
             new PlainRequest(),
-            () =>
+            async () =>
             {
-                session.IsDirty().Returns(true);
-                return Task.FromResult<OperationOutcome<Success, Failure>>(default(Success));
+                await session.SaveAsync(widget, CancellationToken.None);
+                return default(Success);
             },
             CancellationToken.None
         );
 
         // Assert
         Assert.True(result.IsSuccess);
-        await transaction.Received(1).RollbackAsync(CancellationToken.None);
-        await transaction.DidNotReceive().CommitAsync(Arg.Any<CancellationToken>());
+        Assert.False(session.GetCurrentTransaction() is { IsActive: true });
+
+        // The classifier says "failure" despite the Success payload, so the behavior rolls back - proving
+        // the classifier drives the decision, not the outcome's own shape. Same never-flushed proof as
+        // Handle_ClassifiedFailure_RollsBack_NotCommit.
+        this.AssertNotPersisted(widget.Id);
     }
 
-    /// <summary>
-    /// Builds a substituted <see cref="ISession"/>/<see cref="ITransaction"/> pair whose
-    /// <see cref="ISession.Transaction"/> and <see cref="ITransaction.IsActive"/> track
-    /// <see cref="ISession.BeginTransaction()"/>/<see cref="ITransaction.CommitAsync"/>/<see cref="ITransaction.RollbackAsync"/>
-    /// as real side effects - matching real NHibernate, where beginning a transaction sets
-    /// <see cref="ISession.Transaction"/> and completing one (either way) ends its <see cref="ITransaction.IsActive"/>
-    /// life, which bare NSubstitute stubbing otherwise leaves disconnected from the method calls.
-    /// </summary>
-    private static (ISession Session, ITransaction Transaction) CreateStubbedSession()
+    /// <summary>Opens a fresh session and asserts a <see cref="Widget"/> with the given id was actually committed.</summary>
+    private void AssertPersisted(Guid widgetId)
     {
-        var session = Substitute.For<ISession>();
-        var transaction = Substitute.For<ITransaction>();
+        using var verifySession = this.fixture.OpenSession();
+        Assert.NotNull(verifySession.Get<Widget>(widgetId));
+    }
 
-        var transactionActive = false;
-        session
-            .BeginTransaction()
-            .Returns(_ =>
-            {
-                transactionActive = true;
-                return transaction;
-            });
-        session.Transaction.Returns(_ => transactionActive ? transaction : null);
-        transaction.IsActive.Returns(_ => transactionActive);
-        transaction.When(t => t.CommitAsync(Arg.Any<CancellationToken>())).Do(_ => transactionActive = false);
-        transaction.When(t => t.RollbackAsync(Arg.Any<CancellationToken>())).Do(_ => transactionActive = false);
-
-        return (session, transaction);
+    /// <summary>Opens a fresh session and asserts no <see cref="Widget"/> with the given id was ever committed.</summary>
+    private void AssertNotPersisted(Guid widgetId)
+    {
+        using var verifySession = this.fixture.OpenSession();
+        Assert.Null(verifySession.Get<Widget>(widgetId));
     }
 
     private static UnitOfWorkBehavior<PlainRequest, OperationOutcome<Success, Failure>> CreateBehavior(ISession session) =>

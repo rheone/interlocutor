@@ -34,9 +34,12 @@ public sealed class NotificationHandlerTests
         var handler = new TodoTaskCompletionAuditLogHandler(logger);
         var notification = new TodoTaskCompletedNotification(1, "owner-1", "Buy milk");
 
-        // Act & Assert - completes without throwing; the log call itself is the behavior under test,
-        // and ILogger's extension methods aren't meaningfully mockable beyond "did it throw."
-        await handler.Handle(notification, CancellationToken.None);
+        // Act - the log call itself is the behavior under test, and ILogger's extension methods aren't
+        // meaningfully mockable beyond "did it throw."
+        var exception = await Record.ExceptionAsync(() => handler.Handle(notification, CancellationToken.None));
+
+        // Assert
+        Assert.Null(exception);
     }
 
     [Fact]

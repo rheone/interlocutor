@@ -37,5 +37,8 @@
     </PackageReference>
     <PackageReference Include="NSubstitute" />
     <PackageReference Include="NSubstitute.Analyzers.CSharp" />
+    <!-- PipelineOrderingIntegrationTests builds a real, mapping-free in-memory NHibernate session against
+         the SQLite driver NHibernate's SQLite20Driver wraps, rather than hand-simulating one. -->
+    <PackageReference Include="System.Data.SQLite.Core" />
   </ItemGroup>
 </Project>

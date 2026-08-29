@@ -14,5 +14,9 @@
     </PackageReference>
     <PackageReference Include="NSubstitute" />
     <PackageReference Include="NSubstitute.Analyzers.CSharp" />
+    <!-- RealSessionFixture builds a real in-memory NHibernate session factory, mapped via FluentNHibernate,
+         against the SQLite driver NHibernate's SQLite20Driver wraps - see that fixture's own remarks. -->
+    <PackageReference Include="FluentNHibernate" />
+    <PackageReference Include="System.Data.SQLite.Core" />
   </ItemGroup>
 </Project>

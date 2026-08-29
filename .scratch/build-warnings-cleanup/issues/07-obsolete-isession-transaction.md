@@ -11,9 +11,13 @@ This ticket is deliberately narrow: it doesn't touch the NSubstitute-mocked `ISe
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `dotnet build` reports zero `CS0618` warnings for `ISession.Transaction` in `src/Interlocutor.Persistence.NHibernate` or `tests/TodoTasks.Api.Tests` (including both `SyncAwareCompleteTodoTaskRollbackTests.cs` occurrences)
-- [ ] Every production call site (`NHibernateUnitOfWork.cs`, `UnitOfWorkBehavior.cs`) uses `GetCurrentTransaction()` with an explicit null check, preserving the exact same active/inactive-transaction logic as today
-- [ ] The stale `<see cref="ISession.Transaction"/>` doc-comment reference in `UnitOfWorkBehavior.cs` is updated to reference `GetCurrentTransaction()` instead
-- [ ] `dotnet test` passes for `Interlocutor.Persistence.NHibernate.Tests` and `TodoTasks.Api.Tests` with no behavior change (the mocked tests in `Interlocutor.Persistence.NHibernate.Tests` still pass as-is, still stubbing the now-more-obsolete `ISession.Transaction` - ticket 08 replaces them, not this one), and the full solution `dotnet test` remains green
+- [x] `dotnet build` reports zero `CS0618` warnings for `ISession.Transaction` in `src/Interlocutor.Persistence.NHibernate` or `tests/TodoTasks.Api.Tests` (including both `SyncAwareCompleteTodoTaskRollbackTests.cs` occurrences)
+- [x] Every production call site (`NHibernateUnitOfWork.cs`, `UnitOfWorkBehavior.cs`) uses `GetCurrentTransaction()` with an explicit null check, preserving the exact same active/inactive-transaction logic as today
+- [x] The stale `<see cref="ISession.Transaction"/>` doc-comment reference in `UnitOfWorkBehavior.cs` is updated to reference `GetCurrentTransaction()` instead
+- [x] `dotnet test` passes for `Interlocutor.Persistence.NHibernate.Tests` and `TodoTasks.Api.Tests`, and the full solution `dotnet test` remains green
+
+## Comments
+
+The last acceptance bullet's "the mocked tests still pass as-is" premise didn't hold: `GetCurrentTransaction()` is `session.GetSessionImplementation().ConnectionManager.CurrentTransaction` (decompiled and confirmed), not a wrapper over `ISession.Transaction` - it NREs against any NSubstitute-mocked `ISession` regardless of what `.Transaction` is stubbed to return, since `GetSessionImplementation()` itself is unstubbed. Fixed in the same pass as ticket 08 (which was already blocked on this one) rather than landing a build that fails its own mocked tests in between.

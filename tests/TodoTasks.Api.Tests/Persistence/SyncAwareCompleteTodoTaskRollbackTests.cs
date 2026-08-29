@@ -1,5 +1,6 @@
 namespace TodoTasks.Api.Tests.Persistence;
 
+using global::NHibernate;
 using Interlocutor.Persistence.NHibernate;
 using NSubstitute;
 using TodoTasks.Api.Domain;
@@ -54,10 +55,8 @@ public sealed class SyncAwareCompleteTodoTaskRollbackTests : IClassFixture<Persi
             // Nothing left open for this session's Dispose() to roll back on its own - IUnitOfWork.Cancel
             // already did that (or, as here, never opened a transaction at all, since the staged change
             // was never flushed - see the handler's own remarks). This assertion is the point of the
-            // test, not incidental cleanup. ISession.Transaction is obsolete - matches
-            // DeleteUserCascadeTests' existing pattern; see backlog ticket 07/08 for migrating every such
-            // use at once, rather than this ticket picking its own replacement ad hoc.
-            Assert.False(session.Transaction is { IsActive: true });
+            // test, not incidental cleanup.
+            Assert.False(session.GetCurrentTransaction() is { IsActive: true });
         }
 
         // Assert - the handler reported the task as completed (correct: it is, just not through this
@@ -98,7 +97,7 @@ public sealed class SyncAwareCompleteTodoTaskRollbackTests : IClassFixture<Persi
             var handler = new SyncAwareCompleteTodoTaskHandler(tasks, unitOfWork, externalSync);
 
             await handler.Handle(new SyncAwareCompleteTodoTaskCommand(taskId), TestContext.Current.CancellationToken);
-            session.Transaction.Commit();
+            session.CommitIfActive();
         }
 
         // Assert

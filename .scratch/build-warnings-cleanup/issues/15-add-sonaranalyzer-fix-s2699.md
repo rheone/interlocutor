@@ -4,10 +4,17 @@
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `SonarAnalyzer.CSharp` is referenced solution-wide via `Directory.Build.props`, pinned to an exact version, `PrivateAssets="all"`
-- [ ] `dotnet build` reports zero `S2699` warnings, with every fix adding a real assertion (not a mechanical no-op to silence the rule)
-- [ ] A comment/note records why `S326` is closed as not-applicable (no C# implementation exists)
-- [ ] Every other newly-surfaced Sonar rule finding is filed as a new `ready-for-agent` ticket under `.scratch/build-warnings-cleanup/issues/`, not fixed in this ticket
-- [ ] `dotnet test` passes solution-wide
+- [x] `SonarAnalyzer.CSharp` is referenced solution-wide via `Directory.Build.props`, pinned to an exact version, `PrivateAssets="all"`
+- [x] `dotnet build` reports zero `S2699` warnings, with every fix adding a real assertion (not a mechanical no-op to silence the rule)
+- [x] A comment/note records why `S326` is closed as not-applicable (no C# implementation exists)
+- [x] Every other newly-surfaced Sonar rule finding is filed as a new `ready-for-agent` ticket under `.scratch/build-warnings-cleanup/issues/`, not fixed in this ticket
+- [x] `dotnet test` passes solution-wide
+
+## Comments
+
+- Pinned `SonarAnalyzer.CSharp` `10.33.0.1635` (latest stable at the time) in `Directory.Packages.props`, referenced via `Directory.Build.props` matching the existing `Roslynator`/`StyleCop` pattern exactly.
+- `S326` genuinely has no C# implementation: decompiled `SonarAnalyzer.CSharp.dll` 10.33.0.1635 and inspected `SonarAnalyzer.CSharp.Core.Rspec.RuleCatalog` directly - the analyzer's own complete rule catalog (480 `RuleDescriptor` entries, everything from `S1000`-family upward, e.g. `S3265`/`S3267` sit adjacent with no `S326x` gap-filler between them) contains no `"S326"` entry at all. This is a stronger check than "it didn't fire on this codebase" (which only proves absence on the code shapes present here) - it confirms the rule ID itself isn't implemented by this analyzer, at this version, full stop. Also confirmed empirically via `dotnet build -t:Rebuild` across the whole solution: zero `S326` occurrences.
+- `S2699` fired on four tests solution-wide (`dotnet build` alone under-reports vs. a full `-t:Rebuild` - MSBuild's incremental up-to-date check skips re-running analyzers on projects it considers unchanged, so a full rebuild is the only authoritative count): `TodoTasks.Api.Tests/Unit/Features/Tasks/CompleteTodoTask/NotificationHandlerTests.cs`, `Interlocutor.Abstractions.Tests/DelegatePipelineStageTests.cs`, `Interlocutor.Abstractions.Tests/NotificationFanOutTests.cs`, and `Interlocutor.Abstractions.Tests/MediatorTests.cs`. All four were legitimate "must not throw" tests (matching ticket 05's own classification) with no runtime assertion at all - each rewritten with the repo's existing `Record.Exception(Async)` + `Assert.Null(exception)` idiom (already used elsewhere, e.g. `NHibernateUnitOfWorkTests`) rather than a mechanical no-op.
+- Adding the package surfaced nineteen other distinct Sonar rules solution-wide (`S1118`, `S1135`, `S1144`, `S125`, `S1694`, `S2094`, `S2139`, `S2325`, `S2326`, `S3236`, `S3246`, `S3267`, `S3878`, `S4136`, `S4144`, `S6444`, `S6966`, `S8969`, `S927`) - each filed as its own `ready-for-agent` ticket (`.scratch/build-warnings-cleanup/issues/17` through `35`) per this ticket's own scope boundary, rather than fixed inline.

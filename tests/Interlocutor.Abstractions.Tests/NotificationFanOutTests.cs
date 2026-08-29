@@ -120,9 +120,14 @@ public sealed class NotificationFanOutTests
         services.AddSingleton<IMediator, Mediator>();
         IPublisher publisher = services.BuildServiceProvider().GetRequiredService<IMediator>();
 
-        // Act & Assert - Compiles and runs only if the strategy overload lives on IPublisher itself, not just
-        // on the concrete Mediator class.
-        await publisher.Publish(new OrderCreated(1), PublishStrategy.Parallel, CancellationToken.None);
+        // Act - compiles and runs only if the strategy overload lives on IPublisher itself, not just on
+        // the concrete Mediator class.
+        var exception = await Record.ExceptionAsync(() =>
+            publisher.Publish(new OrderCreated(1), PublishStrategy.Parallel, CancellationToken.None)
+        );
+
+        // Assert
+        Assert.Null(exception);
     }
 
     [Fact]

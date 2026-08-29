@@ -74,8 +74,13 @@ public class DelegatePipelineStageTests
         // Arrange
         var stage = new DelegatePipelineStage<TestRequest, OperationOutcome<string, Failure>>(onBefore: null, onAfter: null);
 
-        // Act & Assert - completing without throwing proves the base no-op hook ran.
-        await stage.OnAfterAsync(new TestRequest(), "done", CancellationToken.None);
+        // Act - completing without throwing proves the base no-op hook ran.
+        var exception = await Record.ExceptionAsync(() =>
+            stage.OnAfterAsync(new TestRequest(), "done", CancellationToken.None)
+        );
+
+        // Assert
+        Assert.Null(exception);
     }
 
     public record TestRequest;

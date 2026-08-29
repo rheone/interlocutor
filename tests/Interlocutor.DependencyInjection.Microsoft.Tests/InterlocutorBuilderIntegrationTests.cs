@@ -2,7 +2,6 @@ namespace Interlocutor.DependencyInjection.Microsoft.Tests;
 
 using global::Microsoft.Extensions.DependencyInjection;
 using global::Microsoft.Extensions.Logging;
-using global::NSubstitute;
 using Interlocutor.Abstractions;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Markers;
@@ -302,7 +301,7 @@ public class InterlocutorBuilderIntegrationTests
         // UnitOfWorkBehavior<,> applies to every request once registered, per ADR-0018 - no ITransactionalRequest
         // marker required to participate - so even this pure-read query needs Lazy<ISession> resolvable. It
         // never actually begins a transaction here: nothing in this dispatch writes.
-        services.AddScoped(_ => new Lazy<global::NHibernate.ISession>(() => Substitute.For<global::NHibernate.ISession>()));
+        services.AddScoped(_ => new Lazy<global::NHibernate.ISession>(RealNHibernateSession.Open));
 
         services.AddInterlocutor(builder =>
             builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).Pipeline.UseRecommendedChain()

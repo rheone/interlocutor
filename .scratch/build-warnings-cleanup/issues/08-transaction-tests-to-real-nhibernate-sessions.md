@@ -10,11 +10,17 @@ Affected files:
 
 **Blocked by:** 07 - production code should already read `GetCurrentTransaction()` before these tests are rewritten against its final call shape.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Zero remaining NSubstitute stubs of `ISession.Transaction` anywhere in the solution, and no `#pragma warning disable CS0618` added to work around it
-- [ ] `SharedSessionIntegrationTests`' shared-session test runs against a real in-memory NHibernate session and still proves its original claim (repository, unit-of-work, and behavior all resolve the same session/transaction) via a real persisted row
-- [ ] `UnitOfWorkBehaviorTests`' transaction-lifecycle tests (begin/commit/rollback, `IsDirty`-triggered write, cancel-triggered rollback) run against a real session and still cover the same scenarios, with the same pass/fail meaning as today
-- [ ] `PipelineOrderingIntegrationTests` continues to prove behavior ordering correctly, using either a real in-memory session or a purpose-built lifecycle fake - whichever was chosen, with a comment explaining the choice
-- [ ] No test relies on hand-simulated NHibernate side effects (the `transactionBegun`/`transactionActive` boolean-tracking pattern) to approximate what a real session already provides
-- [ ] `dotnet test` passes for `Interlocutor.Persistence.NHibernate.Tests`, `Interlocutor.DependencyInjection.Microsoft.Tests`, and the full solution
+- [x] Zero remaining NSubstitute stubs of `ISession.Transaction` anywhere in the solution, and no `#pragma warning disable CS0618` added to work around it
+- [x] `SharedSessionIntegrationTests`' shared-session test runs against a real in-memory NHibernate session and still proves its original claim (repository, unit-of-work, and behavior all resolve the same session/transaction) via a real persisted row
+- [x] `UnitOfWorkBehaviorTests`' transaction-lifecycle tests (begin/commit/rollback, `IsDirty`-triggered write, cancel-triggered rollback) run against a real session and still cover the same scenarios, with the same pass/fail meaning as today
+- [x] `PipelineOrderingIntegrationTests` continues to prove behavior ordering correctly, using a real in-memory session, with a comment explaining the choice
+- [x] No test relies on hand-simulated NHibernate side effects (the `transactionBegun`/`transactionActive` boolean-tracking pattern) to approximate what a real session already provides
+- [x] `dotnet test` passes for `Interlocutor.Persistence.NHibernate.Tests`, `Interlocutor.DependencyInjection.Microsoft.Tests`, and the full solution
+
+## Comments
+
+Added `RealSessionFixture`/`Widget` to `Interlocutor.Persistence.NHibernate.Tests` (FluentNHibernate-mapped, `GeneratedBy.Guid()` rather than an identity column - an identity/auto-increment generator forces NHibernate to insert immediately on `Save()`, before any commit/rollback decision, which would have made committed and rolled-back rows indistinguishable by the time a test observes them). `SharedSessionIntegrationTests`, `UnitOfWorkBehaviorTests`, and `NHibernateUnitOfWorkTests` (not originally listed, but broken by ticket 07's production change the same way) all now run against real sessions.
+
+For `PipelineOrderingIntegrationTests`, went with a real (mapping-free) in-memory session over a purpose-built fake: `ISession` has on the order of a hundred members, and `GetCurrentTransaction()`'s actual implementation (`session.GetSessionImplementation().ConnectionManager.CurrentTransaction`) reaches into a concrete, constructor-heavy NHibernate engine type that isn't reasonably fakeable, so a hand-rolled `ISession` would have been far larger than "smaller." "transaction-begin" is recorded by `OrderedRequestHandler` observing a real active transaction when it runs; "transaction-commit"/"transaction-rollback" are recorded by `RecordingLogger` from `UnitOfWorkBehavior<,>`'s own existing debug-level log line - both real side effects already produced by production code, not new simulation. The same real-session recipe (extracted as `RealNHibernateSession`) also fixed `InterlocutorBuilderIntegrationTests`' unrelated `Substitute.For<ISession>()`, which ticket 07's production change broke the same way and which wasn't in this ticket's original file list either.

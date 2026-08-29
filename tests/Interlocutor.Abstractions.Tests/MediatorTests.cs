@@ -467,7 +467,7 @@ public class MediatorTests
     }
 
     [Fact]
-    public Task Publish_WithNoHandlers_DoesNotThrow()
+    public async Task Publish_WithNoHandlers_DoesNotThrow()
     {
         // Arrange
         var services = new ServiceCollection();
@@ -475,8 +475,13 @@ public class MediatorTests
         var provider = services.BuildServiceProvider();
         var mediator = provider.GetRequiredService<IMediator>();
 
-        // Act & Assert - no handlers registered for TestNotification; publishing must not throw.
-        return mediator.Publish(new TestNotification("hello"), CancellationToken.None);
+        // Act - no handlers registered for TestNotification; publishing must not throw.
+        var exception = await Record.ExceptionAsync(() =>
+            mediator.Publish(new TestNotification("hello"), CancellationToken.None)
+        );
+
+        // Assert
+        Assert.Null(exception);
     }
 
     [Fact]

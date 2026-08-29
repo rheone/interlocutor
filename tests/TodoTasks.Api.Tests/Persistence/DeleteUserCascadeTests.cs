@@ -75,7 +75,7 @@ public sealed class DeleteUserCascadeTests : IClassFixture<PersistenceFixture>
             var result = await handler.Handle(new DeleteUserCommand(deletedUserId), TestContext.Current.CancellationToken);
             Assert.True(result.IsSuccess);
 
-            session.Transaction.Commit();
+            session.CommitIfActive();
         }
 
         // Assert - a brand new session sees the committed state.

@@ -1,10 +1,9 @@
 namespace Interlocutor.DependencyInjection.Microsoft.Tests;
 
 using global::FluentValidation;
+using global::NHibernate;
 using global::Microsoft.Extensions.DependencyInjection;
 using global::Microsoft.Extensions.Logging;
-using global::NHibernate;
-using global::NSubstitute;
 using Interlocutor.Abstractions;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
@@ -22,9 +21,11 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// <remarks>
 /// No test double stands in for any of the five behaviors: each one's only externally observable side effect
 /// (its logger call, audit sink write, policy evaluation, validator invocation, or transaction begin/commit)
-/// is what gets recorded. Only the dependencies each behavior resolves - <see cref="ILogger{TCategoryName}"/>,
-/// <see cref="IAuditSink"/>, <see cref="IPolicyEvaluator"/>, <see cref="IValidator{T}"/>, and
-/// <see cref="ISession"/> - are recording stand-ins, so the real onion nesting is what produces the observed order.
+/// is what gets recorded. <see cref="IAuditSink"/> and <see cref="IPolicyEvaluator"/> are overridden inline
+/// via the builder itself; <see cref="IValidator{T}"/> is a small hand-written recording fake; and
+/// <see cref="ISession"/> is a real, mapping-free in-memory NHibernate session (see
+/// <see cref="ConfigureSharedDependencies"/>) rather than a mocked stand-in, so the real onion nesting -
+/// including a real transaction begin/commit - is what produces the observed order.
 /// </remarks>
 public sealed class PipelineOrderingIntegrationTests
 {
@@ -34,7 +35,7 @@ public sealed class PipelineOrderingIntegrationTests
         // Arrange
         var log = new List<string>();
         var services = new ServiceCollection();
-        var transaction = ConfigureSharedDependencies(services, log);
+        using var session = ConfigureSharedDependencies(services, log);
 
         services.AddInterlocutor(builder =>
             builder
@@ -54,7 +55,9 @@ public sealed class PipelineOrderingIntegrationTests
 
         // Assert
         Assert.True(sendResult.IsSuccess);
-        await transaction.Received(1).CommitAsync(Arg.Any<CancellationToken>());
+        // The real transaction never stays open past a successful dispatch - it was either committed or
+        // rolled back; the ordered log below (ending in "transaction-commit") proves which.
+        Assert.False(session.GetCurrentTransaction() is { IsActive: true });
 
         // Inbound (before the handler runs): only Authorization, Validation, and Transaction have an
         // observable "entering" side effect - Logging and Auditing only act after next() returns. Outbound
@@ -79,7 +82,7 @@ public sealed class PipelineOrderingIntegrationTests
         // Arrange
         var log = new List<string>();
         var services = new ServiceCollection();
-        ConfigureSharedDependencies(services, log);
+        using var session = ConfigureSharedDependencies(services, log);
 
         services.AddInterlocutor(builder =>
             builder
@@ -116,47 +119,39 @@ public sealed class PipelineOrderingIntegrationTests
 
     /// <summary>
     /// Registers the recording <see cref="ILogger{TCategoryName}"/> provider, <see cref="IValidator{T}"/>,
-    /// and NHibernate <see cref="ISession"/>/<see cref="ITransaction"/> stand-ins shared by both tests -
-    /// everything the five real behaviors resolve besides the audit sink and policy evaluator, which are
-    /// overridden inline via the builder itself.
+    /// and a real NHibernate <see cref="ISession"/> shared by both tests - everything the five real
+    /// behaviors resolve besides the audit sink and policy evaluator, which are overridden inline via the
+    /// builder itself.
     /// </summary>
-    private static ITransaction ConfigureSharedDependencies(ServiceCollection services, List<string> log)
+    /// <remarks>
+    /// The session is real (see <see cref="RealNHibernateSession"/>) rather than an
+    /// <c>ISession</c>/<c>ITransaction</c> pair hand-simulating <c>BeginTransaction</c>/<c>Commit</c> side
+    /// effects: <see cref="global::NHibernate.SessionExtensions.GetCurrentTransaction(ISession)"/> - which
+    /// <c>UnitOfWorkBehavior&lt;,&gt;</c> now reads instead of the obsolete <c>ISession.Transaction</c> -
+    /// resolves through real session internals a mock can't stand in for. "transaction-begin" is recorded
+    /// by <see cref="OrderedRequestHandler"/> observing a real active transaction when it runs (proving the
+    /// eager begin already happened); "transaction-commit"/"transaction-rollback" are recorded by
+    /// <see cref="RecordingLogger"/> from the debug-level line <c>UnitOfWorkBehavior&lt;,&gt;</c> already
+    /// logs at that exact moment - both real side effects, not simulated ones.
+    /// </remarks>
+    private static ISession ConfigureSharedDependencies(ServiceCollection services, List<string> log)
     {
         services.AddSingleton(log);
-        services.AddLogging(loggingBuilder => loggingBuilder.AddProvider(new RecordingLoggerProvider(log)));
+        services.AddLogging(loggingBuilder =>
+        {
+            // UnitOfWorkBehavior<,>'s commit/rollback line - which RecordingLogger turns into this test's
+            // "transaction-commit"/"transaction-rollback" log entries - is logged at Debug level.
+            loggingBuilder.SetMinimumLevel(LogLevel.Debug);
+            loggingBuilder.AddProvider(new RecordingLoggerProvider(log));
+        });
         services.AddSingleton<IValidator<OrderedRequest>>(new RecordingValidator(log));
 
-        // Configure return values before attaching the recording side effects below: the call expression
-        // inside Returns(...) is itself a real invocation NSubstitute uses to identify which member is being
-        // configured, and if a When/Do side effect were already attached it would fire during this setup
-        // call, polluting the log before the request is even sent.
-        var transaction = Substitute.For<ITransaction>();
-        transaction.IsActive.Returns(true);
-        transaction.CommitAsync(Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
-
-        // UnitOfWorkBehavior<,> reads ISession.Transaction (not just the BeginTransaction() return value) to
-        // detect whether a transaction is already open - matching real NHibernate, where BeginTransaction()
-        // sets this property as a side effect. transactionBegun tracks that side effect so Transaction only
-        // reports the active transaction after BeginTransaction() has actually run.
-        var transactionBegun = false;
-        var session = Substitute.For<ISession>();
-        session.BeginTransaction().Returns(transaction);
-        session.Transaction.Returns(_ => transactionBegun ? transaction : null);
-
-        transaction.When(t => t.CommitAsync(Arg.Any<CancellationToken>())).Do(_ => log.Add("transaction-commit"));
-        session
-            .When(s => s.BeginTransaction())
-            .Do(_ =>
-            {
-                transactionBegun = true;
-                log.Add("transaction-begin");
-            });
-
+        var session = RealNHibernateSession.Open();
         services.AddScoped(_ => session);
         // NHibernate.UnitOfWorkBehavior<,> takes a Lazy<ISession> factory, not ISession directly - Microsoft
         // DI has no built-in Lazy<T> support, so the factory is registered explicitly.
         services.AddScoped(sp => new Lazy<ISession>(() => sp.GetRequiredService<ISession>()));
-        return transaction;
+        return session;
     }
 
     private sealed record OrderedRequest
@@ -170,11 +165,19 @@ public sealed class PipelineOrderingIntegrationTests
         public string PolicyName => "Test.Policy";
     }
 
-    private sealed class OrderedRequestHandler(List<string> log)
+    private sealed class OrderedRequestHandler(Lazy<ISession> session, List<string> log)
         : ICommandHandler<OrderedRequest, OperationOutcome<Success, Forbidden>>
     {
         public Task<OperationOutcome<Success, Forbidden>> Handle(OrderedRequest command, CancellationToken ct)
         {
+            // UnitOfWorkBehavior<,> begins a transaction eagerly for ITransactionalRequest, before next()
+            // runs - checking the real session here proves that already happened, rather than assuming it
+            // from timing alone.
+            if (session.Value.GetCurrentTransaction() is { IsActive: true })
+            {
+                log.Add("transaction-begin");
+            }
+
             log.Add("handler");
             // The success payload must be the kernel's own Success type, not an arbitrary value: the default
             // outcome classifier - which every real behavior in this chain shares - fail-closes on unknown
@@ -224,10 +227,12 @@ public sealed class PipelineOrderingIntegrationTests
     }
 
     /// <summary>
-    /// Records every informational message under any category except <c>"Interlocutor"</c> - the category
-    /// <c>AddInterlocutor()</c>'s own opt-in registration-report log
+    /// Records every informational message, and translates <c>UnitOfWorkBehavior&lt;,&gt;</c>'s own
+    /// debug-level commit/rollback line into this test's "transaction-commit"/"transaction-rollback" log
+    /// entries - both skipped for the <c>"Interlocutor"</c> category, which <c>AddInterlocutor()</c>'s own
+    /// opt-in registration-report log
     /// (<see cref="Interlocutor.DependencyInjection.Microsoft.InterlocutorServiceCollectionExtensions"/>) uses,
-    /// which fires once at configuration time and is not part of the pipeline-order sequence this test proves.
+    /// fires once at configuration time, and is not part of the pipeline-order sequence this test proves.
     /// </summary>
     private sealed class RecordingLogger(List<string> log, string categoryName) : ILogger
     {
@@ -244,9 +249,26 @@ public sealed class PipelineOrderingIntegrationTests
             Func<TState, Exception?, string> formatter
         )
         {
-            if (logLevel == LogLevel.Information && categoryName != "Interlocutor")
+            if (categoryName == "Interlocutor")
+            {
+                return;
+            }
+
+            if (logLevel == LogLevel.Information)
             {
                 log.Add("logging");
+            }
+            else if (logLevel == LogLevel.Debug)
+            {
+                var message = formatter(state, exception);
+                if (message.StartsWith("Committed transaction", StringComparison.Ordinal))
+                {
+                    log.Add("transaction-commit");
+                }
+                else if (message.StartsWith("Rolled back transaction", StringComparison.Ordinal))
+                {
+                    log.Add("transaction-rollback");
+                }
             }
         }
     }

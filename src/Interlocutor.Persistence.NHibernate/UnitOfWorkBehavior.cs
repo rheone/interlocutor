@@ -43,7 +43,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 /// the session with no such call in between - is detected retroactively via <see cref="ISession.IsDirty()"/>
 /// when this behavior's own post-<c>next()</c> check runs. Either way, nothing reaches the database before
 /// that begin, because the flush-mode default above blocks every flush attempt until then. At pipeline
-/// completion, this behavior checks <see cref="ISession.Transaction"/> and <see cref="ISession.IsDirty()"/> -
+/// completion, this behavior checks <see cref="SessionExtensions.GetCurrentTransaction(ISession)"/> and
+/// <see cref="ISession.IsDirty()"/> -
 /// if neither indicates pending work, the dispatch never wrote anything (or an explicit
 /// <see cref="Interlocutor.Persistence.Abstractions.IUnitOfWork.Cancel"/> already cleaned up) and this
 /// behavior does nothing further, so a pure-read dispatch never pays for an open transaction.
@@ -95,7 +96,7 @@ public sealed class UnitOfWorkBehavior<TRequest, TResponse>(
 
         // Eager begin: ITransactionalRequest's narrowed meaning is "protect my read(s) and write(s) with one
         // transaction from pipeline start," not the default lazy begin-on-first-write.
-        if (request is ITransactionalRequest && s.Transaction is not { IsActive: true })
+        if (request is ITransactionalRequest && s.GetCurrentTransaction() is not { IsActive: true })
         {
             s.BeginTransaction();
         }
@@ -105,12 +106,12 @@ public sealed class UnitOfWorkBehavior<TRequest, TResponse>(
         // Nothing to finalize if nothing wrote: no transaction was ever opened (pure read, or a request that
         // short-circuited before reaching a write), and nothing is staged either (or IUnitOfWork.Cancel
         // already rolled back and cleared the session) - same "nothing to roll back" outcome as today.
-        if (s.Transaction is not { IsActive: true } && !s.IsDirty())
+        if (s.GetCurrentTransaction() is not { IsActive: true } && !s.IsDirty())
         {
             return result;
         }
 
-        var transaction = s.Transaction is { IsActive: true } active ? active : s.BeginTransaction();
+        var transaction = s.GetCurrentTransaction() is { IsActive: true } active ? active : s.BeginTransaction();
 
         if (!this.classifier.IsFailure(result))
         {
