@@ -12,9 +12,9 @@
     <Project Path="src/Interlocutor.Persistence.EntityFrameworkCore/Interlocutor.Persistence.EntityFrameworkCore.csproj" />
     <Project Path="src/Interlocutor.Persistence.NHibernate/Interlocutor.Persistence.NHibernate.csproj" />
   </Folder>
-  <Folder Name="/samples/">
-    <Project Path="samples/Interlocutor.Sample.Handlers/Interlocutor.Sample.Handlers.csproj" />
-    <Project Path="samples/Interlocutor.Sample.WebApi/Interlocutor.Sample.WebApi.csproj" />
+  <Folder Name="/TutorialProject/">
+    <Project Path="TutorialProject/TodoTasks.Api/TodoTasks.Api.csproj" />
+    <Project Path="tests/TodoTasks.Api.Tests/TodoTasks.Api.Tests.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Interlocutor.CommonKernel.Tests/Interlocutor.CommonKernel.Tests.csproj" />

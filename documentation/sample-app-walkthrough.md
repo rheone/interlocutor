@@ -1,219 +1,232 @@
 # Sample App Walkthrough
 
-A guided tour of the runnable sample under [`samples/`](../samples/) - two projects, `Interlocutor.Sample.Handlers` (a class library) and `Interlocutor.Sample.WebApi` (a minimal API), together showing the intended shape of a real Interlocutor consumer end to end. Both are excluded from packaging (`IsPackable=false`) - they exist to be read and run, not shipped.
+A guided tour of the runnable project under [`TutorialProject/TodoTasks.Api`](../TutorialProject/TodoTasks.Api/) - a single minimal API project that *is* [the Beginner's Guide](beginners-guide-todo-api.md), every "blank" the guide leaves as an exercise filled in: NHibernate against an in-memory SQLite database, FluentValidation, Autofac, one command/query/handler/endpoint set per use case. It's a proof-of-concept, excluded from packaging (`IsPackable=false`) and never released - it exists to be read, run, and tested, not shipped.
 
 If you haven't read [Glossary](glossary.md), [Messages, Result Types & Variance](messages-and-result-types.md), and [Builder & Registration](builder-and-registration.md) yet, do that first - this walkthrough assumes the vocabulary and API shape those establish and shows them applied together rather than re-explaining them.
 
 ## What it is
 
-A minimal to-do list API: create, look up by id, delete, and a running count of how many items have been created. Small enough to read in one sitting, deliberately - the point isn't the domain, it's the composition around it. Every feature the sample exercises maps to a piece of Interlocutor's design:
+A to-do list API with two features: **Tasks** (create, look up by id, list, update, complete, reopen, delete, clear completed) and **Users** (create, look up by id, delete). Every piece maps to a piece of Interlocutor's design:
 
-| Sample piece | What it demonstrates |
+| Project piece | What it demonstrates |
 | --- | --- |
-| `GetTodoByIdQuery` / `GetTodoByIdHandler` | A plain query handler - read-only, never transactional |
-| `CreateTodoCommand` / `CreateTodoHandler` | A value-returning command handler |
-| `DeleteTodoCommand` / `DeleteTodoHandler` | A unit command handler (mutates, returns no domain data) |
-| `GetByIdQuery<TEntity>` / `GetByIdHandler<TEntity>` | A generic handler serving more than one concrete request type |
-| `Interlocutor.Sample.Handlers` referenced by `Interlocutor.Sample.WebApi` | Cross-assembly handler discovery with no assembly list |
-| `Program.cs`'s `interlocutor.Pipeline...` chain | An explicitly composed pipeline, not `UseRecommendedChain()` |
-| `DuplicateTitleGuardStage` | A pipeline stage that short-circuits |
-| `TodoCreatedNotification` with two handlers | A multi-subscriber notification |
+| `GetTodoTaskByIdQuery` / `GetTodoTaskByIdHandler` | A plain query handler - read-only, never transactional |
+| `CreateTodoTaskCommand` / `CreateTodoTaskHandler` | A value-returning command handler, with `ITransactionalRequest` protecting a duplicate-title check against a concurrent insert |
+| `DeleteTodoTaskCommand` | `IRequiresPolicy`, coarse-grained authorization evaluated before the entity ever loads |
+| `UpdateTodoTaskCommand` / `UpdateTodoTaskHandler` | `ResourceCommandHandler`'s load/authorize/handle template - fine-grained, entity-based authorization |
+| `DeleteUserHandler` | One `IUnitOfWork` spanning two repositories - a user and every task they own deleted together or not at all |
+| `TodoTaskCompletedNotification` with two handlers | A multi-subscriber notification |
+| `DevHeaderAuthenticationHandler` | A minimal `AuthenticationHandler` standing in for real authentication, backed by the Users feature's own repository |
 | `ToMinimalApiResult()` at each endpoint | Transport conversion at the edge |
+
+Unlike an earlier sample this project replaced, it doesn't demonstrate cross-assembly handler discovery (everything lives in one project) or a hand-composed pipeline (`Program.cs` calls `UseRecommendedChain()` - see [Pipeline & Behaviors](pipeline-and-behaviors.md) for what that chain is) or a pipeline stage that short-circuits (the duplicate-title check here is an ordinary read inside the handler, guarded by `ITransactionalRequest` instead of a `PipelineStageBehavior`-hosted stage). Describing only what this project actually does, rather than carrying those claims forward, is deliberate.
 
 ## Project structure
 
 ```
-samples/
-├── Interlocutor.Sample.Handlers/     # domain + application layer: entities, requests, handlers
-│   ├── SampleDbContext.cs
-│   ├── Shared/                       # the generic GetByIdQuery<TEntity> and its handler
-│   ├── Tags/                         # TagItem - exists only to give the generic handler a second entity type
-│   └── Todos/                        # TodoItem, its commands/queries/handlers, the guard stage, the notification
-└── Interlocutor.Sample.WebApi/       # API layer: minimal API endpoints, DI wiring, EF Core/Sqlite setup
-    ├── Program.cs
-    ├── SampleUnitOfWorkBehavior.cs
-    ├── SampleJsonContext.cs
-    └── CompiledModels/               # EF Core compiled model, for the AOT/trim publish story
+TutorialProject/TodoTasks.Api/
+├── Domain/                    # TodoTask/User entities and their Dto projections
+├── Persistence/                # Fluent NHibernate ClassMaps, the session factory, a custom IUserType
+├── Infrastructure/             # dev auth handler, policy evaluator, outcome describer, completion counter
+├── Features/
+│   ├── Tasks/                  # one folder per use case: CreateTodoTask, GetTodoTaskById, ListTodoTasks,
+│   │                           # UpdateTodoTask, CompleteTodoTask, ReopenTodoTask, DeleteTodoTask,
+│   │                           # ClearCompletedTodoTasks
+│   └── Users/                  # CreateUser, GetUserById, DeleteUser
+└── Program.cs                  # Autofac host, DI wiring, one MapXEndpoint() call per feature
 ```
 
-`Interlocutor.Sample.Handlers` never references `Interlocutor.AspNetCore` or ASP.NET Core itself - handlers know nothing about HTTP. `Interlocutor.Sample.WebApi` is the only place transport-specific code lives, which is what "transport conversion at the edge" means in practice: the boundary is a project boundary, not just a convention.
+This is vertical-slice structure **by directory within one project**, not one project per slice: every file a use case needs - its command or query, validator (if any), handler, and endpoint mapping - lives together in one folder, e.g. `Features/Tasks/CreateTodoTask/`. `Domain/` and `Persistence/` are the only things shared across slices, because an entity and its mapping genuinely belong to more than one use case at once.
+
+`Features/Tasks/` is deliberately not named `Features/TodoTasks/` - a subfolder segment matching the project's own root namespace (`TodoTasks.Api`) breaks C#'s `using`-resolution for every file under it, since a `using` directive inside a namespace block resolves outward and commits to the first matching segment it finds.
 
 ## Query handler example (read request, no transaction)
 
-[`GetTodoByIdQuery`](../samples/Interlocutor.Sample.Handlers/Todos/GetTodoByIdQuery.cs) and its handler are the plainest possible shape - a record implementing `IQuery<TResponse>`, a handler implementing `IQueryHandler<TRequest, TResponse>`, no marker interfaces:
+[`GetTodoTaskByIdQuery`](../TutorialProject/TodoTasks.Api/Features/Tasks/GetTodoTaskById/GetTodoTaskByIdQuery.cs) and its handler are the plainest possible shape - a record implementing `IQuery<TResponse>`, a handler implementing `IQueryHandler<TRequest, TResponse>`, no marker interfaces:
 
 ```csharp
-public sealed record GetTodoByIdQuery(int Id) : IQuery<OperationOutcome<TodoItem, NotFound>>;
+public sealed record GetTodoTaskByIdQuery(int Id) : IQuery<OperationOutcome<TodoTaskDto, NotFound>>;
 
-public sealed class GetTodoByIdHandler(SampleDbContext db)
-    : IQueryHandler<GetTodoByIdQuery, OperationOutcome<TodoItem, NotFound>>
+public sealed class GetTodoTaskByIdHandler(IDomainRepository<TodoTask, int> tasks)
+    : IQueryHandler<GetTodoTaskByIdQuery, OperationOutcome<TodoTaskDto, NotFound>>
 {
-    public async Task<OperationOutcome<TodoItem, NotFound>> Handle(GetTodoByIdQuery query, CancellationToken ct)
-    {
-        var todo = await db.TodoItems.FindAsync([query.Id], ct);
-        return todo is null ? new NotFound($"To-do {query.Id} not found") : todo;
-    }
+    public Task<OperationOutcome<TodoTaskDto, NotFound>> Handle(GetTodoTaskByIdQuery query, CancellationToken ct) =>
+        Task.FromResult<OperationOutcome<TodoTaskDto, NotFound>>(
+            tasks.GetById(query.Id) is { } task ? TodoTaskDto.FromEntity(task) : new NotFound($"TodoTask {query.Id}")
+        );
 }
 ```
 
-Two cases, `TodoItem` or `NotFound` - the query never writes, so `UnitOfWorkBehavior` never opens a transaction for it. A read has nothing to commit or roll back, and no marker is needed to say so.
+Two cases, `TodoTaskDto` or `NotFound` - the query never writes, so `UnitOfWorkBehavior` never opens a transaction for it. A read has nothing to commit or roll back, and no marker is needed to say so.
 
 ## Command handler example (write request, transaction)
 
-[`CreateTodoCommand`](../samples/Interlocutor.Sample.Handlers/Todos/CreateTodoCommand.cs) is a value-returning command - it mutates state and hands back the entity it created, not just a bare outcome - and it implements `ITransactionalRequest`:
+[`CreateTodoTaskCommand`](../TutorialProject/TodoTasks.Api/Features/Tasks/CreateTodoTask/CreateTodoTaskCommand.cs) is a value-returning command - it mutates state and hands back the entity it created, not just a bare outcome:
 
 ```csharp
-public sealed record CreateTodoCommand(string Title)
-    : ICommand<OperationOutcome<TodoItem, ValidationErrors, Conflict>>,
-        ITransactionalRequest;
-```
-
-Three cases: `TodoItem` on success, `ValidationErrors` for an empty title, `Conflict` for a duplicate one. [`CreateTodoHandler`](../samples/Interlocutor.Sample.Handlers/Todos/CreateTodoHandler.cs) only has to handle the first two - the duplicate-title case never reaches it, because [`DuplicateTitleGuardStage`](#pipeline-stage-with-short-circuit) rejects it earlier. The handler doesn't call `SaveChangesAsync` itself; committing is `UnitOfWorkBehavior`'s job, after the handler returns a success outcome - the insert alone would already get a transaction with no marker at all. `ITransactionalRequest` here does a narrower job: it makes the stage's duplicate-title read (below) share that same transaction, eagerly begun at pipeline start, instead of one that would otherwise only open on the insert. See [Transactions & Store Integration](transactions-and-store-integration.md) for how that commit/rollback decision is made from the outcome's active case.
-
-[`DeleteTodoCommand`](../samples/Interlocutor.Sample.Handlers/Todos/DeleteTodoCommand.cs) is the sample's unit command - it implements bare `ICommand` (no `<TResponse>`), returning `OperationOutcome<Success, NotFound>` with no domain payload. It has no preceding read to protect, so it doesn't need `ITransactionalRequest` at all - its delete gets a transaction automatically, the same begin-on-first-write way `CreateTodoCommand`'s insert does.
-
-## Generic handler example (serves multiple request types)
-
-[`GetByIdQuery<TEntity>`](../samples/Interlocutor.Sample.Handlers/Shared/GetByIdQuery.cs) and [`GetByIdHandler<TEntity>`](../samples/Interlocutor.Sample.Handlers/Shared/GetByIdHandler.cs) are generic over the entity type, so one handler serves every closed instantiation instead of one handler per entity:
-
-```csharp
-public sealed record GetByIdQuery<TEntity>(int Id) : IQuery<OperationOutcome<TEntity, NotFound>>
-    where TEntity : class;
-
-public sealed class GetByIdHandler<TEntity>(SampleDbContext db)
-    : IQueryHandler<GetByIdQuery<TEntity>, OperationOutcome<TEntity, NotFound>>
-    where TEntity : class
+public sealed record CreateTodoTaskCommand(string Title, string? Notes, string OwnerId)
+    : ICommand<OperationOutcome<TodoTaskDto, ValidationErrors, Conflict>>,
+        ITransactionalRequest,
+        IAuditableRequest
 {
-    public async Task<OperationOutcome<TEntity, NotFound>> Handle(GetByIdQuery<TEntity> query, CancellationToken ct)
-    {
-        var entity = await db.Set<TEntity>().FindAsync([query.Id], ct);
-        return entity is null ? new NotFound($"{typeof(TEntity).Name} {query.Id} not found") : entity;
-    }
+    public string ActionName => "create_todo_task";
 }
 ```
 
-`TagItem` exists in the sample for exactly one reason: to give this handler a second entity type to actually serve, so the sample proves "more than one request type" rather than asserting it.
+Three cases: `TodoTaskDto` on success, `ValidationErrors` from [`CreateTodoTaskValidator`](../TutorialProject/TodoTasks.Api/Features/Tasks/CreateTodoTask/CreateTodoTaskValidator.cs) for an empty or overlong title, `Conflict` for a title the caller already has. `CreateTodoTaskHandler` checks the duplicate itself, as an ordinary read at the top of `Handle` - `ITransactionalRequest` is what keeps that read and the insert that follows it inside one transaction, eagerly begun at pipeline start, so two concurrent requests for the same title can't both pass the check before either commits. `IAuditableRequest`'s `ActionName` records the action via `AuditingBehavior` (part of `UseRecommendedChain()`). The handler never calls `Commit` itself - that's `UnitOfWorkBehavior`'s job, once the handler returns a success outcome.
+
+## Fine-grained vs. coarse-grained authorization
+
+[`DeleteTodoTaskCommand`](../TutorialProject/TodoTasks.Api/Features/Tasks/DeleteTodoTask/DeleteTodoTaskCommand.cs) uses `IRequiresPolicy` - `AuthorizationBehavior` evaluates its `PolicyName` via [`TodoTaskPolicyEvaluator`](../TutorialProject/TodoTasks.Api/Infrastructure/TodoTaskPolicyEvaluator.cs) *before* the task is ever loaded: "can this caller attempt this kind of command at all," not "is this specific task theirs."
+
+[`UpdateTodoTaskCommand`](../TutorialProject/TodoTasks.Api/Features/Tasks/UpdateTodoTask/UpdateTodoTaskCommand.cs) needs the opposite: only the task's *owner* may update it, a check that can only run after the task is loaded. [`UpdateTodoTaskHandler`](../TutorialProject/TodoTasks.Api/Features/Tasks/UpdateTodoTask/UpdateTodoTaskHandler.cs) uses `ResourceCommandHandler`'s load/authorize/handle template instead:
+
+```csharp
+public sealed class UpdateTodoTaskHandler(IDomainRepository<TodoTask, int> tasks, IUnitOfWork unitOfWork)
+    : ResourceCommandHandler<UpdateTodoTaskCommand, TodoTask, TodoTaskDto>,
+        ICommandHandler<UpdateTodoTaskCommand, OperationOutcome<TodoTaskDto, NotFound, Failure>>
+{
+    protected override Task<TodoTask?> LoadAsync(UpdateTodoTaskCommand command, CancellationToken ct) =>
+        Task.FromResult(tasks.GetById(command.Id));
+
+    protected override Failure? Authorize(TodoTask entity, UpdateTodoTaskCommand command) =>
+        entity.OwnerId == command.RequestedByUserId ? null : new Failure("Only the task's owner can update it.");
+
+    protected override async Task<OperationOutcome<TodoTaskDto, NotFound, Failure>> HandleAsync(
+        UpdateTodoTaskCommand command, TodoTask entity, CancellationToken ct)
+    {
+        entity.Title = command.Title;
+        entity.Notes = command.Notes;
+        await unitOfWork.SaveChangesAsync(ct);
+        return TodoTaskDto.FromEntity(entity);
+    }
+}
+```
 
 > [!IMPORTANT]
-> Interlocutor.Generator only closes an open generic handler over a request type when it finds a *fully closed usage* of that instantiation (for example `new GetByIdQuery<TodoItem>(...)`) in the **same compilation** as the handler - it doesn't scan a referencing project's syntax trees for usages. [`GetByIdQueries`](../samples/Interlocutor.Sample.Handlers/Shared/GetByIdQueries.cs), beside the handler in `Interlocutor.Sample.Handlers`, supplies those closed usages for both entity types via typed extension methods (`GetTodoByIdGenericAsync`, `GetTagByIdAsync`). `Interlocutor.Sample.WebApi` dispatches through those instead of constructing `GetByIdQuery<TEntity>` directly - constructing it at the call site there would be invisible to the generator's closing pass.
+> `ResourceCommandHandler<TCommand, TEntity, TSuccess>` does not itself implement `ICommandHandler<TCommand, TResponse>` - a plain subclass is invisible to handler discovery. The explicit interface declaration above is required, not decorative; the base class's own `Handle` method already satisfies it, so no override body is needed.
 
-## Cross-assembly handler discovery
+`LoadAsync` returning `null` short-circuits with `NotFound` before `Authorize` ever runs; `Authorize` returning non-null short-circuits with that `Failure` before `HandleAsync` ever runs. Neither `NotFound` nor the ownership `Failure` reaches `HandleAsync` - it only ever sees an entity that was both found and authorized.
 
-`Interlocutor.Sample.WebApi` never lists an assembly to scan. Its `Program.cs` calls:
+## Multi-repository unit-of-work example
 
-```csharp
-interlocutor.AddGeneratedRegistrations(
-    Interlocutor.Generated.Interlocutor_Sample_WebApi.InterlocutorGeneratedRegistrations.Registrations
-);
-```
-
-`Interlocutor.Sample.WebApi`'s own generated registration module aggregates `Interlocutor.Sample.Handlers`' generated module automatically, because the web project references the handler library (see [Builder & Registration](builder-and-registration.md) for how compile-time aggregation across a project reference works, and [Dependency Injection: Abstractions & Registration Model](dependency-injection-abstractions.md#compile-time-generated-registrations) for the generated-registration attributes underneath it). One `AddGeneratedRegistrations` call, no assembly list anywhere in either project, and every handler in both assemblies is registered.
-
-## Explicitly composed pipeline (non-default behaviors)
-
-`Program.cs` composes the pipeline by hand rather than calling `UseRecommendedChain()`:
+[`DeleteUserHandler`](../TutorialProject/TodoTasks.Api/Features/Users/DeleteUser/DeleteUserHandler.cs) is this project's worked example of one `IUnitOfWork` spanning two repositories - deleting a user and every task they own, together or not at all:
 
 ```csharp
-interlocutor
-    .Pipeline.AddLoggingBehavior()
-    .AddBehavior(typeof(SampleUnitOfWorkBehavior<,>))
-    .AddStage<DuplicateTitleGuardStage>()
-    .AddStageHost();
-```
-
-That's deliberate: the sample's point is that a consumer chooses exactly the behaviors their application needs and the order they run in (see [Pipeline & Behavior Composition](pipeline-and-behaviors.md) for the full behavior list and the reasoning behind the recommended order). Logging wraps everything; the unit-of-work behavior wraps the stage host - not the other way around, unlike the library's own recommended chain, which places it innermost - specifically so the guard stage's duplicate-title read and the handler's insert that follows it share one transaction, per `CreateTodoCommand`'s `ITransactionalRequest` marker. `AddStageHost()` is what actually runs the registered stages, since a stage isn't itself an `IPipelineBehavior`.
-
-The unit-of-work behavior is registered as `SampleUnitOfWorkBehavior<,>`, not the library's own `UnitOfWorkBehavior<,,>`, for a container-mechanics reason worth knowing if you write your own EF Core-backed application: Microsoft.Extensions.DependencyInjection requires an open generic registration's implementation type to leave the *same* number of type parameters open as the service interface it's registered against, so a three-parameter `UnitOfWorkBehavior<TRequest, TResponse, TContext>` cannot be registered directly behind two-parameter `IPipelineBehavior<TRequest, TResponse>`. [`SampleUnitOfWorkBehavior<TRequest, TResponse>`](../samples/Interlocutor.Sample.WebApi/SampleUnitOfWorkBehavior.cs) fixes `TContext` to `SampleDbContext` at compile time and is what actually gets registered.
-
-## Pipeline stage with short-circuit
-
-[`DuplicateTitleGuardStage`](../samples/Interlocutor.Sample.Handlers/Todos/DuplicateTitleGuardStage.cs) declines a `CreateTodoCommand` whose title already exists, before the handler ever runs - inside the same transaction as the insert that would otherwise follow it, per the pipeline ordering above:
-
-```csharp
-public sealed class DuplicateTitleGuardStage(SampleDbContext db)
-    : PipelineStageBase<CreateTodoCommand, OperationOutcome<TodoItem, ValidationErrors, Conflict>>
+public sealed class DeleteUserHandler(
+    IDomainRepository<User, int> users,
+    IDomainRepository<TodoTask, int> tasks,
+    IUnitOfWork unitOfWork
+) : ICommandHandler<DeleteUserCommand, OperationOutcome<Success, NotFound>>
 {
-    public override async Task<StageResult<OperationOutcome<TodoItem, ValidationErrors, Conflict>>> OnBeforeAsync(
-        CreateTodoCommand request,
-        CancellationToken ct
-    )
+    public async Task<OperationOutcome<Success, NotFound>> Handle(DeleteUserCommand command, CancellationToken ct)
     {
-        var title = request.Title.Trim();
-        var exists = await db.TodoItems.AnyAsync(t => t.Title == title, ct);
-        return exists
-            ? StageResult<OperationOutcome<TodoItem, ValidationErrors, Conflict>>.ShortCircuit(
-                new Conflict($"A to-do titled '{title}' already exists.", "duplicate-title")
-            )
-            : StageResult<OperationOutcome<TodoItem, ValidationErrors, Conflict>>.Continue;
+        if (users.GetById(command.Id) is not { } user)
+        {
+            return new NotFound($"User {command.Id}");
+        }
+
+        var ownedTasks = await tasks.GetManyAsync(
+            t => t.OwnerId == user.Id.ToString(CultureInfo.InvariantCulture),
+            cancellationToken: ct
+        );
+
+        foreach (var task in ownedTasks)
+        {
+            await tasks.DeleteAsync(task, ct);
+        }
+
+        await users.DeleteAsync(user, ct);
+        await unitOfWork.SaveChangesAsync(ct); // One commit for both repositories' staged deletes.
+
+        return default(Success);
     }
 }
 ```
 
-`CreateTodoHandler` never has to consider the duplicate-title case at all - it's handled entirely by the stage, one layer up. See [Pipeline & Behavior Composition](pipeline-and-behaviors.md) for `IPipelineStage`'s full before/after contract.
+Both repositories are built over the same scoped NHibernate session `IUnitOfWork` commits, so this one `SaveChangesAsync` call is what actually makes the deletion atomic - a task deletion that succeeded while the user deletion failed (or vice versa) is not a state this handler can leave behind. `TodoTask.OwnerId` stays an opaque string rather than a database foreign key to `User.Id` (see [ASP.NET Core Integration & HTTP Mapping](aspnetcore-integration.md) for how that string arrives from an authenticated caller in the first place), so the owned-tasks lookup is a string comparison, not a relational join.
 
 ## Multi-subscriber notification
 
-After `CreateTodoCommand`'s transaction commits, `Program.cs` publishes [`TodoCreatedNotification`](../samples/Interlocutor.Sample.Handlers/Todos/TodoCreatedNotification.cs):
+[`CompleteTodoTaskHandler`](../TutorialProject/TodoTasks.Api/Features/Tasks/CompleteTodoTask/CompleteTodoTaskHandler.cs) publishes [`TodoTaskCompletedNotification`](../TutorialProject/TodoTasks.Api/Features/Tasks/CompleteTodoTask/TodoTaskCompletedNotification.cs) after marking a task complete:
 
 ```csharp
-var result = await sender.Send(new CreateTodoCommand(request.Title), ct);
-if (result.Value is TodoItem created)
+task.IsCompleted = true;
+await unitOfWork.SaveChangesAsync(ct);
+
+await publisher.Publish(new TodoTaskCompletedNotification(task.Id, task.OwnerId, task.Title), ct);
+```
+
+Two independent handlers subscribe to it, neither aware of the other: [`TodoTaskCompletionCounterHandler`](../TutorialProject/TodoTasks.Api/Features/Tasks/CompleteTodoTask/TodoTaskCompletionCounterHandler.cs) increments an in-process per-owner completion count, and [`TodoTaskCompletionAuditLogHandler`](../TutorialProject/TodoTasks.Api/Features/Tasks/CompleteTodoTask/TodoTaskCompletionAuditLogHandler.cs) writes a log entry. See [Notifications & Fan-out](notifications-and-fan-out.md) for execution order guarantees (unspecified) and the Sequential/Parallel publish strategies, and [Transactions & Store Integration](transactions-and-store-integration.md)'s "Transactions with Notifications" section for how a command's transaction and its published notification relate.
+
+## Development authentication
+
+The guide's own "Before you start" section assumes real authentication middleware already exists and deliberately doesn't teach it. This project needs *something* to populate an authenticated caller, so [`DevHeaderAuthenticationHandler`](../TutorialProject/TodoTasks.Api/Infrastructure/DevHeaderAuthenticationHandler.cs) fills that gap - never a pattern to carry into a real application:
+
+```csharp
+protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
 {
-    await publisher.Publish(new TodoCreatedNotification(created.Id, created.Title), ct);
+    if (!this.Request.Headers.TryGetValue(HeaderName, out var headerValues)
+        || !int.TryParse(headerValues.ToString(), out var userId))
+    {
+        return AuthenticateResult.NoResult();
+    }
+
+    if (users.GetById(userId) is not { } user)
+    {
+        return AuthenticateResult.NoResult();
+    }
+
+    var identity = new ClaimsIdentity([new Claim(ClaimTypes.Name, user.Id.ToString(CultureInfo.InvariantCulture))], this.Scheme.Name);
+    return await Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(identity), this.Scheme.Name)));
 }
 ```
 
-Two independent handlers subscribe to it, neither aware of the other: [`TodoCreatedLoggingHandler`](../samples/Interlocutor.Sample.Handlers/Todos/TodoCreatedLoggingHandler.cs) logs the creation, and [`TodoCreatedCounterHandler`](../samples/Interlocutor.Sample.Handlers/Todos/TodoCreatedCounterHandler.cs) increments an in-process counter exposed at `GET /todos/created-count`. Publishing happens after the command's own dispatch returns, not from inside the transaction - by the time it fires, the create has already committed, so the notification announces a fact that's true in the database rather than one that might still roll back. See [Notifications & Fan-out](notifications-and-fan-out.md) for execution order guarantees (unspecified) and the Sequential/Parallel publish strategies.
+It trusts an `X-User-Id` request header as the caller's claimed identity, but only authenticates it once it matches a real `User` row - so create a user first, then act as them by sending that user's id back on every later request. Ties the Tasks and Users features together: `Interlocutor.AspNetCore`'s `AspNetCoreRequestContextAccessor` reads the matched user's id off `HttpContext.User` exactly as the guide describes, nothing custom needed on Interlocutor's side.
 
 ## Transport conversion at the edge (ASP.NET Core integration)
 
-Every endpoint in `Program.cs` calls `ToMinimalApiResult()` as its last step, converting the outcome's active case to an `IResult`:
+Every endpoint calls `ToMinimalApiResult()` as its last step, converting the outcome's active case to an `IResult`:
 
 ```csharp
 app.MapGet(
-    "/todos/{id:int}",
+    "/todo-tasks/{id:int}",
     async (int id, ISender sender, CancellationToken ct) =>
-        (await sender.Send(new GetTodoByIdQuery(id), ct)).ToMinimalApiResult()
+        (await sender.Send(new GetTodoTaskByIdQuery(id), ct)).ToMinimalApiResult()
 );
 ```
 
-Handlers and stages never see `IResult`, `HttpContext`, or any other ASP.NET Core type - the mapping happens once, at the endpoint delegate, which is the entire "transport conversion at the edge" idea in one line. See [ASP.NET Core Integration & HTTP Mapping](aspnetcore-integration.md) for the case-to-status-code mapping this extension applies.
+Handlers never see `IResult`, `HttpContext`, or any other ASP.NET Core type - the mapping happens once, at the endpoint delegate. See [ASP.NET Core Integration & HTTP Mapping](aspnetcore-integration.md) for the case-to-status-code mapping this extension applies.
 
-A couple of other pieces exist purely to make that mapping work under a trimmed publish, since this sample also proves the library's trim story (see [Trim & AOT Support](trim-and-aot-support.md)):
-
-- [`SampleJsonContext`](../samples/Interlocutor.Sample.WebApi/SampleJsonContext.cs) - a source-generated `JsonSerializerContext` listing every request/response body type an endpoint reads or writes, including the failure-case bodies (`ProblemDetails`, `Success`) that are easy to overlook because nothing references them by name.
-- `CompiledModels/` - an EF Core compiled model (regenerated via `dotnet ef dbcontext optimize` whenever `SampleDbContext`'s shape changes), replacing EF Core's normal reflection-based model building.
-
-## Running and testing the sample
+## Running and testing the project
 
 From the repository root:
 
 ```bash
-dotnet run --project samples/Interlocutor.Sample.WebApi --urls http://localhost:5299
+dotnet run --project TutorialProject/TodoTasks.Api
 ```
 
-The app opens an in-memory Sqlite database and creates its schema on startup - no separate migration step. Exercise it with `curl`:
+The app opens an in-memory SQLite database (SQLite's shared-cache mode, kept alive for the app's lifetime) and exports its schema on startup - no separate migration step. Exercise it with `curl`:
 
 ```bash
-curl -X POST http://localhost:5299/todos -H "Content-Type: application/json" -d '{"title":"buy milk"}'
-curl http://localhost:5299/todos/1
-curl http://localhost:5299/todos/1/generic   # same lookup, through the generic handler
-curl http://localhost:5299/todos/created-count
-curl -X DELETE http://localhost:5299/todos/1
+curl -X POST http://localhost:5000/users -H "Content-Type: application/json" -d '{"displayName":"Ada","email":"ada@example.com"}'
+curl -X POST http://localhost:5000/todo-tasks -H "Content-Type: application/json" -H "X-User-Id: 1" -d '{"title":"Buy milk"}'
+curl http://localhost:5000/todo-tasks/1
+curl -X POST http://localhost:5000/todo-tasks/1/complete -H "X-User-Id: 1"
+curl -X DELETE http://localhost:5000/users/1
 ```
 
-[`scripts/smoke-test-trimmed-sample.sh`](../scripts/smoke-test-trimmed-sample.sh) is the automated version of the same walk - create, read via both handlers, a 404 for a tag that doesn't exist, the fan-out counter, a duplicate-title conflict, delete, and a final 404 - run against a published (trimmed) binary in CI so a build that compiles clean can't silently mean a build that crashes on first dispatch. Run it yourself against a local build:
+`tests/TodoTasks.Api.Tests` (see its own [README](../tests/TodoTasks.Api.Tests/README.md)) covers this project across three layers - unit tests per handler/validator, NHibernate mapping/persistence tests against real in-memory SQLite, and full HTTP integration tests via `WebApplicationFactory<Program>` - run them the normal way:
 
 ```bash
-dotnet publish samples/Interlocutor.Sample.WebApi -c Release -o /tmp/sample-publish
-scripts/smoke-test-trimmed-sample.sh /tmp/sample-publish/Interlocutor.Sample.WebApi
+dotnet test tests/TodoTasks.Api.Tests/TodoTasks.Api.Tests.csproj
 ```
 
 ## Links
 
-- [Builder & Registration](builder-and-registration.md) - assembly scanning vs. compile-time generated registrations, cross-assembly aggregation
-- [Pipeline & Behaviors](pipeline-and-behaviors.md) - the recommended chain, pipeline stages, short-circuiting
+- [Builder & Registration](builder-and-registration.md) - assembly scanning vs. compile-time generated registrations
+- [Pipeline & Behaviors](pipeline-and-behaviors.md) - the recommended chain, resource authorization, short-circuiting
 - [Notifications & Fan-out](notifications-and-fan-out.md) - contravariant dispatch, execution order, publish strategies
 - [Transactions & Store Integration](transactions-and-store-integration.md) - `ITransactionalRequest`, commit/rollback semantics
 - [ASP.NET Core Integration & HTTP Mapping](aspnetcore-integration.md) - `ToActionResult()`/`ToMinimalApiResult()`, status code mapping
-- [Trim & AOT Support](trim-and-aot-support.md) - what this sample's trimmed-publish smoke test proves
+- [Beginner's Guide: Building a To-Do API](beginners-guide-todo-api.md) - the guide this project implements end to end

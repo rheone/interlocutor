@@ -41,7 +41,7 @@ Registering the library and understanding how a dispatch's scope and context flo
 ### Framework & store integration
 
 - [ASP.NET Core Integration & HTTP Mapping](aspnetcore-integration.md) - `ToActionResult()`/`ToMinimalApiResult()`, the status-code mapping table, `ProblemDetails` (RFC 7807), custom mapping via `IOutcomeStatusMapper`, error handling.
-- [Transactions & Store Integration](transactions-and-store-integration.md) - `Interlocutor.Persistence.EntityFrameworkCore` and `Interlocutor.Persistence.NHibernate`'s `UnitOfWorkBehavior`, `IUnitOfWork` as transaction owner, begin-on-first-write, the `ITransactionalRequest`/`IExternalStoreRequest` markers, `Cancel`, commit/rollback semantics, nested dispatch, notifications after commit.
+- [Transactions & Store Integration](transactions-and-store-integration.md) - `Interlocutor.Persistence.EntityFrameworkCore` and `Interlocutor.Persistence.NHibernate`'s `UnitOfWorkBehavior`, `IUnitOfWork` as transaction owner, begin-on-first-write, the `ITransactionalRequest`/`IExternalStoreRequest` markers, `Cancel`, commit/rollback semantics, nested dispatch, transactions and notifications.
 - [Persistence Abstraction](persistence-abstraction.md) - the optional, opt-in `IUnitOfWork`/`IDomainRepository<TEntity, TKey>` CRUD/paging surface, `Page<T>`, per-container registration, NHibernate session concurrency.
 - [Persistence Implementations](persistence-implementations.md) - what `EntityFrameworkUnitOfWork<TContext>`/`EntityFrameworkRepository<TEntity, TKey, TContext>` and `NHibernateUnitOfWork`/`NHibernateRepository<TEntity, TKey>` actually do underneath the interfaces, the shared filter/sort/paging query-composition helpers, and the behavioral differences between the two stores.
 - [Trim & AOT Support](trim-and-aot-support.md) - what "trim-compatible, not yet Native AOT-compatible" means in practice, the runtime-scanning trim cost, publishing trimmed, known limitations.
@@ -56,4 +56,4 @@ Registering the library and understanding how a dispatch's scope and context flo
 
 ### Worked example
 
-- [Sample App Walkthrough](sample-app-walkthrough.md) - a guided tour of the runnable sample under `samples/`: query/command/generic handlers, cross-assembly discovery, an explicitly composed pipeline with a short-circuiting stage, a multi-subscriber notification, and transport conversion at the edge.
+- [Sample App Walkthrough](sample-app-walkthrough.md) - a guided tour of `TutorialProject/TodoTasks.Api`, a full runnable implementation of the Beginner's Guide: query/command handlers, fine- and coarse-grained authorization, a multi-repository unit-of-work example, a multi-subscriber notification, and transport conversion at the edge.
