@@ -97,7 +97,7 @@ Anything left unregistered still falls back to `DefaultOutcomeCaseRegistry`, so 
 
 A related but separate extension point: `LoggingBehavior`, `AuditingBehavior`, and both store-specific `UnitOfWorkBehavior` implementations need to describe a response for a log/audit line and classify it as success or failure, which is a different question from constructing/extracting a case. That's `IResponseOutcomeDescriber`, built on `OutcomeClassifierBuilder` - see [Pipeline & Behavior Composition § Outcome Description & Classification](pipeline-and-behaviors.md#outcome-description--classification) for the worked example. And at the HTTP boundary, `IOutcomeStatusMapper` maps a failure case to a status code and body - see [ASP.NET Core Integration § Custom HTTP Mapping](aspnetcore-integration.md#custom-http-mapping).
 
-## Full-fidelity validation failures: `IValidationFailureCase`
+## Full-fidelity failure cases: `IValidationFailureCase` and its siblings
 
 `Interlocutor.FluentValidation.ValidationBehavior` collapses every validator's failures down to
 `ValidationErrors` - a message-only aggregate, portable across any validation technology. A handler that
@@ -121,6 +121,15 @@ This is the same extension-point shape as a custom `IOperationOutcome` implement
 interface a technology-specific case type implements, rather than a base type every case would need to
 inherit from - record structs can't be inherited from at all, which is exactly why this couldn't be modeled
 as `FluentValidationErrors : ValidationErrors`.
+
+`RateLimited`, `Timeout`, and `Forbidden` follow the identical shape, one interface each -
+`IRateLimitedFailureCase`, `ITimeoutFailureCase`, `IForbiddenFailureCase` - and `DefaultOutcomeStatusMapper`
+recognizes all three generically today, the same way it recognizes `IValidationFailureCase`. Unlike
+validation, no second implementation ships yet: `Interlocutor.Abstractions` has exactly one `IRateLimiter`,
+one `ITimeoutPolicy`, and one `IPolicyEvaluator`. A consumer who implements one of those three interfaces with
+a technology-specific diagnostic shape - a distributed rate limiter's bucket state, a Polly policy's context,
+which of several authorization policies denied a request - can pair it with their own case type implementing
+the matching marker interface, and `DefaultOutcomeStatusMapper` maps it correctly with no override required.
 
 ## Predicate-based registration: `InterlocutorBuilder.AddTypeMatch`
 
