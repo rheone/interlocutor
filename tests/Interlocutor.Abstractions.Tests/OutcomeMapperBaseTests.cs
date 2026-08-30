@@ -144,6 +144,8 @@ public class OutcomeMapperBaseTests
 
         protected override int MapForbidden(Forbidden forbidden) => ForbiddenExitCode;
 
+        protected override int MapForbiddenFailureCase(IForbiddenFailureCase forbiddenFailureCase) => ForbiddenExitCode;
+
         protected override int MapConflict(Conflict conflict) => ConflictExitCode;
 
         protected override int MapValidationErrors(ValidationErrors validationErrors) => ValidationExitCode;
@@ -154,7 +156,11 @@ public class OutcomeMapperBaseTests
 
         protected override int MapTimeout(Timeout timeout) => UnknownExitCode;
 
+        protected override int MapTimeoutFailureCase(ITimeoutFailureCase timeoutFailureCase) => UnknownExitCode;
+
         protected override int MapRateLimited(RateLimited rateLimited) => UnknownExitCode;
+
+        protected override int MapRateLimitedFailureCase(IRateLimitedFailureCase rateLimitedFailureCase) => UnknownExitCode;
 
         protected override int MapFailures(Failures failures) => UnknownExitCode;
 

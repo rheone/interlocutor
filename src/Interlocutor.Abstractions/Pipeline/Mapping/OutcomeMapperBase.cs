@@ -25,13 +25,16 @@ public abstract class OutcomeMapperBase<TResult> : IOutcomeMapper<TResult>
             ValidationErrors validationErrors => this.MapValidationErrors(validationErrors),
             IValidationFailureCase validationFailureCase => this.MapValidationFailureCase(validationFailureCase),
             Forbidden forbidden => this.MapForbidden(forbidden),
+            IForbiddenFailureCase forbiddenFailureCase => this.MapForbiddenFailureCase(forbiddenFailureCase),
             Conflict conflict => this.MapConflict(conflict),
             Failures failures => this.MapFailures(failures),
             Failure singleFailure => this.MapFailure(singleFailure),
             NotFound notFound => this.MapNotFound(notFound),
             Cancelled cancelled => this.MapCancelled(cancelled),
             Timeout timeout => this.MapTimeout(timeout),
+            ITimeoutFailureCase timeoutFailureCase => this.MapTimeoutFailureCase(timeoutFailureCase),
             RateLimited rateLimited => this.MapRateLimited(rateLimited),
+            IRateLimitedFailureCase rateLimitedFailureCase => this.MapRateLimitedFailureCase(rateLimitedFailureCase),
             _ => this.MapNotFoundGenericOrUnrecognized(failure),
         };
 
@@ -64,6 +67,19 @@ public abstract class OutcomeMapperBase<TResult> : IOutcomeMapper<TResult>
     /// <returns>The mapped <typeparamref name="TResult"/>.</returns>
     protected abstract TResult MapForbidden(Forbidden forbidden);
 
+    /// <summary>
+    /// Maps any <see cref="IForbiddenFailureCase"/> implementer other than <see cref="Forbidden"/> itself -
+    /// notably a future evaluator-specific case type this mapper was never taught about directly.
+    /// </summary>
+    /// <param name="forbiddenFailureCase">The forbidden failure to map.</param>
+    /// <returns>The mapped <typeparamref name="TResult"/>.</returns>
+    /// <remarks>
+    /// Ordered after the exact <see cref="Forbidden"/> branch in <see cref="Map{TFailure}"/>, so a plain
+    /// <see cref="Forbidden"/> failure still resolves to <see cref="MapForbidden"/> unchanged - this branch
+    /// only ever runs for some other <see cref="IForbiddenFailureCase"/> implementer.
+    /// </remarks>
+    protected abstract TResult MapForbiddenFailureCase(IForbiddenFailureCase forbiddenFailureCase);
+
     /// <summary>Maps a <see cref="Conflict"/> case.</summary>
     /// <param name="conflict">The conflict failure to map.</param>
     /// <returns>The mapped <typeparamref name="TResult"/>.</returns>
@@ -79,10 +95,40 @@ public abstract class OutcomeMapperBase<TResult> : IOutcomeMapper<TResult>
     /// <returns>The mapped <typeparamref name="TResult"/>.</returns>
     protected abstract TResult MapTimeout(Timeout timeout);
 
+    /// <summary>
+    /// Maps any <see cref="ITimeoutFailureCase"/> implementer other than <see cref="Timeout"/> itself -
+    /// notably a future policy-specific case type this mapper was never taught about directly.
+    /// </summary>
+    /// <param name="timeoutFailureCase">The timeout failure to map.</param>
+    /// <returns>The mapped <typeparamref name="TResult"/>.</returns>
+    /// <remarks>
+    /// Ordered after the exact <see cref="Timeout"/> branch in <see cref="Map{TFailure}"/>, so a plain
+    /// <see cref="Timeout"/> failure still resolves to <see cref="MapTimeout"/> unchanged - this branch only
+    /// ever runs for some other <see cref="ITimeoutFailureCase"/> implementer. Unlike <see cref="MapTimeout"/>,
+    /// there is no <c>Budget</c>/<c>Elapsed</c> fallback available here - <see cref="ITimeoutFailureCase"/>
+    /// only guarantees <see cref="ITimeoutFailureCase.Message"/>.
+    /// </remarks>
+    protected abstract TResult MapTimeoutFailureCase(ITimeoutFailureCase timeoutFailureCase);
+
     /// <summary>Maps a <see cref="RateLimited"/> case.</summary>
     /// <param name="rateLimited">The rate-limit failure to map.</param>
     /// <returns>The mapped <typeparamref name="TResult"/>.</returns>
     protected abstract TResult MapRateLimited(RateLimited rateLimited);
+
+    /// <summary>
+    /// Maps any <see cref="IRateLimitedFailureCase"/> implementer other than <see cref="RateLimited"/> itself -
+    /// notably a future limiter-specific case type this mapper was never taught about directly.
+    /// </summary>
+    /// <param name="rateLimitedFailureCase">The rate-limit failure to map.</param>
+    /// <returns>The mapped <typeparamref name="TResult"/>.</returns>
+    /// <remarks>
+    /// Ordered after the exact <see cref="RateLimited"/> branch in <see cref="Map{TFailure}"/>, so a plain
+    /// <see cref="RateLimited"/> failure still resolves to <see cref="MapRateLimited"/> unchanged - this
+    /// branch only ever runs for some other <see cref="IRateLimitedFailureCase"/> implementer. Unlike
+    /// <see cref="MapRateLimited"/>, there is no <c>LimitKey</c> fallback available here -
+    /// <see cref="IRateLimitedFailureCase"/> only guarantees <see cref="IRateLimitedFailureCase.Message"/>.
+    /// </remarks>
+    protected abstract TResult MapRateLimitedFailureCase(IRateLimitedFailureCase rateLimitedFailureCase);
 
     /// <summary>Maps a <see cref="Failures"/> aggregate.</summary>
     /// <param name="failures">The failures to map.</param>

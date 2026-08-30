@@ -106,6 +106,21 @@ public class DefaultHttpOutcomeStatusMapper : OutcomeMapperBase<OutcomeHttpMappi
     /// <returns>The mapped status code, with no body.</returns>
     protected override OutcomeHttpMapping MapForbidden(Forbidden forbidden) => new(StatusCodes.Status403Forbidden);
 
+    /// <summary>
+    /// Maps any <see cref="IForbiddenFailureCase"/> implementer other than <see cref="Forbidden"/> itself to
+    /// 403 Forbidden, with no body - notably a future evaluator-specific case type this mapper was never
+    /// taught about directly.
+    /// </summary>
+    /// <param name="forbiddenFailureCase">The forbidden failure to map.</param>
+    /// <returns>The mapped status code, with no body.</returns>
+    /// <remarks>
+    /// Ordered after the exact <see cref="Forbidden"/> branch in <see cref="OutcomeMapperBase{TResult}.Map{TFailure}"/>,
+    /// so a plain <see cref="Forbidden"/> failure still resolves to <see cref="MapForbidden"/> unchanged -
+    /// this branch only ever runs for some other <see cref="IForbiddenFailureCase"/> implementer.
+    /// </remarks>
+    protected override OutcomeHttpMapping MapForbiddenFailureCase(IForbiddenFailureCase forbiddenFailureCase) =>
+        new(StatusCodes.Status403Forbidden);
+
     /// <summary>Maps a <see cref="Conflict"/> case to 409 Conflict with its code and message.</summary>
     /// <param name="conflict">The conflict failure to map.</param>
     /// <returns>The mapped status code and <see cref="ProblemDetails"/> body.</returns>
@@ -151,6 +166,33 @@ public class DefaultHttpOutcomeStatusMapper : OutcomeMapperBase<OutcomeHttpMappi
             }
         );
 
+    /// <summary>
+    /// Maps any <see cref="ITimeoutFailureCase"/> implementer other than <see cref="Timeout"/> itself to a
+    /// gateway-timeout status - notably a future policy-specific case type this mapper was never taught about
+    /// directly.
+    /// </summary>
+    /// <param name="timeoutFailureCase">The timeout failure to map.</param>
+    /// <returns>The mapped status code and <see cref="ProblemDetails"/> body.</returns>
+    /// <remarks>
+    /// 504, not 408, for the same reason <see cref="MapTimeout"/> is - see its remarks. Ordered after the
+    /// exact <see cref="Timeout"/> branch in <see cref="OutcomeMapperBase{TResult}.Map{TFailure}"/>, so a
+    /// plain <see cref="Timeout"/> failure still resolves to <see cref="MapTimeout"/> unchanged - this branch
+    /// only ever runs for some other <see cref="ITimeoutFailureCase"/> implementer. Unlike
+    /// <see cref="MapTimeout"/>, there is no <c>Budget</c>/<c>Elapsed</c> fallback available here -
+    /// <see cref="ITimeoutFailureCase"/> only guarantees <see cref="ITimeoutFailureCase.Message"/>, so
+    /// <c>Detail</c> is that message verbatim, including <see langword="null"/> if none was supplied.
+    /// </remarks>
+    protected override OutcomeHttpMapping MapTimeoutFailureCase(ITimeoutFailureCase timeoutFailureCase) =>
+        new(
+            StatusCodes.Status504GatewayTimeout,
+            new ProblemDetails
+            {
+                Title = "Timeout",
+                Detail = timeoutFailureCase.Message,
+                Status = StatusCodes.Status504GatewayTimeout,
+            }
+        );
+
     /// <summary>Maps a <see cref="RateLimited"/> case to a too-many-requests status with the limiter that was hit.</summary>
     /// <param name="rateLimited">The rate-limit failure to map.</param>
     /// <returns>The mapped status code and <see cref="ProblemDetails"/> body.</returns>
@@ -167,6 +209,32 @@ public class DefaultHttpOutcomeStatusMapper : OutcomeMapperBase<OutcomeHttpMappi
             {
                 Title = "Rate Limited",
                 Detail = rateLimited.Message ?? rateLimited.LimitKey,
+                Status = StatusCodes.Status429TooManyRequests,
+            }
+        );
+
+    /// <summary>
+    /// Maps any <see cref="IRateLimitedFailureCase"/> implementer other than <see cref="RateLimited"/> itself
+    /// to a too-many-requests status - notably a future limiter-specific case type this mapper was never
+    /// taught about directly.
+    /// </summary>
+    /// <param name="rateLimitedFailureCase">The rate-limit failure to map.</param>
+    /// <returns>The mapped status code and <see cref="ProblemDetails"/> body.</returns>
+    /// <remarks>
+    /// Ordered after the exact <see cref="RateLimited"/> branch in <see cref="OutcomeMapperBase{TResult}.Map{TFailure}"/>,
+    /// so a plain <see cref="RateLimited"/> failure still resolves to <see cref="MapRateLimited"/> unchanged -
+    /// this branch only ever runs for some other <see cref="IRateLimitedFailureCase"/> implementer. Unlike
+    /// <see cref="MapRateLimited"/>, there is no <c>LimitKey</c> fallback available here -
+    /// <see cref="IRateLimitedFailureCase"/> only guarantees <see cref="IRateLimitedFailureCase.Message"/>, so
+    /// <c>Detail</c> is that message verbatim, including <see langword="null"/> if none was supplied.
+    /// </remarks>
+    protected override OutcomeHttpMapping MapRateLimitedFailureCase(IRateLimitedFailureCase rateLimitedFailureCase) =>
+        new(
+            StatusCodes.Status429TooManyRequests,
+            new ProblemDetails
+            {
+                Title = "Rate Limited",
+                Detail = rateLimitedFailureCase.Message,
                 Status = StatusCodes.Status429TooManyRequests,
             }
         );

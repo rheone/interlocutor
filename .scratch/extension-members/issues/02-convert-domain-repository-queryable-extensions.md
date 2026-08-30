@@ -15,10 +15,14 @@ of a later cleanup).
 
 **Blocked by:** None - can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] All three methods share one extension block on `IQueryable<TEntity>`, still in the same file
-- [ ] The cross-method `<see cref>` is fully qualified and resolves (no CS1574)
-- [ ] `PublicAPI.Unshipped.txt` updated to satisfy the analyzer with no RS0016/RS0017 warnings
-- [ ] `dotnet build` and `dotnet test tests/Interlocutor.Persistence.Abstractions.Tests` are green
-- [ ] `dotnet csharpier .` produces no diff on the touched file
+- [x] All three methods share one extension block on `IQueryable<TEntity>`, still in the same file
+- [x] The cross-method `<see cref>` is fully qualified and resolves (no CS1574)
+- [x] `PublicAPI.Unshipped.txt` updated to satisfy the analyzer with no RS0016/RS0017 warnings
+- [x] `dotnet build` and `dotnet test tests/Interlocutor.Persistence.Abstractions.Tests` are green
+- [x] `dotnet csharpier .` produces no diff on the touched file
+
+## Comments
+
+`ApplyPaging`'s doc comment previously carried a `<param name="query">` tag documenting the call-order note; since `query` is now the extension block's receiver rather than a method parameter, that note moved into the `<summary>` (as prose, still linking the two crefs) to avoid a CS1572/SA1612 mismatch. The three RS0016-flagged extension-block symbols (the block declaration plus the three methods) were added to `PublicAPI.Unshipped.txt` alongside the existing classic-shape entries. `dotnet build`, `dotnet test tests/Interlocutor.Persistence.Abstractions.Tests`, and `dotnet csharpier check` all clean.

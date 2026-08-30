@@ -1,6 +1,6 @@
 # PRD: Validation Failure-Case Fidelity
 
-Status: done - issues 01-04 and 08 implemented in 8a7ca91, recorded as ADR-0020; issues 05-07 parked as needs-triage by design (no second implementation driving them yet)
+Status: done - issues 01-04 and 08 implemented in 8a7ca91, recorded as ADR-0020. Issues 05-07 split by triage: each ticket's generic-mapper-recognition half is now also done (see its own file); the concrete-second-implementation half stays parked as needs-triage by design (no second implementation driving it yet).
 
 ## Problem
 
@@ -48,17 +48,18 @@ Gains an `IValidationFailureCase v => this.MapValidationFailureCase(v)` branch (
 
 ### Extension-point consistency for `RateLimited`/`Timeout`/`Forbidden`
 
-Validation is an established extension point today (`Interlocutor.FluentValidation` swaps in for the built-in behavior); `RateLimited`/`Timeout`/`Forbidden` are architecturally the same shape - each backed by a swappable interface (`IRateLimiter`, `ITimeoutPolicy`, `IPolicyEvaluator`) - even though only one implementation of each ships today. Two things follow from treating them as the same kind of extension point, and they're deliberately split apart:
+Validation is an established extension point today (`Interlocutor.FluentValidation` swaps in for the built-in behavior); `RateLimited`/`Timeout`/`Forbidden` are architecturally the same shape - each backed by a swappable interface (`IRateLimiter`, `ITimeoutPolicy`, `IPolicyEvaluator`) - even though only one implementation of each ships today. Three things follow from treating them as the same kind of extension point, split apart by cost and by who benefits:
 
 - **The marker interface + retrofit** (`IRateLimitedFailureCase`, `ITimeoutFailureCase`, `IForbiddenFailureCase`, each implemented by the corresponding existing struct) is low-cost, non-breaking, and purely structural - done now, in issue 08, so the pattern stays in sync across every result-type family and no CommonKernel retrofit is needed later.
-- **A second implementation's own case type, behavior, and mapper recognition** - the part with real design surface and no current driver - stays gated behind an explicit developer decision (issues 05-07, `needs-triage`).
+- **`DefaultOutcomeStatusMapper` generic recognition of each interface** - a branch ordered after the exact-type match, mirroring `IValidationFailureCase`'s branch - is likewise low-cost, shape-agnostic, and purely additive. Done now (see issues 05-07, each rescoped to just this half), specifically so a *consuming project's own* implementation of `IRateLimiter`/`ITimeoutPolicy`/`IPolicyEvaluator` maps correctly the moment it exists, with no library change required on the consumer's part.
+- **A concrete second implementation's own case type and behavior** - the part with real design surface, an invented property shape, and no current driver - stays gated behind an explicit developer decision (issues 05-07's remaining scope, `needs-triage`).
 
 ## Alternatives Considered
 
 - **Record-struct inheritance (`FluentValidationErrors : ValidationErrors`).** Rejected outright - does not compile. C# record structs cannot be inherited from.
 - **Decompose `TResponse` into a fixed failure-case generic parameter on the behavior** (e.g. `ValidationBehavior<TRequest, TResponse, TFailure>`), so one generic behavior could construct whichever failure type a caller specifies. Rejected for the same reason `AuthorizationBehavior`'s and today's `ValidationBehavior`'s own XML docs already give for keeping `TResponse` unconstrained: Microsoft.Extensions.DependencyInjection requires an open-generic implementation to declare exactly as many open type parameters as the service interface it's paired against (`IPipelineBehavior<TRequest, TResponse>`, arity 2) - a third open parameter can't be left open behind that two-parameter contract.
 - **A `TryConstruct` on `IOutcomeCaseRegistry` so one behavior multiplexes between `ValidationErrors` and `FluentValidationErrors` depending on which case `TResponse`'s union declares.** Deferred as unnecessary complexity for a first pass - shipping two distinct, explicitly-named behaviors and letting the consumer register the one matching their chosen case type is simpler, consistent with how every other custom-behavior swap in this library already works (register what you want instead of what you don't), and avoids adding a non-throwing construction path to `IOutcomeCaseRegistry` that nothing else needs yet.
-- **Preemptively building a second implementation's case type/behavior/mapper branch for `RateLimited`/`Timeout`/`Forbidden`.** Rejected for now - each has exactly one shipped implementation today, so there is nothing to be agnostic *between* yet. Parked as `needs-triage` notes (issues 05-07) rather than built speculatively. The marker interface itself is a different call (see "Extension-point consistency" above) - low-cost and non-breaking enough to add now rather than parking it alongside the higher-surface work.
+- **Preemptively building a second implementation's own case type and behavior for `RateLimited`/`Timeout`/`Forbidden`.** Rejected for now - each has exactly one shipped implementation today, so there is nothing to be agnostic *between* yet, and any property shape chosen would be invented rather than validated against a real API. Parked as `needs-triage` notes (issues 05-07's remaining scope) rather than built speculatively. The marker interface and the mapper's generic recognition of it are a different call (see "Extension-point consistency" above) - both low-cost, shape-agnostic, and non-breaking enough to add now rather than parking them alongside the higher-surface work.
 
 ## Verification
 

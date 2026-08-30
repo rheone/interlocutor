@@ -55,6 +55,36 @@ public class DefaultHttpOutcomeStatusMapperTests
     }
 
     [Fact]
+    public void Map_WithHandRolledForbiddenFailureCase_Returns403()
+    {
+        // Arrange - proves DefaultHttpOutcomeStatusMapper recognizes IForbiddenFailureCase via the interface
+        // itself, not a type-specific special case for the library's own Forbidden.
+        var customCase = new CustomForbiddenFailureCase("policy denied");
+
+        // Act
+        var mapping = this.mapper.Map(customCase);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status403Forbidden, mapping.StatusCode);
+        Assert.Null(mapping.Body);
+    }
+
+    [Fact]
+    public void Map_WithForbidden_MappingIsUnaffectedByIForbiddenFailureCaseRecognition()
+    {
+        // Arrange - the exact Forbidden branch in Map<TFailure> is ordered before the new
+        // IForbiddenFailureCase branch, so this mapping is byte-for-byte the same as before that branch existed.
+        var forbidden = new Forbidden("denied");
+
+        // Act
+        var mapping = this.mapper.Map(forbidden);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status403Forbidden, mapping.StatusCode);
+        Assert.Null(mapping.Body);
+    }
+
+    [Fact]
     public void Map_WithConflict_Returns409()
     {
         // Arrange
@@ -173,7 +203,8 @@ public class DefaultHttpOutcomeStatusMapperTests
     [Fact]
     public void Map_WithTimeout_Returns504()
     {
-        // Arrange
+        // Arrange - also proves the exact Timeout branch in Map<TFailure>, ordered before the new
+        // ITimeoutFailureCase branch below, still resolves this mapping byte-for-byte unchanged.
         var timeout = new Timeout(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2), "downstream slow");
 
         // Act
@@ -186,13 +217,49 @@ public class DefaultHttpOutcomeStatusMapperTests
     }
 
     [Fact]
+    public void Map_WithHandRolledTimeoutFailureCase_Returns504()
+    {
+        // Arrange - proves DefaultHttpOutcomeStatusMapper recognizes ITimeoutFailureCase via the interface
+        // itself, not a type-specific special case for the library's own Timeout. Same 504 (not 408) as the
+        // exact Timeout branch above, for the same reason - see MapTimeoutFailureCase's remarks.
+        var customCase = new CustomTimeoutFailureCase("policy budget exceeded");
+
+        // Act
+        var mapping = this.mapper.Map(customCase);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status504GatewayTimeout, mapping.StatusCode);
+        var problemDetails = Assert.IsType<ProblemDetails>(mapping.Body);
+        Assert.Equal("policy budget exceeded", problemDetails.Detail);
+    }
+
+    [Fact]
     public void Map_WithRateLimited_Returns429()
     {
-        // Arrange
+        // Arrange - also proves the exact RateLimited branch in Map<TFailure>, ordered before the new
+        // IRateLimitedFailureCase branch below, still resolves this mapping byte-for-byte unchanged.
         var rateLimited = new RateLimited("per-user", TimeSpan.FromSeconds(30), "slow down");
 
         // Act
         var mapping = this.mapper.Map(rateLimited);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status429TooManyRequests, mapping.StatusCode);
+        var problemDetails = Assert.IsType<ProblemDetails>(mapping.Body);
+        Assert.Equal("slow down", problemDetails.Detail);
+    }
+
+    [Fact]
+    public void Map_WithHandRolledRateLimitedFailureCase_Returns429()
+    {
+        // Arrange - proves DefaultHttpOutcomeStatusMapper recognizes IRateLimitedFailureCase via the interface
+        // itself, not a type-specific special case for the library's own RateLimited. Distinct from
+        // CustomRateLimited (used elsewhere for the unrecognized-type path), which implements no marker
+        // interface at all.
+        var customCase = new CustomRateLimitedFailureCase("slow down");
+
+        // Act
+        var mapping = this.mapper.Map(customCase);
 
         // Assert
         Assert.Equal(StatusCodes.Status429TooManyRequests, mapping.StatusCode);

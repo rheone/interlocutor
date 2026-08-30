@@ -85,11 +85,14 @@ flowchart TD
     CaseType -->|"IFieldValidationFailureCase<br/>(e.g. FluentValidationErrors)"| Bad400FieldValidation["400 Bad Request<br/>ValidationProblemDetails (field-keyed)"]
     CaseType -->|"NotFound / NotFound&lt;TId&gt;"| NotFound404["404 Not Found<br/>body: message or none"]
     CaseType -->|"Forbidden"| Forbidden403["403 Forbidden<br/>no body"]
+    CaseType -->|"any other IForbiddenFailureCase"| Forbidden403
     CaseType -->|"Conflict"| Conflict409["409 Conflict<br/>ProblemDetails"]
     CaseType -->|"Failure / Failures"| Bad400["400 Bad Request<br/>ProblemDetails"]
     CaseType -->|"Cancelled"| ClientClosed499["499 Client Closed Request<br/>no body"]
     CaseType -->|"Timeout"| Timeout504["504 Gateway Timeout<br/>ProblemDetails"]
+    CaseType -->|"any other ITimeoutFailureCase"| Timeout504
     CaseType -->|"RateLimited"| TooMany429["429 Too Many Requests<br/>ProblemDetails"]
+    CaseType -->|"any other IRateLimitedFailureCase"| TooMany429
     CaseType -->|"unrecognized (a custom failure type<br/>the default mapper wasn't taught)"| Error500["500 Internal Server Error<br/>body: the failure value itself"]
 ```
 
@@ -102,12 +105,15 @@ flowchart TD
 | [`IFieldValidationFailureCase`](glossary.md#outcome-mapping) implementer (e.g. `FluentValidationErrors`) | 400 Bad Request | `ValidationProblemDetails` | `Errors` is `FieldMessages` grouped by property name (empty-string key for an entry with no property) - see [Field-Keyed Validation Errors](#field-keyed-validation-errors) below. |
 | NotFound | 404 Not Found | The message, or none | `NotFound<TId>` (the generic form) maps the same way via a separate reflective path. |
 | Forbidden | 403 Forbidden | None | Reason is never sent to the client. |
+| Any other `IForbiddenFailureCase` implementer | 403 Forbidden | None | Recognized via the interface, not a type-specific branch - a consumer's own `IPolicyEvaluator`-specific failure case maps the same way without a mapper override, even though only the single built-in `IPolicyEvaluator` ships today. |
 | Conflict | 409 Conflict | `ProblemDetails` | `Title` is the conflict code, `Detail` is the message. |
 | Failure | 400 Bad Request | `ProblemDetails` | Deliberately not 500 - `Failure` is an outcome a handler chose to report, not a server fault. An unhandled exception still reaches ASP.NET Core's exception middleware as 500, independently of this mapping. |
 | Failures (aggregate) | 400 Bad Request | `ProblemDetails` | `Detail` is every reason joined with `"; "`. |
 | Cancelled | 499 Client Closed Request | None | Not 400 - the caller withdrew interest before the operation completed, which is neither a malformed request nor a domain failure. |
 | Timeout | 504 Gateway Timeout | `ProblemDetails` | Not 408 - 408 means the *client* was slow sending its request; this is the server exceeding its own time budget waiting on an operation, which 504 represents. `Detail` is the message, or `Budget`/`Elapsed` if none was set. |
+| Any other `ITimeoutFailureCase` implementer | 504 Gateway Timeout | `ProblemDetails` | Recognized via the interface - a consumer's own `ITimeoutPolicy`-specific failure case maps the same way without a mapper override, and for the same reason as the exact `Timeout` case above. `Detail` is the message verbatim (no `Budget`/`Elapsed` fallback - the interface guarantees only the message). |
 | RateLimited | 429 Too Many Requests | `ProblemDetails` | `Detail` is the message, or the `LimitKey`. Does not set a `Retry-After` header - override `MapRateLimited` to add one. |
+| Any other `IRateLimitedFailureCase` implementer | 429 Too Many Requests | `ProblemDetails` | Recognized via the interface - a consumer's own `IRateLimiter`-specific failure case maps the same way without a mapper override. `Detail` is the message verbatim (no `LimitKey` fallback - the interface guarantees only the message). |
 | Anything else (a custom failure type) | 500 Internal Server Error | The failure value itself | The default mapper doesn't know this type - supply your own `IOutcomeStatusMapper`, or override `MapUnrecognized`, to map it precisely. |
 
 ## Custom HTTP Mapping
