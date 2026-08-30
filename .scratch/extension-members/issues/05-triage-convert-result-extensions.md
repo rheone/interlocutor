@@ -59,15 +59,31 @@ Findings against the three flagged risks:
 
 **Unflagged risk found during the work**: `StyleCop.Analyzers` 1.2.0-beta.556 (this repo's pinned version)
 does not recognize C# 14 extension block declarations for its SA1201 member-ordering check. Placing an
-extension block directly after a field or a method - regardless of which - produces a location-less
-`warning SA1201: A <unknown> should not follow a field/method`, which can't be attributed to a line or
-suppressed per-site. Reordering so all eight extension blocks are contiguous (the type's full public surface)
-followed by the private fields and private static helper methods (`ExtractCase`, `InvokeMap`) together at
-the bottom eliminates the warning entirely - no extension block then sits immediately after a field or
-method. This deviates from the canonical Fields-before-Methods ordering in `member-ordering.md` for this one
-file, but extension block declarations aren't a kind that canonical order table covers at all, so there's no
-documented rule actually being broken - and the resulting shape (public API surface first, private
-implementation last) is a defensible convention in its own right, not merely a workaround.
+extension block directly after a field or a method - regardless of which - produces a `warning SA1201: A
+<unknown> should not follow a field/method` with **no source location attached to the diagnostic** (MSBuild
+prints it with no file/line at all). That ruled out a per-line `#pragma warning disable SA1201` outright: a
+pragma only suppresses a diagnostic within the text span it's reported against, and this one has none -
+confirmed by testing, the pragma compiled clean but the warning still fired.
+
+Two suppress-shaped fixes were tried and rejected before landing on the real one:
+
+- A `.editorconfig` path-scoped `dotnet_diagnostic.SA1201.severity = none` override for this file did work
+  mechanically (the same mechanism `build-warnings-cleanup` ticket 18 used for an analogous unlocatable
+  S1135 false-positive), but disables SA1201 for the *entire* file, not just the false positive - any
+  genuine member-ordering mistake added to this file later would go uncaught. Rejected on review.
+- A `#pragma` was already ruled out above.
+
+The fix that shipped: reorder the file so no extension block ever sits immediately after a field or method
+- every `extension` block grouped together (the type's full public surface, in arity order) followed by the
+private fields and private static helpers (`ExtractCase`, `InvokeMap`) together at the bottom. This produces
+zero SA1201 warnings **without disabling the rule** - SA1201 stays fully live for the file, including for
+any future member added in the wrong place; it simply never encounters the one adjacency pattern the
+analyzer misclassifies. A `<remarks>` on the type documents why the order deviates from the canonical
+fields-first layout and points at the follow-up ticket.
+
+Follow-up filed: [06-stylecop-extension-block-support.md](06-stylecop-extension-block-support.md) - revisit
+this ordering (it's cosmetic pressure, not a correctness requirement) once `StyleCop.Analyzers` ships
+extension-block support.
 
 Verified clean: `dotnet build` (whole solution, 0 warnings/errors), `dotnet test` (whole solution, 990/990
 passing, including all 103 `Interlocutor.AspNetCore.Tests` and the 11 overload-resolution regression tests),

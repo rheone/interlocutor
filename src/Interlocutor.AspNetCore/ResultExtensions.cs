@@ -15,6 +15,17 @@ using Microsoft.AspNetCore.Mvc;
 /// Provides both controller-based (<see cref="IActionResult"/>) and minimal API mappings, both delegating to
 /// an <see cref="IOutcomeStatusMapper"/> for the failure-to-status-code decision so the two cannot drift.
 /// </summary>
+/// <remarks>
+/// The type's members are ordered public-surface-first (every <c>extension</c> block, in arity order) then
+/// private implementation last (fields, then the private helpers) rather than the usual fields-first
+/// canonical order - StyleCop.Analyzers 1.2.0-beta.556 (this repo's pinned version) doesn't classify C# 14
+/// extension block declarations for its SA1201 member-ordering check, so it misreports "A &lt;unknown&gt;
+/// should not follow a field/method" whenever an extension block sits immediately after a field or method.
+/// The diagnostic carries no source location, so it can't be suppressed per-line or per-block; this ordering
+/// simply never produces that adjacency, keeping SA1201 fully live (not switched off) for the rest of the
+/// file. Tracked as .scratch/extension-members/issues/06-stylecop-extension-block-support.md - revisit this
+/// ordering once StyleCop.Analyzers ships extension-block support.
+/// </remarks>
 public static class ResultExtensions
 {
     extension<TSuccess, TFailure>(OperationOutcome<TSuccess, TFailure> result)
