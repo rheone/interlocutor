@@ -1,8 +1,8 @@
-> **Status: ready-for-agent** - unblocked 2026-08-30; format/scope decided by the repo owner (see Decisions below).
+> **Status: needs-triage** - scope/format decided by the repo owner 2026-08-30 (see Decisions below), but held awaiting developer triage before an agent picks it up.
 
 ## Labels
 
-ready-for-agent
+needs-triage
 
 ## What to build
 
