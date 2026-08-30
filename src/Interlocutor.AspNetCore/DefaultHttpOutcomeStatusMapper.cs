@@ -1,5 +1,6 @@
 namespace Interlocutor.AspNetCore;
 
+using System.Linq;
 using Interlocutor.Abstractions.Pipeline.Mapping;
 using Interlocutor.CommonKernel.ResultTypes;
 using Microsoft.AspNetCore.Http;
@@ -36,14 +37,43 @@ public class DefaultHttpOutcomeStatusMapper : OutcomeMapperBase<OutcomeHttpMappi
     /// Ordered after the exact <see cref="ValidationErrors"/> branch in <see cref="OutcomeMapperBase{TResult}.Map{TFailure}"/>,
     /// so a plain <see cref="ValidationErrors"/> failure still resolves to <see cref="MapValidationErrors"/>
     /// unchanged - this branch only ever runs for some other <see cref="IValidationFailureCase"/> implementer.
+    /// Delegates to <see cref="MapFieldValidationFailureCase"/> when the failure additionally implements
+    /// <see cref="IFieldValidationFailureCase"/>, for a field-keyed body instead of a flat one.
     /// </remarks>
     protected override OutcomeHttpMapping MapValidationFailureCase(IValidationFailureCase validationFailureCase) =>
-        MapValidationMessages(validationFailureCase.Messages);
+        validationFailureCase is IFieldValidationFailureCase fieldValidationFailureCase
+            ? this.MapFieldValidationFailureCase(fieldValidationFailureCase)
+            : MapValidationMessages(validationFailureCase.Messages);
+
+    /// <summary>
+    /// Maps an <see cref="IFieldValidationFailureCase"/> implementer to 400 Bad Request with a field-keyed
+    /// <see cref="ValidationProblemDetails"/> body, grouped by property name.
+    /// </summary>
+    /// <param name="fieldValidationFailureCase">The field-attributed validation failure to map.</param>
+    /// <returns>The mapped status code and <see cref="ValidationProblemDetails"/> body.</returns>
+    /// <remarks>
+    /// A failure entry with no property name (<see cref="FieldValidationMessage.PropertyName"/> is
+    /// <see langword="null"/>) is grouped under the empty-string key, matching
+    /// <see cref="ValidationProblemDetails"/>'s own convention for a whole-object/cross-field rule. Reached
+    /// only from <see cref="MapValidationFailureCase"/> - <see cref="ValidationErrors"/> never reaches this
+    /// method, since its <see cref="ValidationError"/> entries carry no property name to key by.
+    /// </remarks>
+    protected virtual OutcomeHttpMapping MapFieldValidationFailureCase(IFieldValidationFailureCase fieldValidationFailureCase)
+    {
+        var errors = fieldValidationFailureCase
+            .FieldMessages.GroupBy(fieldMessage => fieldMessage.PropertyName ?? string.Empty)
+            .ToDictionary(group => group.Key, group => group.Select(fieldMessage => fieldMessage.Message).ToArray());
+
+        return new(
+            StatusCodes.Status400BadRequest,
+            new ValidationProblemDetails(errors) { Title = "Validation Failed", Status = StatusCodes.Status400BadRequest }
+        );
+    }
 
     /// <summary>
     /// Builds the 400 Bad Request mapping shared by <see cref="MapValidationErrors"/> and
-    /// <see cref="MapValidationFailureCase"/> - both produce an identical <see cref="ProblemDetails"/> shape,
-    /// differing only in where their messages come from.
+    /// <see cref="MapValidationFailureCase"/> (for a failure with no field data) - both produce an identical
+    /// <see cref="ProblemDetails"/> shape, differing only in where their messages come from.
     /// </summary>
     /// <param name="messages">The validation failure messages to join into the body's <c>Detail</c>.</param>
     /// <returns>The mapped status code and <see cref="ProblemDetails"/> body.</returns>

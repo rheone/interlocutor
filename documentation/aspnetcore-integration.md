@@ -81,7 +81,8 @@ flowchart TD
     IsSuccess -->|"success, unit Success"| NoContent204["204 No Content"]
     IsSuccess -->|"failure - IOutcomeStatusMapper.Map(failure)"| CaseType{"Failure case type"}
     CaseType -->|"ValidationErrors"| Bad400Validation["400 Bad Request<br/>ProblemDetails"]
-    CaseType -->|"any other IValidationFailureCase<br/>(e.g. FluentValidationErrors)"| Bad400Validation
+    CaseType -->|"IValidationFailureCase, no field data"| Bad400Validation
+    CaseType -->|"IFieldValidationFailureCase<br/>(e.g. FluentValidationErrors)"| Bad400FieldValidation["400 Bad Request<br/>ValidationProblemDetails (field-keyed)"]
     CaseType -->|"NotFound / NotFound&lt;TId&gt;"| NotFound404["404 Not Found<br/>body: message or none"]
     CaseType -->|"Forbidden"| Forbidden403["403 Forbidden<br/>no body"]
     CaseType -->|"Conflict"| Conflict409["409 Conflict<br/>ProblemDetails"]
@@ -97,7 +98,8 @@ flowchart TD
 | Success (payload) | 200 OK | The success payload (JSON) | For `OperationOutcome<TSuccess, ...>`, `TSuccess` is serialized. |
 | Success (unit) | 204 No Content | None | For the non-generic `OperationOutcome`. |
 | ValidationErrors | 400 Bad Request | `ProblemDetails` | `Detail` is every message joined with `"; "` - no per-field errors dictionary, since `ValidationError` carries a message and optional code, not a field name. |
-| Any other [`IValidationFailureCase`](glossary.md#result-types) implementer (e.g. `FluentValidationErrors`) | 400 Bad Request | `ProblemDetails` | Recognized via the interface, not a type-specific branch - a consumer's own validation-shaped failure case maps the same way without a mapper override. `Detail` is every `Messages` entry joined with `"; "`. |
+| Any other [`IValidationFailureCase`](glossary.md#result-types) implementer with no field data | 400 Bad Request | `ProblemDetails` | Recognized via the interface, not a type-specific branch - a consumer's own validation-shaped failure case maps the same way without a mapper override. `Detail` is every `Messages` entry joined with `"; "`. |
+| [`IFieldValidationFailureCase`](glossary.md#outcome-mapping) implementer (e.g. `FluentValidationErrors`) | 400 Bad Request | `ValidationProblemDetails` | `Errors` is `FieldMessages` grouped by property name (empty-string key for an entry with no property) - see [Field-Keyed Validation Errors](#field-keyed-validation-errors) below. |
 | NotFound | 404 Not Found | The message, or none | `NotFound<TId>` (the generic form) maps the same way via a separate reflective path. |
 | Forbidden | 403 Forbidden | None | Reason is never sent to the client. |
 | Conflict | 409 Conflict | `ProblemDetails` | `Title` is the conflict code, `Detail` is the message. |
@@ -187,7 +189,29 @@ var result = await mediator.Send(new CreateUser("", "not-an-email"));
 // }
 ```
 
-`ValidationError` carries a message and an optional error code, not a field name, so the default mapping joins every message into `Detail` rather than building a per-field errors dictionary. Override `MapValidationErrors` if you want field-keyed output instead.
+`ValidationError` carries a message and an optional error code, not a field name, so the default mapping joins every message into `Detail` rather than building a per-field errors dictionary. Override `MapValidationErrors` if you want field-keyed output instead - or use `FluentValidationErrors` in place of `ValidationErrors`, which gets field-keyed output automatically; see [Field-Keyed Validation Errors](#field-keyed-validation-errors) below.
+
+### Field-Keyed Validation Errors
+
+`Interlocutor.FluentValidation.FluentValidationErrors` (see [Pipeline & Behavior Composition § `FluentValidationErrorsBehavior`](pipeline-and-behaviors.md#fluentvalidationerrorsbehavior)) preserves each failure's property name, unlike the message-only `ValidationErrors`. `DefaultHttpOutcomeStatusMapper` recognizes this via [`IFieldValidationFailureCase`](glossary.md#outcome-mapping) - implemented by `FluentValidationErrors`, not by `ValidationErrors` - and builds a field-keyed `ValidationProblemDetails` body instead of the flat `ProblemDetails` other validation-shaped failures get:
+
+```csharp
+// Command with invalid data, using FluentValidationErrorsBehavior instead of ValidationBehavior
+var result = await mediator.Send(new CreateUser("", "not-an-email"));
+
+// Response: 400 Bad Request
+// Body:
+// {
+//   "title": "Validation Failed",
+//   "status": 400,
+//   "errors": {
+//     "Name": ["'Name' must not be empty."],
+//     "Email": ["'Email' is not a valid email address."]
+//   }
+// }
+```
+
+A failure not tied to a specific property (a cross-field or whole-object rule) groups under the empty-string key, matching `ValidationProblemDetails`'s own convention. Override `MapFieldValidationFailureCase` to change this shape, the same way any other case is customized.
 
 ### NotFound
 
@@ -228,7 +252,7 @@ var result = await mediator.Send(new UpdateProduct(1, "New Name", 10));  // Old 
 
 ## Problem Details (RFC 7807)
 
-Most non-2xx responses carry a plain ASP.NET Core `ProblemDetails` body by default (`Title`, `Detail`, `Status`) - `Forbidden` and `Cancelled` carry no body at all, and an unrecognized custom failure type's body is the failure value itself, not a `ProblemDetails`. There is no `ValidationProblemDetails` (the per-field-errors variant) anywhere in the default mapping, since `ValidationError` doesn't carry a field name to key a dictionary by.
+Most non-2xx responses carry a plain ASP.NET Core `ProblemDetails` body by default (`Title`, `Detail`, `Status`) - `Forbidden` and `Cancelled` carry no body at all, and an unrecognized custom failure type's body is the failure value itself, not a `ProblemDetails`. A validation-shaped failure that implements [`IFieldValidationFailureCase`](glossary.md#outcome-mapping) (`FluentValidationErrors`, but not `ValidationErrors`) is the one exception: it gets the per-field-errors `ValidationProblemDetails` variant instead - see [Field-Keyed Validation Errors](#field-keyed-validation-errors) above.
 
 ## Error Handling at the Edge
 

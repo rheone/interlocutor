@@ -1,7 +1,9 @@
 namespace Interlocutor.AspNetCore.Tests;
 
+using global::FluentValidation.Results;
 using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
+using Interlocutor.FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -98,6 +100,28 @@ public class ResultExtensionsTests
         Assert.Equal(StatusCodes.Status400BadRequest, problemDetails.Status);
         Assert.Contains("Name is required", problemDetails.Detail);
         Assert.Contains("Email is invalid", problemDetails.Detail);
+    }
+
+    [Fact]
+    public void ToActionResult_WithFluentValidationErrors_Returns400WithFieldKeyedValidationProblemDetails()
+    {
+        // Arrange - proves the field-keyed body reaches a real ToActionResult() caller end-to-end, not just
+        // the mapper in isolation (see DefaultHttpOutcomeStatusMapperTests for the mapper-level coverage).
+        var errors = new FluentValidationErrors([
+            new ValidationFailure("Name", "'Name' must not be empty."),
+            new ValidationFailure("Email", "'Email' is not a valid email address."),
+        ]);
+        OperationOutcome<string, FluentValidationErrors> result = new(errors);
+
+        // Act
+        var actionResult = result.ToActionResult();
+
+        // Assert
+        var objectResult = Assert.IsType<ObjectResult>(actionResult);
+        Assert.Equal(StatusCodes.Status400BadRequest, objectResult.StatusCode);
+        var validationProblemDetails = Assert.IsType<ValidationProblemDetails>(objectResult.Value);
+        Assert.Equal(["'Name' must not be empty."], validationProblemDetails.Errors["Name"]);
+        Assert.Equal(["'Email' is not a valid email address."], validationProblemDetails.Errors["Email"]);
     }
 
     [Fact]

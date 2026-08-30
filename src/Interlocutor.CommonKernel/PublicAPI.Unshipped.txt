@@ -289,3 +289,19 @@ static Interlocutor.CommonKernel.ResultTypes.ValidationErrors<TErrorCode>.operat
 ~override Interlocutor.CommonKernel.ResultTypes.ValidationError<TErrorCode>.Equals(object obj) -> bool
 ~override Interlocutor.CommonKernel.ResultTypes.ValidationErrors.Equals(object obj) -> bool
 ~override Interlocutor.CommonKernel.ResultTypes.ValidationErrors<TErrorCode>.Equals(object obj) -> bool
+Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage
+Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage.Deconstruct(out string? PropertyName, out string! Message) -> void
+Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage.Equals(Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage other) -> bool
+Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage.FieldValidationMessage() -> void
+Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage.FieldValidationMessage(string? PropertyName, string! Message) -> void
+Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage.Message.get -> string!
+Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage.Message.init -> void
+Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage.PropertyName.get -> string?
+Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage.PropertyName.init -> void
+Interlocutor.CommonKernel.ResultTypes.IFieldValidationFailureCase
+Interlocutor.CommonKernel.ResultTypes.IFieldValidationFailureCase.FieldMessages.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage>!
+override Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage.GetHashCode() -> int
+static Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage.operator !=(Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage left, Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage right) -> bool
+static Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage.operator ==(Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage left, Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage right) -> bool
+~override Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage.Equals(object obj) -> bool
+~override Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage.ToString() -> string

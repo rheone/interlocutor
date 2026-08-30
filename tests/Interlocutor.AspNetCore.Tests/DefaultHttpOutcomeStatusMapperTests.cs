@@ -81,9 +81,11 @@ public class DefaultHttpOutcomeStatusMapperTests
     }
 
     [Fact]
-    public void Map_WithFluentValidationErrors_Returns400()
+    public void Map_WithFluentValidationErrors_Returns400WithFieldKeyedValidationProblemDetails()
     {
-        // Arrange - a real second IValidationFailureCase implementer, not the library's own ValidationErrors.
+        // Arrange - FluentValidationErrors implements IFieldValidationFailureCase, so it gets a field-keyed
+        // ValidationProblemDetails body instead of the flat ProblemDetails other IValidationFailureCase
+        // implementers (that don't carry field data) receive.
         var fluentValidationErrors = new FluentValidationErrors([
             new ValidationFailure("Email", "'Email' is not a valid email address."),
         ]);
@@ -93,8 +95,32 @@ public class DefaultHttpOutcomeStatusMapperTests
 
         // Assert
         Assert.Equal(StatusCodes.Status400BadRequest, mapping.StatusCode);
-        var problemDetails = Assert.IsType<ProblemDetails>(mapping.Body);
-        Assert.Equal("'Email' is not a valid email address.", problemDetails.Detail);
+        var problemDetails = Assert.IsType<ValidationProblemDetails>(mapping.Body);
+        Assert.Equal("Validation Failed", problemDetails.Title);
+        var email = Assert.Single(problemDetails.Errors["Email"]);
+        Assert.Equal("'Email' is not a valid email address.", email);
+    }
+
+    [Fact]
+    public void Map_WithFluentValidationErrors_GroupsMultipleFailuresByProperty()
+    {
+        // Arrange - two failures on the same property, one on a different property, and one with no property
+        // at all (a cross-field/whole-object rule) - proving grouping and the empty-string fallback key.
+        var fluentValidationErrors = new FluentValidationErrors([
+            new ValidationFailure("Email", "'Email' is not a valid email address."),
+            new ValidationFailure("Email", "'Email' must not be empty."),
+            new ValidationFailure("Name", "'Name' must not be empty."),
+            new ValidationFailure(string.Empty, "Start date must be before end date."),
+        ]);
+
+        // Act
+        var mapping = this.mapper.Map(fluentValidationErrors);
+
+        // Assert
+        var problemDetails = Assert.IsType<ValidationProblemDetails>(mapping.Body);
+        Assert.Equal(["'Email' is not a valid email address.", "'Email' must not be empty."], problemDetails.Errors["Email"]);
+        Assert.Equal(["'Name' must not be empty."], problemDetails.Errors["Name"]);
+        Assert.Equal(["Start date must be before end date."], problemDetails.Errors[string.Empty]);
     }
 
     [Fact]
