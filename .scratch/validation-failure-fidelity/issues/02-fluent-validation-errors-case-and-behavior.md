@@ -1,6 +1,6 @@
 # 02 - `FluentValidationErrors` case type + `FluentValidationErrorsBehavior`
 
-Status: not started
+Status: done
 
 ## Labels
 
@@ -17,13 +17,13 @@ This is strictly additive - `ValidationBehavior` and `ValidationErrors` are not 
 
 ## Acceptance criteria
 
-- [ ] `FluentValidationErrors` preserves every field of every `ValidationFailure` from every registered validator - no data collapsed to `.ErrorMessage` only
-- [ ] `FluentValidationErrorsBehavior` aggregates failures across every registered validator, matching `ValidationBehavior`'s existing "preserve every violation from every validator" guarantee
-- [ ] `FluentValidationErrorsBehavior` short-circuits to `next()` unchanged when no validators are registered, matching `ValidationBehavior`'s existing behavior
-- [ ] `Interlocutor.FluentValidation/PublicAPI.Unshipped.txt` updated for both new types
-- [ ] New unit tests mirror the existing `ValidationBehavior` test suite's shape and coverage for the new behavior
-- [ ] Existing `ValidationBehavior`/`ValidationErrors` tests remain green and unmodified
-- [ ] `dotnet build` and `dotnet test` remain clean
+- [x] `FluentValidationErrors` preserves every field of every `ValidationFailure` from every registered validator - no data collapsed to `.ErrorMessage` only
+- [x] `FluentValidationErrorsBehavior` aggregates failures across every registered validator, matching `ValidationBehavior`'s existing "preserve every violation from every validator" guarantee
+- [x] `FluentValidationErrorsBehavior` short-circuits to `next()` unchanged when no validators are registered, matching `ValidationBehavior`'s existing behavior
+- [x] `Interlocutor.FluentValidation/PublicAPI.Unshipped.txt` updated for both new types
+- [x] New unit tests mirror the existing `ValidationBehavior` test suite's shape and coverage for the new behavior
+- [x] Existing `ValidationBehavior`/`ValidationErrors` tests remain green and unmodified
+- [x] `dotnet build` and `dotnet test` remain clean
 
 ## Blocked by
 

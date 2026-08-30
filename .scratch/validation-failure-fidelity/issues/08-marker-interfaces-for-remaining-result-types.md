@@ -1,6 +1,6 @@
 # 08 - Marker interfaces for `RateLimited`/`Timeout`/`Forbidden` (interface + retrofit only)
 
-Status: not started
+Status: done
 
 ## Labels
 
@@ -35,12 +35,12 @@ Extend `maintainer_docs/adr/0020-validation-failure-case-fidelity.md` (written i
 
 ## Acceptance criteria
 
-- [ ] `IRateLimitedFailureCase`, `ITimeoutFailureCase`, `IForbiddenFailureCase` added to `Interlocutor.CommonKernel` with XML doc comments
-- [ ] `RateLimited`, `Timeout`, `Forbidden` each implement their corresponding interface with no observable behavior change to any existing consumer
-- [ ] `Interlocutor.CommonKernel/PublicAPI.Unshipped.txt` updated for all three new interfaces and the three interface implementations
-- [ ] Unit tests confirm each struct satisfies its interface and the exposed member matches the struct's existing property value
-- [ ] `maintainer_docs/adr/0020-validation-failure-case-fidelity.md` extended with the consistency-policy addendum described above
-- [ ] `dotnet build` and `dotnet test` remain clean
+- [x] `IRateLimitedFailureCase`, `ITimeoutFailureCase`, `IForbiddenFailureCase` added to `Interlocutor.CommonKernel` with XML doc comments
+- [x] `RateLimited`, `Timeout`, `Forbidden` each implement their corresponding interface with no observable behavior change to any existing consumer
+- [x] `Interlocutor.CommonKernel/PublicAPI.Unshipped.txt` updated for all three new interfaces and the three interface implementations
+- [x] Unit tests confirm each struct satisfies its interface and the exposed member matches the struct's existing property value
+- [x] `maintainer_docs/adr/0020-validation-failure-case-fidelity.md` extended with the consistency-policy addendum described above
+- [x] `dotnet build` and `dotnet test` remain clean
 
 ## Blocked by
 

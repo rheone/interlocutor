@@ -1,6 +1,6 @@
 # 03 - `DefaultOutcomeStatusMapper` recognizes `IValidationFailureCase`
 
-Status: not started
+Status: done
 
 ## Labels
 
@@ -16,11 +16,11 @@ Add an `IValidationFailureCase v => this.MapValidationFailureCase(v)` branch, or
 
 ## Acceptance criteria
 
-- [ ] `FluentValidationErrors` maps to 422 Unprocessable Entity, not `MapUnrecognized`
-- [ ] Existing `ValidationErrors` mapping is byte-for-byte unchanged (exact-type branch still wins)
-- [ ] `MapValidationFailureCase` is `protected virtual`, consistent with every other case-mapping method on the class
-- [ ] Tests cover: `FluentValidationErrors` mapping, `ValidationErrors` mapping unaffected, and a plain hand-rolled `IValidationFailureCase` implementer also mapping correctly (proving the interface-based recognition, not a type-specific special case)
-- [ ] `dotnet build` and `dotnet test` remain clean
+- [x] `FluentValidationErrors` maps to 422 Unprocessable Entity, not `MapUnrecognized`
+- [x] Existing `ValidationErrors` mapping is byte-for-byte unchanged (exact-type branch still wins)
+- [x] `MapValidationFailureCase` is `protected virtual`, consistent with every other case-mapping method on the class
+- [x] Tests cover: `FluentValidationErrors` mapping, `ValidationErrors` mapping unaffected, and a plain hand-rolled `IValidationFailureCase` implementer also mapping correctly (proving the interface-based recognition, not a type-specific special case)
+- [x] `dotnet build` and `dotnet test` remain clean
 
 ## Blocked by
 

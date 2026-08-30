@@ -1,6 +1,6 @@
 # 01 - `IValidationFailureCase` marker interface + ADR-0020
 
-Status: not started
+Status: done
 
 ## Labels
 
@@ -25,12 +25,12 @@ This ticket is the foundation the rest of this feature (issues 02-04) builds on.
 
 ## Acceptance criteria
 
-- [ ] `IValidationFailureCase` added to `Interlocutor.CommonKernel` with XML doc comments
-- [ ] `ValidationErrors` implements `IValidationFailureCase` with no observable behavior change to any existing consumer
-- [ ] `Interlocutor.CommonKernel/PublicAPI.Unshipped.txt` updated for the new interface and the `ValidationErrors` interface implementation
-- [ ] Unit tests confirm `ValidationErrors` satisfies `IValidationFailureCase` and that `Messages` matches its existing message-exposure behavior
-- [ ] `maintainer_docs/adr/0020-validation-failure-case-fidelity.md` written and accepted, cross-referencing ADR-0004 and ADR-0001
-- [ ] `dotnet build` and `dotnet test` remain clean
+- [x] `IValidationFailureCase` added to `Interlocutor.CommonKernel` with XML doc comments
+- [x] `ValidationErrors` implements `IValidationFailureCase` with no observable behavior change to any existing consumer
+- [x] `Interlocutor.CommonKernel/PublicAPI.Unshipped.txt` updated for the new interface and the `ValidationErrors` interface implementation
+- [x] Unit tests confirm `ValidationErrors` satisfies `IValidationFailureCase` and that `Messages` matches its existing message-exposure behavior
+- [x] `maintainer_docs/adr/0020-validation-failure-case-fidelity.md` written and accepted, cross-referencing ADR-0004 and ADR-0001
+- [x] `dotnet build` and `dotnet test` remain clean
 
 ## Blocked by
 
