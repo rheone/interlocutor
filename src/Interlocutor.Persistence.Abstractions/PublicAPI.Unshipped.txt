@@ -1,0 +1,37 @@
+#nullable enable
+Interlocutor.Persistence.Abstractions.DomainRepositoryQueryableExtensions
+Interlocutor.Persistence.Abstractions.IDomainRepository<TEntity, TKey>
+Interlocutor.Persistence.Abstractions.IDomainRepository<TEntity, TKey>.DeleteAsync(TEntity entity, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Interlocutor.Persistence.Abstractions.IDomainRepository<TEntity, TKey>.GetById(TKey id) -> TEntity?
+Interlocutor.Persistence.Abstractions.IDomainRepository<TEntity, TKey>.GetManyAsync(System.Linq.Expressions.Expression<System.Func<TEntity, bool>!>? filter = null, System.Collections.Generic.IReadOnlyList<Interlocutor.Persistence.Abstractions.SortCriterion<TEntity>!>? sort = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TEntity>!>!
+Interlocutor.Persistence.Abstractions.IDomainRepository<TEntity, TKey>.GetPagedAsync(int pageNumber, int pageSize, System.Linq.Expressions.Expression<System.Func<TEntity, bool>!>? filter = null, System.Collections.Generic.IReadOnlyList<Interlocutor.Persistence.Abstractions.SortCriterion<TEntity>!>? sort = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Interlocutor.Persistence.Abstractions.Page<TEntity>!>!
+Interlocutor.Persistence.Abstractions.IDomainRepository<TEntity, TKey>.IdSelector.get -> System.Linq.Expressions.Expression<System.Func<TEntity, TKey>!>!
+Interlocutor.Persistence.Abstractions.IDomainRepository<TEntity, TKey>.InsertAsync(TEntity entity, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Interlocutor.Persistence.Abstractions.IDomainRepository<TEntity, TKey>.Query.get -> System.Linq.IQueryable<TEntity>!
+Interlocutor.Persistence.Abstractions.IDomainRepository<TEntity, TKey>.UpdateAsync(TEntity entity, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Interlocutor.Persistence.Abstractions.IUnitOfWork
+Interlocutor.Persistence.Abstractions.IUnitOfWork.Cancel(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Interlocutor.Persistence.Abstractions.IUnitOfWork.SaveChangesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Interlocutor.Persistence.Abstractions.Page<T>
+Interlocutor.Persistence.Abstractions.Page<T>.Items.get -> System.Collections.Generic.IReadOnlyList<T>!
+Interlocutor.Persistence.Abstractions.Page<T>.Items.init -> void
+Interlocutor.Persistence.Abstractions.Page<T>.Page(System.Collections.Generic.IReadOnlyList<T>! Items, int PageNumber, int PageSize, int TotalCount) -> void
+Interlocutor.Persistence.Abstractions.Page<T>.PageNumber.get -> int
+Interlocutor.Persistence.Abstractions.Page<T>.PageNumber.init -> void
+Interlocutor.Persistence.Abstractions.Page<T>.PageSize.get -> int
+Interlocutor.Persistence.Abstractions.Page<T>.PageSize.init -> void
+Interlocutor.Persistence.Abstractions.Page<T>.TotalCount.get -> int
+Interlocutor.Persistence.Abstractions.Page<T>.TotalCount.init -> void
+Interlocutor.Persistence.Abstractions.Page<T>.TotalPageCount.get -> int
+Interlocutor.Persistence.Abstractions.SortCriterion<TEntity>
+Interlocutor.Persistence.Abstractions.SortCriterion<TEntity>.Direction.get -> Interlocutor.Persistence.Abstractions.SortDirection
+Interlocutor.Persistence.Abstractions.SortCriterion<TEntity>.Direction.init -> void
+Interlocutor.Persistence.Abstractions.SortCriterion<TEntity>.KeySelector.get -> System.Linq.Expressions.Expression<System.Func<TEntity, object!>!>!
+Interlocutor.Persistence.Abstractions.SortCriterion<TEntity>.KeySelector.init -> void
+Interlocutor.Persistence.Abstractions.SortCriterion<TEntity>.SortCriterion(System.Linq.Expressions.Expression<System.Func<TEntity, object!>!>! KeySelector, Interlocutor.Persistence.Abstractions.SortDirection Direction) -> void
+Interlocutor.Persistence.Abstractions.SortDirection
+Interlocutor.Persistence.Abstractions.SortDirection.Ascending = 0 -> Interlocutor.Persistence.Abstractions.SortDirection
+Interlocutor.Persistence.Abstractions.SortDirection.Descending = 1 -> Interlocutor.Persistence.Abstractions.SortDirection
+static Interlocutor.Persistence.Abstractions.DomainRepositoryQueryableExtensions.ApplyFilter<TEntity>(this System.Linq.IQueryable<TEntity>! query, System.Linq.Expressions.Expression<System.Func<TEntity, bool>!>? filter) -> System.Linq.IQueryable<TEntity>!
+static Interlocutor.Persistence.Abstractions.DomainRepositoryQueryableExtensions.ApplyPaging<TEntity>(this System.Linq.IQueryable<TEntity>! query, int pageNumber, int pageSize) -> System.Linq.IQueryable<TEntity>!
+static Interlocutor.Persistence.Abstractions.DomainRepositoryQueryableExtensions.ApplySort<TEntity>(this System.Linq.IQueryable<TEntity>! query, System.Collections.Generic.IReadOnlyList<Interlocutor.Persistence.Abstractions.SortCriterion<TEntity>!>? sort) -> System.Linq.IQueryable<TEntity>!

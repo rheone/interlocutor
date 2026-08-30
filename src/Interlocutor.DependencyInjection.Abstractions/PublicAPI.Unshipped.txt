@@ -1,0 +1,196 @@
+#nullable enable
+Interlocutor.DependencyInjection.Abstractions.GeneratedHandlerKind
+Interlocutor.DependencyInjection.Abstractions.GeneratedHandlerKind.Command = 1 -> Interlocutor.DependencyInjection.Abstractions.GeneratedHandlerKind
+Interlocutor.DependencyInjection.Abstractions.GeneratedHandlerKind.Notification = 3 -> Interlocutor.DependencyInjection.Abstractions.GeneratedHandlerKind
+Interlocutor.DependencyInjection.Abstractions.GeneratedHandlerKind.Query = 0 -> Interlocutor.DependencyInjection.Abstractions.GeneratedHandlerKind
+Interlocutor.DependencyInjection.Abstractions.GeneratedHandlerKind.VoidCommand = 2 -> Interlocutor.DependencyInjection.Abstractions.GeneratedHandlerKind
+Interlocutor.DependencyInjection.Abstractions.HandlerDiscovery
+Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder
+Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.AddGeneratedRegistrations(System.Collections.Generic.IEnumerable<Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration>! registrations) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.AddHandler(System.Type! handlerImplementationType, Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime lifetime = Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Scoped) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.AddTypeMatch(System.Func<System.Type!, bool>! predicate, Interlocutor.DependencyInjection.Abstractions.TypeMatchTarget target, Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime lifetime = Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Scoped, System.Func<System.Type!, bool>? except = null, bool require = false, string? name = null) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.AssembliesToScan.get -> System.Collections.Generic.IReadOnlyList<System.Reflection.Assembly!>!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.Behaviors.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration>!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.Defaults.get -> System.Collections.Generic.IReadOnlyCollection<Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration>!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.DescribeRegistrations() -> Interlocutor.DependencyInjection.Abstractions.RegistrationReport!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.Eject(params System.Type![]! implementationTypes) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.Eject<TImplementation>() -> Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.EjectedImplementationTypes.get -> System.Collections.Generic.IReadOnlyList<System.Type!>!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.GeneratedRegistrations.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration>!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.Handlers.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration>!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.InterlocutorBuilder() -> void
+Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.MatchedRegistrations.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration>!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.MatchRules.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.TypeMatchRule!>!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.OverrideRequestContextAccessor<TAccessor>(Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime lifetime = Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Scoped) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.Pipeline.get -> Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.RequireUniqueClosure(System.Type! openGenericContract) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.ScanAssemblies(Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime lifetime, params System.Reflection.Assembly![]! assemblies) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.ScanAssemblies(params System.Reflection.Assembly![]! assemblies) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.ScanAssembly(System.Reflection.Assembly! assembly, Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime lifetime = Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Scoped) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.ScanAssemblyContaining<TMarker>(Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime lifetime = Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Scoped) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.ScanEntryAssembly(Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime lifetime = Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Scoped) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.StageFactories.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.InterlocutorFactoryRegistration>!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.Stages.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration>!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.UniqueClosureContracts.get -> System.Collections.Generic.IReadOnlyList<System.Type!>!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.ValidateOnBuild() -> Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorFactoryRegistration
+Interlocutor.DependencyInjection.Abstractions.InterlocutorFactoryRegistration.Factory.get -> System.Func<System.IServiceProvider!, object!>!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorFactoryRegistration.Factory.init -> void
+Interlocutor.DependencyInjection.Abstractions.InterlocutorFactoryRegistration.InterlocutorFactoryRegistration() -> void
+Interlocutor.DependencyInjection.Abstractions.InterlocutorFactoryRegistration.InterlocutorFactoryRegistration(System.Type! ServiceType, System.Func<System.IServiceProvider!, object!>! Factory, Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime Lifetime, Interlocutor.DependencyInjection.Abstractions.RegistrationKind Kind) -> void
+Interlocutor.DependencyInjection.Abstractions.InterlocutorFactoryRegistration.Kind.get -> Interlocutor.DependencyInjection.Abstractions.RegistrationKind
+Interlocutor.DependencyInjection.Abstractions.InterlocutorFactoryRegistration.Kind.init -> void
+Interlocutor.DependencyInjection.Abstractions.InterlocutorFactoryRegistration.Lifetime.get -> Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime
+Interlocutor.DependencyInjection.Abstractions.InterlocutorFactoryRegistration.Lifetime.init -> void
+Interlocutor.DependencyInjection.Abstractions.InterlocutorFactoryRegistration.ServiceType.get -> System.Type!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorFactoryRegistration.ServiceType.init -> void
+Interlocutor.DependencyInjection.Abstractions.InterlocutorGeneratedHandlerAttribute
+Interlocutor.DependencyInjection.Abstractions.InterlocutorGeneratedHandlerAttribute.InterlocutorGeneratedHandlerAttribute(System.Type! requestType, System.Type? responseType, Interlocutor.DependencyInjection.Abstractions.GeneratedHandlerKind kind) -> void
+Interlocutor.DependencyInjection.Abstractions.InterlocutorGeneratedHandlerAttribute.Kind.get -> Interlocutor.DependencyInjection.Abstractions.GeneratedHandlerKind
+Interlocutor.DependencyInjection.Abstractions.InterlocutorGeneratedHandlerAttribute.RequestType.get -> System.Type!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorGeneratedHandlerAttribute.ResponseType.get -> System.Type?
+Interlocutor.DependencyInjection.Abstractions.InterlocutorGeneratedModuleAttribute
+Interlocutor.DependencyInjection.Abstractions.InterlocutorGeneratedModuleAttribute.InterlocutorGeneratedModuleAttribute(System.Type! moduleType) -> void
+Interlocutor.DependencyInjection.Abstractions.InterlocutorGeneratedModuleAttribute.ModuleType.get -> System.Type!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.AddAuditingBehavior() -> Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.AddAuthorizationBehavior() -> Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.AddBehavior(System.Type! behaviorImplementationType, Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime lifetime = Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Scoped) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.AddCancellationBehavior() -> Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.AddLoggingBehavior() -> Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.AddRateLimitedBehavior() -> Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.AddStage(System.Type! stageImplementationType, Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime lifetime = Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Scoped) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.AddStage<TRequest, TResponse>(System.Func<System.IServiceProvider!, TRequest, System.Threading.CancellationToken, System.Threading.Tasks.Task<Interlocutor.Abstractions.Pipeline.StageResult<TResponse>>!>? onBefore, System.Func<System.IServiceProvider!, TRequest, TResponse, System.Threading.CancellationToken, System.Threading.Tasks.Task!>? onAfter, Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime lifetime = Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Scoped) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.AddStage<TRequest, TResponse>(System.Func<TRequest, System.Threading.CancellationToken, System.Threading.Tasks.Task<Interlocutor.Abstractions.Pipeline.StageResult<TResponse>>!>? onBefore = null, System.Func<TRequest, TResponse, System.Threading.CancellationToken, System.Threading.Tasks.Task!>? onAfter = null, Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime lifetime = Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Singleton) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.AddStage<TStage>(Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime lifetime = Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Scoped) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.AddStageHost(Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime lifetime = Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Scoped) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.AddTimeoutBehavior() -> Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.AddUnitOfWorkBehavior() -> Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.AddValidationBehavior() -> Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.Behaviors.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration>!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.Defaults.get -> System.Collections.Generic.IReadOnlyCollection<Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration>!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.InterlocutorPipelineBuilder() -> void
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.OverrideAuditSink<TSink>(Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime lifetime = Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Scoped) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.OverrideOutcomeCaseRegistry<TRegistry>(Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime lifetime = Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Scoped) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.OverrideOutcomeDescriber<TDescriber>(Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime lifetime = Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Singleton) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.OverridePipelineFor(System.Func<System.Type!, bool>! predicate, string! name, System.Collections.Generic.IReadOnlyList<System.Type!>! behaviors) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.OverridePipelineFor<TRequest>(string! name, params System.Type![]! behaviors) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.OverridePolicyEvaluator<TEvaluator>(Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime lifetime = Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Scoped) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.OverrideRateLimiter<TLimiter>(Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime lifetime = Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Scoped) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.OverrideRules.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule!>!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.OverrideTimeoutPolicy<TPolicy>(Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime lifetime = Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Scoped) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.Skipped.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.SkippedRegistration>!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.StageFactories.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.InterlocutorFactoryRegistration>!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.Stages.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration>!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.UseRecommendedChain() -> Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration
+Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration.ImplementationType.get -> System.Type!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration.ImplementationType.init -> void
+Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration.InterlocutorRegistration() -> void
+Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration.InterlocutorRegistration(System.Type! ServiceType, System.Type! ImplementationType, Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime Lifetime, Interlocutor.DependencyInjection.Abstractions.RegistrationKind Kind, Interlocutor.DependencyInjection.Abstractions.RegistrationProvenance Provenance = Interlocutor.DependencyInjection.Abstractions.RegistrationProvenance.Explicit, string? MatchedByRule = null) -> void
+Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration.Kind.get -> Interlocutor.DependencyInjection.Abstractions.RegistrationKind
+Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration.Kind.init -> void
+Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration.Lifetime.get -> Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime
+Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration.Lifetime.init -> void
+Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration.MatchedByRule.get -> string?
+Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration.MatchedByRule.init -> void
+Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration.Provenance.get -> Interlocutor.DependencyInjection.Abstractions.RegistrationProvenance
+Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration.Provenance.init -> void
+Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration.ServiceType.get -> System.Type!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration.ServiceType.init -> void
+Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistrationValidationException
+Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistrationValidationException.InterlocutorRegistrationValidationException(Interlocutor.DependencyInjection.Abstractions.RegistrationReport! report) -> void
+Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistrationValidationException.Report.get -> Interlocutor.DependencyInjection.Abstractions.RegistrationReport!
+Interlocutor.DependencyInjection.Abstractions.IRootScopeDetector
+Interlocutor.DependencyInjection.Abstractions.IRootScopeDetector.IsRootScope.get -> bool
+Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRegistry
+Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRegistry.PipelineOverrideRegistry(System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule!>! rules) -> void
+Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRegistry.TryGetOverride(System.Type! requestType, out System.Collections.Generic.IReadOnlyList<System.Type!>! behaviorTypes) -> bool
+Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule
+Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule.BehaviorTypes.get -> System.Collections.Generic.IReadOnlyList<System.Type!>!
+Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule.BehaviorTypes.init -> void
+Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule.Name.get -> string!
+Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule.Name.init -> void
+Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule.PipelineOverrideRule(System.Func<System.Type!, bool>! Predicate, string! Name, System.Collections.Generic.IReadOnlyList<System.Type!>! BehaviorTypes) -> void
+Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule.Predicate.get -> System.Func<System.Type!, bool>!
+Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule.Predicate.init -> void
+Interlocutor.DependencyInjection.Abstractions.RegistrationApplier
+Interlocutor.DependencyInjection.Abstractions.RegistrationApplier.Apply(Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder! builder) -> void
+Interlocutor.DependencyInjection.Abstractions.RegistrationApplier.RegistrationApplier(System.Action<Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration>! addRegistration, System.Action<Interlocutor.DependencyInjection.Abstractions.InterlocutorFactoryRegistration>! addFactory, System.Action<Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration>! tryAddDefault) -> void
+Interlocutor.DependencyInjection.Abstractions.RegistrationKind
+Interlocutor.DependencyInjection.Abstractions.RegistrationKind.Behavior = 1 -> Interlocutor.DependencyInjection.Abstractions.RegistrationKind
+Interlocutor.DependencyInjection.Abstractions.RegistrationKind.Default = 2 -> Interlocutor.DependencyInjection.Abstractions.RegistrationKind
+Interlocutor.DependencyInjection.Abstractions.RegistrationKind.Dispatcher = 4 -> Interlocutor.DependencyInjection.Abstractions.RegistrationKind
+Interlocutor.DependencyInjection.Abstractions.RegistrationKind.Handler = 0 -> Interlocutor.DependencyInjection.Abstractions.RegistrationKind
+Interlocutor.DependencyInjection.Abstractions.RegistrationKind.Stage = 3 -> Interlocutor.DependencyInjection.Abstractions.RegistrationKind
+Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime
+Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Scoped = 1 -> Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime
+Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Singleton = 0 -> Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime
+Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Transient = 2 -> Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime
+Interlocutor.DependencyInjection.Abstractions.RegistrationProblem
+Interlocutor.DependencyInjection.Abstractions.RegistrationProblem.Description.get -> string!
+Interlocutor.DependencyInjection.Abstractions.RegistrationProblem.Description.init -> void
+Interlocutor.DependencyInjection.Abstractions.RegistrationProblem.Kind.get -> Interlocutor.DependencyInjection.Abstractions.RegistrationProblemKind
+Interlocutor.DependencyInjection.Abstractions.RegistrationProblem.Kind.init -> void
+Interlocutor.DependencyInjection.Abstractions.RegistrationProblem.RegistrationProblem() -> void
+Interlocutor.DependencyInjection.Abstractions.RegistrationProblem.RegistrationProblem(Interlocutor.DependencyInjection.Abstractions.RegistrationProblemKind Kind, string! Description) -> void
+Interlocutor.DependencyInjection.Abstractions.RegistrationProblemKind
+Interlocutor.DependencyInjection.Abstractions.RegistrationProblemKind.AmbiguousClosure = 3 -> Interlocutor.DependencyInjection.Abstractions.RegistrationProblemKind
+Interlocutor.DependencyInjection.Abstractions.RegistrationProblemKind.ConflictingLifetime = 2 -> Interlocutor.DependencyInjection.Abstractions.RegistrationProblemKind
+Interlocutor.DependencyInjection.Abstractions.RegistrationProblemKind.ConflictingPipelineOverride = 4 -> Interlocutor.DependencyInjection.Abstractions.RegistrationProblemKind
+Interlocutor.DependencyInjection.Abstractions.RegistrationProblemKind.UnhandledRequestType = 0 -> Interlocutor.DependencyInjection.Abstractions.RegistrationProblemKind
+Interlocutor.DependencyInjection.Abstractions.RegistrationProblemKind.UnmatchedRequiredRule = 1 -> Interlocutor.DependencyInjection.Abstractions.RegistrationProblemKind
+Interlocutor.DependencyInjection.Abstractions.RegistrationProvenance
+Interlocutor.DependencyInjection.Abstractions.RegistrationProvenance.Explicit = 1 -> Interlocutor.DependencyInjection.Abstractions.RegistrationProvenance
+Interlocutor.DependencyInjection.Abstractions.RegistrationProvenance.Matched = 2 -> Interlocutor.DependencyInjection.Abstractions.RegistrationProvenance
+Interlocutor.DependencyInjection.Abstractions.RegistrationProvenance.Scanned = 0 -> Interlocutor.DependencyInjection.Abstractions.RegistrationProvenance
+Interlocutor.DependencyInjection.Abstractions.RegistrationReport
+Interlocutor.DependencyInjection.Abstractions.RegistrationReport.Format() -> string!
+Interlocutor.DependencyInjection.Abstractions.RegistrationReport.Problems.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.RegistrationProblem>!
+Interlocutor.DependencyInjection.Abstractions.RegistrationReport.RegistrationReport(System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration>! registrations, System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.InterlocutorFactoryRegistration>! stageFactories, System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.SkippedRegistration>! skipped, System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.RegistrationProblem>! problems, System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.TypeLoadFailure>? typeLoadFailures = null) -> void
+Interlocutor.DependencyInjection.Abstractions.RegistrationReport.Registrations.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration>!
+Interlocutor.DependencyInjection.Abstractions.RegistrationReport.Skipped.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.SkippedRegistration>!
+Interlocutor.DependencyInjection.Abstractions.RegistrationReport.StageFactories.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.InterlocutorFactoryRegistration>!
+Interlocutor.DependencyInjection.Abstractions.RegistrationReport.TypeLoadFailures.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.TypeLoadFailure>!
+Interlocutor.DependencyInjection.Abstractions.RootScopeGuardedMediator
+Interlocutor.DependencyInjection.Abstractions.RootScopeGuardedMediator.Publish<TNotification>(TNotification notification, Interlocutor.Abstractions.Core.PublishStrategy strategy, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Interlocutor.DependencyInjection.Abstractions.RootScopeGuardedMediator.Publish<TNotification>(TNotification notification, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Interlocutor.DependencyInjection.Abstractions.RootScopeGuardedMediator.RootScopeGuardedMediator(Interlocutor.Abstractions.Core.IMediator! inner, Interlocutor.DependencyInjection.Abstractions.IRootScopeDetector! rootScopeDetector) -> void
+Interlocutor.DependencyInjection.Abstractions.RootScopeGuardedMediator.Send(object! request, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Interlocutor.CommonKernel.ResultTypes.IOperationOutcome!>!
+Interlocutor.DependencyInjection.Abstractions.RootScopeGuardedMediator.Send<TResponse>(Interlocutor.Abstractions.Commands.ICommand<TResponse>! command, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResponse>!
+Interlocutor.DependencyInjection.Abstractions.RootScopeGuardedMediator.Send<TResponse>(Interlocutor.Abstractions.Queries.IQuery<TResponse>! query, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResponse>!
+Interlocutor.DependencyInjection.Abstractions.RootScopeGuardedMediator.Send<TResult>(Interlocutor.Abstractions.Commands.ICommand! command, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResult>!
+Interlocutor.DependencyInjection.Abstractions.SkippedRegistration
+Interlocutor.DependencyInjection.Abstractions.SkippedRegistration.Description.get -> string!
+Interlocutor.DependencyInjection.Abstractions.SkippedRegistration.Description.init -> void
+Interlocutor.DependencyInjection.Abstractions.SkippedRegistration.Reason.get -> string!
+Interlocutor.DependencyInjection.Abstractions.SkippedRegistration.Reason.init -> void
+Interlocutor.DependencyInjection.Abstractions.SkippedRegistration.SkippedRegistration() -> void
+Interlocutor.DependencyInjection.Abstractions.SkippedRegistration.SkippedRegistration(string! Description, string! Reason) -> void
+Interlocutor.DependencyInjection.Abstractions.TypeLoadFailure
+Interlocutor.DependencyInjection.Abstractions.TypeLoadFailure.AssemblyName.get -> string!
+Interlocutor.DependencyInjection.Abstractions.TypeLoadFailure.AssemblyName.init -> void
+Interlocutor.DependencyInjection.Abstractions.TypeLoadFailure.Detail.get -> string!
+Interlocutor.DependencyInjection.Abstractions.TypeLoadFailure.Detail.init -> void
+Interlocutor.DependencyInjection.Abstractions.TypeLoadFailure.TypeLoadFailure() -> void
+Interlocutor.DependencyInjection.Abstractions.TypeLoadFailure.TypeLoadFailure(string! AssemblyName, string! Detail) -> void
+Interlocutor.DependencyInjection.Abstractions.TypeMatchRule
+Interlocutor.DependencyInjection.Abstractions.TypeMatchRule.Except.get -> System.Func<System.Type!, bool>?
+Interlocutor.DependencyInjection.Abstractions.TypeMatchRule.Except.init -> void
+Interlocutor.DependencyInjection.Abstractions.TypeMatchRule.Lifetime.get -> Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime
+Interlocutor.DependencyInjection.Abstractions.TypeMatchRule.Lifetime.init -> void
+Interlocutor.DependencyInjection.Abstractions.TypeMatchRule.Name.get -> string?
+Interlocutor.DependencyInjection.Abstractions.TypeMatchRule.Name.init -> void
+Interlocutor.DependencyInjection.Abstractions.TypeMatchRule.Predicate.get -> System.Func<System.Type!, bool>!
+Interlocutor.DependencyInjection.Abstractions.TypeMatchRule.Predicate.init -> void
+Interlocutor.DependencyInjection.Abstractions.TypeMatchRule.Require.get -> bool
+Interlocutor.DependencyInjection.Abstractions.TypeMatchRule.Require.init -> void
+Interlocutor.DependencyInjection.Abstractions.TypeMatchRule.Target.get -> Interlocutor.DependencyInjection.Abstractions.TypeMatchTarget
+Interlocutor.DependencyInjection.Abstractions.TypeMatchRule.Target.init -> void
+Interlocutor.DependencyInjection.Abstractions.TypeMatchRule.TypeMatchRule(System.Func<System.Type!, bool>! Predicate, Interlocutor.DependencyInjection.Abstractions.TypeMatchTarget Target, Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime Lifetime, System.Func<System.Type!, bool>? Except, bool Require, string? Name = null) -> void
+Interlocutor.DependencyInjection.Abstractions.TypeMatchTarget
+Interlocutor.DependencyInjection.Abstractions.TypeMatchTarget.Behavior = 1 -> Interlocutor.DependencyInjection.Abstractions.TypeMatchTarget
+Interlocutor.DependencyInjection.Abstractions.TypeMatchTarget.Handler = 0 -> Interlocutor.DependencyInjection.Abstractions.TypeMatchTarget
+override Interlocutor.DependencyInjection.Abstractions.RegistrationReport.ToString() -> string!
+static Interlocutor.DependencyInjection.Abstractions.HandlerDiscovery.Discover(System.Collections.Generic.IEnumerable<(System.Reflection.Assembly! Assembly, Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime Lifetime)>! assembliesToScan, System.Collections.Generic.IReadOnlyList<System.Type!>? extraContracts = null, System.Collections.Generic.ICollection<Interlocutor.DependencyInjection.Abstractions.TypeLoadFailure>? failures = null) -> System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration>!
+static Interlocutor.DependencyInjection.Abstractions.HandlerDiscovery.Discover(System.Collections.Generic.IEnumerable<System.Reflection.Assembly!>! assembliesToScan) -> System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration>!

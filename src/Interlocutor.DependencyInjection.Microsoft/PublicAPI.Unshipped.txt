@@ -1,0 +1,6 @@
+#nullable enable
+Interlocutor.DependencyInjection.Microsoft.InterlocutorServiceCollectionExtensions
+Interlocutor.DependencyInjection.Microsoft.PersistenceServiceCollectionExtensions
+static Interlocutor.DependencyInjection.Microsoft.InterlocutorServiceCollectionExtensions.AddInterlocutor(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder!>! configure) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Interlocutor.DependencyInjection.Microsoft.PersistenceServiceCollectionExtensions.AddInterlocutorRepository<TEntity, TKey, TImplementation>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Func<System.IServiceProvider!, TImplementation!>! implementationFactory) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Interlocutor.DependencyInjection.Microsoft.PersistenceServiceCollectionExtensions.AddInterlocutorUnitOfWork<TImplementation>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Func<System.IServiceProvider!, TImplementation!>! implementationFactory) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

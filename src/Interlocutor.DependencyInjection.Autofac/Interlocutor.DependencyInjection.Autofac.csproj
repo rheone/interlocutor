@@ -21,4 +21,10 @@
     <PackageReference Include="Autofac" />
     <PackageReference Include="Autofac.Extensions.DependencyInjection" />
   </ItemGroup>
+
+  <!-- Public API surface tracking: fails the build if a public member changes without
+       being recorded in PublicAPI.Shipped.txt/PublicAPI.Unshipped.txt. -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" PrivateAssets="all" />
+  </ItemGroup>
 </Project>

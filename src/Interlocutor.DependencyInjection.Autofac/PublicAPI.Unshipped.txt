@@ -1,0 +1,6 @@
+#nullable enable
+Interlocutor.DependencyInjection.Autofac.InterlocutorAutofacExtensions
+Interlocutor.DependencyInjection.Autofac.PersistenceContainerBuilderExtensions
+static Interlocutor.DependencyInjection.Autofac.InterlocutorAutofacExtensions.AddInterlocutor(this Autofac.ContainerBuilder! builder, System.Action<Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder!>! configure) -> Autofac.ContainerBuilder!
+static Interlocutor.DependencyInjection.Autofac.PersistenceContainerBuilderExtensions.AddInterlocutorRepository<TEntity, TKey, TImplementation>(this Autofac.ContainerBuilder! builder, System.Func<Autofac.IComponentContext!, TImplementation>! implementationFactory) -> Autofac.ContainerBuilder!
+static Interlocutor.DependencyInjection.Autofac.PersistenceContainerBuilderExtensions.AddInterlocutorUnitOfWork<TImplementation>(this Autofac.ContainerBuilder! builder, System.Func<Autofac.IComponentContext!, TImplementation>! implementationFactory) -> Autofac.ContainerBuilder!

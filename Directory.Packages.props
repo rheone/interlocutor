@@ -20,6 +20,21 @@
   <ItemGroup>
     <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.33.0.1635" />
   </ItemGroup>
+  <!-- Async/await usage analyzers -->
+  <ItemGroup>
+    <PackageVersion Include="AsyncFixer" Version="2.1.0" />
+    <PackageVersion Include="Microsoft.VisualStudio.Threading.Analyzers" Version="18.7.23" />
+  </ItemGroup>
+  <!-- IDisposable usage analyzer -->
+  <ItemGroup>
+    <PackageVersion Include="IDisposableAnalyzers" Version="4.0.8" />
+  </ItemGroup>
+  <!-- Public API surface tracking - referenced only by the packable src/ libraries, not
+       Interlocutor.Generator (tracked separately via its own AnalyzerReleases.*.md), tests, or
+       TutorialProject. -->
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="3.3.4" />
+  </ItemGroup>
   <!-- Microsoft extensions (ship with .NET 11) -->
   <ItemGroup>
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="11.0.0-preview.6.26359.118" />

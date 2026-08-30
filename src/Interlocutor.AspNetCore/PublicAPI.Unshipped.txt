@@ -1,0 +1,42 @@
+#nullable enable
+Interlocutor.AspNetCore.AspNetCoreRequestContextAccessor
+Interlocutor.AspNetCore.AspNetCoreRequestContextAccessor.AspNetCoreRequestContextAccessor(Microsoft.AspNetCore.Http.IHttpContextAccessor! httpContextAccessor) -> void
+Interlocutor.AspNetCore.AspNetCoreRequestContextAccessor.Context.get -> Interlocutor.Abstractions.Core.RequestContext?
+Interlocutor.AspNetCore.AspNetCoreRequestContextAccessor.Context.set -> void
+Interlocutor.AspNetCore.DefaultOutcomeStatusMapper
+Interlocutor.AspNetCore.DefaultOutcomeStatusMapper.DefaultOutcomeStatusMapper() -> void
+Interlocutor.AspNetCore.DefaultOutcomeStatusMapper.Map<TFailure>(TFailure failure) -> Interlocutor.AspNetCore.OutcomeHttpMapping!
+Interlocutor.AspNetCore.IOutcomeStatusMapper
+Interlocutor.AspNetCore.IOutcomeStatusMapper.Map<TFailure>(TFailure failure) -> Interlocutor.AspNetCore.OutcomeHttpMapping!
+Interlocutor.AspNetCore.OutcomeHttpMapping
+Interlocutor.AspNetCore.OutcomeHttpMapping.Body.get -> object?
+Interlocutor.AspNetCore.OutcomeHttpMapping.Body.init -> void
+Interlocutor.AspNetCore.OutcomeHttpMapping.OutcomeHttpMapping(int StatusCode, object? Body = null) -> void
+Interlocutor.AspNetCore.OutcomeHttpMapping.StatusCode.get -> int
+Interlocutor.AspNetCore.OutcomeHttpMapping.StatusCode.init -> void
+Interlocutor.AspNetCore.ResultExtensions
+static Interlocutor.AspNetCore.ResultExtensions.ToActionResult(this Interlocutor.CommonKernel.OperationOutcome result, Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper = null) -> Microsoft.AspNetCore.Mvc.IActionResult!
+static Interlocutor.AspNetCore.ResultExtensions.ToActionResult<TResponse>(this TResponse response, Interlocutor.Abstractions.Pipeline.Cases.IOutcomeCaseRegistry? caseRegistry, Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper = null) -> Microsoft.AspNetCore.Mvc.IActionResult!
+static Interlocutor.AspNetCore.ResultExtensions.ToActionResult<TSuccess, TCase2, TCase3, TCase4, TCase5, TCase6>(this Interlocutor.CommonKernel.OperationOutcome<TSuccess, TCase2, TCase3, TCase4, TCase5, TCase6> result, Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper = null) -> Microsoft.AspNetCore.Mvc.IActionResult!
+static Interlocutor.AspNetCore.ResultExtensions.ToActionResult<TSuccess, TCase2, TCase3, TCase4, TCase5>(this Interlocutor.CommonKernel.OperationOutcome<TSuccess, TCase2, TCase3, TCase4, TCase5> result, Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper = null) -> Microsoft.AspNetCore.Mvc.IActionResult!
+static Interlocutor.AspNetCore.ResultExtensions.ToActionResult<TSuccess, TCase2, TCase3, TCase4>(this Interlocutor.CommonKernel.OperationOutcome<TSuccess, TCase2, TCase3, TCase4> result, Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper = null) -> Microsoft.AspNetCore.Mvc.IActionResult!
+static Interlocutor.AspNetCore.ResultExtensions.ToActionResult<TSuccess, TCase2, TCase3>(this Interlocutor.CommonKernel.OperationOutcome<TSuccess, TCase2, TCase3> result, Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper = null) -> Microsoft.AspNetCore.Mvc.IActionResult!
+static Interlocutor.AspNetCore.ResultExtensions.ToActionResult<TSuccess, TFailure>(this Interlocutor.CommonKernel.OperationOutcome<TSuccess, TFailure> result, Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper = null) -> Microsoft.AspNetCore.Mvc.IActionResult!
+static Interlocutor.AspNetCore.ResultExtensions.ToMinimalApiResult(this Interlocutor.CommonKernel.OperationOutcome result, Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper = null) -> Microsoft.AspNetCore.Http.IResult!
+static Interlocutor.AspNetCore.ResultExtensions.ToMinimalApiResult<TResponse>(this TResponse response, Interlocutor.Abstractions.Pipeline.Cases.IOutcomeCaseRegistry? caseRegistry, Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper = null) -> Microsoft.AspNetCore.Http.IResult!
+static Interlocutor.AspNetCore.ResultExtensions.ToMinimalApiResult<TSuccess, TCase2, TCase3, TCase4, TCase5, TCase6>(this Interlocutor.CommonKernel.OperationOutcome<TSuccess, TCase2, TCase3, TCase4, TCase5, TCase6> result, Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper = null) -> Microsoft.AspNetCore.Http.IResult!
+static Interlocutor.AspNetCore.ResultExtensions.ToMinimalApiResult<TSuccess, TCase2, TCase3, TCase4, TCase5>(this Interlocutor.CommonKernel.OperationOutcome<TSuccess, TCase2, TCase3, TCase4, TCase5> result, Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper = null) -> Microsoft.AspNetCore.Http.IResult!
+static Interlocutor.AspNetCore.ResultExtensions.ToMinimalApiResult<TSuccess, TCase2, TCase3, TCase4>(this Interlocutor.CommonKernel.OperationOutcome<TSuccess, TCase2, TCase3, TCase4> result, Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper = null) -> Microsoft.AspNetCore.Http.IResult!
+static Interlocutor.AspNetCore.ResultExtensions.ToMinimalApiResult<TSuccess, TCase2, TCase3>(this Interlocutor.CommonKernel.OperationOutcome<TSuccess, TCase2, TCase3> result, Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper = null) -> Microsoft.AspNetCore.Http.IResult!
+static Interlocutor.AspNetCore.ResultExtensions.ToMinimalApiResult<TSuccess, TFailure>(this Interlocutor.CommonKernel.OperationOutcome<TSuccess, TFailure> result, Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper = null) -> Microsoft.AspNetCore.Http.IResult!
+virtual Interlocutor.AspNetCore.DefaultOutcomeStatusMapper.MapCancelled(Interlocutor.CommonKernel.ResultTypes.Cancelled cancelled) -> Interlocutor.AspNetCore.OutcomeHttpMapping!
+virtual Interlocutor.AspNetCore.DefaultOutcomeStatusMapper.MapConflict(Interlocutor.CommonKernel.ResultTypes.Conflict conflict) -> Interlocutor.AspNetCore.OutcomeHttpMapping!
+virtual Interlocutor.AspNetCore.DefaultOutcomeStatusMapper.MapFailure(Interlocutor.CommonKernel.ResultTypes.Failure failure) -> Interlocutor.AspNetCore.OutcomeHttpMapping!
+virtual Interlocutor.AspNetCore.DefaultOutcomeStatusMapper.MapFailures(Interlocutor.CommonKernel.ResultTypes.Failures failures) -> Interlocutor.AspNetCore.OutcomeHttpMapping!
+virtual Interlocutor.AspNetCore.DefaultOutcomeStatusMapper.MapForbidden(Interlocutor.CommonKernel.ResultTypes.Forbidden forbidden) -> Interlocutor.AspNetCore.OutcomeHttpMapping!
+virtual Interlocutor.AspNetCore.DefaultOutcomeStatusMapper.MapNotFound(Interlocutor.CommonKernel.ResultTypes.NotFound notFound) -> Interlocutor.AspNetCore.OutcomeHttpMapping!
+virtual Interlocutor.AspNetCore.DefaultOutcomeStatusMapper.MapNotFoundGeneric(System.Type! entityType, object? id, string? message) -> Interlocutor.AspNetCore.OutcomeHttpMapping!
+virtual Interlocutor.AspNetCore.DefaultOutcomeStatusMapper.MapRateLimited(Interlocutor.CommonKernel.ResultTypes.RateLimited rateLimited) -> Interlocutor.AspNetCore.OutcomeHttpMapping!
+virtual Interlocutor.AspNetCore.DefaultOutcomeStatusMapper.MapTimeout(Interlocutor.CommonKernel.ResultTypes.Timeout timeout) -> Interlocutor.AspNetCore.OutcomeHttpMapping!
+virtual Interlocutor.AspNetCore.DefaultOutcomeStatusMapper.MapUnrecognized<TFailure>(TFailure failure) -> Interlocutor.AspNetCore.OutcomeHttpMapping!
+virtual Interlocutor.AspNetCore.DefaultOutcomeStatusMapper.MapValidationErrors(Interlocutor.CommonKernel.ResultTypes.ValidationErrors validationErrors) -> Interlocutor.AspNetCore.OutcomeHttpMapping!

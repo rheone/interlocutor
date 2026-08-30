@@ -1,0 +1,246 @@
+#nullable enable
+abstract Interlocutor.Abstractions.Commands.ResourceCommandHandler<TCommand, TEntity, TSuccess>.Authorize(TEntity entity, TCommand command) -> Interlocutor.CommonKernel.ResultTypes.Failure?
+abstract Interlocutor.Abstractions.Commands.ResourceCommandHandler<TCommand, TEntity, TSuccess>.HandleAsync(TCommand command, TEntity entity, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Interlocutor.CommonKernel.OperationOutcome<TSuccess, Interlocutor.CommonKernel.ResultTypes.NotFound, Interlocutor.CommonKernel.ResultTypes.Failure>>!
+abstract Interlocutor.Abstractions.Commands.ResourceCommandHandler<TCommand, TEntity, TSuccess>.LoadAsync(TCommand command, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TEntity?>!
+const Interlocutor.Abstractions.Diagnostics.MediatorActivitySource.HandlerTypeTag = "interlocutor.handler_type" -> string!
+const Interlocutor.Abstractions.Diagnostics.MediatorActivitySource.Name = "Interlocutor.Mediator" -> string!
+const Interlocutor.Abstractions.Diagnostics.MediatorActivitySource.OutcomeTag = "interlocutor.outcome" -> string!
+const Interlocutor.Abstractions.Diagnostics.MediatorActivitySource.RequestTypeTag = "interlocutor.request_type" -> string!
+Interlocutor.Abstractions.Commands.ICommand
+Interlocutor.Abstractions.Commands.ICommand<TResponse>
+Interlocutor.Abstractions.Commands.ICommandHandler<TCommand, TResponse>
+Interlocutor.Abstractions.Commands.ICommandHandler<TCommand, TResponse>.Handle(TCommand command, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
+Interlocutor.Abstractions.Commands.IVoidCommandHandler<TCommand, TResult>
+Interlocutor.Abstractions.Commands.IVoidCommandHandler<TCommand, TResult>.Handle(TCommand command, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResult>!
+Interlocutor.Abstractions.Commands.ResourceCommandHandler<TCommand, TEntity, TSuccess>
+Interlocutor.Abstractions.Commands.ResourceCommandHandler<TCommand, TEntity, TSuccess>.Handle(TCommand command, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Interlocutor.CommonKernel.OperationOutcome<TSuccess, Interlocutor.CommonKernel.ResultTypes.NotFound, Interlocutor.CommonKernel.ResultTypes.Failure>>!
+Interlocutor.Abstractions.Commands.ResourceCommandHandler<TCommand, TEntity, TSuccess>.ResourceCommandHandler() -> void
+Interlocutor.Abstractions.Core.AmbientRequestContextAccessor
+Interlocutor.Abstractions.Core.AmbientRequestContextAccessor.AmbientRequestContextAccessor() -> void
+Interlocutor.Abstractions.Core.AmbientRequestContextAccessor.Context.get -> Interlocutor.Abstractions.Core.RequestContext?
+Interlocutor.Abstractions.Core.AmbientRequestContextAccessor.Context.set -> void
+Interlocutor.Abstractions.Core.HandlerNotRegisteredException
+Interlocutor.Abstractions.Core.HandlerNotRegisteredException.HandlerNotRegisteredException(System.Type! requestType, System.Type? handlerType = null) -> void
+Interlocutor.Abstractions.Core.HandlerNotRegisteredException.HandlerType.get -> System.Type?
+Interlocutor.Abstractions.Core.HandlerNotRegisteredException.RequestType.get -> System.Type!
+Interlocutor.Abstractions.Core.HandlerOverrideAttribute
+Interlocutor.Abstractions.Core.HandlerOverrideAttribute.HandlerOverrideAttribute(System.Type! handlerType) -> void
+Interlocutor.Abstractions.Core.HandlerOverrideAttribute.HandlerType.get -> System.Type!
+Interlocutor.Abstractions.Core.IGeneratedNotificationHandlerOrder
+Interlocutor.Abstractions.Core.IGeneratedNotificationHandlerOrder.Rank(System.Type! handlerType) -> int
+Interlocutor.Abstractions.Core.IGeneratedRequestDispatcher
+Interlocutor.Abstractions.Core.IGeneratedRequestDispatcher.Dispatch(object! request, System.IServiceProvider! services, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Interlocutor.CommonKernel.ResultTypes.IOperationOutcome!>!
+Interlocutor.Abstractions.Core.IMediator
+Interlocutor.Abstractions.Core.IPublisher
+Interlocutor.Abstractions.Core.IPublisher.Publish<TNotification>(TNotification notification, Interlocutor.Abstractions.Core.PublishStrategy strategy, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Interlocutor.Abstractions.Core.IPublisher.Publish<TNotification>(TNotification notification, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Interlocutor.Abstractions.Core.IRequestContextAccessor
+Interlocutor.Abstractions.Core.IRequestContextAccessor.Context.get -> Interlocutor.Abstractions.Core.RequestContext?
+Interlocutor.Abstractions.Core.IRequestContextAccessor.Context.set -> void
+Interlocutor.Abstractions.Core.ISender
+Interlocutor.Abstractions.Core.ISender.Send(object! request, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Interlocutor.CommonKernel.ResultTypes.IOperationOutcome!>!
+Interlocutor.Abstractions.Core.ISender.Send<TResponse>(Interlocutor.Abstractions.Commands.ICommand<TResponse>! command, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResponse>!
+Interlocutor.Abstractions.Core.ISender.Send<TResponse>(Interlocutor.Abstractions.Queries.IQuery<TResponse>! query, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResponse>!
+Interlocutor.Abstractions.Core.ISender.Send<TResult>(Interlocutor.Abstractions.Commands.ICommand! command, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResult>!
+Interlocutor.Abstractions.Core.MediatorResolvedFromRootScopeException
+Interlocutor.Abstractions.Core.MediatorResolvedFromRootScopeException.MediatorResolvedFromRootScopeException(System.Type! requestType) -> void
+Interlocutor.Abstractions.Core.MediatorResolvedFromRootScopeException.RequestType.get -> System.Type!
+Interlocutor.Abstractions.Core.PublishStrategy
+Interlocutor.Abstractions.Core.PublishStrategy.Parallel = 1 -> Interlocutor.Abstractions.Core.PublishStrategy
+Interlocutor.Abstractions.Core.PublishStrategy.Sequential = 0 -> Interlocutor.Abstractions.Core.PublishStrategy
+Interlocutor.Abstractions.Core.RequestContext
+Interlocutor.Abstractions.Core.RequestContext.CorrelationId.get -> string!
+Interlocutor.Abstractions.Core.RequestContext.CorrelationId.init -> void
+Interlocutor.Abstractions.Core.RequestContext.Items.get -> Interlocutor.Abstractions.Core.RequestContextItems!
+Interlocutor.Abstractions.Core.RequestContext.Items.init -> void
+Interlocutor.Abstractions.Core.RequestContext.TenantId.get -> string?
+Interlocutor.Abstractions.Core.RequestContext.TenantId.init -> void
+Interlocutor.Abstractions.Core.RequestContext.UserId.get -> string?
+Interlocutor.Abstractions.Core.RequestContext.UserId.init -> void
+Interlocutor.Abstractions.Core.RequestContextItems
+Interlocutor.Abstractions.Core.RequestContextItems.Clear() -> void
+Interlocutor.Abstractions.Core.RequestContextItems.ContainsKey(string! key) -> bool
+Interlocutor.Abstractions.Core.RequestContextItems.GetEnumerator() -> System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string!, object?>>!
+Interlocutor.Abstractions.Core.RequestContextItems.GetOrAdd<TValue>(string! key, System.Func<string!, TValue>! factory) -> TValue
+Interlocutor.Abstractions.Core.RequestContextItems.Remove(string! key) -> bool
+Interlocutor.Abstractions.Core.RequestContextItems.RequestContextItems() -> void
+Interlocutor.Abstractions.Core.RequestContextItems.RequestContextItems(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string!, object?>>! seed) -> void
+Interlocutor.Abstractions.Core.RequestContextItems.Set<TValue>(string! key, TValue value) -> void
+Interlocutor.Abstractions.Core.RequestContextItems.this[string! key].get -> object?
+Interlocutor.Abstractions.Core.RequestContextItems.this[string! key].set -> void
+Interlocutor.Abstractions.Core.RequestContextItems.TryGet<TValue>(string! key, out TValue value) -> bool
+Interlocutor.Abstractions.Core.UnsupportedRequestTypeException
+Interlocutor.Abstractions.Core.UnsupportedRequestTypeException.RequestType.get -> System.Type!
+Interlocutor.Abstractions.Core.UnsupportedRequestTypeException.UnsupportedRequestTypeException(System.Type! requestType) -> void
+Interlocutor.Abstractions.Diagnostics.MediatorActivitySource
+Interlocutor.Abstractions.InterlocutorStartupValidation
+Interlocutor.Abstractions.Markers.IAuditableRequest
+Interlocutor.Abstractions.Markers.IAuditableRequest.ActionName.get -> string!
+Interlocutor.Abstractions.Markers.ICancellable
+Interlocutor.Abstractions.Markers.IExternalStoreRequest
+Interlocutor.Abstractions.Markers.IHasTimeout
+Interlocutor.Abstractions.Markers.IHasTimeout.Budget.get -> System.TimeSpan
+Interlocutor.Abstractions.Markers.IRateLimited
+Interlocutor.Abstractions.Markers.IRateLimited.LimitKey.get -> string!
+Interlocutor.Abstractions.Markers.IRequiresPolicy
+Interlocutor.Abstractions.Markers.IRequiresPolicy.PolicyName.get -> string!
+Interlocutor.Abstractions.Markers.ITransactionalRequest
+Interlocutor.Abstractions.Mediator
+Interlocutor.Abstractions.Mediator.Mediator(System.IServiceProvider! services) -> void
+Interlocutor.Abstractions.Mediator.Publish<TNotification>(TNotification notification, Interlocutor.Abstractions.Core.PublishStrategy strategy, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Interlocutor.Abstractions.Mediator.Publish<TNotification>(TNotification notification, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Interlocutor.Abstractions.Mediator.Send(object! request, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Interlocutor.CommonKernel.ResultTypes.IOperationOutcome!>!
+Interlocutor.Abstractions.Mediator.Send<TResponse>(Interlocutor.Abstractions.Commands.ICommand<TResponse>! command, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResponse>!
+Interlocutor.Abstractions.Mediator.Send<TResponse>(Interlocutor.Abstractions.Queries.IQuery<TResponse>! query, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResponse>!
+Interlocutor.Abstractions.Mediator.Send<TResult>(Interlocutor.Abstractions.Commands.ICommand! command, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResult>!
+Interlocutor.Abstractions.Notifications.INotification
+Interlocutor.Abstractions.Notifications.INotificationHandler<TNotification>
+Interlocutor.Abstractions.Notifications.INotificationHandler<TNotification>.Handle(TNotification notification, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Interlocutor.Abstractions.Notifications.NotificationHandlerRunAfterAttribute
+Interlocutor.Abstractions.Notifications.NotificationHandlerRunAfterAttribute.HandlerType.get -> System.Type!
+Interlocutor.Abstractions.Notifications.NotificationHandlerRunAfterAttribute.NotificationHandlerRunAfterAttribute(System.Type! handlerType) -> void
+Interlocutor.Abstractions.Notifications.NotificationHandlerRunBeforeAttribute
+Interlocutor.Abstractions.Notifications.NotificationHandlerRunBeforeAttribute.HandlerType.get -> System.Type!
+Interlocutor.Abstractions.Notifications.NotificationHandlerRunBeforeAttribute.NotificationHandlerRunBeforeAttribute(System.Type! handlerType) -> void
+Interlocutor.Abstractions.Pipeline.AuditEntry
+Interlocutor.Abstractions.Pipeline.AuditEntry.ActionName.get -> string!
+Interlocutor.Abstractions.Pipeline.AuditEntry.ActionName.init -> void
+Interlocutor.Abstractions.Pipeline.AuditEntry.AuditEntry(string! ActionName, string! RequestType, string! Outcome, System.DateTime Timestamp, string? UserId = null) -> void
+Interlocutor.Abstractions.Pipeline.AuditEntry.Outcome.get -> string!
+Interlocutor.Abstractions.Pipeline.AuditEntry.Outcome.init -> void
+Interlocutor.Abstractions.Pipeline.AuditEntry.RequestType.get -> string!
+Interlocutor.Abstractions.Pipeline.AuditEntry.RequestType.init -> void
+Interlocutor.Abstractions.Pipeline.AuditEntry.Timestamp.get -> System.DateTime
+Interlocutor.Abstractions.Pipeline.AuditEntry.Timestamp.init -> void
+Interlocutor.Abstractions.Pipeline.AuditEntry.UserId.get -> string?
+Interlocutor.Abstractions.Pipeline.AuditEntry.UserId.init -> void
+Interlocutor.Abstractions.Pipeline.AuditingBehavior<TRequest, TResponse>
+Interlocutor.Abstractions.Pipeline.AuditingBehavior<TRequest, TResponse>.AuditingBehavior(Interlocutor.Abstractions.Pipeline.IAuditSink! sink, Interlocutor.Abstractions.Pipeline.IResponseOutcomeDescriber? describer = null, Interlocutor.Abstractions.Core.IRequestContextAccessor? contextAccessor = null) -> void
+Interlocutor.Abstractions.Pipeline.AuditingBehavior<TRequest, TResponse>.Handle(TRequest request, System.Func<System.Threading.Tasks.Task<TResponse>!>! next, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
+Interlocutor.Abstractions.Pipeline.AuthorizationBehavior<TRequest, TResponse>
+Interlocutor.Abstractions.Pipeline.AuthorizationBehavior<TRequest, TResponse>.AuthorizationBehavior(Interlocutor.Abstractions.Pipeline.IPolicyEvaluator! policyEvaluator, Interlocutor.Abstractions.Pipeline.Cases.IOutcomeCaseRegistry! caseRegistry) -> void
+Interlocutor.Abstractions.Pipeline.AuthorizationBehavior<TRequest, TResponse>.Handle(TRequest request, System.Func<System.Threading.Tasks.Task<TResponse>!>! next, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
+Interlocutor.Abstractions.Pipeline.CancellationBehavior<TRequest, TResponse>
+Interlocutor.Abstractions.Pipeline.CancellationBehavior<TRequest, TResponse>.CancellationBehavior(Interlocutor.Abstractions.Pipeline.Cases.IOutcomeCaseRegistry! caseRegistry) -> void
+Interlocutor.Abstractions.Pipeline.CancellationBehavior<TRequest, TResponse>.Handle(TRequest request, System.Func<System.Threading.Tasks.Task<TResponse>!>! next, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
+Interlocutor.Abstractions.Pipeline.Cases.DefaultOutcomeCaseRegistry
+Interlocutor.Abstractions.Pipeline.Cases.DefaultOutcomeCaseRegistry.Construct<TResponse, TCase>(TCase caseValue) -> TResponse
+Interlocutor.Abstractions.Pipeline.Cases.DefaultOutcomeCaseRegistry.DefaultOutcomeCaseRegistry() -> void
+Interlocutor.Abstractions.Pipeline.Cases.DefaultOutcomeCaseRegistry.TryGetActiveCase<TResponse>(TResponse response, out System.Type! caseType, out object? caseValue) -> bool
+Interlocutor.Abstractions.Pipeline.Cases.IOutcomeCaseRegistry
+Interlocutor.Abstractions.Pipeline.Cases.IOutcomeCaseRegistry.Construct<TResponse, TCase>(TCase caseValue) -> TResponse
+Interlocutor.Abstractions.Pipeline.Cases.IOutcomeCaseRegistry.TryGetActiveCase<TResponse>(TResponse response, out System.Type! caseType, out object? caseValue) -> bool
+Interlocutor.Abstractions.Pipeline.Cases.OutcomeCaseExtractor<TResponse>
+Interlocutor.Abstractions.Pipeline.Cases.OutcomeCaseNotSupportedException
+Interlocutor.Abstractions.Pipeline.Cases.OutcomeCaseNotSupportedException.CaseType.get -> System.Type?
+Interlocutor.Abstractions.Pipeline.Cases.OutcomeCaseNotSupportedException.OutcomeCaseNotSupportedException(System.Type! responseType, System.Type? caseType, string! message) -> void
+Interlocutor.Abstractions.Pipeline.Cases.OutcomeCaseNotSupportedException.ResponseType.get -> System.Type!
+Interlocutor.Abstractions.Pipeline.Cases.OutcomeCaseRegistryBuilder
+Interlocutor.Abstractions.Pipeline.Cases.OutcomeCaseRegistryBuilder.Build() -> Interlocutor.Abstractions.Pipeline.Cases.IOutcomeCaseRegistry!
+Interlocutor.Abstractions.Pipeline.Cases.OutcomeCaseRegistryBuilder.OutcomeCaseRegistryBuilder() -> void
+Interlocutor.Abstractions.Pipeline.Cases.OutcomeCaseRegistryBuilder.RegisterExtractor<TResponse>(Interlocutor.Abstractions.Pipeline.Cases.OutcomeCaseExtractor<TResponse>! extractor) -> Interlocutor.Abstractions.Pipeline.Cases.OutcomeCaseRegistryBuilder!
+Interlocutor.Abstractions.Pipeline.Cases.OutcomeCaseRegistryBuilder.RegisterFactory<TResponse, TCase>(System.Func<TCase, TResponse>! factory) -> Interlocutor.Abstractions.Pipeline.Cases.OutcomeCaseRegistryBuilder!
+Interlocutor.Abstractions.Pipeline.Cases.OutcomeCaseRegistryExtensions
+Interlocutor.Abstractions.Pipeline.Classifiers.IOutcomeClassifier
+Interlocutor.Abstractions.Pipeline.Classifiers.IOutcomeClassifier.GetLabel(object? response) -> string!
+Interlocutor.Abstractions.Pipeline.Classifiers.IOutcomeClassifier.IsFailure(object? response) -> bool
+Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder
+Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder.Build() -> Interlocutor.Abstractions.Pipeline.Classifiers.IOutcomeClassifier!
+Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder.OutcomeClassifierBuilder() -> void
+Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder.RegisterFailureType(System.Type! type, string! label) -> Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder!
+Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder.RegisterFailureType<TFailure>(string! label) -> Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder!
+Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder.RegisterPredicate(System.Func<object?, bool>! predicate, string! label, bool isFailure) -> Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder!
+Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder.RegisterSuccessType<TSuccess>(string! label) -> Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder!
+Interlocutor.Abstractions.Pipeline.DefaultPolicyEvaluator
+Interlocutor.Abstractions.Pipeline.DefaultPolicyEvaluator.DefaultPolicyEvaluator() -> void
+Interlocutor.Abstractions.Pipeline.DefaultPolicyEvaluator.EvaluateAsync(string! policyName, object! request, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<bool>!
+Interlocutor.Abstractions.Pipeline.DefaultRateLimiter
+Interlocutor.Abstractions.Pipeline.DefaultRateLimiter.CheckAsync(string! limitKey, object! request, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Interlocutor.Abstractions.Pipeline.RateLimitResult>!
+Interlocutor.Abstractions.Pipeline.DefaultRateLimiter.DefaultRateLimiter() -> void
+Interlocutor.Abstractions.Pipeline.DefaultResponseOutcomeDescriber
+Interlocutor.Abstractions.Pipeline.DefaultResponseOutcomeDescriber.DefaultResponseOutcomeDescriber(Interlocutor.Abstractions.Pipeline.Classifiers.IOutcomeClassifier! classifier) -> void
+Interlocutor.Abstractions.Pipeline.DefaultResponseOutcomeDescriber.Describe(object? response) -> string!
+Interlocutor.Abstractions.Pipeline.DefaultResponseOutcomeDescriber.IsFailure(object? response) -> bool
+Interlocutor.Abstractions.Pipeline.DefaultTimeoutPolicy
+Interlocutor.Abstractions.Pipeline.DefaultTimeoutPolicy.DefaultTimeoutPolicy() -> void
+Interlocutor.Abstractions.Pipeline.DefaultTimeoutPolicy.ResolveBudget(Interlocutor.Abstractions.Markers.IHasTimeout! request) -> System.TimeSpan
+Interlocutor.Abstractions.Pipeline.DelegatePipelineStage<TRequest, TResponse>
+Interlocutor.Abstractions.Pipeline.DelegatePipelineStage<TRequest, TResponse>.DelegatePipelineStage(System.Func<TRequest, System.Threading.CancellationToken, System.Threading.Tasks.Task<Interlocutor.Abstractions.Pipeline.StageResult<TResponse>>!>? onBefore, System.Func<TRequest, TResponse, System.Threading.CancellationToken, System.Threading.Tasks.Task!>? onAfter) -> void
+Interlocutor.Abstractions.Pipeline.DelegateRateLimiter
+Interlocutor.Abstractions.Pipeline.DelegateRateLimiter.CheckAsync(string! limitKey, object! request, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Interlocutor.Abstractions.Pipeline.RateLimitResult>!
+Interlocutor.Abstractions.Pipeline.DelegateRateLimiter.DelegateRateLimiter(System.Func<string!, object!, System.Threading.CancellationToken, System.Threading.Tasks.Task<Interlocutor.Abstractions.Pipeline.RateLimitResult>!>! check) -> void
+Interlocutor.Abstractions.Pipeline.DelegateTimeoutPolicy
+Interlocutor.Abstractions.Pipeline.DelegateTimeoutPolicy.DelegateTimeoutPolicy(System.Func<Interlocutor.Abstractions.Markers.IHasTimeout!, System.TimeSpan>! resolveBudget) -> void
+Interlocutor.Abstractions.Pipeline.DelegateTimeoutPolicy.ResolveBudget(Interlocutor.Abstractions.Markers.IHasTimeout! request) -> System.TimeSpan
+Interlocutor.Abstractions.Pipeline.Eject
+Interlocutor.Abstractions.Pipeline.IAuditSink
+Interlocutor.Abstractions.Pipeline.IAuditSink.RecordAsync(Interlocutor.Abstractions.Pipeline.AuditEntry! entry, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Interlocutor.Abstractions.Pipeline.IPipelineBehavior<TRequest, TResponse>
+Interlocutor.Abstractions.Pipeline.IPipelineBehavior<TRequest, TResponse>.Handle(TRequest request, System.Func<System.Threading.Tasks.Task<TResponse>!>! next, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
+Interlocutor.Abstractions.Pipeline.IPipelineOverrideRegistry
+Interlocutor.Abstractions.Pipeline.IPipelineOverrideRegistry.TryGetOverride(System.Type! requestType, out System.Collections.Generic.IReadOnlyList<System.Type!>! behaviorTypes) -> bool
+Interlocutor.Abstractions.Pipeline.IPipelineStage<TRequest, TResponse>
+Interlocutor.Abstractions.Pipeline.IPipelineStage<TRequest, TResponse>.OnAfterAsync(TRequest request, TResponse result, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Interlocutor.Abstractions.Pipeline.IPipelineStage<TRequest, TResponse>.OnBeforeAsync(TRequest request, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Interlocutor.Abstractions.Pipeline.StageResult<TResponse>>!
+Interlocutor.Abstractions.Pipeline.IPolicyEvaluator
+Interlocutor.Abstractions.Pipeline.IPolicyEvaluator.EvaluateAsync(string! policyName, object! request, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<bool>!
+Interlocutor.Abstractions.Pipeline.IRateLimiter
+Interlocutor.Abstractions.Pipeline.IRateLimiter.CheckAsync(string! limitKey, object! request, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Interlocutor.Abstractions.Pipeline.RateLimitResult>!
+Interlocutor.Abstractions.Pipeline.IResponseOutcomeDescriber
+Interlocutor.Abstractions.Pipeline.IResponseOutcomeDescriber.Describe(object? response) -> string!
+Interlocutor.Abstractions.Pipeline.IResponseOutcomeDescriber.IsFailure(object? response) -> bool
+Interlocutor.Abstractions.Pipeline.ITimeoutPolicy
+Interlocutor.Abstractions.Pipeline.ITimeoutPolicy.ResolveBudget(Interlocutor.Abstractions.Markers.IHasTimeout! request) -> System.TimeSpan
+Interlocutor.Abstractions.Pipeline.LoggingAuditSink
+Interlocutor.Abstractions.Pipeline.LoggingAuditSink.LoggingAuditSink(Microsoft.Extensions.Logging.ILogger<Interlocutor.Abstractions.Pipeline.LoggingAuditSink!>! logger) -> void
+Interlocutor.Abstractions.Pipeline.LoggingAuditSink.RecordAsync(Interlocutor.Abstractions.Pipeline.AuditEntry! entry, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+Interlocutor.Abstractions.Pipeline.LoggingBehavior<TRequest, TResponse>
+Interlocutor.Abstractions.Pipeline.LoggingBehavior<TRequest, TResponse>.Handle(TRequest request, System.Func<System.Threading.Tasks.Task<TResponse>!>! next, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
+Interlocutor.Abstractions.Pipeline.LoggingBehavior<TRequest, TResponse>.LoggingBehavior(Microsoft.Extensions.Logging.ILogger<Interlocutor.Abstractions.Pipeline.LoggingBehavior<TRequest, TResponse>!>! logger, Interlocutor.Abstractions.Pipeline.IResponseOutcomeDescriber? describer = null) -> void
+Interlocutor.Abstractions.Pipeline.PipelineChainResolver
+Interlocutor.Abstractions.Pipeline.PipelineEjectException<TResponse>
+Interlocutor.Abstractions.Pipeline.PipelineEjectException<TResponse>.Response.get -> TResponse
+Interlocutor.Abstractions.Pipeline.PipelineStageBase<TRequest, TResponse>
+Interlocutor.Abstractions.Pipeline.PipelineStageBase<TRequest, TResponse>.PipelineStageBase() -> void
+Interlocutor.Abstractions.Pipeline.PipelineStageBehavior<TRequest, TResponse>
+Interlocutor.Abstractions.Pipeline.PipelineStageBehavior<TRequest, TResponse>.Handle(TRequest request, System.Func<System.Threading.Tasks.Task<TResponse>!>! next, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
+Interlocutor.Abstractions.Pipeline.PipelineStageBehavior<TRequest, TResponse>.PipelineStageBehavior(System.Collections.Generic.IEnumerable<Interlocutor.Abstractions.Pipeline.IPipelineStage<TRequest, TResponse>!>! stages, Microsoft.Extensions.Logging.ILogger<Interlocutor.Abstractions.Pipeline.PipelineStageBehavior<TRequest, TResponse>!>! logger, bool rethrowAfterHookExceptions = false) -> void
+Interlocutor.Abstractions.Pipeline.RateLimitedBehavior<TRequest, TResponse>
+Interlocutor.Abstractions.Pipeline.RateLimitedBehavior<TRequest, TResponse>.Handle(TRequest request, System.Func<System.Threading.Tasks.Task<TResponse>!>! next, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
+Interlocutor.Abstractions.Pipeline.RateLimitedBehavior<TRequest, TResponse>.RateLimitedBehavior(Interlocutor.Abstractions.Pipeline.IRateLimiter! rateLimiter, Interlocutor.Abstractions.Pipeline.Cases.IOutcomeCaseRegistry! caseRegistry) -> void
+Interlocutor.Abstractions.Pipeline.RateLimitResult
+Interlocutor.Abstractions.Pipeline.RateLimitResult.IsAllowed.get -> bool
+Interlocutor.Abstractions.Pipeline.RateLimitResult.IsAllowed.init -> void
+Interlocutor.Abstractions.Pipeline.RateLimitResult.RateLimitResult() -> void
+Interlocutor.Abstractions.Pipeline.RateLimitResult.RateLimitResult(bool IsAllowed, System.TimeSpan? RetryAfter = null) -> void
+Interlocutor.Abstractions.Pipeline.RateLimitResult.RetryAfter.get -> System.TimeSpan?
+Interlocutor.Abstractions.Pipeline.RateLimitResult.RetryAfter.init -> void
+Interlocutor.Abstractions.Pipeline.StageResult<TResponse>
+Interlocutor.Abstractions.Pipeline.StageResult<TResponse>.Response.get -> TResponse
+Interlocutor.Abstractions.Pipeline.StageResult<TResponse>.ShortCircuited.get -> bool
+Interlocutor.Abstractions.Pipeline.StageResult<TResponse>.StageResult() -> void
+Interlocutor.Abstractions.Pipeline.TimeoutBehavior<TRequest, TResponse>
+Interlocutor.Abstractions.Pipeline.TimeoutBehavior<TRequest, TResponse>.Handle(TRequest request, System.Func<System.Threading.Tasks.Task<TResponse>!>! next, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
+Interlocutor.Abstractions.Pipeline.TimeoutBehavior<TRequest, TResponse>.TimeoutBehavior(Interlocutor.Abstractions.Pipeline.ITimeoutPolicy! timeoutPolicy, Interlocutor.Abstractions.Pipeline.Cases.IOutcomeCaseRegistry! caseRegistry) -> void
+Interlocutor.Abstractions.Pipeline.UnionCaseFactory
+Interlocutor.Abstractions.Queries.IQuery<TResponse>
+Interlocutor.Abstractions.Queries.IQueryHandler<TQuery, TResponse>
+Interlocutor.Abstractions.Queries.IQueryHandler<TQuery, TResponse>.Handle(TQuery query, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
+override Interlocutor.Abstractions.Pipeline.DelegatePipelineStage<TRequest, TResponse>.OnAfterAsync(TRequest request, TResponse result, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+override Interlocutor.Abstractions.Pipeline.DelegatePipelineStage<TRequest, TResponse>.OnBeforeAsync(TRequest request, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Interlocutor.Abstractions.Pipeline.StageResult<TResponse>>!
+static Interlocutor.Abstractions.InterlocutorStartupValidation.ValidateHandlerRegistrations(this System.IServiceProvider! provider, params System.Reflection.Assembly![]! assembliesToScan) -> System.IServiceProvider!
+static Interlocutor.Abstractions.Pipeline.Cases.DefaultOutcomeCaseRegistry.Instance.get -> Interlocutor.Abstractions.Pipeline.Cases.IOutcomeCaseRegistry!
+static Interlocutor.Abstractions.Pipeline.Cases.OutcomeCaseRegistryExtensions.ConstructOrThrow<TResponse, TCase>(this Interlocutor.Abstractions.Pipeline.Cases.IOutcomeCaseRegistry! caseRegistry, TCase caseValue, string! behaviorName, string! eventPhrase, string! requirementClause) -> TResponse
+static Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder.DefaultClassifier.get -> Interlocutor.Abstractions.Pipeline.Classifiers.IOutcomeClassifier!
+static Interlocutor.Abstractions.Pipeline.Eject.With<TResponse>(TResponse response) -> TResponse
+static Interlocutor.Abstractions.Pipeline.PipelineChainResolver.ResolveChain<TRequest, TResponse>(System.IServiceProvider! services) -> System.Collections.Generic.IReadOnlyList<Interlocutor.Abstractions.Pipeline.IPipelineBehavior<TRequest, TResponse>!>!
+static Interlocutor.Abstractions.Pipeline.StageResult<TResponse>.Continue.get -> Interlocutor.Abstractions.Pipeline.StageResult<TResponse>
+static Interlocutor.Abstractions.Pipeline.StageResult<TResponse>.ShortCircuit(TResponse response) -> Interlocutor.Abstractions.Pipeline.StageResult<TResponse>
+static Interlocutor.Abstractions.Pipeline.UnionCaseFactory.FindCaseConstructor<TResponse, TCase>() -> System.Reflection.ConstructorInfo?
+static Interlocutor.Abstractions.Pipeline.UnionCaseFactory.Invoke<TResponse, TCase>(System.Reflection.ConstructorInfo! caseConstructor, TCase caseValue) -> TResponse
+static readonly Interlocutor.Abstractions.Pipeline.DefaultPolicyEvaluator.Instance -> Interlocutor.Abstractions.Pipeline.DefaultPolicyEvaluator!
+static readonly Interlocutor.Abstractions.Pipeline.DefaultRateLimiter.Instance -> Interlocutor.Abstractions.Pipeline.DefaultRateLimiter!
+static readonly Interlocutor.Abstractions.Pipeline.DefaultTimeoutPolicy.Instance -> Interlocutor.Abstractions.Pipeline.DefaultTimeoutPolicy!
+virtual Interlocutor.Abstractions.Commands.ResourceCommandHandler<TCommand, TEntity, TSuccess>.DescribeKey(TCommand command) -> object!
+virtual Interlocutor.Abstractions.Pipeline.PipelineStageBase<TRequest, TResponse>.OnAfterAsync(TRequest request, TResponse result, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
+virtual Interlocutor.Abstractions.Pipeline.PipelineStageBase<TRequest, TResponse>.OnBeforeAsync(TRequest request, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Interlocutor.Abstractions.Pipeline.StageResult<TResponse>>!

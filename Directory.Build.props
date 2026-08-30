@@ -54,6 +54,17 @@
     <PackageReference Include="SonarAnalyzer.CSharp" PrivateAssets="all" />
   </ItemGroup>
 
+  <!-- Async/await usage analyzers -->
+  <ItemGroup>
+    <PackageReference Include="AsyncFixer" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- IDisposable usage analyzer -->
+  <ItemGroup>
+    <PackageReference Include="IDisposableAnalyzers" PrivateAssets="all" />
+  </ItemGroup>
+
   <!-- Shared AdditionalFiles -->
   <ItemGroup>
     <AdditionalFiles Include="$(MSBuildThisFileDirectory).editorconfig" Link=".editorconfig" />

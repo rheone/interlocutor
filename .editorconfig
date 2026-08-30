@@ -21,9 +21,9 @@ trim_trailing_whitespace = false
 
 [*.{cs,vb,fs}]
 # Suppress StyleCop layout analyzers that crash on union type syntax
-dotnet_diagnostic.SA1500.severity = None
-dotnet_diagnostic.SA1502.severity = None
-dotnet_diagnostic.SA1508.severity = None
+dotnet_diagnostic.SA1500.severity = None # Braces for multi-line statements should not share a line
+dotnet_diagnostic.SA1502.severity = None # An element (class, method, etc.) should not be written entirely on a single line
+dotnet_diagnostic.SA1508.severity = None # A closing brace should not be preceded by a blank line
 
 # C# files
 [{src,smoketests}/**/*.cs]
@@ -90,7 +90,6 @@ dotnet_remove_unnecessary_suppression_exclusions = None
 csharp_style_var_elsewhere = true:suggestion
 csharp_style_var_for_built_in_types = true:warning
 csharp_style_var_when_type_is_apparent = true:warning
-
 
 # Expression-bodied members
 csharp_style_expression_bodied_accessors = true:silent
@@ -271,7 +270,6 @@ dotnet_naming_rule.non_field_members_should_be_pascalcase.symbols = non_field_me
 dotnet_naming_rule.non_field_members_should_be_pascalcase.style = pascalcase
 
 # Symbol specifications
-
 dotnet_naming_symbols.interfaces.applicable_kinds = interface
 dotnet_naming_symbols.interfaces.applicable_accessibilities = public, internal, private, protected, protected_internal, private_protected
 dotnet_naming_symbols.interfaces.required_modifiers =
@@ -349,7 +347,6 @@ dotnet_naming_symbols.local_functions.applicable_accessibilities = *
 dotnet_naming_symbols.local_functions.required_modifiers =
 
 # Naming styles
-
 dotnet_naming_style.pascalcase.required_prefix =
 dotnet_naming_style.pascalcase.required_suffix =
 dotnet_naming_style.pascalcase.word_separator =
@@ -383,112 +380,182 @@ dotnet_style_namespace_match_folder = true:suggestion
 dotnet_style_allow_multiple_blank_lines_experimental = true:suggestion
 dotnet_style_allow_statement_immediately_after_block_experimental = true:silent
 
+# AnalyzerId= AsyncFixer  RuleNamespace= AsyncFixer
+# Detects async/await anti-patterns: unnecessary await, blocking calls inside async methods, and
+# fire-and-forget mistakes. Referenced solution-wide (Directory.Build.props).
+dotnet_diagnostic.AsyncFixer01.severity = Suggestion # Unnecessary async/await usage - the method could return the inner Task directly
+dotnet_diagnostic.AsyncFixer02.severity = Warning    # Long-running or blocking synchronous call (e.g. Thread.Sleep, sync I/O) inside an async method
+dotnet_diagnostic.AsyncFixer03.severity = Warning    # Fire-and-forget async void method
+dotnet_diagnostic.AsyncFixer04.severity = Warning    # Fire-and-forget async call made inside a using block - the resource may be disposed before the task completes
+dotnet_diagnostic.AsyncFixer05.severity = Suggestion # Downcasting from a Task to a Task<T>
+
 # AnalyzerId= AsyncUsageAnalyzers  RuleNamespace= AsyncUsageAnalyzers
-dotnet_diagnostic.UseConfigureAwait.severity = Warning
+# Flags await expressions missing ConfigureAwait. NOT currently referenced by any project (no
+# AsyncUsageAnalyzers PackageReference exists) - this entry is inert; Microsoft.VisualStudio.Threading.Analyzers'
+# VSTHRD111 below covers the same concern and is actually live.
+dotnet_diagnostic.UseConfigureAwait.severity = Warning # An await expression does not call ConfigureAwait
 
 # AnalyzerId= DocumentationAnalyzers  RuleNamespace= DocumentationAnalyzers
-dotnet_diagnostic.DOC100.severity = Warning
-dotnet_diagnostic.DOC101.severity = Warning
-dotnet_diagnostic.DOC102.severity = Warning
-dotnet_diagnostic.DOC103.severity = Warning
-dotnet_diagnostic.DOC104.severity = Warning
-dotnet_diagnostic.DOC105.severity = Warning
-dotnet_diagnostic.DOC106.severity = Warning
-dotnet_diagnostic.DOC107.severity = Warning
-dotnet_diagnostic.DOC108.severity = Warning
-dotnet_diagnostic.DOC200.severity = Warning
-dotnet_diagnostic.DOC201.severity = Warning
-dotnet_diagnostic.DOC202.severity = Warning
-dotnet_diagnostic.DOC203.severity = Warning
-dotnet_diagnostic.DOC204.severity = Warning
+# Flags malformed or inconsistent XML doc-comment markup. NOT currently referenced by any project
+# (no DotNetAnalyzers.DocumentationAnalyzers PackageReference exists) - these entries are inert.
+dotnet_diagnostic.DOC100.severity = Warning # Content in a <remarks> or <note> element should be wrapped in block-level elements
+dotnet_diagnostic.DOC101.severity = Warning # Documentation mixes block-wrapped text and inline text inconsistently
+dotnet_diagnostic.DOC102.severity = Warning # Documentation uses inline text where a sibling element of the same kind uses block-level elements
+dotnet_diagnostic.DOC103.severity = Warning # Unnecessary or unrecognized HTML character entities should be replaced with Unicode characters
+dotnet_diagnostic.DOC104.severity = Warning # A keyword wrapped in a <c> tag should use <see langword="..."/> instead
+dotnet_diagnostic.DOC105.severity = Warning # A parameter reference wrapped in a <c> tag should use <paramref name="..."/> instead
+dotnet_diagnostic.DOC106.severity = Warning # A type parameter reference wrapped in a <c> tag should use <typeparamref name="..."/> instead
+dotnet_diagnostic.DOC107.severity = Warning # A code element reference wrapped in a <c> tag should use <see cref="..."/> instead
+dotnet_diagnostic.DOC108.severity = Warning # An empty <para/> or <p/> element used as a separator should be removed
+dotnet_diagnostic.DOC200.severity = Warning # Documentation uses an HTML element where an XML documentation element was expected (e.g. <p> instead of <para>)
+dotnet_diagnostic.DOC201.severity = Warning # Content within an <item> element should be wrapped in a <description> element
+dotnet_diagnostic.DOC202.severity = Warning # Documentation contains a section element where a block or inline element was expected
+dotnet_diagnostic.DOC203.severity = Warning # Documentation contains a block element where a section or inline element was expected
+dotnet_diagnostic.DOC204.severity = Warning # Documentation contains an inline element where a section or block element was expected
+
+# AnalyzerId= IDisposableAnalyzers  RuleNamespace= IDisposableAnalyzers
+# Flags IDisposable ownership/lifetime mistakes (IDISP-prefixed): created-but-undisposed instances,
+# disposing an injected dependency you don't own, returning an already-disposed instance, etc.
+# Referenced solution-wide. Runs on its shipped default severities everywhere except IDISP001 in
+# test files (see the [tests/**/*.cs] section further below) - nothing else here currently
+# warrants a stronger or weaker severity than IDisposableAnalyzers' own defaults.
 
 # AnalyzerId= Microsoft.Analyzers.ManagedCodeAnalysis  RuleNamespace= Microsoft.Rules.Managed
-dotnet_diagnostic.CA1001.severity = Warning
-dotnet_diagnostic.CA1009.severity = Warning
-dotnet_diagnostic.CA1016.severity = Warning
-dotnet_diagnostic.CA1033.severity = Warning
-dotnet_diagnostic.CA1049.severity = Warning
-dotnet_diagnostic.CA1056.severity = Warning
-dotnet_diagnostic.CA1060.severity = Warning
-dotnet_diagnostic.CA1061.severity = Warning
-dotnet_diagnostic.CA1063.severity = Warning
-dotnet_diagnostic.CA1065.severity = Warning
-dotnet_diagnostic.CA1301.severity = Warning
-dotnet_diagnostic.CA1400.severity = Warning
-dotnet_diagnostic.CA1401.severity = Warning
-dotnet_diagnostic.CA1403.severity = Warning
-dotnet_diagnostic.CA1404.severity = Warning
-dotnet_diagnostic.CA1405.severity = Warning
-dotnet_diagnostic.CA1410.severity = Warning
-dotnet_diagnostic.CA1415.severity = Warning
-dotnet_diagnostic.CA1821.severity = Warning
-dotnet_diagnostic.CA1825.severity = Warning
-dotnet_diagnostic.CA1900.severity = Warning
-dotnet_diagnostic.CA1901.severity = Warning
-dotnet_diagnostic.CA2000.severity = Warning
-dotnet_diagnostic.CA2002.severity = Warning
-dotnet_diagnostic.CA2100.severity = Warning
-dotnet_diagnostic.CA2101.severity = Warning
-dotnet_diagnostic.CA2108.severity = Warning
-dotnet_diagnostic.CA2111.severity = Warning
-dotnet_diagnostic.CA2112.severity = Warning
-dotnet_diagnostic.CA2114.severity = Warning
-dotnet_diagnostic.CA2116.severity = Warning
-dotnet_diagnostic.CA2117.severity = Warning
-dotnet_diagnostic.CA2122.severity = Warning
-dotnet_diagnostic.CA2123.severity = Warning
-dotnet_diagnostic.CA2124.severity = Warning
-dotnet_diagnostic.CA2126.severity = Warning
-dotnet_diagnostic.CA2131.severity = Warning
-dotnet_diagnostic.CA2132.severity = Warning
-dotnet_diagnostic.CA2133.severity = Warning
-dotnet_diagnostic.CA2134.severity = Warning
-dotnet_diagnostic.CA2137.severity = Warning
-dotnet_diagnostic.CA2138.severity = Warning
-dotnet_diagnostic.CA2140.severity = Warning
-dotnet_diagnostic.CA2141.severity = Warning
-dotnet_diagnostic.CA2146.severity = Warning
-dotnet_diagnostic.CA2147.severity = Warning
-dotnet_diagnostic.CA2149.severity = Warning
-dotnet_diagnostic.CA2200.severity = Warning
-dotnet_diagnostic.CA2202.severity = Warning
-dotnet_diagnostic.CA2207.severity = Warning
-dotnet_diagnostic.CA2212.severity = Warning
-dotnet_diagnostic.CA2213.severity = Warning
-dotnet_diagnostic.CA2214.severity = Warning
-dotnet_diagnostic.CA2215.severity = Warning
-dotnet_diagnostic.CA2216.severity = Warning
-dotnet_diagnostic.CA2220.severity = Warning
-dotnet_diagnostic.CA2229.severity = Warning
-dotnet_diagnostic.CA2231.severity = Warning
-dotnet_diagnostic.CA2232.severity = Warning
-dotnet_diagnostic.CA2235.severity = Warning
-dotnet_diagnostic.CA2236.severity = Warning
-dotnet_diagnostic.CA2237.severity = Warning
-dotnet_diagnostic.CA2238.severity = Warning
-dotnet_diagnostic.CA2240.severity = Warning
-dotnet_diagnostic.CA2241.severity = Warning
-dotnet_diagnostic.CA2242.severity = Warning
-dotnet_diagnostic.CA2253.severity = Warning
-dotnet_diagnostic.CA2254.severity = Warning
+# Legacy "Code Analysis" (pre-Roslyn FxCop) rule IDs carried over from this repo's original
+# ruleset. The general design/usage/reliability rules below are still produced today by the .NET
+# SDK's built-in analyzers (EnableNETAnalyzers, on by default for SDK-style projects); the
+# CAS/security-transparency rules (CA2108, CA2111-CA2149), the COM/P-Invoke interop rules
+# (CA1400-CA1415), the portability rules (CA1900-CA1901), and the WinForms mobility rule (CA1301)
+# predate .NET Core - Code Access Security doesn't exist there - and are not produced by anything
+# in this SDK. Kept for parity with the original ruleset, not confirmed-live enforcement.
+dotnet_diagnostic.CA1001.severity = Warning # Types that own disposable fields should be disposable
+dotnet_diagnostic.CA1009.severity = Warning # Declare event handlers correctly
+dotnet_diagnostic.CA1016.severity = Warning # Mark assemblies with assembly version
+dotnet_diagnostic.CA1033.severity = Warning # Interface methods should be callable by child types
+dotnet_diagnostic.CA1049.severity = Warning # Types that own native resources should be disposable
+dotnet_diagnostic.CA1056.severity = Warning # URI properties should not be strings
+dotnet_diagnostic.CA1060.severity = Warning # Move P/Invokes to a dedicated NativeMethods class
+dotnet_diagnostic.CA1061.severity = Warning # Do not hide base class methods
+dotnet_diagnostic.CA1063.severity = Warning # Implement IDisposable correctly
+dotnet_diagnostic.CA1065.severity = Warning # Do not raise exceptions in unexpected locations (e.g. property getters, Equals, finalizers)
+dotnet_diagnostic.CA1301.severity = Warning # Avoid duplicate keyboard accelerators
+dotnet_diagnostic.CA1400.severity = Warning # P/Invoke entry points should exist
+dotnet_diagnostic.CA1401.severity = Warning # P/Invoke methods should not be visible
+dotnet_diagnostic.CA1403.severity = Warning # Auto-layout types should not be COM-visible
+dotnet_diagnostic.CA1404.severity = Warning # Call GetLastError immediately after a P/Invoke call
+dotnet_diagnostic.CA1405.severity = Warning # A COM-visible type's base type should also be COM-visible
+dotnet_diagnostic.CA1410.severity = Warning # COM registration and unregistration methods should be matched
+dotnet_diagnostic.CA1415.severity = Warning # Declare P/Invoke members correctly
+dotnet_diagnostic.CA1821.severity = Warning # Remove empty finalizers
+dotnet_diagnostic.CA1825.severity = Warning # Avoid unnecessary zero-length array allocations; use Array.Empty<T>() instead
+dotnet_diagnostic.CA1900.severity = Warning # Value type fields declared for P/Invoke should be portable across platforms
+dotnet_diagnostic.CA1901.severity = Warning # P/Invoke declarations should be portable across platforms
+dotnet_diagnostic.CA2000.severity = Warning # Dispose objects before losing scope
+dotnet_diagnostic.CA2002.severity = Warning # Do not lock on objects with weak identity
+dotnet_diagnostic.CA2100.severity = Warning # Review SQL queries for security vulnerabilities
+dotnet_diagnostic.CA2101.severity = Warning # Specify marshaling for P/Invoke string arguments
+dotnet_diagnostic.CA2108.severity = Warning # Review declarative security on value types
+dotnet_diagnostic.CA2111.severity = Warning # Pointers should not be visible
+dotnet_diagnostic.CA2112.severity = Warning # Secured types should not expose fields
+dotnet_diagnostic.CA2114.severity = Warning # Method security should be a superset of the declaring type's security
+dotnet_diagnostic.CA2116.severity = Warning # APTCA methods should only call other APTCA methods
+dotnet_diagnostic.CA2117.severity = Warning # APTCA types should only extend other APTCA base types
+dotnet_diagnostic.CA2122.severity = Warning # Do not indirectly expose methods that have a link demand
+dotnet_diagnostic.CA2123.severity = Warning # An override's link demands should be identical to the base method's
+dotnet_diagnostic.CA2124.severity = Warning # Wrap vulnerable finally clauses in an outer try/catch
+dotnet_diagnostic.CA2126.severity = Warning # A type link demand requires an accompanying inheritance demand
+dotnet_diagnostic.CA2131.severity = Warning # Security-critical types must not participate in type equivalence
+dotnet_diagnostic.CA2132.severity = Warning # A default constructor must be at least as security-critical as its base type's default constructor
+dotnet_diagnostic.CA2133.severity = Warning # Delegates must bind to methods with consistent security transparency
+dotnet_diagnostic.CA2134.severity = Warning # An override must keep the same security transparency as the method it overrides
+dotnet_diagnostic.CA2137.severity = Warning # Transparent methods must contain only verifiable IL
+dotnet_diagnostic.CA2138.severity = Warning # Transparent methods must not call methods with the SuppressUnmanagedCodeSecurity attribute
+dotnet_diagnostic.CA2140.severity = Warning # Transparent code must not reference security-critical items
+dotnet_diagnostic.CA2141.severity = Warning # Transparent methods must not satisfy LinkDemands
+dotnet_diagnostic.CA2146.severity = Warning # A type must be at least as security-critical as its base types and interfaces
+dotnet_diagnostic.CA2147.severity = Warning # Transparent methods may not use security asserts
+dotnet_diagnostic.CA2149.severity = Warning # Transparent methods must not call into native code
+dotnet_diagnostic.CA2200.severity = Warning # Rethrow to preserve stack details instead of throwing the caught exception
+dotnet_diagnostic.CA2202.severity = Warning # Do not dispose an object more than once
+dotnet_diagnostic.CA2207.severity = Warning # Initialize value type static fields inline
+dotnet_diagnostic.CA2212.severity = Warning # Do not mark serviced components with WebMethod
+dotnet_diagnostic.CA2213.severity = Warning # Disposable fields should be disposed
+dotnet_diagnostic.CA2214.severity = Warning # Do not call overridable methods in constructors
+dotnet_diagnostic.CA2215.severity = Warning # Dispose methods should call the base class's Dispose method
+dotnet_diagnostic.CA2216.severity = Warning # Disposable types should declare a finalizer if they hold unmanaged resources
+dotnet_diagnostic.CA2220.severity = Warning # Finalizers should be protected
+dotnet_diagnostic.CA2229.severity = Warning # Implement serialization constructors
+dotnet_diagnostic.CA2231.severity = Warning # Overload the equality operator when overriding a value type's Equals
+dotnet_diagnostic.CA2232.severity = Warning # Mark Windows Forms entry points with STAThread
+dotnet_diagnostic.CA2235.severity = Warning # Mark all non-serializable fields
+dotnet_diagnostic.CA2236.severity = Warning # Call base class methods on ISerializable types
+dotnet_diagnostic.CA2237.severity = Warning # Mark ISerializable types with SerializableAttribute
+dotnet_diagnostic.CA2238.severity = Warning # Implement serialization methods correctly
+dotnet_diagnostic.CA2240.severity = Warning # Implement ISerializable correctly
+dotnet_diagnostic.CA2241.severity = Warning # Provide correct arguments to formatting methods
+dotnet_diagnostic.CA2242.severity = Warning # Test for NaN correctly (use float.IsNaN/double.IsNaN, not equality comparison)
+dotnet_diagnostic.CA2253.severity = Warning # Named placeholders in a logging message should not be numeric values
+dotnet_diagnostic.CA2254.severity = Warning # The logging message template should be a static expression, not a dynamically constructed string
 
 # AnalyzerId= Microsoft.CodeAnalysis.CSharp  RuleNamespace= Microsoft.CodeAnalysis.CSharp
-dotnet_diagnostic.CS8019.severity = Warning
+# The Roslyn C# compiler itself, not an installed analyzer package - CS-prefixed diagnostics.
+dotnet_diagnostic.CS8019.severity = Warning # Unnecessary using directive
 
 # AnalyzerId= Microsoft.CodeAnalysis.CSharp.Analyzers  RuleNamespace= Microsoft.CodeAnalysis.CSharp.Analyzers
-dotnet_diagnostic.RS1022.severity = Warning
+# Analyzer-authoring analyzers (RS-prefixed) from the Microsoft.CodeAnalysis.Analyzers package,
+# referenced by Interlocutor.Generator to keep the source generator itself well-behaved.
+dotnet_diagnostic.RS1022.severity = Warning # Do not use types from the Workspaces assembly in an analyzer
 
 # AnalyzerId= Microsoft.CodeAnalysis.CSharp.CodeStyle  RuleNamespace= Microsoft.CodeAnalysis.CSharp.CodeStyle
+# Built into the Roslyn compiler/SDK (not a separate package) - the editorconfig-driven "code
+# style" (IDE-prefixed) analyzers.
 dotnet_diagnostic.IDE0055.severity = Suggestion # Fix formatting
 dotnet_diagnostic.IDE0079.severity = Warning    # Remove unnecessary suppression
 dotnet_diagnostic.IDE1006.severity = None       # Naming rule violation
 
 # AnalyzerId= Microsoft.CodeAnalysis.CSharp.Features  RuleNamespace= Microsoft.CodeAnalysis.CSharp.Features
-dotnet_diagnostic.IDE0003.severity = None
-dotnet_diagnostic.IDE0007.severity = Warning
-dotnet_diagnostic.IDE0009.severity = None
+# Also built into the Roslyn compiler/SDK - the IDE "quick actions"/refactoring-backed style rules.
+dotnet_diagnostic.IDE0003.severity = None    # Remove unnecessary 'this.' qualification
+dotnet_diagnostic.IDE0007.severity = Warning # Use 'var' instead of an explicit type
+dotnet_diagnostic.IDE0009.severity = None    # Add 'this.' qualification
+
+# AnalyzerId= Microsoft.CodeAnalysis.PublicApiAnalyzers  RuleNamespace= Microsoft.CodeAnalysis.PublicApiAnalyzers
+# Tracks each project's public API surface (RS00xx-prefixed) against a PublicAPI.Shipped.txt/
+# PublicAPI.Unshipped.txt pair, failing the build if a public member changes without being
+# recorded - guards against accidental breaking changes. Referenced only by the packable src/
+# libraries (not Interlocutor.Generator, which tracks its own shipped diagnostics via
+# AnalyzerReleases.*.md instead; not tests or TutorialProject, which ship nothing). Runs on
+# defaults except RS0026 below.
+dotnet_diagnostic.RS0026.severity = None # "Do not add multiple overloads with optional parameters" -
+# this library's core pattern is exactly that: ISender/IPublisher/Mediator/ResultExtensions
+# deliberately expose several generic overloads (one per OperationOutcome arity/shape) that all
+# happen to carry the same optional CancellationToken parameter, disambiguated by the required
+# parameter's constrained type, not by arity. RS0026 cannot tell that apart from a genuine
+# ambiguous-overload mistake, so it fires on every one of them (see ISender.cs, IPublisher.cs).
+
+# AnalyzerId= Roslynator.Analyzers / Roslynator.CodeAnalysis.Analyzers / Roslynator.Formatting.Analyzers
+# General-purpose C# code-quality, simplification, and formatting analyzer suite (RCS-prefixed),
+# referenced solution-wide. Runs on its shipped default severities everywhere except RCS1192,
+# overridden further below (scoped to test files).
+
+# AnalyzerId= Microsoft.VisualStudio.Threading.Analyzers  RuleNamespace= Microsoft.VisualStudio.Threading.Analyzers
+# Threading/async best-practice analyzer (VSTHRD-prefixed): deadlock-prone sync-over-async,
+# missing ConfigureAwait, async-void, and async-naming conventions.
+dotnet_diagnostic.VSTHRD002.severity = Warning    # Synchronously waiting on a Task (.Result, .Wait(), .GetAwaiter().GetResult()) risks a deadlock
+dotnet_diagnostic.VSTHRD003.severity = Warning    # Avoid awaiting a "foreign" Task created outside the current method's control
+dotnet_diagnostic.VSTHRD100.severity = Warning    # Avoid async void methods - use async Task so exceptions and completion can be observed
+dotnet_diagnostic.VSTHRD103.severity = Warning    # Call the async version of a method when already inside an async method
+dotnet_diagnostic.VSTHRD105.severity = Suggestion # Avoid async method overloads that implicitly capture TaskScheduler.Current
+dotnet_diagnostic.VSTHRD110.severity = Warning    # Observe the result of an async call instead of discarding it (accidental fire-and-forget)
+dotnet_diagnostic.VSTHRD111.severity = Warning    # Use ConfigureAwait(bool) on the awaited expression
+dotnet_diagnostic.VSTHRD112.severity = Suggestion # Implement System.IAsyncDisposable alongside IDisposable when cleanup can be asynchronous
+dotnet_diagnostic.VSTHRD113.severity = Suggestion # Check for System.IAsyncDisposable in addition to IDisposable when disposing an object
+dotnet_diagnostic.VSTHRD114.severity = Warning    # Avoid returning null from a Task-returning method - awaiting null throws NullReferenceException
+dotnet_diagnostic.VSTHRD200.severity = Warning    # Use an "Async" suffix for async methods
 
 # AnalyzerId= StyleCop.Analyzers  RuleNamespace= StyleCop.Analyzers
+# Enforces C# style, formatting, and documentation-header conventions (SA-prefixed): spacing,
+# brace/element ordering, and XML doc-comment presence.
 dotnet_diagnostic.SA1000.severity = Suggestion   # Keywords should be followed by whitespace
 dotnet_diagnostic.SA1003.severity = Suggestion   # Symbols should be spaced correctly
 dotnet_diagnostic.SA1005.severity = Suggestion   # Single-line comments should begin with a space
@@ -508,8 +575,10 @@ dotnet_diagnostic.SA1124.severity = None         # Do not use #region directives
 dotnet_diagnostic.SA1127.severity = None         # Generic type constraints should be on separate lines
 dotnet_diagnostic.SA1128.severity = None         # Constructor initializers should be on separate lines
 dotnet_diagnostic.SA1137.severity = Warning      # Elements should have consistent indentation
+
 # Warning, not error, until tests/ is migrated: src/ puts usings inside the namespace (matching
 # stylecop.json insideNamespace), tests/ puts them outside. Restore to error once tests/ is unified.
+
 dotnet_diagnostic.SA1200.severity = Warning      # Using directives should be inside namespace
 dotnet_diagnostic.SA1201.severity = Warning      # Elements should appear in the prescribed order
 dotnet_diagnostic.SA1202.severity = None         # Elements should be ordered by access level
@@ -577,9 +646,11 @@ dotnet_diagnostic.SA1648.severity = Warning	     # <inheritdoc> has been used on
 dotnet_diagnostic.SA1649.severity = Warning	     # The file name of a C# code file does not match the first type declared in the file.
 dotnet_diagnostic.SA1650.severity = Warning	     # The element documentation for the element contains one or more spelling mistakes or unrecognized words.
 dotnet_diagnostic.SA1651.severity = Warning	     # The documentation for the element contains one or more <placeholder> elements.
-dotnet_diagnostic.SA1652.severity = None	     # This rule was moved to SA0001
 
-# Sonar
+# AnalyzerId= SonarAnalyzer.CSharp  RuleNamespace= SonarAnalyzer.CSharp
+# General bug/vulnerability/code-smell static analysis (S-prefixed), referenced solution-wide.
+# Only the rules below are overridden from their shipped severity - the rest of the ruleset runs
+# on SonarAnalyzer's prescribed defaults.
 dotnet_diagnostic.S107.severity = Suggestion  #  Methods should not have too many parameters
 dotnet_diagnostic.S1210.severity = Suggestion # "Equals" and the comparison operators should be overridden when implementing "IComparable"
 dotnet_diagnostic.S2436.severity = Suggestion # Types and methods should not have too many generic parameters
@@ -588,29 +659,49 @@ dotnet_diagnostic.S4457.severity = Warning    # Parameter validation in "async"/
 # C# Autogenerated code
 [{**/obj/**,**/bin/**}]
 # AnalyzerId= Microsoft.CodeAnalysis.CSharp  RuleNamespace= Microsoft.CodeAnalysis.CSharp
-dotnet_diagnostic.CS8019.severity = None
+dotnet_diagnostic.CS8019.severity = None # Unnecessary using directive
+
+# C# files in test projects (broader than the *Tests.cs glob below - also covers fixtures,
+# builders, and other test-support files)
+[tests/**/*.cs]
+# AnalyzerId= NSubstitute.Analyzers.CSharp  RuleNamespace= NSubstitute.Analyzers
+# Flags invalid Substitute.For<T> usage (non-virtual members, argument matchers used outside a
+# call, misuse of Returns/ThrowsAsync, internal-member substitution without InternalsVisibleTo,
+# etc.). Referenced by every tests/*.csproj; runs on its shipped default severities - nothing here
+# currently warrants a stronger or weaker severity than NSubstitute.Analyzers.CSharp's own defaults.
+
+# AnalyzerId= xunit.analyzers  RuleNamespace= xunit.analyzers
+# Flags xUnit usage mistakes (xUnit-prefixed): misused [Fact]/[Theory] attributes, missing
+# [InlineData] parameters, comparer/assertion misuse, test classes with no runnable tests, etc.
+# Comes in transitively with the xunit.v3 package reference (not a direct PackageReference of its
+# own); runs on its shipped default severities - nothing here currently warrants an override.
+
+# AnalyzerId= IDisposableAnalyzers  RuleNamespace= IDisposableAnalyzers
+# IDISP001 ("Dispose created") fires on almost every DI container/scope a test builds inline
+# (services.BuildServiceProvider(), builder.Build() for an Autofac IContainer, etc.) and then uses
+# for the rest of a short-lived test method without an explicit using - idiomatic in this test
+# suite's fixtures, not a leak (the container is GC'd with the test). Left at full severity in
+# src/, where the same pattern would matter.
+dotnet_diagnostic.IDISP001.severity = Suggestion # Dispose created
 
 # C# Tests files in Tests projects
 [{**Tests/**Tests.cs,**Tests.**/**Tests.cs}]
 # Reset StyleCop documentation comments
-dotnet_diagnostic.SA1600.severity = None	# A C# code element is missing a documentation header.
-dotnet_diagnostic.SA1601.severity = None	# A C# partial element is missing a documentation header.
-dotnet_diagnostic.SA1602.severity = None	# An item within a C# enumeration is missing an Xml documentation header.
+dotnet_diagnostic.SA1600.severity = Suggestion	# A C# code element is missing a documentation header.
+dotnet_diagnostic.SA1601.severity = Suggestion	# A C# partial element is missing a documentation header.
+dotnet_diagnostic.SA1602.severity = Suggestion	# An item within a C# enumeration is missing an Xml documentation header.
 
 # Test fixture files routinely declare several supporting types (records, marker interfaces,
 # handler stubs) ahead of the XxxTests class that uses them - relax the multi-type/file-name-match
 # rules here; both stay fully enforced in src/.
-dotnet_diagnostic.SA1402.severity = None	# File may only contain a single type.
-dotnet_diagnostic.SA1649.severity = None	# File name must match first type name.
+dotnet_diagnostic.SA1402.severity = Suggestion	# File may only contain a single type.
+dotnet_diagnostic.SA1649.severity = Suggestion	# File name must match first type name.
 
 # Sonar
 dotnet_diagnostic.S4114.severity = Suggestion   # Methods should not have identical implementations
 
-# Microsoft.VisualStudio.Threading
-dotnet_diagnostic.VSTHRD200.severity = None # Use Async suffix for async methods
-
 # Misc
-dotnet_diagnostic.CS1591.severity = None	 # Missing XML comment for publicly visible type or member 'Type_or_Member'
+dotnet_diagnostic.CS1591.severity = Suggestion	 # Missing XML comment for publicly visible type or member 'Type_or_Member'
 dotnet_diagnostic.CA1707.severity = None     # Identifiers should not contain underscores
 dotnet_diagnostic.RCS1192.severity = Warning # RCS1192: Unnecessary usage of verbatim string literal.
 
