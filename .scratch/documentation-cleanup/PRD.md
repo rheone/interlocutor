@@ -1,6 +1,6 @@
 # Documentation Cleanup
 
-Status: units 01-11 and 13-16 done. Only unit 12 (full API reference) remains, blocked pending the repo owner's go-ahead on scope/format.
+Status: units 01-11 and 13-16 done; issues 18-19 done in ce515d2. Only unit 12 (full API reference) remains, blocked pending the repo owner's go-ahead on scope/format.
 
 This effort is expected to recur as the codebase evolves (see `maintainer_docs/agents/documentation-maintenance.md`) - this file is the reusable record of scope, decisions, and unit breakdown for re-running it, not a one-shot ticket to close and forget.
 

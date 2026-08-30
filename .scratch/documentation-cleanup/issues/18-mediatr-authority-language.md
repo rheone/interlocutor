@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: done - reworded in ce515d2
 
 ## Labels
 
