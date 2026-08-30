@@ -373,7 +373,7 @@ public class PipelineStageBehaviorTests
         )
         {
             callOrder.Add($"{name}.Before");
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
             return StageResult<OperationOutcome<TestResponse, Failure>>.Continue;
         }
 
@@ -384,7 +384,7 @@ public class PipelineStageBehaviorTests
         )
         {
             callOrder.Add($"{name}.After");
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
         }
     }
 
@@ -400,7 +400,7 @@ public class PipelineStageBehaviorTests
         )
         {
             callOrder.Add($"{name}.Before");
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
             return StageResult<OperationOutcome<TestResponse, Failure>>.ShortCircuit(response);
         }
 
@@ -411,7 +411,7 @@ public class PipelineStageBehaviorTests
         )
         {
             callOrder.Add($"{name}.After");
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
         }
     }
 
@@ -432,7 +432,7 @@ public class PipelineStageBehaviorTests
             CancellationToken ct
         )
         {
-            var result = await next();
+            var result = await next().ConfigureAwait(false);
             this.ObservedResponse = true;
 
             // There is no member on OperationOutcome<,> - or anything else visible here - that could ever
@@ -458,7 +458,7 @@ public class PipelineStageBehaviorTests
         )
         {
             callOrder.Add($"{name}.After");
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
         }
     }
 
@@ -471,7 +471,7 @@ public class PipelineStageBehaviorTests
         )
         {
             callOrder.Add($"{name}.Before");
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
             return StageResult<OperationOutcome<TestResponse, Failure>>.Continue;
         }
 

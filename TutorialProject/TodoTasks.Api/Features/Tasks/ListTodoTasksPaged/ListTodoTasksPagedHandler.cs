@@ -13,13 +13,15 @@ public sealed class ListTodoTasksPagedHandler(IDomainRepository<TodoTask, int> t
     /// <inheritdoc/>
     public async Task<OperationOutcome<PagedTodoTasksDto, Failure>> Handle(ListTodoTasksPagedQuery query, CancellationToken ct)
     {
-        var page = await tasks.GetPagedAsync(
-            query.Page,
-            query.PageSize,
-            filter: t => t.OwnerId == query.OwnerId,
-            sort: [new SortCriterion<TodoTask>(t => t.CreatedAtUtc, SortDirection.Descending)],
-            cancellationToken: ct
-        );
+        var page = await tasks
+            .GetPagedAsync(
+                query.Page,
+                query.PageSize,
+                filter: t => t.OwnerId == query.OwnerId,
+                sort: [new SortCriterion<TodoTask>(t => t.CreatedAtUtc, SortDirection.Descending)],
+                cancellationToken: ct
+            )
+            .ConfigureAwait(false);
 
         return new PagedTodoTasksDto(
             page.Items.Select(TodoTaskDto.FromEntity).ToList(),

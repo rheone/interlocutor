@@ -32,7 +32,7 @@ public class LoggingBehavior<TRequest, TResponse>(
         TResponse result;
         try
         {
-            result = await next();
+            result = await next().ConfigureAwait(false);
         }
         // S2139 wants either logging or rethrowing, not both, on the theory that a caller further up the
         // stack will log the same exception again. Nothing further out in this pipeline does: the exception

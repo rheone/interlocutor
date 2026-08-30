@@ -15,7 +15,9 @@ public static class CreateUserEndpoint
             "/users",
             async (CreateUserRequest request, ISender sender, CancellationToken ct) =>
             {
-                var result = await sender.Send(new CreateUserCommand(request.DisplayName, request.Email), ct);
+                var result = await sender
+                    .Send(new CreateUserCommand(request.DisplayName, request.Email), ct)
+                    .ConfigureAwait(false);
                 return result.ToMinimalApiResult();
             }
         );

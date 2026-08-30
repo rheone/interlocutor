@@ -17,14 +17,16 @@ public sealed class ClearCompletedTodoTasksHandler(IDomainRepository<TodoTask, i
     /// <inheritdoc/>
     public async Task<OperationOutcome> Handle(ClearCompletedTodoTasksCommand command, CancellationToken ct)
     {
-        var completed = await tasks.GetManyAsync(t => t.OwnerId == command.OwnerId && t.IsCompleted, cancellationToken: ct);
+        var completed = await tasks
+            .GetManyAsync(t => t.OwnerId == command.OwnerId && t.IsCompleted, cancellationToken: ct)
+            .ConfigureAwait(false);
 
         foreach (var task in completed)
         {
-            await tasks.DeleteAsync(task, ct);
+            await tasks.DeleteAsync(task, ct).ConfigureAwait(false);
         }
 
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
         return default(Success);
     }
 }

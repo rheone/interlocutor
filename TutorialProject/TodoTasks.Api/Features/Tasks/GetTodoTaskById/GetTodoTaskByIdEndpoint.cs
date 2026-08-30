@@ -15,7 +15,7 @@ public static class GetTodoTaskByIdEndpoint
             "/todo-tasks/{id:int}",
             async (int id, ISender sender, CancellationToken ct) =>
             {
-                var result = await sender.Send(new GetTodoTaskByIdQuery(id), ct);
+                var result = await sender.Send(new GetTodoTaskByIdQuery(id), ct).ConfigureAwait(false);
                 return result.ToMinimalApiResult();
             }
         );

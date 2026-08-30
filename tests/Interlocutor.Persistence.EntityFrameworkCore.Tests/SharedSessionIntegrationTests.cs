@@ -43,13 +43,15 @@ public sealed class SharedSessionIntegrationTests : IDisposable
         // Act
         var result = await behavior.Handle(
             new TransactionalRequest(),
-            () =>
+            async () =>
             {
                 // The repository resolves DbContext.Value from the exact same Lazy<TestDbContext> instance
                 // UnitOfWorkBehavior itself resolves - proving both see one shared scoped context.
-                repository.Query.ToList();
-                this.context.Widgets.Add(new Widget { Name = "shared-session" });
-                return Task.FromResult<OperationOutcome<Success, Failure>>(default(Success));
+                await repository.Query.ToListAsync(TestContext.Current.CancellationToken).ConfigureAwait(false);
+                await this
+                    .context.Widgets.AddAsync(new Widget { Name = "shared-session" }, TestContext.Current.CancellationToken)
+                    .ConfigureAwait(false);
+                return default(Success);
             },
             CancellationToken.None
         );

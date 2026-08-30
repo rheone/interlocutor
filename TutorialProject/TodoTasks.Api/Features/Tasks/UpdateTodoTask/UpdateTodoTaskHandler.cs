@@ -54,7 +54,7 @@ public sealed class UpdateTodoTaskHandler(IDomainRepository<TodoTask, int> tasks
     {
         entity.Title = command.Title;
         entity.Notes = command.Notes;
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
 
         return TodoTaskDto.FromEntity(entity);
     }

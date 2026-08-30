@@ -25,10 +25,9 @@ public static class UpdateTodoTaskEndpoint
                         contextAccessor.Context?.UserId
                         ?? throw new InvalidOperationException("This endpoint requires an authenticated caller.");
 
-                    var result = await sender.Send(
-                        new UpdateTodoTaskCommand(id, request.Title, request.Notes, requestedBy),
-                        ct
-                    );
+                    var result = await sender
+                        .Send(new UpdateTodoTaskCommand(id, request.Title, request.Notes, requestedBy), ct)
+                        .ConfigureAwait(false);
                     return result.ToMinimalApiResult();
                 }
             )

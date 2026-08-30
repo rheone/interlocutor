@@ -85,7 +85,7 @@ public sealed class UnitOfWorkBehavior<TRequest, TResponse>(
         // touches the scoped session - see that marker's remarks.
         if (request is IExternalStoreRequest)
         {
-            return await next();
+            return await next().ConfigureAwait(false);
         }
 
         var s = session.Value;
@@ -98,26 +98,30 @@ public sealed class UnitOfWorkBehavior<TRequest, TResponse>(
         // transaction from pipeline start," not the default lazy begin-on-first-write.
         if (request is ITransactionalRequest && s.GetCurrentTransaction() is not { IsActive: true })
         {
+            // The transaction this begins isn't captured here - it's retrieved again via GetCurrentTransaction()
+            // and disposed once, below, after it's committed or rolled back.
+#pragma warning disable IDISP004
             s.BeginTransaction();
+#pragma warning restore IDISP004
         }
 
-        var result = await next();
+        var result = await next().ConfigureAwait(false);
 
         // Nothing to finalize if nothing wrote: no transaction was ever opened (pure read, or a request that
         // short-circuited before reaching a write), and nothing is staged either (or IUnitOfWork.Cancel
         // already rolled back and cleared the session) - same "nothing to roll back" outcome as today.
-        if (s.GetCurrentTransaction() is not { IsActive: true } && !await s.IsDirtyAsync(ct))
+        if (s.GetCurrentTransaction() is not { IsActive: true } && !await s.IsDirtyAsync(ct).ConfigureAwait(false))
         {
             return result;
         }
 
-        var transaction = s.GetCurrentTransaction() is { IsActive: true } active ? active : s.BeginTransaction();
+        using var transaction = s.GetCurrentTransaction() is { IsActive: true } active ? active : s.BeginTransaction();
 
         if (!this.classifier.IsFailure(result))
         {
             // Committing flushes all pending entity changes tracked by the session and then commits the
             // transaction, making all changes durable and atomic.
-            await transaction.CommitAsync(ct);
+            await transaction.CommitAsync(ct).ConfigureAwait(false);
             this.logger.LogDebug(
                 "Committed transaction for {RequestType} with outcome {Outcome}",
                 typeof(TRequest).Name,
@@ -126,7 +130,7 @@ public sealed class UnitOfWorkBehavior<TRequest, TResponse>(
         }
         else
         {
-            await transaction.RollbackAsync(ct);
+            await transaction.RollbackAsync(ct).ConfigureAwait(false);
             this.logger.LogDebug(
                 "Rolled back transaction for {RequestType} with outcome {Outcome}",
                 typeof(TRequest).Name,

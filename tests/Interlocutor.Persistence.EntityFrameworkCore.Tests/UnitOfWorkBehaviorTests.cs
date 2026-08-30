@@ -59,12 +59,12 @@ public sealed class UnitOfWorkBehaviorTests : IDisposable
         // Act
         var result = await behavior.Handle(
             new PlainRequest(),
-            () =>
+            async () =>
             {
                 // Direct DbContext access, bypassing IUnitOfWork/IDomainRepository entirely - the escape hatch
                 // ADR-0018 requires begin-on-first-write to cover too.
-                this.context.Widgets.Add(new Widget { Name = "direct-write" });
-                return Task.FromResult<OperationOutcome<Success, Failure>>(default(Success));
+                await this.context.Widgets.AddAsync(new Widget { Name = "direct-write" }, CancellationToken.None).ConfigureAwait(false);
+                return default(Success);
             },
             CancellationToken.None
         );
@@ -84,10 +84,10 @@ public sealed class UnitOfWorkBehaviorTests : IDisposable
         // Act
         var result = await behavior.Handle(
             new PlainRequest(),
-            () =>
+            async () =>
             {
-                this.context.Widgets.Add(new Widget { Name = "never-persisted" });
-                return Task.FromResult<OperationOutcome<Success, Failure>>(new Failure("rejected"));
+                await this.context.Widgets.AddAsync(new Widget { Name = "never-persisted" }, CancellationToken.None).ConfigureAwait(false);
+                return new Failure("rejected");
             },
             CancellationToken.None
         );
@@ -137,11 +137,11 @@ public sealed class UnitOfWorkBehaviorTests : IDisposable
             new ExternalStoreRequest(),
             async () =>
             {
-                this.context.Widgets.Add(new Widget { Name = "external" });
+                await this.context.Widgets.AddAsync(new Widget { Name = "external" }, CancellationToken.None).ConfigureAwait(false);
                 // A raw SaveChangesAsync call, with no ambient transaction, auto-commits immediately under
                 // EF Core's own per-call implicit transaction - proving this request's write really did skip
                 // this behavior's local transaction machinery, not merely that nothing was staged.
-                await this.context.SaveChangesAsync(CancellationToken.None);
+                await this.context.SaveChangesAsync(CancellationToken.None).ConfigureAwait(false);
                 return default(Success);
             },
             CancellationToken.None
@@ -164,12 +164,12 @@ public sealed class UnitOfWorkBehaviorTests : IDisposable
             new PlainRequest(),
             async () =>
             {
-                this.context.Widgets.Add(new Widget { Name = "cancelled" });
-                await unitOfWork.SaveChangesAsync(CancellationToken.None);
+                await this.context.Widgets.AddAsync(new Widget { Name = "cancelled" }, CancellationToken.None).ConfigureAwait(false);
+                await unitOfWork.SaveChangesAsync(CancellationToken.None).ConfigureAwait(false);
 
                 // The handler cancels, then still returns its own Success outcome - Cancel is not a
                 // short-circuit primitive, so the handler retains control of what it returns.
-                await unitOfWork.Cancel(CancellationToken.None);
+                await unitOfWork.Cancel(CancellationToken.None).ConfigureAwait(false);
                 return default(Success);
             },
             CancellationToken.None
@@ -200,10 +200,10 @@ public sealed class UnitOfWorkBehaviorTests : IDisposable
         // Act
         var result = await behavior.Handle(
             new PlainRequest(),
-            () =>
+            async () =>
             {
-                this.context.Widgets.Add(new Widget { Name = "should-not-persist" });
-                return Task.FromResult<OperationOutcome<Success, Failure>>(default(Success));
+                await this.context.Widgets.AddAsync(new Widget { Name = "should-not-persist" }, CancellationToken.None).ConfigureAwait(false);
+                return default(Success);
             },
             CancellationToken.None
         );

@@ -170,7 +170,13 @@ public sealed class Mediator(IServiceProvider services) : IMediator
         Func<Activity, Task<TResult>> dispatch
     )
     {
+        // IDisposableAnalyzers treats any disposable parameter as "injected" and flags disposing it (IDISP007).
+        // That heuristic doesn't see the actual ownership here: every caller creates `activity` via
+        // MediatorActivitySource.Source.StartActivity() immediately before the call and hands it off solely to
+        // dispatch it - this method is the sole, intended owner of its disposal.
+#pragma warning disable IDISP007
         using (activity)
+#pragma warning restore IDISP007
         {
             activity.SetTag(MediatorActivitySource.RequestTypeTag, request.GetType().FullName);
             try

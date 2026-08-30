@@ -103,15 +103,16 @@ public sealed class TodoTasksReadEndpointTests : IClassFixture<TodoTasksApiFacto
     /// <summary>Creates a real <see cref="User"/> and attaches the dev-auth header for it.</summary>
     private static async Task AuthenticateAsANewUserAsync(HttpClient client)
     {
-        using var createResponse = await client.PostAsJsonAsync(
-            new Uri("/users", UriKind.Relative),
-            new CreateUserRequest("Ada Lovelace", $"ada-{Guid.NewGuid():N}@example.com"),
-            TestContext.Current.CancellationToken
-        );
-        var user = await createResponse.Content.ReadFromJsonAsync<UserDto>(
-            WebJsonOptions,
-            TestContext.Current.CancellationToken
-        );
+        using var createResponse = await client
+            .PostAsJsonAsync(
+                new Uri("/users", UriKind.Relative),
+                new CreateUserRequest("Ada Lovelace", $"ada-{Guid.NewGuid():N}@example.com"),
+                TestContext.Current.CancellationToken
+            )
+            .ConfigureAwait(false);
+        var user = await createResponse
+            .Content.ReadFromJsonAsync<UserDto>(WebJsonOptions, TestContext.Current.CancellationToken)
+            .ConfigureAwait(false);
         client.DefaultRequestHeaders.Add(DevHeaderAuthenticationHandler.HeaderName, user!.Id.ToString());
     }
 }

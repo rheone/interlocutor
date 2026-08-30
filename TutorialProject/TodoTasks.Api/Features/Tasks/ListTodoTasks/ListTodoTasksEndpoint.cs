@@ -15,7 +15,7 @@ public static class ListTodoTasksEndpoint
             "/todo-tasks",
             async (bool onlyIncomplete, ISender sender, CancellationToken ct) =>
             {
-                var result = await sender.Send(new ListTodoTasksQuery(onlyIncomplete), ct);
+                var result = await sender.Send(new ListTodoTasksQuery(onlyIncomplete), ct).ConfigureAwait(false);
                 return result.ToMinimalApiResult();
             }
         );

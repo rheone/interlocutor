@@ -281,7 +281,7 @@ public record TracingOuterQuery : IQuery<OperationOutcome<int, Failure>>;
 public class TracingOuterQueryHandler(IMediator mediator) : IQueryHandler<TracingOuterQuery, OperationOutcome<int, Failure>>
 {
     public async Task<OperationOutcome<int, Failure>> Handle(TracingOuterQuery query, CancellationToken ct) =>
-        await mediator.Send(new TracingInnerQuery(), ct);
+        await mediator.Send(new TracingInnerQuery(), ct).ConfigureAwait(false);
 }
 
 public record TracingInnerQuery : IQuery<OperationOutcome<int, Failure>>;

@@ -40,12 +40,9 @@ public sealed class EntityFrameworkRepository<
     public Expression<Func<TEntity, TKey>> IdSelector { get; } = idSelector;
 
     /// <inheritdoc/>
-    /// <remarks>Stages the entity via <see cref="DbSet{TEntity}.Add(TEntity)"/>; no query is issued until <see cref="IUnitOfWork.SaveChangesAsync"/> runs.</remarks>
-    public Task InsertAsync(TEntity entity, CancellationToken cancellationToken = default)
-    {
-        context.Value.Set<TEntity>().Add(entity);
-        return Task.CompletedTask;
-    }
+    /// <remarks>Stages the entity via <see cref="DbSet{TEntity}.AddAsync(TEntity, CancellationToken)"/>; no query is issued until <see cref="IUnitOfWork.SaveChangesAsync"/> runs.</remarks>
+    public async Task InsertAsync(TEntity entity, CancellationToken cancellationToken = default) =>
+        await context.Value.Set<TEntity>().AddAsync(entity, cancellationToken).ConfigureAwait(false);
 
     /// <inheritdoc/>
     /// <remarks>Stages the entity via <see cref="DbSet{TEntity}.Update(TEntity)"/>; no query is issued until <see cref="IUnitOfWork.SaveChangesAsync"/> runs.</remarks>
@@ -73,7 +70,7 @@ public sealed class EntityFrameworkRepository<
         Expression<Func<TEntity, bool>>? filter = null,
         IReadOnlyList<SortCriterion<TEntity>>? sort = null,
         CancellationToken cancellationToken = default
-    ) => await this.Query.ApplyFilter(filter).ApplySort(sort).ToListAsync(cancellationToken);
+    ) => await this.Query.ApplyFilter(filter).ApplySort(sort).ToListAsync(cancellationToken).ConfigureAwait(false);
 
     /// <inheritdoc/>
     /// <remarks>
@@ -91,8 +88,12 @@ public sealed class EntityFrameworkRepository<
     )
     {
         var filtered = this.Query.ApplyFilter(filter);
-        var totalCount = await filtered.CountAsync(cancellationToken);
-        var items = await filtered.ApplySort(sort).ApplyPaging(pageNumber, pageSize).ToListAsync(cancellationToken);
+        var totalCount = await filtered.CountAsync(cancellationToken).ConfigureAwait(false);
+        var items = await filtered
+            .ApplySort(sort)
+            .ApplyPaging(pageNumber, pageSize)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
 
         return new Page<TEntity>(items, pageNumber, pageSize, totalCount);
     }

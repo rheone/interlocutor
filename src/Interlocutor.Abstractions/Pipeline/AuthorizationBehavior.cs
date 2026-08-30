@@ -70,7 +70,7 @@ public class AuthorizationBehavior<TRequest, TResponse>(IPolicyEvaluator policyE
     {
         // Evaluate the authorization policy. If it fails, short-circuit immediately with Forbidden
         // without invoking the handler or any downstream behaviors.
-        var authorized = await policyEvaluator.EvaluateAsync(request.PolicyName, request, ct);
+        var authorized = await policyEvaluator.EvaluateAsync(request.PolicyName, request, ct).ConfigureAwait(false);
         if (!authorized)
         {
             var forbidden = new Forbidden($"Policy '{request.PolicyName}' denied access to {typeof(TRequest).Name}");
@@ -78,7 +78,7 @@ public class AuthorizationBehavior<TRequest, TResponse>(IPolicyEvaluator policyE
         }
 
         // Authorization passed - proceed to the handler.
-        return await next();
+        return await next().ConfigureAwait(false);
     }
 
     private TResponse ConstructForbiddenResponse(Forbidden forbidden) =>

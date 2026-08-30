@@ -105,7 +105,7 @@ public sealed class GeneratedRegistrationIntegrationTests
         )
         {
             _executionOrder.Add("B1-enter");
-            var result = await next();
+            var result = await next().ConfigureAwait(false);
             _executionOrder.Add("B1-exit");
             return result;
         }
@@ -124,7 +124,7 @@ public sealed class GeneratedRegistrationIntegrationTests
         )
         {
             _executionOrder.Add("B2-enter");
-            var result = await next();
+            var result = await next().ConfigureAwait(false);
             _executionOrder.Add("B2-exit");
             return result;
         }
@@ -143,7 +143,7 @@ public sealed class GeneratedRegistrationIntegrationTests
         )
         {
             _executionOrder.Add("B3-enter");
-            var result = await next();
+            var result = await next().ConfigureAwait(false);
             _executionOrder.Add("B3-exit");
             return result;
         }

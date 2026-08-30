@@ -112,7 +112,7 @@ public sealed class CompleteReopenTodoTaskEndpointTests : IClassFixture<TodoTask
     }
 
     private static async Task<TodoTaskDto> CreateTaskAsync(HttpClient client, string displayName, string title) =>
-        (await CreateTaskAndReturnItsOwnerIdAsync(client, displayName, title)).Task;
+        (await CreateTaskAndReturnItsOwnerIdAsync(client, displayName, title).ConfigureAwait(false)).Task;
 
     /// <summary>Creates a user, authenticates as them, and creates a task - returning both the task and the owner's actual numeric user id (the counter's real key, not the display name).</summary>
     private static async Task<(TodoTaskDto Task, string OwnerUserId)> CreateTaskAndReturnItsOwnerIdAsync(
@@ -122,28 +122,30 @@ public sealed class CompleteReopenTodoTaskEndpointTests : IClassFixture<TodoTask
     )
     {
         client.DefaultRequestHeaders.Remove(DevHeaderAuthenticationHandler.HeaderName);
-        using var createUserResponse = await client.PostAsJsonAsync(
-            new Uri("/users", UriKind.Relative),
-            new CreateUserRequest(displayName, $"{displayName}@example.com"),
-            TestContext.Current.CancellationToken
-        );
-        var user = await createUserResponse.Content.ReadFromJsonAsync<UserDto>(
-            WebJsonOptions,
-            TestContext.Current.CancellationToken
-        );
+        using var createUserResponse = await client
+            .PostAsJsonAsync(
+                new Uri("/users", UriKind.Relative),
+                new CreateUserRequest(displayName, $"{displayName}@example.com"),
+                TestContext.Current.CancellationToken
+            )
+            .ConfigureAwait(false);
+        var user = await createUserResponse
+            .Content.ReadFromJsonAsync<UserDto>(WebJsonOptions, TestContext.Current.CancellationToken)
+            .ConfigureAwait(false);
         var ownerUserId = user!.Id.ToString();
         client.DefaultRequestHeaders.Add(DevHeaderAuthenticationHandler.HeaderName, ownerUserId);
 
-        using var createTaskResponse = await client.PostAsJsonAsync(
-            new Uri("/todo-tasks", UriKind.Relative),
-            new CreateTodoTaskRequest(title, null),
-            TestContext.Current.CancellationToken
-        );
-        var task = (
-            await createTaskResponse.Content.ReadFromJsonAsync<TodoTaskDto>(
-                WebJsonOptions,
+        using var createTaskResponse = await client
+            .PostAsJsonAsync(
+                new Uri("/todo-tasks", UriKind.Relative),
+                new CreateTodoTaskRequest(title, null),
                 TestContext.Current.CancellationToken
             )
+            .ConfigureAwait(false);
+        var task = (
+            await createTaskResponse
+                .Content.ReadFromJsonAsync<TodoTaskDto>(WebJsonOptions, TestContext.Current.CancellationToken)
+                .ConfigureAwait(false)
         )!;
         return (task, ownerUserId);
     }

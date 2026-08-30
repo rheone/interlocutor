@@ -50,7 +50,7 @@ public sealed class EntityFrameworkRepositoryTests : IDisposable
     {
         // Arrange
         var widget = new Widget { Name = "original" };
-        this.context.Widgets.Add(widget);
+        await this.context.Widgets.AddAsync(widget, TestContext.Current.CancellationToken);
         await this.context.SaveChangesAsync(TestContext.Current.CancellationToken);
         this.context.ChangeTracker.Clear();
 
@@ -71,7 +71,7 @@ public sealed class EntityFrameworkRepositoryTests : IDisposable
     {
         // Arrange
         var widget = new Widget { Name = "doomed" };
-        this.context.Widgets.Add(widget);
+        await this.context.Widgets.AddAsync(widget, TestContext.Current.CancellationToken);
         await this.context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
@@ -87,7 +87,7 @@ public sealed class EntityFrameworkRepositoryTests : IDisposable
     public async Task GetManyAsync_PushesFilterAndSortToSql_RatherThanMaterializingFirst()
     {
         // Arrange
-        this.context.Widgets.AddRange(
+        await this.context.Widgets.AddRangeAsync(
             new Widget { Name = "beta", Value = 2 },
             new Widget { Name = "alpha", Value = 1 },
             new Widget { Name = "gamma", Value = 3 }
@@ -119,7 +119,7 @@ public sealed class EntityFrameworkRepositoryTests : IDisposable
     public async Task GetManyAsync_WithNoFilterOrSort_ReturnsEveryEntity()
     {
         // Arrange
-        this.context.Widgets.AddRange(new Widget { Name = "beta" }, new Widget { Name = "alpha" });
+        await this.context.Widgets.AddRangeAsync(new Widget { Name = "beta" }, new Widget { Name = "alpha" });
         await this.context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
@@ -137,7 +137,10 @@ public sealed class EntityFrameworkRepositoryTests : IDisposable
         // Arrange
         for (var i = 1; i <= 5; i++)
         {
-            this.context.Widgets.Add(new Widget { Name = $"widget-{i}", Value = i });
+            await this.context.Widgets.AddAsync(
+                new Widget { Name = $"widget-{i}", Value = i },
+                TestContext.Current.CancellationToken
+            );
         }
 
         await this.context.SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -170,7 +173,10 @@ public sealed class EntityFrameworkRepositoryTests : IDisposable
         // Arrange
         for (var i = 1; i <= 5; i++)
         {
-            this.context.Widgets.Add(new Widget { Name = $"widget-{i}", Value = i });
+            await this.context.Widgets.AddAsync(
+                new Widget { Name = $"widget-{i}", Value = i },
+                TestContext.Current.CancellationToken
+            );
         }
 
         await this.context.SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -211,7 +217,7 @@ public sealed class EntityFrameworkRepositoryTests : IDisposable
     public async Task GetById_ReturnsMatchingEntity_WhenQueryTranslatesThroughEfCore()
     {
         // Arrange
-        this.context.Widgets.AddRange(new Widget { Name = "first" }, new Widget { Name = "second" });
+        await this.context.Widgets.AddRangeAsync(new Widget { Name = "first" }, new Widget { Name = "second" });
         await this.context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var expectedId = (
             await this.context.Widgets.SingleAsync(w => w.Name == "second", TestContext.Current.CancellationToken)

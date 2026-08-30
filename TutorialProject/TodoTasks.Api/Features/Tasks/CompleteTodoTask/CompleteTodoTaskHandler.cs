@@ -44,9 +44,9 @@ public sealed class CompleteTodoTaskHandler(
         }
 
         task.IsCompleted = true;
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
 
-        await publisher.Publish(new TodoTaskCompletedNotification(task.Id, task.OwnerId, task.Title), ct);
+        await publisher.Publish(new TodoTaskCompletedNotification(task.Id, task.OwnerId, task.Title), ct).ConfigureAwait(false);
 
         return TodoTaskDto.FromEntity(task);
     }

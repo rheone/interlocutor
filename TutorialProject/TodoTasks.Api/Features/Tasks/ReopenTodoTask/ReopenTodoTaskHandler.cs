@@ -27,7 +27,7 @@ public sealed class ReopenTodoTaskHandler(IDomainRepository<TodoTask, int> tasks
         }
 
         task.IsCompleted = false;
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
 
         return TodoTaskDto.FromEntity(task);
     }

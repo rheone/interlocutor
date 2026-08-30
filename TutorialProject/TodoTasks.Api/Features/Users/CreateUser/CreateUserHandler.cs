@@ -18,7 +18,8 @@ public sealed class CreateUserHandler(IDomainRepository<User, int> users, IUnitO
     {
         // Shares CreateUserCommand's ITransactionalRequest-eager transaction with the insert below - see
         // that command's own remarks for why this specific ordering needs one.
-        var emailAlreadyTaken = (await users.GetManyAsync(u => u.Email == command.Email, cancellationToken: ct)).Count > 0;
+        var emailAlreadyTaken =
+            (await users.GetManyAsync(u => u.Email == command.Email, cancellationToken: ct).ConfigureAwait(false)).Count > 0;
 
         if (emailAlreadyTaken)
         {
@@ -26,8 +27,8 @@ public sealed class CreateUserHandler(IDomainRepository<User, int> users, IUnitO
         }
 
         var user = new User(command.DisplayName, command.Email);
-        await users.InsertAsync(user, ct);
-        await unitOfWork.SaveChangesAsync(ct); // UnitOfWorkBehavior commits from here on success.
+        await users.InsertAsync(user, ct).ConfigureAwait(false);
+        await unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false); // UnitOfWorkBehavior commits from here on success.
 
         return UserDto.FromEntity(user);
     }

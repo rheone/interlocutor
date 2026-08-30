@@ -47,7 +47,7 @@ public sealed class SyncAwareCompleteTodoTaskHandler(
 
         task.IsCompleted = true; // Staged - not committed until SaveChangesAsync or pipeline egress.
 
-        if (await externalSync.WasAlreadyCompletedElsewhereAsync(task.Id, ct))
+        if (await externalSync.WasAlreadyCompletedElsewhereAsync(task.Id, ct).ConfigureAwait(false))
         {
             // The external system already completed this task - abandon our own staged write rather
             // than double-apply it. This still isn't our failure: the task ends up completed either
@@ -55,11 +55,11 @@ public sealed class SyncAwareCompleteTodoTaskHandler(
             // carries Conflict for an already-completed task), this command never checks task.IsCompleted
             // itself - completing an already-complete task through this path is not an error to guard
             // against, so its response shape only needs NotFound.
-            await unitOfWork.Cancel(ct);
+            await unitOfWork.Cancel(ct).ConfigureAwait(false);
             return TodoTaskDto.FromEntity(task);
         }
 
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
         return TodoTaskDto.FromEntity(task);
     }
 }

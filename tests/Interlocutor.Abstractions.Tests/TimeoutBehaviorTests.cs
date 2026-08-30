@@ -21,7 +21,7 @@ public class TimeoutBehaviorTests
         var request = new TimeBoundQuery(budget);
         static async Task<OperationOutcome<string, Timeout>> Next()
         {
-            await Task.Delay(TimeSpan.FromMilliseconds(500), CancellationToken.None);
+            await Task.Delay(TimeSpan.FromMilliseconds(500), CancellationToken.None).ConfigureAwait(false);
             return new OperationOutcome<string, Timeout>("too slow");
         }
 
@@ -55,7 +55,14 @@ public class TimeoutBehaviorTests
         var tcs = new TaskCompletionSource<OperationOutcome<string, Timeout>>();
         Task<OperationOutcome<string, Timeout>> Next()
         {
+            // VSTHRD003/IDISP013 both read this as a "foreign" task escaping the using scope below - it's
+            // deliberately never-completing (a stand-in for a slow handler losing the race to cts's own
+            // cancellation), not a task whose start this method owns or needs to await within the using block.
+#pragma warning disable VSTHRD003
+#pragma warning disable IDISP013
             return tcs.Task; // never completes on its own
+#pragma warning restore IDISP013
+#pragma warning restore VSTHRD003
         }
 
         cts.CancelAfter(TimeSpan.FromMilliseconds(20));
@@ -100,7 +107,7 @@ public class TimeoutBehaviorTests
         var request = new TimeBoundQuery(TimeSpan.FromSeconds(30)); // request declares a much larger budget
         static async Task<OperationOutcome<string, Timeout>> Next()
         {
-            await Task.Delay(TimeSpan.FromMilliseconds(500), CancellationToken.None);
+            await Task.Delay(TimeSpan.FromMilliseconds(500), CancellationToken.None).ConfigureAwait(false);
             return new OperationOutcome<string, Timeout>("too slow");
         }
 

@@ -146,7 +146,7 @@ public class ServiceCollectionExtensionsTests
         public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
         {
             this._executionOrder.Add("open-enter");
-            var result = await next();
+            var result = await next().ConfigureAwait(false);
             this._executionOrder.Add("open-exit");
             return result;
         }
@@ -165,7 +165,7 @@ public class ServiceCollectionExtensionsTests
         )
         {
             this._executionOrder.Add("closed-enter");
-            var result = await next();
+            var result = await next().ConfigureAwait(false);
             this._executionOrder.Add("closed-exit");
             return result;
         }

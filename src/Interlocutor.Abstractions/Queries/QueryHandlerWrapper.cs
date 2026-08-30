@@ -42,7 +42,7 @@ internal sealed class QueryHandlerWrapper<TQuery, TResponse> : IHandlerWrapper<T
         {
             try
             {
-                return await handler.Handle(typedRequest, ct);
+                return await handler.Handle(typedRequest, ct).ConfigureAwait(false);
             }
             catch (PipelineEjectException<TResponse> eject)
             {
@@ -62,7 +62,7 @@ internal sealed class QueryHandlerWrapper<TQuery, TResponse> : IHandlerWrapper<T
             {
                 try
                 {
-                    return await behavior.Handle(typedRequest, next, ct);
+                    return await behavior.Handle(typedRequest, next, ct).ConfigureAwait(false);
                 }
                 catch (PipelineEjectException<TResponse> eject)
                 {

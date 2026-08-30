@@ -41,7 +41,7 @@ internal sealed class SequentialNotificationHandlerWrapper<
         // handler throws, the exception propagates immediately and subsequent handlers are not invoked.
         foreach (var handler in handlers)
         {
-            await handler.Handle(typedNotification, ct);
+            await handler.Handle(typedNotification, ct).ConfigureAwait(false);
         }
     }
 }

@@ -45,7 +45,7 @@ public sealed class SlowHandlerWarningBehaviorTests
         var behavior = new SlowHandlerWarningBehavior<SlowRequest, string>(this.logger);
         static async Task<string> SlowHandler()
         {
-            await Task.Delay(TimeSpan.FromMilliseconds(400), TestContext.Current.CancellationToken);
+            await Task.Delay(TimeSpan.FromMilliseconds(400), TestContext.Current.CancellationToken).ConfigureAwait(false);
             return "done";
         }
 
@@ -77,7 +77,7 @@ public sealed class SlowHandlerWarningBehaviorTests
         await Task.Delay(TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken); // Ahead of this behavior - never measured by it.
         static async Task<string> FastHandler()
         {
-            await Task.Delay(TimeSpan.FromMilliseconds(10), TestContext.Current.CancellationToken);
+            await Task.Delay(TimeSpan.FromMilliseconds(10), TestContext.Current.CancellationToken).ConfigureAwait(false);
             return "done";
         }
 

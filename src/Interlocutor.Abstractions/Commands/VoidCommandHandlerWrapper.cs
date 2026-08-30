@@ -43,7 +43,7 @@ internal sealed class VoidCommandHandlerWrapper<TCommand, TResult> : IVoidHandle
         {
             try
             {
-                return await handler.Handle(typedRequest, ct);
+                return await handler.Handle(typedRequest, ct).ConfigureAwait(false);
             }
             catch (PipelineEjectException<TResult> eject)
             {
@@ -63,7 +63,7 @@ internal sealed class VoidCommandHandlerWrapper<TCommand, TResult> : IVoidHandle
             {
                 try
                 {
-                    return await behavior.Handle(typedRequest, next, ct);
+                    return await behavior.Handle(typedRequest, next, ct).ConfigureAwait(false);
                 }
                 catch (PipelineEjectException<TResult> eject)
                 {

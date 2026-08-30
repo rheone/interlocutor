@@ -19,7 +19,7 @@ public static class CompleteTodoTaskEndpoint
             "/todo-tasks/{id:int}/complete",
             async (int id, ISender sender, CancellationToken ct) =>
             {
-                var result = await sender.Send(new CompleteTodoTaskCommand(id), ct);
+                var result = await sender.Send(new CompleteTodoTaskCommand(id), ct).ConfigureAwait(false);
                 return result.ToMinimalApiResult();
             }
         );

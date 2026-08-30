@@ -123,7 +123,7 @@ public class EjectingAfterNextBehavior<TRequest, TResponse>(TResponse response) 
 {
     public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
-        _ = await next();
+        _ = await next().ConfigureAwait(false);
         return Eject.With(response);
     }
 }

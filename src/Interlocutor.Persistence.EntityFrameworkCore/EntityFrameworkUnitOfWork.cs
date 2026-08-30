@@ -35,10 +35,14 @@ public sealed class EntityFrameworkUnitOfWork<TContext>(Lazy<TContext> context) 
         var db = context.Value;
         if (db.Database.CurrentTransaction is null)
         {
-            await db.Database.BeginTransactionAsync(cancellationToken);
+            // Not captured/disposed here - UnitOfWorkBehavior retrieves this same context-owned transaction via
+            // Database.CurrentTransaction and disposes it once, after commit or rollback, at pipeline completion.
+#pragma warning disable IDISP004
+            await db.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+#pragma warning restore IDISP004
         }
 
-        await db.SaveChangesAsync(cancellationToken);
+        await db.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc/>
@@ -53,8 +57,8 @@ public sealed class EntityFrameworkUnitOfWork<TContext>(Lazy<TContext> context) 
         var db = context.Value;
         if (db.Database.CurrentTransaction is { } transaction)
         {
-            await transaction.RollbackAsync(cancellationToken);
-            await transaction.DisposeAsync();
+            await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+            await transaction.DisposeAsync().ConfigureAwait(false);
         }
 
         db.ChangeTracker.Clear();

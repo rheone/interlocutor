@@ -120,5 +120,7 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
 
     /// <summary>A query with no handler anywhere in this compilation - proves the generated switch's
     /// "recognized shape, no handler" case throws the same named exception the reflection path does.</summary>
+#pragma warning disable INTERLOC001 // Deliberately unregistered - this type exists to exercise that diagnostic's runtime counterpart
     public sealed record GeneratedSwitchUnregisteredQuery : IQuery<OperationOutcome<int, Failure>>;
+#pragma warning restore INTERLOC001
 }

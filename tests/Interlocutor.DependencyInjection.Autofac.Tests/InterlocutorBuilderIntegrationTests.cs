@@ -95,7 +95,11 @@ public class InterlocutorBuilderIntegrationTests
         containerBuilder.AddInterlocutor(builder => builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly));
 
         // Act
+        // Built just to prove Build() doesn't throw - not kept around, so never disposed; the same
+        // inline-container idiom .editorconfig's IDISP001 override documents for this test suite.
+#pragma warning disable IDISP005
         var exception = Record.Exception(() => containerBuilder.Build());
+#pragma warning restore IDISP005
 
         // Assert
         Assert.Null(exception);
@@ -432,7 +436,7 @@ public class InterlocutorBuilderIntegrationTests
             public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
             {
                 log.Add("first-before");
-                var result = await next();
+                var result = await next().ConfigureAwait(false);
                 log.Add("first-after");
                 return result;
             }
@@ -443,7 +447,7 @@ public class InterlocutorBuilderIntegrationTests
             public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
             {
                 log.Add("second-before");
-                var result = await next();
+                var result = await next().ConfigureAwait(false);
                 log.Add("second-after");
                 return result;
             }

@@ -60,7 +60,7 @@ public sealed class PersistenceRegistrationTests : IDisposable
         // The repository's Query escape hatch reads through DbSet<Widget> - proving it and the container's
         // own resolved TestDbContext agree confirms IUnitOfWork, the repository, and a plain DbContext
         // injection all share one scoped instance within this scope.
-        contextFromContainer.Widgets.Add(new Widget { Name = "shared" });
+        await contextFromContainer.Widgets.AddAsync(new Widget { Name = "shared" }, TestContext.Current.CancellationToken);
         await contextFromContainer.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Assert

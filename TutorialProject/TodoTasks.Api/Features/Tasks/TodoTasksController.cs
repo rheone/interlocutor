@@ -57,7 +57,9 @@ public sealed class TodoTasksController(ISender sender, IRequestContextAccessor 
             contextAccessor.Context?.UserId
             ?? throw new InvalidOperationException("This endpoint requires an authenticated caller.");
 
-        var result = await sender.Send(new CreateTodoTaskCommand(request.Title, request.Notes, ownerId), ct);
+        var result = await sender
+            .Send(new CreateTodoTaskCommand(request.Title, request.Notes, ownerId), ct)
+            .ConfigureAwait(false);
         return result.ToActionResult();
     }
 
@@ -88,7 +90,7 @@ public sealed class TodoTasksController(ISender sender, IRequestContextAccessor 
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
-        var result = await sender.Send(new GetTodoTaskByIdQuery(id), ct);
+        var result = await sender.Send(new GetTodoTaskByIdQuery(id), ct).ConfigureAwait(false);
         return result.Value switch
         {
             TodoTaskDto dto => this.Ok(dto),
@@ -104,7 +106,7 @@ public sealed class TodoTasksController(ISender sender, IRequestContextAccessor 
     [HttpGet]
     public async Task<IActionResult> List(bool onlyIncomplete, CancellationToken ct)
     {
-        var result = await sender.Send(new ListTodoTasksQuery(onlyIncomplete), ct);
+        var result = await sender.Send(new ListTodoTasksQuery(onlyIncomplete), ct).ConfigureAwait(false);
         return result.ToActionResult();
     }
 
@@ -121,7 +123,9 @@ public sealed class TodoTasksController(ISender sender, IRequestContextAccessor 
             contextAccessor.Context?.UserId
             ?? throw new InvalidOperationException("This endpoint requires an authenticated caller.");
 
-        var result = await sender.Send(new UpdateTodoTaskCommand(id, request.Title, request.Notes, requestedBy), ct);
+        var result = await sender
+            .Send(new UpdateTodoTaskCommand(id, request.Title, request.Notes, requestedBy), ct)
+            .ConfigureAwait(false);
         return result.ToActionResult();
     }
 
@@ -132,7 +136,7 @@ public sealed class TodoTasksController(ISender sender, IRequestContextAccessor 
     [HttpPost("{id:int}/complete")]
     public async Task<IActionResult> Complete(int id, CancellationToken ct)
     {
-        var result = await sender.Send(new CompleteTodoTaskCommand(id), ct);
+        var result = await sender.Send(new CompleteTodoTaskCommand(id), ct).ConfigureAwait(false);
         return result.ToActionResult();
     }
 
@@ -143,7 +147,7 @@ public sealed class TodoTasksController(ISender sender, IRequestContextAccessor 
     [HttpPost("{id:int}/reopen")]
     public async Task<IActionResult> Reopen(int id, CancellationToken ct)
     {
-        var result = await sender.Send(new ReopenTodoTaskCommand(id), ct);
+        var result = await sender.Send(new ReopenTodoTaskCommand(id), ct).ConfigureAwait(false);
         return result.ToActionResult();
     }
 
@@ -166,7 +170,7 @@ public sealed class TodoTasksController(ISender sender, IRequestContextAccessor 
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
-        var result = await sender.Send(new DeleteTodoTaskCommand(id), ct);
+        var result = await sender.Send(new DeleteTodoTaskCommand(id), ct).ConfigureAwait(false);
         return result.ToActionResult();
     }
 
@@ -187,7 +191,7 @@ public sealed class TodoTasksController(ISender sender, IRequestContextAccessor 
             contextAccessor.Context?.UserId
             ?? throw new InvalidOperationException("This endpoint requires an authenticated caller.");
 
-        var result = await sender.Send<OperationOutcome>(new ClearCompletedTodoTasksCommand(ownerId), ct);
+        var result = await sender.Send<OperationOutcome>(new ClearCompletedTodoTasksCommand(ownerId), ct).ConfigureAwait(false);
         return result.ToActionResult();
     }
 }

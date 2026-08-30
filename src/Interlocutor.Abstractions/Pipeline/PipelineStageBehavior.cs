@@ -48,7 +48,7 @@ public class PipelineStageBehavior<TRequest, TResponse>(
             StageResult<TResponse> beforeResult;
             try
             {
-                beforeResult = await stagesList[i].OnBeforeAsync(request, ct);
+                beforeResult = await stagesList[i].OnBeforeAsync(request, ct).ConfigureAwait(false);
             }
             catch
             {
@@ -57,7 +57,7 @@ public class PipelineStageBehavior<TRequest, TResponse>(
                 // throws (only possible when rethrowAfterHookExceptions is set), the original exception
                 // still wins per UnwindStagesAsync's own contract... except when the rethrow escalation
                 // is explicitly requested, in which case the caller has opted into losing that guarantee.
-                await this.UnwindStagesAsync(stagesList, completedStages, request, default!, ct);
+                await this.UnwindStagesAsync(stagesList, completedStages, request, default!, ct).ConfigureAwait(false);
                 throw;
             }
 
@@ -69,7 +69,8 @@ public class PipelineStageBehavior<TRequest, TResponse>(
                 // reverse for exactly the stages whose Before ran -- including this one -- with the
                 // short-circuit response, then return it as an ordinary result so behaviors outside this
                 // host cannot distinguish it from a handled response.
-                await this.UnwindStagesAsync(stagesList, completedStages, request, beforeResult.Response, ct);
+                await this.UnwindStagesAsync(stagesList, completedStages, request, beforeResult.Response, ct)
+                    .ConfigureAwait(false);
                 return beforeResult.Response;
             }
         }
@@ -77,10 +78,10 @@ public class PipelineStageBehavior<TRequest, TResponse>(
         // No before-hook short-circuited; run the handler. An exception here is a bug or infrastructure
         // fault, not an expected outcome -- OnAfter is paired with a produced response and deliberately
         // does not run, so a stage cannot observe a response that was never produced.
-        var result = await next();
+        var result = await next().ConfigureAwait(false);
 
         // Handler succeeded. Run OnAfter hooks for completed stages in reverse order with the actual result.
-        await this.UnwindStagesAsync(stagesList, completedStages, request, result, ct);
+        await this.UnwindStagesAsync(stagesList, completedStages, request, result, ct).ConfigureAwait(false);
 
         return result;
     }
@@ -104,7 +105,7 @@ public class PipelineStageBehavior<TRequest, TResponse>(
             var stage = stagesList[completedStages[i]];
             try
             {
-                await stage.OnAfterAsync(request, response, ct);
+                await stage.OnAfterAsync(request, response, ct).ConfigureAwait(false);
             }
             catch (Exception ex)
             {

@@ -40,8 +40,8 @@ public sealed class SharedSessionIntegrationTests : IClassFixture<RealSessionFix
             {
                 // Both calls resolve ISession.Value from the exact same Lazy<ISession> instance
                 // UnitOfWorkBehavior itself resolves - proving all three share one scoped session.
-                await repository.InsertAsync(widget, CancellationToken.None);
-                await unitOfWork.SaveChangesAsync(CancellationToken.None);
+                await repository.InsertAsync(widget, CancellationToken.None).ConfigureAwait(false);
+                await unitOfWork.SaveChangesAsync(CancellationToken.None).ConfigureAwait(false);
                 return default(Success);
             },
             CancellationToken.None

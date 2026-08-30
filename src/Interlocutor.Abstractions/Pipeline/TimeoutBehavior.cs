@@ -76,10 +76,10 @@ public class TimeoutBehavior<TRequest, TResponse>(ITimeoutPolicy timeoutPolicy, 
         var nextTask = next();
         var delayTask = Task.Delay(budget, ct);
 
-        var winner = await Task.WhenAny(nextTask, delayTask);
+        var winner = await Task.WhenAny(nextTask, delayTask).ConfigureAwait(false);
         if (winner == nextTask)
         {
-            return await nextTask;
+            return await nextTask.ConfigureAwait(false);
         }
 
         // The delay task won the race. It observes `ct` as well as the budget, so it can complete either
@@ -89,7 +89,7 @@ public class TimeoutBehavior<TRequest, TResponse>(ITimeoutPolicy timeoutPolicy, 
         // being misreported as a Timeout.
         if (delayTask.IsCanceled)
         {
-            await delayTask;
+            await delayTask.ConfigureAwait(false);
         }
 
         stopwatch.Stop();

@@ -196,7 +196,7 @@ app.MapReopenTodoTaskEndpoint();
 app.MapDeleteTodoTaskEndpoint();
 app.MapClearCompletedTodoTasksEndpoint();
 
-await app.RunAsync();
+await app.RunAsync().ConfigureAwait(false);
 
 /// <summary>
 /// Exposes this file's top-level-statements entry point as a named type so
