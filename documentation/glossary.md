@@ -30,12 +30,9 @@ Independent record-struct types, each usable as one case type in an `OperationOu
 | **Forbidden** | Authorization denied for a specific resource. Produced by `ResourceCommandHandler.Authorize()` or `AuthorizationBehavior`. |
 | **Conflict** | State conflict: concurrency, uniqueness violation, or invalid transition. Carries a message and a machine-readable code. Produced by handler code. |
 | **Failure** | The generic fallback case - see Result Types above. |
-| **Cancelled** | Cooperative cancellation of the ambient request, converted from an `OperationCanceledException` rather than letting it propagate as an unexpected fault. Reason-only, matching the shape of `NotFound`/`Forbidden` - a `CancellationToken` carries no queryable reason of its own. Produced by `CancellationBehavior` for requests implementing `ICancellable`. **Obsolete** - see the warning below. |
-| **Timeout** | A handler exceeded its declared time budget. Carries the `Budget` that was allotted and the `Elapsed` time actually observed, plus an optional message. Produced by `TimeoutBehavior` for requests implementing `IHasTimeout`. Can only report a timeout, not enforce cancellation of the abandoned work - see the pipeline-and-behaviors reference doc. **Obsolete** - see the warning below. |
-| **RateLimited** | The caller was throttled by a rate limiter. Carries the `LimitKey` identifying which limiter/bucket was hit and an optional `RetryAfter` hint. Produced by `RateLimitedBehavior` for requests implementing `IRateLimited`. **Obsolete** - see the warning below. |
-
-> [!WARNING]
-> `Cancelled`, `Timeout`, and `RateLimited` are marked `[Obsolete("May be overkill to include")]` in `Interlocutor.CommonKernel` and may be removed before this library's first stable release - see [Messages, Result Types & Variance](messages-and-result-types.md#cancelled-timeout--ratelimited) for the full detail.
+| **Cancelled** | Cooperative cancellation of the ambient request, converted from an `OperationCanceledException` rather than letting it propagate as an unexpected fault. Reason-only, matching the shape of `NotFound`/`Forbidden` - a `CancellationToken` carries no queryable reason of its own. Produced by `CancellationBehavior` for requests implementing `ICancellable`. |
+| **Timeout** | A handler exceeded its declared time budget. Carries the `Budget` that was allotted and the `Elapsed` time actually observed, plus an optional message. Produced by `TimeoutBehavior` for requests implementing `IHasTimeout`. Can only report a timeout, not enforce cancellation of the abandoned work - see the pipeline-and-behaviors reference doc. |
+| **RateLimited** | The caller was throttled by a rate limiter. Carries the `LimitKey` identifying which limiter/bucket was hit and an optional `RetryAfter` hint. Produced by `RateLimitedBehavior` for requests implementing `IRateLimited`. |
 
 ## Result Type Aggregates
 

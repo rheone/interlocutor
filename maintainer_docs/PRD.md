@@ -57,7 +57,7 @@ Before this library, "what can go wrong" for a given handler was implicit - disc
 | `Conflict` | `readonly record struct` | State conflict (concurrency, uniqueness, invalid transition) - `Message` and `Code` both mandatory |
 | `ValidationError` / `ValidationError<TErrorCode>` | `readonly record struct` | A single validation failure |
 | `ValidationErrors` / `ValidationErrors<TErrorCode>` | `readonly record struct` | De-duplicated aggregate of `ValidationError` instances |
-| `Cancelled`, `Timeout`, `RateLimited` | `readonly record struct` | Cross-cutting opt-in behavior outcomes - **all three `[Obsolete]`**, may be removed before first stable release |
+| `Cancelled`, `Timeout`, `RateLimited` | `readonly record struct` | Cross-cutting opt-in behavior outcomes |
 | `OperationOutcome` | `union` | `union OperationOutcome(Success, Failure)` - void command outcome |
 | `OperationOutcome<TSuccess, TFailure...>` | `union` | Generic in 2-6 case types; first is success, the rest independent failure cases |
 
@@ -92,9 +92,9 @@ All behaviors implement `IPipelineBehavior<TRequest, TResponse>` and compose via
 | `LoggingBehavior` | `Interlocutor.Abstractions` | - | Explicit registration; no marker |
 | `AuditingBehavior` | `Interlocutor.Abstractions` | - | `IAuditableRequest` + `IAuditSink` |
 | `AuthorizationBehavior` | `Interlocutor.Abstractions` | `Forbidden` | `IRequiresPolicy` + `IPolicyEvaluator` |
-| `CancellationBehavior` | `Interlocutor.Abstractions` | `Cancelled` (obsolete) | `ICancellable` |
-| `TimeoutBehavior` | `Interlocutor.Abstractions` | `Timeout` (obsolete) | `IHasTimeout` + `ITimeoutPolicy` |
-| `RateLimitedBehavior` | `Interlocutor.Abstractions` | `RateLimited` (obsolete) | `IRateLimited` + `IRateLimiter` |
+| `CancellationBehavior` | `Interlocutor.Abstractions` | `Cancelled` | `ICancellable` |
+| `TimeoutBehavior` | `Interlocutor.Abstractions` | `Timeout` | `IHasTimeout` + `ITimeoutPolicy` |
+| `RateLimitedBehavior` | `Interlocutor.Abstractions` | `RateLimited` | `IRateLimited` + `IRateLimiter` |
 | `PipelineStageBehavior` | `Interlocutor.Abstractions` | - | Aggregates registered `IPipelineStage<,>` pre/post hooks |
 | `ValidationBehavior` | `Interlocutor.FluentValidation` | `ValidationError(s)` | No marker - validates every request, if referenced |
 | `UnitOfWorkBehavior<,,>` | `Interlocutor.Persistence.EntityFrameworkCore` / `.NHibernate` | - | No marker required; `ITransactionalRequest`/`IExternalStoreRequest` narrow it |

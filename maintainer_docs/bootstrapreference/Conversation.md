@@ -259,7 +259,7 @@ The top-level switch is two-armed (`T` / `Failure`) - detailed failure handling 
 
 ### Terminology
 
-"Decorator" is fine informally, but the more precise term is **pipeline behavior** (MediatR's term) or **middleware** (ASP.NET's term). The mental model is the **onion / Russian-doll model**: each layer wraps the next, and *the same layer* handles both "on the way in" and "on the way out" - one behavior, one `next()` call in the middle:
+"Decorator" is fine informally, but the more precise terms are **pipeline behavior** and **middleware** - standard names for a decorator-style pipeline stage in this space generally. The mental model is the **onion / Russian-doll model**: each layer wraps the next, and *the same layer* handles both "on the way in" and "on the way out" - one behavior, one `next()` call in the middle:
 
 ```csharp
 public interface IPipelineBehavior<TRequest, TResponse>
@@ -515,7 +515,7 @@ Summary of what was delivered:
 
 ### The guidance
 
-Mark Seemann's "Service Locator is an anti-pattern" critique is specific: it's a problem when **application/business code** reaches into a container to fetch its own dependencies, hiding them from the constructor signature and defeating compile-time checking. It is **not** the same problem when confined to a small piece of generic infrastructure whose entire job is runtime dispatch on a type only known at the call site - MediatR, ASP.NET's controller activation, and AutoMapper's internal resolution all do the same, for the same reason. The rule of thumb: **confine it to one class, and make sure nothing downstream (handlers, behaviors) ever touches `IServiceProvider` directly** - already true here, since every behavior/handler uses ordinary constructor injection.
+Mark Seemann's "Service Locator is an anti-pattern" critique is specific: it's a problem when **application/business code** reaches into a container to fetch its own dependencies, hiding them from the constructor signature and defeating compile-time checking. It is **not** the same problem when confined to a small piece of generic infrastructure whose entire job is runtime dispatch on a type only known at the call site - MediatR, ASP.NET's controller activation, and AutoMapper's internal resolution are independent examples of the same general confinement pattern. The rule of thumb: **confine it to one class, and make sure nothing downstream (handlers, behaviors) ever touches `IServiceProvider` directly** - already true here, since every behavior/handler uses ordinary constructor injection.
 
 ### Where it's used, and why it can't be fully avoided
 
@@ -523,7 +523,7 @@ Exactly two lookups, both inside `Dispatch`: resolving the concrete handler for 
 
 ### What was avoidably unsafe: `dynamic`
 
-Fixed with a small **handler-wrapper hierarchy** (the same technique MediatR uses internally): a non-generic `HandlerWrapper<TResponse>` base, with fully statically-typed generic implementations (`QueryHandlerWrapper<TQuery,TResponse>`, `CommandHandlerWrapper<TCommand,TResponse>`) constructed once via reflection and cached in a `ConcurrentDictionary<Type,object>`. Every call after construction is ordinary, compiler-checked C# - no `dynamic`, no runtime binder.
+Fixed with a small **handler-wrapper hierarchy** - a non-generic `HandlerWrapper<TResponse>` base, with fully statically-typed generic implementations (`QueryHandlerWrapper<TQuery,TResponse>`, `CommandHandlerWrapper<TCommand,TResponse>`) constructed once via reflection and cached in a `ConcurrentDictionary<Type,object>`. Every call after construction is ordinary, compiler-checked C# - no `dynamic`, no runtime binder. (MediatR uses a similar technique internally.)
 
 Added `InterlocutorStartupValidation.ValidateInterlocutorHandlerRegistrations(...)` to close the remaining gap: a missing handler registration would otherwise only surface on the first production request that hits it; this scans all `IQuery<T>`/`ICommand<T>`/`ICommand` types at boot and fails startup instead.
 

@@ -255,9 +255,6 @@ var result = await mediator.Send(new BulkDelete([1, 2, 3]));
 
 ### Cancelled, Timeout & RateLimited
 
-> [!WARNING]
-> `Cancelled`, `Timeout`, and `RateLimited` are marked `[Obsolete("May be overkill to include")]` in `Interlocutor.CommonKernel` and may be removed before this library's first stable release. Using them today produces a compiler warning; using the general `Failure` case instead avoids taking a dependency on a type that might not ship.
-
 Three additional case types cover cross-cutting concerns that opt-in pipeline behaviors (see [pipeline-and-behaviors.md](pipeline-and-behaviors.md)) can short-circuit with:
 
 ```csharp
