@@ -97,6 +97,31 @@ Anything left unregistered still falls back to `DefaultOutcomeCaseRegistry`, so 
 
 A related but separate extension point: `LoggingBehavior`, `AuditingBehavior`, and both store-specific `UnitOfWorkBehavior` implementations need to describe a response for a log/audit line and classify it as success or failure, which is a different question from constructing/extracting a case. That's `IResponseOutcomeDescriber`, built on `OutcomeClassifierBuilder` - see [Pipeline & Behavior Composition § Outcome Description & Classification](pipeline-and-behaviors.md#outcome-description--classification) for the worked example. And at the HTTP boundary, `IOutcomeStatusMapper` maps a failure case to a status code and body - see [ASP.NET Core Integration § Custom HTTP Mapping](aspnetcore-integration.md#custom-http-mapping).
 
+## Full-fidelity validation failures: `IValidationFailureCase`
+
+`Interlocutor.FluentValidation.ValidationBehavior` collapses every validator's failures down to
+`ValidationErrors` - a message-only aggregate, portable across any validation technology. A handler that
+needs more - FluentValidation's `PropertyName`, `Severity`, `ErrorCode`, `CustomState`, and `AttemptedValue` -
+opts into `FluentValidationErrors` instead, by declaring it as a case and registering
+`FluentValidationErrorsBehavior` in place of `ValidationBehavior`:
+
+```csharp
+public record CreateUser(string Name, string Email)
+    : ICommand<OperationOutcome<int, FluentValidationErrors>>;
+
+builder.Pipeline.AddBehavior(typeof(FluentValidationErrorsBehavior<,>));
+```
+
+`FluentValidationErrors` wraps every `FluentValidation.Results.ValidationFailure` verbatim - nothing is
+projected away - while still implementing [`IValidationFailureCase`](glossary.md#result-types), the same
+minimal interface `ValidationErrors` implements. A consumer that recognizes `IValidationFailureCase` - such as
+`DefaultOutcomeStatusMapper` (see [ASP.NET Core Integration § Status Code Mapping](aspnetcore-integration.md#status-code-mapping))
+- handles either case type the same way, without needing to know which validation technology produced it.
+This is the same extension-point shape as a custom `IOperationOutcome` implementation above: a minimal marker
+interface a technology-specific case type implements, rather than a base type every case would need to
+inherit from - record structs can't be inherited from at all, which is exactly why this couldn't be modeled
+as `FluentValidationErrors : ValidationErrors`.
+
 ## Predicate-based registration: `InterlocutorBuilder.AddTypeMatch`
 
 Marker interfaces are the idiomatic opt-in mechanism, but sometimes what should be registered as a handler or behavior is better expressed as a predicate over discovered types than a shared interface - a namespace convention, a naming convention, anything scanning already sees:
@@ -138,7 +163,7 @@ For tracing the mechanism rather than copying an example:
 |---|---|---|
 | Marker interfaces | Your own request type | The container's generic-constraint resolution - no Interlocutor code inspects markers directly |
 | `IPipelineBehavior<,>` / `IPipelineStage<,>` | `Interlocutor.Abstractions.Pipeline` | `Mediator`'s dispatch path, chained via `InterlocutorPipelineBuilder` |
-| `IOutcomeCaseRegistry` | `Interlocutor.Abstractions.Pipeline.Cases` | `AuthorizationBehavior`, `CancellationBehavior`, `TimeoutBehavior`, `RateLimitedBehavior`, `Interlocutor.FluentValidation.ValidationBehavior` |
+| `IOutcomeCaseRegistry` | `Interlocutor.Abstractions.Pipeline.Cases` | `AuthorizationBehavior`, `CancellationBehavior`, `TimeoutBehavior`, `RateLimitedBehavior`, `Interlocutor.FluentValidation.ValidationBehavior`, `Interlocutor.FluentValidation.FluentValidationErrorsBehavior` |
 | `IOutcomeClassifier` / `IResponseOutcomeDescriber` | `Interlocutor.Abstractions.Pipeline.Classifiers` | `LoggingBehavior`, `AuditingBehavior`, both `UnitOfWorkBehavior` implementations |
 | `IOutcomeStatusMapper` | `Interlocutor.AspNetCore` | `ResultExtensions.ToActionResult`/`ToMinimalApiResult` |
 | `InterlocutorBuilder.AddTypeMatch` / `RequireUniqueClosure` / `Eject` | `Interlocutor.DependencyInjection.Abstractions` | Resolved when `AddInterlocutor` translates the accumulated registration list; checked by `ValidateOnBuild()` |

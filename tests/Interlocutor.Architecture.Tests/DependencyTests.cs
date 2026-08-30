@@ -129,15 +129,13 @@ public class DependencyTests
         // Arrange
         // (static class-level assembly references serve as fixture)
 
-        // Act
-        var fluentResult = Types
-            .InAssembly(FluentValidationAssembly)
-            .Should()
-            .HaveDependencyOn("Interlocutor.Abstractions")
-            .GetResult();
+        // Act - assembly-level (rather than per-type): the module owns plain data types (FluentValidationErrors)
+        // alongside its pipeline behaviors, so not every type references Abstractions directly - only that
+        // the module as a whole depends on it, per the same pattern as DependencyInjectionAbstractions above.
+        var referencedAssemblyNames = FluentValidationAssembly.GetReferencedAssemblies().Select(a => a.Name);
 
         // Assert
-        Assert.True(fluentResult.IsSuccessful, "FluentValidation package should depend on Abstractions");
+        Assert.Contains(AbstractionsAssembly.GetName().Name, referencedAssemblyNames);
     }
 
     [Fact]

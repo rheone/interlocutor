@@ -14,7 +14,7 @@ namespace Interlocutor.CommonKernel.ResultTypes;
 /// Provide a <paramref name="Reason"/> for logging/debugging, but avoid exposing policy details to callers for security.
 /// </para>
 /// </remarks>
-public readonly record struct Forbidden(string? Reason = null)
+public readonly record struct Forbidden(string? Reason = null) : IForbiddenFailureCase
 {
     /// <summary>
     /// Returns a human-readable representation of this outcome.

@@ -19,6 +19,7 @@ namespace Interlocutor.CommonKernel.ResultTypes;
 /// </para>
 /// </remarks>
 public readonly record struct RateLimited(string LimitKey, TimeSpan? RetryAfter = null, string? Message = null)
+    : IRateLimitedFailureCase
 {
     /// <summary>
     /// Returns a human-readable representation of this rate-limit rejection.

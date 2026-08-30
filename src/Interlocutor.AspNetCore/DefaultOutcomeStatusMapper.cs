@@ -23,6 +23,7 @@ public class DefaultOutcomeStatusMapper : IOutcomeStatusMapper
         failure switch
         {
             ValidationErrors validationErrors => this.MapValidationErrors(validationErrors),
+            IValidationFailureCase validationFailureCase => this.MapValidationFailureCase(validationFailureCase),
             Forbidden forbidden => this.MapForbidden(forbidden),
             Conflict conflict => this.MapConflict(conflict),
             Failures failures => this.MapFailures(failures),
@@ -38,12 +39,38 @@ public class DefaultOutcomeStatusMapper : IOutcomeStatusMapper
     /// <param name="validationErrors">The validation failures to map.</param>
     /// <returns>The mapped status code and <see cref="ProblemDetails"/> body.</returns>
     protected virtual OutcomeHttpMapping MapValidationErrors(ValidationErrors validationErrors) =>
+        MapValidationMessages(validationErrors.Messages);
+
+    /// <summary>
+    /// Maps any <see cref="IValidationFailureCase"/> implementer other than <see cref="ValidationErrors"/>
+    /// itself to 422 Unprocessable Entity with its messages - notably
+    /// <c>Interlocutor.FluentValidation.FluentValidationErrors</c>, and any future implementer this mapper
+    /// was never taught about directly.
+    /// </summary>
+    /// <param name="validationFailureCase">The validation failure to map.</param>
+    /// <returns>The mapped status code and <see cref="ProblemDetails"/> body.</returns>
+    /// <remarks>
+    /// Ordered after the exact <see cref="ValidationErrors"/> branch in <see cref="Map{TFailure}"/>, so a
+    /// plain <see cref="ValidationErrors"/> failure still resolves to <see cref="MapValidationErrors"/>
+    /// unchanged - this branch only ever runs for some other <see cref="IValidationFailureCase"/> implementer.
+    /// </remarks>
+    protected virtual OutcomeHttpMapping MapValidationFailureCase(IValidationFailureCase validationFailureCase) =>
+        MapValidationMessages(validationFailureCase.Messages);
+
+    /// <summary>
+    /// Builds the 422 Unprocessable Entity mapping shared by <see cref="MapValidationErrors"/> and
+    /// <see cref="MapValidationFailureCase"/> - both produce an identical <see cref="ProblemDetails"/> shape,
+    /// differing only in where their messages come from.
+    /// </summary>
+    /// <param name="messages">The validation failure messages to join into the body's <c>Detail</c>.</param>
+    /// <returns>The mapped status code and <see cref="ProblemDetails"/> body.</returns>
+    private static OutcomeHttpMapping MapValidationMessages(IReadOnlyList<string> messages) =>
         new(
             StatusCodes.Status422UnprocessableEntity,
             new ProblemDetails
             {
                 Title = "Validation Failed",
-                Detail = string.Join("; ", validationErrors.Messages),
+                Detail = string.Join("; ", messages),
                 Status = StatusCodes.Status422UnprocessableEntity,
             }
         );

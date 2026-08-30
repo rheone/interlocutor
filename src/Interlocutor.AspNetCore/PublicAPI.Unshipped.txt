@@ -48,3 +48,4 @@ virtual Interlocutor.AspNetCore.DefaultOutcomeStatusMapper.MapRateLimited(Interl
 virtual Interlocutor.AspNetCore.DefaultOutcomeStatusMapper.MapTimeout(Interlocutor.CommonKernel.ResultTypes.Timeout timeout) -> Interlocutor.AspNetCore.OutcomeHttpMapping!
 virtual Interlocutor.AspNetCore.DefaultOutcomeStatusMapper.MapUnrecognized<TFailure>(TFailure failure) -> Interlocutor.AspNetCore.OutcomeHttpMapping!
 virtual Interlocutor.AspNetCore.DefaultOutcomeStatusMapper.MapValidationErrors(Interlocutor.CommonKernel.ResultTypes.ValidationErrors validationErrors) -> Interlocutor.AspNetCore.OutcomeHttpMapping!
+virtual Interlocutor.AspNetCore.DefaultOutcomeStatusMapper.MapValidationFailureCase(Interlocutor.CommonKernel.ResultTypes.IValidationFailureCase! validationFailureCase) -> Interlocutor.AspNetCore.OutcomeHttpMapping!

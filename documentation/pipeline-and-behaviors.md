@@ -176,6 +176,29 @@ var result = await mediator.Send(new CreateUser("", "bad-email"));
 // result.Value is ValidationError with collected errors
 ```
 
+### FluentValidationErrorsBehavior
+
+Same validation, full fidelity: validates the request against registered FluentValidation rules, but returns
+`Interlocutor.FluentValidation.FluentValidationErrors` - every `FluentValidation.Results.ValidationFailure`
+preserved verbatim (property name, severity, error code, custom state, attempted value), not just its message.
+An alternative to `ValidationBehavior` for a handler that wants full fidelity, not an addition to it - register
+whichever one matches the case type your `OperationOutcome<...>` union declares.
+
+- Requires: `Interlocutor.FluentValidation` package
+- Marker: no marker - validates all requests, regardless of opt-in
+- Constraint: `TResponse : IOperationOutcome` (must be able to construct a `FluentValidationErrors` case)
+
+```csharp
+public record CreateUser(string Name, string Email)
+    : ICommand<OperationOutcome<int, FluentValidationErrors>>;
+
+builder.Pipeline.AddBehavior(typeof(FluentValidationErrorsBehavior<,>));
+
+// FluentValidationErrorsBehavior runs before your handler and short-circuits with FluentValidationErrors if invalid
+var result = await mediator.Send(new CreateUser("", "bad-email"));
+// result.Value is FluentValidationErrors - result.Value.Failures[0].PropertyName is "Email"
+```
+
 ### AuthorizationBehavior
 
 Enforces policy-based, non-resource authorization. Short-circuits with `Forbidden` if the policy fails.

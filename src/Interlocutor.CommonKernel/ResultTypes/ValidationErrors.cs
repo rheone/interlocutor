@@ -24,7 +24,7 @@ using Interlocutor.CommonKernel.ResultTypes.Internal;
 /// For validation errors that carry error codes, use <see cref="ValidationErrors{TErrorCode}"/>.
 /// </para>
 /// </remarks>
-public readonly record struct ValidationErrors
+public readonly record struct ValidationErrors : IValidationFailureCase
 {
     private readonly DistinctItemSet<ValidationError> _errors;
 

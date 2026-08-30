@@ -1,7 +1,9 @@
 namespace Interlocutor.AspNetCore.Tests;
 
+using global::FluentValidation.Results;
 using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
+using Interlocutor.FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -76,6 +78,56 @@ public class DefaultOutcomeStatusMapperTests
 
         // Assert
         Assert.Equal(StatusCodes.Status422UnprocessableEntity, mapping.StatusCode);
+    }
+
+    [Fact]
+    public void Map_WithFluentValidationErrors_Returns422()
+    {
+        // Arrange - a real second IValidationFailureCase implementer, not the library's own ValidationErrors.
+        var fluentValidationErrors = new FluentValidationErrors([
+            new ValidationFailure("Email", "'Email' is not a valid email address."),
+        ]);
+
+        // Act
+        var mapping = this.mapper.Map(fluentValidationErrors);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status422UnprocessableEntity, mapping.StatusCode);
+        var problemDetails = Assert.IsType<ProblemDetails>(mapping.Body);
+        Assert.Equal("'Email' is not a valid email address.", problemDetails.Detail);
+    }
+
+    [Fact]
+    public void Map_WithHandRolledValidationFailureCase_Returns422()
+    {
+        // Arrange - proves DefaultOutcomeStatusMapper recognizes IValidationFailureCase via the interface
+        // itself, not a type-specific special case for the library's own or FluentValidation's types.
+        var customCase = new CustomValidationFailureCase(["custom rule failed"]);
+
+        // Act
+        var mapping = this.mapper.Map(customCase);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status422UnprocessableEntity, mapping.StatusCode);
+        var problemDetails = Assert.IsType<ProblemDetails>(mapping.Body);
+        Assert.Equal("custom rule failed", problemDetails.Detail);
+    }
+
+    [Fact]
+    public void Map_WithValidationErrors_MappingIsUnaffectedByIValidationFailureCaseRecognition()
+    {
+        // Arrange - the exact ValidationErrors branch in Map<TFailure> is ordered before the new
+        // IValidationFailureCase branch, so this mapping is byte-for-byte the same as before that branch existed.
+        var validationErrors = new ValidationErrors(["required"]);
+
+        // Act
+        var mapping = this.mapper.Map(validationErrors);
+
+        // Assert
+        Assert.Equal(StatusCodes.Status422UnprocessableEntity, mapping.StatusCode);
+        var problemDetails = Assert.IsType<ProblemDetails>(mapping.Body);
+        Assert.Equal("Validation Failed", problemDetails.Title);
+        Assert.Equal("required", problemDetails.Detail);
     }
 
     [Fact]

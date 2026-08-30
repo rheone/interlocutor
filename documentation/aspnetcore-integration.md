@@ -81,6 +81,7 @@ flowchart TD
     IsSuccess -->|"success, unit Success"| NoContent204["204 No Content"]
     IsSuccess -->|"failure - IOutcomeStatusMapper.Map(failure)"| CaseType{"Failure case type"}
     CaseType -->|"ValidationErrors"| Unprocessable422["422 Unprocessable Entity<br/>ProblemDetails"]
+    CaseType -->|"any other IValidationFailureCase<br/>(e.g. FluentValidationErrors)"| Unprocessable422
     CaseType -->|"NotFound / NotFound&lt;TId&gt;"| NotFound404["404 Not Found<br/>body: message or none"]
     CaseType -->|"Forbidden"| Forbidden403["403 Forbidden<br/>no body"]
     CaseType -->|"Conflict"| Conflict409["409 Conflict<br/>ProblemDetails"]
@@ -96,6 +97,7 @@ flowchart TD
 | Success (payload) | 200 OK | The success payload (JSON) | For `OperationOutcome<TSuccess, ...>`, `TSuccess` is serialized. |
 | Success (unit) | 204 No Content | None | For the non-generic `OperationOutcome`. |
 | ValidationErrors | 422 Unprocessable Entity | `ProblemDetails` | `Detail` is every message joined with `"; "` - no per-field errors dictionary, since `ValidationError` carries a message and optional code, not a field name. |
+| Any other [`IValidationFailureCase`](glossary.md#result-types) implementer (e.g. `FluentValidationErrors`) | 422 Unprocessable Entity | `ProblemDetails` | Recognized via the interface, not a type-specific branch - a consumer's own validation-shaped failure case maps the same way without a mapper override. `Detail` is every `Messages` entry joined with `"; "`. |
 | NotFound | 404 Not Found | The message, or none | `NotFound<TId>` (the generic form) maps the same way via a separate reflective path. |
 | Forbidden | 403 Forbidden | None | Reason is never sent to the client. |
 | Conflict | 409 Conflict | `ProblemDetails` | `Title` is the conflict code, `Detail` is the message. |
@@ -118,6 +120,11 @@ public class MyStatusMapper : DefaultOutcomeStatusMapper
     // Change only how ValidationErrors maps; every other case keeps the default behavior
     protected override OutcomeHttpMapping MapValidationErrors(ValidationErrors validationErrors) =>
         new(StatusCodes.Status400BadRequest, new { errors = validationErrors.Messages });
+
+    // Change every OTHER IValidationFailureCase implementer at once (e.g. FluentValidationErrors) -
+    // this override doesn't affect ValidationErrors, since that exact-type branch is checked first
+    protected override OutcomeHttpMapping MapValidationFailureCase(IValidationFailureCase validationFailureCase) =>
+        new(StatusCodes.Status400BadRequest, new { errors = validationFailureCase.Messages });
 
     // Add a Retry-After-friendly body for a case the default mapper leaves generic
     protected override OutcomeHttpMapping MapUnrecognized<TFailure>(TFailure failure) =>

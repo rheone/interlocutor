@@ -17,7 +17,7 @@ namespace Interlocutor.CommonKernel.ResultTypes;
 /// Provide a <paramref name="Message"/> for additional context, such as which downstream dependency was slow.
 /// </para>
 /// </remarks>
-public readonly record struct Timeout(TimeSpan Budget, TimeSpan Elapsed, string? Message = null)
+public readonly record struct Timeout(TimeSpan Budget, TimeSpan Elapsed, string? Message = null) : ITimeoutFailureCase
 {
     /// <summary>
     /// Returns a human-readable representation of this timeout.
