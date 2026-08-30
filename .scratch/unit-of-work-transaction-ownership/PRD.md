@@ -1,6 +1,6 @@
 # PRD: Unit of Work as Transaction Owner
 
-Status: ready - 10 tickets, not yet started
+Status: done - all 10 tickets implemented in c938568 ("feat: make IUnitOfWork the transaction owner (ADR-0018)"), individually verified and marked done in b5f71e4
 
 Design decisions for this feature are recorded in [ADR-0018](../../docs/adr/0018-unit-of-work-as-transaction-owner.md). This PRD exists to break ADR-0018 into implementation issues; it does not re-derive the reasoning in the ADR.
 
