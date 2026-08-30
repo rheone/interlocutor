@@ -72,7 +72,7 @@ public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<
         // Short-circuit when no validators are registered - the pipeline proceeds without validation.
         if (!this.validators.Any())
         {
-            return await next();
+            return await next().ConfigureAwait(false);
         }
 
         // Aggregate all validation failures across every validator.
@@ -80,7 +80,7 @@ public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<
         var errorMessages = new List<string>();
         foreach (var validator in this.validators)
         {
-            var result = await validator.ValidateAsync(request, ct);
+            var result = await validator.ValidateAsync(request, ct).ConfigureAwait(false);
             foreach (var error in result.Errors)
             {
                 errorMessages.Add(error.ErrorMessage);
@@ -90,7 +90,7 @@ public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<
         // Short-circuit if validation passed - forward to handler unchanged.
         if (errorMessages.Count == 0)
         {
-            return await next();
+            return await next().ConfigureAwait(false);
         }
 
         // Validation failed - create ValidationErrors aggregate with all messages (de-duplicated)

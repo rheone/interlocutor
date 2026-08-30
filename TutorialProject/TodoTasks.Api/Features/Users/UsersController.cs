@@ -31,7 +31,7 @@ public sealed class UsersController(ISender sender) : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create(CreateUserRequest request, CancellationToken ct)
     {
-        var result = await sender.Send(new CreateUserCommand(request.DisplayName, request.Email), ct);
+        var result = await sender.Send(new CreateUserCommand(request.DisplayName, request.Email), ct).ConfigureAwait(false);
         return result.ToActionResult();
     }
 
@@ -52,7 +52,7 @@ public sealed class UsersController(ISender sender) : ControllerBase
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
-        var result = await sender.Send(new GetUserByIdQuery(id), ct);
+        var result = await sender.Send(new GetUserByIdQuery(id), ct).ConfigureAwait(false);
         return result.ToActionResult();
     }
 
@@ -73,7 +73,7 @@ public sealed class UsersController(ISender sender) : ControllerBase
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
-        var result = await sender.Send(new DeleteUserCommand(id), ct);
+        var result = await sender.Send(new DeleteUserCommand(id), ct).ConfigureAwait(false);
         return result.ToActionResult();
     }
 }

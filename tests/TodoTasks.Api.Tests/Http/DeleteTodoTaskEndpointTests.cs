@@ -89,22 +89,32 @@ public sealed class DeleteTodoTaskEndpointTests : IClassFixture<TodoTasksApiFact
 
     private static async Task AuthenticateAsANewUserAsync(HttpClient client)
     {
-        using var response = await client.PostAsJsonAsync(
-            new Uri("/users", UriKind.Relative),
-            new CreateUserRequest("Ada Lovelace", $"ada-{Guid.NewGuid():N}@example.com"),
-            TestContext.Current.CancellationToken
-        );
-        var user = await response.Content.ReadFromJsonAsync<UserDto>(WebJsonOptions, TestContext.Current.CancellationToken);
+        using var response = await client
+            .PostAsJsonAsync(
+                new Uri("/users", UriKind.Relative),
+                new CreateUserRequest("Ada Lovelace", $"ada-{Guid.NewGuid():N}@example.com"),
+                TestContext.Current.CancellationToken
+            )
+            .ConfigureAwait(false);
+        var user = await response
+            .Content.ReadFromJsonAsync<UserDto>(WebJsonOptions, TestContext.Current.CancellationToken)
+            .ConfigureAwait(false);
         client.DefaultRequestHeaders.Add(DevHeaderAuthenticationHandler.HeaderName, user!.Id.ToString());
     }
 
     private static async Task<TodoTaskDto> CreateTaskAsync(HttpClient client, string title)
     {
-        using var response = await client.PostAsJsonAsync(
-            new Uri("/todo-tasks", UriKind.Relative),
-            new CreateTodoTaskRequest(title, null),
-            TestContext.Current.CancellationToken
-        );
-        return (await response.Content.ReadFromJsonAsync<TodoTaskDto>(WebJsonOptions, TestContext.Current.CancellationToken))!;
+        using var response = await client
+            .PostAsJsonAsync(
+                new Uri("/todo-tasks", UriKind.Relative),
+                new CreateTodoTaskRequest(title, null),
+                TestContext.Current.CancellationToken
+            )
+            .ConfigureAwait(false);
+        return (
+            await response
+                .Content.ReadFromJsonAsync<TodoTaskDto>(WebJsonOptions, TestContext.Current.CancellationToken)
+                .ConfigureAwait(false)
+        )!;
     }
 }

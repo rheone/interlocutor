@@ -551,7 +551,15 @@ dotnet_diagnostic.VSTHRD111.severity = Warning    # Use ConfigureAwait(bool) on 
 dotnet_diagnostic.VSTHRD112.severity = Suggestion # Implement System.IAsyncDisposable alongside IDisposable when cleanup can be asynchronous
 dotnet_diagnostic.VSTHRD113.severity = Suggestion # Check for System.IAsyncDisposable in addition to IDisposable when disposing an object
 dotnet_diagnostic.VSTHRD114.severity = Warning    # Avoid returning null from a Task-returning method - awaiting null throws NullReferenceException
-dotnet_diagnostic.VSTHRD200.severity = Warning    # Use an "Async" suffix for async methods
+# VSTHRD200 ("Async" suffix) is intentionally off solution-wide: the mediator's public dispatch
+# contract (ICommandHandler/IQueryHandler/INotificationHandler.Handle, ISender.Send,
+# IPublisher.Publish, IPipelineBehavior.Handle, IUnitOfWork.Cancel, ...) deliberately omits the
+# suffix, following MediatR-style naming - it's the verb consumers call, not a framework-plumbing
+# method. Every hit traces back to one of these members, an override of one, or a test double
+# implementing/mocking one; renaming them would be a breaking change to this deliberate naming
+# choice, not a bug fix. Internal extension-point hooks still carry the suffix where it adds clarity (e.g.
+# ResourceCommandHandler's protected HandleAsync), so this is a naming choice, not a blind opt-out.
+dotnet_diagnostic.VSTHRD200.severity = None       # Use an "Async" suffix for async methods
 
 # AnalyzerId= StyleCop.Analyzers  RuleNamespace= StyleCop.Analyzers
 # Enforces C# style, formatting, and documentation-header conventions (SA-prefixed): spacing,
@@ -674,15 +682,38 @@ dotnet_diagnostic.CS8019.severity = Suggestion # Unnecessary using directive
 # Flags xUnit usage mistakes (xUnit-prefixed): misused [Fact]/[Theory] attributes, missing
 # [InlineData] parameters, comparer/assertion misuse, test classes with no runnable tests, etc.
 # Comes in transitively with the xunit.v3 package reference (not a direct PackageReference of its
-# own); runs on its shipped default severities - nothing here currently warrants an override.
+# own); runs on its shipped default severities, with one exception: xUnit1051 ("use
+# TestContext.Current.CancellationToken") stays at its shipped default (Warning) - every call this
+# flags gets that token threaded through, not suppressed, since xunit.v3 test cancellation actually
+# depends on it.
+
+# AnalyzerId= Microsoft.VisualStudio.Threading.Analyzers  RuleNamespace= Microsoft.VisualStudio.Threading.Analyzers
+# VSTHRD111 ("use ConfigureAwait(bool)") directly contradicts xUnit1030 ("test methods should not
+# call ConfigureAwait(false), as it may bypass parallelization limits") for every await inside a
+# [Fact]/[Theory] body - xUnit1030 wins here because xunit.v3 test methods never run under a
+# SynchronizationContext in the first place, so ConfigureAwait(false) buys nothing but the
+# parallelization risk xUnit1030 warns about. Left at full severity in src/, where the
+# SynchronizationContext a consumer's own await runs under is genuinely unknown.
+dotnet_diagnostic.VSTHRD111.severity = None # Use ConfigureAwait(bool) on the awaited expression
 
 # AnalyzerId= IDisposableAnalyzers  RuleNamespace= IDisposableAnalyzers
 # IDISP001 ("Dispose created") fires on almost every DI container/scope a test builds inline
 # (services.BuildServiceProvider(), builder.Build() for an Autofac IContainer, etc.) and then uses
 # for the rest of a short-lived test method without an explicit using - idiomatic in this test
-# suite's fixtures, not a leak (the container is GC'd with the test). Left at full severity in
-# src/, where the same pattern would matter.
+# suite's fixtures, not a leak (the container is GC'd with the test). IDISP004 ("Don't ignore
+# created IDisposable") fires on the same idiom when the container is chained straight into a
+# resolve call instead of assigned to a variable first (services.BuildServiceProvider().GetRequiredService<T>()) -
+# same non-leak, same rationale. Both left at full severity in src/, where the same pattern would matter.
 dotnet_diagnostic.IDISP001.severity = Suggestion # Dispose created
+dotnet_diagnostic.IDISP004.severity = Suggestion # Don't ignore created IDisposable
+
+# IDISP011 ("Don't return disposed instance") fires on every `new Lazy<ISession>(() => session)` /
+# `new Lazy<TContext>(() => context)` this test suite builds to hand a real, `using`-scoped
+# session/context to a unit-of-work or repository under test, matching production's own
+# Lazy<T>-injection idiom - IDisposableAnalyzers sees the lambda capturing a `using` variable and
+# assumes it can be invoked after disposal. In every case here the Lazy is realized well within the
+# same test method, before the `using` block disposes anything - left at full severity in src/.
+dotnet_diagnostic.IDISP011.severity = Suggestion # Don't return disposed instance
 
 # C# Tests files in Tests projects
 [{**Tests/**Tests.cs,**Tests.**/**Tests.cs}]

@@ -32,6 +32,10 @@ public sealed class ResultExtensionsHttpHostTests : IAsyncLifetime
     private WebApplication _app = null!;
     private HttpClient _client = null!;
 
+    // IDISP003 ("Dispose previous before re-assigning") fires on both field assignments below because
+    // _app/_client are pre-declared as `null!` per xunit's IAsyncLifetime pattern - there is no real previous
+    // instance to dispose. DisposeAsync below is where these are actually cleaned up, once, at test teardown.
+#pragma warning disable IDISP003
     public async ValueTask InitializeAsync()
     {
         var builder = WebApplication.CreateBuilder();
@@ -71,14 +75,15 @@ public sealed class ResultExtensionsHttpHostTests : IAsyncLifetime
             }
         );
 
-        await this._app.StartAsync();
+        await this._app.StartAsync().ConfigureAwait(false);
         this._client = this._app.GetTestClient();
     }
+#pragma warning restore IDISP003
 
     public async ValueTask DisposeAsync()
     {
         this._client.Dispose();
-        await this._app.DisposeAsync();
+        await this._app.DisposeAsync().ConfigureAwait(false);
     }
 
     [Fact]

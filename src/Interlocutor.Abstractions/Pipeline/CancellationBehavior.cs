@@ -69,7 +69,7 @@ public class CancellationBehavior<TRequest, TResponse>(IOutcomeCaseRegistry case
     {
         try
         {
-            return await next();
+            return await next().ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {

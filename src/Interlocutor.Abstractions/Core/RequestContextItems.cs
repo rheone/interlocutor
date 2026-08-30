@@ -43,7 +43,7 @@ public sealed class RequestContextItems : IEnumerable<KeyValuePair<string, objec
 {
     private readonly ConcurrentDictionary<string, object?> items;
 
-    /// <summary>Initializes a new, empty instance of the <see cref="RequestContextItems"/> class.</summary>
+    /// <summary>Initializes a new instance of the <see cref="RequestContextItems"/> class, with an empty item bag.</summary>
     public RequestContextItems() => this.items = new ConcurrentDictionary<string, object?>(StringComparer.Ordinal);
 
     /// <summary>Initializes a new instance of the <see cref="RequestContextItems"/> class, seeded with <paramref name="seed"/>.</summary>

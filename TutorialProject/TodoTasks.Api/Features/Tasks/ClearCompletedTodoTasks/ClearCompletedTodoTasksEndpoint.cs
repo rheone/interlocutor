@@ -26,7 +26,9 @@ public static class ClearCompletedTodoTasksEndpoint
                         contextAccessor.Context?.UserId
                         ?? throw new InvalidOperationException("This endpoint requires an authenticated caller.");
 
-                    var result = await sender.Send<OperationOutcome>(new ClearCompletedTodoTasksCommand(ownerId), ct);
+                    var result = await sender
+                        .Send<OperationOutcome>(new ClearCompletedTodoTasksCommand(ownerId), ct)
+                        .ConfigureAwait(false);
                     return result.ToMinimalApiResult();
                 }
             )

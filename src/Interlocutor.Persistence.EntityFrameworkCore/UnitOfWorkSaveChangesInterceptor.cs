@@ -58,10 +58,14 @@ public sealed class UnitOfWorkSaveChangesInterceptor : SaveChangesInterceptor
     {
         if (!IsSuppressed.Value && eventData.Context is { } context && context.Database.CurrentTransaction is null)
         {
-            await context.Database.BeginTransactionAsync(cancellationToken);
+            // Not captured/disposed here - UnitOfWorkBehavior retrieves this same context-owned transaction via
+            // Database.CurrentTransaction and disposes it once, after commit or rollback, at pipeline completion.
+#pragma warning disable IDISP004
+            await context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+#pragma warning restore IDISP004
         }
 
-        return await base.SavingChangesAsync(eventData, result, cancellationToken);
+        return await base.SavingChangesAsync(eventData, result, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc/>
@@ -70,7 +74,11 @@ public sealed class UnitOfWorkSaveChangesInterceptor : SaveChangesInterceptor
     {
         if (!IsSuppressed.Value && eventData.Context is { } context && context.Database.CurrentTransaction is null)
         {
+            // Not captured/disposed here - UnitOfWorkBehavior retrieves this same context-owned transaction via
+            // Database.CurrentTransaction and disposes it once, after commit or rollback, at pipeline completion.
+#pragma warning disable IDISP004
             context.Database.BeginTransaction();
+#pragma warning restore IDISP004
         }
 
         return base.SavingChanges(eventData, result);

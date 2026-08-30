@@ -62,7 +62,7 @@ public abstract class ResourceCommandHandler<TCommand, TEntity, TSuccess>
     /// <returns>The response, or a failure reason.</returns>
     public async Task<OperationOutcome<TSuccess, NotFound, Failure>> Handle(TCommand command, CancellationToken ct)
     {
-        var entity = await this.LoadAsync(command, ct);
+        var entity = await this.LoadAsync(command, ct).ConfigureAwait(false);
 
         // Short-circuit if the entity does not exist - no need to authorize or process.
         if (entity is null)
@@ -79,7 +79,7 @@ public abstract class ResourceCommandHandler<TCommand, TEntity, TSuccess>
         }
 
         // Entity exists and caller is authorized - delegate to the subclass business logic.
-        return await this.HandleAsync(command, entity, ct);
+        return await this.HandleAsync(command, entity, ct).ConfigureAwait(false);
     }
 
     /// <summary>

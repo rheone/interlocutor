@@ -51,7 +51,7 @@ public sealed class NHibernateRepository<TEntity, TKey>(Lazy<ISession> session, 
     /// not immediately.
     /// </remarks>
     public async Task InsertAsync(TEntity entity, CancellationToken cancellationToken = default) =>
-        await session.Value.SaveAsync(entity, cancellationToken);
+        await session.Value.SaveAsync(entity, cancellationToken).ConfigureAwait(false);
 
     /// <inheritdoc/>
     /// <remarks>
@@ -81,7 +81,7 @@ public sealed class NHibernateRepository<TEntity, TKey>(Lazy<ISession> session, 
         Expression<Func<TEntity, bool>>? filter = null,
         IReadOnlyList<SortCriterion<TEntity>>? sort = null,
         CancellationToken cancellationToken = default
-    ) => await this.Query.ApplyFilter(filter).ApplySort(sort).ToListAsync(cancellationToken);
+    ) => await this.Query.ApplyFilter(filter).ApplySort(sort).ToListAsync(cancellationToken).ConfigureAwait(false);
 
     /// <inheritdoc/>
     /// <remarks>
@@ -99,8 +99,12 @@ public sealed class NHibernateRepository<TEntity, TKey>(Lazy<ISession> session, 
     )
     {
         var filtered = this.Query.ApplyFilter(filter);
-        var totalCount = await filtered.CountAsync(cancellationToken);
-        var items = await filtered.ApplySort(sort).ApplyPaging(pageNumber, pageSize).ToListAsync(cancellationToken);
+        var totalCount = await filtered.CountAsync(cancellationToken).ConfigureAwait(false);
+        var items = await filtered
+            .ApplySort(sort)
+            .ApplyPaging(pageNumber, pageSize)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
 
         return new Page<TEntity>(items, pageNumber, pageSize, totalCount);
     }

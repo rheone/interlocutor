@@ -29,7 +29,7 @@ public sealed class EntityFrameworkUnitOfWorkTests : IDisposable
     {
         // Arrange
         var unitOfWork = new EntityFrameworkUnitOfWork<TestDbContext>(new Lazy<TestDbContext>(() => this.context));
-        this.context.Widgets.Add(new Widget { Name = "pending" });
+        await this.context.Widgets.AddAsync(new Widget { Name = "pending" }, TestContext.Current.CancellationToken);
 
         // Act
         await unitOfWork.SaveChangesAsync(TestContext.Current.CancellationToken);

@@ -31,20 +31,19 @@ public sealed class DeleteUserHandler(
 
         // TodoTask.OwnerId is an opaque string, not a foreign key to User.Id - see TodoTask's own
         // remarks for why - so this comparison is a string match, not a relational join.
-        var ownedTasks = await tasks.GetManyAsync(
-            t => t.OwnerId == user.Id.ToString(CultureInfo.InvariantCulture),
-            cancellationToken: ct
-        );
+        var ownedTasks = await tasks
+            .GetManyAsync(t => t.OwnerId == user.Id.ToString(CultureInfo.InvariantCulture), cancellationToken: ct)
+            .ConfigureAwait(false);
 
         foreach (var task in ownedTasks)
         {
-            await tasks.DeleteAsync(task, ct);
+            await tasks.DeleteAsync(task, ct).ConfigureAwait(false);
         }
 
-        await users.DeleteAsync(user, ct);
+        await users.DeleteAsync(user, ct).ConfigureAwait(false);
 
         // One commit for both repositories' staged deletes - the actual point of this handler.
-        await unitOfWork.SaveChangesAsync(ct);
+        await unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
 
         return default(Success);
     }

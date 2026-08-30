@@ -25,8 +25,9 @@ public class ValidationBehaviorTests
         {
             handlerInvoked = true;
             return await Task.FromResult<OperationOutcome<string, ValidationErrors>>(
-                new OperationOutcome<string, ValidationErrors>("success")
-            );
+                    new OperationOutcome<string, ValidationErrors>("success")
+                )
+                .ConfigureAwait(false);
         }
 
         // Act
@@ -53,8 +54,9 @@ public class ValidationBehaviorTests
         {
             handlerInvoked = true;
             return await Task.FromResult<OperationOutcome<string, ValidationErrors>>(
-                new OperationOutcome<string, ValidationErrors>("success")
-            );
+                    new OperationOutcome<string, ValidationErrors>("success")
+                )
+                .ConfigureAwait(false);
         }
 
         // Act
@@ -81,8 +83,9 @@ public class ValidationBehaviorTests
         {
             handlerInvoked = true;
             return await Task.FromResult<OperationOutcome<string, ValidationErrors>>(
-                new OperationOutcome<string, ValidationErrors>("success")
-            );
+                    new OperationOutcome<string, ValidationErrors>("success")
+                )
+                .ConfigureAwait(false);
         }
 
         // Act
@@ -107,8 +110,9 @@ public class ValidationBehaviorTests
         static async Task<OperationOutcome<string, ValidationErrors>> Next()
         {
             return await Task.FromResult<OperationOutcome<string, ValidationErrors>>(
-                new OperationOutcome<string, ValidationErrors>("success")
-            );
+                    new OperationOutcome<string, ValidationErrors>("success")
+                )
+                .ConfigureAwait(false);
         }
 
         // Act
@@ -140,8 +144,9 @@ public class ValidationBehaviorTests
         static async Task<OperationOutcome<string, ValidationErrors>> Next()
         {
             return await Task.FromResult<OperationOutcome<string, ValidationErrors>>(
-                new OperationOutcome<string, ValidationErrors>("success")
-            );
+                    new OperationOutcome<string, ValidationErrors>("success")
+                )
+                .ConfigureAwait(false);
         }
 
         // Act

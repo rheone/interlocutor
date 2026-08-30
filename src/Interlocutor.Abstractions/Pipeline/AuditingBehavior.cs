@@ -38,7 +38,7 @@ public class AuditingBehavior<TRequest, TResponse>(
     public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         // Execute the handler first, capturing the result. This ensures we audit both success and failure outcomes.
-        var result = await next();
+        var result = await next().ConfigureAwait(false);
 
         // Describe the outcome (e.g., "Success", "NotFound", "Forbidden") for the audit log. This gives
         // compliance/forensics a quick way to filter audits by outcome type without parsing full result objects.
@@ -54,7 +54,7 @@ public class AuditingBehavior<TRequest, TResponse>(
         // request type name (for categorization), outcome, timestamp, and the authenticated user ID
         // (or null if anonymous or no request context is available).
         var entry = new AuditEntry(request.ActionName, typeof(TRequest).Name, outcome, DateTime.UtcNow, userId);
-        await sink.RecordAsync(entry, ct);
+        await sink.RecordAsync(entry, ct).ConfigureAwait(false);
 
         return result;
     }

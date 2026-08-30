@@ -29,7 +29,7 @@ public sealed class UnitOfWorkSaveChangesInterceptorTests : IDisposable
 
         // Act
         // A raw, direct call - bypassing IUnitOfWork and any pipeline behavior entirely.
-        context.Widgets.Add(new Widget { Name = "direct" });
+        await context.Widgets.AddAsync(new Widget { Name = "direct" }, TestContext.Current.CancellationToken);
         await context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Assert
@@ -54,7 +54,7 @@ public sealed class UnitOfWorkSaveChangesInterceptorTests : IDisposable
         try
         {
             // Act
-            context.Widgets.Add(new Widget { Name = "external-store" });
+            await context.Widgets.AddAsync(new Widget { Name = "external-store" }, TestContext.Current.CancellationToken);
             await context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
             // Assert

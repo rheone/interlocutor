@@ -19,7 +19,7 @@ public static class SearchTodoTasksEndpoint
                         contextAccessor.Context?.UserId
                         ?? throw new InvalidOperationException("This endpoint requires an authenticated caller.");
 
-                    var result = await sender.Send(new SearchTodoTasksQuery(ownerId, titleContains), ct);
+                    var result = await sender.Send(new SearchTodoTasksQuery(ownerId, titleContains), ct).ConfigureAwait(false);
                     return result.ToMinimalApiResult();
                 }
             )

@@ -610,14 +610,14 @@ public class InterlocutorBuilderIntegrationTests
         public override async Task<StageResult<OperationOutcome>> OnBeforeAsync(SampleQuery request, CancellationToken ct)
         {
             log.Add("stage-before");
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
             return StageResult<OperationOutcome>.Continue;
         }
 
         public override async Task OnAfterAsync(SampleQuery request, OperationOutcome result, CancellationToken ct)
         {
             log.Add("stage-after");
-            await Task.CompletedTask;
+            await Task.CompletedTask.ConfigureAwait(false);
         }
     }
 
@@ -681,7 +681,7 @@ public class InterlocutorBuilderIntegrationTests
             public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
             {
                 log.Add("first-before");
-                var result = await next();
+                var result = await next().ConfigureAwait(false);
                 log.Add("first-after");
                 return result;
             }
@@ -692,7 +692,7 @@ public class InterlocutorBuilderIntegrationTests
             public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
             {
                 log.Add("second-before");
-                var result = await next();
+                var result = await next().ConfigureAwait(false);
                 log.Add("second-after");
                 return result;
             }

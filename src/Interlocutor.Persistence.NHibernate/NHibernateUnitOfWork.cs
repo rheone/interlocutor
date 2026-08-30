@@ -34,10 +34,14 @@ public sealed class NHibernateUnitOfWork(Lazy<ISession> session) : IUnitOfWork
         var s = session.Value;
         if (s.GetCurrentTransaction() is not { IsActive: true })
         {
+            // Not captured/disposed here - UnitOfWorkBehavior retrieves this same session-owned transaction via
+            // GetCurrentTransaction() and disposes it once, after commit or rollback, at pipeline completion.
+#pragma warning disable IDISP004
             s.BeginTransaction();
+#pragma warning restore IDISP004
         }
 
-        await s.FlushAsync(cancellationToken);
+        await s.FlushAsync(cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc/>
@@ -52,7 +56,7 @@ public sealed class NHibernateUnitOfWork(Lazy<ISession> session) : IUnitOfWork
         var s = session.Value;
         if (s.GetCurrentTransaction() is { IsActive: true } transaction)
         {
-            await transaction.RollbackAsync(cancellationToken);
+            await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
         }
 
         s.Clear();

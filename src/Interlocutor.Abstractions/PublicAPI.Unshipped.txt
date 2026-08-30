@@ -49,10 +49,13 @@ Interlocutor.Abstractions.Core.PublishStrategy
 Interlocutor.Abstractions.Core.PublishStrategy.Parallel = 1 -> Interlocutor.Abstractions.Core.PublishStrategy
 Interlocutor.Abstractions.Core.PublishStrategy.Sequential = 0 -> Interlocutor.Abstractions.Core.PublishStrategy
 Interlocutor.Abstractions.Core.RequestContext
+Interlocutor.Abstractions.Core.RequestContext.<Clone>$() -> Interlocutor.Abstractions.Core.RequestContext!
 Interlocutor.Abstractions.Core.RequestContext.CorrelationId.get -> string!
 Interlocutor.Abstractions.Core.RequestContext.CorrelationId.init -> void
+Interlocutor.Abstractions.Core.RequestContext.Equals(Interlocutor.Abstractions.Core.RequestContext? other) -> bool
 Interlocutor.Abstractions.Core.RequestContext.Items.get -> Interlocutor.Abstractions.Core.RequestContextItems!
 Interlocutor.Abstractions.Core.RequestContext.Items.init -> void
+Interlocutor.Abstractions.Core.RequestContext.RequestContext() -> void
 Interlocutor.Abstractions.Core.RequestContext.TenantId.get -> string?
 Interlocutor.Abstractions.Core.RequestContext.TenantId.init -> void
 Interlocutor.Abstractions.Core.RequestContext.UserId.get -> string?
@@ -105,7 +108,9 @@ Interlocutor.Abstractions.Notifications.NotificationHandlerRunBeforeAttribute.No
 Interlocutor.Abstractions.Pipeline.AuditEntry
 Interlocutor.Abstractions.Pipeline.AuditEntry.ActionName.get -> string!
 Interlocutor.Abstractions.Pipeline.AuditEntry.ActionName.init -> void
+Interlocutor.Abstractions.Pipeline.AuditEntry.AuditEntry(Interlocutor.Abstractions.Pipeline.AuditEntry! original) -> void
 Interlocutor.Abstractions.Pipeline.AuditEntry.AuditEntry(string! ActionName, string! RequestType, string! Outcome, System.DateTime Timestamp, string? UserId = null) -> void
+Interlocutor.Abstractions.Pipeline.AuditEntry.Deconstruct(out string! ActionName, out string! RequestType, out string! Outcome, out System.DateTime Timestamp, out string? UserId) -> void
 Interlocutor.Abstractions.Pipeline.AuditEntry.Outcome.get -> string!
 Interlocutor.Abstractions.Pipeline.AuditEntry.Outcome.init -> void
 Interlocutor.Abstractions.Pipeline.AuditEntry.RequestType.get -> string!
@@ -209,6 +214,8 @@ Interlocutor.Abstractions.Pipeline.RateLimitedBehavior<TRequest, TResponse>
 Interlocutor.Abstractions.Pipeline.RateLimitedBehavior<TRequest, TResponse>.Handle(TRequest request, System.Func<System.Threading.Tasks.Task<TResponse>!>! next, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
 Interlocutor.Abstractions.Pipeline.RateLimitedBehavior<TRequest, TResponse>.RateLimitedBehavior(Interlocutor.Abstractions.Pipeline.IRateLimiter! rateLimiter, Interlocutor.Abstractions.Pipeline.Cases.IOutcomeCaseRegistry! caseRegistry) -> void
 Interlocutor.Abstractions.Pipeline.RateLimitResult
+Interlocutor.Abstractions.Pipeline.RateLimitResult.Deconstruct(out bool IsAllowed, out System.TimeSpan? RetryAfter) -> void
+Interlocutor.Abstractions.Pipeline.RateLimitResult.Equals(Interlocutor.Abstractions.Pipeline.RateLimitResult other) -> bool
 Interlocutor.Abstractions.Pipeline.RateLimitResult.IsAllowed.get -> bool
 Interlocutor.Abstractions.Pipeline.RateLimitResult.IsAllowed.init -> void
 Interlocutor.Abstractions.Pipeline.RateLimitResult.RateLimitResult() -> void
@@ -226,14 +233,27 @@ Interlocutor.Abstractions.Pipeline.UnionCaseFactory
 Interlocutor.Abstractions.Queries.IQuery<TResponse>
 Interlocutor.Abstractions.Queries.IQueryHandler<TQuery, TResponse>
 Interlocutor.Abstractions.Queries.IQueryHandler<TQuery, TResponse>.Handle(TQuery query, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
+override Interlocutor.Abstractions.Core.RequestContext.Equals(object? obj) -> bool
+override Interlocutor.Abstractions.Core.RequestContext.GetHashCode() -> int
+override Interlocutor.Abstractions.Core.RequestContext.ToString() -> string!
+override Interlocutor.Abstractions.Pipeline.AuditEntry.Equals(object? obj) -> bool
+override Interlocutor.Abstractions.Pipeline.AuditEntry.GetHashCode() -> int
+override Interlocutor.Abstractions.Pipeline.AuditEntry.ToString() -> string!
 override Interlocutor.Abstractions.Pipeline.DelegatePipelineStage<TRequest, TResponse>.OnAfterAsync(TRequest request, TResponse result, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
 override Interlocutor.Abstractions.Pipeline.DelegatePipelineStage<TRequest, TResponse>.OnBeforeAsync(TRequest request, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Interlocutor.Abstractions.Pipeline.StageResult<TResponse>>!
+override Interlocutor.Abstractions.Pipeline.RateLimitResult.GetHashCode() -> int
+static Interlocutor.Abstractions.Core.RequestContext.operator !=(Interlocutor.Abstractions.Core.RequestContext? left, Interlocutor.Abstractions.Core.RequestContext? right) -> bool
+static Interlocutor.Abstractions.Core.RequestContext.operator ==(Interlocutor.Abstractions.Core.RequestContext? left, Interlocutor.Abstractions.Core.RequestContext? right) -> bool
 static Interlocutor.Abstractions.InterlocutorStartupValidation.ValidateHandlerRegistrations(this System.IServiceProvider! provider, params System.Reflection.Assembly![]! assembliesToScan) -> System.IServiceProvider!
+static Interlocutor.Abstractions.Pipeline.AuditEntry.operator !=(Interlocutor.Abstractions.Pipeline.AuditEntry? left, Interlocutor.Abstractions.Pipeline.AuditEntry? right) -> bool
+static Interlocutor.Abstractions.Pipeline.AuditEntry.operator ==(Interlocutor.Abstractions.Pipeline.AuditEntry? left, Interlocutor.Abstractions.Pipeline.AuditEntry? right) -> bool
 static Interlocutor.Abstractions.Pipeline.Cases.DefaultOutcomeCaseRegistry.Instance.get -> Interlocutor.Abstractions.Pipeline.Cases.IOutcomeCaseRegistry!
 static Interlocutor.Abstractions.Pipeline.Cases.OutcomeCaseRegistryExtensions.ConstructOrThrow<TResponse, TCase>(this Interlocutor.Abstractions.Pipeline.Cases.IOutcomeCaseRegistry! caseRegistry, TCase caseValue, string! behaviorName, string! eventPhrase, string! requirementClause) -> TResponse
 static Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder.DefaultClassifier.get -> Interlocutor.Abstractions.Pipeline.Classifiers.IOutcomeClassifier!
 static Interlocutor.Abstractions.Pipeline.Eject.With<TResponse>(TResponse response) -> TResponse
 static Interlocutor.Abstractions.Pipeline.PipelineChainResolver.ResolveChain<TRequest, TResponse>(System.IServiceProvider! services) -> System.Collections.Generic.IReadOnlyList<Interlocutor.Abstractions.Pipeline.IPipelineBehavior<TRequest, TResponse>!>!
+static Interlocutor.Abstractions.Pipeline.RateLimitResult.operator !=(Interlocutor.Abstractions.Pipeline.RateLimitResult left, Interlocutor.Abstractions.Pipeline.RateLimitResult right) -> bool
+static Interlocutor.Abstractions.Pipeline.RateLimitResult.operator ==(Interlocutor.Abstractions.Pipeline.RateLimitResult left, Interlocutor.Abstractions.Pipeline.RateLimitResult right) -> bool
 static Interlocutor.Abstractions.Pipeline.StageResult<TResponse>.Continue.get -> Interlocutor.Abstractions.Pipeline.StageResult<TResponse>
 static Interlocutor.Abstractions.Pipeline.StageResult<TResponse>.ShortCircuit(TResponse response) -> Interlocutor.Abstractions.Pipeline.StageResult<TResponse>
 static Interlocutor.Abstractions.Pipeline.UnionCaseFactory.FindCaseConstructor<TResponse, TCase>() -> System.Reflection.ConstructorInfo?
@@ -242,5 +262,12 @@ static readonly Interlocutor.Abstractions.Pipeline.DefaultPolicyEvaluator.Instan
 static readonly Interlocutor.Abstractions.Pipeline.DefaultRateLimiter.Instance -> Interlocutor.Abstractions.Pipeline.DefaultRateLimiter!
 static readonly Interlocutor.Abstractions.Pipeline.DefaultTimeoutPolicy.Instance -> Interlocutor.Abstractions.Pipeline.DefaultTimeoutPolicy!
 virtual Interlocutor.Abstractions.Commands.ResourceCommandHandler<TCommand, TEntity, TSuccess>.DescribeKey(TCommand command) -> object!
+virtual Interlocutor.Abstractions.Pipeline.AuditEntry.<Clone>$() -> Interlocutor.Abstractions.Pipeline.AuditEntry!
+virtual Interlocutor.Abstractions.Pipeline.AuditEntry.EqualityContract.get -> System.Type!
+virtual Interlocutor.Abstractions.Pipeline.AuditEntry.Equals(Interlocutor.Abstractions.Pipeline.AuditEntry? other) -> bool
+virtual Interlocutor.Abstractions.Pipeline.AuditEntry.PrintMembers(System.Text.StringBuilder! builder) -> bool
+virtual Interlocutor.Abstractions.Pipeline.Cases.OutcomeCaseExtractor<TResponse>.Invoke(TResponse response, out System.Type! caseType, out object? caseValue) -> bool
 virtual Interlocutor.Abstractions.Pipeline.PipelineStageBase<TRequest, TResponse>.OnAfterAsync(TRequest request, TResponse result, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
 virtual Interlocutor.Abstractions.Pipeline.PipelineStageBase<TRequest, TResponse>.OnBeforeAsync(TRequest request, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Interlocutor.Abstractions.Pipeline.StageResult<TResponse>>!
+~override Interlocutor.Abstractions.Pipeline.RateLimitResult.Equals(object obj) -> bool
+~override Interlocutor.Abstractions.Pipeline.RateLimitResult.ToString() -> string

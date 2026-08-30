@@ -21,11 +21,13 @@ public sealed class ListTodoTasksHandler(IDomainRepository<TodoTask, int> tasks)
         CancellationToken ct
     )
     {
-        var matches = await tasks.GetManyAsync(
-            filter: query.OnlyIncomplete ? t => !t.IsCompleted : null,
-            sort: [new SortCriterion<TodoTask>(t => t.CreatedAtUtc, SortDirection.Descending)],
-            cancellationToken: ct
-        );
+        var matches = await tasks
+            .GetManyAsync(
+                filter: query.OnlyIncomplete ? t => !t.IsCompleted : null,
+                sort: [new SortCriterion<TodoTask>(t => t.CreatedAtUtc, SortDirection.Descending)],
+                cancellationToken: ct
+            )
+            .ConfigureAwait(false);
 
         return matches.Select(TodoTaskDto.FromEntity).ToList();
     }

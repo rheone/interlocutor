@@ -97,7 +97,7 @@ public sealed class DevHeaderAuthenticationHandlerTests
             displayName: null,
             typeof(DevHeaderAuthenticationHandler)
         );
-        await handler.InitializeAsync(scheme, httpContext);
+        await handler.InitializeAsync(scheme, httpContext).ConfigureAwait(false);
         return handler;
     }
 }

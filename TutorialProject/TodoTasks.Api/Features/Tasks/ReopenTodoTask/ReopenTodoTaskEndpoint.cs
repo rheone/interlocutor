@@ -15,7 +15,7 @@ public static class ReopenTodoTaskEndpoint
             "/todo-tasks/{id:int}/reopen",
             async (int id, ISender sender, CancellationToken ct) =>
             {
-                var result = await sender.Send(new ReopenTodoTaskCommand(id), ct);
+                var result = await sender.Send(new ReopenTodoTaskCommand(id), ct).ConfigureAwait(false);
                 return result.ToMinimalApiResult();
             }
         );

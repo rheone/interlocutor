@@ -89,21 +89,33 @@ public sealed class DeleteUserEndpointTests : IClassFixture<TodoTasksApiFactory>
 
     private static async Task<UserDto> CreateUserAsync(HttpClient client)
     {
-        using var response = await client.PostAsJsonAsync(
-            new Uri("/users", UriKind.Relative),
-            new CreateUserRequest("Ada Lovelace", $"ada-{Guid.NewGuid():N}@example.com"),
-            TestContext.Current.CancellationToken
-        );
-        return (await response.Content.ReadFromJsonAsync<UserDto>(WebJsonOptions, TestContext.Current.CancellationToken))!;
+        using var response = await client
+            .PostAsJsonAsync(
+                new Uri("/users", UriKind.Relative),
+                new CreateUserRequest("Ada Lovelace", $"ada-{Guid.NewGuid():N}@example.com"),
+                TestContext.Current.CancellationToken
+            )
+            .ConfigureAwait(false);
+        return (
+            await response
+                .Content.ReadFromJsonAsync<UserDto>(WebJsonOptions, TestContext.Current.CancellationToken)
+                .ConfigureAwait(false)
+        )!;
     }
 
     private static async Task<TodoTaskDto> CreateTaskAsync(HttpClient client, string title)
     {
-        using var response = await client.PostAsJsonAsync(
-            new Uri("/todo-tasks", UriKind.Relative),
-            new CreateTodoTaskRequest(title, null),
-            TestContext.Current.CancellationToken
-        );
-        return (await response.Content.ReadFromJsonAsync<TodoTaskDto>(WebJsonOptions, TestContext.Current.CancellationToken))!;
+        using var response = await client
+            .PostAsJsonAsync(
+                new Uri("/todo-tasks", UriKind.Relative),
+                new CreateTodoTaskRequest(title, null),
+                TestContext.Current.CancellationToken
+            )
+            .ConfigureAwait(false);
+        return (
+            await response
+                .Content.ReadFromJsonAsync<TodoTaskDto>(WebJsonOptions, TestContext.Current.CancellationToken)
+                .ConfigureAwait(false)
+        )!;
     }
 }

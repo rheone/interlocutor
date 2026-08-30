@@ -80,7 +80,7 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<RealSessionFixture>
             {
                 // A direct Save() on the session, not through NHibernateUnitOfWork - IsDirty() reflects
                 // the session's own tracked state regardless of which access path staged it.
-                await session.SaveAsync(widget, CancellationToken.None);
+                await session.SaveAsync(widget, CancellationToken.None).ConfigureAwait(false);
                 return default(Success);
             },
             CancellationToken.None
@@ -108,7 +108,7 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<RealSessionFixture>
             new PlainRequest(),
             async () =>
             {
-                await session.SaveAsync(widget, CancellationToken.None);
+                await session.SaveAsync(widget, CancellationToken.None).ConfigureAwait(false);
                 return new Failure("rejected");
             },
             CancellationToken.None
@@ -186,12 +186,12 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<RealSessionFixture>
             new PlainRequest(),
             async () =>
             {
-                await session.SaveAsync(widget, CancellationToken.None);
-                await unitOfWork.SaveChangesAsync(CancellationToken.None);
+                await session.SaveAsync(widget, CancellationToken.None).ConfigureAwait(false);
+                await unitOfWork.SaveChangesAsync(CancellationToken.None).ConfigureAwait(false);
 
                 // The handler cancels, then still returns its own Success outcome - Cancel is not a
                 // short-circuit primitive, so the handler retains control of what it returns.
-                await unitOfWork.Cancel(CancellationToken.None);
+                await unitOfWork.Cancel(CancellationToken.None).ConfigureAwait(false);
                 return default(Success);
             },
             CancellationToken.None
@@ -226,7 +226,7 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<RealSessionFixture>
             new PlainRequest(),
             async () =>
             {
-                await session.SaveAsync(widget, CancellationToken.None);
+                await session.SaveAsync(widget, CancellationToken.None).ConfigureAwait(false);
                 return default(Success);
             },
             CancellationToken.None

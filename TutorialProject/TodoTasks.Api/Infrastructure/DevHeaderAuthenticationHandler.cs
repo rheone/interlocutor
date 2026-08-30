@@ -69,6 +69,6 @@ public sealed class DevHeaderAuthenticationHandler(
             this.Scheme.Name
         );
         var ticket = new AuthenticationTicket(new ClaimsPrincipal(identity), this.Scheme.Name);
-        return await Task.FromResult(AuthenticateResult.Success(ticket));
+        return await Task.FromResult(AuthenticateResult.Success(ticket)).ConfigureAwait(false);
     }
 }

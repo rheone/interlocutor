@@ -21,8 +21,8 @@ public sealed class DeleteTodoTaskHandler(IDomainRepository<TodoTask, int> tasks
             return new NotFound($"TodoTask {command.Id}");
         }
 
-        await tasks.DeleteAsync(task, ct);
-        await unitOfWork.SaveChangesAsync(ct);
+        await tasks.DeleteAsync(task, ct).ConfigureAwait(false);
+        await unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
 
         return default(Success);
     }

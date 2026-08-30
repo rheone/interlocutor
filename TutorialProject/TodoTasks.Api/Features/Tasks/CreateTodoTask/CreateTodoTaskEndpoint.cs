@@ -28,7 +28,9 @@ public static class CreateTodoTaskEndpoint
                         contextAccessor.Context?.UserId
                         ?? throw new InvalidOperationException("This endpoint requires an authenticated caller.");
 
-                    var result = await sender.Send(new CreateTodoTaskCommand(request.Title, request.Notes, ownerId), ct);
+                    var result = await sender
+                        .Send(new CreateTodoTaskCommand(request.Title, request.Notes, ownerId), ct)
+                        .ConfigureAwait(false);
                     return result.ToMinimalApiResult();
                 }
             )

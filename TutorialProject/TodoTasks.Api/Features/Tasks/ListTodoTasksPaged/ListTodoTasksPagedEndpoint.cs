@@ -19,7 +19,9 @@ public static class ListTodoTasksPagedEndpoint
                         contextAccessor.Context?.UserId
                         ?? throw new InvalidOperationException("This endpoint requires an authenticated caller.");
 
-                    var result = await sender.Send(new ListTodoTasksPagedQuery(ownerId, page, pageSize), ct);
+                    var result = await sender
+                        .Send(new ListTodoTasksPagedQuery(ownerId, page, pageSize), ct)
+                        .ConfigureAwait(false);
                     return result.ToMinimalApiResult();
                 }
             )

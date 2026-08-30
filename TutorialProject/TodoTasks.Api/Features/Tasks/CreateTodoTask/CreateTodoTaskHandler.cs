@@ -20,7 +20,9 @@ public sealed class CreateTodoTaskHandler(IDomainRepository<TodoTask, int> tasks
         // - see that command's own remarks for why this specific ordering needs one.
         var hasDuplicateTitle =
             (
-                await tasks.GetManyAsync(t => t.OwnerId == command.OwnerId && t.Title == command.Title, cancellationToken: ct)
+                await tasks
+                    .GetManyAsync(t => t.OwnerId == command.OwnerId && t.Title == command.Title, cancellationToken: ct)
+                    .ConfigureAwait(false)
             ).Count > 0;
 
         if (hasDuplicateTitle)
@@ -31,8 +33,8 @@ public sealed class CreateTodoTaskHandler(IDomainRepository<TodoTask, int> tasks
         }
 
         var task = new TodoTask(command.Title, command.OwnerId, command.Notes);
-        await tasks.InsertAsync(task, ct);
-        await unitOfWork.SaveChangesAsync(ct); // UnitOfWorkBehavior commits from here on success.
+        await tasks.InsertAsync(task, ct).ConfigureAwait(false);
+        await unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false); // UnitOfWorkBehavior commits from here on success.
 
         return TodoTaskDto.FromEntity(task);
     }

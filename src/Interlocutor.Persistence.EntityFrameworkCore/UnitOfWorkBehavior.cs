@@ -82,7 +82,7 @@ public class UnitOfWorkBehavior<TRequest, TResponse, TContext>(
             UnitOfWorkSaveChangesInterceptor.IsSuppressed.Value = true;
             try
             {
-                return await next();
+                return await next().ConfigureAwait(false);
             }
             finally
             {
@@ -96,10 +96,14 @@ public class UnitOfWorkBehavior<TRequest, TResponse, TContext>(
         // transaction from pipeline start," not the default lazy begin-on-first-write.
         if (request is ITransactionalRequest && context.Database.CurrentTransaction is null)
         {
-            await context.Database.BeginTransactionAsync(ct);
+            // Not captured/disposed here - retrieved again via Database.CurrentTransaction and disposed once,
+            // below, after it's committed or rolled back.
+#pragma warning disable IDISP004
+            await context.Database.BeginTransactionAsync(ct).ConfigureAwait(false);
+#pragma warning restore IDISP004
         }
 
-        var result = await next();
+        var result = await next().ConfigureAwait(false);
 
         // Nothing to finalize if nothing wrote: no transaction was ever opened (pure read, or a request that
         // short-circuited before reaching a write), and nothing is staged either (or IUnitOfWork.Cancel
@@ -109,7 +113,8 @@ public class UnitOfWorkBehavior<TRequest, TResponse, TContext>(
             return result;
         }
 
-        var transaction = context.Database.CurrentTransaction ?? await context.Database.BeginTransactionAsync(ct);
+        var transaction =
+            context.Database.CurrentTransaction ?? await context.Database.BeginTransactionAsync(ct).ConfigureAwait(false);
         await using var scopedTransaction = transaction;
 
         if (!this.classifier.IsFailure(result))
@@ -118,15 +123,15 @@ public class UnitOfWorkBehavior<TRequest, TResponse, TContext>(
             {
                 // Persists whatever is still staged - a handler that already called SaveChangesAsync mid-handler
                 // leaves nothing pending here, so this is a no-op in that case.
-                await context.SaveChangesAsync(ct);
+                await context.SaveChangesAsync(ct).ConfigureAwait(false);
             }
             catch
             {
-                await transaction.RollbackAsync(ct);
+                await transaction.RollbackAsync(ct).ConfigureAwait(false);
                 throw;
             }
 
-            await transaction.CommitAsync(ct);
+            await transaction.CommitAsync(ct).ConfigureAwait(false);
             this.logger.LogDebug(
                 "Committed transaction for {RequestType} with outcome {Outcome}",
                 typeof(TRequest).Name,
@@ -135,7 +140,7 @@ public class UnitOfWorkBehavior<TRequest, TResponse, TContext>(
         }
         else
         {
-            await transaction.RollbackAsync(ct);
+            await transaction.RollbackAsync(ct).ConfigureAwait(false);
             this.logger.LogDebug(
                 "Rolled back transaction for {RequestType} with outcome {Outcome}",
                 typeof(TRequest).Name,

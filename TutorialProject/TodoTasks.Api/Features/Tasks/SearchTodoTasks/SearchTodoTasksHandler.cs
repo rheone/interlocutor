@@ -42,7 +42,8 @@ public sealed class SearchTodoTasksHandler(Lazy<ISession> session)
             .AndRestrictionOn(t => t.Title)
             .IsInsensitiveLike(query.TitleContains, MatchMode.Anywhere)
             .OrderBy(t => t.CreatedAtUtc)
-            .Desc.ListAsync(ct);
+            .Desc.ListAsync(ct)
+            .ConfigureAwait(false);
 
         return tasks.Select(TodoTaskDto.FromEntity).ToList();
     }

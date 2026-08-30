@@ -48,7 +48,7 @@ public class RateLimitedBehavior<TRequest, TResponse>(IRateLimiter rateLimiter, 
     {
         // Check the rate limit. If it's exceeded, short-circuit immediately with RateLimited without
         // invoking the handler or any downstream behaviors.
-        var check = await rateLimiter.CheckAsync(request.LimitKey, request, ct);
+        var check = await rateLimiter.CheckAsync(request.LimitKey, request, ct).ConfigureAwait(false);
         if (!check.IsAllowed)
         {
             var rateLimited = new RateLimited(request.LimitKey, check.RetryAfter);
@@ -56,7 +56,7 @@ public class RateLimitedBehavior<TRequest, TResponse>(IRateLimiter rateLimiter, 
         }
 
         // Within the limit - proceed to the handler.
-        return await next();
+        return await next().ConfigureAwait(false);
     }
 
     private TResponse ConstructRateLimitedResponse(RateLimited rateLimited) =>
