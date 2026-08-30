@@ -193,7 +193,7 @@ var result = await mediator.Send(new CreateUser("", "not-an-email"));
 
 ### Field-Keyed Validation Errors
 
-`Interlocutor.FluentValidation.FluentValidationErrors` (see [Pipeline & Behavior Composition § `FluentValidationErrorsBehavior`](pipeline-and-behaviors.md#fluentvalidationerrorsbehavior)) preserves each failure's property name, unlike the message-only `ValidationErrors`. `DefaultHttpOutcomeStatusMapper` recognizes this via [`IFieldValidationFailureCase`](glossary.md#outcome-mapping) - implemented by `FluentValidationErrors`, not by `ValidationErrors` - and builds a field-keyed `ValidationProblemDetails` body instead of the flat `ProblemDetails` other validation-shaped failures get:
+`Interlocutor.FluentValidation.FluentValidationErrors` (see [Pipeline & Behavior Composition § `FluentValidationErrorsBehavior`](pipeline-and-behaviors.md#fluentvalidationerrorsbehavior)) preserves each failure's property name, unlike the message-only `ValidationErrors`. `DefaultHttpOutcomeStatusMapper` recognizes this via `IFieldValidationFailureCase` - implemented by `FluentValidationErrors`, not by `ValidationErrors` - and builds a field-keyed `ValidationProblemDetails` body instead of the flat `ProblemDetails` other validation-shaped failures get:
 
 ```csharp
 // Command with invalid data, using FluentValidationErrorsBehavior instead of ValidationBehavior
@@ -252,7 +252,7 @@ var result = await mediator.Send(new UpdateProduct(1, "New Name", 10));  // Old 
 
 ## Problem Details (RFC 7807)
 
-Most non-2xx responses carry a plain ASP.NET Core `ProblemDetails` body by default (`Title`, `Detail`, `Status`) - `Forbidden` and `Cancelled` carry no body at all, and an unrecognized custom failure type's body is the failure value itself, not a `ProblemDetails`. A validation-shaped failure that implements [`IFieldValidationFailureCase`](glossary.md#outcome-mapping) (`FluentValidationErrors`, but not `ValidationErrors`) is the one exception: it gets the per-field-errors `ValidationProblemDetails` variant instead - see [Field-Keyed Validation Errors](#field-keyed-validation-errors) above.
+Most non-2xx responses carry a plain ASP.NET Core `ProblemDetails` body by default (`Title`, `Detail`, `Status`) - `Forbidden` and `Cancelled` carry no body at all, and an unrecognized custom failure type's body is the failure value itself, not a `ProblemDetails`. A validation-shaped failure that implements `IFieldValidationFailureCase` (`FluentValidationErrors`, but not `ValidationErrors`) is the one exception: it gets the per-field-errors `ValidationProblemDetails` variant instead - see [Field-Keyed Validation Errors](#field-keyed-validation-errors) above.
 
 ## Error Handling at the Edge
 

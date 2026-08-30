@@ -1,6 +1,9 @@
 namespace Interlocutor.AspNetCore.Tests;
 
+using global::FluentValidation;
 using global::FluentValidation.Results;
+using Interlocutor.Abstractions.Commands;
+using Interlocutor.Abstractions.Pipeline.Cases;
 using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 using Interlocutor.FluentValidation;
@@ -103,25 +106,33 @@ public class ResultExtensionsTests
     }
 
     [Fact]
-    public void ToActionResult_WithFluentValidationErrors_Returns400WithFieldKeyedValidationProblemDetails()
+    public async Task ToActionResult_WithFluentValidationErrorsRoutedThroughBehavior_Returns400WithFieldKeyedValidationProblemDetails()
     {
-        // Arrange - proves the field-keyed body reaches a real ToActionResult() caller end-to-end, not just
-        // the mapper in isolation (see DefaultHttpOutcomeStatusMapperTests for the mapper-level coverage).
-        var errors = new FluentValidationErrors([
-            new ValidationFailure("Name", "'Name' must not be empty."),
-            new ValidationFailure("Email", "'Email' is not a valid email address."),
-        ]);
-        OperationOutcome<string, FluentValidationErrors> result = new(errors);
+        // Arrange - routes an actually-invalid request through a real FluentValidationErrorsBehavior (the
+        // same way a mediator pipeline would), rather than constructing FluentValidationErrors by hand, so
+        // this proves the field-keyed body survives the real pipeline hop into ToActionResult() end-to-end.
+        var request = new CreateWidgetCommand(string.Empty, -1);
+        var behavior = new FluentValidationErrorsBehavior<
+            CreateWidgetCommand,
+            OperationOutcome<string, FluentValidationErrors>
+        >([new CreateWidgetCommandValidator()], DefaultOutcomeCaseRegistry.Instance);
 
         // Act
+        var result = await behavior.Handle(
+            request,
+            () => throw new InvalidOperationException("The handler must not run - validation should short-circuit first."),
+            CancellationToken.None
+        );
         var actionResult = result.ToActionResult();
 
         // Assert
         var objectResult = Assert.IsType<ObjectResult>(actionResult);
         Assert.Equal(StatusCodes.Status400BadRequest, objectResult.StatusCode);
         var validationProblemDetails = Assert.IsType<ValidationProblemDetails>(objectResult.Value);
-        Assert.Equal(["'Name' must not be empty."], validationProblemDetails.Errors["Name"]);
-        Assert.Equal(["'Email' is not a valid email address."], validationProblemDetails.Errors["Email"]);
+        var name = Assert.Single(validationProblemDetails.Errors["Name"]);
+        Assert.Equal("'Name' must not be empty.", name);
+        var quantity = Assert.Single(validationProblemDetails.Errors["Quantity"]);
+        Assert.Equal("'Quantity' must be greater than or equal to '0'.", quantity);
     }
 
     [Fact]
@@ -518,5 +529,19 @@ public class ResultExtensionsTests
         Assert.Equal(StatusCodes.Status429TooManyRequests, objectResult.StatusCode);
         var problemDetails = Assert.IsType<ProblemDetails>(objectResult.Value);
         Assert.Equal("slow down", problemDetails.Detail);
+    }
+
+    /// <summary>Request fixture for <see cref="ToActionResult_WithFluentValidationErrorsRoutedThroughBehavior_Returns400WithFieldKeyedValidationProblemDetails"/> only.</summary>
+    private sealed record CreateWidgetCommand(string Name, int Quantity)
+        : ICommand<OperationOutcome<string, FluentValidationErrors>>;
+
+    /// <summary>Validator fixture for <see cref="ToActionResult_WithFluentValidationErrorsRoutedThroughBehavior_Returns400WithFieldKeyedValidationProblemDetails"/> only.</summary>
+    private sealed class CreateWidgetCommandValidator : AbstractValidator<CreateWidgetCommand>
+    {
+        public CreateWidgetCommandValidator()
+        {
+            this.RuleFor(c => c.Name).NotEmpty();
+            this.RuleFor(c => c.Quantity).GreaterThanOrEqualTo(0);
+        }
     }
 }

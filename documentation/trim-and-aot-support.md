@@ -38,10 +38,11 @@ dynamically-discovered type - so trimming the assemblies a compiled application 
 safe.
 
 A handful of call sites are still genuinely reflective by design - notification fan-out across a
-notification's base-type hierarchy, and the failure-case-to-HTTP-status mapping that dispatches on a
-failure's runtime type - and are documented as safe under trimming specifically because every type they
-close over is a reference type, which the trimmer keeps reachable through the application's own ordinary
-use of it.
+notification's base-type hierarchy, and the generic `NotFound<TId>` dispatch inside `OutcomeMapperBase<TResult>`
+(shared by every `IOutcomeMapper<TResult>` implementation, HTTP or otherwise - `DefaultHttpOutcomeStatusMapper`
+is its only shipped consumer today) that dispatches on a failure's runtime type - and are documented as safe
+under trimming specifically because every type they close over is a reference type, which the trimmer keeps
+reachable through the application's own ordinary use of it.
 
 ## The runtime scanning fallback, and what it costs
 

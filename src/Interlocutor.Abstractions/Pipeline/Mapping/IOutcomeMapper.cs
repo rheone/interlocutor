@@ -20,8 +20,13 @@ namespace Interlocutor.Abstractions.Pipeline.Mapping;
 /// <see cref="OutcomeMapperBase{TResult}"/>, which supplies the dispatch over each built-in failure case,
 /// rather than implementing this interface directly.
 /// </para>
+/// <para>
+/// Covariant in <typeparamref name="TResult"/>: it only ever appears in a return position here, never as a
+/// parameter, so an <c>IOutcomeMapper&lt;Derived&gt;</c> is safely usable wherever an
+/// <c>IOutcomeMapper&lt;Base&gt;</c> is expected.
+/// </para>
 /// </remarks>
-public interface IOutcomeMapper<TResult>
+public interface IOutcomeMapper<out TResult>
 {
     /// <summary>
     /// Maps a failure case value to its <typeparamref name="TResult"/> representation.
