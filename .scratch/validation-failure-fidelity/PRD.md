@@ -1,6 +1,6 @@
 # PRD: Validation Failure-Case Fidelity
 
-Status: not started
+Status: done - issues 01-04 and 08 implemented in 8a7ca91, recorded as ADR-0020; issues 05-07 parked as needs-triage by design (no second implementation driving them yet)
 
 ## Problem
 
