@@ -15,82 +15,76 @@ using System.Linq.Expressions;
 /// </remarks>
 public static class DomainRepositoryQueryableExtensions
 {
-    /// <summary>
-    /// Applies an optional filter predicate to <paramref name="query"/>.
-    /// </summary>
-    /// <typeparam name="TEntity">The entity type being queried.</typeparam>
-    /// <param name="query">The query to filter.</param>
-    /// <param name="filter">The predicate to apply, or <see langword="null"/> to leave <paramref name="query"/> unchanged.</param>
-    /// <returns><paramref name="query"/> with <paramref name="filter"/> applied via <c>Queryable.Where</c>, if given.</returns>
-    public static IQueryable<TEntity> ApplyFilter<TEntity>(
-        this IQueryable<TEntity> query,
-        Expression<Func<TEntity, bool>>? filter
-    ) => filter is null ? query : query.Where(filter);
-
-    /// <summary>
-    /// Applies an optional multi-column sort specification to <paramref name="query"/>.
-    /// </summary>
-    /// <typeparam name="TEntity">The entity type being queried.</typeparam>
-    /// <param name="query">The query to sort.</param>
-    /// <param name="sort">
-    /// The ordered sort criteria to apply - the first entry becomes the primary <c>OrderBy</c>/<c>OrderByDescending</c>
-    /// key, each subsequent entry a <c>ThenBy</c>/<c>ThenByDescending</c> tiebreaker - or <see langword="null"/>/empty
-    /// to leave <paramref name="query"/>'s ordering unspecified.
-    /// </param>
-    /// <returns><paramref name="query"/> with <paramref name="sort"/> applied, if given.</returns>
-    public static IQueryable<TEntity> ApplySort<TEntity>(
-        this IQueryable<TEntity> query,
-        IReadOnlyList<SortCriterion<TEntity>>? sort
-    )
+    extension<TEntity>(IQueryable<TEntity> query)
     {
-        if (sort is null || sort.Count == 0)
-        {
-            return query;
-        }
+        /// <summary>
+        /// Applies an optional filter predicate to <paramref name="query"/>.
+        /// </summary>
+        /// <param name="filter">The predicate to apply, or <see langword="null"/> to leave <paramref name="query"/> unchanged.</param>
+        /// <returns><paramref name="query"/> with <paramref name="filter"/> applied via <c>Queryable.Where</c>, if given.</returns>
+        public IQueryable<TEntity> ApplyFilter(Expression<Func<TEntity, bool>>? filter) =>
+            filter is null ? query : query.Where(filter);
 
-        IOrderedQueryable<TEntity>? ordered = null;
-        foreach (var criterion in sort)
+        /// <summary>
+        /// Applies an optional multi-column sort specification to <paramref name="query"/>.
+        /// </summary>
+        /// <param name="sort">
+        /// The ordered sort criteria to apply - the first entry becomes the primary <c>OrderBy</c>/<c>OrderByDescending</c>
+        /// key, each subsequent entry a <c>ThenBy</c>/<c>ThenByDescending</c> tiebreaker - or <see langword="null"/>/empty
+        /// to leave <paramref name="query"/>'s ordering unspecified.
+        /// </param>
+        /// <returns><paramref name="query"/> with <paramref name="sort"/> applied, if given.</returns>
+        public IQueryable<TEntity> ApplySort(IReadOnlyList<SortCriterion<TEntity>>? sort)
         {
-            if (ordered is null)
+            if (sort is null || sort.Count == 0)
             {
-                if (criterion.Direction == SortDirection.Ascending)
+                return query;
+            }
+
+            IOrderedQueryable<TEntity>? ordered = null;
+            foreach (var criterion in sort)
+            {
+                if (ordered is null)
                 {
-                    ordered = query.OrderBy(criterion.KeySelector);
+                    if (criterion.Direction == SortDirection.Ascending)
+                    {
+                        ordered = query.OrderBy(criterion.KeySelector);
+                    }
+                    else
+                    {
+                        ordered = query.OrderByDescending(criterion.KeySelector);
+                    }
+                }
+                else if (criterion.Direction == SortDirection.Ascending)
+                {
+                    ordered = ordered.ThenBy(criterion.KeySelector);
                 }
                 else
                 {
-                    ordered = query.OrderByDescending(criterion.KeySelector);
+                    ordered = ordered.ThenByDescending(criterion.KeySelector);
                 }
             }
-            else if (criterion.Direction == SortDirection.Ascending)
-            {
-                ordered = ordered.ThenBy(criterion.KeySelector);
-            }
-            else
-            {
-                ordered = ordered.ThenByDescending(criterion.KeySelector);
-            }
+
+            return ordered!;
         }
 
-        return ordered!;
-    }
+        /// <summary>
+        /// Applies a one-based page number and page size to <paramref name="query"/> via <c>Skip</c>/<c>Take</c>.
+        /// Callers apply <see cref="DomainRepositoryQueryableExtensions.ApplyFilter{TEntity}(IQueryable{TEntity}, Expression{Func{TEntity, bool}}?)"/>
+        /// and <see cref="DomainRepositoryQueryableExtensions.ApplySort{TEntity}(IQueryable{TEntity}, IReadOnlyList{SortCriterion{TEntity}}?)"/> first.
+        /// </summary>
+        /// <param name="pageNumber">The one-based page number to retrieve. Must be at least <c>1</c>.</param>
+        /// <param name="pageSize">The maximum number of items per page. Must be at least <c>1</c>.</param>
+        /// <returns>A query restricted to the requested page.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="pageNumber"/> or <paramref name="pageSize"/> is less than <c>1</c>.
+        /// </exception>
+        public IQueryable<TEntity> ApplyPaging(int pageNumber, int pageSize)
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(pageNumber, 1);
+            ArgumentOutOfRangeException.ThrowIfLessThan(pageSize, 1);
 
-    /// <summary>
-    /// Applies a one-based page number and page size to <paramref name="query"/> via <c>Skip</c>/<c>Take</c>.
-    /// </summary>
-    /// <typeparam name="TEntity">The entity type being queried.</typeparam>
-    /// <param name="query">The query to page - callers apply <see cref="ApplyFilter{TEntity}"/> and <see cref="ApplySort{TEntity}"/> first.</param>
-    /// <param name="pageNumber">The one-based page number to retrieve. Must be at least <c>1</c>.</param>
-    /// <param name="pageSize">The maximum number of items per page. Must be at least <c>1</c>.</param>
-    /// <returns>A query restricted to the requested page.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">
-    /// <paramref name="pageNumber"/> or <paramref name="pageSize"/> is less than <c>1</c>.
-    /// </exception>
-    public static IQueryable<TEntity> ApplyPaging<TEntity>(this IQueryable<TEntity> query, int pageNumber, int pageSize)
-    {
-        ArgumentOutOfRangeException.ThrowIfLessThan(pageNumber, 1);
-        ArgumentOutOfRangeException.ThrowIfLessThan(pageSize, 1);
-
-        return query.Skip((pageNumber - 1) * pageSize).Take(pageSize);
+            return query.Skip((pageNumber - 1) * pageSize).Take(pageSize);
+        }
     }
 }

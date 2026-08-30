@@ -13,9 +13,13 @@ block conversion itself.
 
 **Blocked by:** None - can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Both methods share one extension block on `IServiceCollection`, still in the same file
-- [ ] `PublicAPI.Unshipped.txt` updated to satisfy the analyzer with no RS0016/RS0017 warnings
-- [ ] `dotnet build` and `dotnet test tests/Interlocutor.DependencyInjection.Microsoft.Tests` are green
-- [ ] `dotnet csharpier .` produces no diff on the touched file
+- [x] Both methods share one extension block on `IServiceCollection`, still in the same file
+- [x] `PublicAPI.Unshipped.txt` updated to satisfy the analyzer with no RS0016/RS0017 warnings
+- [x] `dotnet build` and `dotnet test tests/Interlocutor.DependencyInjection.Microsoft.Tests` are green
+- [x] `dotnet csharpier .` produces no diff on the touched file
+
+## Comments
+
+Mirrors ticket 03: each method's `<param name="services">` doc tag was dropped, since `services` is now the extension block's receiver. `dotnet build`, `dotnet test tests/Interlocutor.DependencyInjection.Microsoft.Tests`, and `dotnet csharpier check` all clean.
