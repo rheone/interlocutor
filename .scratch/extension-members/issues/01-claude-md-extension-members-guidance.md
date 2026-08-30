@@ -16,8 +16,12 @@ syntax.
 
 **Blocked by:** None - can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] CLAUDE.md's Conventions section documents the conditional preference (2+ members sharing a receiver → extension block; single-method classes stay classic)
-- [ ] The `TutorialProject/` exemption is stated explicitly, with the reason (teaching-code fidelity to `documentation/sample-app-walkthrough.md`)
-- [ ] Wording is consistent with the existing "Use the newest C# .NET 11 features when appropriate" bullet rather than duplicating or contradicting it
+- [x] CLAUDE.md's Conventions section documents the conditional preference (2+ members sharing a receiver → extension block; single-method classes stay classic)
+- [x] The `TutorialProject/` exemption is stated explicitly, with the reason (teaching-code fidelity to `documentation/sample-app-walkthrough.md`)
+- [x] Wording is consistent with the existing "Use the newest C# .NET 11 features when appropriate" bullet rather than duplicating or contradicting it
+
+## Comments
+
+Folded into the existing "Use the newest C# .NET 11 features when appropriate" bullet in [CLAUDE.md](../../../CLAUDE.md) rather than added as a new bullet, per the ticket's own requirement not to duplicate or contradict it.

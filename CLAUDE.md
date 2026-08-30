@@ -44,7 +44,7 @@ Each `src/*` project has a matching `tests/*.Tests` project (xunit.v3, NSubstitu
 ## Conventions
 
 - Conventional Git commits (`feat:`, `fix:`, `chore:`...), imperative mood, subject <72 chars.
-- Use the newest C# .NET 11 features when appropriate
+- Use the newest C# .NET 11 features when appropriate, including C# 14 extension members - prefer an `extension(receiver) { }` block over classic `this`-parameter extension methods only when two or more members share the same receiver type in a static class, since that's the case where the block actually removes repetition (the receiver declared once instead of once per method); a static class with a single extension method keeps the classic `this`-parameter syntax, which stays the more widely recognized form for a one-off. `TutorialProject/` is exempt regardless of member count - it optimizes for showing widely-recognized C# to match `documentation/sample-app-walkthrough.md`, not for the newest syntax.
 - One top-level public type per file, filename matches type name - except simple record/struct types, which may keep custom equality/formatting/operator members in the same file. For member ordering, partial-class splitting, generic-arity file naming, and region grouping, use the `csharp-code-organization` skill.
 - Rich XML doc comments on all public members (doc-warning suppressions in `Directory.Build.props` are there so undocumented code doesn't break the build, not license to skip docs on new code).
 - Value-added inline comments only - don't narrate obvious logic.
