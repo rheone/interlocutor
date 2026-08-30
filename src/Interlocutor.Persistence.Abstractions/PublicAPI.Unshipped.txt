@@ -13,6 +13,9 @@ Interlocutor.Persistence.Abstractions.IUnitOfWork
 Interlocutor.Persistence.Abstractions.IUnitOfWork.Cancel(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Interlocutor.Persistence.Abstractions.IUnitOfWork.SaveChangesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Interlocutor.Persistence.Abstractions.Page<T>
+Interlocutor.Persistence.Abstractions.Page<T>.<Clone>$() -> Interlocutor.Persistence.Abstractions.Page<T>!
+Interlocutor.Persistence.Abstractions.Page<T>.Deconstruct(out System.Collections.Generic.IReadOnlyList<T>! Items, out int PageNumber, out int PageSize, out int TotalCount) -> void
+Interlocutor.Persistence.Abstractions.Page<T>.Equals(Interlocutor.Persistence.Abstractions.Page<T>? other) -> bool
 Interlocutor.Persistence.Abstractions.Page<T>.Items.get -> System.Collections.Generic.IReadOnlyList<T>!
 Interlocutor.Persistence.Abstractions.Page<T>.Items.init -> void
 Interlocutor.Persistence.Abstractions.Page<T>.Page(System.Collections.Generic.IReadOnlyList<T>! Items, int PageNumber, int PageSize, int TotalCount) -> void
@@ -24,14 +27,27 @@ Interlocutor.Persistence.Abstractions.Page<T>.TotalCount.get -> int
 Interlocutor.Persistence.Abstractions.Page<T>.TotalCount.init -> void
 Interlocutor.Persistence.Abstractions.Page<T>.TotalPageCount.get -> int
 Interlocutor.Persistence.Abstractions.SortCriterion<TEntity>
+Interlocutor.Persistence.Abstractions.SortCriterion<TEntity>.<Clone>$() -> Interlocutor.Persistence.Abstractions.SortCriterion<TEntity>!
+Interlocutor.Persistence.Abstractions.SortCriterion<TEntity>.Deconstruct(out System.Linq.Expressions.Expression<System.Func<TEntity, object!>!>! KeySelector, out Interlocutor.Persistence.Abstractions.SortDirection Direction) -> void
 Interlocutor.Persistence.Abstractions.SortCriterion<TEntity>.Direction.get -> Interlocutor.Persistence.Abstractions.SortDirection
 Interlocutor.Persistence.Abstractions.SortCriterion<TEntity>.Direction.init -> void
+Interlocutor.Persistence.Abstractions.SortCriterion<TEntity>.Equals(Interlocutor.Persistence.Abstractions.SortCriterion<TEntity>? other) -> bool
 Interlocutor.Persistence.Abstractions.SortCriterion<TEntity>.KeySelector.get -> System.Linq.Expressions.Expression<System.Func<TEntity, object!>!>!
 Interlocutor.Persistence.Abstractions.SortCriterion<TEntity>.KeySelector.init -> void
 Interlocutor.Persistence.Abstractions.SortCriterion<TEntity>.SortCriterion(System.Linq.Expressions.Expression<System.Func<TEntity, object!>!>! KeySelector, Interlocutor.Persistence.Abstractions.SortDirection Direction) -> void
 Interlocutor.Persistence.Abstractions.SortDirection
 Interlocutor.Persistence.Abstractions.SortDirection.Ascending = 0 -> Interlocutor.Persistence.Abstractions.SortDirection
 Interlocutor.Persistence.Abstractions.SortDirection.Descending = 1 -> Interlocutor.Persistence.Abstractions.SortDirection
+override Interlocutor.Persistence.Abstractions.Page<T>.Equals(object? obj) -> bool
+override Interlocutor.Persistence.Abstractions.Page<T>.GetHashCode() -> int
+override Interlocutor.Persistence.Abstractions.Page<T>.ToString() -> string!
+override Interlocutor.Persistence.Abstractions.SortCriterion<TEntity>.Equals(object? obj) -> bool
+override Interlocutor.Persistence.Abstractions.SortCriterion<TEntity>.GetHashCode() -> int
+override Interlocutor.Persistence.Abstractions.SortCriterion<TEntity>.ToString() -> string!
 static Interlocutor.Persistence.Abstractions.DomainRepositoryQueryableExtensions.ApplyFilter<TEntity>(this System.Linq.IQueryable<TEntity>! query, System.Linq.Expressions.Expression<System.Func<TEntity, bool>!>? filter) -> System.Linq.IQueryable<TEntity>!
 static Interlocutor.Persistence.Abstractions.DomainRepositoryQueryableExtensions.ApplyPaging<TEntity>(this System.Linq.IQueryable<TEntity>! query, int pageNumber, int pageSize) -> System.Linq.IQueryable<TEntity>!
 static Interlocutor.Persistence.Abstractions.DomainRepositoryQueryableExtensions.ApplySort<TEntity>(this System.Linq.IQueryable<TEntity>! query, System.Collections.Generic.IReadOnlyList<Interlocutor.Persistence.Abstractions.SortCriterion<TEntity>!>? sort) -> System.Linq.IQueryable<TEntity>!
+static Interlocutor.Persistence.Abstractions.Page<T>.operator !=(Interlocutor.Persistence.Abstractions.Page<T>? left, Interlocutor.Persistence.Abstractions.Page<T>? right) -> bool
+static Interlocutor.Persistence.Abstractions.Page<T>.operator ==(Interlocutor.Persistence.Abstractions.Page<T>? left, Interlocutor.Persistence.Abstractions.Page<T>? right) -> bool
+static Interlocutor.Persistence.Abstractions.SortCriterion<TEntity>.operator !=(Interlocutor.Persistence.Abstractions.SortCriterion<TEntity>? left, Interlocutor.Persistence.Abstractions.SortCriterion<TEntity>? right) -> bool
+static Interlocutor.Persistence.Abstractions.SortCriterion<TEntity>.operator ==(Interlocutor.Persistence.Abstractions.SortCriterion<TEntity>? left, Interlocutor.Persistence.Abstractions.SortCriterion<TEntity>? right) -> bool

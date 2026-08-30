@@ -1,7 +1,6 @@
 namespace Interlocutor.Persistence.NHibernate.Tests;
 
 using global::NHibernate;
-using global::NHibernate.Linq;
 
 /// <summary>Covers <see cref="NHibernateUnitOfWork.SaveChangesAsync"/>'s forwarding to <see cref="ISession.FlushAsync(CancellationToken)"/>.</summary>
 public sealed class NHibernateUnitOfWorkTests : IClassFixture<RealSessionFixture>

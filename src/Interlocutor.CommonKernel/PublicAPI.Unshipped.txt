@@ -1,29 +1,59 @@
 #nullable enable
 Interlocutor.CommonKernel.OperationOutcome
 Interlocutor.CommonKernel.OperationOutcome.IsSuccess.get -> bool
+Interlocutor.CommonKernel.OperationOutcome.OperationOutcome() -> void
+Interlocutor.CommonKernel.OperationOutcome.OperationOutcome(Interlocutor.CommonKernel.ResultTypes.Failure value) -> void
 Interlocutor.CommonKernel.OperationOutcome.OperationOutcome(Interlocutor.CommonKernel.ResultTypes.Success value) -> void
+Interlocutor.CommonKernel.OperationOutcome.Value.get -> object?
 Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>
 Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>.GetValue() -> object?
 Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>.IsSuccess.get -> bool
+Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>.OperationOutcome() -> void
+Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>.OperationOutcome(TCase2 value) -> void
+Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>.OperationOutcome(TCase3 value) -> void
+Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>.OperationOutcome(TCase4 value) -> void
+Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>.OperationOutcome(TCase5 value) -> void
+Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>.OperationOutcome(TCase6 value) -> void
 Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>.OperationOutcome(TSuccessResult value) -> void
+Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>.Value.get -> object?
 Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>
 Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>.GetValue() -> object?
 Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>.IsSuccess.get -> bool
+Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>.OperationOutcome() -> void
+Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>.OperationOutcome(TCase2 value) -> void
+Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>.OperationOutcome(TCase3 value) -> void
+Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>.OperationOutcome(TCase4 value) -> void
+Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>.OperationOutcome(TCase5 value) -> void
 Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>.OperationOutcome(TSuccessResult value) -> void
+Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>.Value.get -> object?
 Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4>
 Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4>.GetValue() -> object?
 Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4>.IsSuccess.get -> bool
+Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4>.OperationOutcome() -> void
+Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4>.OperationOutcome(TCase2 value) -> void
+Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4>.OperationOutcome(TCase3 value) -> void
+Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4>.OperationOutcome(TCase4 value) -> void
 Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4>.OperationOutcome(TSuccessResult value) -> void
+Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4>.Value.get -> object?
 Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3>
 Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3>.GetValue() -> object?
 Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3>.IsSuccess.get -> bool
+Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3>.OperationOutcome() -> void
+Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3>.OperationOutcome(TCase2 value) -> void
+Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3>.OperationOutcome(TCase3 value) -> void
 Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3>.OperationOutcome(TSuccessResult value) -> void
+Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TCase2, TCase3>.Value.get -> object?
 Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TFailureResult>
 Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TFailureResult>.IsSuccess.get -> bool
+Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TFailureResult>.OperationOutcome() -> void
+Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TFailureResult>.OperationOutcome(TFailureResult value) -> void
 Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TFailureResult>.OperationOutcome(TSuccessResult value) -> void
+Interlocutor.CommonKernel.OperationOutcome<TSuccessResult, TFailureResult>.Value.get -> object?
 Interlocutor.CommonKernel.ResultTypes.Cancelled
 Interlocutor.CommonKernel.ResultTypes.Cancelled.Cancelled() -> void
 Interlocutor.CommonKernel.ResultTypes.Cancelled.Cancelled(string? Reason = null) -> void
+Interlocutor.CommonKernel.ResultTypes.Cancelled.Deconstruct(out string? Reason) -> void
+Interlocutor.CommonKernel.ResultTypes.Cancelled.Equals(Interlocutor.CommonKernel.ResultTypes.Cancelled other) -> bool
 Interlocutor.CommonKernel.ResultTypes.Cancelled.Reason.get -> string?
 Interlocutor.CommonKernel.ResultTypes.Cancelled.Reason.init -> void
 Interlocutor.CommonKernel.ResultTypes.Conflict
@@ -31,6 +61,8 @@ Interlocutor.CommonKernel.ResultTypes.Conflict.Code.get -> string!
 Interlocutor.CommonKernel.ResultTypes.Conflict.Code.init -> void
 Interlocutor.CommonKernel.ResultTypes.Conflict.Conflict() -> void
 Interlocutor.CommonKernel.ResultTypes.Conflict.Conflict(string! Message, string! Code) -> void
+Interlocutor.CommonKernel.ResultTypes.Conflict.Deconstruct(out string! Message, out string! Code) -> void
+Interlocutor.CommonKernel.ResultTypes.Conflict.Equals(Interlocutor.CommonKernel.ResultTypes.Conflict other) -> bool
 Interlocutor.CommonKernel.ResultTypes.Conflict.Message.get -> string!
 Interlocutor.CommonKernel.ResultTypes.Conflict.Message.init -> void
 Interlocutor.CommonKernel.ResultTypes.Conflicts
@@ -38,14 +70,19 @@ Interlocutor.CommonKernel.ResultTypes.Conflicts.Conflicts() -> void
 Interlocutor.CommonKernel.ResultTypes.Conflicts.Conflicts(Interlocutor.CommonKernel.ResultTypes.Conflict conflict) -> void
 Interlocutor.CommonKernel.ResultTypes.Conflicts.Conflicts(System.Collections.Generic.IEnumerable<Interlocutor.CommonKernel.ResultTypes.Conflict>! conflicts) -> void
 Interlocutor.CommonKernel.ResultTypes.Conflicts.Count.get -> int
+Interlocutor.CommonKernel.ResultTypes.Conflicts.Equals(Interlocutor.CommonKernel.ResultTypes.Conflicts other) -> bool
 Interlocutor.CommonKernel.ResultTypes.Conflicts.Items.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.CommonKernel.ResultTypes.Conflict>!
 Interlocutor.CommonKernel.ResultTypes.Conflicts.Messages.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Interlocutor.CommonKernel.ResultTypes.Failure
+Interlocutor.CommonKernel.ResultTypes.Failure.Deconstruct(out string? Reason) -> void
+Interlocutor.CommonKernel.ResultTypes.Failure.Equals(Interlocutor.CommonKernel.ResultTypes.Failure other) -> bool
 Interlocutor.CommonKernel.ResultTypes.Failure.Failure() -> void
 Interlocutor.CommonKernel.ResultTypes.Failure.Failure(string? Reason = null) -> void
 Interlocutor.CommonKernel.ResultTypes.Failure.Reason.get -> string?
 Interlocutor.CommonKernel.ResultTypes.Failure.Reason.init -> void
 Interlocutor.CommonKernel.ResultTypes.Failure<TErrorCode>
+Interlocutor.CommonKernel.ResultTypes.Failure<TErrorCode>.Deconstruct(out TErrorCode ErrorCode, out string? Reason) -> void
+Interlocutor.CommonKernel.ResultTypes.Failure<TErrorCode>.Equals(Interlocutor.CommonKernel.ResultTypes.Failure<TErrorCode> other) -> bool
 Interlocutor.CommonKernel.ResultTypes.Failure<TErrorCode>.ErrorCode.get -> TErrorCode
 Interlocutor.CommonKernel.ResultTypes.Failure<TErrorCode>.ErrorCode.init -> void
 Interlocutor.CommonKernel.ResultTypes.Failure<TErrorCode>.Failure() -> void
@@ -54,6 +91,7 @@ Interlocutor.CommonKernel.ResultTypes.Failure<TErrorCode>.Reason.get -> string?
 Interlocutor.CommonKernel.ResultTypes.Failure<TErrorCode>.Reason.init -> void
 Interlocutor.CommonKernel.ResultTypes.Failures
 Interlocutor.CommonKernel.ResultTypes.Failures.Count.get -> int
+Interlocutor.CommonKernel.ResultTypes.Failures.Equals(Interlocutor.CommonKernel.ResultTypes.Failures other) -> bool
 Interlocutor.CommonKernel.ResultTypes.Failures.Failures() -> void
 Interlocutor.CommonKernel.ResultTypes.Failures.Failures(Interlocutor.CommonKernel.ResultTypes.Failure failure) -> void
 Interlocutor.CommonKernel.ResultTypes.Failures.Failures(System.Collections.Generic.IEnumerable<Interlocutor.CommonKernel.ResultTypes.Failure>! failures) -> void
@@ -61,6 +99,7 @@ Interlocutor.CommonKernel.ResultTypes.Failures.Items.get -> System.Collections.G
 Interlocutor.CommonKernel.ResultTypes.Failures.Reasons.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Interlocutor.CommonKernel.ResultTypes.Failures<TErrorCode>
 Interlocutor.CommonKernel.ResultTypes.Failures<TErrorCode>.Count.get -> int
+Interlocutor.CommonKernel.ResultTypes.Failures<TErrorCode>.Equals(Interlocutor.CommonKernel.ResultTypes.Failures<TErrorCode> other) -> bool
 Interlocutor.CommonKernel.ResultTypes.Failures<TErrorCode>.ErrorCodes.get -> System.Collections.Generic.IReadOnlyList<TErrorCode>!
 Interlocutor.CommonKernel.ResultTypes.Failures<TErrorCode>.Failures() -> void
 Interlocutor.CommonKernel.ResultTypes.Failures<TErrorCode>.Failures(Interlocutor.CommonKernel.ResultTypes.Failure<TErrorCode> failure) -> void
@@ -68,19 +107,25 @@ Interlocutor.CommonKernel.ResultTypes.Failures<TErrorCode>.Failures(System.Colle
 Interlocutor.CommonKernel.ResultTypes.Failures<TErrorCode>.Items.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.CommonKernel.ResultTypes.Failure<TErrorCode>>!
 Interlocutor.CommonKernel.ResultTypes.Failures<TErrorCode>.Reasons.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Interlocutor.CommonKernel.ResultTypes.Forbidden
+Interlocutor.CommonKernel.ResultTypes.Forbidden.Deconstruct(out string? Reason) -> void
+Interlocutor.CommonKernel.ResultTypes.Forbidden.Equals(Interlocutor.CommonKernel.ResultTypes.Forbidden other) -> bool
 Interlocutor.CommonKernel.ResultTypes.Forbidden.Forbidden() -> void
 Interlocutor.CommonKernel.ResultTypes.Forbidden.Forbidden(string? Reason = null) -> void
 Interlocutor.CommonKernel.ResultTypes.Forbidden.Reason.get -> string?
 Interlocutor.CommonKernel.ResultTypes.Forbidden.Reason.init -> void
 Interlocutor.CommonKernel.ResultTypes.IOperationOutcome
 Interlocutor.CommonKernel.ResultTypes.NotFound
+Interlocutor.CommonKernel.ResultTypes.NotFound.Deconstruct(out string? Message) -> void
+Interlocutor.CommonKernel.ResultTypes.NotFound.Equals(Interlocutor.CommonKernel.ResultTypes.NotFound other) -> bool
 Interlocutor.CommonKernel.ResultTypes.NotFound.Message.get -> string?
 Interlocutor.CommonKernel.ResultTypes.NotFound.Message.init -> void
 Interlocutor.CommonKernel.ResultTypes.NotFound.NotFound() -> void
 Interlocutor.CommonKernel.ResultTypes.NotFound.NotFound(string? Message = null) -> void
 Interlocutor.CommonKernel.ResultTypes.NotFound<TId>
+Interlocutor.CommonKernel.ResultTypes.NotFound<TId>.Deconstruct(out System.Type! EntityType, out TId Id, out string? Message) -> void
 Interlocutor.CommonKernel.ResultTypes.NotFound<TId>.EntityType.get -> System.Type!
 Interlocutor.CommonKernel.ResultTypes.NotFound<TId>.EntityType.init -> void
+Interlocutor.CommonKernel.ResultTypes.NotFound<TId>.Equals(Interlocutor.CommonKernel.ResultTypes.NotFound<TId> other) -> bool
 Interlocutor.CommonKernel.ResultTypes.NotFound<TId>.Id.get -> TId
 Interlocutor.CommonKernel.ResultTypes.NotFound<TId>.Id.init -> void
 Interlocutor.CommonKernel.ResultTypes.NotFound<TId>.Message.get -> string?
@@ -88,6 +133,8 @@ Interlocutor.CommonKernel.ResultTypes.NotFound<TId>.Message.init -> void
 Interlocutor.CommonKernel.ResultTypes.NotFound<TId>.NotFound() -> void
 Interlocutor.CommonKernel.ResultTypes.NotFound<TId>.NotFound(System.Type! EntityType, TId Id, string? Message = null) -> void
 Interlocutor.CommonKernel.ResultTypes.RateLimited
+Interlocutor.CommonKernel.ResultTypes.RateLimited.Deconstruct(out string! LimitKey, out System.TimeSpan? RetryAfter, out string? Message) -> void
+Interlocutor.CommonKernel.ResultTypes.RateLimited.Equals(Interlocutor.CommonKernel.ResultTypes.RateLimited other) -> bool
 Interlocutor.CommonKernel.ResultTypes.RateLimited.LimitKey.get -> string!
 Interlocutor.CommonKernel.ResultTypes.RateLimited.LimitKey.init -> void
 Interlocutor.CommonKernel.ResultTypes.RateLimited.Message.get -> string?
@@ -97,22 +144,29 @@ Interlocutor.CommonKernel.ResultTypes.RateLimited.RateLimited(string! LimitKey, 
 Interlocutor.CommonKernel.ResultTypes.RateLimited.RetryAfter.get -> System.TimeSpan?
 Interlocutor.CommonKernel.ResultTypes.RateLimited.RetryAfter.init -> void
 Interlocutor.CommonKernel.ResultTypes.Success
+Interlocutor.CommonKernel.ResultTypes.Success.Equals(Interlocutor.CommonKernel.ResultTypes.Success other) -> bool
 Interlocutor.CommonKernel.ResultTypes.Success.Success() -> void
 Interlocutor.CommonKernel.ResultTypes.Timeout
 Interlocutor.CommonKernel.ResultTypes.Timeout.Budget.get -> System.TimeSpan
 Interlocutor.CommonKernel.ResultTypes.Timeout.Budget.init -> void
+Interlocutor.CommonKernel.ResultTypes.Timeout.Deconstruct(out System.TimeSpan Budget, out System.TimeSpan Elapsed, out string? Message) -> void
 Interlocutor.CommonKernel.ResultTypes.Timeout.Elapsed.get -> System.TimeSpan
 Interlocutor.CommonKernel.ResultTypes.Timeout.Elapsed.init -> void
+Interlocutor.CommonKernel.ResultTypes.Timeout.Equals(Interlocutor.CommonKernel.ResultTypes.Timeout other) -> bool
 Interlocutor.CommonKernel.ResultTypes.Timeout.Message.get -> string?
 Interlocutor.CommonKernel.ResultTypes.Timeout.Message.init -> void
 Interlocutor.CommonKernel.ResultTypes.Timeout.Timeout() -> void
 Interlocutor.CommonKernel.ResultTypes.Timeout.Timeout(System.TimeSpan Budget, System.TimeSpan Elapsed, string? Message = null) -> void
 Interlocutor.CommonKernel.ResultTypes.ValidationError
+Interlocutor.CommonKernel.ResultTypes.ValidationError.Deconstruct(out string! Message) -> void
+Interlocutor.CommonKernel.ResultTypes.ValidationError.Equals(Interlocutor.CommonKernel.ResultTypes.ValidationError other) -> bool
 Interlocutor.CommonKernel.ResultTypes.ValidationError.Message.get -> string!
 Interlocutor.CommonKernel.ResultTypes.ValidationError.Message.init -> void
 Interlocutor.CommonKernel.ResultTypes.ValidationError.ValidationError() -> void
 Interlocutor.CommonKernel.ResultTypes.ValidationError.ValidationError(string! Message) -> void
 Interlocutor.CommonKernel.ResultTypes.ValidationError<TErrorCode>
+Interlocutor.CommonKernel.ResultTypes.ValidationError<TErrorCode>.Deconstruct(out string! Message, out TErrorCode ErrorCode) -> void
+Interlocutor.CommonKernel.ResultTypes.ValidationError<TErrorCode>.Equals(Interlocutor.CommonKernel.ResultTypes.ValidationError<TErrorCode> other) -> bool
 Interlocutor.CommonKernel.ResultTypes.ValidationError<TErrorCode>.ErrorCode.get -> TErrorCode
 Interlocutor.CommonKernel.ResultTypes.ValidationError<TErrorCode>.ErrorCode.init -> void
 Interlocutor.CommonKernel.ResultTypes.ValidationError<TErrorCode>.Message.get -> string!
@@ -121,6 +175,7 @@ Interlocutor.CommonKernel.ResultTypes.ValidationError<TErrorCode>.ValidationErro
 Interlocutor.CommonKernel.ResultTypes.ValidationError<TErrorCode>.ValidationError(string! Message, TErrorCode ErrorCode) -> void
 Interlocutor.CommonKernel.ResultTypes.ValidationErrors
 Interlocutor.CommonKernel.ResultTypes.ValidationErrors.Count.get -> int
+Interlocutor.CommonKernel.ResultTypes.ValidationErrors.Equals(Interlocutor.CommonKernel.ResultTypes.ValidationErrors other) -> bool
 Interlocutor.CommonKernel.ResultTypes.ValidationErrors.Errors.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.CommonKernel.ResultTypes.ValidationError>!
 Interlocutor.CommonKernel.ResultTypes.ValidationErrors.Items.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.CommonKernel.ResultTypes.ValidationError>!
 Interlocutor.CommonKernel.ResultTypes.ValidationErrors.Messages.get -> System.Collections.Generic.IReadOnlyList<string!>!
@@ -130,6 +185,7 @@ Interlocutor.CommonKernel.ResultTypes.ValidationErrors.ValidationErrors(System.C
 Interlocutor.CommonKernel.ResultTypes.ValidationErrors.ValidationErrors(System.Collections.Generic.IEnumerable<string!>! messages) -> void
 Interlocutor.CommonKernel.ResultTypes.ValidationErrors<TErrorCode>
 Interlocutor.CommonKernel.ResultTypes.ValidationErrors<TErrorCode>.Count.get -> int
+Interlocutor.CommonKernel.ResultTypes.ValidationErrors<TErrorCode>.Equals(Interlocutor.CommonKernel.ResultTypes.ValidationErrors<TErrorCode> other) -> bool
 Interlocutor.CommonKernel.ResultTypes.ValidationErrors<TErrorCode>.ErrorCodes.get -> System.Collections.Generic.IReadOnlyList<TErrorCode>!
 Interlocutor.CommonKernel.ResultTypes.ValidationErrors<TErrorCode>.Errors.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.CommonKernel.ResultTypes.ValidationError<TErrorCode>>!
 Interlocutor.CommonKernel.ResultTypes.ValidationErrors<TErrorCode>.Items.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.CommonKernel.ResultTypes.ValidationError<TErrorCode>>!
@@ -140,20 +196,88 @@ Interlocutor.CommonKernel.ResultTypes.ValidationErrors<TErrorCode>.ValidationErr
 Interlocutor.CommonKernel.ResultTypes.ValidationErrors<TErrorCode>.ValidationErrors(string! message, TErrorCode errorCode) -> void
 Interlocutor.CommonKernel.ResultTypes.ValidationErrors<TErrorCode>.ValidationErrors(System.Collections.Generic.IEnumerable<(string! Message, TErrorCode ErrorCode)>! errors) -> void
 Interlocutor.CommonKernel.ResultTypes.ValidationErrors<TErrorCode>.ValidationErrors(System.Collections.Generic.IEnumerable<Interlocutor.CommonKernel.ResultTypes.ValidationError<TErrorCode>>! errors) -> void
+override Interlocutor.CommonKernel.ResultTypes.Cancelled.GetHashCode() -> int
 override Interlocutor.CommonKernel.ResultTypes.Cancelled.ToString() -> string!
+override Interlocutor.CommonKernel.ResultTypes.Conflict.GetHashCode() -> int
 override Interlocutor.CommonKernel.ResultTypes.Conflict.ToString() -> string!
+override Interlocutor.CommonKernel.ResultTypes.Conflicts.GetHashCode() -> int
 override Interlocutor.CommonKernel.ResultTypes.Conflicts.ToString() -> string!
+override Interlocutor.CommonKernel.ResultTypes.Failure.GetHashCode() -> int
 override Interlocutor.CommonKernel.ResultTypes.Failure.ToString() -> string!
+override Interlocutor.CommonKernel.ResultTypes.Failure<TErrorCode>.GetHashCode() -> int
 override Interlocutor.CommonKernel.ResultTypes.Failure<TErrorCode>.ToString() -> string!
+override Interlocutor.CommonKernel.ResultTypes.Failures.GetHashCode() -> int
 override Interlocutor.CommonKernel.ResultTypes.Failures.ToString() -> string!
+override Interlocutor.CommonKernel.ResultTypes.Failures<TErrorCode>.GetHashCode() -> int
 override Interlocutor.CommonKernel.ResultTypes.Failures<TErrorCode>.ToString() -> string!
+override Interlocutor.CommonKernel.ResultTypes.Forbidden.GetHashCode() -> int
 override Interlocutor.CommonKernel.ResultTypes.Forbidden.ToString() -> string!
+override Interlocutor.CommonKernel.ResultTypes.NotFound.GetHashCode() -> int
 override Interlocutor.CommonKernel.ResultTypes.NotFound.ToString() -> string!
+override Interlocutor.CommonKernel.ResultTypes.NotFound<TId>.GetHashCode() -> int
 override Interlocutor.CommonKernel.ResultTypes.NotFound<TId>.ToString() -> string!
+override Interlocutor.CommonKernel.ResultTypes.RateLimited.GetHashCode() -> int
 override Interlocutor.CommonKernel.ResultTypes.RateLimited.ToString() -> string!
+override Interlocutor.CommonKernel.ResultTypes.Success.GetHashCode() -> int
 override Interlocutor.CommonKernel.ResultTypes.Success.ToString() -> string!
+override Interlocutor.CommonKernel.ResultTypes.Timeout.GetHashCode() -> int
 override Interlocutor.CommonKernel.ResultTypes.Timeout.ToString() -> string!
+override Interlocutor.CommonKernel.ResultTypes.ValidationError.GetHashCode() -> int
 override Interlocutor.CommonKernel.ResultTypes.ValidationError.ToString() -> string!
+override Interlocutor.CommonKernel.ResultTypes.ValidationError<TErrorCode>.GetHashCode() -> int
 override Interlocutor.CommonKernel.ResultTypes.ValidationError<TErrorCode>.ToString() -> string!
+override Interlocutor.CommonKernel.ResultTypes.ValidationErrors.GetHashCode() -> int
 override Interlocutor.CommonKernel.ResultTypes.ValidationErrors.ToString() -> string!
+override Interlocutor.CommonKernel.ResultTypes.ValidationErrors<TErrorCode>.GetHashCode() -> int
 override Interlocutor.CommonKernel.ResultTypes.ValidationErrors<TErrorCode>.ToString() -> string!
+static Interlocutor.CommonKernel.ResultTypes.Cancelled.operator !=(Interlocutor.CommonKernel.ResultTypes.Cancelled left, Interlocutor.CommonKernel.ResultTypes.Cancelled right) -> bool
+static Interlocutor.CommonKernel.ResultTypes.Cancelled.operator ==(Interlocutor.CommonKernel.ResultTypes.Cancelled left, Interlocutor.CommonKernel.ResultTypes.Cancelled right) -> bool
+static Interlocutor.CommonKernel.ResultTypes.Conflict.operator !=(Interlocutor.CommonKernel.ResultTypes.Conflict left, Interlocutor.CommonKernel.ResultTypes.Conflict right) -> bool
+static Interlocutor.CommonKernel.ResultTypes.Conflict.operator ==(Interlocutor.CommonKernel.ResultTypes.Conflict left, Interlocutor.CommonKernel.ResultTypes.Conflict right) -> bool
+static Interlocutor.CommonKernel.ResultTypes.Conflicts.operator !=(Interlocutor.CommonKernel.ResultTypes.Conflicts left, Interlocutor.CommonKernel.ResultTypes.Conflicts right) -> bool
+static Interlocutor.CommonKernel.ResultTypes.Conflicts.operator ==(Interlocutor.CommonKernel.ResultTypes.Conflicts left, Interlocutor.CommonKernel.ResultTypes.Conflicts right) -> bool
+static Interlocutor.CommonKernel.ResultTypes.Failure.operator !=(Interlocutor.CommonKernel.ResultTypes.Failure left, Interlocutor.CommonKernel.ResultTypes.Failure right) -> bool
+static Interlocutor.CommonKernel.ResultTypes.Failure.operator ==(Interlocutor.CommonKernel.ResultTypes.Failure left, Interlocutor.CommonKernel.ResultTypes.Failure right) -> bool
+static Interlocutor.CommonKernel.ResultTypes.Failure<TErrorCode>.operator !=(Interlocutor.CommonKernel.ResultTypes.Failure<TErrorCode> left, Interlocutor.CommonKernel.ResultTypes.Failure<TErrorCode> right) -> bool
+static Interlocutor.CommonKernel.ResultTypes.Failure<TErrorCode>.operator ==(Interlocutor.CommonKernel.ResultTypes.Failure<TErrorCode> left, Interlocutor.CommonKernel.ResultTypes.Failure<TErrorCode> right) -> bool
+static Interlocutor.CommonKernel.ResultTypes.Failures.operator !=(Interlocutor.CommonKernel.ResultTypes.Failures left, Interlocutor.CommonKernel.ResultTypes.Failures right) -> bool
+static Interlocutor.CommonKernel.ResultTypes.Failures.operator ==(Interlocutor.CommonKernel.ResultTypes.Failures left, Interlocutor.CommonKernel.ResultTypes.Failures right) -> bool
+static Interlocutor.CommonKernel.ResultTypes.Failures<TErrorCode>.operator !=(Interlocutor.CommonKernel.ResultTypes.Failures<TErrorCode> left, Interlocutor.CommonKernel.ResultTypes.Failures<TErrorCode> right) -> bool
+static Interlocutor.CommonKernel.ResultTypes.Failures<TErrorCode>.operator ==(Interlocutor.CommonKernel.ResultTypes.Failures<TErrorCode> left, Interlocutor.CommonKernel.ResultTypes.Failures<TErrorCode> right) -> bool
+static Interlocutor.CommonKernel.ResultTypes.Forbidden.operator !=(Interlocutor.CommonKernel.ResultTypes.Forbidden left, Interlocutor.CommonKernel.ResultTypes.Forbidden right) -> bool
+static Interlocutor.CommonKernel.ResultTypes.Forbidden.operator ==(Interlocutor.CommonKernel.ResultTypes.Forbidden left, Interlocutor.CommonKernel.ResultTypes.Forbidden right) -> bool
+static Interlocutor.CommonKernel.ResultTypes.NotFound.operator !=(Interlocutor.CommonKernel.ResultTypes.NotFound left, Interlocutor.CommonKernel.ResultTypes.NotFound right) -> bool
+static Interlocutor.CommonKernel.ResultTypes.NotFound.operator ==(Interlocutor.CommonKernel.ResultTypes.NotFound left, Interlocutor.CommonKernel.ResultTypes.NotFound right) -> bool
+static Interlocutor.CommonKernel.ResultTypes.NotFound<TId>.operator !=(Interlocutor.CommonKernel.ResultTypes.NotFound<TId> left, Interlocutor.CommonKernel.ResultTypes.NotFound<TId> right) -> bool
+static Interlocutor.CommonKernel.ResultTypes.NotFound<TId>.operator ==(Interlocutor.CommonKernel.ResultTypes.NotFound<TId> left, Interlocutor.CommonKernel.ResultTypes.NotFound<TId> right) -> bool
+static Interlocutor.CommonKernel.ResultTypes.RateLimited.operator !=(Interlocutor.CommonKernel.ResultTypes.RateLimited left, Interlocutor.CommonKernel.ResultTypes.RateLimited right) -> bool
+static Interlocutor.CommonKernel.ResultTypes.RateLimited.operator ==(Interlocutor.CommonKernel.ResultTypes.RateLimited left, Interlocutor.CommonKernel.ResultTypes.RateLimited right) -> bool
+static Interlocutor.CommonKernel.ResultTypes.Success.operator !=(Interlocutor.CommonKernel.ResultTypes.Success left, Interlocutor.CommonKernel.ResultTypes.Success right) -> bool
+static Interlocutor.CommonKernel.ResultTypes.Success.operator ==(Interlocutor.CommonKernel.ResultTypes.Success left, Interlocutor.CommonKernel.ResultTypes.Success right) -> bool
+static Interlocutor.CommonKernel.ResultTypes.Timeout.operator !=(Interlocutor.CommonKernel.ResultTypes.Timeout left, Interlocutor.CommonKernel.ResultTypes.Timeout right) -> bool
+static Interlocutor.CommonKernel.ResultTypes.Timeout.operator ==(Interlocutor.CommonKernel.ResultTypes.Timeout left, Interlocutor.CommonKernel.ResultTypes.Timeout right) -> bool
+static Interlocutor.CommonKernel.ResultTypes.ValidationError.operator !=(Interlocutor.CommonKernel.ResultTypes.ValidationError left, Interlocutor.CommonKernel.ResultTypes.ValidationError right) -> bool
+static Interlocutor.CommonKernel.ResultTypes.ValidationError.operator ==(Interlocutor.CommonKernel.ResultTypes.ValidationError left, Interlocutor.CommonKernel.ResultTypes.ValidationError right) -> bool
+static Interlocutor.CommonKernel.ResultTypes.ValidationError<TErrorCode>.operator !=(Interlocutor.CommonKernel.ResultTypes.ValidationError<TErrorCode> left, Interlocutor.CommonKernel.ResultTypes.ValidationError<TErrorCode> right) -> bool
+static Interlocutor.CommonKernel.ResultTypes.ValidationError<TErrorCode>.operator ==(Interlocutor.CommonKernel.ResultTypes.ValidationError<TErrorCode> left, Interlocutor.CommonKernel.ResultTypes.ValidationError<TErrorCode> right) -> bool
+static Interlocutor.CommonKernel.ResultTypes.ValidationErrors.operator !=(Interlocutor.CommonKernel.ResultTypes.ValidationErrors left, Interlocutor.CommonKernel.ResultTypes.ValidationErrors right) -> bool
+static Interlocutor.CommonKernel.ResultTypes.ValidationErrors.operator ==(Interlocutor.CommonKernel.ResultTypes.ValidationErrors left, Interlocutor.CommonKernel.ResultTypes.ValidationErrors right) -> bool
+static Interlocutor.CommonKernel.ResultTypes.ValidationErrors<TErrorCode>.operator !=(Interlocutor.CommonKernel.ResultTypes.ValidationErrors<TErrorCode> left, Interlocutor.CommonKernel.ResultTypes.ValidationErrors<TErrorCode> right) -> bool
+static Interlocutor.CommonKernel.ResultTypes.ValidationErrors<TErrorCode>.operator ==(Interlocutor.CommonKernel.ResultTypes.ValidationErrors<TErrorCode> left, Interlocutor.CommonKernel.ResultTypes.ValidationErrors<TErrorCode> right) -> bool
+~override Interlocutor.CommonKernel.ResultTypes.Cancelled.Equals(object obj) -> bool
+~override Interlocutor.CommonKernel.ResultTypes.Conflict.Equals(object obj) -> bool
+~override Interlocutor.CommonKernel.ResultTypes.Conflicts.Equals(object obj) -> bool
+~override Interlocutor.CommonKernel.ResultTypes.Failure.Equals(object obj) -> bool
+~override Interlocutor.CommonKernel.ResultTypes.Failure<TErrorCode>.Equals(object obj) -> bool
+~override Interlocutor.CommonKernel.ResultTypes.Failures.Equals(object obj) -> bool
+~override Interlocutor.CommonKernel.ResultTypes.Failures<TErrorCode>.Equals(object obj) -> bool
+~override Interlocutor.CommonKernel.ResultTypes.Forbidden.Equals(object obj) -> bool
+~override Interlocutor.CommonKernel.ResultTypes.NotFound.Equals(object obj) -> bool
+~override Interlocutor.CommonKernel.ResultTypes.NotFound<TId>.Equals(object obj) -> bool
+~override Interlocutor.CommonKernel.ResultTypes.RateLimited.Equals(object obj) -> bool
+~override Interlocutor.CommonKernel.ResultTypes.Success.Equals(object obj) -> bool
+~override Interlocutor.CommonKernel.ResultTypes.Timeout.Equals(object obj) -> bool
+~override Interlocutor.CommonKernel.ResultTypes.ValidationError.Equals(object obj) -> bool
+~override Interlocutor.CommonKernel.ResultTypes.ValidationError<TErrorCode>.Equals(object obj) -> bool
+~override Interlocutor.CommonKernel.ResultTypes.ValidationErrors.Equals(object obj) -> bool
+~override Interlocutor.CommonKernel.ResultTypes.ValidationErrors<TErrorCode>.Equals(object obj) -> bool

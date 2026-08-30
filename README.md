@@ -125,7 +125,7 @@ For contributors and maintainers working on *this repository* - not needed to us
 
 - **[Developer documentation index](maintainer_docs/README.md)** - Architecture Decision Records, the project PRD, contributor guides, and agent process docs.
 
-## A Note on AI Aid
+## A Note on LLMs and Generative AI
 
 This project was aided in part by large language models and agentic coding tools in its development. Every line of code and documentation was read, reviewed, and approved by a tired human before it shipped. Nothing here ran on autopilot.
 

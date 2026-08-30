@@ -34,6 +34,8 @@ Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.Stages.get -> 
 Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.UniqueClosureContracts.get -> System.Collections.Generic.IReadOnlyList<System.Type!>!
 Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.ValidateOnBuild() -> Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder!
 Interlocutor.DependencyInjection.Abstractions.InterlocutorFactoryRegistration
+Interlocutor.DependencyInjection.Abstractions.InterlocutorFactoryRegistration.Deconstruct(out System.Type! ServiceType, out System.Func<System.IServiceProvider!, object!>! Factory, out Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime Lifetime, out Interlocutor.DependencyInjection.Abstractions.RegistrationKind Kind) -> void
+Interlocutor.DependencyInjection.Abstractions.InterlocutorFactoryRegistration.Equals(Interlocutor.DependencyInjection.Abstractions.InterlocutorFactoryRegistration other) -> bool
 Interlocutor.DependencyInjection.Abstractions.InterlocutorFactoryRegistration.Factory.get -> System.Func<System.IServiceProvider!, object!>!
 Interlocutor.DependencyInjection.Abstractions.InterlocutorFactoryRegistration.Factory.init -> void
 Interlocutor.DependencyInjection.Abstractions.InterlocutorFactoryRegistration.InterlocutorFactoryRegistration() -> void
@@ -84,6 +86,8 @@ Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.StageF
 Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.Stages.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration>!
 Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.UseRecommendedChain() -> Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder!
 Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration
+Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration.Deconstruct(out System.Type! ServiceType, out System.Type! ImplementationType, out Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime Lifetime, out Interlocutor.DependencyInjection.Abstractions.RegistrationKind Kind, out Interlocutor.DependencyInjection.Abstractions.RegistrationProvenance Provenance, out string? MatchedByRule) -> void
+Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration.Equals(Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration other) -> bool
 Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration.ImplementationType.get -> System.Type!
 Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration.ImplementationType.init -> void
 Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration.InterlocutorRegistration() -> void
@@ -107,8 +111,11 @@ Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRegistry
 Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRegistry.PipelineOverrideRegistry(System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule!>! rules) -> void
 Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRegistry.TryGetOverride(System.Type! requestType, out System.Collections.Generic.IReadOnlyList<System.Type!>! behaviorTypes) -> bool
 Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule
+Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule.<Clone>$() -> Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule!
 Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule.BehaviorTypes.get -> System.Collections.Generic.IReadOnlyList<System.Type!>!
 Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule.BehaviorTypes.init -> void
+Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule.Deconstruct(out System.Func<System.Type!, bool>! Predicate, out string! Name, out System.Collections.Generic.IReadOnlyList<System.Type!>! BehaviorTypes) -> void
+Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule.Equals(Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule? other) -> bool
 Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule.Name.get -> string!
 Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule.Name.init -> void
 Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule.PipelineOverrideRule(System.Func<System.Type!, bool>! Predicate, string! Name, System.Collections.Generic.IReadOnlyList<System.Type!>! BehaviorTypes) -> void
@@ -128,8 +135,10 @@ Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Scoped = 1 ->
 Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Singleton = 0 -> Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime
 Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Transient = 2 -> Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime
 Interlocutor.DependencyInjection.Abstractions.RegistrationProblem
+Interlocutor.DependencyInjection.Abstractions.RegistrationProblem.Deconstruct(out Interlocutor.DependencyInjection.Abstractions.RegistrationProblemKind Kind, out string! Description) -> void
 Interlocutor.DependencyInjection.Abstractions.RegistrationProblem.Description.get -> string!
 Interlocutor.DependencyInjection.Abstractions.RegistrationProblem.Description.init -> void
+Interlocutor.DependencyInjection.Abstractions.RegistrationProblem.Equals(Interlocutor.DependencyInjection.Abstractions.RegistrationProblem other) -> bool
 Interlocutor.DependencyInjection.Abstractions.RegistrationProblem.Kind.get -> Interlocutor.DependencyInjection.Abstractions.RegistrationProblemKind
 Interlocutor.DependencyInjection.Abstractions.RegistrationProblem.Kind.init -> void
 Interlocutor.DependencyInjection.Abstractions.RegistrationProblem.RegistrationProblem() -> void
@@ -161,8 +170,10 @@ Interlocutor.DependencyInjection.Abstractions.RootScopeGuardedMediator.Send<TRes
 Interlocutor.DependencyInjection.Abstractions.RootScopeGuardedMediator.Send<TResponse>(Interlocutor.Abstractions.Queries.IQuery<TResponse>! query, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResponse>!
 Interlocutor.DependencyInjection.Abstractions.RootScopeGuardedMediator.Send<TResult>(Interlocutor.Abstractions.Commands.ICommand! command, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResult>!
 Interlocutor.DependencyInjection.Abstractions.SkippedRegistration
+Interlocutor.DependencyInjection.Abstractions.SkippedRegistration.Deconstruct(out string! Description, out string! Reason) -> void
 Interlocutor.DependencyInjection.Abstractions.SkippedRegistration.Description.get -> string!
 Interlocutor.DependencyInjection.Abstractions.SkippedRegistration.Description.init -> void
+Interlocutor.DependencyInjection.Abstractions.SkippedRegistration.Equals(Interlocutor.DependencyInjection.Abstractions.SkippedRegistration other) -> bool
 Interlocutor.DependencyInjection.Abstractions.SkippedRegistration.Reason.get -> string!
 Interlocutor.DependencyInjection.Abstractions.SkippedRegistration.Reason.init -> void
 Interlocutor.DependencyInjection.Abstractions.SkippedRegistration.SkippedRegistration() -> void
@@ -170,11 +181,16 @@ Interlocutor.DependencyInjection.Abstractions.SkippedRegistration.SkippedRegistr
 Interlocutor.DependencyInjection.Abstractions.TypeLoadFailure
 Interlocutor.DependencyInjection.Abstractions.TypeLoadFailure.AssemblyName.get -> string!
 Interlocutor.DependencyInjection.Abstractions.TypeLoadFailure.AssemblyName.init -> void
+Interlocutor.DependencyInjection.Abstractions.TypeLoadFailure.Deconstruct(out string! AssemblyName, out string! Detail) -> void
 Interlocutor.DependencyInjection.Abstractions.TypeLoadFailure.Detail.get -> string!
 Interlocutor.DependencyInjection.Abstractions.TypeLoadFailure.Detail.init -> void
+Interlocutor.DependencyInjection.Abstractions.TypeLoadFailure.Equals(Interlocutor.DependencyInjection.Abstractions.TypeLoadFailure other) -> bool
 Interlocutor.DependencyInjection.Abstractions.TypeLoadFailure.TypeLoadFailure() -> void
 Interlocutor.DependencyInjection.Abstractions.TypeLoadFailure.TypeLoadFailure(string! AssemblyName, string! Detail) -> void
 Interlocutor.DependencyInjection.Abstractions.TypeMatchRule
+Interlocutor.DependencyInjection.Abstractions.TypeMatchRule.<Clone>$() -> Interlocutor.DependencyInjection.Abstractions.TypeMatchRule!
+Interlocutor.DependencyInjection.Abstractions.TypeMatchRule.Deconstruct(out System.Func<System.Type!, bool>! Predicate, out Interlocutor.DependencyInjection.Abstractions.TypeMatchTarget Target, out Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime Lifetime, out System.Func<System.Type!, bool>? Except, out bool Require, out string? Name) -> void
+Interlocutor.DependencyInjection.Abstractions.TypeMatchRule.Equals(Interlocutor.DependencyInjection.Abstractions.TypeMatchRule? other) -> bool
 Interlocutor.DependencyInjection.Abstractions.TypeMatchRule.Except.get -> System.Func<System.Type!, bool>?
 Interlocutor.DependencyInjection.Abstractions.TypeMatchRule.Except.init -> void
 Interlocutor.DependencyInjection.Abstractions.TypeMatchRule.Lifetime.get -> Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime
@@ -191,6 +207,41 @@ Interlocutor.DependencyInjection.Abstractions.TypeMatchRule.TypeMatchRule(System
 Interlocutor.DependencyInjection.Abstractions.TypeMatchTarget
 Interlocutor.DependencyInjection.Abstractions.TypeMatchTarget.Behavior = 1 -> Interlocutor.DependencyInjection.Abstractions.TypeMatchTarget
 Interlocutor.DependencyInjection.Abstractions.TypeMatchTarget.Handler = 0 -> Interlocutor.DependencyInjection.Abstractions.TypeMatchTarget
+override Interlocutor.DependencyInjection.Abstractions.InterlocutorFactoryRegistration.GetHashCode() -> int
+override Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration.GetHashCode() -> int
+override Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule.Equals(object? obj) -> bool
+override Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule.GetHashCode() -> int
+override Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule.ToString() -> string!
+override Interlocutor.DependencyInjection.Abstractions.RegistrationProblem.GetHashCode() -> int
 override Interlocutor.DependencyInjection.Abstractions.RegistrationReport.ToString() -> string!
+override Interlocutor.DependencyInjection.Abstractions.SkippedRegistration.GetHashCode() -> int
+override Interlocutor.DependencyInjection.Abstractions.TypeLoadFailure.GetHashCode() -> int
+override Interlocutor.DependencyInjection.Abstractions.TypeMatchRule.Equals(object? obj) -> bool
+override Interlocutor.DependencyInjection.Abstractions.TypeMatchRule.GetHashCode() -> int
+override Interlocutor.DependencyInjection.Abstractions.TypeMatchRule.ToString() -> string!
 static Interlocutor.DependencyInjection.Abstractions.HandlerDiscovery.Discover(System.Collections.Generic.IEnumerable<(System.Reflection.Assembly! Assembly, Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime Lifetime)>! assembliesToScan, System.Collections.Generic.IReadOnlyList<System.Type!>? extraContracts = null, System.Collections.Generic.ICollection<Interlocutor.DependencyInjection.Abstractions.TypeLoadFailure>? failures = null) -> System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration>!
 static Interlocutor.DependencyInjection.Abstractions.HandlerDiscovery.Discover(System.Collections.Generic.IEnumerable<System.Reflection.Assembly!>! assembliesToScan) -> System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration>!
+static Interlocutor.DependencyInjection.Abstractions.InterlocutorFactoryRegistration.operator !=(Interlocutor.DependencyInjection.Abstractions.InterlocutorFactoryRegistration left, Interlocutor.DependencyInjection.Abstractions.InterlocutorFactoryRegistration right) -> bool
+static Interlocutor.DependencyInjection.Abstractions.InterlocutorFactoryRegistration.operator ==(Interlocutor.DependencyInjection.Abstractions.InterlocutorFactoryRegistration left, Interlocutor.DependencyInjection.Abstractions.InterlocutorFactoryRegistration right) -> bool
+static Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration.operator !=(Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration left, Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration right) -> bool
+static Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration.operator ==(Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration left, Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration right) -> bool
+static Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule.operator !=(Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule? left, Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule? right) -> bool
+static Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule.operator ==(Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule? left, Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule? right) -> bool
+static Interlocutor.DependencyInjection.Abstractions.RegistrationProblem.operator !=(Interlocutor.DependencyInjection.Abstractions.RegistrationProblem left, Interlocutor.DependencyInjection.Abstractions.RegistrationProblem right) -> bool
+static Interlocutor.DependencyInjection.Abstractions.RegistrationProblem.operator ==(Interlocutor.DependencyInjection.Abstractions.RegistrationProblem left, Interlocutor.DependencyInjection.Abstractions.RegistrationProblem right) -> bool
+static Interlocutor.DependencyInjection.Abstractions.SkippedRegistration.operator !=(Interlocutor.DependencyInjection.Abstractions.SkippedRegistration left, Interlocutor.DependencyInjection.Abstractions.SkippedRegistration right) -> bool
+static Interlocutor.DependencyInjection.Abstractions.SkippedRegistration.operator ==(Interlocutor.DependencyInjection.Abstractions.SkippedRegistration left, Interlocutor.DependencyInjection.Abstractions.SkippedRegistration right) -> bool
+static Interlocutor.DependencyInjection.Abstractions.TypeLoadFailure.operator !=(Interlocutor.DependencyInjection.Abstractions.TypeLoadFailure left, Interlocutor.DependencyInjection.Abstractions.TypeLoadFailure right) -> bool
+static Interlocutor.DependencyInjection.Abstractions.TypeLoadFailure.operator ==(Interlocutor.DependencyInjection.Abstractions.TypeLoadFailure left, Interlocutor.DependencyInjection.Abstractions.TypeLoadFailure right) -> bool
+static Interlocutor.DependencyInjection.Abstractions.TypeMatchRule.operator !=(Interlocutor.DependencyInjection.Abstractions.TypeMatchRule? left, Interlocutor.DependencyInjection.Abstractions.TypeMatchRule? right) -> bool
+static Interlocutor.DependencyInjection.Abstractions.TypeMatchRule.operator ==(Interlocutor.DependencyInjection.Abstractions.TypeMatchRule? left, Interlocutor.DependencyInjection.Abstractions.TypeMatchRule? right) -> bool
+~override Interlocutor.DependencyInjection.Abstractions.InterlocutorFactoryRegistration.Equals(object obj) -> bool
+~override Interlocutor.DependencyInjection.Abstractions.InterlocutorFactoryRegistration.ToString() -> string
+~override Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration.Equals(object obj) -> bool
+~override Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration.ToString() -> string
+~override Interlocutor.DependencyInjection.Abstractions.RegistrationProblem.Equals(object obj) -> bool
+~override Interlocutor.DependencyInjection.Abstractions.RegistrationProblem.ToString() -> string
+~override Interlocutor.DependencyInjection.Abstractions.SkippedRegistration.Equals(object obj) -> bool
+~override Interlocutor.DependencyInjection.Abstractions.SkippedRegistration.ToString() -> string
+~override Interlocutor.DependencyInjection.Abstractions.TypeLoadFailure.Equals(object obj) -> bool
+~override Interlocutor.DependencyInjection.Abstractions.TypeLoadFailure.ToString() -> string
