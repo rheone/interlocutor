@@ -8,12 +8,12 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 /// <summary>
-/// Verifies the status code <see cref="DefaultOutcomeStatusMapper"/> chooses for each built-in failure case,
+/// Verifies the status code <see cref="DefaultHttpOutcomeStatusMapper"/> chooses for each built-in failure case,
 /// independent of which transport-specific extension method renders it.
 /// </summary>
-public class DefaultOutcomeStatusMapperTests
+public class DefaultHttpOutcomeStatusMapperTests
 {
-    private readonly DefaultOutcomeStatusMapper mapper = new();
+    private readonly DefaultHttpOutcomeStatusMapper mapper = new();
 
     [Fact]
     public void Map_WithNotFound_Returns404()
@@ -100,7 +100,7 @@ public class DefaultOutcomeStatusMapperTests
     [Fact]
     public void Map_WithHandRolledValidationFailureCase_Returns400()
     {
-        // Arrange - proves DefaultOutcomeStatusMapper recognizes IValidationFailureCase via the interface
+        // Arrange - proves DefaultHttpOutcomeStatusMapper recognizes IValidationFailureCase via the interface
         // itself, not a type-specific special case for the library's own or FluentValidation's types.
         var customCase = new CustomValidationFailureCase(["custom rule failed"]);
 
@@ -177,7 +177,7 @@ public class DefaultOutcomeStatusMapperTests
     [Fact]
     public void Map_WithFailure_Returns400NotServerError()
     {
-        // Arrange - see the remarks on DefaultOutcomeStatusMapper.MapFailure: a plain Failure is an expected
+        // Arrange - see the remarks on DefaultHttpOutcomeStatusMapper.MapFailure: a plain Failure is an expected
         // outcome, not an unhandled exception, so it must not surface as a 5xx server error.
         var failure = new Failure("expected domain failure");
 
@@ -320,10 +320,10 @@ public class DefaultOutcomeStatusMapperTests
     }
 
     /// <summary>
-    /// Proves the "overridable default" contract: derive from <see cref="DefaultOutcomeStatusMapper"/> and
+    /// Proves the "overridable default" contract: derive from <see cref="DefaultHttpOutcomeStatusMapper"/> and
     /// override just the one case that needs to change, inheriting every other mapping unchanged.
     /// </summary>
-    private sealed class RateLimitAwareOutcomeStatusMapper : DefaultOutcomeStatusMapper
+    private sealed class RateLimitAwareOutcomeStatusMapper : DefaultHttpOutcomeStatusMapper
     {
         protected override OutcomeHttpMapping MapUnrecognized<TFailure>(TFailure failure) =>
             failure is CustomRateLimited rateLimited
@@ -331,8 +331,8 @@ public class DefaultOutcomeStatusMapperTests
                 : base.MapUnrecognized(failure);
     }
 
-    /// <summary>Proves <see cref="DefaultOutcomeStatusMapper.MapNotFoundGeneric"/> is independently overridable.</summary>
-    private sealed class EntityNameIncludingOutcomeStatusMapper : DefaultOutcomeStatusMapper
+    /// <summary>Proves <see cref="DefaultHttpOutcomeStatusMapper.MapNotFoundGeneric"/> is independently overridable.</summary>
+    private sealed class EntityNameIncludingOutcomeStatusMapper : DefaultHttpOutcomeStatusMapper
     {
         protected override OutcomeHttpMapping MapNotFoundGeneric(Type entityType, object? id, string? message) =>
             new(StatusCodes.Status404NotFound, $"{entityType.Name}/{id}");

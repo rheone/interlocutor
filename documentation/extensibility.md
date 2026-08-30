@@ -97,6 +97,52 @@ Anything left unregistered still falls back to `DefaultOutcomeCaseRegistry`, so 
 
 A related but separate extension point: `LoggingBehavior`, `AuditingBehavior`, and both store-specific `UnitOfWorkBehavior` implementations need to describe a response for a log/audit line and classify it as success or failure, which is a different question from constructing/extracting a case. That's `IResponseOutcomeDescriber`, built on `OutcomeClassifierBuilder` - see [Pipeline & Behavior Composition § Outcome Description & Classification](pipeline-and-behaviors.md#outcome-description--classification) for the worked example. And at the HTTP boundary, `IOutcomeStatusMapper` maps a failure case to a status code and body - see [ASP.NET Core Integration § Custom HTTP Mapping](aspnetcore-integration.md#custom-http-mapping).
 
+## Mapping failure cases to any output shape: `IOutcomeMapper<TResult>`
+
+`IOutcomeStatusMapper` (the HTTP mapper above) is a specialization of a transport-agnostic contract that lives one layer down, in `Interlocutor.Abstractions.Pipeline.Mapping`:
+
+```csharp
+public interface IOutcomeMapper<TResult>
+{
+    TResult Map<TFailure>(TFailure failure);
+}
+```
+
+A consumer with no interest in HTTP - a gRPC service mapping to a `Status`, a CLI tool mapping to a process exit code, a queue handler mapping to a nack reason - gets the same pluggable per-failure-case ergonomic `IOutcomeStatusMapper` gives ASP.NET Core consumers, without depending on `Interlocutor.AspNetCore` at all. Derive from `OutcomeMapperBase<TResult>` and implement one method per built-in failure case, rather than writing the dispatch `switch` yourself:
+
+```csharp
+public sealed class GrpcOutcomeMapper : OutcomeMapperBase<Status>
+{
+    protected override Status MapNotFound(NotFound notFound) =>
+        new(StatusCode.NotFound, notFound.Message ?? string.Empty);
+
+    protected override Status MapForbidden(Forbidden forbidden) =>
+        new(StatusCode.PermissionDenied, string.Empty);
+
+    protected override Status MapValidationErrors(ValidationErrors validationErrors) =>
+        new(StatusCode.InvalidArgument, string.Join("; ", validationErrors.Messages));
+
+    // ... one method per remaining case (Conflict, Cancelled, Timeout, RateLimited, Failure(s),
+    // the generic NotFound<TId>, and MapUnrecognized for anything else) - OutcomeMapperBase<TResult>
+    // declares each as abstract, so the compiler enforces every case is handled.
+}
+```
+
+Like `IOutcomeStatusMapper`, there's no DI registration to configure - construct an instance and call `Map` directly, the same way `ResultExtensions.ToActionResult` does internally, by pattern-matching `OperationOutcome<TSuccess, TFailure>.Value`:
+
+```csharp
+private static readonly GrpcOutcomeMapper Mapper = new();
+
+var result = await mediator.Send(command, ct);
+return result.Value switch
+{
+    int userId => new CreateUserResponse { UserId = userId },
+    var failure => throw new RpcException(Mapper.Map(failure)),
+};
+```
+
+`Interlocutor.AspNetCore.IOutcomeStatusMapper : IOutcomeMapper<OutcomeHttpMapping>` and `DefaultHttpOutcomeStatusMapper : OutcomeMapperBase<OutcomeHttpMapping>` (see [ASP.NET Core Integration § Custom HTTP Mapping](aspnetcore-integration.md#custom-http-mapping)) are themselves just one instantiation of this same shape - HTTP has no special status in `OutcomeMapperBase<TResult>` beyond being the first consumer.
+
 ## Full-fidelity validation failures: `IValidationFailureCase`
 
 `Interlocutor.FluentValidation.ValidationBehavior` collapses every validator's failures down to
@@ -115,7 +161,7 @@ builder.Pipeline.AddBehavior(typeof(FluentValidationErrorsBehavior<,>));
 `FluentValidationErrors` wraps every `FluentValidation.Results.ValidationFailure` verbatim - nothing is
 projected away - while still implementing [`IValidationFailureCase`](glossary.md#result-types), the same
 minimal interface `ValidationErrors` implements. A consumer that recognizes `IValidationFailureCase` - such as
-`DefaultOutcomeStatusMapper` (see [ASP.NET Core Integration § Status Code Mapping](aspnetcore-integration.md#status-code-mapping))
+`DefaultHttpOutcomeStatusMapper` (see [ASP.NET Core Integration § Status Code Mapping](aspnetcore-integration.md#status-code-mapping))
 - handles either case type the same way, without needing to know which validation technology produced it.
 This is the same extension-point shape as a custom `IOperationOutcome` implementation above: a minimal marker
 interface a technology-specific case type implements, rather than a base type every case would need to
@@ -165,6 +211,7 @@ For tracing the mechanism rather than copying an example:
 | `IPipelineBehavior<,>` / `IPipelineStage<,>` | `Interlocutor.Abstractions.Pipeline` | `Mediator`'s dispatch path, chained via `InterlocutorPipelineBuilder` |
 | `IOutcomeCaseRegistry` | `Interlocutor.Abstractions.Pipeline.Cases` | `AuthorizationBehavior`, `CancellationBehavior`, `TimeoutBehavior`, `RateLimitedBehavior`, `Interlocutor.FluentValidation.ValidationBehavior`, `Interlocutor.FluentValidation.FluentValidationErrorsBehavior` |
 | `IOutcomeClassifier` / `IResponseOutcomeDescriber` | `Interlocutor.Abstractions.Pipeline.Classifiers` | `LoggingBehavior`, `AuditingBehavior`, both `UnitOfWorkBehavior` implementations |
-| `IOutcomeStatusMapper` | `Interlocutor.AspNetCore` | `ResultExtensions.ToActionResult`/`ToMinimalApiResult` |
+| `IOutcomeMapper<TResult>` / `OutcomeMapperBase<TResult>` | `Interlocutor.Abstractions.Pipeline.Mapping` | Invoked directly by consuming code - no Interlocutor behavior calls it itself |
+| `IOutcomeStatusMapper` | `Interlocutor.AspNetCore` (specializes `IOutcomeMapper<OutcomeHttpMapping>`) | `ResultExtensions.ToActionResult`/`ToMinimalApiResult` |
 | `InterlocutorBuilder.AddTypeMatch` / `RequireUniqueClosure` / `Eject` | `Interlocutor.DependencyInjection.Abstractions` | Resolved when `AddInterlocutor` translates the accumulated registration list; checked by `ValidateOnBuild()` |
 | `InterlocutorPipelineBuilder.OverridePipelineFor` | `Interlocutor.DependencyInjection.Abstractions` | `PipelineChainResolver`, at the point each dispatch path builds its behavior chain |

@@ -1,6 +1,6 @@
 namespace Interlocutor.AspNetCore;
 
-using System.Diagnostics.CodeAnalysis;
+using Interlocutor.Abstractions.Pipeline.Mapping;
 using Interlocutor.CommonKernel.ResultTypes;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -8,37 +8,20 @@ using Microsoft.AspNetCore.Mvc;
 /// <summary>
 /// The <see cref="IOutcomeStatusMapper"/> applied by <see cref="ResultExtensions"/> when a consumer registers
 /// none of their own. Recognizes the built-in <c>Interlocutor.CommonKernel.ResultTypes</c> failure cases and
-/// their aggregate forms; anything else - including a consumer's own custom failure type - falls back to
-/// <see cref="MapUnrecognized{TFailure}"/>.
+/// their aggregate forms via <see cref="OutcomeMapperBase{TResult}"/>'s dispatch; anything else - including a
+/// consumer's own custom failure type - falls back to <see cref="MapUnrecognized{TFailure}"/>.
 /// </summary>
 /// <remarks>
-/// Each case is a protected virtual method, so a consumer who wants to change how one case maps while keeping
-/// the rest can derive from this class and override just that method, rather than reimplementing
-/// <see cref="IOutcomeStatusMapper"/> from scratch.
+/// Each case is a protected override of an <see cref="OutcomeMapperBase{TResult}"/> abstract method, so a
+/// consumer who wants to change how one case maps while keeping the rest can derive from this class and
+/// override just that method, rather than reimplementing <see cref="IOutcomeStatusMapper"/> from scratch.
 /// </remarks>
-public class DefaultOutcomeStatusMapper : IOutcomeStatusMapper
+public class DefaultHttpOutcomeStatusMapper : OutcomeMapperBase<OutcomeHttpMapping>, IOutcomeStatusMapper
 {
-    /// <inheritdoc/>
-    public OutcomeHttpMapping Map<TFailure>(TFailure failure) =>
-        failure switch
-        {
-            ValidationErrors validationErrors => this.MapValidationErrors(validationErrors),
-            IValidationFailureCase validationFailureCase => this.MapValidationFailureCase(validationFailureCase),
-            Forbidden forbidden => this.MapForbidden(forbidden),
-            Conflict conflict => this.MapConflict(conflict),
-            Failures failures => this.MapFailures(failures),
-            Failure singleFailure => this.MapFailure(singleFailure),
-            NotFound notFound => this.MapNotFound(notFound),
-            Cancelled cancelled => this.MapCancelled(cancelled),
-            Timeout timeout => this.MapTimeout(timeout),
-            RateLimited rateLimited => this.MapRateLimited(rateLimited),
-            _ => this.MapNotFoundGenericOrUnrecognized(failure),
-        };
-
     /// <summary>Maps a <see cref="ValidationErrors"/> aggregate to 400 Bad Request with all messages.</summary>
     /// <param name="validationErrors">The validation failures to map.</param>
     /// <returns>The mapped status code and <see cref="ProblemDetails"/> body.</returns>
-    protected virtual OutcomeHttpMapping MapValidationErrors(ValidationErrors validationErrors) =>
+    protected override OutcomeHttpMapping MapValidationErrors(ValidationErrors validationErrors) =>
         MapValidationMessages(validationErrors.Messages);
 
     /// <summary>
@@ -50,11 +33,11 @@ public class DefaultOutcomeStatusMapper : IOutcomeStatusMapper
     /// <param name="validationFailureCase">The validation failure to map.</param>
     /// <returns>The mapped status code and <see cref="ProblemDetails"/> body.</returns>
     /// <remarks>
-    /// Ordered after the exact <see cref="ValidationErrors"/> branch in <see cref="Map{TFailure}"/>, so a
-    /// plain <see cref="ValidationErrors"/> failure still resolves to <see cref="MapValidationErrors"/>
+    /// Ordered after the exact <see cref="ValidationErrors"/> branch in <see cref="OutcomeMapperBase{TResult}.Map{TFailure}"/>,
+    /// so a plain <see cref="ValidationErrors"/> failure still resolves to <see cref="MapValidationErrors"/>
     /// unchanged - this branch only ever runs for some other <see cref="IValidationFailureCase"/> implementer.
     /// </remarks>
-    protected virtual OutcomeHttpMapping MapValidationFailureCase(IValidationFailureCase validationFailureCase) =>
+    protected override OutcomeHttpMapping MapValidationFailureCase(IValidationFailureCase validationFailureCase) =>
         MapValidationMessages(validationFailureCase.Messages);
 
     /// <summary>
@@ -85,17 +68,18 @@ public class DefaultOutcomeStatusMapper : IOutcomeStatusMapper
     /// <summary>Maps a <see cref="NotFound"/> singular case to 404 Not Found.</summary>
     /// <param name="notFound">The not-found failure to map.</param>
     /// <returns>The mapped status code and message body.</returns>
-    protected virtual OutcomeHttpMapping MapNotFound(NotFound notFound) => new(StatusCodes.Status404NotFound, notFound.Message);
+    protected override OutcomeHttpMapping MapNotFound(NotFound notFound) =>
+        new(StatusCodes.Status404NotFound, notFound.Message);
 
     /// <summary>Maps a <see cref="Forbidden"/> case to 403 Forbidden, with no body (the reason is not exposed to callers).</summary>
     /// <param name="forbidden">The forbidden failure to map.</param>
     /// <returns>The mapped status code, with no body.</returns>
-    protected virtual OutcomeHttpMapping MapForbidden(Forbidden forbidden) => new(StatusCodes.Status403Forbidden);
+    protected override OutcomeHttpMapping MapForbidden(Forbidden forbidden) => new(StatusCodes.Status403Forbidden);
 
     /// <summary>Maps a <see cref="Conflict"/> case to 409 Conflict with its code and message.</summary>
     /// <param name="conflict">The conflict failure to map.</param>
     /// <returns>The mapped status code and <see cref="ProblemDetails"/> body.</returns>
-    protected virtual OutcomeHttpMapping MapConflict(Conflict conflict) =>
+    protected override OutcomeHttpMapping MapConflict(Conflict conflict) =>
         new(
             StatusCodes.Status409Conflict,
             new ProblemDetails
@@ -114,7 +98,7 @@ public class DefaultOutcomeStatusMapper : IOutcomeStatusMapper
     /// nor a domain failure - the caller withdrew interest in the operation before it completed. See
     /// <c>aspnetcore-integration.md</c> for the specific status code this maps to.
     /// </remarks>
-    protected virtual OutcomeHttpMapping MapCancelled(Cancelled cancelled) => new(StatusCodes.Status499ClientClosedRequest);
+    protected override OutcomeHttpMapping MapCancelled(Cancelled cancelled) => new(StatusCodes.Status499ClientClosedRequest);
 
     /// <summary>Maps a <see cref="Timeout"/> case to a gateway-timeout status with its budget and elapsed time.</summary>
     /// <param name="timeout">The timeout failure to map.</param>
@@ -126,7 +110,7 @@ public class DefaultOutcomeStatusMapper : IOutcomeStatusMapper
     /// upstream/dependency the server was waiting on didn't respond within budget. A prior version of this
     /// mapper used 408 here, which told the caller they themselves were slow when they weren't.
     /// </remarks>
-    protected virtual OutcomeHttpMapping MapTimeout(Timeout timeout) =>
+    protected override OutcomeHttpMapping MapTimeout(Timeout timeout) =>
         new(
             StatusCodes.Status504GatewayTimeout,
             new ProblemDetails
@@ -146,7 +130,7 @@ public class DefaultOutcomeStatusMapper : IOutcomeStatusMapper
     /// consumer who needs the header can override this method (or read <see cref="RateLimited.RetryAfter"/> from
     /// the body) to set it.
     /// </remarks>
-    protected virtual OutcomeHttpMapping MapRateLimited(RateLimited rateLimited) =>
+    protected override OutcomeHttpMapping MapRateLimited(RateLimited rateLimited) =>
         new(
             StatusCodes.Status429TooManyRequests,
             new ProblemDetails
@@ -168,7 +152,7 @@ public class DefaultOutcomeStatusMapper : IOutcomeStatusMapper
     /// unhandled exceptions (see <see cref="MapFailure"/> for the same reasoning applied to the singular case).
     /// </para>
     /// </remarks>
-    protected virtual OutcomeHttpMapping MapFailures(Failures failures) =>
+    protected override OutcomeHttpMapping MapFailures(Failures failures) =>
         new(
             StatusCodes.Status400BadRequest,
             new ProblemDetails
@@ -197,7 +181,7 @@ public class DefaultOutcomeStatusMapper : IOutcomeStatusMapper
     /// purpose.
     /// </para>
     /// </remarks>
-    protected virtual OutcomeHttpMapping MapFailure(Failure failure) =>
+    protected override OutcomeHttpMapping MapFailure(Failure failure) =>
         new(
             StatusCodes.Status400BadRequest,
             new ProblemDetails { Title = failure.Reason ?? "Failure", Status = StatusCodes.Status400BadRequest }
@@ -210,11 +194,10 @@ public class DefaultOutcomeStatusMapper : IOutcomeStatusMapper
     /// <returns>The mapped status code and message body.</returns>
     /// <remarks>
     /// A separate override point from <see cref="MapNotFound"/> because pattern matching can't target the open
-    /// generic <c>NotFound&lt;&gt;</c> case type directly - <see cref="MapNotFoundGenericOrUnrecognized{TFailure}"/>
-    /// reflects the closed instance's fields and forwards them here, so a consumer who wants to change only this
-    /// case's mapping still overrides a plain virtual method rather than reimplementing the reflection.
+    /// generic <c>NotFound&lt;&gt;</c> case type directly - see <see cref="OutcomeMapperBase{TResult}"/> for the
+    /// reflective dispatch that reaches this method.
     /// </remarks>
-    protected virtual OutcomeHttpMapping MapNotFoundGeneric(Type entityType, object? id, string? message) =>
+    protected override OutcomeHttpMapping MapNotFoundGeneric(Type entityType, object? id, string? message) =>
         new(StatusCodes.Status404NotFound, message);
 
     /// <summary>
@@ -227,32 +210,6 @@ public class DefaultOutcomeStatusMapper : IOutcomeStatusMapper
     /// specific status for a type it doesn't recognize; a consumer with a custom failure type should override
     /// this method (or supply their own <see cref="IOutcomeStatusMapper"/>) to map it precisely.
     /// </returns>
-    protected virtual OutcomeHttpMapping MapUnrecognized<TFailure>(TFailure failure) =>
+    protected override OutcomeHttpMapping MapUnrecognized<TFailure>(TFailure failure) =>
         new(StatusCodes.Status500InternalServerError, failure);
-
-    [UnconditionalSuppressMessage(
-        "Trimming",
-        "IL2090:RequiresUnreferencedCode",
-        Justification = "The only closed generic ever tested here is Interlocutor.CommonKernel.ResultTypes."
-            + "NotFound<TId> - a library-owned type whose EntityType/Id/Message properties are always kept by "
-            + "the trimmer independent of this reflective read, since every consumer that produces a NotFound<> "
-            + "failure also constructs or pattern-matches it directly elsewhere. See "
-            + "documentation/trim-and-aot-support.md."
-    )]
-    private OutcomeHttpMapping MapNotFoundGenericOrUnrecognized<TFailure>(TFailure failure)
-    {
-        // Pattern matching doesn't work against the open generic NotFound<> case type, so fall back to
-        // reflection: check whether TFailure closes NotFound<TId> for any TId, then read its fields and
-        // forward to the overridable MapNotFoundGeneric rather than building the mapping here directly.
-        var failureType = typeof(TFailure);
-        if (failureType.IsGenericType && failureType.GetGenericTypeDefinition() == typeof(NotFound<>))
-        {
-            var entityType = (Type)failureType.GetProperty("EntityType")!.GetValue(failure)!;
-            var id = failureType.GetProperty("Id")?.GetValue(failure);
-            var message = (string?)failureType.GetProperty("Message")?.GetValue(failure);
-            return this.MapNotFoundGeneric(entityType, id, message);
-        }
-
-        return this.MapUnrecognized(failure);
-    }
 }

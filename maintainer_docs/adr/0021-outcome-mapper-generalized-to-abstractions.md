@@ -1,0 +1,30 @@
+# ADR-0021: Outcome Mapper Generalized and Relocated to Abstractions
+
+**Status:** Accepted
+
+## Context
+
+ADR-0012 made the failure-to-status-code mapping pluggable (`IOutcomeStatusMapper`, with `DefaultOutcomeStatusMapper` as the overridable default) but left the abstraction itself in `Interlocutor.AspNetCore`. At the time that was reasonable - nothing but the HTTP integration needed it. Since then it's become clear the interface and its dispatch logic never actually needed HTTP: `IOutcomeStatusMapper.Map<TFailure>(TFailure failure)` and its return type, `OutcomeHttpMapping` (a status code and optional body), have zero ASP.NET Core types in their own signatures - only the *default implementation* (via `Microsoft.AspNetCore.Mvc.ProblemDetails`/`Microsoft.AspNetCore.Http.StatusCodes`) and the `ResultExtensions` consumers actually need ASP.NET Core. A non-HTTP consumer - a gRPC service, a CLI tool, a queue handler - wanting the same pluggable per-failure-case mapping ergonomic had nothing reachable to build on, and would have to hand-roll their own dispatch over the same failure cases `DefaultOutcomeStatusMapper` already recognized.
+
+Separately, two of the shipped default mappings were semantically backwards for what they represent (`ValidationErrors` at 422 rather than the more common 400; `Timeout` - a server-side condition - at 408, which means the *client* was slow). Fixing these was free while this code was already being restructured, but is a status-code decision, not an architectural one, and isn't the subject of this ADR.
+
+## Decision
+
+- **The transport-agnostic shape moves to `Interlocutor.Abstractions.Pipeline.Mapping`.** A new `IOutcomeMapper<TResult> { TResult Map<TFailure>(TFailure failure); }` and an `OutcomeMapperBase<TResult>` abstract class (carrying the same per-case dispatch `DefaultOutcomeStatusMapper` already implemented - `NotFound`, `Forbidden`, `Conflict`, `ValidationErrors`/`IValidationFailureCase`, `Failure`/`Failures`, `Cancelled`, `Timeout`, `RateLimited`, the generic `NotFound<TId>`, and an unrecognized-type fallback - each routed to its own protected abstract method) live in `Interlocutor.Abstractions`, matching the existing precedent of `IOutcomeCaseRegistry`, a structurally similar generic-dispatch-over-outcome-cases abstraction that already lives there rather than in `CommonKernel`.
+- **`Interlocutor.AspNetCore` keeps `IOutcomeStatusMapper` as a named HTTP specialization**, not a raw `IOutcomeMapper<OutcomeHttpMapping>` everywhere: `IOutcomeStatusMapper : IOutcomeMapper<OutcomeHttpMapping>`. `OutcomeHttpMapping` itself stays in `Interlocutor.AspNetCore` - it's HTTP vocabulary (a status code and body), meaningless outside HTTP, unlike the dispatch shape that wraps it.
+- **The default HTTP implementation is renamed to `DefaultHttpOutcomeStatusMapper`**, deriving from `OutcomeMapperBase<OutcomeHttpMapping>` and implementing `IOutcomeStatusMapper`, each case now a `protected override` of the base's abstract method rather than a self-contained `protected virtual` one. `Http` disambiguates it from the now-generic base; `Default` and the interface-name suffix preserve the naming convention used elsewhere in this codebase.
+- **Clean-break rename, no forwarding shims.** The library has never had a stable release (`1.0.0-dev`, no tags), so there is no compatibility surface to preserve.
+
+## Consequences
+
+- **Positive:** A non-HTTP consumer gets the same "derive from a base, override just the case you care about" ergonomic as ASP.NET Core consumers, by deriving from `OutcomeMapperBase<TResult>` with their own `TResult`, without taking a dependency on `Interlocutor.AspNetCore` at all.
+- **Positive:** The per-case dispatch logic (the `switch` in `Map<TFailure>`, and the reflective `NotFound<TId>` fallback) exists in exactly one place instead of being duplicated per `TResult`-specific mapper that might arise later.
+- **Positive:** `IOutcomeStatusMapper`'s public shape for existing ASP.NET Core consumers is unchanged in practice - it still has a `Map<TFailure>` method with the same signature, now inherited rather than self-declared; only `DefaultOutcomeStatusMapper`'s name changed.
+- **Negative:** `Type.GetMethod` on an interface only finds methods declared directly on that interface, not ones inherited from a base interface - `ResultExtensions`'s reflective catch-all path (used for the base-`IOperationOutcome` overloads) has to look up the `Map` method via `IOutcomeMapper<OutcomeHttpMapping>` rather than `IOutcomeStatusMapper`, even though every `IOutcomeStatusMapper` instance satisfies it. Mitigated with an explaining code comment at the lookup site, since the failure mode (a silent `null` `MethodInfo`) is not obvious from the interface hierarchy alone.
+- **Negative:** Every consumer's own `MyStatusMapper : DefaultOutcomeStatusMapper` subclass needs a one-line rename to `DefaultHttpOutcomeStatusMapper`. Acceptable given no stable release exists yet.
+
+## Alternatives considered
+
+- **Leave `IOutcomeStatusMapper` HTTP-only, let each non-HTTP domain define its own independent mapper interface and dispatch:** Rejected - defeats the purpose; a non-HTTP consumer would still have to copy the entire per-case `switch` and the `NotFound<TId>` reflective fallback by hand, exactly the duplication this decision exists to avoid.
+- **Put the generic abstraction in `Interlocutor.CommonKernel` instead of `Interlocutor.Abstractions`:** Rejected - `CommonKernel` is exclusively pure, zero-behavior data types (the `OperationOutcome<...>` unions and their case types); `IOutcomeMapper<TResult>`/`OutcomeMapperBase<TResult>` are behavior (dispatch logic), which is `Abstractions`'s job, and `IOutcomeCaseRegistry` already sets that precedent for this exact kind of generic-dispatch-over-outcome-cases contract.
+- **Keep `IOutcomeStatusMapper` as the only name, with `IOutcomeMapper<TResult>` as a type alias rather than a real base interface:** Rejected - C# has no first-class generic type-alias mechanism that would let a non-HTTP consumer express "the same contract, but for my `TResult`" without a real interface to instantiate against.

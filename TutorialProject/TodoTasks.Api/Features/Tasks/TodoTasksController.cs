@@ -73,7 +73,7 @@ public sealed class TodoTasksController(ISender sender, IRequestContextAccessor 
     /// two possible cases directly - a real, compiler-checked exhaustive switch over the union, rather than
     /// the convenience extension hiding it. This is the trade-off the extension exists to avoid repeating:
     /// manual matching gives this one action full control over its response shape (and would let it diverge
-    /// from <c>DefaultOutcomeStatusMapper</c>'s status-code choices, on purpose or by accident - here it
+    /// from <c>DefaultHttpOutcomeStatusMapper</c>'s status-code choices, on purpose or by accident - here it
     /// doesn't), whereas <see cref="ResultExtensions.ToActionResult{TSuccess,TFailure}"/> centralizes that
     /// mapping once for every other action in this project, this controller's own <see cref="Update"/>
     /// included.

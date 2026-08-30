@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="..\..\src\Interlocutor.AspNetCore\Interlocutor.AspNetCore.csproj" />
-    <!-- Test-only: proves DefaultOutcomeStatusMapper recognizes IValidationFailureCase via the interface,
+    <!-- Test-only: proves DefaultHttpOutcomeStatusMapper recognizes IValidationFailureCase via the interface,
          using Interlocutor.FluentValidation's FluentValidationErrors as a real second implementer. The
          architecture rule against Interlocutor.AspNetCore depending on Interlocutor.FluentValidation applies
          to the shipped src assembly, not this test project. -->

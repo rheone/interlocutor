@@ -99,7 +99,7 @@ public sealed class CreateTodoTaskEndpointTests : IClassFixture<TodoTasksApiFact
         );
 
         // Assert
-        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     /// <summary>Creates a real <see cref="User"/> and attaches the dev-auth header for it - the "create a user, then act as them" flow this project's caller identity depends on.</summary>

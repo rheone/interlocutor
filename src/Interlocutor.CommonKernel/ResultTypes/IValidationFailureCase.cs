@@ -15,9 +15,9 @@ using System.Collections.Generic;
 /// </para>
 /// <para>
 /// A consumer that recognizes this interface - such as
-/// <c>Interlocutor.AspNetCore.DefaultOutcomeStatusMapper</c> - can map any implementer to the same outcome
-/// (a 422 response, for example) without needing to know about every concrete validation failure type that
-/// exists or might exist in the future.
+/// <c>Interlocutor.AspNetCore.DefaultHttpOutcomeStatusMapper</c> - can map any implementer to the same outcome
+/// (a 400 Bad Request response, for example) without needing to know about every concrete validation failure
+/// type that exists or might exist in the future.
 /// </para>
 /// </remarks>
 public interface IValidationFailureCase

@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Interlocutor.Abstractions.Pipeline.Cases;
 using Interlocutor.Abstractions.Pipeline.Classifiers;
+using Interlocutor.Abstractions.Pipeline.Mapping;
 using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 using Microsoft.AspNetCore.Http;
@@ -18,11 +19,22 @@ using Microsoft.AspNetCore.Mvc;
 public static class ResultExtensions
 {
     /// <summary>The mapper applied when a caller doesn't supply one, matching the library's built-in status-code choices.</summary>
-    private static readonly IOutcomeStatusMapper DefaultMapper = new DefaultOutcomeStatusMapper();
+    private static readonly IOutcomeStatusMapper DefaultMapper = new DefaultHttpOutcomeStatusMapper();
 
-    /// <summary>The open <see cref="IOutcomeStatusMapper.Map{TFailure}"/> generic method definition, closed per failure <see cref="Type"/> below.</summary>
-    private static readonly MethodInfo MapMethodDefinition = typeof(IOutcomeStatusMapper).GetMethod(
-        nameof(IOutcomeStatusMapper.Map)
+    /// <summary>
+    /// The open <see cref="IOutcomeMapper{TResult}.Map{TFailure}"/> generic method definition, closed per
+    /// failure <see cref="Type"/> below.
+    /// </summary>
+    /// <remarks>
+    /// Looked up via <see cref="IOutcomeMapper{TResult}"/> - the interface that actually declares
+    /// <c>Map</c> - rather than <see cref="IOutcomeStatusMapper"/>: <see cref="Type.GetMethod(string)"/> on an
+    /// interface only finds members declared directly on that interface, not ones it inherits from a base
+    /// interface, so looking this up via <see cref="IOutcomeStatusMapper"/> would return <see langword="null"/>.
+    /// The resulting <see cref="MethodInfo"/> still invokes correctly against any <see cref="IOutcomeStatusMapper"/>
+    /// instance below, since every such instance implements <see cref="IOutcomeMapper{TResult}"/> too.
+    /// </remarks>
+    private static readonly MethodInfo MapMethodDefinition = typeof(IOutcomeMapper<OutcomeHttpMapping>).GetMethod(
+        nameof(IOutcomeMapper<OutcomeHttpMapping>.Map)
     )!;
 
     // The catch-all overloads below don't know the active case's type at compile time - only IOutcomeCaseRegistry
@@ -41,7 +53,7 @@ public static class ResultExtensions
     /// <param name="result">The result to convert.</param>
     /// <param name="mapper">
     /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
-    /// <see cref="DefaultOutcomeStatusMapper"/> is used, preserving today's status codes.
+    /// <see cref="DefaultHttpOutcomeStatusMapper"/> is used, preserving today's status codes.
     /// </param>
     /// <returns>An <see cref="OkObjectResult"/> on success, or the mapped error result on failure.</returns>
     public static IActionResult ToActionResult<TSuccess, TFailure>(
@@ -59,7 +71,7 @@ public static class ResultExtensions
     /// <param name="result">The result to convert.</param>
     /// <param name="mapper">
     /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
-    /// <see cref="DefaultOutcomeStatusMapper"/> is used, preserving today's status codes.
+    /// <see cref="DefaultHttpOutcomeStatusMapper"/> is used, preserving today's status codes.
     /// </param>
     /// <returns>A <see cref="NoContentResult"/> on success, or the mapped error result on failure.</returns>
     public static IActionResult ToActionResult(this OperationOutcome result, IOutcomeStatusMapper? mapper = null) =>
@@ -80,7 +92,7 @@ public static class ResultExtensions
     /// <param name="result">The result to convert.</param>
     /// <param name="mapper">
     /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
-    /// <see cref="DefaultOutcomeStatusMapper"/> is used, preserving today's status codes.
+    /// <see cref="DefaultHttpOutcomeStatusMapper"/> is used, preserving today's status codes.
     /// </param>
     /// <returns>An <see cref="OkObjectResult"/> on success, or the mapped error result on failure.</returns>
     public static IActionResult ToActionResult<TSuccess, TCase2, TCase3>(
@@ -106,7 +118,7 @@ public static class ResultExtensions
     /// <param name="result">The result to convert.</param>
     /// <param name="mapper">
     /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
-    /// <see cref="DefaultOutcomeStatusMapper"/> is used, preserving today's status codes.
+    /// <see cref="DefaultHttpOutcomeStatusMapper"/> is used, preserving today's status codes.
     /// </param>
     /// <returns>An <see cref="OkObjectResult"/> on success, or the mapped error result on failure.</returns>
     public static IActionResult ToActionResult<TSuccess, TCase2, TCase3, TCase4>(
@@ -134,7 +146,7 @@ public static class ResultExtensions
     /// <param name="result">The result to convert.</param>
     /// <param name="mapper">
     /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
-    /// <see cref="DefaultOutcomeStatusMapper"/> is used, preserving today's status codes.
+    /// <see cref="DefaultHttpOutcomeStatusMapper"/> is used, preserving today's status codes.
     /// </param>
     /// <returns>An <see cref="OkObjectResult"/> on success, or the mapped error result on failure.</returns>
     public static IActionResult ToActionResult<TSuccess, TCase2, TCase3, TCase4, TCase5>(
@@ -164,7 +176,7 @@ public static class ResultExtensions
     /// <param name="result">The result to convert.</param>
     /// <param name="mapper">
     /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
-    /// <see cref="DefaultOutcomeStatusMapper"/> is used, preserving today's status codes.
+    /// <see cref="DefaultHttpOutcomeStatusMapper"/> is used, preserving today's status codes.
     /// </param>
     /// <returns>An <see cref="OkObjectResult"/> on success, or the mapped error result on failure.</returns>
     public static IActionResult ToActionResult<TSuccess, TCase2, TCase3, TCase4, TCase5, TCase6>(
@@ -238,7 +250,7 @@ public static class ResultExtensions
     /// </param>
     /// <param name="mapper">
     /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
-    /// <see cref="DefaultOutcomeStatusMapper"/> is used, preserving the dedicated overloads' status codes.
+    /// <see cref="DefaultHttpOutcomeStatusMapper"/> is used, preserving the dedicated overloads' status codes.
     /// </param>
     /// <returns>An <see cref="OkObjectResult"/> on success, or the mapped error result on failure.</returns>
     public static IActionResult ToActionResult<TResponse>(
@@ -263,7 +275,7 @@ public static class ResultExtensions
     /// <param name="result">The result to convert.</param>
     /// <param name="mapper">
     /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
-    /// <see cref="DefaultOutcomeStatusMapper"/> is used - the same instance the controller-based
+    /// <see cref="DefaultHttpOutcomeStatusMapper"/> is used - the same instance the controller-based
     /// <see cref="ToActionResult{TSuccess, TFailure}(OperationOutcome{TSuccess, TFailure}, IOutcomeStatusMapper?)"/>
     /// defaults to, so the two paths cannot drift.
     /// </param>
@@ -283,7 +295,7 @@ public static class ResultExtensions
     /// <param name="result">The result to convert.</param>
     /// <param name="mapper">
     /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
-    /// <see cref="DefaultOutcomeStatusMapper"/> is used, preserving today's status codes.
+    /// <see cref="DefaultHttpOutcomeStatusMapper"/> is used, preserving today's status codes.
     /// </param>
     /// <returns>HTTP 204 No Content on success, or the mapped error result on failure.</returns>
     public static IResult ToMinimalApiResult(this OperationOutcome result, IOutcomeStatusMapper? mapper = null) =>
@@ -304,7 +316,7 @@ public static class ResultExtensions
     /// <param name="result">The result to convert.</param>
     /// <param name="mapper">
     /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
-    /// <see cref="DefaultOutcomeStatusMapper"/> is used, preserving today's status codes.
+    /// <see cref="DefaultHttpOutcomeStatusMapper"/> is used, preserving today's status codes.
     /// </param>
     /// <returns>An HTTP 200 with the success value on success, or the mapped error result on failure.</returns>
     public static IResult ToMinimalApiResult<TSuccess, TCase2, TCase3>(
@@ -330,7 +342,7 @@ public static class ResultExtensions
     /// <param name="result">The result to convert.</param>
     /// <param name="mapper">
     /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
-    /// <see cref="DefaultOutcomeStatusMapper"/> is used, preserving today's status codes.
+    /// <see cref="DefaultHttpOutcomeStatusMapper"/> is used, preserving today's status codes.
     /// </param>
     /// <returns>An HTTP 200 with the success value on success, or the mapped error result on failure.</returns>
     public static IResult ToMinimalApiResult<TSuccess, TCase2, TCase3, TCase4>(
@@ -358,7 +370,7 @@ public static class ResultExtensions
     /// <param name="result">The result to convert.</param>
     /// <param name="mapper">
     /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
-    /// <see cref="DefaultOutcomeStatusMapper"/> is used, preserving today's status codes.
+    /// <see cref="DefaultHttpOutcomeStatusMapper"/> is used, preserving today's status codes.
     /// </param>
     /// <returns>An HTTP 200 with the success value on success, or the mapped error result on failure.</returns>
     public static IResult ToMinimalApiResult<TSuccess, TCase2, TCase3, TCase4, TCase5>(
@@ -388,7 +400,7 @@ public static class ResultExtensions
     /// <param name="result">The result to convert.</param>
     /// <param name="mapper">
     /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
-    /// <see cref="DefaultOutcomeStatusMapper"/> is used, preserving today's status codes.
+    /// <see cref="DefaultHttpOutcomeStatusMapper"/> is used, preserving today's status codes.
     /// </param>
     /// <returns>An HTTP 200 with the success value on success, or the mapped error result on failure.</returns>
     public static IResult ToMinimalApiResult<TSuccess, TCase2, TCase3, TCase4, TCase5, TCase6>(
@@ -426,7 +438,7 @@ public static class ResultExtensions
     /// </param>
     /// <param name="mapper">
     /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
-    /// <see cref="DefaultOutcomeStatusMapper"/> is used, preserving the dedicated overloads' status codes.
+    /// <see cref="DefaultHttpOutcomeStatusMapper"/> is used, preserving the dedicated overloads' status codes.
     /// </param>
     /// <returns>An HTTP 200 with the success value on success, or the mapped error result on failure.</returns>
     public static IResult ToMinimalApiResult<TResponse>(
@@ -460,7 +472,7 @@ public static class ResultExtensions
     }
 
     /// <summary>
-    /// Invokes <see cref="IOutcomeStatusMapper.Map{TFailure}"/> reflectively for a failure value whose static
+    /// Invokes <see cref="IOutcomeMapper{TResult}.Map{TFailure}"/> reflectively for a failure value whose static
     /// type is unknown at compile time, caching the closed generic <see cref="MethodInfo"/> per <paramref name="failureType"/>.
     /// </summary>
     /// <param name="mapper">The mapper to invoke.</param>

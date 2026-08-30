@@ -395,7 +395,7 @@ public class ResultExtensionsTests
     }
 
     // The tests below exercise the 6-arity overload (one success + five failure cases), including the three
-    // case types (Cancelled, Timeout, RateLimited) that DefaultOutcomeStatusMapper only recently learned to
+    // case types (Cancelled, Timeout, RateLimited) that DefaultHttpOutcomeStatusMapper only recently learned to
     // map. Covers success and every failure-case branch for this arity, matching what the audit-followups/05
     // arity 3-6 overloads still lacked coverage for.
 

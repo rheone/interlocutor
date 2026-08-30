@@ -110,12 +110,12 @@ flowchart TD
 
 ## Custom HTTP Mapping
 
-`IOutcomeStatusMapper` maps one failure case value to an `OutcomeHttpMapping` (a status code and optional body) - it's never invoked for the success case, which `ToActionResult`/`ToMinimalApiResult` handle directly. Two ways to customize it:
+`IOutcomeStatusMapper` maps one failure case value to an `OutcomeHttpMapping` (a status code and optional body) - it's never invoked for the success case, which `ToActionResult`/`ToMinimalApiResult` handle directly. `IOutcomeStatusMapper` is itself the HTTP specialization of a transport-agnostic `IOutcomeMapper<TResult>` contract - see [Extensibility § Mapping failure cases to any output shape](extensibility.md#mapping-failure-cases-to-any-output-shape-ioutcomemappertresult) if you need the same pattern for a non-HTTP consumer. Two ways to customize the HTTP mapping:
 
-**Derive from `DefaultOutcomeStatusMapper` and override just the case you want to change** - each case is a separate protected virtual method:
+**Derive from `DefaultHttpOutcomeStatusMapper` and override just the case you want to change** - each case is a separate protected method, overridable one further level:
 
 ```csharp
-public class MyStatusMapper : DefaultOutcomeStatusMapper
+public class MyStatusMapper : DefaultHttpOutcomeStatusMapper
 {
     // Change only how ValidationErrors maps; every other case keeps the default behavior
     protected override OutcomeHttpMapping MapValidationErrors(ValidationErrors validationErrors) =>
@@ -143,7 +143,7 @@ public class MyStatusMapper : IOutcomeStatusMapper
         failure switch
         {
             CustomConflict conflict => new(StatusCodes.Status409Conflict, new { conflict.Code, conflict.Message }),
-            _ => new DefaultOutcomeStatusMapper().Map(failure),  // fall back to built-in cases
+            _ => new DefaultHttpOutcomeStatusMapper().Map(failure),  // fall back to built-in cases
         };
 }
 ```
