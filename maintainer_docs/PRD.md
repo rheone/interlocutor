@@ -153,13 +153,13 @@ Nothing is validated automatically. Three independent, opt-in mechanisms exist: 
 
 | Failure case | HTTP Status | Body |
 |---|---|---|
-| `ValidationErrors` | 422 Unprocessable Entity | `ProblemDetails` (messages joined, no per-field dictionary) |
+| `ValidationErrors` | 400 Bad Request | `ProblemDetails` (messages joined, no per-field dictionary) |
 | `NotFound` | 404 Not Found | Message, or none |
 | `Forbidden` | 403 Forbidden | None |
 | `Conflict` | 409 Conflict | `ProblemDetails` |
 | `Failure` / `Failures` | 400 Bad Request | `ProblemDetails` - deliberately not 500; a handler-chosen outcome, not a server fault |
 | `Cancelled` | 499 Client Closed Request | None |
-| `Timeout` | 408 Request Timeout | `ProblemDetails` |
+| `Timeout` | 504 Gateway Timeout | `ProblemDetails` - deliberately not 408, which means the client was slow, not the server |
 | `RateLimited` | 429 Too Many Requests | `ProblemDetails` |
 | Unrecognized custom type | 500 Internal Server Error | The failure value itself |
 

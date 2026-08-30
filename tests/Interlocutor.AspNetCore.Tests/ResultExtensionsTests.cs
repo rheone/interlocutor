@@ -82,7 +82,7 @@ public class ResultExtensionsTests
     }
 
     [Fact]
-    public void ToActionResult_WithValidationErrors_Returns422()
+    public void ToActionResult_WithValidationErrors_Returns400()
     {
         // Arrange
         var errors = new ValidationErrors(["Name is required", "Email is invalid"]);
@@ -93,9 +93,9 @@ public class ResultExtensionsTests
 
         // Assert
         var objectResult = Assert.IsType<ObjectResult>(actionResult);
-        Assert.Equal(StatusCodes.Status422UnprocessableEntity, objectResult.StatusCode);
+        Assert.Equal(StatusCodes.Status400BadRequest, objectResult.StatusCode);
         var problemDetails = Assert.IsType<ProblemDetails>(objectResult.Value);
-        Assert.Equal(StatusCodes.Status422UnprocessableEntity, problemDetails.Status);
+        Assert.Equal(StatusCodes.Status400BadRequest, problemDetails.Status);
         Assert.Contains("Name is required", problemDetails.Detail);
         Assert.Contains("Email is invalid", problemDetails.Detail);
     }
@@ -233,7 +233,7 @@ public class ResultExtensionsTests
     }
 
     [Fact]
-    public void ToActionResult_ThreeArity_WithValidationErrors_Returns422()
+    public void ToActionResult_ThreeArity_WithValidationErrors_Returns400()
     {
         // Arrange
         var errors = new ValidationErrors(["Name is required"]);
@@ -244,7 +244,7 @@ public class ResultExtensionsTests
 
         // Assert
         var objectResult = Assert.IsType<ObjectResult>(actionResult);
-        Assert.Equal(StatusCodes.Status422UnprocessableEntity, objectResult.StatusCode);
+        Assert.Equal(StatusCodes.Status400BadRequest, objectResult.StatusCode);
         var problemDetails = Assert.IsType<ProblemDetails>(objectResult.Value);
         Assert.Contains("Name is required", problemDetails.Detail);
     }
@@ -297,7 +297,7 @@ public class ResultExtensionsTests
     }
 
     [Fact]
-    public void ToActionResult_FourArity_WithValidationErrors_Returns422()
+    public void ToActionResult_FourArity_WithValidationErrors_Returns400()
     {
         // Arrange
         var errors = new ValidationErrors(["Name is required"]);
@@ -308,7 +308,7 @@ public class ResultExtensionsTests
 
         // Assert
         var objectResult = Assert.IsType<ObjectResult>(actionResult);
-        Assert.Equal(StatusCodes.Status422UnprocessableEntity, objectResult.StatusCode);
+        Assert.Equal(StatusCodes.Status400BadRequest, objectResult.StatusCode);
         var problemDetails = Assert.IsType<ProblemDetails>(objectResult.Value);
         Assert.Contains("Name is required", problemDetails.Detail);
     }
@@ -377,7 +377,7 @@ public class ResultExtensionsTests
     }
 
     [Fact]
-    public void ToActionResult_FiveArity_WithValidationErrors_Returns422()
+    public void ToActionResult_FiveArity_WithValidationErrors_Returns400()
     {
         // Arrange
         var errors = new ValidationErrors(["Name is required", "Email is invalid"]);
@@ -388,7 +388,7 @@ public class ResultExtensionsTests
 
         // Assert
         var objectResult = Assert.IsType<ObjectResult>(actionResult);
-        Assert.Equal(StatusCodes.Status422UnprocessableEntity, objectResult.StatusCode);
+        Assert.Equal(StatusCodes.Status400BadRequest, objectResult.StatusCode);
         var problemDetails = Assert.IsType<ProblemDetails>(objectResult.Value);
         Assert.Contains("Name is required", problemDetails.Detail);
         Assert.Contains("Email is invalid", problemDetails.Detail);
@@ -461,7 +461,7 @@ public class ResultExtensionsTests
     }
 
     [Fact]
-    public void ToActionResult_SixArity_WithTimeout_Returns408()
+    public void ToActionResult_SixArity_WithTimeout_Returns504()
     {
         // Arrange
         OperationOutcome<string, NotFound, Forbidden, Cancelled, Timeout, RateLimited> result = new(
@@ -473,7 +473,7 @@ public class ResultExtensionsTests
 
         // Assert
         var objectResult = Assert.IsType<ObjectResult>(actionResult);
-        Assert.Equal(StatusCodes.Status408RequestTimeout, objectResult.StatusCode);
+        Assert.Equal(StatusCodes.Status504GatewayTimeout, objectResult.StatusCode);
         var problemDetails = Assert.IsType<ProblemDetails>(objectResult.Value);
         Assert.Equal("downstream slow", problemDetails.Detail);
     }

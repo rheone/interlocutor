@@ -68,7 +68,7 @@ public class DefaultOutcomeStatusMapperTests
     }
 
     [Fact]
-    public void Map_WithValidationErrors_Returns422()
+    public void Map_WithValidationErrors_Returns400()
     {
         // Arrange
         var validationErrors = new ValidationErrors("required");
@@ -77,11 +77,11 @@ public class DefaultOutcomeStatusMapperTests
         var mapping = this.mapper.Map(validationErrors);
 
         // Assert
-        Assert.Equal(StatusCodes.Status422UnprocessableEntity, mapping.StatusCode);
+        Assert.Equal(StatusCodes.Status400BadRequest, mapping.StatusCode);
     }
 
     [Fact]
-    public void Map_WithFluentValidationErrors_Returns422()
+    public void Map_WithFluentValidationErrors_Returns400()
     {
         // Arrange - a real second IValidationFailureCase implementer, not the library's own ValidationErrors.
         var fluentValidationErrors = new FluentValidationErrors([
@@ -92,13 +92,13 @@ public class DefaultOutcomeStatusMapperTests
         var mapping = this.mapper.Map(fluentValidationErrors);
 
         // Assert
-        Assert.Equal(StatusCodes.Status422UnprocessableEntity, mapping.StatusCode);
+        Assert.Equal(StatusCodes.Status400BadRequest, mapping.StatusCode);
         var problemDetails = Assert.IsType<ProblemDetails>(mapping.Body);
         Assert.Equal("'Email' is not a valid email address.", problemDetails.Detail);
     }
 
     [Fact]
-    public void Map_WithHandRolledValidationFailureCase_Returns422()
+    public void Map_WithHandRolledValidationFailureCase_Returns400()
     {
         // Arrange - proves DefaultOutcomeStatusMapper recognizes IValidationFailureCase via the interface
         // itself, not a type-specific special case for the library's own or FluentValidation's types.
@@ -108,7 +108,7 @@ public class DefaultOutcomeStatusMapperTests
         var mapping = this.mapper.Map(customCase);
 
         // Assert
-        Assert.Equal(StatusCodes.Status422UnprocessableEntity, mapping.StatusCode);
+        Assert.Equal(StatusCodes.Status400BadRequest, mapping.StatusCode);
         var problemDetails = Assert.IsType<ProblemDetails>(mapping.Body);
         Assert.Equal("custom rule failed", problemDetails.Detail);
     }
@@ -124,7 +124,7 @@ public class DefaultOutcomeStatusMapperTests
         var mapping = this.mapper.Map(validationErrors);
 
         // Assert
-        Assert.Equal(StatusCodes.Status422UnprocessableEntity, mapping.StatusCode);
+        Assert.Equal(StatusCodes.Status400BadRequest, mapping.StatusCode);
         var problemDetails = Assert.IsType<ProblemDetails>(mapping.Body);
         Assert.Equal("Validation Failed", problemDetails.Title);
         Assert.Equal("required", problemDetails.Detail);
@@ -145,7 +145,7 @@ public class DefaultOutcomeStatusMapperTests
     }
 
     [Fact]
-    public void Map_WithTimeout_Returns408()
+    public void Map_WithTimeout_Returns504()
     {
         // Arrange
         var timeout = new Timeout(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2), "downstream slow");
@@ -154,7 +154,7 @@ public class DefaultOutcomeStatusMapperTests
         var mapping = this.mapper.Map(timeout);
 
         // Assert
-        Assert.Equal(StatusCodes.Status408RequestTimeout, mapping.StatusCode);
+        Assert.Equal(StatusCodes.Status504GatewayTimeout, mapping.StatusCode);
         var problemDetails = Assert.IsType<ProblemDetails>(mapping.Body);
         Assert.Equal("downstream slow", problemDetails.Detail);
     }
@@ -292,7 +292,7 @@ public class DefaultOutcomeStatusMapperTests
     }
 
     [Fact]
-    public void Map_AcrossFiveArityOutcome_WithValidationErrorsCase_Returns422()
+    public void Map_AcrossFiveArityOutcome_WithValidationErrorsCase_Returns400()
     {
         // Arrange
         OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationErrors> outcome = new(
@@ -303,7 +303,7 @@ public class DefaultOutcomeStatusMapperTests
         var mapping = this.mapper.Map(outcome.GetValue()!);
 
         // Assert
-        Assert.Equal(StatusCodes.Status422UnprocessableEntity, mapping.StatusCode);
+        Assert.Equal(StatusCodes.Status400BadRequest, mapping.StatusCode);
     }
 
     [Fact]

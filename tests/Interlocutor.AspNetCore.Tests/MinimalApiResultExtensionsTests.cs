@@ -77,7 +77,7 @@ public class MinimalApiResultExtensionsTests
     }
 
     [Fact]
-    public void ToMinimalApiResult_WithValidationErrors_Returns422()
+    public void ToMinimalApiResult_WithValidationErrors_Returns400()
     {
         // Arrange
         var errors = new ValidationErrors(["Name is required", "Email is invalid"]);
@@ -87,7 +87,7 @@ public class MinimalApiResultExtensionsTests
         var minimalResult = result.ToMinimalApiResult();
 
         // Assert
-        Assert.Equal(StatusCodes.Status422UnprocessableEntity, GetStatusCode(minimalResult));
+        Assert.Equal(StatusCodes.Status400BadRequest, GetStatusCode(minimalResult));
     }
 
     [Fact]
@@ -206,7 +206,7 @@ public class MinimalApiResultExtensionsTests
     }
 
     [Fact]
-    public void ToMinimalApiResult_ThreeArity_WithValidationErrors_Returns422()
+    public void ToMinimalApiResult_ThreeArity_WithValidationErrors_Returns400()
     {
         // Arrange
         var errors = new ValidationErrors(["Name is required"]);
@@ -216,7 +216,7 @@ public class MinimalApiResultExtensionsTests
         var minimalResult = result.ToMinimalApiResult();
 
         // Assert
-        Assert.Equal(StatusCodes.Status422UnprocessableEntity, GetStatusCode(minimalResult));
+        Assert.Equal(StatusCodes.Status400BadRequest, GetStatusCode(minimalResult));
     }
 
     // Auto Generated, verify expected behavior: the arity-4 ToMinimalApiResult overload (one success + three
@@ -263,7 +263,7 @@ public class MinimalApiResultExtensionsTests
     }
 
     [Fact]
-    public void ToMinimalApiResult_FourArity_WithValidationErrors_Returns422()
+    public void ToMinimalApiResult_FourArity_WithValidationErrors_Returns400()
     {
         // Arrange
         var errors = new ValidationErrors(["Name is required"]);
@@ -273,7 +273,7 @@ public class MinimalApiResultExtensionsTests
         var minimalResult = result.ToMinimalApiResult();
 
         // Assert
-        Assert.Equal(StatusCodes.Status422UnprocessableEntity, GetStatusCode(minimalResult));
+        Assert.Equal(StatusCodes.Status400BadRequest, GetStatusCode(minimalResult));
     }
 
     [Fact]
@@ -333,7 +333,7 @@ public class MinimalApiResultExtensionsTests
     }
 
     [Fact]
-    public void ToMinimalApiResult_FiveArity_WithValidationErrors_Returns422()
+    public void ToMinimalApiResult_FiveArity_WithValidationErrors_Returns400()
     {
         // Arrange
         var errors = new ValidationErrors(["Name is required", "Email is invalid"]);
@@ -343,7 +343,7 @@ public class MinimalApiResultExtensionsTests
         var minimalResult = result.ToMinimalApiResult();
 
         // Assert
-        Assert.Equal(StatusCodes.Status422UnprocessableEntity, GetStatusCode(minimalResult));
+        Assert.Equal(StatusCodes.Status400BadRequest, GetStatusCode(minimalResult));
     }
 
     /// <summary>

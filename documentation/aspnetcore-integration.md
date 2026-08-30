@@ -80,14 +80,14 @@ flowchart TD
     IsSuccess -->|"success, has payload"| Ok200["200 OK<br/>body: success payload (JSON)"]
     IsSuccess -->|"success, unit Success"| NoContent204["204 No Content"]
     IsSuccess -->|"failure - IOutcomeStatusMapper.Map(failure)"| CaseType{"Failure case type"}
-    CaseType -->|"ValidationErrors"| Unprocessable422["422 Unprocessable Entity<br/>ProblemDetails"]
-    CaseType -->|"any other IValidationFailureCase<br/>(e.g. FluentValidationErrors)"| Unprocessable422
+    CaseType -->|"ValidationErrors"| Bad400Validation["400 Bad Request<br/>ProblemDetails"]
+    CaseType -->|"any other IValidationFailureCase<br/>(e.g. FluentValidationErrors)"| Bad400Validation
     CaseType -->|"NotFound / NotFound&lt;TId&gt;"| NotFound404["404 Not Found<br/>body: message or none"]
     CaseType -->|"Forbidden"| Forbidden403["403 Forbidden<br/>no body"]
     CaseType -->|"Conflict"| Conflict409["409 Conflict<br/>ProblemDetails"]
     CaseType -->|"Failure / Failures"| Bad400["400 Bad Request<br/>ProblemDetails"]
     CaseType -->|"Cancelled"| ClientClosed499["499 Client Closed Request<br/>no body"]
-    CaseType -->|"Timeout"| Timeout408["408 Request Timeout<br/>ProblemDetails"]
+    CaseType -->|"Timeout"| Timeout504["504 Gateway Timeout<br/>ProblemDetails"]
     CaseType -->|"RateLimited"| TooMany429["429 Too Many Requests<br/>ProblemDetails"]
     CaseType -->|"unrecognized (a custom failure type<br/>the default mapper wasn't taught)"| Error500["500 Internal Server Error<br/>body: the failure value itself"]
 ```
@@ -96,15 +96,15 @@ flowchart TD
 |--------------|-------------|------|---------|
 | Success (payload) | 200 OK | The success payload (JSON) | For `OperationOutcome<TSuccess, ...>`, `TSuccess` is serialized. |
 | Success (unit) | 204 No Content | None | For the non-generic `OperationOutcome`. |
-| ValidationErrors | 422 Unprocessable Entity | `ProblemDetails` | `Detail` is every message joined with `"; "` - no per-field errors dictionary, since `ValidationError` carries a message and optional code, not a field name. |
-| Any other [`IValidationFailureCase`](glossary.md#result-types) implementer (e.g. `FluentValidationErrors`) | 422 Unprocessable Entity | `ProblemDetails` | Recognized via the interface, not a type-specific branch - a consumer's own validation-shaped failure case maps the same way without a mapper override. `Detail` is every `Messages` entry joined with `"; "`. |
+| ValidationErrors | 400 Bad Request | `ProblemDetails` | `Detail` is every message joined with `"; "` - no per-field errors dictionary, since `ValidationError` carries a message and optional code, not a field name. |
+| Any other [`IValidationFailureCase`](glossary.md#result-types) implementer (e.g. `FluentValidationErrors`) | 400 Bad Request | `ProblemDetails` | Recognized via the interface, not a type-specific branch - a consumer's own validation-shaped failure case maps the same way without a mapper override. `Detail` is every `Messages` entry joined with `"; "`. |
 | NotFound | 404 Not Found | The message, or none | `NotFound<TId>` (the generic form) maps the same way via a separate reflective path. |
 | Forbidden | 403 Forbidden | None | Reason is never sent to the client. |
 | Conflict | 409 Conflict | `ProblemDetails` | `Title` is the conflict code, `Detail` is the message. |
 | Failure | 400 Bad Request | `ProblemDetails` | Deliberately not 500 - `Failure` is an outcome a handler chose to report, not a server fault. An unhandled exception still reaches ASP.NET Core's exception middleware as 500, independently of this mapping. |
 | Failures (aggregate) | 400 Bad Request | `ProblemDetails` | `Detail` is every reason joined with `"; "`. |
 | Cancelled | 499 Client Closed Request | None | Not 400 - the caller withdrew interest before the operation completed, which is neither a malformed request nor a domain failure. |
-| Timeout | 408 Request Timeout | `ProblemDetails` | `Detail` is the message, or `Budget`/`Elapsed` if none was set. |
+| Timeout | 504 Gateway Timeout | `ProblemDetails` | Not 408 - 408 means the *client* was slow sending its request; this is the server exceeding its own time budget waiting on an operation, which 504 represents. `Detail` is the message, or `Budget`/`Elapsed` if none was set. |
 | RateLimited | 429 Too Many Requests | `ProblemDetails` | `Detail` is the message, or the `LimitKey`. Does not set a `Retry-After` header - override `MapRateLimited` to add one. |
 | Anything else (a custom failure type) | 500 Internal Server Error | The failure value itself | The default mapper doesn't know this type - supply your own `IOutcomeStatusMapper`, or override `MapUnrecognized`, to map it precisely. |
 
@@ -178,12 +178,12 @@ var result = await mediator.Send(new CreateUser("Alice", "alice@example.com"));
 // Command with invalid data
 var result = await mediator.Send(new CreateUser("", "not-an-email"));
 
-// Response: 422 Unprocessable Entity
+// Response: 400 Bad Request
 // Body:
 // {
 //   "title": "Validation Failed",
 //   "detail": "'Name' must not be empty; 'Email' is not a valid email address.",
-//   "status": 422
+//   "status": 400
 // }
 ```
 

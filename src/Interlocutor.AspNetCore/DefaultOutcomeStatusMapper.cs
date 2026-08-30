@@ -35,7 +35,7 @@ public class DefaultOutcomeStatusMapper : IOutcomeStatusMapper
             _ => this.MapNotFoundGenericOrUnrecognized(failure),
         };
 
-    /// <summary>Maps a <see cref="ValidationErrors"/> aggregate to 422 Unprocessable Entity with all messages.</summary>
+    /// <summary>Maps a <see cref="ValidationErrors"/> aggregate to 400 Bad Request with all messages.</summary>
     /// <param name="validationErrors">The validation failures to map.</param>
     /// <returns>The mapped status code and <see cref="ProblemDetails"/> body.</returns>
     protected virtual OutcomeHttpMapping MapValidationErrors(ValidationErrors validationErrors) =>
@@ -43,7 +43,7 @@ public class DefaultOutcomeStatusMapper : IOutcomeStatusMapper
 
     /// <summary>
     /// Maps any <see cref="IValidationFailureCase"/> implementer other than <see cref="ValidationErrors"/>
-    /// itself to 422 Unprocessable Entity with its messages - notably
+    /// itself to 400 Bad Request with its messages - notably
     /// <c>Interlocutor.FluentValidation.FluentValidationErrors</c>, and any future implementer this mapper
     /// was never taught about directly.
     /// </summary>
@@ -58,20 +58,27 @@ public class DefaultOutcomeStatusMapper : IOutcomeStatusMapper
         MapValidationMessages(validationFailureCase.Messages);
 
     /// <summary>
-    /// Builds the 422 Unprocessable Entity mapping shared by <see cref="MapValidationErrors"/> and
+    /// Builds the 400 Bad Request mapping shared by <see cref="MapValidationErrors"/> and
     /// <see cref="MapValidationFailureCase"/> - both produce an identical <see cref="ProblemDetails"/> shape,
     /// differing only in where their messages come from.
     /// </summary>
     /// <param name="messages">The validation failure messages to join into the body's <c>Detail</c>.</param>
     /// <returns>The mapped status code and <see cref="ProblemDetails"/> body.</returns>
+    /// <remarks>
+    /// 400, not 422: 422 Unprocessable Entity is a narrower WebDAV-originated code for a syntactically valid
+    /// but semantically un-processable request, and most HTTP clients/tooling only special-case 400. A prior
+    /// version of this mapper used 422 for validation failures specifically; this uses the same 400 Bad
+    /// Request every other malformed-request-shaped failure in this mapper already uses, so a caller doesn't
+    /// need to special-case validation to detect "the request was rejected."
+    /// </remarks>
     private static OutcomeHttpMapping MapValidationMessages(IReadOnlyList<string> messages) =>
         new(
-            StatusCodes.Status422UnprocessableEntity,
+            StatusCodes.Status400BadRequest,
             new ProblemDetails
             {
                 Title = "Validation Failed",
                 Detail = string.Join("; ", messages),
-                Status = StatusCodes.Status422UnprocessableEntity,
+                Status = StatusCodes.Status400BadRequest,
             }
         );
 
@@ -109,17 +116,24 @@ public class DefaultOutcomeStatusMapper : IOutcomeStatusMapper
     /// </remarks>
     protected virtual OutcomeHttpMapping MapCancelled(Cancelled cancelled) => new(StatusCodes.Status499ClientClosedRequest);
 
-    /// <summary>Maps a <see cref="Timeout"/> case to a request-timeout status with its budget and elapsed time.</summary>
+    /// <summary>Maps a <see cref="Timeout"/> case to a gateway-timeout status with its budget and elapsed time.</summary>
     /// <param name="timeout">The timeout failure to map.</param>
     /// <returns>The mapped status code and <see cref="ProblemDetails"/> body.</returns>
+    /// <remarks>
+    /// 504 Gateway Timeout, not 408 Request Timeout: 408 means the <em>client</em> took too long sending its
+    /// request, which is not what <see cref="Timeout"/> represents - it's the server exceeding its own time
+    /// budget waiting on an operation (a downstream call, a handler). 504 is the code for exactly that: an
+    /// upstream/dependency the server was waiting on didn't respond within budget. A prior version of this
+    /// mapper used 408 here, which told the caller they themselves were slow when they weren't.
+    /// </remarks>
     protected virtual OutcomeHttpMapping MapTimeout(Timeout timeout) =>
         new(
-            StatusCodes.Status408RequestTimeout,
+            StatusCodes.Status504GatewayTimeout,
             new ProblemDetails
             {
                 Title = "Timeout",
                 Detail = timeout.Message ?? $"Budget={timeout.Budget}, Elapsed={timeout.Elapsed}",
-                Status = StatusCodes.Status408RequestTimeout,
+                Status = StatusCodes.Status504GatewayTimeout,
             }
         );
 
