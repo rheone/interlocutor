@@ -1,6 +1,7 @@
 namespace Interlocutor.AspNetCore;
 
-using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using Interlocutor.Abstractions.Pipeline.Mapping;
 using Interlocutor.CommonKernel.ResultTypes;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -8,85 +9,102 @@ using Microsoft.AspNetCore.Mvc;
 /// <summary>
 /// The <see cref="IOutcomeStatusMapper"/> applied by <see cref="ResultExtensions"/> when a consumer registers
 /// none of their own. Recognizes the built-in <c>Interlocutor.CommonKernel.ResultTypes</c> failure cases and
-/// their aggregate forms; anything else - including a consumer's own custom failure type - falls back to
-/// <see cref="MapUnrecognized{TFailure}"/>.
+/// their aggregate forms via <see cref="OutcomeMapperBase{TResult}"/>'s dispatch; anything else - including a
+/// consumer's own custom failure type - falls back to <see cref="MapUnrecognized{TFailure}"/>.
 /// </summary>
 /// <remarks>
-/// Each case is a protected virtual method, so a consumer who wants to change how one case maps while keeping
-/// the rest can derive from this class and override just that method, rather than reimplementing
-/// <see cref="IOutcomeStatusMapper"/> from scratch.
+/// Each case is a protected override of an <see cref="OutcomeMapperBase{TResult}"/> abstract method, so a
+/// consumer who wants to change how one case maps while keeping the rest can derive from this class and
+/// override just that method, rather than reimplementing <see cref="IOutcomeStatusMapper"/> from scratch.
 /// </remarks>
-public class DefaultOutcomeStatusMapper : IOutcomeStatusMapper
+public class DefaultHttpOutcomeStatusMapper : OutcomeMapperBase<OutcomeHttpMapping>, IOutcomeStatusMapper
 {
-    /// <inheritdoc/>
-    public OutcomeHttpMapping Map<TFailure>(TFailure failure) =>
-        failure switch
-        {
-            ValidationErrors validationErrors => this.MapValidationErrors(validationErrors),
-            IValidationFailureCase validationFailureCase => this.MapValidationFailureCase(validationFailureCase),
-            Forbidden forbidden => this.MapForbidden(forbidden),
-            IForbiddenFailureCase forbiddenFailureCase => this.MapForbiddenFailureCase(forbiddenFailureCase),
-            Conflict conflict => this.MapConflict(conflict),
-            Failures failures => this.MapFailures(failures),
-            Failure singleFailure => this.MapFailure(singleFailure),
-            NotFound notFound => this.MapNotFound(notFound),
-            Cancelled cancelled => this.MapCancelled(cancelled),
-            Timeout timeout => this.MapTimeout(timeout),
-            ITimeoutFailureCase timeoutFailureCase => this.MapTimeoutFailureCase(timeoutFailureCase),
-            RateLimited rateLimited => this.MapRateLimited(rateLimited),
-            IRateLimitedFailureCase rateLimitedFailureCase => this.MapRateLimitedFailureCase(rateLimitedFailureCase),
-            _ => this.MapNotFoundGenericOrUnrecognized(failure),
-        };
-
-    /// <summary>Maps a <see cref="ValidationErrors"/> aggregate to 422 Unprocessable Entity with all messages.</summary>
+    /// <summary>Maps a <see cref="ValidationErrors"/> aggregate to 400 Bad Request with all messages.</summary>
     /// <param name="validationErrors">The validation failures to map.</param>
     /// <returns>The mapped status code and <see cref="ProblemDetails"/> body.</returns>
-    protected virtual OutcomeHttpMapping MapValidationErrors(ValidationErrors validationErrors) =>
+    protected override OutcomeHttpMapping MapValidationErrors(ValidationErrors validationErrors) =>
         MapValidationMessages(validationErrors.Messages);
 
     /// <summary>
     /// Maps any <see cref="IValidationFailureCase"/> implementer other than <see cref="ValidationErrors"/>
-    /// itself to 422 Unprocessable Entity with its messages - notably
+    /// itself to 400 Bad Request with its messages - notably
     /// <c>Interlocutor.FluentValidation.FluentValidationErrors</c>, and any future implementer this mapper
     /// was never taught about directly.
     /// </summary>
     /// <param name="validationFailureCase">The validation failure to map.</param>
     /// <returns>The mapped status code and <see cref="ProblemDetails"/> body.</returns>
     /// <remarks>
-    /// Ordered after the exact <see cref="ValidationErrors"/> branch in <see cref="Map{TFailure}"/>, so a
-    /// plain <see cref="ValidationErrors"/> failure still resolves to <see cref="MapValidationErrors"/>
+    /// Ordered after the exact <see cref="ValidationErrors"/> branch in <see cref="OutcomeMapperBase{TResult}.Map{TFailure}"/>,
+    /// so a plain <see cref="ValidationErrors"/> failure still resolves to <see cref="MapValidationErrors"/>
     /// unchanged - this branch only ever runs for some other <see cref="IValidationFailureCase"/> implementer.
+    /// Delegates to <see cref="MapFieldValidationFailureCase"/> when the failure additionally implements
+    /// <see cref="IFieldValidationFailureCase"/>, for a field-keyed body instead of a flat one.
     /// </remarks>
-    protected virtual OutcomeHttpMapping MapValidationFailureCase(IValidationFailureCase validationFailureCase) =>
-        MapValidationMessages(validationFailureCase.Messages);
+    protected override OutcomeHttpMapping MapValidationFailureCase(IValidationFailureCase validationFailureCase) =>
+        validationFailureCase is IFieldValidationFailureCase fieldValidationFailureCase
+            ? this.MapFieldValidationFailureCase(fieldValidationFailureCase)
+            : MapValidationMessages(validationFailureCase.Messages);
 
     /// <summary>
-    /// Builds the 422 Unprocessable Entity mapping shared by <see cref="MapValidationErrors"/> and
-    /// <see cref="MapValidationFailureCase"/> - both produce an identical <see cref="ProblemDetails"/> shape,
-    /// differing only in where their messages come from.
+    /// Maps an <see cref="IFieldValidationFailureCase"/> implementer to 400 Bad Request with a field-keyed
+    /// <see cref="ValidationProblemDetails"/> body, grouped by property name.
+    /// </summary>
+    /// <param name="fieldValidationFailureCase">The field-attributed validation failure to map.</param>
+    /// <returns>The mapped status code and <see cref="ValidationProblemDetails"/> body.</returns>
+    /// <remarks>
+    /// A failure entry with no property name (<see cref="FieldValidationMessage.PropertyName"/> is
+    /// <see langword="null"/>) is grouped under the empty-string key, matching
+    /// <see cref="ValidationProblemDetails"/>'s own convention for a whole-object/cross-field rule. Reached
+    /// only from <see cref="MapValidationFailureCase"/> - <see cref="ValidationErrors"/> never reaches this
+    /// method, since its <see cref="ValidationError"/> entries carry no property name to key by.
+    /// </remarks>
+    protected virtual OutcomeHttpMapping MapFieldValidationFailureCase(IFieldValidationFailureCase fieldValidationFailureCase)
+    {
+        var errors = fieldValidationFailureCase
+            .FieldMessages.GroupBy(fieldMessage => fieldMessage.PropertyName ?? string.Empty)
+            .ToDictionary(group => group.Key, group => group.Select(fieldMessage => fieldMessage.Message).ToArray());
+
+        return new(
+            StatusCodes.Status400BadRequest,
+            new ValidationProblemDetails(errors) { Title = "Validation Failed", Status = StatusCodes.Status400BadRequest }
+        );
+    }
+
+    /// <summary>
+    /// Builds the 400 Bad Request mapping shared by <see cref="MapValidationErrors"/> and
+    /// <see cref="MapValidationFailureCase"/> (for a failure with no field data) - both produce an identical
+    /// <see cref="ProblemDetails"/> shape, differing only in where their messages come from.
     /// </summary>
     /// <param name="messages">The validation failure messages to join into the body's <c>Detail</c>.</param>
     /// <returns>The mapped status code and <see cref="ProblemDetails"/> body.</returns>
+    /// <remarks>
+    /// 400, not 422: 422 Unprocessable Entity is a narrower WebDAV-originated code for a syntactically valid
+    /// but semantically un-processable request, and most HTTP clients/tooling only special-case 400. A prior
+    /// version of this mapper used 422 for validation failures specifically; this uses the same 400 Bad
+    /// Request every other malformed-request-shaped failure in this mapper already uses, so a caller doesn't
+    /// need to special-case validation to detect "the request was rejected."
+    /// </remarks>
     private static OutcomeHttpMapping MapValidationMessages(IReadOnlyList<string> messages) =>
         new(
-            StatusCodes.Status422UnprocessableEntity,
+            StatusCodes.Status400BadRequest,
             new ProblemDetails
             {
                 Title = "Validation Failed",
                 Detail = string.Join("; ", messages),
-                Status = StatusCodes.Status422UnprocessableEntity,
+                Status = StatusCodes.Status400BadRequest,
             }
         );
 
     /// <summary>Maps a <see cref="NotFound"/> singular case to 404 Not Found.</summary>
     /// <param name="notFound">The not-found failure to map.</param>
     /// <returns>The mapped status code and message body.</returns>
-    protected virtual OutcomeHttpMapping MapNotFound(NotFound notFound) => new(StatusCodes.Status404NotFound, notFound.Message);
+    protected override OutcomeHttpMapping MapNotFound(NotFound notFound) =>
+        new(StatusCodes.Status404NotFound, notFound.Message);
 
     /// <summary>Maps a <see cref="Forbidden"/> case to 403 Forbidden, with no body (the reason is not exposed to callers).</summary>
     /// <param name="forbidden">The forbidden failure to map.</param>
     /// <returns>The mapped status code, with no body.</returns>
-    protected virtual OutcomeHttpMapping MapForbidden(Forbidden forbidden) => new(StatusCodes.Status403Forbidden);
+    protected override OutcomeHttpMapping MapForbidden(Forbidden forbidden) => new(StatusCodes.Status403Forbidden);
 
     /// <summary>
     /// Maps any <see cref="IForbiddenFailureCase"/> implementer other than <see cref="Forbidden"/> itself to
@@ -96,17 +114,17 @@ public class DefaultOutcomeStatusMapper : IOutcomeStatusMapper
     /// <param name="forbiddenFailureCase">The forbidden failure to map.</param>
     /// <returns>The mapped status code, with no body.</returns>
     /// <remarks>
-    /// Ordered after the exact <see cref="Forbidden"/> branch in <see cref="Map{TFailure}"/>, so a plain
-    /// <see cref="Forbidden"/> failure still resolves to <see cref="MapForbidden"/> unchanged - this branch
-    /// only ever runs for some other <see cref="IForbiddenFailureCase"/> implementer.
+    /// Ordered after the exact <see cref="Forbidden"/> branch in <see cref="OutcomeMapperBase{TResult}.Map{TFailure}"/>,
+    /// so a plain <see cref="Forbidden"/> failure still resolves to <see cref="MapForbidden"/> unchanged -
+    /// this branch only ever runs for some other <see cref="IForbiddenFailureCase"/> implementer.
     /// </remarks>
-    protected virtual OutcomeHttpMapping MapForbiddenFailureCase(IForbiddenFailureCase forbiddenFailureCase) =>
+    protected override OutcomeHttpMapping MapForbiddenFailureCase(IForbiddenFailureCase forbiddenFailureCase) =>
         new(StatusCodes.Status403Forbidden);
 
     /// <summary>Maps a <see cref="Conflict"/> case to 409 Conflict with its code and message.</summary>
     /// <param name="conflict">The conflict failure to map.</param>
     /// <returns>The mapped status code and <see cref="ProblemDetails"/> body.</returns>
-    protected virtual OutcomeHttpMapping MapConflict(Conflict conflict) =>
+    protected override OutcomeHttpMapping MapConflict(Conflict conflict) =>
         new(
             StatusCodes.Status409Conflict,
             new ProblemDetails
@@ -125,45 +143,53 @@ public class DefaultOutcomeStatusMapper : IOutcomeStatusMapper
     /// nor a domain failure - the caller withdrew interest in the operation before it completed. See
     /// <c>aspnetcore-integration.md</c> for the specific status code this maps to.
     /// </remarks>
-    protected virtual OutcomeHttpMapping MapCancelled(Cancelled cancelled) => new(StatusCodes.Status499ClientClosedRequest);
+    protected override OutcomeHttpMapping MapCancelled(Cancelled cancelled) => new(StatusCodes.Status499ClientClosedRequest);
 
-    /// <summary>Maps a <see cref="Timeout"/> case to a request-timeout status with its budget and elapsed time.</summary>
+    /// <summary>Maps a <see cref="Timeout"/> case to a gateway-timeout status with its budget and elapsed time.</summary>
     /// <param name="timeout">The timeout failure to map.</param>
     /// <returns>The mapped status code and <see cref="ProblemDetails"/> body.</returns>
-    protected virtual OutcomeHttpMapping MapTimeout(Timeout timeout) =>
+    /// <remarks>
+    /// 504 Gateway Timeout, not 408 Request Timeout: 408 means the <em>client</em> took too long sending its
+    /// request, which is not what <see cref="Timeout"/> represents - it's the server exceeding its own time
+    /// budget waiting on an operation (a downstream call, a handler). 504 is the code for exactly that: an
+    /// upstream/dependency the server was waiting on didn't respond within budget. A prior version of this
+    /// mapper used 408 here, which told the caller they themselves were slow when they weren't.
+    /// </remarks>
+    protected override OutcomeHttpMapping MapTimeout(Timeout timeout) =>
         new(
-            StatusCodes.Status408RequestTimeout,
+            StatusCodes.Status504GatewayTimeout,
             new ProblemDetails
             {
                 Title = "Timeout",
                 Detail = timeout.Message ?? $"Budget={timeout.Budget}, Elapsed={timeout.Elapsed}",
-                Status = StatusCodes.Status408RequestTimeout,
+                Status = StatusCodes.Status504GatewayTimeout,
             }
         );
 
     /// <summary>
     /// Maps any <see cref="ITimeoutFailureCase"/> implementer other than <see cref="Timeout"/> itself to a
-    /// request-timeout status - notably a future policy-specific case type this mapper was never taught
-    /// about directly.
+    /// gateway-timeout status - notably a future policy-specific case type this mapper was never taught about
+    /// directly.
     /// </summary>
     /// <param name="timeoutFailureCase">The timeout failure to map.</param>
     /// <returns>The mapped status code and <see cref="ProblemDetails"/> body.</returns>
     /// <remarks>
-    /// Ordered after the exact <see cref="Timeout"/> branch in <see cref="Map{TFailure}"/>, so a plain
-    /// <see cref="Timeout"/> failure still resolves to <see cref="MapTimeout"/> unchanged - this branch only
-    /// ever runs for some other <see cref="ITimeoutFailureCase"/> implementer. Unlike <see cref="MapTimeout"/>,
-    /// there is no <c>Budget</c>/<c>Elapsed</c> fallback available here - <see cref="ITimeoutFailureCase"/>
-    /// only guarantees <see cref="ITimeoutFailureCase.Message"/>, so <c>Detail</c> is that message verbatim,
-    /// including <see langword="null"/> if none was supplied.
+    /// 504, not 408, for the same reason <see cref="MapTimeout"/> is - see its remarks. Ordered after the
+    /// exact <see cref="Timeout"/> branch in <see cref="OutcomeMapperBase{TResult}.Map{TFailure}"/>, so a
+    /// plain <see cref="Timeout"/> failure still resolves to <see cref="MapTimeout"/> unchanged - this branch
+    /// only ever runs for some other <see cref="ITimeoutFailureCase"/> implementer. Unlike
+    /// <see cref="MapTimeout"/>, there is no <c>Budget</c>/<c>Elapsed</c> fallback available here -
+    /// <see cref="ITimeoutFailureCase"/> only guarantees <see cref="ITimeoutFailureCase.Message"/>, so
+    /// <c>Detail</c> is that message verbatim, including <see langword="null"/> if none was supplied.
     /// </remarks>
-    protected virtual OutcomeHttpMapping MapTimeoutFailureCase(ITimeoutFailureCase timeoutFailureCase) =>
+    protected override OutcomeHttpMapping MapTimeoutFailureCase(ITimeoutFailureCase timeoutFailureCase) =>
         new(
-            StatusCodes.Status408RequestTimeout,
+            StatusCodes.Status504GatewayTimeout,
             new ProblemDetails
             {
                 Title = "Timeout",
                 Detail = timeoutFailureCase.Message,
-                Status = StatusCodes.Status408RequestTimeout,
+                Status = StatusCodes.Status504GatewayTimeout,
             }
         );
 
@@ -176,7 +202,7 @@ public class DefaultOutcomeStatusMapper : IOutcomeStatusMapper
     /// consumer who needs the header can override this method (or read <see cref="RateLimited.RetryAfter"/> from
     /// the body) to set it.
     /// </remarks>
-    protected virtual OutcomeHttpMapping MapRateLimited(RateLimited rateLimited) =>
+    protected override OutcomeHttpMapping MapRateLimited(RateLimited rateLimited) =>
         new(
             StatusCodes.Status429TooManyRequests,
             new ProblemDetails
@@ -195,14 +221,14 @@ public class DefaultOutcomeStatusMapper : IOutcomeStatusMapper
     /// <param name="rateLimitedFailureCase">The rate-limit failure to map.</param>
     /// <returns>The mapped status code and <see cref="ProblemDetails"/> body.</returns>
     /// <remarks>
-    /// Ordered after the exact <see cref="RateLimited"/> branch in <see cref="Map{TFailure}"/>, so a plain
-    /// <see cref="RateLimited"/> failure still resolves to <see cref="MapRateLimited"/> unchanged - this
-    /// branch only ever runs for some other <see cref="IRateLimitedFailureCase"/> implementer. Unlike
+    /// Ordered after the exact <see cref="RateLimited"/> branch in <see cref="OutcomeMapperBase{TResult}.Map{TFailure}"/>,
+    /// so a plain <see cref="RateLimited"/> failure still resolves to <see cref="MapRateLimited"/> unchanged -
+    /// this branch only ever runs for some other <see cref="IRateLimitedFailureCase"/> implementer. Unlike
     /// <see cref="MapRateLimited"/>, there is no <c>LimitKey</c> fallback available here -
     /// <see cref="IRateLimitedFailureCase"/> only guarantees <see cref="IRateLimitedFailureCase.Message"/>, so
     /// <c>Detail</c> is that message verbatim, including <see langword="null"/> if none was supplied.
     /// </remarks>
-    protected virtual OutcomeHttpMapping MapRateLimitedFailureCase(IRateLimitedFailureCase rateLimitedFailureCase) =>
+    protected override OutcomeHttpMapping MapRateLimitedFailureCase(IRateLimitedFailureCase rateLimitedFailureCase) =>
         new(
             StatusCodes.Status429TooManyRequests,
             new ProblemDetails
@@ -224,7 +250,7 @@ public class DefaultOutcomeStatusMapper : IOutcomeStatusMapper
     /// unhandled exceptions (see <see cref="MapFailure"/> for the same reasoning applied to the singular case).
     /// </para>
     /// </remarks>
-    protected virtual OutcomeHttpMapping MapFailures(Failures failures) =>
+    protected override OutcomeHttpMapping MapFailures(Failures failures) =>
         new(
             StatusCodes.Status400BadRequest,
             new ProblemDetails
@@ -253,7 +279,7 @@ public class DefaultOutcomeStatusMapper : IOutcomeStatusMapper
     /// purpose.
     /// </para>
     /// </remarks>
-    protected virtual OutcomeHttpMapping MapFailure(Failure failure) =>
+    protected override OutcomeHttpMapping MapFailure(Failure failure) =>
         new(
             StatusCodes.Status400BadRequest,
             new ProblemDetails { Title = failure.Reason ?? "Failure", Status = StatusCodes.Status400BadRequest }
@@ -266,11 +292,10 @@ public class DefaultOutcomeStatusMapper : IOutcomeStatusMapper
     /// <returns>The mapped status code and message body.</returns>
     /// <remarks>
     /// A separate override point from <see cref="MapNotFound"/> because pattern matching can't target the open
-    /// generic <c>NotFound&lt;&gt;</c> case type directly - <see cref="MapNotFoundGenericOrUnrecognized{TFailure}"/>
-    /// reflects the closed instance's fields and forwards them here, so a consumer who wants to change only this
-    /// case's mapping still overrides a plain virtual method rather than reimplementing the reflection.
+    /// generic <c>NotFound&lt;&gt;</c> case type directly - see <see cref="OutcomeMapperBase{TResult}"/> for the
+    /// reflective dispatch that reaches this method.
     /// </remarks>
-    protected virtual OutcomeHttpMapping MapNotFoundGeneric(Type entityType, object? id, string? message) =>
+    protected override OutcomeHttpMapping MapNotFoundGeneric(Type entityType, object? id, string? message) =>
         new(StatusCodes.Status404NotFound, message);
 
     /// <summary>
@@ -283,32 +308,6 @@ public class DefaultOutcomeStatusMapper : IOutcomeStatusMapper
     /// specific status for a type it doesn't recognize; a consumer with a custom failure type should override
     /// this method (or supply their own <see cref="IOutcomeStatusMapper"/>) to map it precisely.
     /// </returns>
-    protected virtual OutcomeHttpMapping MapUnrecognized<TFailure>(TFailure failure) =>
+    protected override OutcomeHttpMapping MapUnrecognized<TFailure>(TFailure failure) =>
         new(StatusCodes.Status500InternalServerError, failure);
-
-    [UnconditionalSuppressMessage(
-        "Trimming",
-        "IL2090:RequiresUnreferencedCode",
-        Justification = "The only closed generic ever tested here is Interlocutor.CommonKernel.ResultTypes."
-            + "NotFound<TId> - a library-owned type whose EntityType/Id/Message properties are always kept by "
-            + "the trimmer independent of this reflective read, since every consumer that produces a NotFound<> "
-            + "failure also constructs or pattern-matches it directly elsewhere. See "
-            + "documentation/trim-and-aot-support.md."
-    )]
-    private OutcomeHttpMapping MapNotFoundGenericOrUnrecognized<TFailure>(TFailure failure)
-    {
-        // Pattern matching doesn't work against the open generic NotFound<> case type, so fall back to
-        // reflection: check whether TFailure closes NotFound<TId> for any TId, then read its fields and
-        // forward to the overridable MapNotFoundGeneric rather than building the mapping here directly.
-        var failureType = typeof(TFailure);
-        if (failureType.IsGenericType && failureType.GetGenericTypeDefinition() == typeof(NotFound<>))
-        {
-            var entityType = (Type)failureType.GetProperty("EntityType")!.GetValue(failure)!;
-            var id = failureType.GetProperty("Id")?.GetValue(failure);
-            var message = (string?)failureType.GetProperty("Message")?.GetValue(failure);
-            return this.MapNotFoundGeneric(entityType, id, message);
-        }
-
-        return this.MapUnrecognized(failure);
-    }
 }

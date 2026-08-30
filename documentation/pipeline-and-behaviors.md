@@ -199,6 +199,8 @@ var result = await mediator.Send(new CreateUser("", "bad-email"));
 // result.Value is FluentValidationErrors - result.Value.Failures[0].PropertyName is "Email"
 ```
 
+`FluentValidationErrors` also implements `IFieldValidationFailureCase`, pairing each failure's message with its property name via `FieldMessages` - `Interlocutor.AspNetCore.DefaultHttpOutcomeStatusMapper` recognizes this and builds a field-keyed HTTP response instead of the flat one `ValidationBehavior`'s `ValidationErrors` gets; see [ASP.NET Core Integration § Field-Keyed Validation Errors](aspnetcore-integration.md#field-keyed-validation-errors).
+
 ### AuthorizationBehavior
 
 Enforces policy-based, non-resource authorization. Short-circuits with `Forbidden` if the policy fails.

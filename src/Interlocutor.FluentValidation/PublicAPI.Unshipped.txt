@@ -16,3 +16,4 @@ override Interlocutor.FluentValidation.FluentValidationErrors.ToString() -> stri
 static Interlocutor.FluentValidation.FluentValidationErrors.operator !=(Interlocutor.FluentValidation.FluentValidationErrors left, Interlocutor.FluentValidation.FluentValidationErrors right) -> bool
 static Interlocutor.FluentValidation.FluentValidationErrors.operator ==(Interlocutor.FluentValidation.FluentValidationErrors left, Interlocutor.FluentValidation.FluentValidationErrors right) -> bool
 ~override Interlocutor.FluentValidation.FluentValidationErrors.Equals(object obj) -> bool
+Interlocutor.FluentValidation.FluentValidationErrors.FieldMessages.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage>!

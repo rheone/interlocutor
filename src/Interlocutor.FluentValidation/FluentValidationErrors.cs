@@ -26,7 +26,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// each validator produced it.
 /// </para>
 /// </remarks>
-public readonly record struct FluentValidationErrors : IValidationFailureCase
+public readonly record struct FluentValidationErrors : IFieldValidationFailureCase
 {
     private readonly IReadOnlyList<ValidationFailure>? _failures;
 
@@ -75,6 +75,28 @@ public readonly record struct FluentValidationErrors : IValidationFailureCase
     /// default value.
     /// </value>
     public IReadOnlyList<string> Messages => this.Failures.Count == 0 ? [] : [.. this.Failures.Select(f => f.ErrorMessage)];
+
+    /// <summary>
+    /// Gets each failure's <see cref="ValidationFailure.PropertyName"/> paired with its
+    /// <see cref="ValidationFailure.ErrorMessage"/>, in the order <see cref="Failures"/> reports them.
+    /// </summary>
+    /// <value>
+    /// The property/message pairs carried by <see cref="Failures"/>, or an empty collection if this instance
+    /// is the default value. FluentValidation always populates <see cref="ValidationFailure.PropertyName"/> as
+    /// an empty string rather than <see langword="null"/> for a rule with no target property, so this
+    /// normalizes that to <see langword="null"/>, matching <see cref="FieldValidationMessage.PropertyName"/>'s
+    /// documented meaning.
+    /// </value>
+    public IReadOnlyList<FieldValidationMessage> FieldMessages =>
+        this.Failures.Count == 0
+            ? []
+            :
+            [
+                .. this.Failures.Select(f => new FieldValidationMessage(
+                    string.IsNullOrEmpty(f.PropertyName) ? null : f.PropertyName,
+                    f.ErrorMessage
+                )),
+            ];
 
     /// <summary>
     /// Returns a human-readable representation of this validation failure set.

@@ -80,16 +80,17 @@ flowchart TD
     IsSuccess -->|"success, has payload"| Ok200["200 OK<br/>body: success payload (JSON)"]
     IsSuccess -->|"success, unit Success"| NoContent204["204 No Content"]
     IsSuccess -->|"failure - IOutcomeStatusMapper.Map(failure)"| CaseType{"Failure case type"}
-    CaseType -->|"ValidationErrors"| Unprocessable422["422 Unprocessable Entity<br/>ProblemDetails"]
-    CaseType -->|"any other IValidationFailureCase<br/>(e.g. FluentValidationErrors)"| Unprocessable422
+    CaseType -->|"ValidationErrors"| Bad400Validation["400 Bad Request<br/>ProblemDetails"]
+    CaseType -->|"IValidationFailureCase, no field data"| Bad400Validation
+    CaseType -->|"IFieldValidationFailureCase<br/>(e.g. FluentValidationErrors)"| Bad400FieldValidation["400 Bad Request<br/>ValidationProblemDetails (field-keyed)"]
     CaseType -->|"NotFound / NotFound&lt;TId&gt;"| NotFound404["404 Not Found<br/>body: message or none"]
     CaseType -->|"Forbidden"| Forbidden403["403 Forbidden<br/>no body"]
     CaseType -->|"any other IForbiddenFailureCase"| Forbidden403
     CaseType -->|"Conflict"| Conflict409["409 Conflict<br/>ProblemDetails"]
     CaseType -->|"Failure / Failures"| Bad400["400 Bad Request<br/>ProblemDetails"]
     CaseType -->|"Cancelled"| ClientClosed499["499 Client Closed Request<br/>no body"]
-    CaseType -->|"Timeout"| Timeout408["408 Request Timeout<br/>ProblemDetails"]
-    CaseType -->|"any other ITimeoutFailureCase"| Timeout408
+    CaseType -->|"Timeout"| Timeout504["504 Gateway Timeout<br/>ProblemDetails"]
+    CaseType -->|"any other ITimeoutFailureCase"| Timeout504
     CaseType -->|"RateLimited"| TooMany429["429 Too Many Requests<br/>ProblemDetails"]
     CaseType -->|"any other IRateLimitedFailureCase"| TooMany429
     CaseType -->|"unrecognized (a custom failure type<br/>the default mapper wasn't taught)"| Error500["500 Internal Server Error<br/>body: the failure value itself"]
@@ -99,8 +100,9 @@ flowchart TD
 |--------------|-------------|------|---------|
 | Success (payload) | 200 OK | The success payload (JSON) | For `OperationOutcome<TSuccess, ...>`, `TSuccess` is serialized. |
 | Success (unit) | 204 No Content | None | For the non-generic `OperationOutcome`. |
-| ValidationErrors | 422 Unprocessable Entity | `ProblemDetails` | `Detail` is every message joined with `"; "` - no per-field errors dictionary, since `ValidationError` carries a message and optional code, not a field name. |
-| Any other [`IValidationFailureCase`](glossary.md#result-types) implementer (e.g. `FluentValidationErrors`) | 422 Unprocessable Entity | `ProblemDetails` | Recognized via the interface, not a type-specific branch - a consumer's own validation-shaped failure case maps the same way without a mapper override. `Detail` is every `Messages` entry joined with `"; "`. |
+| ValidationErrors | 400 Bad Request | `ProblemDetails` | `Detail` is every message joined with `"; "` - no per-field errors dictionary, since `ValidationError` carries a message and optional code, not a field name. |
+| Any other [`IValidationFailureCase`](glossary.md#result-types) implementer with no field data | 400 Bad Request | `ProblemDetails` | Recognized via the interface, not a type-specific branch - a consumer's own validation-shaped failure case maps the same way without a mapper override. `Detail` is every `Messages` entry joined with `"; "`. |
+| [`IFieldValidationFailureCase`](glossary.md#outcome-mapping) implementer (e.g. `FluentValidationErrors`) | 400 Bad Request | `ValidationProblemDetails` | `Errors` is `FieldMessages` grouped by property name (empty-string key for an entry with no property) - see [Field-Keyed Validation Errors](#field-keyed-validation-errors) below. |
 | NotFound | 404 Not Found | The message, or none | `NotFound<TId>` (the generic form) maps the same way via a separate reflective path. |
 | Forbidden | 403 Forbidden | None | Reason is never sent to the client. |
 | Any other `IForbiddenFailureCase` implementer | 403 Forbidden | None | Recognized via the interface, not a type-specific branch - a consumer's own `IPolicyEvaluator`-specific failure case maps the same way without a mapper override, even though only the single built-in `IPolicyEvaluator` ships today. |
@@ -108,20 +110,20 @@ flowchart TD
 | Failure | 400 Bad Request | `ProblemDetails` | Deliberately not 500 - `Failure` is an outcome a handler chose to report, not a server fault. An unhandled exception still reaches ASP.NET Core's exception middleware as 500, independently of this mapping. |
 | Failures (aggregate) | 400 Bad Request | `ProblemDetails` | `Detail` is every reason joined with `"; "`. |
 | Cancelled | 499 Client Closed Request | None | Not 400 - the caller withdrew interest before the operation completed, which is neither a malformed request nor a domain failure. |
-| Timeout | 408 Request Timeout | `ProblemDetails` | `Detail` is the message, or `Budget`/`Elapsed` if none was set. |
-| Any other `ITimeoutFailureCase` implementer | 408 Request Timeout | `ProblemDetails` | Recognized via the interface - a consumer's own `ITimeoutPolicy`-specific failure case maps the same way without a mapper override. `Detail` is the message verbatim (no `Budget`/`Elapsed` fallback - the interface guarantees only the message). |
+| Timeout | 504 Gateway Timeout | `ProblemDetails` | Not 408 - 408 means the *client* was slow sending its request; this is the server exceeding its own time budget waiting on an operation, which 504 represents. `Detail` is the message, or `Budget`/`Elapsed` if none was set. |
+| Any other `ITimeoutFailureCase` implementer | 504 Gateway Timeout | `ProblemDetails` | Recognized via the interface - a consumer's own `ITimeoutPolicy`-specific failure case maps the same way without a mapper override, and for the same reason as the exact `Timeout` case above. `Detail` is the message verbatim (no `Budget`/`Elapsed` fallback - the interface guarantees only the message). |
 | RateLimited | 429 Too Many Requests | `ProblemDetails` | `Detail` is the message, or the `LimitKey`. Does not set a `Retry-After` header - override `MapRateLimited` to add one. |
 | Any other `IRateLimitedFailureCase` implementer | 429 Too Many Requests | `ProblemDetails` | Recognized via the interface - a consumer's own `IRateLimiter`-specific failure case maps the same way without a mapper override. `Detail` is the message verbatim (no `LimitKey` fallback - the interface guarantees only the message). |
 | Anything else (a custom failure type) | 500 Internal Server Error | The failure value itself | The default mapper doesn't know this type - supply your own `IOutcomeStatusMapper`, or override `MapUnrecognized`, to map it precisely. |
 
 ## Custom HTTP Mapping
 
-`IOutcomeStatusMapper` maps one failure case value to an `OutcomeHttpMapping` (a status code and optional body) - it's never invoked for the success case, which `ToActionResult`/`ToMinimalApiResult` handle directly. Two ways to customize it:
+`IOutcomeStatusMapper` maps one failure case value to an `OutcomeHttpMapping` (a status code and optional body) - it's never invoked for the success case, which `ToActionResult`/`ToMinimalApiResult` handle directly. `IOutcomeStatusMapper` is itself the HTTP specialization of a transport-agnostic `IOutcomeMapper<TResult>` contract - see [Extensibility § Mapping failure cases to any output shape](extensibility.md#mapping-failure-cases-to-any-output-shape-ioutcomemappertresult) if you need the same pattern for a non-HTTP consumer. Two ways to customize the HTTP mapping:
 
-**Derive from `DefaultOutcomeStatusMapper` and override just the case you want to change** - each case is a separate protected virtual method:
+**Derive from `DefaultHttpOutcomeStatusMapper` and override just the case you want to change** - each case is a separate protected method, overridable one further level:
 
 ```csharp
-public class MyStatusMapper : DefaultOutcomeStatusMapper
+public class MyStatusMapper : DefaultHttpOutcomeStatusMapper
 {
     // Change only how ValidationErrors maps; every other case keeps the default behavior
     protected override OutcomeHttpMapping MapValidationErrors(ValidationErrors validationErrors) =>
@@ -149,7 +151,7 @@ public class MyStatusMapper : IOutcomeStatusMapper
         failure switch
         {
             CustomConflict conflict => new(StatusCodes.Status409Conflict, new { conflict.Code, conflict.Message }),
-            _ => new DefaultOutcomeStatusMapper().Map(failure),  // fall back to built-in cases
+            _ => new DefaultHttpOutcomeStatusMapper().Map(failure),  // fall back to built-in cases
         };
 }
 ```
@@ -184,16 +186,38 @@ var result = await mediator.Send(new CreateUser("Alice", "alice@example.com"));
 // Command with invalid data
 var result = await mediator.Send(new CreateUser("", "not-an-email"));
 
-// Response: 422 Unprocessable Entity
+// Response: 400 Bad Request
 // Body:
 // {
 //   "title": "Validation Failed",
 //   "detail": "'Name' must not be empty; 'Email' is not a valid email address.",
-//   "status": 422
+//   "status": 400
 // }
 ```
 
-`ValidationError` carries a message and an optional error code, not a field name, so the default mapping joins every message into `Detail` rather than building a per-field errors dictionary. Override `MapValidationErrors` if you want field-keyed output instead.
+`ValidationError` carries a message and an optional error code, not a field name, so the default mapping joins every message into `Detail` rather than building a per-field errors dictionary. Override `MapValidationErrors` if you want field-keyed output instead - or use `FluentValidationErrors` in place of `ValidationErrors`, which gets field-keyed output automatically; see [Field-Keyed Validation Errors](#field-keyed-validation-errors) below.
+
+### Field-Keyed Validation Errors
+
+`Interlocutor.FluentValidation.FluentValidationErrors` (see [Pipeline & Behavior Composition § `FluentValidationErrorsBehavior`](pipeline-and-behaviors.md#fluentvalidationerrorsbehavior)) preserves each failure's property name, unlike the message-only `ValidationErrors`. `DefaultHttpOutcomeStatusMapper` recognizes this via `IFieldValidationFailureCase` - implemented by `FluentValidationErrors`, not by `ValidationErrors` - and builds a field-keyed `ValidationProblemDetails` body instead of the flat `ProblemDetails` other validation-shaped failures get:
+
+```csharp
+// Command with invalid data, using FluentValidationErrorsBehavior instead of ValidationBehavior
+var result = await mediator.Send(new CreateUser("", "not-an-email"));
+
+// Response: 400 Bad Request
+// Body:
+// {
+//   "title": "Validation Failed",
+//   "status": 400,
+//   "errors": {
+//     "Name": ["'Name' must not be empty."],
+//     "Email": ["'Email' is not a valid email address."]
+//   }
+// }
+```
+
+A failure not tied to a specific property (a cross-field or whole-object rule) groups under the empty-string key, matching `ValidationProblemDetails`'s own convention. Override `MapFieldValidationFailureCase` to change this shape, the same way any other case is customized.
 
 ### NotFound
 
@@ -234,7 +258,7 @@ var result = await mediator.Send(new UpdateProduct(1, "New Name", 10));  // Old 
 
 ## Problem Details (RFC 7807)
 
-Most non-2xx responses carry a plain ASP.NET Core `ProblemDetails` body by default (`Title`, `Detail`, `Status`) - `Forbidden` and `Cancelled` carry no body at all, and an unrecognized custom failure type's body is the failure value itself, not a `ProblemDetails`. There is no `ValidationProblemDetails` (the per-field-errors variant) anywhere in the default mapping, since `ValidationError` doesn't carry a field name to key a dictionary by.
+Most non-2xx responses carry a plain ASP.NET Core `ProblemDetails` body by default (`Title`, `Detail`, `Status`) - `Forbidden` and `Cancelled` carry no body at all, and an unrecognized custom failure type's body is the failure value itself, not a `ProblemDetails`. A validation-shaped failure that implements `IFieldValidationFailureCase` (`FluentValidationErrors`, but not `ValidationErrors`) is the one exception: it gets the per-field-errors `ValidationProblemDetails` variant instead - see [Field-Keyed Validation Errors](#field-keyed-validation-errors) above.
 
 ## Error Handling at the Edge
 

@@ -95,6 +95,7 @@ public class FluentValidationErrorsTests
         // Assert
         Assert.Empty(defaultValue.Failures);
         Assert.Empty(defaultValue.Messages);
+        Assert.Empty(defaultValue.FieldMessages);
     }
 
     [Fact]
@@ -108,6 +109,58 @@ public class FluentValidationErrorsTests
 
         // Assert
         Assert.Equal(errors.Messages, failureCase.Messages);
+    }
+
+    [Fact]
+    public void SatisfiesIFieldValidationFailureCase()
+    {
+        // Arrange
+        var errors = new FluentValidationErrors([new ValidationFailure("Name", "Name is required")]);
+
+        // Act
+        IFieldValidationFailureCase failureCase = errors;
+
+        // Assert
+        Assert.Equal(errors.FieldMessages, failureCase.FieldMessages);
+    }
+
+    [Fact]
+    public void FieldMessages_PairsPropertyNameWithMessage_InFailureOrder()
+    {
+        // Arrange
+        var failures = new[]
+        {
+            new ValidationFailure("Name", "Name is required"),
+            new ValidationFailure("Age", "Age must be non-negative"),
+        };
+
+        // Act
+        var errors = new FluentValidationErrors(failures);
+
+        // Assert
+        Assert.Equal(
+            [
+                new FieldValidationMessage("Name", "Name is required"),
+                new FieldValidationMessage("Age", "Age must be non-negative"),
+            ],
+            errors.FieldMessages
+        );
+    }
+
+    [Fact]
+    public void FieldMessages_EmptyPropertyName_NormalizedToNull()
+    {
+        // Arrange - FluentValidation populates PropertyName as "" (not null) for a rule with no target
+        // property (e.g. RuleFor(x => x)); FieldValidationMessage.PropertyName documents null as that meaning.
+        var failure = new ValidationFailure(string.Empty, "Start date must be before end date.");
+
+        // Act
+        var errors = new FluentValidationErrors([failure]);
+
+        // Assert
+        var fieldMessage = Assert.Single(errors.FieldMessages);
+        Assert.Null(fieldMessage.PropertyName);
+        Assert.Equal("Start date must be before end date.", fieldMessage.Message);
     }
 
     [Fact]

@@ -271,3 +271,23 @@ virtual Interlocutor.Abstractions.Pipeline.PipelineStageBase<TRequest, TResponse
 virtual Interlocutor.Abstractions.Pipeline.PipelineStageBase<TRequest, TResponse>.OnBeforeAsync(TRequest request, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Interlocutor.Abstractions.Pipeline.StageResult<TResponse>>!
 ~override Interlocutor.Abstractions.Pipeline.RateLimitResult.Equals(object obj) -> bool
 ~override Interlocutor.Abstractions.Pipeline.RateLimitResult.ToString() -> string
+Interlocutor.Abstractions.Pipeline.Mapping.IOutcomeMapper<TResult>
+Interlocutor.Abstractions.Pipeline.Mapping.IOutcomeMapper<TResult>.Map<TFailure>(TFailure failure) -> TResult
+Interlocutor.Abstractions.Pipeline.Mapping.OutcomeMapperBase<TResult>
+Interlocutor.Abstractions.Pipeline.Mapping.OutcomeMapperBase<TResult>.Map<TFailure>(TFailure failure) -> TResult
+Interlocutor.Abstractions.Pipeline.Mapping.OutcomeMapperBase<TResult>.OutcomeMapperBase() -> void
+abstract Interlocutor.Abstractions.Pipeline.Mapping.OutcomeMapperBase<TResult>.MapCancelled(Interlocutor.CommonKernel.ResultTypes.Cancelled cancelled) -> TResult
+abstract Interlocutor.Abstractions.Pipeline.Mapping.OutcomeMapperBase<TResult>.MapConflict(Interlocutor.CommonKernel.ResultTypes.Conflict conflict) -> TResult
+abstract Interlocutor.Abstractions.Pipeline.Mapping.OutcomeMapperBase<TResult>.MapFailure(Interlocutor.CommonKernel.ResultTypes.Failure failure) -> TResult
+abstract Interlocutor.Abstractions.Pipeline.Mapping.OutcomeMapperBase<TResult>.MapFailures(Interlocutor.CommonKernel.ResultTypes.Failures failures) -> TResult
+abstract Interlocutor.Abstractions.Pipeline.Mapping.OutcomeMapperBase<TResult>.MapForbidden(Interlocutor.CommonKernel.ResultTypes.Forbidden forbidden) -> TResult
+abstract Interlocutor.Abstractions.Pipeline.Mapping.OutcomeMapperBase<TResult>.MapForbiddenFailureCase(Interlocutor.CommonKernel.ResultTypes.IForbiddenFailureCase! forbiddenFailureCase) -> TResult
+abstract Interlocutor.Abstractions.Pipeline.Mapping.OutcomeMapperBase<TResult>.MapNotFound(Interlocutor.CommonKernel.ResultTypes.NotFound notFound) -> TResult
+abstract Interlocutor.Abstractions.Pipeline.Mapping.OutcomeMapperBase<TResult>.MapNotFoundGeneric(System.Type! entityType, object? id, string? message) -> TResult
+abstract Interlocutor.Abstractions.Pipeline.Mapping.OutcomeMapperBase<TResult>.MapRateLimited(Interlocutor.CommonKernel.ResultTypes.RateLimited rateLimited) -> TResult
+abstract Interlocutor.Abstractions.Pipeline.Mapping.OutcomeMapperBase<TResult>.MapRateLimitedFailureCase(Interlocutor.CommonKernel.ResultTypes.IRateLimitedFailureCase! rateLimitedFailureCase) -> TResult
+abstract Interlocutor.Abstractions.Pipeline.Mapping.OutcomeMapperBase<TResult>.MapTimeout(Interlocutor.CommonKernel.ResultTypes.Timeout timeout) -> TResult
+abstract Interlocutor.Abstractions.Pipeline.Mapping.OutcomeMapperBase<TResult>.MapTimeoutFailureCase(Interlocutor.CommonKernel.ResultTypes.ITimeoutFailureCase! timeoutFailureCase) -> TResult
+abstract Interlocutor.Abstractions.Pipeline.Mapping.OutcomeMapperBase<TResult>.MapUnrecognized<TFailure>(TFailure failure) -> TResult
+abstract Interlocutor.Abstractions.Pipeline.Mapping.OutcomeMapperBase<TResult>.MapValidationErrors(Interlocutor.CommonKernel.ResultTypes.ValidationErrors validationErrors) -> TResult
+abstract Interlocutor.Abstractions.Pipeline.Mapping.OutcomeMapperBase<TResult>.MapValidationFailureCase(Interlocutor.CommonKernel.ResultTypes.IValidationFailureCase! validationFailureCase) -> TResult

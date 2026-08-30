@@ -113,6 +113,6 @@ public sealed class UsersEndpointTests : IClassFixture<TodoTasksApiFactory>
 
         // Assert - ToMinimalApiResult()'s default mapping for ValidationErrors, per
         // documentation/aspnetcore-integration.md's status-code table.
-        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 }

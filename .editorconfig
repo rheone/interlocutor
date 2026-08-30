@@ -515,9 +515,9 @@ dotnet_diagnostic.IDE1006.severity = None       # Naming rule violation
 
 # AnalyzerId= Microsoft.CodeAnalysis.CSharp.Features  RuleNamespace= Microsoft.CodeAnalysis.CSharp.Features
 # Also built into the Roslyn compiler/SDK - the IDE "quick actions"/refactoring-backed style rules.
-dotnet_diagnostic.IDE0003.severity = Suggestion  # Remove unnecessary 'this.' qualification
-dotnet_diagnostic.IDE0007.severity = Warning     # Use 'var' instead of an explicit type
-dotnet_diagnostic.IDE0009.severity = None        # Add 'this.' qualification
+dotnet_diagnostic.IDE0003.severity = None    # Remove unnecessary 'this.' qualification
+dotnet_diagnostic.IDE0007.severity = Warning # Use 'var' instead of an explicit type
+dotnet_diagnostic.IDE0009.severity = Warning # Add 'this.' qualification
 
 # AnalyzerId= Microsoft.CodeAnalysis.PublicApiAnalyzers  RuleNamespace= Microsoft.CodeAnalysis.PublicApiAnalyzers
 # Tracks each project's public API surface (RS00xx-prefixed) against a PublicAPI.Shipped.txt/
@@ -526,6 +526,7 @@ dotnet_diagnostic.IDE0009.severity = None        # Add 'this.' qualification
 # libraries (not Interlocutor.Generator, which tracks its own shipped diagnostics via
 # AnalyzerReleases.*.md instead; not tests or TutorialProject, which ship nothing). Runs on
 # defaults except RS0026 below.
+# See <https://github.com/dotnet/roslyn/blob/main/src/RoslynAnalyzers/PublicApiAnalyzers/PublicApiAnalyzers.Help.md>
 dotnet_diagnostic.RS0026.severity = None # "Do not add multiple overloads with optional parameters" -
 # this library's core pattern is exactly that: ISender/IPublisher/Mediator/ResultExtensions
 # deliberately expose several generic overloads (one per OperationOutcome arity/shape) that all

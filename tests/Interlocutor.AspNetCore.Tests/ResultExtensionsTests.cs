@@ -1,7 +1,12 @@
 namespace Interlocutor.AspNetCore.Tests;
 
+using global::FluentValidation;
+using global::FluentValidation.Results;
+using Interlocutor.Abstractions.Commands;
+using Interlocutor.Abstractions.Pipeline.Cases;
 using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
+using Interlocutor.FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -82,7 +87,7 @@ public class ResultExtensionsTests
     }
 
     [Fact]
-    public void ToActionResult_WithValidationErrors_Returns422()
+    public void ToActionResult_WithValidationErrors_Returns400()
     {
         // Arrange
         var errors = new ValidationErrors(["Name is required", "Email is invalid"]);
@@ -93,11 +98,41 @@ public class ResultExtensionsTests
 
         // Assert
         var objectResult = Assert.IsType<ObjectResult>(actionResult);
-        Assert.Equal(StatusCodes.Status422UnprocessableEntity, objectResult.StatusCode);
+        Assert.Equal(StatusCodes.Status400BadRequest, objectResult.StatusCode);
         var problemDetails = Assert.IsType<ProblemDetails>(objectResult.Value);
-        Assert.Equal(StatusCodes.Status422UnprocessableEntity, problemDetails.Status);
+        Assert.Equal(StatusCodes.Status400BadRequest, problemDetails.Status);
         Assert.Contains("Name is required", problemDetails.Detail);
         Assert.Contains("Email is invalid", problemDetails.Detail);
+    }
+
+    [Fact]
+    public async Task ToActionResult_WithFluentValidationErrorsRoutedThroughBehavior_Returns400WithFieldKeyedValidationProblemDetails()
+    {
+        // Arrange - routes an actually-invalid request through a real FluentValidationErrorsBehavior (the
+        // same way a mediator pipeline would), rather than constructing FluentValidationErrors by hand, so
+        // this proves the field-keyed body survives the real pipeline hop into ToActionResult() end-to-end.
+        var request = new CreateWidgetCommand(string.Empty, -1);
+        var behavior = new FluentValidationErrorsBehavior<
+            CreateWidgetCommand,
+            OperationOutcome<string, FluentValidationErrors>
+        >([new CreateWidgetCommandValidator()], DefaultOutcomeCaseRegistry.Instance);
+
+        // Act
+        var result = await behavior.Handle(
+            request,
+            () => throw new InvalidOperationException("The handler must not run - validation should short-circuit first."),
+            CancellationToken.None
+        );
+        var actionResult = result.ToActionResult();
+
+        // Assert
+        var objectResult = Assert.IsType<ObjectResult>(actionResult);
+        Assert.Equal(StatusCodes.Status400BadRequest, objectResult.StatusCode);
+        var validationProblemDetails = Assert.IsType<ValidationProblemDetails>(objectResult.Value);
+        var name = Assert.Single(validationProblemDetails.Errors["Name"]);
+        Assert.Equal("'Name' must not be empty.", name);
+        var quantity = Assert.Single(validationProblemDetails.Errors["Quantity"]);
+        Assert.Equal("'Quantity' must be greater than or equal to '0'.", quantity);
     }
 
     [Fact]
@@ -233,7 +268,7 @@ public class ResultExtensionsTests
     }
 
     [Fact]
-    public void ToActionResult_ThreeArity_WithValidationErrors_Returns422()
+    public void ToActionResult_ThreeArity_WithValidationErrors_Returns400()
     {
         // Arrange
         var errors = new ValidationErrors(["Name is required"]);
@@ -244,7 +279,7 @@ public class ResultExtensionsTests
 
         // Assert
         var objectResult = Assert.IsType<ObjectResult>(actionResult);
-        Assert.Equal(StatusCodes.Status422UnprocessableEntity, objectResult.StatusCode);
+        Assert.Equal(StatusCodes.Status400BadRequest, objectResult.StatusCode);
         var problemDetails = Assert.IsType<ProblemDetails>(objectResult.Value);
         Assert.Contains("Name is required", problemDetails.Detail);
     }
@@ -297,7 +332,7 @@ public class ResultExtensionsTests
     }
 
     [Fact]
-    public void ToActionResult_FourArity_WithValidationErrors_Returns422()
+    public void ToActionResult_FourArity_WithValidationErrors_Returns400()
     {
         // Arrange
         var errors = new ValidationErrors(["Name is required"]);
@@ -308,7 +343,7 @@ public class ResultExtensionsTests
 
         // Assert
         var objectResult = Assert.IsType<ObjectResult>(actionResult);
-        Assert.Equal(StatusCodes.Status422UnprocessableEntity, objectResult.StatusCode);
+        Assert.Equal(StatusCodes.Status400BadRequest, objectResult.StatusCode);
         var problemDetails = Assert.IsType<ProblemDetails>(objectResult.Value);
         Assert.Contains("Name is required", problemDetails.Detail);
     }
@@ -377,7 +412,7 @@ public class ResultExtensionsTests
     }
 
     [Fact]
-    public void ToActionResult_FiveArity_WithValidationErrors_Returns422()
+    public void ToActionResult_FiveArity_WithValidationErrors_Returns400()
     {
         // Arrange
         var errors = new ValidationErrors(["Name is required", "Email is invalid"]);
@@ -388,14 +423,14 @@ public class ResultExtensionsTests
 
         // Assert
         var objectResult = Assert.IsType<ObjectResult>(actionResult);
-        Assert.Equal(StatusCodes.Status422UnprocessableEntity, objectResult.StatusCode);
+        Assert.Equal(StatusCodes.Status400BadRequest, objectResult.StatusCode);
         var problemDetails = Assert.IsType<ProblemDetails>(objectResult.Value);
         Assert.Contains("Name is required", problemDetails.Detail);
         Assert.Contains("Email is invalid", problemDetails.Detail);
     }
 
     // The tests below exercise the 6-arity overload (one success + five failure cases), including the three
-    // case types (Cancelled, Timeout, RateLimited) that DefaultOutcomeStatusMapper only recently learned to
+    // case types (Cancelled, Timeout, RateLimited) that DefaultHttpOutcomeStatusMapper only recently learned to
     // map. Covers success and every failure-case branch for this arity, matching what the audit-followups/05
     // arity 3-6 overloads still lacked coverage for.
 
@@ -461,7 +496,7 @@ public class ResultExtensionsTests
     }
 
     [Fact]
-    public void ToActionResult_SixArity_WithTimeout_Returns408()
+    public void ToActionResult_SixArity_WithTimeout_Returns504()
     {
         // Arrange
         OperationOutcome<string, NotFound, Forbidden, Cancelled, Timeout, RateLimited> result = new(
@@ -473,7 +508,7 @@ public class ResultExtensionsTests
 
         // Assert
         var objectResult = Assert.IsType<ObjectResult>(actionResult);
-        Assert.Equal(StatusCodes.Status408RequestTimeout, objectResult.StatusCode);
+        Assert.Equal(StatusCodes.Status504GatewayTimeout, objectResult.StatusCode);
         var problemDetails = Assert.IsType<ProblemDetails>(objectResult.Value);
         Assert.Equal("downstream slow", problemDetails.Detail);
     }
@@ -494,5 +529,19 @@ public class ResultExtensionsTests
         Assert.Equal(StatusCodes.Status429TooManyRequests, objectResult.StatusCode);
         var problemDetails = Assert.IsType<ProblemDetails>(objectResult.Value);
         Assert.Equal("slow down", problemDetails.Detail);
+    }
+
+    /// <summary>Request fixture for <see cref="ToActionResult_WithFluentValidationErrorsRoutedThroughBehavior_Returns400WithFieldKeyedValidationProblemDetails"/> only.</summary>
+    private sealed record CreateWidgetCommand(string Name, int Quantity)
+        : ICommand<OperationOutcome<string, FluentValidationErrors>>;
+
+    /// <summary>Validator fixture for <see cref="ToActionResult_WithFluentValidationErrorsRoutedThroughBehavior_Returns400WithFieldKeyedValidationProblemDetails"/> only.</summary>
+    private sealed class CreateWidgetCommandValidator : AbstractValidator<CreateWidgetCommand>
+    {
+        public CreateWidgetCommandValidator()
+        {
+            this.RuleFor(c => c.Name).NotEmpty();
+            this.RuleFor(c => c.Quantity).GreaterThanOrEqualTo(0);
+        }
     }
 }

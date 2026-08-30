@@ -8,12 +8,12 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 /// <summary>
-/// Verifies the status code <see cref="DefaultOutcomeStatusMapper"/> chooses for each built-in failure case,
+/// Verifies the status code <see cref="DefaultHttpOutcomeStatusMapper"/> chooses for each built-in failure case,
 /// independent of which transport-specific extension method renders it.
 /// </summary>
-public class DefaultOutcomeStatusMapperTests
+public class DefaultHttpOutcomeStatusMapperTests
 {
-    private readonly DefaultOutcomeStatusMapper mapper = new();
+    private readonly DefaultHttpOutcomeStatusMapper mapper = new();
 
     [Fact]
     public void Map_WithNotFound_Returns404()
@@ -57,7 +57,7 @@ public class DefaultOutcomeStatusMapperTests
     [Fact]
     public void Map_WithHandRolledForbiddenFailureCase_Returns403()
     {
-        // Arrange - proves DefaultOutcomeStatusMapper recognizes IForbiddenFailureCase via the interface
+        // Arrange - proves DefaultHttpOutcomeStatusMapper recognizes IForbiddenFailureCase via the interface
         // itself, not a type-specific special case for the library's own Forbidden.
         var customCase = new CustomForbiddenFailureCase("policy denied");
 
@@ -98,7 +98,7 @@ public class DefaultOutcomeStatusMapperTests
     }
 
     [Fact]
-    public void Map_WithValidationErrors_Returns422()
+    public void Map_WithValidationErrors_Returns400()
     {
         // Arrange
         var validationErrors = new ValidationErrors("required");
@@ -107,13 +107,15 @@ public class DefaultOutcomeStatusMapperTests
         var mapping = this.mapper.Map(validationErrors);
 
         // Assert
-        Assert.Equal(StatusCodes.Status422UnprocessableEntity, mapping.StatusCode);
+        Assert.Equal(StatusCodes.Status400BadRequest, mapping.StatusCode);
     }
 
     [Fact]
-    public void Map_WithFluentValidationErrors_Returns422()
+    public void Map_WithFluentValidationErrors_Returns400WithFieldKeyedValidationProblemDetails()
     {
-        // Arrange - a real second IValidationFailureCase implementer, not the library's own ValidationErrors.
+        // Arrange - FluentValidationErrors implements IFieldValidationFailureCase, so it gets a field-keyed
+        // ValidationProblemDetails body instead of the flat ProblemDetails other IValidationFailureCase
+        // implementers (that don't carry field data) receive.
         var fluentValidationErrors = new FluentValidationErrors([
             new ValidationFailure("Email", "'Email' is not a valid email address."),
         ]);
@@ -122,15 +124,39 @@ public class DefaultOutcomeStatusMapperTests
         var mapping = this.mapper.Map(fluentValidationErrors);
 
         // Assert
-        Assert.Equal(StatusCodes.Status422UnprocessableEntity, mapping.StatusCode);
-        var problemDetails = Assert.IsType<ProblemDetails>(mapping.Body);
-        Assert.Equal("'Email' is not a valid email address.", problemDetails.Detail);
+        Assert.Equal(StatusCodes.Status400BadRequest, mapping.StatusCode);
+        var problemDetails = Assert.IsType<ValidationProblemDetails>(mapping.Body);
+        Assert.Equal("Validation Failed", problemDetails.Title);
+        var email = Assert.Single(problemDetails.Errors["Email"]);
+        Assert.Equal("'Email' is not a valid email address.", email);
     }
 
     [Fact]
-    public void Map_WithHandRolledValidationFailureCase_Returns422()
+    public void Map_WithFluentValidationErrors_GroupsMultipleFailuresByProperty()
     {
-        // Arrange - proves DefaultOutcomeStatusMapper recognizes IValidationFailureCase via the interface
+        // Arrange - two failures on the same property, one on a different property, and one with no property
+        // at all (a cross-field/whole-object rule) - proving grouping and the empty-string fallback key.
+        var fluentValidationErrors = new FluentValidationErrors([
+            new ValidationFailure("Email", "'Email' is not a valid email address."),
+            new ValidationFailure("Email", "'Email' must not be empty."),
+            new ValidationFailure("Name", "'Name' must not be empty."),
+            new ValidationFailure(string.Empty, "Start date must be before end date."),
+        ]);
+
+        // Act
+        var mapping = this.mapper.Map(fluentValidationErrors);
+
+        // Assert
+        var problemDetails = Assert.IsType<ValidationProblemDetails>(mapping.Body);
+        Assert.Equal(["'Email' is not a valid email address.", "'Email' must not be empty."], problemDetails.Errors["Email"]);
+        Assert.Equal(["'Name' must not be empty."], problemDetails.Errors["Name"]);
+        Assert.Equal(["Start date must be before end date."], problemDetails.Errors[string.Empty]);
+    }
+
+    [Fact]
+    public void Map_WithHandRolledValidationFailureCase_Returns400()
+    {
+        // Arrange - proves DefaultHttpOutcomeStatusMapper recognizes IValidationFailureCase via the interface
         // itself, not a type-specific special case for the library's own or FluentValidation's types.
         var customCase = new CustomValidationFailureCase(["custom rule failed"]);
 
@@ -138,7 +164,7 @@ public class DefaultOutcomeStatusMapperTests
         var mapping = this.mapper.Map(customCase);
 
         // Assert
-        Assert.Equal(StatusCodes.Status422UnprocessableEntity, mapping.StatusCode);
+        Assert.Equal(StatusCodes.Status400BadRequest, mapping.StatusCode);
         var problemDetails = Assert.IsType<ProblemDetails>(mapping.Body);
         Assert.Equal("custom rule failed", problemDetails.Detail);
     }
@@ -154,7 +180,7 @@ public class DefaultOutcomeStatusMapperTests
         var mapping = this.mapper.Map(validationErrors);
 
         // Assert
-        Assert.Equal(StatusCodes.Status422UnprocessableEntity, mapping.StatusCode);
+        Assert.Equal(StatusCodes.Status400BadRequest, mapping.StatusCode);
         var problemDetails = Assert.IsType<ProblemDetails>(mapping.Body);
         Assert.Equal("Validation Failed", problemDetails.Title);
         Assert.Equal("required", problemDetails.Detail);
@@ -175,7 +201,7 @@ public class DefaultOutcomeStatusMapperTests
     }
 
     [Fact]
-    public void Map_WithTimeout_Returns408()
+    public void Map_WithTimeout_Returns504()
     {
         // Arrange - also proves the exact Timeout branch in Map<TFailure>, ordered before the new
         // ITimeoutFailureCase branch below, still resolves this mapping byte-for-byte unchanged.
@@ -185,23 +211,24 @@ public class DefaultOutcomeStatusMapperTests
         var mapping = this.mapper.Map(timeout);
 
         // Assert
-        Assert.Equal(StatusCodes.Status408RequestTimeout, mapping.StatusCode);
+        Assert.Equal(StatusCodes.Status504GatewayTimeout, mapping.StatusCode);
         var problemDetails = Assert.IsType<ProblemDetails>(mapping.Body);
         Assert.Equal("downstream slow", problemDetails.Detail);
     }
 
     [Fact]
-    public void Map_WithHandRolledTimeoutFailureCase_Returns408()
+    public void Map_WithHandRolledTimeoutFailureCase_Returns504()
     {
-        // Arrange - proves DefaultOutcomeStatusMapper recognizes ITimeoutFailureCase via the interface
-        // itself, not a type-specific special case for the library's own Timeout.
+        // Arrange - proves DefaultHttpOutcomeStatusMapper recognizes ITimeoutFailureCase via the interface
+        // itself, not a type-specific special case for the library's own Timeout. Same 504 (not 408) as the
+        // exact Timeout branch above, for the same reason - see MapTimeoutFailureCase's remarks.
         var customCase = new CustomTimeoutFailureCase("policy budget exceeded");
 
         // Act
         var mapping = this.mapper.Map(customCase);
 
         // Assert
-        Assert.Equal(StatusCodes.Status408RequestTimeout, mapping.StatusCode);
+        Assert.Equal(StatusCodes.Status504GatewayTimeout, mapping.StatusCode);
         var problemDetails = Assert.IsType<ProblemDetails>(mapping.Body);
         Assert.Equal("policy budget exceeded", problemDetails.Detail);
     }
@@ -225,7 +252,7 @@ public class DefaultOutcomeStatusMapperTests
     [Fact]
     public void Map_WithHandRolledRateLimitedFailureCase_Returns429()
     {
-        // Arrange - proves DefaultOutcomeStatusMapper recognizes IRateLimitedFailureCase via the interface
+        // Arrange - proves DefaultHttpOutcomeStatusMapper recognizes IRateLimitedFailureCase via the interface
         // itself, not a type-specific special case for the library's own RateLimited. Distinct from
         // CustomRateLimited (used elsewhere for the unrecognized-type path), which implements no marker
         // interface at all.
@@ -243,7 +270,7 @@ public class DefaultOutcomeStatusMapperTests
     [Fact]
     public void Map_WithFailure_Returns400NotServerError()
     {
-        // Arrange - see the remarks on DefaultOutcomeStatusMapper.MapFailure: a plain Failure is an expected
+        // Arrange - see the remarks on DefaultHttpOutcomeStatusMapper.MapFailure: a plain Failure is an expected
         // outcome, not an unhandled exception, so it must not surface as a 5xx server error.
         var failure = new Failure("expected domain failure");
 
@@ -358,7 +385,7 @@ public class DefaultOutcomeStatusMapperTests
     }
 
     [Fact]
-    public void Map_AcrossFiveArityOutcome_WithValidationErrorsCase_Returns422()
+    public void Map_AcrossFiveArityOutcome_WithValidationErrorsCase_Returns400()
     {
         // Arrange
         OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationErrors> outcome = new(
@@ -369,7 +396,7 @@ public class DefaultOutcomeStatusMapperTests
         var mapping = this.mapper.Map(outcome.GetValue()!);
 
         // Assert
-        Assert.Equal(StatusCodes.Status422UnprocessableEntity, mapping.StatusCode);
+        Assert.Equal(StatusCodes.Status400BadRequest, mapping.StatusCode);
     }
 
     [Fact]
@@ -386,10 +413,10 @@ public class DefaultOutcomeStatusMapperTests
     }
 
     /// <summary>
-    /// Proves the "overridable default" contract: derive from <see cref="DefaultOutcomeStatusMapper"/> and
+    /// Proves the "overridable default" contract: derive from <see cref="DefaultHttpOutcomeStatusMapper"/> and
     /// override just the one case that needs to change, inheriting every other mapping unchanged.
     /// </summary>
-    private sealed class RateLimitAwareOutcomeStatusMapper : DefaultOutcomeStatusMapper
+    private sealed class RateLimitAwareOutcomeStatusMapper : DefaultHttpOutcomeStatusMapper
     {
         protected override OutcomeHttpMapping MapUnrecognized<TFailure>(TFailure failure) =>
             failure is CustomRateLimited rateLimited
@@ -397,8 +424,8 @@ public class DefaultOutcomeStatusMapperTests
                 : base.MapUnrecognized(failure);
     }
 
-    /// <summary>Proves <see cref="DefaultOutcomeStatusMapper.MapNotFoundGeneric"/> is independently overridable.</summary>
-    private sealed class EntityNameIncludingOutcomeStatusMapper : DefaultOutcomeStatusMapper
+    /// <summary>Proves <see cref="DefaultHttpOutcomeStatusMapper.MapNotFoundGeneric"/> is independently overridable.</summary>
+    private sealed class EntityNameIncludingOutcomeStatusMapper : DefaultHttpOutcomeStatusMapper
     {
         protected override OutcomeHttpMapping MapNotFoundGeneric(Type entityType, object? id, string? message) =>
             new(StatusCodes.Status404NotFound, $"{entityType.Name}/{id}");

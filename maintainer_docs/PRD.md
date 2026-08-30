@@ -35,7 +35,7 @@ Before this library, "what can go wrong" for a given handler was implicit - disc
 | `Interlocutor.CommonKernel` | `OperationOutcome`/`OperationOutcome<...>` (2-6 arities), `Success`, `Failure`/`Failures`, `NotFound`, `Forbidden`, `Conflict`/`Conflicts`, `ValidationError`/`ValidationErrors` | .NET BCL only |
 | `Interlocutor.Abstractions` | `IMediator`/`ISender`/`IPublisher`, handler contracts, marker interfaces, `Mediator`, `ResourceCommandHandler`, `InterlocutorStartupValidation`, built-in pipeline behaviors (Logging, Authorization, Auditing, Cancellation, Timeout, RateLimited, PipelineStage), `IOutcomeCaseRegistry`/`IOutcomeClassifier` | `Interlocutor.CommonKernel` |
 | `Interlocutor.Generator` | Roslyn incremental source generator behind compile-time handler discovery (ADR-0008); analyzer reference only, never a runtime dependency | - |
-| `Interlocutor.AspNetCore` | `ToActionResult()`/`ToMinimalApiResult()`, `IOutcomeStatusMapper`/`DefaultOutcomeStatusMapper` | `Interlocutor.CommonKernel`, `Interlocutor.Abstractions`, ASP.NET Core |
+| `Interlocutor.AspNetCore` | `ToActionResult()`/`ToMinimalApiResult()`, `IOutcomeStatusMapper`/`DefaultHttpOutcomeStatusMapper` | `Interlocutor.CommonKernel`, `Interlocutor.Abstractions`, ASP.NET Core |
 | `Interlocutor.DependencyInjection.Abstractions` | Container-neutral registration model - `InterlocutorBuilder`, `InterlocutorPipelineBuilder`, `RegistrationReport` | `Interlocutor.Abstractions` |
 | `Interlocutor.DependencyInjection.Microsoft` | `AddInterlocutor()` for `IServiceCollection` | `Interlocutor.DependencyInjection.Abstractions`, `Interlocutor.Persistence.Abstractions` |
 | `Interlocutor.DependencyInjection.Autofac` | `AddInterlocutor()` for `ContainerBuilder` | `Interlocutor.DependencyInjection.Abstractions`, `Interlocutor.Persistence.Abstractions` |
@@ -153,13 +153,13 @@ Nothing is validated automatically. Three independent, opt-in mechanisms exist: 
 
 | Failure case | HTTP Status | Body |
 |---|---|---|
-| `ValidationErrors` | 422 Unprocessable Entity | `ProblemDetails` (messages joined, no per-field dictionary) |
+| `ValidationErrors` | 400 Bad Request | `ProblemDetails` (messages joined, no per-field dictionary) |
 | `NotFound` | 404 Not Found | Message, or none |
 | `Forbidden` | 403 Forbidden | None |
 | `Conflict` | 409 Conflict | `ProblemDetails` |
 | `Failure` / `Failures` | 400 Bad Request | `ProblemDetails` - deliberately not 500; a handler-chosen outcome, not a server fault |
 | `Cancelled` | 499 Client Closed Request | None |
-| `Timeout` | 408 Request Timeout | `ProblemDetails` |
+| `Timeout` | 504 Gateway Timeout | `ProblemDetails` - deliberately not 408, which means the client was slow, not the server |
 | `RateLimited` | 429 Too Many Requests | `ProblemDetails` |
 | Unrecognized custom type | 500 Internal Server Error | The failure value itself |
 

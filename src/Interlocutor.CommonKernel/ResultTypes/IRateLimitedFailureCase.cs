@@ -6,7 +6,7 @@ namespace Interlocutor.CommonKernel.ResultTypes;
 /// <remarks>
 /// Mirrors <see cref="IValidationFailureCase"/>'s role for validation: a minimal, zero-dependency contract
 /// naming the shape any rate-limit rejection shares, ahead of a second implementation actually needing it.
-/// <see cref="RateLimited"/> implements it directly, and <c>Interlocutor.AspNetCore.DefaultOutcomeStatusMapper</c>
+/// <see cref="RateLimited"/> implements it directly, and <c>Interlocutor.AspNetCore.DefaultHttpOutcomeStatusMapper</c>
 /// recognizes this interface generically (ordered after its exact match on <see cref="RateLimited"/>) - so a
 /// future second implementation, first-party or consumer-authored, needs only its own case type and behavior;
 /// no further retrofit is needed here or in the mapper.
