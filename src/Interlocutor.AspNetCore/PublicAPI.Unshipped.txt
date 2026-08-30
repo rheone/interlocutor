@@ -64,10 +64,13 @@ virtual Interlocutor.AspNetCore.DefaultOutcomeStatusMapper.MapConflict(Interlocu
 virtual Interlocutor.AspNetCore.DefaultOutcomeStatusMapper.MapFailure(Interlocutor.CommonKernel.ResultTypes.Failure failure) -> Interlocutor.AspNetCore.OutcomeHttpMapping!
 virtual Interlocutor.AspNetCore.DefaultOutcomeStatusMapper.MapFailures(Interlocutor.CommonKernel.ResultTypes.Failures failures) -> Interlocutor.AspNetCore.OutcomeHttpMapping!
 virtual Interlocutor.AspNetCore.DefaultOutcomeStatusMapper.MapForbidden(Interlocutor.CommonKernel.ResultTypes.Forbidden forbidden) -> Interlocutor.AspNetCore.OutcomeHttpMapping!
+virtual Interlocutor.AspNetCore.DefaultOutcomeStatusMapper.MapForbiddenFailureCase(Interlocutor.CommonKernel.ResultTypes.IForbiddenFailureCase! forbiddenFailureCase) -> Interlocutor.AspNetCore.OutcomeHttpMapping!
 virtual Interlocutor.AspNetCore.DefaultOutcomeStatusMapper.MapNotFound(Interlocutor.CommonKernel.ResultTypes.NotFound notFound) -> Interlocutor.AspNetCore.OutcomeHttpMapping!
 virtual Interlocutor.AspNetCore.DefaultOutcomeStatusMapper.MapNotFoundGeneric(System.Type! entityType, object? id, string? message) -> Interlocutor.AspNetCore.OutcomeHttpMapping!
 virtual Interlocutor.AspNetCore.DefaultOutcomeStatusMapper.MapRateLimited(Interlocutor.CommonKernel.ResultTypes.RateLimited rateLimited) -> Interlocutor.AspNetCore.OutcomeHttpMapping!
+virtual Interlocutor.AspNetCore.DefaultOutcomeStatusMapper.MapRateLimitedFailureCase(Interlocutor.CommonKernel.ResultTypes.IRateLimitedFailureCase! rateLimitedFailureCase) -> Interlocutor.AspNetCore.OutcomeHttpMapping!
 virtual Interlocutor.AspNetCore.DefaultOutcomeStatusMapper.MapTimeout(Interlocutor.CommonKernel.ResultTypes.Timeout timeout) -> Interlocutor.AspNetCore.OutcomeHttpMapping!
+virtual Interlocutor.AspNetCore.DefaultOutcomeStatusMapper.MapTimeoutFailureCase(Interlocutor.CommonKernel.ResultTypes.ITimeoutFailureCase! timeoutFailureCase) -> Interlocutor.AspNetCore.OutcomeHttpMapping!
 virtual Interlocutor.AspNetCore.DefaultOutcomeStatusMapper.MapUnrecognized<TFailure>(TFailure failure) -> Interlocutor.AspNetCore.OutcomeHttpMapping!
 virtual Interlocutor.AspNetCore.DefaultOutcomeStatusMapper.MapValidationErrors(Interlocutor.CommonKernel.ResultTypes.ValidationErrors validationErrors) -> Interlocutor.AspNetCore.OutcomeHttpMapping!
 virtual Interlocutor.AspNetCore.DefaultOutcomeStatusMapper.MapValidationFailureCase(Interlocutor.CommonKernel.ResultTypes.IValidationFailureCase! validationFailureCase) -> Interlocutor.AspNetCore.OutcomeHttpMapping!

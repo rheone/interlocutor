@@ -84,11 +84,14 @@ flowchart TD
     CaseType -->|"any other IValidationFailureCase<br/>(e.g. FluentValidationErrors)"| Unprocessable422
     CaseType -->|"NotFound / NotFound&lt;TId&gt;"| NotFound404["404 Not Found<br/>body: message or none"]
     CaseType -->|"Forbidden"| Forbidden403["403 Forbidden<br/>no body"]
+    CaseType -->|"any other IForbiddenFailureCase"| Forbidden403
     CaseType -->|"Conflict"| Conflict409["409 Conflict<br/>ProblemDetails"]
     CaseType -->|"Failure / Failures"| Bad400["400 Bad Request<br/>ProblemDetails"]
     CaseType -->|"Cancelled"| ClientClosed499["499 Client Closed Request<br/>no body"]
     CaseType -->|"Timeout"| Timeout408["408 Request Timeout<br/>ProblemDetails"]
+    CaseType -->|"any other ITimeoutFailureCase"| Timeout408
     CaseType -->|"RateLimited"| TooMany429["429 Too Many Requests<br/>ProblemDetails"]
+    CaseType -->|"any other IRateLimitedFailureCase"| TooMany429
     CaseType -->|"unrecognized (a custom failure type<br/>the default mapper wasn't taught)"| Error500["500 Internal Server Error<br/>body: the failure value itself"]
 ```
 
@@ -100,12 +103,15 @@ flowchart TD
 | Any other [`IValidationFailureCase`](glossary.md#result-types) implementer (e.g. `FluentValidationErrors`) | 422 Unprocessable Entity | `ProblemDetails` | Recognized via the interface, not a type-specific branch - a consumer's own validation-shaped failure case maps the same way without a mapper override. `Detail` is every `Messages` entry joined with `"; "`. |
 | NotFound | 404 Not Found | The message, or none | `NotFound<TId>` (the generic form) maps the same way via a separate reflective path. |
 | Forbidden | 403 Forbidden | None | Reason is never sent to the client. |
+| Any other `IForbiddenFailureCase` implementer | 403 Forbidden | None | Recognized via the interface, not a type-specific branch - a consumer's own `IPolicyEvaluator`-specific failure case maps the same way without a mapper override, even though only the single built-in `IPolicyEvaluator` ships today. |
 | Conflict | 409 Conflict | `ProblemDetails` | `Title` is the conflict code, `Detail` is the message. |
 | Failure | 400 Bad Request | `ProblemDetails` | Deliberately not 500 - `Failure` is an outcome a handler chose to report, not a server fault. An unhandled exception still reaches ASP.NET Core's exception middleware as 500, independently of this mapping. |
 | Failures (aggregate) | 400 Bad Request | `ProblemDetails` | `Detail` is every reason joined with `"; "`. |
 | Cancelled | 499 Client Closed Request | None | Not 400 - the caller withdrew interest before the operation completed, which is neither a malformed request nor a domain failure. |
 | Timeout | 408 Request Timeout | `ProblemDetails` | `Detail` is the message, or `Budget`/`Elapsed` if none was set. |
+| Any other `ITimeoutFailureCase` implementer | 408 Request Timeout | `ProblemDetails` | Recognized via the interface - a consumer's own `ITimeoutPolicy`-specific failure case maps the same way without a mapper override. `Detail` is the message verbatim (no `Budget`/`Elapsed` fallback - the interface guarantees only the message). |
 | RateLimited | 429 Too Many Requests | `ProblemDetails` | `Detail` is the message, or the `LimitKey`. Does not set a `Retry-After` header - override `MapRateLimited` to add one. |
+| Any other `IRateLimitedFailureCase` implementer | 429 Too Many Requests | `ProblemDetails` | Recognized via the interface - a consumer's own `IRateLimiter`-specific failure case maps the same way without a mapper override. `Detail` is the message verbatim (no `LimitKey` fallback - the interface guarantees only the message). |
 | Anything else (a custom failure type) | 500 Internal Server Error | The failure value itself | The default mapper doesn't know this type - supply your own `IOutcomeStatusMapper`, or override `MapUnrecognized`, to map it precisely. |
 
 ## Custom HTTP Mapping
