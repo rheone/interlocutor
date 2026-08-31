@@ -26,7 +26,7 @@ public interface ISender
     /// <param name="ct">The cancellation token.</param>
     /// <returns>A <see cref="Task{TResult}"/> representing the asynchronous operation.</returns>
     Task<TResponse> Send<TResponse>(IQuery<TResponse> query, CancellationToken ct = default)
-        where TResponse : IOperationOutcome;
+        where TResponse : IOutcome;
 
     /// <summary>Dispatches a value-returning command to its registered handler, returning the result through all pipeline behaviors.</summary>
     /// <typeparam name="TResponse">The command response type.</typeparam>
@@ -34,15 +34,15 @@ public interface ISender
     /// <param name="ct">The cancellation token.</param>
     /// <returns>A <see cref="Task{TResult}"/> representing the asynchronous operation.</returns>
     Task<TResponse> Send<TResponse>(ICommand<TResponse> command, CancellationToken ct = default)
-        where TResponse : IOperationOutcome;
+        where TResponse : IOutcome;
 
     /// <summary>Dispatches a void command to its registered handler, returning the outcome through all pipeline behaviors.</summary>
-    /// <typeparam name="TResult">The <see cref="CommonKernel.ResultTypes.IOperationOutcome"/>-shaped outcome type to resolve a handler for.</typeparam>
+    /// <typeparam name="TResult">The <see cref="CommonKernel.ResultTypes.IOutcome"/>-shaped outcome type to resolve a handler for.</typeparam>
     /// <param name="command">The command to dispatch.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>A <see cref="Task{TResult}"/> representing the asynchronous operation.</returns>
     Task<TResult> Send<TResult>(ICommand command, CancellationToken ct = default)
-        where TResult : IOperationOutcome;
+        where TResult : IOutcome;
 
     /// <summary>
     /// Dispatches a request whose static type is not known at the call site - a query, a value-returning
@@ -56,7 +56,7 @@ public interface ISender
     /// <param name="ct">The cancellation token.</param>
     /// <returns>
     /// A <see cref="Task{TResult}"/> whose result is the handler's response as an
-    /// <see cref="CommonKernel.ResultTypes.IOperationOutcome"/>. Callers can check
+    /// <see cref="CommonKernel.ResultTypes.IOutcome"/>. Callers can check
     /// <c>IsSuccess</c>-shaped members or pattern-match the union's case value (via
     /// <see cref="System.Runtime.CompilerServices.IUnion"/>) without knowing the concrete outcome type
     /// statically.
@@ -96,5 +96,5 @@ public interface ISender
         "May run the runtime-typed dispatch fallback when no generated dispatcher is registered - see "
             + "documentation/trim-and-aot-support.md."
     )]
-    Task<IOperationOutcome> Send(object request, CancellationToken ct = default);
+    Task<IOutcome> Send(object request, CancellationToken ct = default);
 }

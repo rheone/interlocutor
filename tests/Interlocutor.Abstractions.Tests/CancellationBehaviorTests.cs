@@ -18,7 +18,7 @@ public class CancellationBehaviorTests
     public async Task Handle_ReturnsCancelledWhenNextThrowsOperationCanceledExceptionTiedToAmbientToken()
     {
         // Arrange
-        var behavior = new CancellationBehavior<CancellableQuery, OperationOutcome<string, Cancelled>>(
+        var behavior = new CancellationBehavior<CancellableQuery, Outcome<string, Cancelled>>(
             DefaultOutcomeCaseRegistry.Instance
         );
         var request = new CancellableQuery("test");
@@ -26,7 +26,7 @@ public class CancellationBehaviorTests
         await cts.CancelAsync();
         var ct = cts.Token;
 
-        Task<OperationOutcome<string, Cancelled>> Next()
+        Task<Outcome<string, Cancelled>> Next()
         {
             throw new OperationCanceledException(ct);
         }
@@ -42,13 +42,13 @@ public class CancellationBehaviorTests
     public async Task Handle_ReturnsResultFromNextWhenNotCancelled()
     {
         // Arrange
-        var behavior = new CancellationBehavior<CancellableQuery, OperationOutcome<string, Cancelled>>(
+        var behavior = new CancellationBehavior<CancellableQuery, Outcome<string, Cancelled>>(
             DefaultOutcomeCaseRegistry.Instance
         );
         var request = new CancellableQuery("test");
-        static Task<OperationOutcome<string, Cancelled>> Next()
+        static Task<Outcome<string, Cancelled>> Next()
         {
-            return Task.FromResult<OperationOutcome<string, Cancelled>>(new OperationOutcome<string, Cancelled>("success"));
+            return Task.FromResult<Outcome<string, Cancelled>>(new Outcome<string, Cancelled>("success"));
         }
 
         // Act
@@ -62,7 +62,7 @@ public class CancellationBehaviorTests
     public async Task Handle_PropagatesNonCancellationExceptionUnchanged()
     {
         // Arrange
-        var behavior = new CancellationBehavior<CancellableQuery, OperationOutcome<string, Cancelled>>(
+        var behavior = new CancellationBehavior<CancellableQuery, Outcome<string, Cancelled>>(
             DefaultOutcomeCaseRegistry.Instance
         );
         var request = new CancellableQuery("test");
@@ -70,7 +70,7 @@ public class CancellationBehaviorTests
         await cts.CancelAsync();
         var ct = cts.Token;
 
-        static Task<OperationOutcome<string, Cancelled>> Next()
+        static Task<Outcome<string, Cancelled>> Next()
         {
             throw new InvalidOperationException("boom");
         }
@@ -88,7 +88,7 @@ public class CancellationBehaviorTests
         // CancellationTokenSource than the ambient ct passed to Handle. The ambient ct itself was never
         // signalled, so ct.IsCancellationRequested is false and the exception must propagate unchanged
         // instead of being misreported as the ambient request being cancelled.
-        var behavior = new CancellationBehavior<CancellableQuery, OperationOutcome<string, Cancelled>>(
+        var behavior = new CancellationBehavior<CancellableQuery, Outcome<string, Cancelled>>(
             DefaultOutcomeCaseRegistry.Instance
         );
         var request = new CancellableQuery("test");
@@ -96,7 +96,7 @@ public class CancellationBehaviorTests
         await unrelatedCts.CancelAsync();
         var unrelatedToken = unrelatedCts.Token;
 
-        Task<OperationOutcome<string, Cancelled>> Next()
+        Task<Outcome<string, Cancelled>> Next()
         {
             throw new OperationCanceledException(unrelatedToken);
         }
@@ -110,21 +110,21 @@ public class CancellationBehaviorTests
     [Fact]
     public async Task Handle_WithResponseTypeThatHasNoCancelledCase_ThrowsNamedExceptionOnCancellation()
     {
-        // TResponse is an arbitrary IOperationOutcome the caller chose, constructed reflectively from a
+        // TResponse is an arbitrary IOutcome the caller chose, constructed reflectively from a
         // Cancelled case constructor when cancellation is actually observed. A response shape with no such
-        // case (like OperationOutcome<string, NotFound> here) can't express "cancelled" at all, so it must
+        // case (like Outcome<string, NotFound> here) can't express "cancelled" at all, so it must
         // fail loudly and specifically rather than silently succeeding or crashing obscurely.
         // Arrange
         var behavior = new CancellationBehavior<
             MisshapenCancellableQuery,
-            OperationOutcome<string, Interlocutor.CommonKernel.ResultTypes.NotFound>
+            Outcome<string, Interlocutor.CommonKernel.ResultTypes.NotFound>
         >(DefaultOutcomeCaseRegistry.Instance);
         var request = new MisshapenCancellableQuery();
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
         var ct = cts.Token;
 
-        Task<OperationOutcome<string, NotFound>> Next()
+        Task<Outcome<string, NotFound>> Next()
         {
             throw new OperationCanceledException(ct);
         }
@@ -165,20 +165,20 @@ public class CancellationBehaviorTests
         Assert.IsType<Cancelled>(result.CaseValue);
     }
 
-    public record CancellableQuery(string Name) : IQuery<OperationOutcome<string, Cancelled>>, ICancellable;
+    public record CancellableQuery(string Name) : IQuery<Outcome<string, Cancelled>>, ICancellable;
 
     /// <summary>A request implementing <see cref="ICancellable"/> whose response has no <see cref="Cancelled"/> case at all.</summary>
     public record MisshapenCancellableQuery
-        : IQuery<OperationOutcome<string, Interlocutor.CommonKernel.ResultTypes.NotFound>>,
+        : IQuery<Outcome<string, Interlocutor.CommonKernel.ResultTypes.NotFound>>,
             ICancellable;
 
-    /// <summary>A request whose response type is a hand-rolled, non-union <see cref="IOperationOutcome"/>.</summary>
+    /// <summary>A request whose response type is a hand-rolled, non-union <see cref="IOutcome"/>.</summary>
     public record CancellableHandRolledQuery : ICancellable;
 
-    /// <summary>A hand-rolled, non-union <see cref="IOperationOutcome"/> implementation - no compiler-generated
+    /// <summary>A hand-rolled, non-union <see cref="IOutcome"/> implementation - no compiler-generated
     /// case constructor, so it can only participate in <see cref="CancellationBehavior{TRequest, TResponse}"/>
     /// via a custom <see cref="IOutcomeCaseRegistry"/> registration.</summary>
-    public sealed class HandRolledOutcome : IOperationOutcome
+    public sealed class HandRolledOutcome : IOutcome
     {
         private HandRolledOutcome(Type caseType, object? caseValue)
         {

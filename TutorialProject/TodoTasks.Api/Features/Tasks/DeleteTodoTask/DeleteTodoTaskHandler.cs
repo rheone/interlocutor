@@ -8,13 +8,10 @@ using TodoTasks.Api.Domain;
 
 /// <summary>Handles <see cref="DeleteTodoTaskCommand"/>. By the time this runs, <c>AuthorizationBehavior</c> has already confirmed the caller satisfies the <c>"DeleteTodoTask"</c> policy - this handler only needs to worry about whether the task exists.</summary>
 public sealed class DeleteTodoTaskHandler(IDomainRepository<TodoTask, int> tasks, IUnitOfWork unitOfWork)
-    : ICommandHandler<DeleteTodoTaskCommand, OperationOutcome<Success, NotFound, Forbidden>>
+    : ICommandHandler<DeleteTodoTaskCommand, Outcome<Success, NotFound, Forbidden>>
 {
     /// <inheritdoc/>
-    public async Task<OperationOutcome<Success, NotFound, Forbidden>> Handle(
-        DeleteTodoTaskCommand command,
-        CancellationToken ct
-    )
+    public async Task<Outcome<Success, NotFound, Forbidden>> Handle(DeleteTodoTaskCommand command, CancellationToken ct)
     {
         if (tasks.GetById(command.Id) is not { } task)
         {

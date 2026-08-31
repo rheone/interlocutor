@@ -7,4 +7,4 @@ using TodoTasks.Api.Domain;
 
 /// <summary>Lists every <see cref="TodoTask"/>, optionally filtered to incomplete ones.</summary>
 /// <param name="OnlyIncomplete">When <see langword="true"/>, only tasks not yet completed are returned.</param>
-public sealed record ListTodoTasksQuery(bool OnlyIncomplete) : IQuery<OperationOutcome<IReadOnlyList<TodoTaskDto>, Failure>>;
+public sealed record ListTodoTasksQuery(bool OnlyIncomplete) : IQuery<Outcome<IReadOnlyList<TodoTaskDto>, Failure>>;

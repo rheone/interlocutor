@@ -19,13 +19,13 @@ using TodoTasks.Api.Domain;
 /// <remarks>
 /// No FluentValidation here, deliberately: <see cref="UpdateTodoTaskHandler"/>'s base class,
 /// <c>ResourceCommandHandler{TCommand,TEntity,TSuccess}</c>, fixes the response shape to
-/// <c>OperationOutcome{TSuccess,NotFound,Failure}</c>, which has no <see cref="ValidationErrors"/>
+/// <c>Outcome{TSuccess,NotFound,Failure}</c>, which has no <see cref="ValidationErrors"/>
 /// case for <c>ValidationBehavior</c> to construct on a validation failure - registering a validator
 /// for this command would throw at the first validation failure, not silently do nothing. Input
 /// checks belong in <see cref="UpdateTodoTaskHandler.Authorize"/> or its <c>HandleAsync</c> instead.
 /// </remarks>
 public sealed record UpdateTodoTaskCommand(int Id, string Title, string? Notes, string RequestedByUserId)
-    : ICommand<OperationOutcome<TodoTaskDto, NotFound, Failure>>,
+    : ICommand<Outcome<TodoTaskDto, NotFound, Failure>>,
         IAuditableRequest
 {
     /// <inheritdoc/>

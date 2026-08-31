@@ -45,16 +45,16 @@ services.AddInterlocutor(builder =>
 
 ```csharp
 // A query - read data, never writes, returns a result
-public record GetUser(int UserId) : IQuery<OperationOutcome<UserDto, NotFound>>;
+public record GetUser(int UserId) : IQuery<Outcome<UserDto, NotFound>>;
 
 // The handler - injected normally, no special requirements
-public class GetUserHandler : IQueryHandler<GetUser, OperationOutcome<UserDto, NotFound>>
+public class GetUserHandler : IQueryHandler<GetUser, Outcome<UserDto, NotFound>>
 {
     private readonly IUserRepository repository;
 
     public GetUserHandler(IUserRepository repository) => this.repository = repository;
 
-    public async Task<OperationOutcome<UserDto, NotFound>> Handle(
+    public async Task<Outcome<UserDto, NotFound>> Handle(
         GetUser query, CancellationToken ct)
     {
         var user = await repository.FindAsync(query.UserId, ct);
@@ -74,7 +74,7 @@ var result = await mediator.Send(new GetUser(42), cancellationToken);
 // Pattern-match the result - the compiler forces you to handle every case
 var message = result switch
 {
-    OperationOutcome.SuccessCase<UserDto> success => $"Found: {success.Value.Name}",
+    Outcome.SuccessCase<UserDto> success => $"Found: {success.Value.Name}",
     NotFound notfound => $"Not found: {notfound.Message}",
     _ => "Unexpected"
 };
@@ -84,7 +84,7 @@ var message = result switch
 
 | Package | Purpose |
 |---------|---------|
-| `Interlocutor.CommonKernel` | Result types. `IOperationOutcome` is the extension point every handler response implements - see [messages-and-result-types.md](documentation/messages-and-result-types.md) for the full walkthrough. `OperationOutcome<...>` unions and their failure cases (`Success`, `NotFound`, `Forbidden`, `Conflict`, `ValidationError`, `Failure`) are the library's own built-in implementation of it. Zero dependencies. |
+| `Interlocutor.CommonKernel` | Result types. `IOutcome` is the extension point every handler response implements - see [messages-and-result-types.md](documentation/messages-and-result-types.md) for the full walkthrough. `Outcome<...>` unions and their failure cases (`Success`, `NotFound`, `Forbidden`, `Conflict`, `ValidationError`, `Failure`) are the library's own built-in implementation of it. Zero dependencies. |
 | `Interlocutor.Abstractions` | Core: `IMediator`, `ISender`, `IPublisher`; handler interfaces; pipeline behaviors (`LoggingBehavior`, `AuthorizationBehavior`, `AuditingBehavior`, plus the opt-in `CancellationBehavior`, `TimeoutBehavior`, and `RateLimitedBehavior`, which have no prescribed position in the chain); marker interfaces for opt-in concerns. |
 | `Interlocutor.DependencyInjection.Abstractions` | Container-neutral registration model shared by the two DI packages below - `InterlocutorBuilder`, `InterlocutorPipelineBuilder`, `RegistrationReport` - see [dependency-injection-abstractions.md](documentation/dependency-injection-abstractions.md). Pulled in transitively; not referenced directly by most consumers. |
 | `Interlocutor.DependencyInjection.Microsoft` | Builder-based registration for Microsoft.Extensions.DependencyInjection - see [dependency-injection-microsoft.md](documentation/dependency-injection-microsoft.md). |

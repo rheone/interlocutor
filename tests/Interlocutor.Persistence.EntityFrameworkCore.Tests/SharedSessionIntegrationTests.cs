@@ -36,9 +36,7 @@ public sealed class SharedSessionIntegrationTests : IDisposable
     {
         // Arrange
         var repository = new EntityFrameworkRepository<Widget, int, TestDbContext>(this.lazyContext, w => w.Id);
-        var behavior = new UnitOfWorkBehavior<TransactionalRequest, OperationOutcome<Success, Failure>, TestDbContext>(
-            this.lazyContext
-        );
+        var behavior = new UnitOfWorkBehavior<TransactionalRequest, Outcome<Success, Failure>, TestDbContext>(this.lazyContext);
 
         // Act
         var result = await behavior.Handle(
@@ -96,7 +94,7 @@ public sealed class SharedSessionIntegrationTests : IDisposable
         return new TestDbContext(options);
     }
 
-    private sealed record TransactionalRequest : ICommand<OperationOutcome<Success, Failure>>;
+    private sealed record TransactionalRequest : ICommand<Outcome<Success, Failure>>;
 
     public sealed class Widget
     {

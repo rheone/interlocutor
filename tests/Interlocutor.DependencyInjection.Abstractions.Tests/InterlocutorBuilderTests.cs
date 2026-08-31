@@ -161,7 +161,7 @@ public class InterlocutorBuilderTests
 
         // Assert
         var registration = Assert.Single(builder.Handlers, r => r.ImplementationType == typeof(SampleQueryHandler));
-        Assert.Equal(typeof(IQueryHandler<SampleQuery, OperationOutcome>), registration.ServiceType);
+        Assert.Equal(typeof(IQueryHandler<SampleQuery, Outcome>), registration.ServiceType);
         Assert.Equal(RegistrationKind.Handler, registration.Kind);
         Assert.Equal(RegistrationProvenance.Explicit, registration.Provenance);
         Assert.Equal(RegistrationLifetime.Scoped, registration.Lifetime);
@@ -317,7 +317,7 @@ public class InterlocutorBuilderTests
 
         // Assert
         var registration = Assert.Single(builder.MatchedRegistrations);
-        Assert.Equal(typeof(IQueryHandler<SampleQuery, OperationOutcome>), registration.ServiceType);
+        Assert.Equal(typeof(IQueryHandler<SampleQuery, Outcome>), registration.ServiceType);
         Assert.Equal(typeof(SampleQueryHandler), registration.ImplementationType);
         Assert.Equal(RegistrationKind.Handler, registration.Kind);
         Assert.Equal(RegistrationProvenance.Matched, registration.Provenance);
@@ -580,14 +580,13 @@ public class InterlocutorBuilderTests
         public Task OnAfterAsync(SampleRequest request, SampleResponse result, CancellationToken ct) => Task.CompletedTask;
     }
 
-    private sealed record SampleQuery : IQuery<OperationOutcome>;
+    private sealed record SampleQuery : IQuery<Outcome>;
 
-    private sealed record UnhandledQuery : IQuery<OperationOutcome>;
+    private sealed record UnhandledQuery : IQuery<Outcome>;
 
-    private sealed class SampleQueryHandler : IQueryHandler<SampleQuery, OperationOutcome>
+    private sealed class SampleQueryHandler : IQueryHandler<SampleQuery, Outcome>
     {
-        public Task<OperationOutcome> Handle(SampleQuery query, CancellationToken ct) =>
-            Task.FromResult(default(OperationOutcome));
+        public Task<Outcome> Handle(SampleQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 
     // Deliberately empty: a negative-case marker that implements no handler interface, not a data holder.

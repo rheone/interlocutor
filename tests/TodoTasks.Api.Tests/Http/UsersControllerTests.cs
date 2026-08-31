@@ -91,7 +91,7 @@ public sealed class UsersControllerTests : IClassFixture<TodoTasksApiFactory>
         );
 
         // Assert - 200, not 204: DeleteUserCommand's success case is the generic union's TSuccess, not the
-        // bare non-generic OperationOutcome ClearCompletedTodoTasksCommand uses.
+        // bare non-generic Outcome ClearCompletedTodoTasksCommand uses.
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         using var getResponse = await client.GetAsync(
             new Uri($"/api/users/{user.Id}", UriKind.Relative),

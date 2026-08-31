@@ -36,7 +36,7 @@ public sealed class RootScopeGuardedMediator(IMediator inner, IRootScopeDetector
 {
     /// <inheritdoc/>
     public Task<TResponse> Send<TResponse>(IQuery<TResponse> query, CancellationToken ct = default)
-        where TResponse : IOperationOutcome
+        where TResponse : IOutcome
     {
         ArgumentNullException.ThrowIfNull(query);
         this.EnsureNotRootScope(query.GetType());
@@ -45,7 +45,7 @@ public sealed class RootScopeGuardedMediator(IMediator inner, IRootScopeDetector
 
     /// <inheritdoc/>
     public Task<TResponse> Send<TResponse>(ICommand<TResponse> command, CancellationToken ct = default)
-        where TResponse : IOperationOutcome
+        where TResponse : IOutcome
     {
         ArgumentNullException.ThrowIfNull(command);
         this.EnsureNotRootScope(command.GetType());
@@ -54,7 +54,7 @@ public sealed class RootScopeGuardedMediator(IMediator inner, IRootScopeDetector
 
     /// <inheritdoc/>
     public Task<TResult> Send<TResult>(ICommand command, CancellationToken ct = default)
-        where TResult : IOperationOutcome
+        where TResult : IOutcome
     {
         ArgumentNullException.ThrowIfNull(command);
         this.EnsureNotRootScope(command.GetType());
@@ -70,7 +70,7 @@ public sealed class RootScopeGuardedMediator(IMediator inner, IRootScopeDetector
         "May run the runtime-typed dispatch fallback when no generated dispatcher is registered - see "
             + "documentation/trim-and-aot-support.md."
     )]
-    public Task<IOperationOutcome> Send(object request, CancellationToken ct = default)
+    public Task<IOutcome> Send(object request, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(request);
         this.EnsureNotRootScope(request.GetType());

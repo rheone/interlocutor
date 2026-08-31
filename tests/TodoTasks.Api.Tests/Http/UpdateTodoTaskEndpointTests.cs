@@ -63,7 +63,7 @@ public sealed class UpdateTodoTaskEndpointTests : IClassFixture<TodoTasksApiFact
             TestContext.Current.CancellationToken
         );
 
-        // Assert - ResourceCommandHandler's fixed OperationOutcome<TSuccess,NotFound,Failure> arity
+        // Assert - ResourceCommandHandler's fixed Outcome<TSuccess,NotFound,Failure> arity
         // has no dedicated "forbidden" case, so Failure maps to the default's generic failure status.
         Assert.False(response.IsSuccessStatusCode);
     }

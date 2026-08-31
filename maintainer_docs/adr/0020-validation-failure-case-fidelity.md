@@ -14,7 +14,7 @@ The same shape of problem exists in principle for any pipeline result case backe
 
 ### `IValidationFailureCase` (`Interlocutor.CommonKernel`)
 
-A minimal, zero-dependency marker interface any validation-shaped failure case can implement, mirroring `IOperationOutcome` as CommonKernel's existing extension-point precedent and following the same marker-interface shape [ADR-0004](0004-marker-interfaces-for-cross-cutting.md) established for cross-cutting opt-in - except this marker is on a failure *case value*, not a request type:
+A minimal, zero-dependency marker interface any validation-shaped failure case can implement, mirroring `IOutcome` as CommonKernel's existing extension-point precedent and following the same marker-interface shape [ADR-0004](0004-marker-interfaces-for-cross-cutting.md) established for cross-cutting opt-in - except this marker is on a failure *case value*, not a request type:
 
 ```csharp
 public interface IValidationFailureCase
@@ -25,7 +25,7 @@ public interface IValidationFailureCase
 
 `ValidationErrors` is retrofitted to implement it - no behavior change, since it already exposes a `Messages`-shaped surface.
 
-`FluentValidationErrors` (`Interlocutor.FluentValidation`) is a new struct wrapping `IReadOnlyList<FluentValidation.Results.ValidationFailure>` verbatim (full fidelity), implementing `IValidationFailureCase`. It lives in `Interlocutor.FluentValidation`, not CommonKernel, because CommonKernel must never depend on FluentValidation's types. `FluentValidationErrorsBehavior<TRequest, TResponse>` has the same shape as `ValidationBehavior<TRequest, TResponse>` - aggregates every registered `FluentValidation.IValidator<TRequest>`, short-circuits when none are registered - but constructs `FluentValidationErrors` via `IOutcomeCaseRegistry` instead of `ValidationErrors`. This is purely additive: a handler opts in by declaring `FluentValidationErrors` as a case in its own `OperationOutcome<...>` union and registering this behavior instead of (or, if genuinely wanted, alongside - though not recommended) today's `ValidationBehavior`. Nothing about `ValidationBehavior` or `ValidationErrors` changes.
+`FluentValidationErrors` (`Interlocutor.FluentValidation`) is a new struct wrapping `IReadOnlyList<FluentValidation.Results.ValidationFailure>` verbatim (full fidelity), implementing `IValidationFailureCase`. It lives in `Interlocutor.FluentValidation`, not CommonKernel, because CommonKernel must never depend on FluentValidation's types. `FluentValidationErrorsBehavior<TRequest, TResponse>` has the same shape as `ValidationBehavior<TRequest, TResponse>` - aggregates every registered `FluentValidation.IValidator<TRequest>`, short-circuits when none are registered - but constructs `FluentValidationErrors` via `IOutcomeCaseRegistry` instead of `ValidationErrors`. This is purely additive: a handler opts in by declaring `FluentValidationErrors` as a case in its own `Outcome<...>` union and registering this behavior instead of (or, if genuinely wanted, alongside - though not recommended) today's `ValidationBehavior`. Nothing about `ValidationBehavior` or `ValidationErrors` changes.
 
 `Interlocutor.AspNetCore.DefaultOutcomeStatusMapper` gains an `IValidationFailureCase v => this.MapValidationFailureCase(v)` branch (ordered after the existing exact `ValidationErrors` branch, so today's mapping is unaffected) so `FluentValidationErrors` - and any future implementer - maps to 422 instead of falling into `MapUnrecognized`.
 

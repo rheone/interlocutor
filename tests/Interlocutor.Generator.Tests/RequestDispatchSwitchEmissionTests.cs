@@ -18,11 +18,11 @@ public sealed class RequestDispatchSwitchEmissionTests
         using Interlocutor.Abstractions.Queries;
         using Interlocutor.CommonKernel;
 
-        public sealed class GetFooQuery : IQuery<OperationOutcome>;
+        public sealed class GetFooQuery : IQuery<Outcome>;
 
-        public sealed class GetFooQueryHandler : IQueryHandler<GetFooQuery, OperationOutcome>
+        public sealed class GetFooQueryHandler : IQueryHandler<GetFooQuery, Outcome>
         {
-            public Task<OperationOutcome> Handle(GetFooQuery query, CancellationToken ct) => throw new System.NotImplementedException();
+            public Task<Outcome> Handle(GetFooQuery query, CancellationToken ct) => throw new System.NotImplementedException();
         }
         """;
 
@@ -91,7 +91,7 @@ public sealed class RequestDispatchSwitchEmissionTests
             using Interlocutor.Abstractions.Queries;
             using Interlocutor.CommonKernel;
 
-            public sealed class GetFooQuery : IQuery<OperationOutcome>;
+            public sealed class GetFooQuery : IQuery<Outcome>;
             """;
 
         // Act
@@ -103,7 +103,7 @@ public sealed class RequestDispatchSwitchEmissionTests
         Assert.Contains("case global::TestApp.GetFooQuery:", dispatchSwitchSource, StringComparison.Ordinal);
         Assert.Contains(
             "throw new global::Interlocutor.Abstractions.Core.HandlerNotRegisteredException(typeof(global::TestApp.GetFooQuery), "
-                + "typeof(global::Interlocutor.Abstractions.Queries.IQueryHandler<global::TestApp.GetFooQuery, global::Interlocutor.CommonKernel.OperationOutcome>));",
+                + "typeof(global::Interlocutor.Abstractions.Queries.IQueryHandler<global::TestApp.GetFooQuery, global::Interlocutor.CommonKernel.Outcome>));",
             dispatchSwitchSource,
             StringComparison.Ordinal
         );
@@ -157,9 +157,9 @@ public sealed class RequestDispatchSwitchEmissionTests
 
             public sealed class DeleteFooCommand : ICommand;
 
-            public sealed class DeleteFooCommandHandler : IVoidCommandHandler<DeleteFooCommand, OperationOutcome>
+            public sealed class DeleteFooCommandHandler : IVoidCommandHandler<DeleteFooCommand, Outcome>
             {
-                public Task<OperationOutcome> Handle(DeleteFooCommand command, CancellationToken ct) => throw new System.NotImplementedException();
+                public Task<Outcome> Handle(DeleteFooCommand command, CancellationToken ct) => throw new System.NotImplementedException();
             }
             """;
 

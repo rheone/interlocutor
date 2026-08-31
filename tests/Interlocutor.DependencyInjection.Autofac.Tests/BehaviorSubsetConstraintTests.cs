@@ -33,7 +33,7 @@ public class BehaviorSubsetConstraintTests
         var container = containerBuilder.Build();
 
         // Assert
-        Assert.Empty(container.Resolve<IEnumerable<IPipelineBehavior<PlainCommand, OperationOutcome<string, Forbidden>>>>());
+        Assert.Empty(container.Resolve<IEnumerable<IPipelineBehavior<PlainCommand, Outcome<string, Forbidden>>>>());
     }
 
     [Fact]
@@ -48,12 +48,12 @@ public class BehaviorSubsetConstraintTests
         // Act
         var container = containerBuilder.Build();
         var resolved = container
-            .Resolve<IEnumerable<IPipelineBehavior<AuditableCommand, OperationOutcome<string, Forbidden>>>>()
+            .Resolve<IEnumerable<IPipelineBehavior<AuditableCommand, Outcome<string, Forbidden>>>>()
             .ToList();
 
         // Assert
         Assert.Single(resolved);
-        Assert.IsType<AuditingBehavior<AuditableCommand, OperationOutcome<string, Forbidden>>>(resolved[0]);
+        Assert.IsType<AuditingBehavior<AuditableCommand, Outcome<string, Forbidden>>>(resolved[0]);
     }
 
     [Fact]
@@ -69,7 +69,7 @@ public class BehaviorSubsetConstraintTests
         var container = containerBuilder.Build();
 
         // Assert
-        Assert.Empty(container.Resolve<IEnumerable<IPipelineBehavior<PlainCommand, OperationOutcome<string, Forbidden>>>>());
+        Assert.Empty(container.Resolve<IEnumerable<IPipelineBehavior<PlainCommand, Outcome<string, Forbidden>>>>());
     }
 
     [Fact]
@@ -83,13 +83,11 @@ public class BehaviorSubsetConstraintTests
 
         // Act
         var container = containerBuilder.Build();
-        var resolved = container
-            .Resolve<IEnumerable<IPipelineBehavior<PolicyCommand, OperationOutcome<string, Forbidden>>>>()
-            .ToList();
+        var resolved = container.Resolve<IEnumerable<IPipelineBehavior<PolicyCommand, Outcome<string, Forbidden>>>>().ToList();
 
         // Assert
         Assert.Single(resolved);
-        Assert.IsType<AuthorizationBehavior<PolicyCommand, OperationOutcome<string, Forbidden>>>(resolved[0]);
+        Assert.IsType<AuthorizationBehavior<PolicyCommand, Outcome<string, Forbidden>>>(resolved[0]);
     }
 
     [Fact]
@@ -109,14 +107,14 @@ public class BehaviorSubsetConstraintTests
 
         // AuditableCommand satisfies AuditingBehavior's constraint: both behaviors resolve, in registration order.
         var auditableChain = container
-            .Resolve<IEnumerable<IPipelineBehavior<AuditableCommand, OperationOutcome<string, Forbidden>>>>()
+            .Resolve<IEnumerable<IPipelineBehavior<AuditableCommand, Outcome<string, Forbidden>>>>()
             .Select(b => b.GetType().Name)
             .ToList();
 
         // PlainCommand does not satisfy AuditingBehavior's constraint: only the unconstrained LoggingBehavior
         // resolves, at the same relative position - filtering one entry out of the list doesn't reorder the rest.
         var plainChain = container
-            .Resolve<IEnumerable<IPipelineBehavior<PlainCommand, OperationOutcome<string, Forbidden>>>>()
+            .Resolve<IEnumerable<IPipelineBehavior<PlainCommand, Outcome<string, Forbidden>>>>()
             .Select(b => b.GetType().Name)
             .ToList();
 
@@ -143,20 +141,20 @@ public class BehaviorSubsetConstraintTests
 
         // AuditableCommand: satisfies IAuditableRequest but not IRequiresPolicy -> logging + auditing only.
         var auditableChain = container
-            .Resolve<IEnumerable<IPipelineBehavior<AuditableCommand, OperationOutcome<string, Forbidden>>>>()
+            .Resolve<IEnumerable<IPipelineBehavior<AuditableCommand, Outcome<string, Forbidden>>>>()
             .Select(b => b.GetType().Name)
             .ToList();
 
         // PolicyCommand: satisfies IRequiresPolicy (and the Forbidden response shape) but not IAuditableRequest
         // -> logging + authorization only. Drawn from the exact same registration list as the other two chains.
         var policyChain = container
-            .Resolve<IEnumerable<IPipelineBehavior<PolicyCommand, OperationOutcome<string, Forbidden>>>>()
+            .Resolve<IEnumerable<IPipelineBehavior<PolicyCommand, Outcome<string, Forbidden>>>>()
             .Select(b => b.GetType().Name)
             .ToList();
 
         // PlainCommand: satisfies neither marker -> logging only.
         var plainChain = container
-            .Resolve<IEnumerable<IPipelineBehavior<PlainCommand, OperationOutcome<string, Forbidden>>>>()
+            .Resolve<IEnumerable<IPipelineBehavior<PlainCommand, Outcome<string, Forbidden>>>>()
             .Select(b => b.GetType().Name)
             .ToList();
 
@@ -184,9 +182,9 @@ public class BehaviorSubsetConstraintTests
         // Assert
         Assert.Equal(
             2,
-            container.Resolve<IEnumerable<IPipelineBehavior<AuditableCommand, OperationOutcome<string, Forbidden>>>>().Count()
+            container.Resolve<IEnumerable<IPipelineBehavior<AuditableCommand, Outcome<string, Forbidden>>>>().Count()
         );
-        Assert.Empty(container.Resolve<IEnumerable<IPipelineBehavior<PlainCommand, OperationOutcome<string, Forbidden>>>>());
+        Assert.Empty(container.Resolve<IEnumerable<IPipelineBehavior<PlainCommand, Outcome<string, Forbidden>>>>());
     }
 
     /// <summary>
@@ -201,15 +199,15 @@ public class BehaviorSubsetConstraintTests
         return containerBuilder;
     }
 
-    private sealed record AuditableCommand(string Name) : ICommand<OperationOutcome<string, Forbidden>>, IAuditableRequest
+    private sealed record AuditableCommand(string Name) : ICommand<Outcome<string, Forbidden>>, IAuditableRequest
     {
         public string ActionName => "Test.Audit";
     }
 
-    private sealed record PolicyCommand(string Name) : ICommand<OperationOutcome<string, Forbidden>>, IRequiresPolicy
+    private sealed record PolicyCommand(string Name) : ICommand<Outcome<string, Forbidden>>, IRequiresPolicy
     {
         public string PolicyName => "Test.Policy";
     }
 
-    private sealed record PlainCommand(string Name) : ICommand<OperationOutcome<string, Forbidden>>;
+    private sealed record PlainCommand(string Name) : ICommand<Outcome<string, Forbidden>>;
 }

@@ -34,7 +34,7 @@ public class RootScopeGuardedMediatorTests
 
         // Assert
         Assert.Equal(typeof(SampleQuery), ex.RequestType);
-        await inner.DidNotReceive().Send(Arg.Any<IQuery<OperationOutcome<int, Failure>>>(), Arg.Any<CancellationToken>());
+        await inner.DidNotReceive().Send(Arg.Any<IQuery<Outcome<int, Failure>>>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -42,8 +42,8 @@ public class RootScopeGuardedMediatorTests
     {
         // Arrange
         var inner = Substitute.For<IMediator>();
-        var expected = new OperationOutcome<int, Failure>(42);
-        inner.Send(Arg.Any<IQuery<OperationOutcome<int, Failure>>>(), Arg.Any<CancellationToken>()).Returns(expected);
+        var expected = new Outcome<int, Failure>(42);
+        inner.Send(Arg.Any<IQuery<Outcome<int, Failure>>>(), Arg.Any<CancellationToken>()).Returns(expected);
         var detector = StubDetector(isRootScope: false);
         var guarded = new RootScopeGuardedMediator(inner, detector);
 
@@ -71,7 +71,7 @@ public class RootScopeGuardedMediatorTests
 
         // Assert
         Assert.Equal(typeof(SampleValueCommand), ex.RequestType);
-        await inner.DidNotReceive().Send(Arg.Any<ICommand<OperationOutcome<int, Failure>>>(), Arg.Any<CancellationToken>());
+        await inner.DidNotReceive().Send(Arg.Any<ICommand<Outcome<int, Failure>>>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -86,12 +86,12 @@ public class RootScopeGuardedMediatorTests
 
         // Act
         var ex = await Assert.ThrowsAsync<MediatorResolvedFromRootScopeException>(() =>
-            guarded.Send<OperationOutcome>(command, CancellationToken.None)
+            guarded.Send<Outcome>(command, CancellationToken.None)
         );
 
         // Assert
         Assert.Equal(typeof(SampleUnitCommand), ex.RequestType);
-        await inner.DidNotReceive().Send<OperationOutcome>(Arg.Any<ICommand>(), Arg.Any<CancellationToken>());
+        await inner.DidNotReceive().Send<Outcome>(Arg.Any<ICommand>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -170,9 +170,9 @@ public class RootScopeGuardedMediatorTests
         return detector;
     }
 
-    private sealed record SampleQuery : IQuery<OperationOutcome<int, Failure>>;
+    private sealed record SampleQuery : IQuery<Outcome<int, Failure>>;
 
-    private sealed record SampleValueCommand : ICommand<OperationOutcome<int, Failure>>;
+    private sealed record SampleValueCommand : ICommand<Outcome<int, Failure>>;
 
     private sealed record SampleUnitCommand : ICommand;
 

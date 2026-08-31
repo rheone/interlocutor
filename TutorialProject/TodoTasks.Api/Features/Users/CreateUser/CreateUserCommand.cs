@@ -22,5 +22,5 @@ using TodoTasks.Api.Domain;
 /// commits.
 /// </remarks>
 public sealed record CreateUserCommand(string DisplayName, string Email)
-    : ICommand<OperationOutcome<UserDto, ValidationErrors, Conflict>>,
+    : ICommand<Outcome<UserDto, ValidationErrors, Conflict>>,
         ITransactionalRequest;

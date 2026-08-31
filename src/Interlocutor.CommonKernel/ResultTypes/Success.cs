@@ -10,7 +10,7 @@ namespace Interlocutor.CommonKernel.ResultTypes;
 /// only mutates state). When you need to return data on success, use a domain type instead of <see cref="Success"/>.
 /// </para>
 /// <para>
-/// Example: <c>Task&lt;OperationOutcome&lt;Success, NotFound, Failure&gt;&gt;</c> for a command that succeeds with no data,
+/// Example: <c>Task&lt;Outcome&lt;Success, NotFound, Failure&gt;&gt;</c> for a command that succeeds with no data,
 /// or fails with not-found or generic failure.
 /// </para>
 /// </remarks>

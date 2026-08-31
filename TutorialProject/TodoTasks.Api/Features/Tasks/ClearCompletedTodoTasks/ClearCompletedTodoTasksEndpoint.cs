@@ -7,7 +7,7 @@ using Interlocutor.CommonKernel;
 /// <summary>
 /// Maps <c>POST /todo-tasks/clear-completed</c>. Unlike every other endpoint in this project, this
 /// one has to state which outcome type it wants back explicitly
-/// (<c>sender.Send&lt;OperationOutcome&gt;(...)</c>) - it can't be inferred from a bare
+/// (<c>sender.Send&lt;Outcome&gt;(...)</c>) - it can't be inferred from a bare
 /// <see cref="Interlocutor.Abstractions.Commands.ICommand"/> the way it can from
 /// <see cref="Interlocutor.Abstractions.Commands.ICommand{TResponse}"/>'s fixed response type.
 /// </summary>
@@ -27,7 +27,7 @@ public static class ClearCompletedTodoTasksEndpoint
                         ?? throw new InvalidOperationException("This endpoint requires an authenticated caller.");
 
                     var result = await sender
-                        .Send<OperationOutcome>(new ClearCompletedTodoTasksCommand(ownerId), ct)
+                        .Send<Outcome>(new ClearCompletedTodoTasksCommand(ownerId), ct)
                         .ConfigureAwait(false);
                     return result.ToMinimalApiResult();
                 }

@@ -86,12 +86,11 @@ public sealed class UnitOfWorkBehaviorArityTests
         Assert.Equal(["subclassed"], verifyContext.Widgets.Select(w => w.Name));
     }
 
-    private sealed record CreateWidget(string Name) : ICommand<OperationOutcome<Success, Failure>>;
+    private sealed record CreateWidget(string Name) : ICommand<Outcome<Success, Failure>>;
 
-    private sealed class WidgetCommandHandler(TestDbContext context)
-        : ICommandHandler<CreateWidget, OperationOutcome<Success, Failure>>
+    private sealed class WidgetCommandHandler(TestDbContext context) : ICommandHandler<CreateWidget, Outcome<Success, Failure>>
     {
-        public async Task<OperationOutcome<Success, Failure>> Handle(CreateWidget command, CancellationToken ct)
+        public async Task<Outcome<Success, Failure>> Handle(CreateWidget command, CancellationToken ct)
         {
             await context.Widgets.AddAsync(new Widget { Name = command.Name }, ct).ConfigureAwait(false);
             return default(Success);

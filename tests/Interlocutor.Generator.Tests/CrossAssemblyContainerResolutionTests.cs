@@ -34,17 +34,17 @@ public sealed class CrossAssemblyContainerResolutionTests
         using Interlocutor.CommonKernel;
         using Interlocutor.CommonKernel.ResultTypes;
 
-        public sealed record GetGreetingQuery : IQuery<OperationOutcome<string, Failure>>;
+        public sealed record GetGreetingQuery : IQuery<Outcome<string, Failure>>;
 
         public interface IGreeter
         {
             string Greet();
         }
 
-        public sealed class GetGreetingQueryHandler(IGreeter greeter) : IQueryHandler<GetGreetingQuery, OperationOutcome<string, Failure>>
+        public sealed class GetGreetingQueryHandler(IGreeter greeter) : IQueryHandler<GetGreetingQuery, Outcome<string, Failure>>
         {
-            public Task<OperationOutcome<string, Failure>> Handle(GetGreetingQuery query, CancellationToken ct) =>
-                Task.FromResult(new OperationOutcome<string, Failure>(greeter.Greet()));
+            public Task<Outcome<string, Failure>> Handle(GetGreetingQuery query, CancellationToken ct) =>
+                Task.FromResult(new Outcome<string, Failure>(greeter.Greet()));
         }
         """;
 
@@ -151,11 +151,11 @@ public sealed class CrossAssemblyContainerResolutionTests
 
     /// <summary>
     /// <see cref="ISender.Send(object, System.Threading.CancellationToken)"/>'s runtime-typed overload
-    /// returns the marker <see cref="IOperationOutcome"/> (compile-time common ground with the caller); the
+    /// returns the marker <see cref="IOutcome"/> (compile-time common ground with the caller); the
     /// concrete case is read back by reflection over the boxed union value's own <c>IsSuccess</c>/<c>Value</c>
     /// members, since the caller has no compile-time reference to the library's own success/failure types.
     /// </summary>
-    private static void AssertSuccessfulGreeting(IOperationOutcome outcome)
+    private static void AssertSuccessfulGreeting(IOutcome outcome)
     {
         var outcomeType = outcome.GetType();
         var isSuccess = (bool)outcomeType.GetProperty("IsSuccess")!.GetValue(outcome)!;

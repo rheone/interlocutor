@@ -14,11 +14,11 @@ Every assembly containing handlers emits a generated module that the application
 
 ```csharp
 // In your domain assembly:
-public record GetUser(int UserId) : IQuery<OperationOutcome<UserDto, NotFound>>;
+public record GetUser(int UserId) : IQuery<Outcome<UserDto, NotFound>>;
 
-public class GetUserHandler : IQueryHandler<GetUser, OperationOutcome<UserDto, NotFound>>
+public class GetUserHandler : IQueryHandler<GetUser, Outcome<UserDto, NotFound>>
 {
-    public async Task<OperationOutcome<UserDto, NotFound>> Handle(
+    public async Task<Outcome<UserDto, NotFound>> Handle(
         GetUser query, CancellationToken ct)
     { /* ... */ }
 }
@@ -57,14 +57,14 @@ Two different mechanisms handle the two ambiguity cases, and they're not interch
 A query or command dispatch always resolves to **exactly one handler**. Two closed handlers matching the same request/response pair produce `INTERLOC002` (default severity `Warning`, escalatable to an error via `.editorconfig` the same way as `INTERLOC001`) - there's no `[HandlerOverride]` for this case, since it's a straightforward duplicate to remove or rename, not a genuine design ambiguity:
 
 ```csharp
-public record GetUser(int UserId) : IQuery<OperationOutcome<UserDto, NotFound>>;
+public record GetUser(int UserId) : IQuery<Outcome<UserDto, NotFound>>;
 
-public class GetUserHandler : IQueryHandler<GetUser, OperationOutcome<UserDto, NotFound>>
+public class GetUserHandler : IQueryHandler<GetUser, Outcome<UserDto, NotFound>>
 { /* ... */ }
 
 // INTERLOC002: duplicate handler for the same closed request/response pair.
 // Fix by removing or renaming one of them - there is no override for this case.
-public class GetUserHandlerV2 : IQueryHandler<GetUser, OperationOutcome<UserDto, NotFound>>
+public class GetUserHandlerV2 : IQueryHandler<GetUser, Outcome<UserDto, NotFound>>
 { /* ... */ }
 ```
 
@@ -74,17 +74,17 @@ A closed handler wins over an open generic handler when both could apply:
 
 ```csharp
 // Open generic - handles any GetById<T> query
-public class GetByIdHandler<T> : IQueryHandler<GetById<T>, OperationOutcome<T, NotFound>>
+public class GetByIdHandler<T> : IQueryHandler<GetById<T>, Outcome<T, NotFound>>
 {
-    public async Task<OperationOutcome<T, NotFound>> Handle(
+    public async Task<Outcome<T, NotFound>> Handle(
         GetById<T> query, CancellationToken ct)
     { /* generic implementation */ }
 }
 
 // Closed - specific to GetById<User>
-public class GetUserByIdHandler : IQueryHandler<GetById<User>, OperationOutcome<User, NotFound>>
+public class GetUserByIdHandler : IQueryHandler<GetById<User>, Outcome<User, NotFound>>
 {
-    public async Task<OperationOutcome<User, NotFound>> Handle(
+    public async Task<Outcome<User, NotFound>> Handle(
         GetById<User> query, CancellationToken ct)
     { /* optimized implementation for User */ }
 }
@@ -103,12 +103,12 @@ Handler selection is purely type-shape-driven. Namespace and assembly location n
 ```csharp
 // src/MyApp.Domain/GetUserHandler.cs
 namespace MyApp.Domain;
-public class GetUserHandler : IQueryHandler<GetUser, OperationOutcome<UserDto, NotFound>>
+public class GetUserHandler : IQueryHandler<GetUser, Outcome<UserDto, NotFound>>
 { /* ... */ }
 
 // src/MyApp.Api/Handlers/GetUserHandler.cs (different namespace, same assembly)
 namespace MyApp.Api.Handlers;
-public class GetUserHandler : IQueryHandler<GetUser, OperationOutcome<UserDto, NotFound>>
+public class GetUserHandler : IQueryHandler<GetUser, Outcome<UserDto, NotFound>>
 { /* ... */ }
 
 // INTERLOC002 again: two handlers with the same signature, same reason as above.
@@ -121,13 +121,13 @@ Closed beats open generic automatically - that's not an ambiguity, so it never n
 
 ```csharp
 // Both handlers close over GenericQuery<T> for the same T - an unresolved ambiguity
-public class GenericQueryHandlerLosing<T> : IQueryHandler<GenericQuery<T>, OperationOutcome<T, string>>
+public class GenericQueryHandlerLosing<T> : IQueryHandler<GenericQuery<T>, Outcome<T, string>>
     where T : IEntity, new()
 { /* ... */ }
 
 // Declares it takes precedence over the other - resolves the ambiguity
 [HandlerOverride(typeof(GenericQueryHandlerLosing<>))]
-public class GenericQueryHandlerWinning<T> : IQueryHandler<GenericQuery<T>, OperationOutcome<T, string>>
+public class GenericQueryHandlerWinning<T> : IQueryHandler<GenericQuery<T>, Outcome<T, string>>
     where T : IEntity, new()
 { /* ... */ }
 
@@ -146,7 +146,7 @@ Some commands need to authorize based on the loaded entity (ownership, entity st
 
 ```csharp
 public record DeleteDocument(int DocumentId, int RequestedByUserId)
-    : ICommand<OperationOutcome<Success, NotFound, Failure>>;
+    : ICommand<Outcome<Success, NotFound, Failure>>;
 
 public class DeleteDocumentHandler
     : ResourceCommandHandler<DeleteDocument, Document, Success>
@@ -170,7 +170,7 @@ public class DeleteDocumentHandler
     }
 
     // Step 3: Handle the command (entity is already loaded and authorized)
-    protected override async Task<OperationOutcome<Success, NotFound, Failure>> HandleAsync(
+    protected override async Task<Outcome<Success, NotFound, Failure>> HandleAsync(
         DeleteDocument command, Document entity, CancellationToken ct)
     {
         await this.repository.DeleteAsync(entity, ct);
@@ -186,7 +186,7 @@ var result = await mediator.Send(new DeleteDocument(42, currentUserId));
 **Why is this not a pipeline behavior?** A behavior cannot express "if this specific part fails, produce this specific outcome" for a reason that depends on data loaded mid-pipeline. Resource authorization needs the entity that was just loaded, and passing it forward would require shared mutable state - exactly the architectural pattern Interlocutor avoids. The template method encapsulates the load, authorize, handle sequence as a single cohesive unit, rather than splitting it across multiple layers.
 
 > [!NOTE]
-> `ResourceCommandHandler` always returns `OperationOutcome<TSuccess, NotFound, Failure>` - it can produce `NotFound` (when `LoadAsync` returns null) and `Failure` (when `Authorize` returns a failure), and any other outcome depends on what `HandleAsync` produces. The shape is fixed and enforced by the handler's own contract.
+> `ResourceCommandHandler` always returns `Outcome<TSuccess, NotFound, Failure>` - it can produce `NotFound` (when `LoadAsync` returns null) and `Failure` (when `Authorize` returns a failure), and any other outcome depends on what `HandleAsync` produces. The shape is fixed and enforced by the handler's own contract.
 
 ## Contrast: Resource vs. Non-Resource Authorization
 
@@ -198,7 +198,7 @@ Both are useful and solve different problems:
 ```csharp
 // Non-resource: "Can this user DELETE (any) document?"
 public record DeleteDocument(int DocumentId, int RequestedByUserId)
-    : ICommand<OperationOutcome<Success, NotFound, Failure>>,
+    : ICommand<Outcome<Success, NotFound, Failure>>,
       IRequiresPolicy  // Evaluated before loading
 {
     public string PolicyName => "DeleteDocument";
@@ -211,7 +211,7 @@ public class AdminOnlyPolicyEvaluator : IPolicyEvaluator
 
 // Resource: "Can this user DELETE *this specific* document?"
 public record DeleteDocument(int DocumentId, int RequestedByUserId)
-    : ICommand<OperationOutcome<Success, NotFound, Failure>>;  // No marker
+    : ICommand<Outcome<Success, NotFound, Failure>>;  // No marker
 
 public class DeleteDocumentHandler : ResourceCommandHandler<DeleteDocument, Document, Success>
 {
@@ -315,7 +315,7 @@ var request = JsonSerializer.Deserialize(message.Payload, requestType);
 // Runtime-typed dispatch - no generic parameter
 var result = await mediator.Send(request);  // request is object
 
-// Result is IOperationOutcome (the base interface all outcomes implement)
+// Result is IOutcome (the base interface all outcomes implement)
 // You can inspect success/failure without knowing the concrete outcome shape
 ```
 

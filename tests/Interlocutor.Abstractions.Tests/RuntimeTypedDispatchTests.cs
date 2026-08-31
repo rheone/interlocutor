@@ -11,7 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 /// <summary>A query with no handler registered in any test's service collection - used to prove the
 /// "unregistered request type" failure path.</summary>
-public record UnregisteredQuery(int Value) : IQuery<OperationOutcome<int, Failure>>;
+public record UnregisteredQuery(int Value) : IQuery<Outcome<int, Failure>>;
 
 /// <summary>A void command with no handler registered in any test's service collection - used to prove the
 /// "unregistered request type" failure path for the unit-command shape.</summary>
@@ -19,13 +19,13 @@ public record UnregisteredVoidCommand : ICommand;
 
 /// <summary>A query whose handler always returns the failure case, used to prove the runtime-dispatched
 /// outcome is pattern-matchable for failure without the caller knowing the concrete outcome shape.</summary>
-public record FailingQuery : IQuery<OperationOutcome<int, Failure>>;
+public record FailingQuery : IQuery<Outcome<int, Failure>>;
 
 /// <summary>Handler for <see cref="FailingQuery"/> - always fails.</summary>
-public class FailingQueryHandler : IQueryHandler<FailingQuery, OperationOutcome<int, Failure>>
+public class FailingQueryHandler : IQueryHandler<FailingQuery, Outcome<int, Failure>>
 {
-    public Task<OperationOutcome<int, Failure>> Handle(FailingQuery query, CancellationToken ct) =>
-        Task.FromResult(new OperationOutcome<int, Failure>(new Failure("boom")));
+    public Task<Outcome<int, Failure>> Handle(FailingQuery query, CancellationToken ct) =>
+        Task.FromResult(new Outcome<int, Failure>(new Failure("boom")));
 }
 
 /// <summary>Tests for <see cref="ISender.Send(object, CancellationToken)"/> - the runtime-typed dispatch
@@ -38,7 +38,7 @@ public class RuntimeTypedDispatchTests
     {
         // Arrange
         var sender = CreateSender(services =>
-            services.AddSingleton<IQueryHandler<TestQuery, OperationOutcome<int, Failure>>, TestQueryHandler>()
+            services.AddSingleton<IQueryHandler<TestQuery, Outcome<int, Failure>>, TestQueryHandler>()
         );
         object request = new TestQuery(21);
 
@@ -46,7 +46,7 @@ public class RuntimeTypedDispatchTests
         var outcome = await sender.Send(request, CancellationToken.None);
 
         // Assert
-        Assert.IsType<IOperationOutcome>(outcome, exactMatch: false);
+        Assert.IsType<IOutcome>(outcome, exactMatch: false);
         var union = Assert.IsType<IUnion>(outcome, exactMatch: false);
         Assert.Equal(42, Assert.IsType<int>(union.Value));
     }
@@ -61,16 +61,16 @@ public class RuntimeTypedDispatchTests
         var executed = new List<string>();
         var sender = CreateSender(services =>
         {
-            services.AddSingleton<IQueryHandler<TestQuery, OperationOutcome<int, Failure>>, TestQueryHandler>();
-            services.AddSingleton<IPipelineBehavior<TestQuery, OperationOutcome<int, Failure>>>(
-                new DroppedTrackingBehavior<TestQuery, OperationOutcome<int, Failure>>(executed.Add)
+            services.AddSingleton<IQueryHandler<TestQuery, Outcome<int, Failure>>, TestQueryHandler>();
+            services.AddSingleton<IPipelineBehavior<TestQuery, Outcome<int, Failure>>>(
+                new DroppedTrackingBehavior<TestQuery, Outcome<int, Failure>>(executed.Add)
             );
-            services.AddSingleton<IPipelineBehavior<TestQuery, OperationOutcome<int, Failure>>>(
-                new KeptTrackingBehavior<TestQuery, OperationOutcome<int, Failure>>(executed.Add)
+            services.AddSingleton<IPipelineBehavior<TestQuery, Outcome<int, Failure>>>(
+                new KeptTrackingBehavior<TestQuery, Outcome<int, Failure>>(executed.Add)
             );
             services.AddSingleton<IPipelineOverrideRegistry>(
                 new FakeOverrideRegistry(t =>
-                    t == typeof(TestQuery) ? [typeof(KeptTrackingBehavior<TestQuery, OperationOutcome<int, Failure>>)] : null
+                    t == typeof(TestQuery) ? [typeof(KeptTrackingBehavior<TestQuery, Outcome<int, Failure>>)] : null
                 )
             );
         });
@@ -92,15 +92,13 @@ public class RuntimeTypedDispatchTests
         var executed = new List<string>();
         var sender = CreateSender(services =>
         {
-            services.AddSingleton<IQueryHandler<TestQuery, OperationOutcome<int, Failure>>, TestQueryHandler>();
-            services.AddSingleton<IPipelineBehavior<TestQuery, OperationOutcome<int, Failure>>>(
-                new KeptTrackingBehavior<TestQuery, OperationOutcome<int, Failure>>(executed.Add)
+            services.AddSingleton<IQueryHandler<TestQuery, Outcome<int, Failure>>, TestQueryHandler>();
+            services.AddSingleton<IPipelineBehavior<TestQuery, Outcome<int, Failure>>>(
+                new KeptTrackingBehavior<TestQuery, Outcome<int, Failure>>(executed.Add)
             );
             services.AddSingleton<IPipelineOverrideRegistry>(
                 new FakeOverrideRegistry(t =>
-                    t == typeof(GreetCommand)
-                        ? [typeof(KeptTrackingBehavior<GreetCommand, OperationOutcome<string, Failure>>)]
-                        : null
+                    t == typeof(GreetCommand) ? [typeof(KeptTrackingBehavior<GreetCommand, Outcome<string, Failure>>)] : null
                 )
             );
         });
@@ -118,7 +116,7 @@ public class RuntimeTypedDispatchTests
     {
         // Arrange
         var sender = CreateSender(services =>
-            services.AddSingleton<ICommandHandler<GreetCommand, OperationOutcome<string, Failure>>, GreetCommandHandler>()
+            services.AddSingleton<ICommandHandler<GreetCommand, Outcome<string, Failure>>, GreetCommandHandler>()
         );
         object request = new GreetCommand("Ada");
 
@@ -135,7 +133,7 @@ public class RuntimeTypedDispatchTests
     {
         // Arrange
         var sender = CreateSender(services =>
-            services.AddSingleton<IVoidCommandHandler<TestVoidCommand, OperationOutcome>, TestVoidHandler>()
+            services.AddSingleton<IVoidCommandHandler<TestVoidCommand, Outcome>, TestVoidHandler>()
         );
         object request = new TestVoidCommand("test");
 
@@ -152,15 +150,15 @@ public class RuntimeTypedDispatchTests
     {
         // Arrange
         var sender = CreateSender(services =>
-            services.AddSingleton<IQueryHandler<FailingQuery, OperationOutcome<int, Failure>>, FailingQueryHandler>()
+            services.AddSingleton<IQueryHandler<FailingQuery, Outcome<int, Failure>>, FailingQueryHandler>()
         );
         object request = new FailingQuery();
 
         // Act
         var outcome = await sender.Send(request, CancellationToken.None);
 
-        // Assert - The caller here only has IOperationOutcome - no generic arguments, no knowledge of the
-        // concrete OperationOutcome<TSuccess, TFailure> shape. IUnion.Value is the union's case value, and
+        // Assert - The caller here only has IOutcome - no generic arguments, no knowledge of the
+        // concrete Outcome<TSuccess, TFailure> shape. IUnion.Value is the union's case value, and
         // case types (Failure, Success, plain data) can still be pattern-matched from it.
         var isFailure = outcome switch
         {

@@ -17,11 +17,11 @@ public sealed class CrossAssemblyAggregationTests
         using Interlocutor.Abstractions.Queries;
         using Interlocutor.CommonKernel;
 
-        public sealed class GetBarQuery : IQuery<OperationOutcome>;
+        public sealed class GetBarQuery : IQuery<Outcome>;
 
-        public sealed class GetBarQueryHandler : IQueryHandler<GetBarQuery, OperationOutcome>
+        public sealed class GetBarQueryHandler : IQueryHandler<GetBarQuery, Outcome>
         {
-            public Task<OperationOutcome> Handle(GetBarQuery query, CancellationToken ct) => throw new System.NotImplementedException();
+            public Task<Outcome> Handle(GetBarQuery query, CancellationToken ct) => throw new System.NotImplementedException();
         }
         """;
 
@@ -33,11 +33,11 @@ public sealed class CrossAssemblyAggregationTests
         using Interlocutor.Abstractions.Queries;
         using Interlocutor.CommonKernel;
 
-        public sealed class GetFooQuery : IQuery<OperationOutcome>;
+        public sealed class GetFooQuery : IQuery<Outcome>;
 
-        public sealed class GetFooQueryHandler : IQueryHandler<GetFooQuery, OperationOutcome>
+        public sealed class GetFooQueryHandler : IQueryHandler<GetFooQuery, Outcome>
         {
-            public Task<OperationOutcome> Handle(GetFooQuery query, CancellationToken ct) => throw new System.NotImplementedException();
+            public Task<Outcome> Handle(GetFooQuery query, CancellationToken ct) => throw new System.NotImplementedException();
         }
         """;
 
@@ -141,7 +141,7 @@ public sealed class CrossAssemblyAggregationTests
 
             // A request declared in the app, handled by LibraryA.GetFooQueryHandler - the app never sees the
             // handler type, only its request/response shape via InterlocutorGeneratedHandlerAttribute metadata.
-            public sealed class AppOnlyQuery : IQuery<OperationOutcome>;
+            public sealed class AppOnlyQuery : IQuery<Outcome>;
             """;
 
         // Act
@@ -192,7 +192,7 @@ public sealed class CrossAssemblyAggregationTests
             using Interlocutor.Abstractions.Queries;
             using Interlocutor.CommonKernel;
 
-            public sealed class GetFooQuery : IQuery<OperationOutcome>;
+            public sealed class GetFooQuery : IQuery<Outcome>;
             """;
 
         // Act
@@ -220,7 +220,7 @@ public sealed class CrossAssemblyAggregationTests
             [assembly: InterlocutorGeneratedModuleAttribute(typeof(LibraryFuture.Module))]
             [assembly: InterlocutorGeneratedHandlerAttribute(
                 typeof(LibraryFuture.WeirdRequest),
-                typeof(Interlocutor.CommonKernel.OperationOutcome),
+                typeof(Interlocutor.CommonKernel.Outcome),
                 (GeneratedHandlerKind)99)]
 
             namespace LibraryFuture;
@@ -248,7 +248,7 @@ public sealed class CrossAssemblyAggregationTests
             using Interlocutor.Abstractions.Queries;
             using Interlocutor.CommonKernel;
 
-            public sealed class WeirdRequest : IQuery<OperationOutcome>;
+            public sealed class WeirdRequest : IQuery<Outcome>;
             """;
 
         // Act

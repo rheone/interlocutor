@@ -24,7 +24,7 @@ using TodoTasks.Api.Domain;
 /// <c>AuditingBehavior</c> - see <see cref="ActionName"/>.
 /// </remarks>
 public sealed record CreateTodoTaskCommand(string Title, string? Notes, string OwnerId)
-    : ICommand<OperationOutcome<TodoTaskDto, ValidationErrors, Conflict>>,
+    : ICommand<Outcome<TodoTaskDto, ValidationErrors, Conflict>>,
         ITransactionalRequest,
         IAuditableRequest
 {

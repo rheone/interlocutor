@@ -83,7 +83,7 @@ public class ContainerBuilderExtensionsTests
 
         // Act
         var container = builder.Build();
-        var behavior = container.Resolve<IPipelineBehavior<MatchedRequest, OperationOutcome>>();
+        var behavior = container.Resolve<IPipelineBehavior<MatchedRequest, Outcome>>();
 
         // Assert
         Assert.IsType<ClosedMatchedBehavior>(behavior);
@@ -108,10 +108,9 @@ public class ContainerBuilderExtensionsTests
     /// against the open <see cref="IPipelineBehavior{TRequest,TResponse}"/> service type - the shape ticket 01
     /// covers: a closed implementation registered against an open Autofac service.
     /// </summary>
-    private sealed class ClosedMatchedBehavior : IPipelineBehavior<MatchedRequest, OperationOutcome>
+    private sealed class ClosedMatchedBehavior : IPipelineBehavior<MatchedRequest, Outcome>
     {
-        public Task<OperationOutcome> Handle(MatchedRequest request, Func<Task<OperationOutcome>> next, CancellationToken ct) =>
-            next();
+        public Task<Outcome> Handle(MatchedRequest request, Func<Task<Outcome>> next, CancellationToken ct) => next();
     }
 
     // Deliberately empty: a type-identity marker for this test's generic-constraint shape, not a data holder.

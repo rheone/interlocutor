@@ -13,13 +13,10 @@ using TodoTasks.Api.Domain;
 /// <c>IDomainRepository{TEntity,TKey}.GetPagedAsync</c> instead of <see cref="IDomainRepository{TEntity,TKey}.GetManyAsync"/>.
 /// </remarks>
 public sealed class ListTodoTasksHandler(IDomainRepository<TodoTask, int> tasks)
-    : IQueryHandler<ListTodoTasksQuery, OperationOutcome<IReadOnlyList<TodoTaskDto>, Failure>>
+    : IQueryHandler<ListTodoTasksQuery, Outcome<IReadOnlyList<TodoTaskDto>, Failure>>
 {
     /// <inheritdoc/>
-    public async Task<OperationOutcome<IReadOnlyList<TodoTaskDto>, Failure>> Handle(
-        ListTodoTasksQuery query,
-        CancellationToken ct
-    )
+    public async Task<Outcome<IReadOnlyList<TodoTaskDto>, Failure>> Handle(ListTodoTasksQuery query, CancellationToken ct)
     {
         var matches = await tasks
             .GetManyAsync(

@@ -12,7 +12,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// close this generic - a container-neutral, compile-time-checked replacement for a runtime <c>is</c> check.
 /// </typeparam>
 /// <typeparam name="TResponse">
-/// The response type, constrained only to <see cref="IOperationOutcome"/> - deliberately unconstrained
+/// The response type, constrained only to <see cref="IOutcome"/> - deliberately unconstrained
 /// beyond that, mirroring <see cref="AuthorizationBehavior{TRequest, TResponse}"/>: both
 /// <typeparamref name="TRequest"/> and <typeparamref name="TResponse"/> map 1:1 onto
 /// <see cref="IPipelineBehavior{TRequest, TResponse}"/>'s generic arguments, which is required for
@@ -30,7 +30,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 public class RateLimitedBehavior<TRequest, TResponse>(IRateLimiter rateLimiter, IOutcomeCaseRegistry caseRegistry)
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRateLimited
-    where TResponse : IOperationOutcome
+    where TResponse : IOutcome
 {
     /// <summary>
     /// Handles the request, checking the rate limit and short-circuiting with <see cref="RateLimited"/>

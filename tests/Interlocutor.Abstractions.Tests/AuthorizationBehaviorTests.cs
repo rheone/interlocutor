@@ -20,7 +20,7 @@ using NSubstitute;
 // open-generic resolver does positional substitution (implementationType.MakeGenericType(serviceType's
 // generic arguments)) and cannot resolve an implementation whose type parameter is nested inside the
 // service's generic argument (the previous <TRequest,TSuccess> shape, implementing
-// IPipelineBehavior<TRequest, OperationOutcome<TSuccess,Forbidden>>) - it throws ArgumentException for
+// IPipelineBehavior<TRequest, Outcome<TSuccess,Forbidden>>) - it throws ArgumentException for
 // every request, unconditionally, the moment that shape is registered. Autofac's RegisterGeneric performs
 // real structural unification and would have tolerated the old shape, which is why this went uncaught until
 // a real Microsoft DI resolution was attempted (see BehaviorSubsetConstraintTests).
@@ -35,14 +35,14 @@ public class AuthorizationBehaviorTests
             .EvaluateAsync(Arg.Any<string>(), Arg.Any<object>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(true));
 
-        var behavior = new AuthorizationBehavior<ProtectedQuery, OperationOutcome<string, Forbidden>>(
+        var behavior = new AuthorizationBehavior<ProtectedQuery, Outcome<string, Forbidden>>(
             policyEvaluator,
             DefaultOutcomeCaseRegistry.Instance
         );
         var request = new ProtectedQuery("test");
-        static Task<OperationOutcome<string, Forbidden>> Next()
+        static Task<Outcome<string, Forbidden>> Next()
         {
-            return Task.FromResult<OperationOutcome<string, Forbidden>>(new OperationOutcome<string, Forbidden>("success"));
+            return Task.FromResult<Outcome<string, Forbidden>>(new Outcome<string, Forbidden>("success"));
         }
 
         // Act
@@ -62,12 +62,12 @@ public class AuthorizationBehaviorTests
             .EvaluateAsync(Arg.Any<string>(), Arg.Any<object>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(false));
 
-        var behavior = new AuthorizationBehavior<ProtectedQuery, OperationOutcome<string, Forbidden>>(
+        var behavior = new AuthorizationBehavior<ProtectedQuery, Outcome<string, Forbidden>>(
             policyEvaluator,
             DefaultOutcomeCaseRegistry.Instance
         );
         var request = new ProtectedQuery("test");
-        static Task<OperationOutcome<string, Forbidden>> Next()
+        static Task<Outcome<string, Forbidden>> Next()
         {
             throw new InvalidOperationException("Handler should not be called");
         }
@@ -89,12 +89,12 @@ public class AuthorizationBehaviorTests
             .EvaluateAsync(Arg.Any<string>(), Arg.Any<object>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(false));
 
-        var behavior = new AuthorizationBehavior<ProtectedQuery, OperationOutcome<string, Forbidden>>(
+        var behavior = new AuthorizationBehavior<ProtectedQuery, Outcome<string, Forbidden>>(
             policyEvaluator,
             DefaultOutcomeCaseRegistry.Instance
         );
         var request = new ProtectedQuery("test");
-        static Task<OperationOutcome<string, Forbidden>> Next()
+        static Task<Outcome<string, Forbidden>> Next()
         {
             throw new InvalidOperationException("Should not be called");
         }
@@ -116,17 +116,17 @@ public class AuthorizationBehaviorTests
             .EvaluateAsync(Arg.Any<string>(), Arg.Any<object>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(false));
 
-        var behavior = new AuthorizationBehavior<ProtectedQuery, OperationOutcome<string, Forbidden>>(
+        var behavior = new AuthorizationBehavior<ProtectedQuery, Outcome<string, Forbidden>>(
             policyEvaluator,
             DefaultOutcomeCaseRegistry.Instance
         );
         var request = new ProtectedQuery("test");
         var nextCalled = false;
 
-        Task<OperationOutcome<string, Forbidden>> Next()
+        Task<Outcome<string, Forbidden>> Next()
         {
             nextCalled = true;
-            return Task.FromResult<OperationOutcome<string, Forbidden>>(new OperationOutcome<string, Forbidden>("success"));
+            return Task.FromResult<Outcome<string, Forbidden>>(new Outcome<string, Forbidden>("success"));
         }
 
         // Act
@@ -145,14 +145,14 @@ public class AuthorizationBehaviorTests
             .EvaluateAsync(Arg.Any<string>(), Arg.Any<object>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(true));
 
-        var behavior = new AuthorizationBehavior<ProtectedQuery, OperationOutcome<string, Forbidden>>(
+        var behavior = new AuthorizationBehavior<ProtectedQuery, Outcome<string, Forbidden>>(
             policyEvaluator,
             DefaultOutcomeCaseRegistry.Instance
         );
         var request = new ProtectedQuery("test-value");
-        static Task<OperationOutcome<string, Forbidden>> Next()
+        static Task<Outcome<string, Forbidden>> Next()
         {
-            return Task.FromResult<OperationOutcome<string, Forbidden>>(new OperationOutcome<string, Forbidden>("success"));
+            return Task.FromResult<Outcome<string, Forbidden>>(new Outcome<string, Forbidden>("success"));
         }
 
         // Act
@@ -168,9 +168,9 @@ public class AuthorizationBehaviorTests
     public async Task Handle_WithResponseTypeThatHasNoForbiddenCase_ThrowsNamedExceptionOnDenial()
     {
         // TResponse is no longer decomposed at compile time into a success-type parameter with Forbidden
-        // pinned as the failure case - it's an arbitrary IOperationOutcome the caller chose, constructed
+        // pinned as the failure case - it's an arbitrary IOutcome the caller chose, constructed
         // reflectively from a Forbidden case constructor when authorization is denied. A response shape with
-        // no such case (like OperationOutcome<string, NotFound> here) can't express "denied" at all, so
+        // no such case (like Outcome<string, NotFound> here) can't express "denied" at all, so
         // denial must fail loudly and specifically rather than silently succeeding or crashing obscurely.
         // Arrange
         var policyEvaluator = Substitute.For<IPolicyEvaluator>();
@@ -180,10 +180,10 @@ public class AuthorizationBehaviorTests
 
         var behavior = new AuthorizationBehavior<
             MisshapenProtectedQuery,
-            OperationOutcome<string, Interlocutor.CommonKernel.ResultTypes.NotFound>
+            Outcome<string, Interlocutor.CommonKernel.ResultTypes.NotFound>
         >(policyEvaluator, DefaultOutcomeCaseRegistry.Instance);
         var request = new MisshapenProtectedQuery();
-        static Task<OperationOutcome<string, NotFound>> Next()
+        static Task<Outcome<string, NotFound>> Next()
         {
             throw new InvalidOperationException("Should not be called");
         }
@@ -229,30 +229,30 @@ public class AuthorizationBehaviorTests
         Assert.Contains("CanRead", forbidden.Reason ?? string.Empty);
     }
 
-    public record ProtectedQuery(string Name) : IQuery<OperationOutcome<string, Forbidden>>, IRequiresPolicy
+    public record ProtectedQuery(string Name) : IQuery<Outcome<string, Forbidden>>, IRequiresPolicy
     {
         public string PolicyName => "CanRead";
     }
 
     /// <summary>A request declaring a policy whose response has no <see cref="Forbidden"/> case at all.</summary>
     public record MisshapenProtectedQuery
-        : IQuery<OperationOutcome<string, Interlocutor.CommonKernel.ResultTypes.NotFound>>,
+        : IQuery<Outcome<string, Interlocutor.CommonKernel.ResultTypes.NotFound>>,
             IRequiresPolicy
     {
         public string PolicyName => "CanRead";
     }
 
-    /// <summary>A request whose response type is a hand-rolled, non-union <see cref="IOperationOutcome"/>.</summary>
+    /// <summary>A request whose response type is a hand-rolled, non-union <see cref="IOutcome"/>.</summary>
     public record ProtectedHandRolledQuery : IRequiresPolicy
     {
         public string PolicyName => "CanRead";
     }
 
-    /// <summary>A hand-rolled, non-union <see cref="IOperationOutcome"/> implementation - no compiler-generated
+    /// <summary>A hand-rolled, non-union <see cref="IOutcome"/> implementation - no compiler-generated
     /// case constructor and no <see cref="System.Runtime.CompilerServices.IUnion"/> marker, so it can only participate in
     /// <see cref="AuthorizationBehavior{TRequest, TResponse}"/> via a custom <see cref="IOutcomeCaseRegistry"/>
     /// registration, never via <see cref="DefaultOutcomeCaseRegistry"/> alone.</summary>
-    public sealed class HandRolledOutcome : IOperationOutcome
+    public sealed class HandRolledOutcome : IOutcome
     {
         private HandRolledOutcome(Type caseType, object? caseValue)
         {

@@ -18,7 +18,7 @@ using Interlocutor.CommonKernel.ResultTypes.Internal;
 /// </para>
 /// <para>
 /// Typically raised by the <c>ValidationBehavior</c> pipeline when a request implements FluentValidation validators
-/// and one or more validators report failures. Example outcome type: <c>OperationOutcome&lt;UserDto, ValidationErrors&gt;</c>.
+/// and one or more validators report failures. Example outcome type: <c>Outcome&lt;UserDto, ValidationErrors&gt;</c>.
 /// </para>
 /// <para>
 /// For validation errors that carry error codes, use <see cref="ValidationErrors{TErrorCode}"/>.

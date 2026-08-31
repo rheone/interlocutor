@@ -15,18 +15,16 @@ public class ValidationBehaviorTests
     {
         // Arrange
         var request = new TestRequest("Alice", 30);
-        var behavior = new ValidationBehavior<TestRequest, OperationOutcome<string, ValidationErrors>>(
+        var behavior = new ValidationBehavior<TestRequest, Outcome<string, ValidationErrors>>(
             [],
             DefaultOutcomeCaseRegistry.Instance
         );
 
         var handlerInvoked = false;
-        async Task<OperationOutcome<string, ValidationErrors>> Next()
+        async Task<Outcome<string, ValidationErrors>> Next()
         {
             handlerInvoked = true;
-            return await Task.FromResult<OperationOutcome<string, ValidationErrors>>(
-                    new OperationOutcome<string, ValidationErrors>("success")
-                )
+            return await Task.FromResult<Outcome<string, ValidationErrors>>(new Outcome<string, ValidationErrors>("success"))
                 .ConfigureAwait(false);
         }
 
@@ -44,18 +42,16 @@ public class ValidationBehaviorTests
         // Arrange
         var request = new TestRequest("Alice", 30);
         var validators = new AbstractValidator<TestRequest>[] { new TestRequestNameValidator(), new TestRequestAgeValidator() };
-        var behavior = new ValidationBehavior<TestRequest, OperationOutcome<string, ValidationErrors>>(
+        var behavior = new ValidationBehavior<TestRequest, Outcome<string, ValidationErrors>>(
             validators,
             DefaultOutcomeCaseRegistry.Instance
         );
 
         var handlerInvoked = false;
-        async Task<OperationOutcome<string, ValidationErrors>> Next()
+        async Task<Outcome<string, ValidationErrors>> Next()
         {
             handlerInvoked = true;
-            return await Task.FromResult<OperationOutcome<string, ValidationErrors>>(
-                    new OperationOutcome<string, ValidationErrors>("success")
-                )
+            return await Task.FromResult<Outcome<string, ValidationErrors>>(new Outcome<string, ValidationErrors>("success"))
                 .ConfigureAwait(false);
         }
 
@@ -73,18 +69,16 @@ public class ValidationBehaviorTests
         // Arrange
         var request = new TestRequest(string.Empty, 30);
         var validators = new AbstractValidator<TestRequest>[] { new TestRequestNameValidator() };
-        var behavior = new ValidationBehavior<TestRequest, OperationOutcome<string, ValidationErrors>>(
+        var behavior = new ValidationBehavior<TestRequest, Outcome<string, ValidationErrors>>(
             validators,
             DefaultOutcomeCaseRegistry.Instance
         );
 
         var handlerInvoked = false;
-        async Task<OperationOutcome<string, ValidationErrors>> Next()
+        async Task<Outcome<string, ValidationErrors>> Next()
         {
             handlerInvoked = true;
-            return await Task.FromResult<OperationOutcome<string, ValidationErrors>>(
-                    new OperationOutcome<string, ValidationErrors>("success")
-                )
+            return await Task.FromResult<Outcome<string, ValidationErrors>>(new Outcome<string, ValidationErrors>("success"))
                 .ConfigureAwait(false);
         }
 
@@ -102,16 +96,14 @@ public class ValidationBehaviorTests
         // Arrange
         var request = new TestRequest("Al", -5);
         var validators = new AbstractValidator<TestRequest>[] { new TestRequestNameValidator(), new TestRequestAgeValidator() };
-        var behavior = new ValidationBehavior<TestRequest, OperationOutcome<string, ValidationErrors>>(
+        var behavior = new ValidationBehavior<TestRequest, Outcome<string, ValidationErrors>>(
             validators,
             DefaultOutcomeCaseRegistry.Instance
         );
 
-        static async Task<OperationOutcome<string, ValidationErrors>> Next()
+        static async Task<Outcome<string, ValidationErrors>> Next()
         {
-            return await Task.FromResult<OperationOutcome<string, ValidationErrors>>(
-                    new OperationOutcome<string, ValidationErrors>("success")
-                )
+            return await Task.FromResult<Outcome<string, ValidationErrors>>(new Outcome<string, ValidationErrors>("success"))
                 .ConfigureAwait(false);
         }
 
@@ -136,16 +128,14 @@ public class ValidationBehaviorTests
         var validator1 = new TestRequestNameValidator();
         var validator2 = new TestRequestNameValidator(); // Same validator twice
         var validators = new AbstractValidator<TestRequest>[] { validator1, validator2 };
-        var behavior = new ValidationBehavior<TestRequest, OperationOutcome<string, ValidationErrors>>(
+        var behavior = new ValidationBehavior<TestRequest, Outcome<string, ValidationErrors>>(
             validators,
             DefaultOutcomeCaseRegistry.Instance
         );
 
-        static async Task<OperationOutcome<string, ValidationErrors>> Next()
+        static async Task<Outcome<string, ValidationErrors>> Next()
         {
-            return await Task.FromResult<OperationOutcome<string, ValidationErrors>>(
-                    new OperationOutcome<string, ValidationErrors>("success")
-                )
+            return await Task.FromResult<Outcome<string, ValidationErrors>>(new Outcome<string, ValidationErrors>("success"))
                 .ConfigureAwait(false);
         }
 
@@ -167,16 +157,14 @@ public class ValidationBehaviorTests
         // Arrange
         var request = new TestRequest(string.Empty, -5);
         var validators = new AbstractValidator<TestRequest>[] { new TestRequestNameValidator(), new TestRequestAgeValidator() };
-        var behavior = new ValidationBehavior<TestRequest, OperationOutcome<string, ValidationErrors>>(
+        var behavior = new ValidationBehavior<TestRequest, Outcome<string, ValidationErrors>>(
             validators,
             DefaultOutcomeCaseRegistry.Instance
         );
 
-        static Task<OperationOutcome<string, ValidationErrors>> Next()
+        static Task<Outcome<string, ValidationErrors>> Next()
         {
-            return Task.FromResult<OperationOutcome<string, ValidationErrors>>(
-                new OperationOutcome<string, ValidationErrors>("success")
-            );
+            return Task.FromResult<Outcome<string, ValidationErrors>>(new Outcome<string, ValidationErrors>("success"));
         }
 
         // Act
@@ -205,16 +193,14 @@ public class ValidationBehaviorTests
         var validator = Substitute.For<IValidator<PublicTestRequest>>();
         validator.ValidateAsync(Arg.Any<PublicTestRequest>(), Arg.Any<CancellationToken>()).Returns(new ValidationResult());
         var request = new PublicTestRequest("Alice", 30);
-        var behavior = new ValidationBehavior<PublicTestRequest, OperationOutcome<string, ValidationErrors>>(
+        var behavior = new ValidationBehavior<PublicTestRequest, Outcome<string, ValidationErrors>>(
             [validator],
             DefaultOutcomeCaseRegistry.Instance
         );
 
-        static Task<OperationOutcome<string, ValidationErrors>> Next()
+        static Task<Outcome<string, ValidationErrors>> Next()
         {
-            return Task.FromResult<OperationOutcome<string, ValidationErrors>>(
-                new OperationOutcome<string, ValidationErrors>("success")
-            );
+            return Task.FromResult<Outcome<string, ValidationErrors>>(new Outcome<string, ValidationErrors>("success"));
         }
 
         // Act
@@ -229,20 +215,20 @@ public class ValidationBehaviorTests
     {
         // Arrange
         // TResponse is no longer decomposed at compile time into a success-type parameter with
-        // ValidationErrors pinned as the failure case - it's an arbitrary IOperationOutcome the caller
+        // ValidationErrors pinned as the failure case - it's an arbitrary IOutcome the caller
         // chose, constructed reflectively from a ValidationErrors case constructor when validation fails.
         // A response shape with no such case can't express "failed validation" at all, so it must fail
         // loudly and specifically rather than silently succeeding or crashing obscurely.
         var request = new TestRequest(string.Empty, 30);
         var validators = new AbstractValidator<TestRequest>[] { new TestRequestNameValidator() };
-        var behavior = new ValidationBehavior<TestRequest, OperationOutcome<string, Failure>>(
+        var behavior = new ValidationBehavior<TestRequest, Outcome<string, Failure>>(
             validators,
             DefaultOutcomeCaseRegistry.Instance
         );
 
-        static Task<OperationOutcome<string, Failure>> Next()
+        static Task<Outcome<string, Failure>> Next()
         {
-            return Task.FromResult<OperationOutcome<string, Failure>>("unreachable");
+            return Task.FromResult<Outcome<string, Failure>>("unreachable");
         }
 
         // Act
@@ -259,7 +245,7 @@ public class ValidationBehaviorTests
     {
         // Arrange
         // TResponse need not be a compiler-generated union at all - IOutcomeCaseRegistry is the seam that
-        // lets ValidationBehavior construct a hand-rolled IOperationOutcome's ValidationErrors case via a
+        // lets ValidationBehavior construct a hand-rolled IOutcome's ValidationErrors case via a
         // consumer-registered factory, rather than requiring UnionCaseFactory's reflection to find a case
         // constructor that a hand-rolled type simply doesn't have.
         var registry = new OutcomeCaseRegistryBuilder()
@@ -287,11 +273,11 @@ public class ValidationBehaviorTests
         Assert.Contains("Name is required", validationErrors.Messages);
     }
 
-    /// <summary>A hand-rolled, non-union <see cref="IOperationOutcome"/> implementation with no
+    /// <summary>A hand-rolled, non-union <see cref="IOutcome"/> implementation with no
     /// compiler-generated case constructor for <see cref="UnionCaseFactory"/> to find reflectively - proves
     /// <see cref="ValidationBehavior{TRequest, TResponse}"/> goes through the injected
     /// <see cref="IOutcomeCaseRegistry"/> rather than assuming the response type is a union.</summary>
-    public sealed class HandRolledOutcome : IOperationOutcome
+    public sealed class HandRolledOutcome : IOutcome
     {
         private HandRolledOutcome(Type caseType, object? caseValue)
         {

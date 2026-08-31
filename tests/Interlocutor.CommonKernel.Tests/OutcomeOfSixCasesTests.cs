@@ -4,16 +4,16 @@ using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
 /// Covers the six-case generic
-/// <see cref="OperationOutcome{TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6}"/> union: construction from
+/// <see cref="Outcome{TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6}"/> union: construction from
 /// each case type, implicit conversion from a bare case value, and exhaustive switch pattern matching.
 /// </summary>
-public class OperationOutcomeOfSixCasesTests
+public class OutcomeOfSixCasesTests
 {
     [Fact]
     public void Construct_FromSuccess_IsSuccessTrue()
     {
         // Arrange & Act
-        var result = new OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure>("hello");
+        var result = new Outcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure>("hello");
 
         // Assert
         Assert.True(result.IsSuccess);
@@ -23,9 +23,7 @@ public class OperationOutcomeOfSixCasesTests
     public void Construct_FromCase2_IsSuccessFalse()
     {
         // Arrange & Act
-        var result = new OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure>(
-            new NotFound("missing")
-        );
+        var result = new Outcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure>(new NotFound("missing"));
 
         // Assert
         Assert.False(result.IsSuccess);
@@ -35,9 +33,7 @@ public class OperationOutcomeOfSixCasesTests
     public void Construct_FromCase3_IsSuccessFalse()
     {
         // Arrange & Act
-        var result = new OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure>(
-            new Forbidden("denied")
-        );
+        var result = new Outcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure>(new Forbidden("denied"));
 
         // Assert
         Assert.False(result.IsSuccess);
@@ -47,7 +43,7 @@ public class OperationOutcomeOfSixCasesTests
     public void Construct_FromCase4_IsSuccessFalse()
     {
         // Arrange & Act
-        var result = new OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure>(
+        var result = new Outcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure>(
             new Conflict("stale", "CONFLICT")
         );
 
@@ -59,7 +55,7 @@ public class OperationOutcomeOfSixCasesTests
     public void Construct_FromCase5_IsSuccessFalse()
     {
         // Arrange & Act
-        var result = new OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure>(
+        var result = new Outcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure>(
             new ValidationError("Name is required")
         );
 
@@ -71,7 +67,7 @@ public class OperationOutcomeOfSixCasesTests
     public void Construct_FromCase6_IsSuccessFalse()
     {
         // Arrange & Act
-        var result = new OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure>(new Failure("boom"));
+        var result = new Outcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure>(new Failure("boom"));
 
         // Assert
         Assert.False(result.IsSuccess);
@@ -81,7 +77,7 @@ public class OperationOutcomeOfSixCasesTests
     public void ImplicitConversion_FromSuccessValue_ProducesSuccessOutcome()
     {
         // Arrange & Act
-        OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure> result = "hello";
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure> result = "hello";
 
         // Assert
         Assert.True(result.IsSuccess);
@@ -91,7 +87,7 @@ public class OperationOutcomeOfSixCasesTests
     public void ImplicitConversion_FromCase6Value_ProducesCase6Outcome()
     {
         // Arrange & Act
-        OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure> result = new Failure("boom");
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure> result = new Failure("boom");
 
         // Assert
         Assert.False(result.IsSuccess);
@@ -101,7 +97,7 @@ public class OperationOutcomeOfSixCasesTests
     public void Switch_OverSuccess_MatchesSuccessCase()
     {
         // Arrange
-        OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure> result = "hello";
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure> result = "hello";
 
         // Act
         var message = result.Value switch
@@ -123,7 +119,7 @@ public class OperationOutcomeOfSixCasesTests
     public void Switch_OverCase2_MatchesCase2()
     {
         // Arrange
-        OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure> result = new NotFound("missing");
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure> result = new NotFound("missing");
 
         // Act
         var message = result.Value switch
@@ -145,7 +141,7 @@ public class OperationOutcomeOfSixCasesTests
     public void Switch_OverCase3_MatchesCase3()
     {
         // Arrange
-        OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure> result = new Forbidden("denied");
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure> result = new Forbidden("denied");
 
         // Act
         var message = result.Value switch
@@ -167,10 +163,7 @@ public class OperationOutcomeOfSixCasesTests
     public void Switch_OverCase4_MatchesCase4()
     {
         // Arrange
-        OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure> result = new Conflict(
-            "stale",
-            "CONFLICT"
-        );
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure> result = new Conflict("stale", "CONFLICT");
 
         // Act
         var message = result.Value switch
@@ -192,7 +185,7 @@ public class OperationOutcomeOfSixCasesTests
     public void Switch_OverCase5_MatchesCase5()
     {
         // Arrange
-        OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure> result = new ValidationError(
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure> result = new ValidationError(
             "Name is required"
         );
 
@@ -216,7 +209,7 @@ public class OperationOutcomeOfSixCasesTests
     public void Switch_OverCase6_MatchesCase6()
     {
         // Arrange
-        OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure> result = new Failure("boom");
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure> result = new Failure("boom");
 
         // Act
         var message = result.Value switch
@@ -238,7 +231,7 @@ public class OperationOutcomeOfSixCasesTests
     public void GetValue_OverSuccess_ReturnsUnderlyingValue()
     {
         // Arrange
-        OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure> result = "hello";
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure> result = "hello";
 
         // Act
         var value = result.GetValue();
@@ -252,7 +245,7 @@ public class OperationOutcomeOfSixCasesTests
     {
         // Arrange
         var failure = new Failure("boom");
-        OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure> result = failure;
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure> result = failure;
 
         // Act
         var value = result.GetValue();

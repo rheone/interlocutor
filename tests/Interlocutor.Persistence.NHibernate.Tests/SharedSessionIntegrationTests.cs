@@ -29,7 +29,7 @@ public sealed class SharedSessionIntegrationTests : IClassFixture<RealSessionFix
 
         var repository = new NHibernateRepository<Widget, Guid>(lazySession, w => w.Id);
         var unitOfWork = new NHibernateUnitOfWork(lazySession);
-        var behavior = new UnitOfWorkBehavior<TransactionalRequest, OperationOutcome<Success, Failure>>(lazySession);
+        var behavior = new UnitOfWorkBehavior<TransactionalRequest, Outcome<Success, Failure>>(lazySession);
 
         var widget = new Widget();
 
@@ -56,5 +56,5 @@ public sealed class SharedSessionIntegrationTests : IClassFixture<RealSessionFix
         Assert.NotNull(await verifySession.GetAsync<Widget>(widget.Id, CancellationToken.None));
     }
 
-    private sealed record TransactionalRequest : ICommand<OperationOutcome<Success, Failure>>;
+    private sealed record TransactionalRequest : ICommand<Outcome<Success, Failure>>;
 }

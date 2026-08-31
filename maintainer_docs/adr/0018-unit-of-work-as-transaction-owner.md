@@ -39,7 +39,7 @@ For NHibernate this is not free: `ISession`'s default flush mode can auto-flush 
 
 ### `Cancel` on `IUnitOfWork`
 
-`IUnitOfWork` gains an explicit `Cancel` operation alongside its existing `SaveChangesAsync`: a rare-case escape hatch for a handler that wants to force a rollback without being obligated to also return a classified failure-shaped outcome. `Cancel` rolls back immediately and returns control to the handler - it is not a short-circuit primitive; the handler decides what `OperationOutcome` to return afterward, and the pipeline's automatic commit gate simply finds nothing pending to commit at completion. This keeps `Cancel` a plain unit-of-work operation, consistent with the library's existing preference for outcome values over exception-driven control flow.
+`IUnitOfWork` gains an explicit `Cancel` operation alongside its existing `SaveChangesAsync`: a rare-case escape hatch for a handler that wants to force a rollback without being obligated to also return a classified failure-shaped outcome. `Cancel` rolls back immediately and returns control to the handler - it is not a short-circuit primitive; the handler decides what `Outcome` to return afterward, and the pipeline's automatic commit gate simply finds nothing pending to commit at completion. This keeps `Cancel` a plain unit-of-work operation, consistent with the library's existing preference for outcome values over exception-driven control flow.
 
 Automatic commit at pipeline completion is unchanged in kind from today's classifier-driven rule: commit if the classifier reports success, roll back on a classified failure, on an already-cancelled unit of work, or if the dispatch short-circuited before any write occurred (nothing to roll back in that case, same as today).
 

@@ -3,17 +3,16 @@ namespace Interlocutor.CommonKernel.Tests;
 using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
-/// Covers the four-case generic <see cref="OperationOutcome{TSuccessResult, TCase2, TCase3, TCase4}"/> union:
-/// construction from each case type, implicit conversion from a bare case value, and exhaustive switch pattern
-/// matching.
+/// Covers the three-case generic <see cref="Outcome{TSuccessResult, TCase2, TCase3}"/> union: construction
+/// from each case type, implicit conversion from a bare case value, and exhaustive switch pattern matching.
 /// </summary>
-public class OperationOutcomeOfFourCasesTests
+public class OutcomeOfThreeCasesTests
 {
     [Fact]
     public void Construct_FromSuccess_IsSuccessTrue()
     {
         // Arrange & Act
-        var result = new OperationOutcome<string, NotFound, Forbidden, Conflict>("hello");
+        var result = new Outcome<string, NotFound, Forbidden>("hello");
 
         // Assert
         Assert.True(result.IsSuccess);
@@ -23,7 +22,7 @@ public class OperationOutcomeOfFourCasesTests
     public void Construct_FromCase2_IsSuccessFalse()
     {
         // Arrange & Act
-        var result = new OperationOutcome<string, NotFound, Forbidden, Conflict>(new NotFound("missing"));
+        var result = new Outcome<string, NotFound, Forbidden>(new NotFound("missing"));
 
         // Assert
         Assert.False(result.IsSuccess);
@@ -33,17 +32,7 @@ public class OperationOutcomeOfFourCasesTests
     public void Construct_FromCase3_IsSuccessFalse()
     {
         // Arrange & Act
-        var result = new OperationOutcome<string, NotFound, Forbidden, Conflict>(new Forbidden("denied"));
-
-        // Assert
-        Assert.False(result.IsSuccess);
-    }
-
-    [Fact]
-    public void Construct_FromCase4_IsSuccessFalse()
-    {
-        // Arrange & Act
-        var result = new OperationOutcome<string, NotFound, Forbidden, Conflict>(new Conflict("stale", "CONFLICT"));
+        var result = new Outcome<string, NotFound, Forbidden>(new Forbidden("denied"));
 
         // Assert
         Assert.False(result.IsSuccess);
@@ -53,7 +42,7 @@ public class OperationOutcomeOfFourCasesTests
     public void ImplicitConversion_FromSuccessValue_ProducesSuccessOutcome()
     {
         // Arrange & Act
-        OperationOutcome<string, NotFound, Forbidden, Conflict> result = "hello";
+        Outcome<string, NotFound, Forbidden> result = "hello";
 
         // Assert
         Assert.True(result.IsSuccess);
@@ -63,7 +52,7 @@ public class OperationOutcomeOfFourCasesTests
     public void ImplicitConversion_FromCase2Value_ProducesCase2Outcome()
     {
         // Arrange & Act
-        OperationOutcome<string, NotFound, Forbidden, Conflict> result = new NotFound("missing");
+        Outcome<string, NotFound, Forbidden> result = new NotFound("missing");
 
         // Assert
         Assert.False(result.IsSuccess);
@@ -73,17 +62,7 @@ public class OperationOutcomeOfFourCasesTests
     public void ImplicitConversion_FromCase3Value_ProducesCase3Outcome()
     {
         // Arrange & Act
-        OperationOutcome<string, NotFound, Forbidden, Conflict> result = new Forbidden("denied");
-
-        // Assert
-        Assert.False(result.IsSuccess);
-    }
-
-    [Fact]
-    public void ImplicitConversion_FromCase4Value_ProducesCase4Outcome()
-    {
-        // Arrange & Act
-        OperationOutcome<string, NotFound, Forbidden, Conflict> result = new Conflict("stale", "CONFLICT");
+        Outcome<string, NotFound, Forbidden> result = new Forbidden("denied");
 
         // Assert
         Assert.False(result.IsSuccess);
@@ -93,7 +72,7 @@ public class OperationOutcomeOfFourCasesTests
     public void Switch_OverSuccess_MatchesSuccessCase()
     {
         // Arrange
-        OperationOutcome<string, NotFound, Forbidden, Conflict> result = "hello";
+        Outcome<string, NotFound, Forbidden> result = "hello";
 
         // Act
         var message = result.Value switch
@@ -101,7 +80,6 @@ public class OperationOutcomeOfFourCasesTests
             string success => success,
             NotFound => "not found",
             Forbidden => "forbidden",
-            Conflict => "conflict",
             _ => throw new InvalidOperationException("Unreachable"),
         };
 
@@ -113,7 +91,7 @@ public class OperationOutcomeOfFourCasesTests
     public void Switch_OverCase2_MatchesCase2()
     {
         // Arrange
-        OperationOutcome<string, NotFound, Forbidden, Conflict> result = new NotFound("missing");
+        Outcome<string, NotFound, Forbidden> result = new NotFound("missing");
 
         // Act
         var message = result.Value switch
@@ -121,7 +99,6 @@ public class OperationOutcomeOfFourCasesTests
             string success => success,
             NotFound notFound => notFound.Message,
             Forbidden => "forbidden",
-            Conflict => "conflict",
             _ => throw new InvalidOperationException("Unreachable"),
         };
 
@@ -133,7 +110,7 @@ public class OperationOutcomeOfFourCasesTests
     public void Switch_OverCase3_MatchesCase3()
     {
         // Arrange
-        OperationOutcome<string, NotFound, Forbidden, Conflict> result = new Forbidden("denied");
+        Outcome<string, NotFound, Forbidden> result = new Forbidden("denied");
 
         // Act
         var message = result.Value switch
@@ -141,7 +118,6 @@ public class OperationOutcomeOfFourCasesTests
             string success => success,
             NotFound => "not found",
             Forbidden forbidden => forbidden.Reason,
-            Conflict => "conflict",
             _ => throw new InvalidOperationException("Unreachable"),
         };
 
@@ -150,30 +126,10 @@ public class OperationOutcomeOfFourCasesTests
     }
 
     [Fact]
-    public void Switch_OverCase4_MatchesCase4()
-    {
-        // Arrange
-        OperationOutcome<string, NotFound, Forbidden, Conflict> result = new Conflict("stale", "CONFLICT");
-
-        // Act
-        var message = result.Value switch
-        {
-            string success => success,
-            NotFound => "not found",
-            Forbidden => "forbidden",
-            Conflict conflict => conflict.Message,
-            _ => throw new InvalidOperationException("Unreachable"),
-        };
-
-        // Assert
-        Assert.Equal("stale", message);
-    }
-
-    [Fact]
     public void GetValue_OverSuccess_ReturnsUnderlyingValue()
     {
         // Arrange
-        OperationOutcome<string, NotFound, Forbidden, Conflict> result = "hello";
+        Outcome<string, NotFound, Forbidden> result = "hello";
 
         // Act
         var value = result.GetValue();
@@ -183,16 +139,30 @@ public class OperationOutcomeOfFourCasesTests
     }
 
     [Fact]
-    public void GetValue_OverCase4_ReturnsUnderlyingValue()
+    public void GetValue_OverCase2_ReturnsUnderlyingValue()
     {
         // Arrange
-        var conflict = new Conflict("stale", "CONFLICT");
-        OperationOutcome<string, NotFound, Forbidden, Conflict> result = conflict;
+        var notFound = new NotFound("missing");
+        Outcome<string, NotFound, Forbidden> result = notFound;
 
         // Act
         var value = result.GetValue();
 
         // Assert
-        Assert.Equal(conflict, value);
+        Assert.Equal(notFound, value);
+    }
+
+    [Fact]
+    public void GetValue_OverCase3_ReturnsUnderlyingValue()
+    {
+        // Arrange
+        var forbidden = new Forbidden("denied");
+        Outcome<string, NotFound, Forbidden> result = forbidden;
+
+        // Act
+        var value = result.GetValue();
+
+        // Assert
+        Assert.Equal(forbidden, value);
     }
 }

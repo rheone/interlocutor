@@ -1,7 +1,7 @@
 namespace Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
-/// Marks a type as a timeout-shaped failure case usable in an <see cref="OperationOutcome"/> union.
+/// Marks a type as a timeout-shaped failure case usable in an <see cref="Outcome"/> union.
 /// </summary>
 /// <remarks>
 /// Mirrors <see cref="IValidationFailureCase"/>'s role for validation: a minimal, zero-dependency contract

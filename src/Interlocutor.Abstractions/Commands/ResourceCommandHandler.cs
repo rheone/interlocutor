@@ -23,7 +23,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// <typeparam name="TEntity">The domain entity type loaded and used by this handler.</typeparam>
 /// <typeparam name="TSuccess">The type of data returned when the command succeeds.</typeparam>
 public abstract class ResourceCommandHandler<TCommand, TEntity, TSuccess>
-    where TCommand : ICommand<OperationOutcome<TSuccess, NotFound, Failure>>
+    where TCommand : ICommand<Outcome<TSuccess, NotFound, Failure>>
 {
     /// <summary>
     /// Loads the target entity for the given command.
@@ -48,7 +48,7 @@ public abstract class ResourceCommandHandler<TCommand, TEntity, TSuccess>
     /// <param name="entity">The loaded entity that passed authorization.</param>
     /// <param name="ct">Cancellation token to cancel the operation.</param>
     /// <returns>The response, or a failure reason.</returns>
-    protected abstract Task<OperationOutcome<TSuccess, NotFound, Failure>> HandleAsync(
+    protected abstract Task<Outcome<TSuccess, NotFound, Failure>> HandleAsync(
         TCommand command,
         TEntity entity,
         CancellationToken ct
@@ -60,7 +60,7 @@ public abstract class ResourceCommandHandler<TCommand, TEntity, TSuccess>
     /// <param name="command">The command to handle.</param>
     /// <param name="ct">Cancellation token to cancel the operation.</param>
     /// <returns>The response, or a failure reason.</returns>
-    public async Task<OperationOutcome<TSuccess, NotFound, Failure>> Handle(TCommand command, CancellationToken ct)
+    public async Task<Outcome<TSuccess, NotFound, Failure>> Handle(TCommand command, CancellationToken ct)
     {
         var entity = await this.LoadAsync(command, ct).ConfigureAwait(false);
 
@@ -75,7 +75,7 @@ public abstract class ResourceCommandHandler<TCommand, TEntity, TSuccess>
         // Short-circuit if the caller is not authorized to act on this entity.
         if (authorizationResult is Failure failure)
         {
-            return new OperationOutcome<TSuccess, NotFound, Failure>(failure);
+            return new Outcome<TSuccess, NotFound, Failure>(failure);
         }
 
         // Entity exists and caller is authorized - delegate to the subclass business logic.

@@ -17,7 +17,7 @@ No additional registration needed - `Interlocutor.AspNetCore` provides extension
 
 ## ToActionResult() Extension
 
-Map an `IOperationOutcome` to an ASP.NET Core `IActionResult`:
+Map an `IOutcome` to an ASP.NET Core `IActionResult`:
 
 ```csharp
 [ApiController]
@@ -72,11 +72,11 @@ app.MapDelete("/api/orders/{id}", async (int id, ISender mediator, CancellationT
 
 ## Status Code Mapping
 
-Each outcome case maps to an HTTP status code via `IOutcomeStatusMapper.Map<TFailure>(failure)`, which both `ToActionResult()` and `ToMinimalApiResult()` delegate to for every failure case - the success case never reaches the mapper, since `ToActionResult`/`ToMinimalApiResult` handle it directly. The dedicated arity-specific overloads (`OperationOutcome<TSuccess, TFailure>`, `<TSuccess, TCase2, TCase3>`, ...) resolve which case is active via an ordinary `switch` at compile time; only the base-`IOperationOutcome` overload used for runtime-typed dispatch needs `IOutcomeCaseRegistry`'s reflective lookup:
+Each outcome case maps to an HTTP status code via `IOutcomeStatusMapper.Map<TFailure>(failure)`, which both `ToActionResult()` and `ToMinimalApiResult()` delegate to for every failure case - the success case never reaches the mapper, since `ToActionResult`/`ToMinimalApiResult` handle it directly. The dedicated arity-specific overloads (`Outcome<TSuccess, TFailure>`, `<TSuccess, TCase2, TCase3>`, ...) resolve which case is active via an ordinary `switch` at compile time; only the base-`IOutcome` overload used for runtime-typed dispatch needs `IOutcomeCaseRegistry`'s reflective lookup:
 
 ```mermaid
 flowchart TD
-    Outcome["OperationOutcome&lt;...&gt; from mediator.Send()"] --> IsSuccess{"Active case?"}
+    Outcome["Outcome&lt;...&gt; from mediator.Send()"] --> IsSuccess{"Active case?"}
     IsSuccess -->|"success, has payload"| Ok200["200 OK<br/>body: success payload (JSON)"]
     IsSuccess -->|"success, unit Success"| NoContent204["204 No Content"]
     IsSuccess -->|"failure - IOutcomeStatusMapper.Map(failure)"| CaseType{"Failure case type"}
@@ -98,8 +98,8 @@ flowchart TD
 
 | Outcome Case | HTTP Status | Body | Details |
 |--------------|-------------|------|---------|
-| Success (payload) | 200 OK | The success payload (JSON) | For `OperationOutcome<TSuccess, ...>`, `TSuccess` is serialized. |
-| Success (unit) | 204 No Content | None | For the non-generic `OperationOutcome`. |
+| Success (payload) | 200 OK | The success payload (JSON) | For `Outcome<TSuccess, ...>`, `TSuccess` is serialized. |
+| Success (unit) | 204 No Content | None | For the non-generic `Outcome`. |
 | ValidationErrors | 400 Bad Request | `ProblemDetails` | `Detail` is every message joined with `"; "` - no per-field errors dictionary, since `ValidationError` carries a message and optional code, not a field name. |
 | Any other [`IValidationFailureCase`](glossary.md#result-types) implementer with no field data | 400 Bad Request | `ProblemDetails` | Recognized via the interface, not a type-specific branch - a consumer's own validation-shaped failure case maps the same way without a mapper override. `Detail` is every `Messages` entry joined with `"; "`. |
 | [`IFieldValidationFailureCase`](glossary.md#outcome-mapping) implementer (e.g. `FluentValidationErrors`) | 400 Bad Request | `ValidationProblemDetails` | `Errors` is `FieldMessages` grouped by property name (empty-string key for an entry with no property) - see [Field-Keyed Validation Errors](#field-keyed-validation-errors) below. |
@@ -171,7 +171,7 @@ return result.ToActionResult(Mapper);
 ```csharp
 // Command
 public record CreateUser(string Name, string Email)
-    : ICommand<OperationOutcome<int, ValidationError>>;
+    : ICommand<Outcome<int, ValidationError>>;
 
 // Handler returns Success with new user ID
 var result = await mediator.Send(new CreateUser("Alice", "alice@example.com"));
@@ -307,8 +307,8 @@ public async Task CreateOrder_Valid_Returns200()
 {
     var mediator = new Mock<ISender>();
     mediator
-        .Setup(m => m.Send(It.IsAny<ICommand<OperationOutcome<int, ValidationError>>>(), It.IsAny<CancellationToken>()))
-        .ReturnsAsync(new OperationOutcome<int, ValidationError>(42));  // Success with ID 42
+        .Setup(m => m.Send(It.IsAny<ICommand<Outcome<int, ValidationError>>>(), It.IsAny<CancellationToken>()))
+        .ReturnsAsync(new Outcome<int, ValidationError>(42));  // Success with ID 42
 
     var controller = new OrdersController(mediator.Object);
 
@@ -323,8 +323,8 @@ public async Task DeleteOrder_NotFound_Returns404()
 {
     var mediator = new Mock<ISender>();
     mediator
-        .Setup(m => m.Send(It.IsAny<ICommand<OperationOutcome<Success, NotFound>>>(), It.IsAny<CancellationToken>()))
-        .ReturnsAsync(new OperationOutcome<Success, NotFound>(new NotFound()));
+        .Setup(m => m.Send(It.IsAny<ICommand<Outcome<Success, NotFound>>>(), It.IsAny<CancellationToken>()))
+        .ReturnsAsync(new Outcome<Success, NotFound>(new NotFound()));
 
     var controller = new OrdersController(mediator.Object);
 

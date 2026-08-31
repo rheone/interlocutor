@@ -20,7 +20,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// <para>
 /// Produced by <see cref="FluentValidationErrorsBehavior{TRequest, TResponse}"/> when one or more registered
 /// validators report failures. Example outcome type:
-/// <c>OperationOutcome&lt;UserDto, FluentValidationErrors&gt;</c>. Unlike
+/// <c>Outcome&lt;UserDto, FluentValidationErrors&gt;</c>. Unlike
 /// <see cref="CommonKernel.ResultTypes.ValidationErrors"/>, <see cref="Failures"/> is not de-duplicated -
 /// every <see cref="ValidationFailure"/> reported by every validator is preserved verbatim, in the order
 /// each validator produced it.

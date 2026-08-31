@@ -16,4 +16,4 @@ using TodoTasks.Api.Domain;
 /// <c>IDomainRepository{TEntity,TKey}</c>. See that handler's own remarks for why.
 /// </remarks>
 public sealed record SearchTodoTasksQuery(string OwnerId, string TitleContains)
-    : IQuery<OperationOutcome<IReadOnlyList<TodoTaskDto>, Failure>>;
+    : IQuery<Outcome<IReadOnlyList<TodoTaskDto>, Failure>>;

@@ -7,15 +7,15 @@ using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 using Microsoft.Extensions.DependencyInjection;
 
-public record StartupValidationQuery(int Value) : IQuery<OperationOutcome<int, Failure>>;
+public record StartupValidationQuery(int Value) : IQuery<Outcome<int, Failure>>;
 
-public class StartupValidationQueryHandler : IQueryHandler<StartupValidationQuery, OperationOutcome<int, Failure>>
+public class StartupValidationQueryHandler : IQueryHandler<StartupValidationQuery, Outcome<int, Failure>>
 {
-    public Task<OperationOutcome<int, Failure>> Handle(StartupValidationQuery query, CancellationToken ct) =>
-        Task.FromResult(new OperationOutcome<int, Failure>(query.Value));
+    public Task<Outcome<int, Failure>> Handle(StartupValidationQuery query, CancellationToken ct) =>
+        Task.FromResult(new Outcome<int, Failure>(query.Value));
 }
 
-public record StartupValidationCommand(string Name) : ICommand<OperationOutcome<string, Failure>>;
+public record StartupValidationCommand(string Name) : ICommand<Outcome<string, Failure>>;
 
 /// <summary>Tests for <see cref="InterlocutorStartupValidation"/>.</summary>
 public class InterlocutorStartupValidationTests
@@ -68,10 +68,7 @@ public class InterlocutorStartupValidationTests
         // request types are reported missing, StartupValidationQuery - whose handler is registered below -
         // must never be one of them.
         var services = new ServiceCollection();
-        services.AddSingleton<
-            IQueryHandler<StartupValidationQuery, OperationOutcome<int, Failure>>,
-            StartupValidationQueryHandler
-        >();
+        services.AddSingleton<IQueryHandler<StartupValidationQuery, Outcome<int, Failure>>, StartupValidationQueryHandler>();
         var provider = services.BuildServiceProvider();
 
         // Act

@@ -15,7 +15,7 @@ public class OutcomeCaseRegistryExtensionsTests
         var registry = DefaultOutcomeCaseRegistry.Instance;
 
         // Act
-        var response = registry.ConstructOrThrow<OperationOutcome<string, Failure>, Failure>(
+        var response = registry.ConstructOrThrow<Outcome<string, Failure>, Failure>(
             new Failure("boom"),
             "SomeBehavior",
             "denied a request",
@@ -31,21 +31,21 @@ public class OutcomeCaseRegistryExtensionsTests
     [Fact]
     public void ConstructOrThrow_ResponseTypeHasNoSuchCase_ThrowsInvalidOperationExceptionNamingBehaviorAndRequirement()
     {
-        // Arrange - OperationOutcome<string, Failure> has no NotFound case to construct.
+        // Arrange - Outcome<string, Failure> has no NotFound case to construct.
         var registry = DefaultOutcomeCaseRegistry.Instance;
 
         // Act
         var ex = Assert.Throws<InvalidOperationException>(() =>
-            registry.ConstructOrThrow<OperationOutcome<string, Failure>, NotFound>(
+            registry.ConstructOrThrow<Outcome<string, Failure>, NotFound>(
                 default,
-                "SomeBehavior<Query, OperationOutcome<string, Failure>>",
+                "SomeBehavior<Query, Outcome<string, Failure>>",
                 "denied a request",
                 "A response type with a NotFound case is required"
             )
         );
 
         // Assert
-        Assert.Contains("SomeBehavior<Query, OperationOutcome<string, Failure>>", ex.Message);
+        Assert.Contains("SomeBehavior<Query, Outcome<string, Failure>>", ex.Message);
         Assert.Contains("denied a request", ex.Message);
         Assert.Contains("A response type with a NotFound case is required", ex.Message);
         Assert.IsType<OutcomeCaseNotSupportedException>(ex.InnerException);

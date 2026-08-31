@@ -16,7 +16,7 @@ public class HandlerDiscoveryTests
         // Assert
         var registration = Assert.Single(registrations, r => r.ImplementationType == typeof(SampleQueryHandler));
 
-        Assert.Equal(typeof(IQueryHandler<SampleQuery, OperationOutcome>), registration.ServiceType);
+        Assert.Equal(typeof(IQueryHandler<SampleQuery, Outcome>), registration.ServiceType);
         Assert.Equal(RegistrationLifetime.Scoped, registration.Lifetime);
         Assert.Equal(RegistrationKind.Handler, registration.Kind);
         Assert.Equal(RegistrationProvenance.Scanned, registration.Provenance);
@@ -48,7 +48,7 @@ public class HandlerDiscoveryTests
             registrations,
             r =>
                 r.ImplementationType == typeof(SampleVoidCommandHandler)
-                && r.ServiceType == typeof(IVoidCommandHandler<SampleCommand, OperationOutcome>)
+                && r.ServiceType == typeof(IVoidCommandHandler<SampleCommand, Outcome>)
                 && r.Kind == RegistrationKind.Handler
         );
 
@@ -80,7 +80,7 @@ public class HandlerDiscoveryTests
         // Assert
         var registration = Assert.Single(registrations, r => r.ImplementationType == typeof(SampleCommandHandler));
 
-        Assert.Equal(typeof(ICommandHandler<SampleCommandWithResponse, OperationOutcome>), registration.ServiceType);
+        Assert.Equal(typeof(ICommandHandler<SampleCommandWithResponse, Outcome>), registration.ServiceType);
         Assert.Equal(RegistrationLifetime.Scoped, registration.Lifetime);
         Assert.Equal(RegistrationKind.Handler, registration.Kind);
     }
@@ -98,9 +98,7 @@ public class HandlerDiscoveryTests
 
         Assert.Contains(
             forType,
-            r =>
-                r.ServiceType == typeof(IQueryHandler<MultiContractQuery, OperationOutcome>)
-                && r.Kind == RegistrationKind.Handler
+            r => r.ServiceType == typeof(IQueryHandler<MultiContractQuery, Outcome>) && r.Kind == RegistrationKind.Handler
         );
 
         Assert.Contains(
@@ -149,15 +147,15 @@ public class HandlerDiscoveryTests
         Assert.Equal(RegistrationKind.Handler, registration.Kind);
     }
 
-    private sealed record SampleQuery : IQuery<OperationOutcome>;
+    private sealed record SampleQuery : IQuery<Outcome>;
 
     private sealed record SampleCommand : ICommand;
 
-    private sealed record SampleCommandWithResponse : ICommand<OperationOutcome>;
+    private sealed record SampleCommandWithResponse : ICommand<Outcome>;
 
     private sealed record SampleNotification : INotification;
 
-    private sealed record MultiContractQuery : IQuery<OperationOutcome>;
+    private sealed record MultiContractQuery : IQuery<Outcome>;
 
     private sealed record MultiContractNotification : INotification;
 
@@ -166,7 +164,7 @@ public class HandlerDiscoveryTests
     // T is deliberately left unconstrained by any member - this record exists to prove open-generic
     // handler discovery (a handler registered for GenericQuery<> closes over whatever T the caller uses).
 #pragma warning disable S2326
-    private sealed record GenericQuery<T> : IQuery<OperationOutcome>;
+    private sealed record GenericQuery<T> : IQuery<Outcome>;
 #pragma warning restore S2326
 
     // Deliberately empty: a negative-case marker that implements no handler interface, not a data holder.
@@ -174,22 +172,20 @@ public class HandlerDiscoveryTests
     private sealed class NotAHandler;
 #pragma warning restore S2094
 
-    private sealed class SampleQueryHandler : IQueryHandler<SampleQuery, OperationOutcome>
+    private sealed class SampleQueryHandler : IQueryHandler<SampleQuery, Outcome>
     {
-        public Task<OperationOutcome> Handle(SampleQuery query, CancellationToken ct) =>
-            Task.FromResult(default(OperationOutcome));
+        public Task<Outcome> Handle(SampleQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 
-    private sealed class SampleVoidCommandHandler : IVoidCommandHandler<SampleCommand, OperationOutcome>
+    private sealed class SampleVoidCommandHandler : IVoidCommandHandler<SampleCommand, Outcome>
     {
-        public Task<OperationOutcome> Handle(SampleCommand command, CancellationToken ct) =>
-            Task.FromResult(default(OperationOutcome));
+        public Task<Outcome> Handle(SampleCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 
-    private sealed class SampleCommandHandler : ICommandHandler<SampleCommandWithResponse, OperationOutcome>
+    private sealed class SampleCommandHandler : ICommandHandler<SampleCommandWithResponse, Outcome>
     {
-        public Task<OperationOutcome> Handle(SampleCommandWithResponse command, CancellationToken ct) =>
-            Task.FromResult(default(OperationOutcome));
+        public Task<Outcome> Handle(SampleCommandWithResponse command, CancellationToken ct) =>
+            Task.FromResult(default(Outcome));
     }
 
     private sealed class SampleNotificationHandler : INotificationHandler<SampleNotification>
@@ -198,11 +194,10 @@ public class HandlerDiscoveryTests
     }
 
     private sealed class MultiContractHandler
-        : IQueryHandler<MultiContractQuery, OperationOutcome>,
+        : IQueryHandler<MultiContractQuery, Outcome>,
             INotificationHandler<MultiContractNotification>
     {
-        public Task<OperationOutcome> Handle(MultiContractQuery query, CancellationToken ct) =>
-            Task.FromResult(default(OperationOutcome));
+        public Task<Outcome> Handle(MultiContractQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
 
         public Task Handle(MultiContractNotification notification, CancellationToken ct) => Task.CompletedTask;
     }
@@ -217,9 +212,8 @@ public class HandlerDiscoveryTests
         public Task Handle(SharedNotification notification, CancellationToken ct) => Task.CompletedTask;
     }
 
-    private sealed class OpenGenericQueryHandler<T> : IQueryHandler<GenericQuery<T>, OperationOutcome>
+    private sealed class OpenGenericQueryHandler<T> : IQueryHandler<GenericQuery<T>, Outcome>
     {
-        public Task<OperationOutcome> Handle(GenericQuery<T> query, CancellationToken ct) =>
-            Task.FromResult(default(OperationOutcome));
+        public Task<Outcome> Handle(GenericQuery<T> query, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 }

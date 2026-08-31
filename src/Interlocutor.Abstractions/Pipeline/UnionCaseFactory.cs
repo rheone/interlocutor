@@ -13,10 +13,10 @@ using System.Reflection;
 /// <see cref="AuthorizationBehavior{TRequest, TResponse}"/> and
 /// <c>Interlocutor.FluentValidation.ValidationBehavior&lt;TRequest, TResponse&gt;</c> both need this: neither
 /// can be generic over a success-type parameter with its failure case pinned at compile time (e.g.
-/// <c>OperationOutcome&lt;TSuccess, Forbidden&gt;</c>) without breaking Microsoft.Extensions.DependencyInjection's
+/// <c>Outcome&lt;TSuccess, Forbidden&gt;</c>) without breaking Microsoft.Extensions.DependencyInjection's
 /// open-generic resolution - see <see cref="AuthorizationBehavior{TRequest, TResponse}"/>'s remarks for the
 /// full explanation. Both are instead generic directly over <c>TResponse</c>, constrained only to
-/// <see cref="CommonKernel.ResultTypes.IOperationOutcome"/>, and use this factory to construct the one case they need.
+/// <see cref="CommonKernel.ResultTypes.IOutcome"/>, and use this factory to construct the one case they need.
 /// </para>
 /// <para>
 /// A union type's compiler-generated constructors are ordinary CLR constructors - one per declared case type,
@@ -45,7 +45,7 @@ public static class UnionCaseFactory
         "Trimming",
         "IL2090:RequiresUnreferencedCode",
         Justification = "TResponse is always a union type the caller's own code constructs or pattern-matches "
-            + "on elsewhere (a compile-time OperationOutcome<...> instantiation), so the trimmer already keeps "
+            + "on elsewhere (a compile-time Outcome<...> instantiation), so the trimmer already keeps "
             + "its compiler-generated case constructors reachable independent of this reflective lookup. "
             + "Requiring DynamicallyAccessedMembers(PublicConstructors) here would be viral across every "
             + "pipeline behavior generic over TResponse - see documentation/trim-and-aot-support.md."

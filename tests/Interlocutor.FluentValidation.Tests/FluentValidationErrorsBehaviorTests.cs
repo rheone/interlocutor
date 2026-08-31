@@ -15,17 +15,17 @@ public class FluentValidationErrorsBehaviorTests
     {
         // Arrange
         var request = new TestRequest("Alice", 30);
-        var behavior = new FluentValidationErrorsBehavior<TestRequest, OperationOutcome<string, FluentValidationErrors>>(
+        var behavior = new FluentValidationErrorsBehavior<TestRequest, Outcome<string, FluentValidationErrors>>(
             [],
             DefaultOutcomeCaseRegistry.Instance
         );
 
         var handlerInvoked = false;
-        Task<OperationOutcome<string, FluentValidationErrors>> Next()
+        Task<Outcome<string, FluentValidationErrors>> Next()
         {
             handlerInvoked = true;
-            return Task.FromResult<OperationOutcome<string, FluentValidationErrors>>(
-                new OperationOutcome<string, FluentValidationErrors>("success")
+            return Task.FromResult<Outcome<string, FluentValidationErrors>>(
+                new Outcome<string, FluentValidationErrors>("success")
             );
         }
 
@@ -43,17 +43,17 @@ public class FluentValidationErrorsBehaviorTests
         // Arrange
         var request = new TestRequest("Alice", 30);
         var validators = new AbstractValidator<TestRequest>[] { new TestRequestNameValidator(), new TestRequestAgeValidator() };
-        var behavior = new FluentValidationErrorsBehavior<TestRequest, OperationOutcome<string, FluentValidationErrors>>(
+        var behavior = new FluentValidationErrorsBehavior<TestRequest, Outcome<string, FluentValidationErrors>>(
             validators,
             DefaultOutcomeCaseRegistry.Instance
         );
 
         var handlerInvoked = false;
-        Task<OperationOutcome<string, FluentValidationErrors>> Next()
+        Task<Outcome<string, FluentValidationErrors>> Next()
         {
             handlerInvoked = true;
-            return Task.FromResult<OperationOutcome<string, FluentValidationErrors>>(
-                new OperationOutcome<string, FluentValidationErrors>("success")
+            return Task.FromResult<Outcome<string, FluentValidationErrors>>(
+                new Outcome<string, FluentValidationErrors>("success")
             );
         }
 
@@ -71,17 +71,17 @@ public class FluentValidationErrorsBehaviorTests
         // Arrange
         var request = new TestRequest(string.Empty, 30);
         var validators = new AbstractValidator<TestRequest>[] { new TestRequestNameValidator() };
-        var behavior = new FluentValidationErrorsBehavior<TestRequest, OperationOutcome<string, FluentValidationErrors>>(
+        var behavior = new FluentValidationErrorsBehavior<TestRequest, Outcome<string, FluentValidationErrors>>(
             validators,
             DefaultOutcomeCaseRegistry.Instance
         );
 
         var handlerInvoked = false;
-        Task<OperationOutcome<string, FluentValidationErrors>> Next()
+        Task<Outcome<string, FluentValidationErrors>> Next()
         {
             handlerInvoked = true;
-            return Task.FromResult<OperationOutcome<string, FluentValidationErrors>>(
-                new OperationOutcome<string, FluentValidationErrors>("success")
+            return Task.FromResult<Outcome<string, FluentValidationErrors>>(
+                new Outcome<string, FluentValidationErrors>("success")
             );
         }
 
@@ -100,15 +100,13 @@ public class FluentValidationErrorsBehaviorTests
         // and AttemptedValue all survive from the validator through the behavior to the caller.
         var request = new TestRequest("Al", -5);
         var validators = new AbstractValidator<TestRequest>[] { new TestRequestNameValidator(), new TestRequestAgeValidator() };
-        var behavior = new FluentValidationErrorsBehavior<TestRequest, OperationOutcome<string, FluentValidationErrors>>(
+        var behavior = new FluentValidationErrorsBehavior<TestRequest, Outcome<string, FluentValidationErrors>>(
             validators,
             DefaultOutcomeCaseRegistry.Instance
         );
 
-        static Task<OperationOutcome<string, FluentValidationErrors>> Next() =>
-            Task.FromResult<OperationOutcome<string, FluentValidationErrors>>(
-                new OperationOutcome<string, FluentValidationErrors>("success")
-            );
+        static Task<Outcome<string, FluentValidationErrors>> Next() =>
+            Task.FromResult<Outcome<string, FluentValidationErrors>>(new Outcome<string, FluentValidationErrors>("success"));
 
         // Act
         var result = await behavior.Handle(request, Next, CancellationToken.None);
@@ -133,15 +131,13 @@ public class FluentValidationErrorsBehaviorTests
         var validator1 = new TestRequestNameValidator();
         var validator2 = new TestRequestNameValidator();
         var validators = new AbstractValidator<TestRequest>[] { validator1, validator2 };
-        var behavior = new FluentValidationErrorsBehavior<TestRequest, OperationOutcome<string, FluentValidationErrors>>(
+        var behavior = new FluentValidationErrorsBehavior<TestRequest, Outcome<string, FluentValidationErrors>>(
             validators,
             DefaultOutcomeCaseRegistry.Instance
         );
 
-        static Task<OperationOutcome<string, FluentValidationErrors>> Next() =>
-            Task.FromResult<OperationOutcome<string, FluentValidationErrors>>(
-                new OperationOutcome<string, FluentValidationErrors>("success")
-            );
+        static Task<Outcome<string, FluentValidationErrors>> Next() =>
+            Task.FromResult<Outcome<string, FluentValidationErrors>>(new Outcome<string, FluentValidationErrors>("success"));
 
         // Act
         var result = await behavior.Handle(request, Next, CancellationToken.None);
@@ -164,13 +160,11 @@ public class FluentValidationErrorsBehaviorTests
         var request = new ValidationBehaviorTests.PublicTestRequest("Alice", 30);
         var behavior = new FluentValidationErrorsBehavior<
             ValidationBehaviorTests.PublicTestRequest,
-            OperationOutcome<string, FluentValidationErrors>
+            Outcome<string, FluentValidationErrors>
         >([validator], DefaultOutcomeCaseRegistry.Instance);
 
-        static Task<OperationOutcome<string, FluentValidationErrors>> Next() =>
-            Task.FromResult<OperationOutcome<string, FluentValidationErrors>>(
-                new OperationOutcome<string, FluentValidationErrors>("success")
-            );
+        static Task<Outcome<string, FluentValidationErrors>> Next() =>
+            Task.FromResult<Outcome<string, FluentValidationErrors>>(new Outcome<string, FluentValidationErrors>("success"));
 
         // Act
         await behavior.Handle(request, Next, token);
@@ -185,13 +179,12 @@ public class FluentValidationErrorsBehaviorTests
         // Arrange
         var request = new TestRequest(string.Empty, 30);
         var validators = new AbstractValidator<TestRequest>[] { new TestRequestNameValidator() };
-        var behavior = new FluentValidationErrorsBehavior<TestRequest, OperationOutcome<string, Failure>>(
+        var behavior = new FluentValidationErrorsBehavior<TestRequest, Outcome<string, Failure>>(
             validators,
             DefaultOutcomeCaseRegistry.Instance
         );
 
-        static Task<OperationOutcome<string, Failure>> Next() =>
-            Task.FromResult<OperationOutcome<string, Failure>>("unreachable");
+        static Task<Outcome<string, Failure>> Next() => Task.FromResult<Outcome<string, Failure>>("unreachable");
 
         // Act
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>

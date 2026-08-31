@@ -102,25 +102,25 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
         return container.BeginLifetimeScope();
     }
 
-    public sealed record GeneratedSwitchQuery(int Value) : IQuery<OperationOutcome<int, Failure>>;
+    public sealed record GeneratedSwitchQuery(int Value) : IQuery<Outcome<int, Failure>>;
 
-    public sealed class GeneratedSwitchQueryHandler : IQueryHandler<GeneratedSwitchQuery, OperationOutcome<int, Failure>>
+    public sealed class GeneratedSwitchQueryHandler : IQueryHandler<GeneratedSwitchQuery, Outcome<int, Failure>>
     {
-        public Task<OperationOutcome<int, Failure>> Handle(GeneratedSwitchQuery query, CancellationToken ct) =>
-            Task.FromResult<OperationOutcome<int, Failure>>(query.Value * 2);
+        public Task<Outcome<int, Failure>> Handle(GeneratedSwitchQuery query, CancellationToken ct) =>
+            Task.FromResult<Outcome<int, Failure>>(query.Value * 2);
     }
 
     public sealed record GeneratedSwitchVoidCommand : ICommand;
 
-    public sealed class GeneratedSwitchVoidCommandHandler : IVoidCommandHandler<GeneratedSwitchVoidCommand, OperationOutcome>
+    public sealed class GeneratedSwitchVoidCommandHandler : IVoidCommandHandler<GeneratedSwitchVoidCommand, Outcome>
     {
-        public Task<OperationOutcome> Handle(GeneratedSwitchVoidCommand command, CancellationToken ct) =>
-            Task.FromResult(new OperationOutcome(default(Success)));
+        public Task<Outcome> Handle(GeneratedSwitchVoidCommand command, CancellationToken ct) =>
+            Task.FromResult(new Outcome(default(Success)));
     }
 
     /// <summary>A query with no handler anywhere in this compilation - proves the generated switch's
     /// "recognized shape, no handler" case throws the same named exception the reflection path does.</summary>
 #pragma warning disable INTERLOC001 // Deliberately unregistered - this type exists to exercise that diagnostic's runtime counterpart
-    public sealed record GeneratedSwitchUnregisteredQuery : IQuery<OperationOutcome<int, Failure>>;
+    public sealed record GeneratedSwitchUnregisteredQuery : IQuery<Outcome<int, Failure>>;
 #pragma warning restore INTERLOC001
 }

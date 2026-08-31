@@ -3,16 +3,16 @@ namespace Interlocutor.CommonKernel.Tests;
 using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
-/// Covers the two-case generic <see cref="OperationOutcome{TSuccessResult, TFailureResult}"/> union: construction
+/// Covers the two-case generic <see cref="Outcome{TSuccessResult, TFailureResult}"/> union: construction
 /// from each case type, implicit conversion from a bare case value, and exhaustive switch pattern matching.
 /// </summary>
-public class OperationOutcomeOfTwoCasesTests
+public class OutcomeOfTwoCasesTests
 {
     [Fact]
     public void Construct_FromSuccess_IsSuccessTrue()
     {
         // Arrange & Act
-        var result = new OperationOutcome<string, NotFound>("hello");
+        var result = new Outcome<string, NotFound>("hello");
 
         // Assert
         Assert.True(result.IsSuccess);
@@ -22,7 +22,7 @@ public class OperationOutcomeOfTwoCasesTests
     public void Construct_FromFailure_IsSuccessFalse()
     {
         // Arrange & Act
-        var result = new OperationOutcome<string, NotFound>(new NotFound("missing"));
+        var result = new Outcome<string, NotFound>(new NotFound("missing"));
 
         // Assert
         Assert.False(result.IsSuccess);
@@ -32,7 +32,7 @@ public class OperationOutcomeOfTwoCasesTests
     public void ImplicitConversion_FromSuccessValue_ProducesSuccessOutcome()
     {
         // Arrange & Act
-        OperationOutcome<string, NotFound> result = "hello";
+        Outcome<string, NotFound> result = "hello";
 
         // Assert
         Assert.True(result.IsSuccess);
@@ -42,7 +42,7 @@ public class OperationOutcomeOfTwoCasesTests
     public void ImplicitConversion_FromFailureValue_ProducesFailureOutcome()
     {
         // Arrange & Act
-        OperationOutcome<string, NotFound> result = new NotFound("missing");
+        Outcome<string, NotFound> result = new NotFound("missing");
 
         // Assert
         Assert.False(result.IsSuccess);
@@ -52,7 +52,7 @@ public class OperationOutcomeOfTwoCasesTests
     public void Switch_OverSuccess_MatchesSuccessCase()
     {
         // Arrange
-        OperationOutcome<string, NotFound> result = "hello";
+        Outcome<string, NotFound> result = "hello";
 
         // Act
         var message = result.Value switch
@@ -70,7 +70,7 @@ public class OperationOutcomeOfTwoCasesTests
     public void Switch_OverFailure_MatchesFailureCase()
     {
         // Arrange
-        OperationOutcome<string, NotFound> result = new NotFound("missing");
+        Outcome<string, NotFound> result = new NotFound("missing");
 
         // Act
         var message = result.Value switch

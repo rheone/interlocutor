@@ -14,10 +14,10 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// <remarks>
 /// <para>This is a union declaration with two case types: <see cref="Success"/> - the operation completed
 /// successfully, or <see cref="Failure"/> - the operation failed.</para>
-/// <para>Values of either case type convert implicitly to <see cref="OperationOutcome"/>, and switch expressions
+/// <para>Values of either case type convert implicitly to <see cref="Outcome"/>, and switch expressions
 /// over it are exhaustive without a discard arm.</para>
 /// </remarks>
-public readonly union OperationOutcome(Success, Failure) : IOperationOutcome
+public readonly union Outcome(Success, Failure) : IOutcome
 {
     /// <summary>
     /// Gets a value indicating whether this result is successful.
@@ -38,10 +38,10 @@ public readonly union OperationOutcome(Success, Failure) : IOperationOutcome
 /// <list type="bullet"><item><description><typeparamref name="TSuccessResult"/> - the operation completed
 /// successfully.</description></item> <item><description><typeparamref name="TFailureResult"/> - the operation
 /// failed.</description></item> </list>
-/// <para>Values of either case type convert implicitly to <see cref="OperationOutcome{TSuccessResult, TFailureResult}"/>,
+/// <para>Values of either case type convert implicitly to <see cref="Outcome{TSuccessResult, TFailureResult}"/>,
 /// and switch expressions over it are exhaustive without a discard arm. </para>
 /// </remarks>
-public readonly union OperationOutcome<TSuccessResult, TFailureResult>(TSuccessResult, TFailureResult) : IOperationOutcome
+public readonly union Outcome<TSuccessResult, TFailureResult>(TSuccessResult, TFailureResult) : IOutcome
 {
     /// <summary>
     /// Gets a value indicating whether this result is successful.
@@ -65,10 +65,10 @@ public readonly union OperationOutcome<TSuccessResult, TFailureResult>(TSuccessR
 /// successfully.</description></item> <item><description><typeparamref name="TCase2"/> - the operation
 /// resolved to the first alternative result case.</description></item> <item><description><typeparamref name="TCase3"/> - the operation
 /// resolved to the second alternative result case.</description></item> </list>
-/// <para>Values of any case type convert implicitly to <see cref="OperationOutcome{TSuccessResult, TCase2, TCase3}"/>, and
+/// <para>Values of any case type convert implicitly to <see cref="Outcome{TSuccessResult, TCase2, TCase3}"/>, and
 /// switch expressions over it are exhaustive without a discard arm. </para>
 /// </remarks>
-public readonly union OperationOutcome<TSuccessResult, TCase2, TCase3>(TSuccessResult, TCase2, TCase3) : IOperationOutcome
+public readonly union Outcome<TSuccessResult, TCase2, TCase3>(TSuccessResult, TCase2, TCase3) : IOutcome
 {
     /// <summary>
     /// Gets a value indicating whether this result is successful.
@@ -106,10 +106,10 @@ public readonly union OperationOutcome<TSuccessResult, TCase2, TCase3>(TSuccessR
 /// resolved to the first alternative result case.</description></item> <item><description><typeparamref name="TCase3"/> - the operation
 /// resolved to the second alternative result case.</description></item> <item><description><typeparamref name="TCase4"/> - the operation
 /// resolved to the third alternative result case.</description></item> </list>
-/// <para>Values of any case type convert implicitly to <see cref="OperationOutcome{TSuccessResult, TCase2, TCase3, TCase4}"/>, and
+/// <para>Values of any case type convert implicitly to <see cref="Outcome{TSuccessResult, TCase2, TCase3, TCase4}"/>, and
 /// switch expressions over it are exhaustive without a discard arm. </para>
 /// </remarks>
-public readonly union OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4>(TSuccessResult, TCase2, TCase3, TCase4) : IOperationOutcome
+public readonly union Outcome<TSuccessResult, TCase2, TCase3, TCase4>(TSuccessResult, TCase2, TCase3, TCase4) : IOutcome
 {
     /// <summary>
     /// Gets a value indicating whether this result is successful.
@@ -150,10 +150,10 @@ public readonly union OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4>(T
 /// resolved to the second alternative result case.</description></item> <item><description><typeparamref name="TCase4"/> - the operation
 /// resolved to the third alternative result case.</description></item> <item><description><typeparamref name="TCase5"/> - the operation
 /// resolved to the fourth alternative result case.</description></item> </list>
-/// <para>Values of any case type convert implicitly to <see cref="OperationOutcome{TSuccessResult, TCase2, TCase3, TCase4, TCase5}"/>, and
+/// <para>Values of any case type convert implicitly to <see cref="Outcome{TSuccessResult, TCase2, TCase3, TCase4, TCase5}"/>, and
 /// switch expressions over it are exhaustive without a discard arm. </para>
 /// </remarks>
-public readonly union OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>(TSuccessResult, TCase2, TCase3, TCase4, TCase5) : IOperationOutcome
+public readonly union Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>(TSuccessResult, TCase2, TCase3, TCase4, TCase5) : IOutcome
 {
     /// <summary>
     /// Gets a value indicating whether this result is successful.
@@ -201,10 +201,10 @@ public readonly union OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, T
 /// resolved to the fourth alternative result case.</description></item> <item><description><typeparamref name="TCase6"/> - the operation
 /// resolved to the fifth alternative result case.</description></item> </list>
 ///
-/// <para>Values of any case type convert implicitly to <see cref="OperationOutcome{TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6}"/>, and
+/// <para>Values of any case type convert implicitly to <see cref="Outcome{TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6}"/>, and
 /// switch expressions over it are exhaustive without a discard arm. </para>
 /// </remarks>
-public readonly union OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>(TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6) : IOperationOutcome
+public readonly union Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>(TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6) : IOutcome
 {
     /// <summary>
     /// Gets a value indicating whether this result is successful.

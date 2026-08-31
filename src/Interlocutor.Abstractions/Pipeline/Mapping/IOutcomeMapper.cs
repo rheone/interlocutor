@@ -1,7 +1,7 @@
 namespace Interlocutor.Abstractions.Pipeline.Mapping;
 
 /// <summary>
-/// Maps a failure case value from an Interlocutor <c>OperationOutcome</c> union to a
+/// Maps a failure case value from an Interlocutor <c>Outcome</c> union to a
 /// <typeparamref name="TResult"/> representing it in some transport or output format - an HTTP status and
 /// body, a gRPC status, a process exit code, a queue nack reason, or anything else a consumer needs to
 /// derive from a failure case.
@@ -32,7 +32,7 @@ public interface IOutcomeMapper<out TResult>
     /// Maps a failure case value to its <typeparamref name="TResult"/> representation.
     /// </summary>
     /// <typeparam name="TFailure">
-    /// The static failure case type carried by the <c>OperationOutcome</c> - a built-in case type
+    /// The static failure case type carried by the <c>Outcome</c> - a built-in case type
     /// (<c>NotFound</c>, <c>Forbidden</c>, <c>Conflict</c>, ...), one of their aggregate forms
     /// (<c>ValidationErrors</c>, <c>Failures</c>), or a consumer-defined custom failure type.
     /// </typeparam>

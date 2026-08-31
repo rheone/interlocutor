@@ -26,8 +26,8 @@ public class InterlocutorBuilderIntegrationTests
 
         // Assert
         Assert.NotNull(container.ResolveOptional<IMediator>());
-        Assert.NotNull(container.ResolveOptional<IQueryHandler<SampleQuery, OperationOutcome>>());
-        Assert.Empty(container.Resolve<IEnumerable<IPipelineBehavior<SampleQuery, OperationOutcome>>>());
+        Assert.NotNull(container.ResolveOptional<IQueryHandler<SampleQuery, Outcome>>());
+        Assert.Empty(container.Resolve<IEnumerable<IPipelineBehavior<SampleQuery, Outcome>>>());
     }
 
     [Fact]
@@ -227,14 +227,14 @@ public class InterlocutorBuilderIntegrationTests
 
         // Act
         // AuthorizationBehavior<TRequest,TResponse> only ever short-circuits meaningfully for a response
-        // shaped OperationOutcome<TSuccess, Forbidden> (it needs a Forbidden case to construct on denial), so
-        // it's resolved against AuthorizableQuery (not the plain-OperationOutcome SampleQuery every other test
+        // shaped Outcome<TSuccess, Forbidden> (it needs a Forbidden case to construct on denial), so
+        // it's resolved against AuthorizableQuery (not the plain-Outcome SampleQuery every other test
         // here uses) to genuinely exercise closed-generic resolution rather than only the open-generic
         // registration list. AuthorizableQuery also implements IAuditableRequest and IRequiresPolicy so that,
         // now that AuditingBehavior/AuthorizationBehavior constrain TRequest to those markers, this query still
         // draws all three behaviors from the recommended chain instead of being filtered down to just logging.
         var behaviors = container
-            .Resolve<IEnumerable<IPipelineBehavior<AuthorizableQuery, OperationOutcome<string, Forbidden>>>>()
+            .Resolve<IEnumerable<IPipelineBehavior<AuthorizableQuery, Outcome<string, Forbidden>>>>()
             .Select(b => b.GetType())
             .ToList();
 
@@ -254,13 +254,13 @@ public class InterlocutorBuilderIntegrationTests
         var handlerRan = false;
         containerBuilder.RegisterInstance(new HandlerRanFlag(() => handlerRan = true)).SingleInstance();
 
-        var declined = new OperationOutcome(new Failure("declined by stage"));
+        var declined = new Outcome(new Failure("declined by stage"));
 
         containerBuilder.AddInterlocutor(builder =>
             builder
                 .ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly)
-                .Pipeline.AddStage<ShortCircuitQuery, OperationOutcome>(
-                    (_, _) => Task.FromResult(StageResult<OperationOutcome>.ShortCircuit(declined)),
+                .Pipeline.AddStage<ShortCircuitQuery, Outcome>(
+                    (_, _) => Task.FromResult(StageResult<Outcome>.ShortCircuit(declined)),
                     null
                 )
                 .AddStageHost()
@@ -298,9 +298,7 @@ public class InterlocutorBuilderIntegrationTests
         using var scope = container.BeginLifetimeScope();
 
         // Act
-        var behaviors = scope
-            .Resolve<IEnumerable<IPipelineBehavior<CancellableQuery, OperationOutcome<string, Cancelled>>>>()
-            .ToList();
+        var behaviors = scope.Resolve<IEnumerable<IPipelineBehavior<CancellableQuery, Outcome<string, Cancelled>>>>().ToList();
 
         // Assert
         Assert.Contains(behaviors, b => b.GetType().Name.StartsWith("CancellationBehavior"));
@@ -319,9 +317,7 @@ public class InterlocutorBuilderIntegrationTests
         using var scope = container.BeginLifetimeScope();
 
         // Act
-        var behaviors = scope
-            .Resolve<IEnumerable<IPipelineBehavior<TimeBoundQuery, OperationOutcome<string, Timeout>>>>()
-            .ToList();
+        var behaviors = scope.Resolve<IEnumerable<IPipelineBehavior<TimeBoundQuery, Outcome<string, Timeout>>>>().ToList();
 
         // Assert
         Assert.Contains(behaviors, b => b.GetType().Name.StartsWith("TimeoutBehavior"));
@@ -340,85 +336,82 @@ public class InterlocutorBuilderIntegrationTests
         using var scope = container.BeginLifetimeScope();
 
         // Act
-        var behaviors = scope
-            .Resolve<IEnumerable<IPipelineBehavior<ThrottledQuery, OperationOutcome<string, RateLimited>>>>()
-            .ToList();
+        var behaviors = scope.Resolve<IEnumerable<IPipelineBehavior<ThrottledQuery, Outcome<string, RateLimited>>>>().ToList();
 
         // Assert
         Assert.Contains(behaviors, b => b.GetType().Name.StartsWith("RateLimitedBehavior"));
     }
 
-    private sealed record SampleQuery : IQuery<OperationOutcome>;
+    private sealed record SampleQuery : IQuery<Outcome>;
 
     // The handler classes through ShortCircuitQueryHandler below are resolved only via
     // AddInterlocutor()'s assembly-scanning DI registration - never new'd or typeof'd directly in
     // this file - so their constructors are invisible to static analysis and read as unused.
 #pragma warning disable S1144
-    private sealed class SampleQueryHandler : IQueryHandler<SampleQuery, OperationOutcome>
+    private sealed class SampleQueryHandler : IQueryHandler<SampleQuery, Outcome>
     {
-        public Task<OperationOutcome> Handle(SampleQuery query, CancellationToken ct) =>
-            Task.FromResult(default(OperationOutcome));
+        public Task<Outcome> Handle(SampleQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 
     /// <summary>Deliberately has no handler, so ValidateOnBuild() tests have a deterministic problem to find.</summary>
-    private sealed record UnhandledValidationQuery : IQuery<OperationOutcome>;
+    private sealed record UnhandledValidationQuery : IQuery<Outcome>;
 
-    private sealed record CancellableQuery : IQuery<OperationOutcome<string, Cancelled>>, ICancellable;
+    private sealed record CancellableQuery : IQuery<Outcome<string, Cancelled>>, ICancellable;
 
-    private sealed class CancellableQueryHandler : IQueryHandler<CancellableQuery, OperationOutcome<string, Cancelled>>
+    private sealed class CancellableQueryHandler : IQueryHandler<CancellableQuery, Outcome<string, Cancelled>>
     {
-        public Task<OperationOutcome<string, Cancelled>> Handle(CancellableQuery query, CancellationToken ct) =>
-            Task.FromResult<OperationOutcome<string, Cancelled>>("ok");
+        public Task<Outcome<string, Cancelled>> Handle(CancellableQuery query, CancellationToken ct) =>
+            Task.FromResult<Outcome<string, Cancelled>>("ok");
     }
 
-    private sealed record TimeBoundQuery : IQuery<OperationOutcome<string, Timeout>>, IHasTimeout
+    private sealed record TimeBoundQuery : IQuery<Outcome<string, Timeout>>, IHasTimeout
     {
         public TimeSpan Budget => TimeSpan.FromSeconds(30);
     }
 
-    private sealed class TimeBoundQueryHandler : IQueryHandler<TimeBoundQuery, OperationOutcome<string, Timeout>>
+    private sealed class TimeBoundQueryHandler : IQueryHandler<TimeBoundQuery, Outcome<string, Timeout>>
     {
-        public Task<OperationOutcome<string, Timeout>> Handle(TimeBoundQuery query, CancellationToken ct) =>
-            Task.FromResult<OperationOutcome<string, Timeout>>("ok");
+        public Task<Outcome<string, Timeout>> Handle(TimeBoundQuery query, CancellationToken ct) =>
+            Task.FromResult<Outcome<string, Timeout>>("ok");
     }
 
-    private sealed record ThrottledQuery : IQuery<OperationOutcome<string, RateLimited>>, IRateLimited
+    private sealed record ThrottledQuery : IQuery<Outcome<string, RateLimited>>, IRateLimited
     {
         public string LimitKey => "test-limit";
     }
 
-    private sealed class ThrottledQueryHandler : IQueryHandler<ThrottledQuery, OperationOutcome<string, RateLimited>>
+    private sealed class ThrottledQueryHandler : IQueryHandler<ThrottledQuery, Outcome<string, RateLimited>>
     {
-        public Task<OperationOutcome<string, RateLimited>> Handle(ThrottledQuery query, CancellationToken ct) =>
-            Task.FromResult<OperationOutcome<string, RateLimited>>("ok");
+        public Task<Outcome<string, RateLimited>> Handle(ThrottledQuery query, CancellationToken ct) =>
+            Task.FromResult<Outcome<string, RateLimited>>("ok");
     }
 
-    private sealed record AuthorizableQuery : IQuery<OperationOutcome<string, Forbidden>>, IAuditableRequest, IRequiresPolicy
+    private sealed record AuthorizableQuery : IQuery<Outcome<string, Forbidden>>, IAuditableRequest, IRequiresPolicy
     {
         public string ActionName => "Query.Authorizable";
 
         public string PolicyName => "CanRead";
     }
 
-    private sealed class AuthorizableQueryHandler : IQueryHandler<AuthorizableQuery, OperationOutcome<string, Forbidden>>
+    private sealed class AuthorizableQueryHandler : IQueryHandler<AuthorizableQuery, Outcome<string, Forbidden>>
     {
-        public Task<OperationOutcome<string, Forbidden>> Handle(AuthorizableQuery query, CancellationToken ct) =>
-            Task.FromResult<OperationOutcome<string, Forbidden>>("ok");
+        public Task<Outcome<string, Forbidden>> Handle(AuthorizableQuery query, CancellationToken ct) =>
+            Task.FromResult<Outcome<string, Forbidden>>("ok");
     }
 
-    private sealed record ShortCircuitQuery : IQuery<OperationOutcome>;
+    private sealed record ShortCircuitQuery : IQuery<Outcome>;
 
     private sealed class HandlerRanFlag(Action onHandled)
     {
         public void MarkHandled() => onHandled();
     }
 
-    private sealed class ShortCircuitQueryHandler(HandlerRanFlag flag) : IQueryHandler<ShortCircuitQuery, OperationOutcome>
+    private sealed class ShortCircuitQueryHandler(HandlerRanFlag flag) : IQueryHandler<ShortCircuitQuery, Outcome>
     {
-        public Task<OperationOutcome> Handle(ShortCircuitQuery query, CancellationToken ct)
+        public Task<Outcome> Handle(ShortCircuitQuery query, CancellationToken ct)
         {
             flag.MarkHandled();
-            return Task.FromResult(default(OperationOutcome));
+            return Task.FromResult(default(Outcome));
         }
     }
 #pragma warning restore S1144

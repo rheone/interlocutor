@@ -194,7 +194,7 @@ Autofac resolves constructor dependencies the same way regardless of what trigge
 ```csharp
 public sealed class OrderApiService(ISender mediator)
 {
-    public Task<OperationOutcome<OrderDto, NotFound>> GetOrder(int id, CancellationToken ct) =>
+    public Task<Outcome<OrderDto, NotFound>> GetOrder(int id, CancellationToken ct) =>
         mediator.Send(new GetOrder(id), ct);
 }
 
@@ -231,10 +231,10 @@ Identical to the Microsoft DI case - a handler constructor-injects the store-agn
 
 ```csharp
 public sealed class CreateOrderHandler(IDomainRepository<Order, int> orders, IUnitOfWork unitOfWork)
-    : ICommandHandler<CreateOrder, OperationOutcome<int, ValidationError>>,
+    : ICommandHandler<CreateOrder, Outcome<int, ValidationError>>,
       ITransactionalRequest
 {
-    public async Task<OperationOutcome<int, ValidationError>> Handle(CreateOrder command, CancellationToken ct)
+    public async Task<Outcome<int, ValidationError>> Handle(CreateOrder command, CancellationToken ct)
     {
         var order = new Order(command.CustomerId, command.Items);
         await orders.InsertAsync(order, ct);

@@ -31,7 +31,7 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<RealSessionFixture>
         // Act
         var result = await behavior.Handle(
             new PlainRequest(),
-            () => Task.FromResult<OperationOutcome<Success, Failure>>(default(Success)),
+            () => Task.FromResult<Outcome<Success, Failure>>(default(Success)),
             CancellationToken.None
         );
 
@@ -54,7 +54,7 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<RealSessionFixture>
             () =>
             {
                 flushModeWhenHandlerRan = session.FlushMode;
-                return Task.FromResult<OperationOutcome<Success, Failure>>(default(Success));
+                return Task.FromResult<Outcome<Success, Failure>>(default(Success));
             },
             CancellationToken.None
         );
@@ -128,7 +128,7 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<RealSessionFixture>
     {
         // Arrange
         using var session = this.fixture.OpenSession();
-        var behavior = new UnitOfWorkBehavior<TransactionalRequest, OperationOutcome<Success, Failure>>(
+        var behavior = new UnitOfWorkBehavior<TransactionalRequest, Outcome<Success, Failure>>(
             new Lazy<ISession>(() => session)
         );
         var transactionActiveBeforeHandler = false;
@@ -139,7 +139,7 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<RealSessionFixture>
             () =>
             {
                 transactionActiveBeforeHandler = session.GetCurrentTransaction() is { IsActive: true };
-                return Task.FromResult<OperationOutcome<Success, Failure>>(default(Success));
+                return Task.FromResult<Outcome<Success, Failure>>(default(Success));
             },
             CancellationToken.None
         );
@@ -153,7 +153,7 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<RealSessionFixture>
     {
         // Arrange
         var session = new Lazy<ISession>(() => throw new InvalidOperationException("Should not be resolved"));
-        var behavior = new UnitOfWorkBehavior<RequestClaimingBothMarkers, OperationOutcome<string, Failure>>(session);
+        var behavior = new UnitOfWorkBehavior<RequestClaimingBothMarkers, Outcome<string, Failure>>(session);
         var handled = false;
 
         // Act
@@ -162,7 +162,7 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<RealSessionFixture>
             () =>
             {
                 handled = true;
-                return Task.FromResult<OperationOutcome<string, Failure>>("done");
+                return Task.FromResult<Outcome<string, Failure>>("done");
             },
             CancellationToken.None
         );
@@ -215,7 +215,7 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<RealSessionFixture>
         using var session = this.fixture.OpenSession();
         var classifier = Substitute.For<IOutcomeClassifier>();
         classifier.IsFailure(Arg.Any<object?>()).Returns(true);
-        var behavior = new UnitOfWorkBehavior<PlainRequest, OperationOutcome<Success, Failure>>(
+        var behavior = new UnitOfWorkBehavior<PlainRequest, Outcome<Success, Failure>>(
             new Lazy<ISession>(() => session),
             classifier
         );
@@ -256,15 +256,15 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<RealSessionFixture>
         Assert.Null(verifySession.Get<Widget>(widgetId));
     }
 
-    private static UnitOfWorkBehavior<PlainRequest, OperationOutcome<Success, Failure>> CreateBehavior(ISession session) =>
+    private static UnitOfWorkBehavior<PlainRequest, Outcome<Success, Failure>> CreateBehavior(ISession session) =>
         new(new Lazy<ISession>(() => session));
 
-    private sealed record PlainRequest : ICommand<OperationOutcome<Success, Failure>>;
+    private sealed record PlainRequest : ICommand<Outcome<Success, Failure>>;
 
-    private sealed record TransactionalRequest : ICommand<OperationOutcome<Success, Failure>>, ITransactionalRequest;
+    private sealed record TransactionalRequest : ICommand<Outcome<Success, Failure>>, ITransactionalRequest;
 
     private sealed record RequestClaimingBothMarkers
-        : ICommand<OperationOutcome<string, Failure>>,
+        : ICommand<Outcome<string, Failure>>,
             ITransactionalRequest,
             IExternalStoreRequest;
 }

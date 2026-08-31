@@ -28,13 +28,10 @@ using ISession = global::NHibernate.ISession;
 /// registering it scoped, one session per dispatch, satisfies by construction.
 /// </remarks>
 public sealed class SearchTodoTasksHandler(Lazy<ISession> session)
-    : IQueryHandler<SearchTodoTasksQuery, OperationOutcome<IReadOnlyList<TodoTaskDto>, Failure>>
+    : IQueryHandler<SearchTodoTasksQuery, Outcome<IReadOnlyList<TodoTaskDto>, Failure>>
 {
     /// <inheritdoc/>
-    public async Task<OperationOutcome<IReadOnlyList<TodoTaskDto>, Failure>> Handle(
-        SearchTodoTasksQuery query,
-        CancellationToken ct
-    )
+    public async Task<Outcome<IReadOnlyList<TodoTaskDto>, Failure>> Handle(SearchTodoTasksQuery query, CancellationToken ct)
     {
         var tasks = await session
             .Value.QueryOver<TodoTask>()

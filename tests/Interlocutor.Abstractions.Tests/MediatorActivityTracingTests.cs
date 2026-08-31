@@ -55,13 +55,13 @@ public class MediatorActivityTracingTests
         ActivitySource.AddActivityListener(listener);
 
         var services = new ServiceCollection();
-        services.AddSingleton<IVoidCommandHandler<TracingSuccessCommand, OperationOutcome>, TracingSuccessCommandHandler>();
+        services.AddSingleton<IVoidCommandHandler<TracingSuccessCommand, Outcome>, TracingSuccessCommandHandler>();
         services.AddSingleton<IMediator, Mediator>();
         var provider = services.BuildServiceProvider();
         var mediator = provider.GetRequiredService<IMediator>();
 
         // Act
-        await mediator.Send<OperationOutcome>(new TracingSuccessCommand(), CancellationToken.None);
+        await mediator.Send<Outcome>(new TracingSuccessCommand(), CancellationToken.None);
 
         // Assert
         var activity = SingleFor<TracingSuccessCommand>(captured);
@@ -122,8 +122,8 @@ public class MediatorActivityTracingTests
         ActivitySource.AddActivityListener(listener);
 
         var services = new ServiceCollection();
-        services.AddSingleton<IQueryHandler<TracingOuterQuery, OperationOutcome<int, Failure>>, TracingOuterQueryHandler>();
-        services.AddSingleton<IQueryHandler<TracingInnerQuery, OperationOutcome<int, Failure>>, TracingInnerQueryHandler>();
+        services.AddSingleton<IQueryHandler<TracingOuterQuery, Outcome<int, Failure>>, TracingOuterQueryHandler>();
+        services.AddSingleton<IQueryHandler<TracingInnerQuery, Outcome<int, Failure>>, TracingInnerQueryHandler>();
         services.AddSingleton<IMediator, Mediator>();
         var provider = services.BuildServiceProvider();
         var mediator = provider.GetRequiredService<IMediator>();
@@ -202,14 +202,14 @@ public class MediatorActivityTracingTests
         using var listener = CreateListener(captured);
         ActivitySource.AddActivityListener(listener);
 
-        var logger = new RecordingLogger<LoggingBehavior<TracingSuccessQuery, OperationOutcome<int, Failure>>>();
+        var logger = new RecordingLogger<LoggingBehavior<TracingSuccessQuery, Outcome<int, Failure>>>();
 
         var services = new ServiceCollection();
-        services.AddSingleton<IQueryHandler<TracingSuccessQuery, OperationOutcome<int, Failure>>, TracingSuccessQueryHandler>();
-        services.AddSingleton<ILogger<LoggingBehavior<TracingSuccessQuery, OperationOutcome<int, Failure>>>>(logger);
+        services.AddSingleton<IQueryHandler<TracingSuccessQuery, Outcome<int, Failure>>, TracingSuccessQueryHandler>();
+        services.AddSingleton<ILogger<LoggingBehavior<TracingSuccessQuery, Outcome<int, Failure>>>>(logger);
         services.AddSingleton<
-            IPipelineBehavior<TracingSuccessQuery, OperationOutcome<int, Failure>>,
-            LoggingBehavior<TracingSuccessQuery, OperationOutcome<int, Failure>>
+            IPipelineBehavior<TracingSuccessQuery, Outcome<int, Failure>>,
+            LoggingBehavior<TracingSuccessQuery, Outcome<int, Failure>>
         >();
         services.AddSingleton<IMediator, Mediator>();
         var provider = services.BuildServiceProvider();
@@ -240,64 +240,61 @@ public class MediatorActivityTracingTests
     private static IMediator CreateMediator()
     {
         var services = new ServiceCollection();
-        services.AddSingleton<IQueryHandler<TracingSuccessQuery, OperationOutcome<int, Failure>>, TracingSuccessQueryHandler>();
-        services.AddSingleton<IQueryHandler<TracingFailingQuery, OperationOutcome<int, Failure>>, TracingFailingQueryHandler>();
-        services.AddSingleton<
-            IQueryHandler<TracingThrowingQuery, OperationOutcome<int, Failure>>,
-            TracingThrowingQueryHandler
-        >();
+        services.AddSingleton<IQueryHandler<TracingSuccessQuery, Outcome<int, Failure>>, TracingSuccessQueryHandler>();
+        services.AddSingleton<IQueryHandler<TracingFailingQuery, Outcome<int, Failure>>, TracingFailingQueryHandler>();
+        services.AddSingleton<IQueryHandler<TracingThrowingQuery, Outcome<int, Failure>>, TracingThrowingQueryHandler>();
         services.AddSingleton<IMediator, Mediator>();
         var provider = services.BuildServiceProvider();
         return provider.GetRequiredService<IMediator>();
     }
 }
 
-public record TracingSuccessQuery(int Value) : IQuery<OperationOutcome<int, Failure>>;
+public record TracingSuccessQuery(int Value) : IQuery<Outcome<int, Failure>>;
 
-public class TracingSuccessQueryHandler : IQueryHandler<TracingSuccessQuery, OperationOutcome<int, Failure>>
+public class TracingSuccessQueryHandler : IQueryHandler<TracingSuccessQuery, Outcome<int, Failure>>
 {
-    public Task<OperationOutcome<int, Failure>> Handle(TracingSuccessQuery query, CancellationToken ct) =>
-        Task.FromResult(new OperationOutcome<int, Failure>(query.Value * 2));
+    public Task<Outcome<int, Failure>> Handle(TracingSuccessQuery query, CancellationToken ct) =>
+        Task.FromResult(new Outcome<int, Failure>(query.Value * 2));
 }
 
-public record TracingFailingQuery : IQuery<OperationOutcome<int, Failure>>;
+public record TracingFailingQuery : IQuery<Outcome<int, Failure>>;
 
-public class TracingFailingQueryHandler : IQueryHandler<TracingFailingQuery, OperationOutcome<int, Failure>>
+public class TracingFailingQueryHandler : IQueryHandler<TracingFailingQuery, Outcome<int, Failure>>
 {
-    public Task<OperationOutcome<int, Failure>> Handle(TracingFailingQuery query, CancellationToken ct) =>
-        Task.FromResult(new OperationOutcome<int, Failure>(new Failure("boom")));
+    public Task<Outcome<int, Failure>> Handle(TracingFailingQuery query, CancellationToken ct) =>
+        Task.FromResult(new Outcome<int, Failure>(new Failure("boom")));
 }
 
-public record TracingThrowingQuery : IQuery<OperationOutcome<int, Failure>>;
+public record TracingThrowingQuery : IQuery<Outcome<int, Failure>>;
 
-public class TracingThrowingQueryHandler : IQueryHandler<TracingThrowingQuery, OperationOutcome<int, Failure>>
+public class TracingThrowingQueryHandler : IQueryHandler<TracingThrowingQuery, Outcome<int, Failure>>
 {
-    public Task<OperationOutcome<int, Failure>> Handle(TracingThrowingQuery query, CancellationToken ct) =>
+    public Task<Outcome<int, Failure>> Handle(TracingThrowingQuery query, CancellationToken ct) =>
         throw new InvalidOperationException("handler bug");
 }
 
-public record TracingOuterQuery : IQuery<OperationOutcome<int, Failure>>;
+public record TracingOuterQuery : IQuery<Outcome<int, Failure>>;
 
-public class TracingOuterQueryHandler(IMediator mediator) : IQueryHandler<TracingOuterQuery, OperationOutcome<int, Failure>>
+public class TracingOuterQueryHandler(IMediator mediator) : IQueryHandler<TracingOuterQuery, Outcome<int, Failure>>
 {
-    public async Task<OperationOutcome<int, Failure>> Handle(TracingOuterQuery query, CancellationToken ct) =>
+    public async Task<Outcome<int, Failure>> Handle(TracingOuterQuery query, CancellationToken ct) =>
         await mediator.Send(new TracingInnerQuery(), ct).ConfigureAwait(false);
 }
 
-public record TracingInnerQuery : IQuery<OperationOutcome<int, Failure>>;
+public record TracingInnerQuery : IQuery<Outcome<int, Failure>>;
 
-public class TracingInnerQueryHandler : IQueryHandler<TracingInnerQuery, OperationOutcome<int, Failure>>
+public class TracingInnerQueryHandler : IQueryHandler<TracingInnerQuery, Outcome<int, Failure>>
 {
-    public Task<OperationOutcome<int, Failure>> Handle(TracingInnerQuery query, CancellationToken ct) =>
-        Task.FromResult(new OperationOutcome<int, Failure>(1));
+    public Task<Outcome<int, Failure>> Handle(TracingInnerQuery query, CancellationToken ct) =>
+        Task.FromResult(new Outcome<int, Failure>(1));
 }
 
 public record TracingSuccessCommand : ICommand;
 
-public class TracingSuccessCommandHandler : IVoidCommandHandler<TracingSuccessCommand, OperationOutcome>
+public class TracingSuccessCommandHandler : IVoidCommandHandler<TracingSuccessCommand, Outcome>
 {
-    public Task<OperationOutcome> Handle(TracingSuccessCommand command, CancellationToken ct) =>
-        Task.FromResult(new OperationOutcome(default(Success)));
+    public Task<Outcome> Handle(TracingSuccessCommand command, CancellationToken ct) =>
+        Task.FromResult(new Outcome(default(Success)));
 }
 
 public record TracingNotification(string Message) : INotification;

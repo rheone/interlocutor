@@ -1,6 +1,6 @@
 #nullable enable
 abstract Interlocutor.Abstractions.Commands.ResourceCommandHandler<TCommand, TEntity, TSuccess>.Authorize(TEntity entity, TCommand command) -> Interlocutor.CommonKernel.ResultTypes.Failure?
-abstract Interlocutor.Abstractions.Commands.ResourceCommandHandler<TCommand, TEntity, TSuccess>.HandleAsync(TCommand command, TEntity entity, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Interlocutor.CommonKernel.OperationOutcome<TSuccess, Interlocutor.CommonKernel.ResultTypes.NotFound, Interlocutor.CommonKernel.ResultTypes.Failure>>!
+abstract Interlocutor.Abstractions.Commands.ResourceCommandHandler<TCommand, TEntity, TSuccess>.HandleAsync(TCommand command, TEntity entity, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Interlocutor.CommonKernel.Outcome<TSuccess, Interlocutor.CommonKernel.ResultTypes.NotFound, Interlocutor.CommonKernel.ResultTypes.Failure>>!
 abstract Interlocutor.Abstractions.Commands.ResourceCommandHandler<TCommand, TEntity, TSuccess>.LoadAsync(TCommand command, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TEntity?>!
 const Interlocutor.Abstractions.Diagnostics.MediatorActivitySource.HandlerTypeTag = "interlocutor.handler_type" -> string!
 const Interlocutor.Abstractions.Diagnostics.MediatorActivitySource.Name = "Interlocutor.Mediator" -> string!
@@ -13,7 +13,7 @@ Interlocutor.Abstractions.Commands.ICommandHandler<TCommand, TResponse>.Handle(T
 Interlocutor.Abstractions.Commands.IVoidCommandHandler<TCommand, TResult>
 Interlocutor.Abstractions.Commands.IVoidCommandHandler<TCommand, TResult>.Handle(TCommand command, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResult>!
 Interlocutor.Abstractions.Commands.ResourceCommandHandler<TCommand, TEntity, TSuccess>
-Interlocutor.Abstractions.Commands.ResourceCommandHandler<TCommand, TEntity, TSuccess>.Handle(TCommand command, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Interlocutor.CommonKernel.OperationOutcome<TSuccess, Interlocutor.CommonKernel.ResultTypes.NotFound, Interlocutor.CommonKernel.ResultTypes.Failure>>!
+Interlocutor.Abstractions.Commands.ResourceCommandHandler<TCommand, TEntity, TSuccess>.Handle(TCommand command, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Interlocutor.CommonKernel.Outcome<TSuccess, Interlocutor.CommonKernel.ResultTypes.NotFound, Interlocutor.CommonKernel.ResultTypes.Failure>>!
 Interlocutor.Abstractions.Commands.ResourceCommandHandler<TCommand, TEntity, TSuccess>.ResourceCommandHandler() -> void
 Interlocutor.Abstractions.Core.AmbientRequestContextAccessor
 Interlocutor.Abstractions.Core.AmbientRequestContextAccessor.AmbientRequestContextAccessor() -> void
@@ -29,7 +29,7 @@ Interlocutor.Abstractions.Core.HandlerOverrideAttribute.HandlerType.get -> Syste
 Interlocutor.Abstractions.Core.IGeneratedNotificationHandlerOrder
 Interlocutor.Abstractions.Core.IGeneratedNotificationHandlerOrder.Rank(System.Type! handlerType) -> int
 Interlocutor.Abstractions.Core.IGeneratedRequestDispatcher
-Interlocutor.Abstractions.Core.IGeneratedRequestDispatcher.Dispatch(object! request, System.IServiceProvider! services, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Interlocutor.CommonKernel.ResultTypes.IOperationOutcome!>!
+Interlocutor.Abstractions.Core.IGeneratedRequestDispatcher.Dispatch(object! request, System.IServiceProvider! services, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Interlocutor.CommonKernel.ResultTypes.IOutcome!>!
 Interlocutor.Abstractions.Core.IMediator
 Interlocutor.Abstractions.Core.IPublisher
 Interlocutor.Abstractions.Core.IPublisher.Publish<TNotification>(TNotification notification, Interlocutor.Abstractions.Core.PublishStrategy strategy, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
@@ -38,7 +38,7 @@ Interlocutor.Abstractions.Core.IRequestContextAccessor
 Interlocutor.Abstractions.Core.IRequestContextAccessor.Context.get -> Interlocutor.Abstractions.Core.RequestContext?
 Interlocutor.Abstractions.Core.IRequestContextAccessor.Context.set -> void
 Interlocutor.Abstractions.Core.ISender
-Interlocutor.Abstractions.Core.ISender.Send(object! request, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Interlocutor.CommonKernel.ResultTypes.IOperationOutcome!>!
+Interlocutor.Abstractions.Core.ISender.Send(object! request, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Interlocutor.CommonKernel.ResultTypes.IOutcome!>!
 Interlocutor.Abstractions.Core.ISender.Send<TResponse>(Interlocutor.Abstractions.Commands.ICommand<TResponse>! command, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResponse>!
 Interlocutor.Abstractions.Core.ISender.Send<TResponse>(Interlocutor.Abstractions.Queries.IQuery<TResponse>! query, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResponse>!
 Interlocutor.Abstractions.Core.ISender.Send<TResult>(Interlocutor.Abstractions.Commands.ICommand! command, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResult>!
@@ -92,7 +92,7 @@ Interlocutor.Abstractions.Mediator
 Interlocutor.Abstractions.Mediator.Mediator(System.IServiceProvider! services) -> void
 Interlocutor.Abstractions.Mediator.Publish<TNotification>(TNotification notification, Interlocutor.Abstractions.Core.PublishStrategy strategy, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Interlocutor.Abstractions.Mediator.Publish<TNotification>(TNotification notification, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
-Interlocutor.Abstractions.Mediator.Send(object! request, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Interlocutor.CommonKernel.ResultTypes.IOperationOutcome!>!
+Interlocutor.Abstractions.Mediator.Send(object! request, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Interlocutor.CommonKernel.ResultTypes.IOutcome!>!
 Interlocutor.Abstractions.Mediator.Send<TResponse>(Interlocutor.Abstractions.Commands.ICommand<TResponse>! command, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResponse>!
 Interlocutor.Abstractions.Mediator.Send<TResponse>(Interlocutor.Abstractions.Queries.IQuery<TResponse>! query, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResponse>!
 Interlocutor.Abstractions.Mediator.Send<TResult>(Interlocutor.Abstractions.Commands.ICommand! command, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResult>!

@@ -11,7 +11,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// <para>
 /// Use this handler for commands that mutate state and return domain data (e.g., <c>CreateUserCommand → UserDto</c>).
 /// For commands that produce only success/failure outcomes (not domain data), use <see cref="IVoidCommandHandler{TCommand, TResult}"/>
-/// instead, which returns an <see cref="CommonKernel.ResultTypes.IOperationOutcome"/> union.
+/// instead, which returns an <see cref="CommonKernel.ResultTypes.IOutcome"/> union.
 /// </para>
 /// <para>
 /// Handlers are registered and discovered by the mediator via DI assembly scanning. Register each handler in
@@ -21,7 +21,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </remarks>
 public interface ICommandHandler<in TCommand, TResponse>
     where TCommand : ICommand<TResponse>
-    where TResponse : IOperationOutcome
+    where TResponse : IOutcome
 {
     /// <summary>
     /// Handles the specified command and returns a result containing the response or a failure.

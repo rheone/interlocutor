@@ -7,4 +7,4 @@ using TodoTasks.Api.Domain;
 
 /// <summary>Deletes a <see cref="User"/> and every <see cref="TodoTask"/> they own.</summary>
 /// <param name="Id">The user to delete.</param>
-public sealed record DeleteUserCommand(int Id) : ICommand<OperationOutcome<Success, NotFound>>;
+public sealed record DeleteUserCommand(int Id) : ICommand<Outcome<Success, NotFound>>;

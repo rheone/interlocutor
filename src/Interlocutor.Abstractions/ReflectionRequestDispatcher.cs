@@ -56,7 +56,7 @@ internal static class ReflectionRequestDispatcher
     [RequiresDynamicCode(
         "The runtime-typed dispatch fallback closes generic types/methods reflectively - see documentation/trim-and-aot-support.md."
     )]
-    public static async Task<IOperationOutcome> DispatchAsync(
+    public static async Task<IOutcome> DispatchAsync(
         Mediator mediator,
         IServiceProvider services,
         object request,
@@ -155,7 +155,7 @@ internal static class ReflectionRequestDispatcher
     [RequiresDynamicCode(
         "The runtime-typed dispatch fallback closes generic types/methods reflectively - see documentation/trim-and-aot-support.md."
     )]
-    private static async Task<IOperationOutcome> InvokeSendAsync(
+    private static async Task<IOutcome> InvokeSendAsync(
         MethodInfo openGenericSendMethod,
         Mediator mediator,
         Type responseType,
@@ -172,7 +172,7 @@ internal static class ReflectionRequestDispatcher
         // is safe to read unconditionally here: the preceding await already completed (or faulted/threw out of)
         // the task, so a completed Task<T> always has a non-null Result property to reflect.
         var resultProperty = task.GetType().GetProperty("Result")!;
-        return (IOperationOutcome)resultProperty.GetValue(task)!;
+        return (IOutcome)resultProperty.GetValue(task)!;
     }
 
     /// <summary>

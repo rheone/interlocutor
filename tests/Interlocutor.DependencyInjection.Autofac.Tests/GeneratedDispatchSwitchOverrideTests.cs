@@ -88,22 +88,22 @@ public sealed class GeneratedDispatchSwitchOverrideTests
         Assert.Equal(["dropped"], log);
     }
 
-    public sealed record GeneratedSwitchOverriddenQuery(int Value) : IQuery<OperationOutcome<int, Failure>>, IOverrideTarget;
+    public sealed record GeneratedSwitchOverriddenQuery(int Value) : IQuery<Outcome<int, Failure>>, IOverrideTarget;
 
-    public sealed record GeneratedSwitchUnrelatedQuery(int Value) : IQuery<OperationOutcome<int, Failure>>;
+    public sealed record GeneratedSwitchUnrelatedQuery(int Value) : IQuery<Outcome<int, Failure>>;
 
     public sealed class GeneratedSwitchOverriddenQueryHandler
-        : IQueryHandler<GeneratedSwitchOverriddenQuery, OperationOutcome<int, Failure>>
+        : IQueryHandler<GeneratedSwitchOverriddenQuery, Outcome<int, Failure>>
     {
-        public Task<OperationOutcome<int, Failure>> Handle(GeneratedSwitchOverriddenQuery query, CancellationToken ct) =>
-            Task.FromResult<OperationOutcome<int, Failure>>(query.Value * 2);
+        public Task<Outcome<int, Failure>> Handle(GeneratedSwitchOverriddenQuery query, CancellationToken ct) =>
+            Task.FromResult<Outcome<int, Failure>>(query.Value * 2);
     }
 
     public sealed class GeneratedSwitchUnrelatedQueryHandler
-        : IQueryHandler<GeneratedSwitchUnrelatedQuery, OperationOutcome<int, Failure>>
+        : IQueryHandler<GeneratedSwitchUnrelatedQuery, Outcome<int, Failure>>
     {
-        public Task<OperationOutcome<int, Failure>> Handle(GeneratedSwitchUnrelatedQuery query, CancellationToken ct) =>
-            Task.FromResult<OperationOutcome<int, Failure>>(query.Value * 2);
+        public Task<Outcome<int, Failure>> Handle(GeneratedSwitchUnrelatedQuery query, CancellationToken ct) =>
+            Task.FromResult<Outcome<int, Failure>>(query.Value * 2);
     }
 
     public sealed class KeptGeneratedSwitchBehavior<TRequest, TResponse>(List<string> log)

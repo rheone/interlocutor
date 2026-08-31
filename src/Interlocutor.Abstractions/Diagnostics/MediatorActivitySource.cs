@@ -43,7 +43,7 @@ public static class MediatorActivitySource
     /// <summary>The tag key carrying the runtime type(s) of the handler(s) resolved to serve the request.</summary>
     public const string HandlerTypeTag = "interlocutor.handler_type";
 
-    /// <summary>The tag key carrying the human-readable label of the resulting <c>OperationOutcome</c> case.</summary>
+    /// <summary>The tag key carrying the human-readable label of the resulting <c>Outcome</c> case.</summary>
     public const string OutcomeTag = "interlocutor.outcome";
 
     /// <summary>

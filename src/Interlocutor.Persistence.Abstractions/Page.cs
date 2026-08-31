@@ -13,7 +13,7 @@ namespace Interlocutor.Persistence.Abstractions;
 /// <para>
 /// This is a different type, for a different concern, than the consumer-defined <c>PagedResult&lt;T&gt;</c>
 /// documented in <c>documentation/glossary.md</c>: that type is a consumer's own success-case payload for an
-/// <c>OperationOutcome&lt;PagedResult&lt;T&gt;, ...&gt;</c>, and <c>Interlocutor.CommonKernel</c> still ships
+/// <c>Outcome&lt;PagedResult&lt;T&gt;, ...&gt;</c>, and <c>Interlocutor.CommonKernel</c> still ships
 /// no opinion about pagination. <see cref="Page{T}"/> is this package's repository-return-shape vocabulary -
 /// a consumer's handler is free to map it into its own success-case type, or return it unwrapped.
 /// </para>

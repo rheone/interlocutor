@@ -20,11 +20,11 @@ public sealed class EjectEmissionTests
 
         public interface ISomeDependency;
 
-        public sealed class GetFooQuery : IQuery<OperationOutcome>;
+        public sealed class GetFooQuery : IQuery<Outcome>;
 
-        public sealed class GetFooQueryHandler(ISomeDependency dependency) : IQueryHandler<GetFooQuery, OperationOutcome>
+        public sealed class GetFooQueryHandler(ISomeDependency dependency) : IQueryHandler<GetFooQuery, Outcome>
         {
-            public Task<OperationOutcome> Handle(GetFooQuery query, CancellationToken ct) => throw new System.NotImplementedException();
+            public Task<Outcome> Handle(GetFooQuery query, CancellationToken ct) => throw new System.NotImplementedException();
         }
         """;
 
@@ -46,7 +46,7 @@ public sealed class EjectEmissionTests
             StringComparison.Ordinal
         );
         Assert.Contains(
-            "catch (global::Interlocutor.Abstractions.Pipeline.PipelineEjectException<global::Interlocutor.CommonKernel.OperationOutcome> eject)",
+            "catch (global::Interlocutor.Abstractions.Pipeline.PipelineEjectException<global::Interlocutor.CommonKernel.Outcome> eject)",
             dispatchSource,
             StringComparison.Ordinal
         );
@@ -72,7 +72,7 @@ public sealed class EjectEmissionTests
 
         var occurrences = CountOccurrences(
             dispatchSource,
-            "catch (global::Interlocutor.Abstractions.Pipeline.PipelineEjectException<global::Interlocutor.CommonKernel.OperationOutcome> eject)"
+            "catch (global::Interlocutor.Abstractions.Pipeline.PipelineEjectException<global::Interlocutor.CommonKernel.Outcome> eject)"
         );
         Assert.Equal(2, occurrences); // one around the handler call, one around the behavior call
     }

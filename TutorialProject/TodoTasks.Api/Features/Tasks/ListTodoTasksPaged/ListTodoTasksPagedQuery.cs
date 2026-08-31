@@ -15,4 +15,4 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// unpaged list stops being a safe default. See <see cref="ListTodoTasksPagedHandler"/>.
 /// </remarks>
 public sealed record ListTodoTasksPagedQuery(string OwnerId, int Page, int PageSize)
-    : IQuery<OperationOutcome<PagedTodoTasksDto, Failure>>;
+    : IQuery<Outcome<PagedTodoTasksDto, Failure>>;

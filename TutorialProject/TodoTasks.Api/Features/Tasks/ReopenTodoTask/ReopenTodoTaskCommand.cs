@@ -12,9 +12,7 @@ using TodoTasks.Api.Domain;
 /// task *isn't* completed, no notification fired).
 /// </summary>
 /// <param name="Id">The task to reopen.</param>
-public sealed record ReopenTodoTaskCommand(int Id)
-    : ICommand<OperationOutcome<TodoTaskDto, NotFound, Conflict>>,
-        IAuditableRequest
+public sealed record ReopenTodoTaskCommand(int Id) : ICommand<Outcome<TodoTaskDto, NotFound, Conflict>>, IAuditableRequest
 {
     /// <inheritdoc/>
     public string ActionName => "reopen_todo_task";

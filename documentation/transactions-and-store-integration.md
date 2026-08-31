@@ -9,7 +9,7 @@ Both EF Core and NHibernate ship a `UnitOfWorkBehavior` that owns transaction li
 ```csharp
 // No ITransactionalRequest needed - the write below gets a transaction automatically.
 public record CreateOrder(int CustomerId, List<OrderItem> Items)
-    : ICommand<OperationOutcome<int, ValidationError>>;
+    : ICommand<Outcome<int, ValidationError>>;
 
 // When the handler runs, UnitOfWorkBehavior:
 // 1. Lets reads run against the scoped session with no transaction open
@@ -29,17 +29,17 @@ A dispatch that only ever reads never pays for an open transaction - it never op
 // A duplicate check immediately before an insert - without an eager transaction, a concurrent
 // request could pass the same check before either insert commits.
 public record CreateOrder(int CustomerId, List<OrderItem> Items)
-    : ICommand<OperationOutcome<int, ValidationError>>,
+    : ICommand<Outcome<int, ValidationError>>,
       ITransactionalRequest;
 
 // A plain create with no preceding read to protect doesn't need the marker at all - begin-on-first-write
 // already covers it.
 public record UpdateProduct(int Id, string Name, int Version)
-    : ICommand<OperationOutcome<Success, Conflict>>;
+    : ICommand<Outcome<Success, Conflict>>;
 
 // Queries never write, so a transaction never opens for one regardless of this marker.
 public record GetProduct(int Id)
-    : IQuery<OperationOutcome<ProductDto, NotFound>>;
+    : IQuery<Outcome<ProductDto, NotFound>>;
 ```
 
 `ITransactionalRequest` only has an effect when `UnitOfWorkBehavior` sits *outside* whatever pipeline stage or handler code performs the protected read - see "Where to register the behavior" below.
@@ -51,7 +51,7 @@ Declare a command is backed by a non-SQL store so `UnitOfWorkBehavior` never ope
 ```csharp
 // This command uses a NoSQL store (Redis, MongoDB, etc.)
 public record SetUserPreferences(int UserId, Dictionary<string, object> Prefs)
-    : ICommand<OperationOutcome>,
+    : ICommand<Outcome>,
       IExternalStoreRequest;  // ← Never gets a local transaction
 
 // UnitOfWorkBehavior sees this marker and skips transaction management entirely
@@ -121,14 +121,14 @@ Without it, a raw `SaveChangesAsync()` call with no transaction already open com
 The behavior will inject `Lazy<AppDbContext>` and resolve it only when needed:
 
 ```csharp
-public class CreateOrderHandler : ICommandHandler<CreateOrder, OperationOutcome<int, ValidationError>>
+public class CreateOrderHandler : ICommandHandler<CreateOrder, Outcome<int, ValidationError>>
 {
     private readonly Lazy<AppDbContext> lazyContext;  // Injected by DI
 
     public CreateOrderHandler(Lazy<AppDbContext> lazyContext)
         => this.lazyContext = lazyContext;
 
-    public async Task<OperationOutcome<int, ValidationError>> Handle(
+    public async Task<Outcome<int, ValidationError>> Handle(
         CreateOrder command, CancellationToken ct)
     {
         var context = this.lazyContext.Value;  // Session is resolved here; the write below opens the transaction
@@ -165,14 +165,14 @@ services.AddScoped<ISession>(sp => sp.GetRequiredService<ISessionFactory>().Open
 NHibernate behavior works the same way - scoped `ISession` is shared per dispatch and transacted:
 
 ```csharp
-public class CreateOrderHandler : ICommandHandler<CreateOrder, OperationOutcome<int, ValidationError>>
+public class CreateOrderHandler : ICommandHandler<CreateOrder, Outcome<int, ValidationError>>
 {
     private readonly Lazy<ISession> lazySession;
 
     public CreateOrderHandler(Lazy<ISession> lazySession)
         => this.lazySession = lazySession;
 
-    public async Task<OperationOutcome<int, ValidationError>> Handle(
+    public async Task<Outcome<int, ValidationError>> Handle(
         CreateOrder command, CancellationToken ct)
     {
         var session = this.lazySession.Value;  // Session is resolved here
@@ -188,17 +188,17 @@ public class CreateOrderHandler : ICommandHandler<CreateOrder, OperationOutcome<
 
 ## Cancel: forcing a rollback without a failure outcome
 
-`IUnitOfWork.Cancel` is a rare-case escape hatch: it rolls back the current transaction immediately and returns control to the caller, without being obligated to also return a classified failure-shaped `OperationOutcome`. It is not a short-circuit primitive - the handler still decides what to return afterward, and the pipeline's commit gate simply finds nothing pending at completion:
+`IUnitOfWork.Cancel` is a rare-case escape hatch: it rolls back the current transaction immediately and returns control to the caller, without being obligated to also return a classified failure-shaped `Outcome`. It is not a short-circuit primitive - the handler still decides what to return afterward, and the pipeline's commit gate simply finds nothing pending at completion:
 
 ```csharp
-public record ArchiveOrder(int OrderId) : ICommand<OperationOutcome>;
+public record ArchiveOrder(int OrderId) : ICommand<Outcome>;
 
-public class ArchiveOrderHandler : ICommandHandler<ArchiveOrder, OperationOutcome>
+public class ArchiveOrderHandler : ICommandHandler<ArchiveOrder, Outcome>
 {
     private readonly IUnitOfWork unitOfWork;
     private readonly Lazy<AppDbContext> lazyContext;
 
-    public async Task<OperationOutcome> Handle(ArchiveOrder command, CancellationToken ct)
+    public async Task<Outcome> Handle(ArchiveOrder command, CancellationToken ct)
     {
         var context = this.lazyContext.Value;
         context.Orders.Remove(/* ... */);
@@ -243,15 +243,15 @@ flowchart TD
 
 ```csharp
 public record UpdateProduct(int Id, string Name, int Version)
-    : ICommand<OperationOutcome<Success, NotFound, Conflict>>,
+    : ICommand<Outcome<Success, NotFound, Conflict>>,
       ITransactionalRequest;
 
 public class UpdateProductHandler
-    : ICommandHandler<UpdateProduct, OperationOutcome<Success, NotFound, Conflict>>
+    : ICommandHandler<UpdateProduct, Outcome<Success, NotFound, Conflict>>
 {
     private readonly Lazy<AppDbContext> lazyContext;
 
-    public async Task<OperationOutcome<Success, NotFound, Conflict>> Handle(
+    public async Task<Outcome<Success, NotFound, Conflict>> Handle(
         UpdateProduct command, CancellationToken ct)
     {
         var context = this.lazyContext.Value;
@@ -291,12 +291,12 @@ Get this ordering wrong and the stage's read runs outside the transaction the ha
 If you dispatch from within a command handler (rare, but possible), each dispatch still shares the parent's scoped session:
 
 ```csharp
-public class ComplexOrderHandler : ICommandHandler<CreateComplexOrder, OperationOutcome<int, InsufficientStock>>
+public class ComplexOrderHandler : ICommandHandler<CreateComplexOrder, Outcome<int, InsufficientStock>>
 {
     private readonly Lazy<AppDbContext> lazyContext;
     private readonly ISender mediator;
 
-    public async Task<OperationOutcome<int, InsufficientStock>> Handle(
+    public async Task<Outcome<int, InsufficientStock>> Handle(
         CreateComplexOrder command, CancellationToken ct)
     {
         var context = this.lazyContext.Value;
@@ -320,7 +320,7 @@ public class ComplexOrderHandler : ICommandHandler<CreateComplexOrder, Operation
 }
 
 public record ReserveInventory(int OrderId, List<OrderItem> Items)
-    : ICommand<OperationOutcome<Success, InsufficientStock>>;
+    : ICommand<Outcome<Success, InsufficientStock>>;
 
 // This command runs inside the parent's transaction, sharing the same DbContext - it doesn't need its
 // own ITransactionalRequest marker; the parent dispatch already opened the transaction.
@@ -331,12 +331,12 @@ public record ReserveInventory(int OrderId, List<OrderItem> Items)
 `UnitOfWorkBehavior` commits or rolls back once the whole dispatch completes - concretely, once the handler's `Handle` method returns to the pipeline (see [UnitOfWorkBehavior](#unitofworkbehavior) above). A `Publish` call made *from inside* `Handle`, before it returns, therefore still runs **inside** the still-open transaction, not after it:
 
 ```csharp
-public class CreateOrderHandler : ICommandHandler<CreateOrder, OperationOutcome<int, Failure>>
+public class CreateOrderHandler : ICommandHandler<CreateOrder, Outcome<int, Failure>>
 {
     private readonly Lazy<AppDbContext> lazyContext;
     private readonly IPublisher publisher;
 
-    public async Task<OperationOutcome<int, Failure>> Handle(
+    public async Task<Outcome<int, Failure>> Handle(
         CreateOrder command, CancellationToken ct)
     {
         var context = this.lazyContext.Value;

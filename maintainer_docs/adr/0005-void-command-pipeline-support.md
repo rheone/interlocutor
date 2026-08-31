@@ -4,11 +4,11 @@
 
 ## Context
 
-Commands come in two flavors: typed commands (`ICommand<TResponse>`) that return `OperationOutcome<TResponse>`, and void commands (`ICommand`) that return a non-generic outcome. The pipeline behavior interface is generic over `<TRequest,TResponse>`, which means it naturally works with `IPipelineBehavior<TCommand, TResponse>` for typed commands. Void commands need the same pipeline treatment - logging, validation, authorization, transactions - but produce an outcome type with no success payload instead of `OperationOutcome<TResponse>`.
+Commands come in two flavors: typed commands (`ICommand<TResponse>`) that return `Outcome<TResponse>`, and void commands (`ICommand`) that return a non-generic outcome. The pipeline behavior interface is generic over `<TRequest,TResponse>`, which means it naturally works with `IPipelineBehavior<TCommand, TResponse>` for typed commands. Void commands need the same pipeline treatment - logging, validation, authorization, transactions - but produce an outcome type with no success payload instead of `Outcome<TResponse>`.
 
 ## Decision
 
-Void commands dispatch through the same pipeline mechanism as typed commands via `VoidCommandHandlerWrapper<TCommand, TResult>`, where `TResult` is constrained to `IOperationOutcome`. The wrapper:
+Void commands dispatch through the same pipeline mechanism as typed commands via `VoidCommandHandlerWrapper<TCommand, TResult>`, where `TResult` is constrained to `IOutcome`. The wrapper:
 
 1. Resolves `IVoidCommandHandler<TCommand, TResult>` from DI.
 2. Uses the handler's `Task<TResult>` return directly as the pipeline's `TResponse` - no wrapping into an outer outcome, because `IPipelineBehavior<TRequest,TResponse>.Handle` already returns `Task<TResponse>` rather than a nested result.

@@ -22,7 +22,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </remarks>
 public interface IQueryHandler<in TQuery, TResponse>
     where TQuery : IQuery<TResponse>
-    where TResponse : IOperationOutcome
+    where TResponse : IOutcome
 {
     /// <summary>
     /// Handles the specified query and returns a result that represents success or failure.

@@ -3,7 +3,7 @@ namespace Interlocutor.AspNetCore;
 using Interlocutor.Abstractions.Pipeline.Mapping;
 
 /// <summary>
-/// Maps a failure case value from an Interlocutor <c>OperationOutcome</c> union to the
+/// Maps a failure case value from an Interlocutor <c>Outcome</c> union to the
 /// <see cref="OutcomeHttpMapping"/> (status code and optional body) that represents it over HTTP.
 /// </summary>
 /// <remarks>

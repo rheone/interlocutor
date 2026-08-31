@@ -69,7 +69,7 @@ public sealed class TodoTasksController(ISender sender, IRequestContextAccessor 
     /// <remarks>
     /// <para>
     /// Deliberately does <em>not</em> call <see cref="ResultExtensions.ToActionResult{TSuccess,TFailure}"/>.
-    /// Instead, this pattern-matches <see cref="OperationOutcome{TSuccessResult,TFailureResult}.Value"/>'s
+    /// Instead, this pattern-matches <see cref="Outcome{TSuccessResult,TFailureResult}.Value"/>'s
     /// two possible cases directly - a real, compiler-checked exhaustive switch over the union, rather than
     /// the convenience extension hiding it. This is the trade-off the extension exists to avoid repeating:
     /// manual matching gives this one action full control over its response shape (and would let it diverge
@@ -80,7 +80,7 @@ public sealed class TodoTasksController(ISender sender, IRequestContextAccessor 
     /// </para>
     /// <para>
     /// Contrast with <c>UsersController.GetById</c>, which handles the identically-shaped
-    /// <c>OperationOutcome&lt;UserDto, NotFound&gt;</c> union via <c>ToActionResult()</c> instead - the two
+    /// <c>Outcome&lt;UserDto, NotFound&gt;</c> union via <c>ToActionResult()</c> instead - the two
     /// actions together show both styles applied to the same union shape.
     /// </para>
     /// </remarks>
@@ -163,7 +163,7 @@ public sealed class TodoTasksController(ISender sender, IRequestContextAccessor 
     /// <param name="ct">A token to observe while dispatching.</param>
     /// <returns>
     /// 200 with an empty <see cref="Success"/> body on success (not 204 - <see cref="DeleteTodoTaskCommand"/>
-    /// returns <c>OperationOutcome&lt;Success, NotFound, Forbidden&gt;</c>, whose success case
+    /// returns <c>Outcome&lt;Success, NotFound, Forbidden&gt;</c>, whose success case
     /// <c>ToActionResult()</c> maps the same way as any other generic union success case), 404 if it
     /// doesn't exist, or 403 if the policy check fails.
     /// </returns>
@@ -177,7 +177,7 @@ public sealed class TodoTasksController(ISender sender, IRequestContextAccessor 
     /// <summary>
     /// Handles <c>POST /api/todo-tasks/clear-completed</c> - the controller twin of
     /// <c>ClearCompletedTodoTasksEndpoint</c>. Like that endpoint, this has to state which outcome type it
-    /// wants back explicitly (<c>sender.Send&lt;OperationOutcome&gt;(...)</c>) - it can't be inferred from a
+    /// wants back explicitly (<c>sender.Send&lt;Outcome&gt;(...)</c>) - it can't be inferred from a
     /// bare <see cref="Interlocutor.Abstractions.Commands.ICommand"/> the way it can from
     /// <see cref="Interlocutor.Abstractions.Commands.ICommand{TResponse}"/>'s fixed response type.
     /// </summary>
@@ -191,7 +191,7 @@ public sealed class TodoTasksController(ISender sender, IRequestContextAccessor 
             contextAccessor.Context?.UserId
             ?? throw new InvalidOperationException("This endpoint requires an authenticated caller.");
 
-        var result = await sender.Send<OperationOutcome>(new ClearCompletedTodoTasksCommand(ownerId), ct).ConfigureAwait(false);
+        var result = await sender.Send<Outcome>(new ClearCompletedTodoTasksCommand(ownerId), ct).ConfigureAwait(false);
         return result.ToActionResult();
     }
 }

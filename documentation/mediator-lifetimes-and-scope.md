@@ -12,17 +12,17 @@ Narrow interface for send-only (request/response dispatch). Exposes `Send<TRespo
 public interface ISender
 {
     Task<TResponse> Send<TResponse>(IQuery<TResponse> query, CancellationToken ct = default)
-        where TResponse : IOperationOutcome;
+        where TResponse : IOutcome;
 
     Task<TResponse> Send<TResponse>(ICommand<TResponse> command, CancellationToken ct = default)
-        where TResponse : IOperationOutcome;
+        where TResponse : IOutcome;
 
     // Unit ICommand carries no response type of its own - the caller picks it per call via TResult
     Task<TResult> Send<TResult>(ICommand command, CancellationToken ct = default)
-        where TResult : IOperationOutcome;
+        where TResult : IOutcome;
 
     // Runtime-typed dispatch - see runtime-typed-dispatch.md
-    Task<IOperationOutcome> Send(object request, CancellationToken ct = default);
+    Task<IOutcome> Send(object request, CancellationToken ct = default);
 }
 ```
 
@@ -385,7 +385,7 @@ services.AddInterlocutor(builder =>
 });
 
 // Override a specific handler's lifetime
-services.AddSingleton<IQueryHandler<GetSetting, OperationOutcome<string, Failure>>, GetSettingHandler>();
+services.AddSingleton<IQueryHandler<GetSetting, Outcome<string, Failure>>, GetSettingHandler>();
 // This handler is now singleton (stateless, side-effect-free queries can benefit)
 ```
 
@@ -394,13 +394,13 @@ services.AddSingleton<IQueryHandler<GetSetting, OperationOutcome<string, Failure
 
 ```csharp
 // ✅ Safe to make singleton - stateless
-public class GetUserHandler : IQueryHandler<GetUser, OperationOutcome<UserDto, NotFound>>
+public class GetUserHandler : IQueryHandler<GetUser, Outcome<UserDto, NotFound>>
 {
     private readonly IUserRepository repository;
 
     public GetUserHandler(IUserRepository repository) => this.repository = repository;
 
-    public async Task<OperationOutcome<UserDto, NotFound>> Handle(
+    public async Task<Outcome<UserDto, NotFound>> Handle(
         GetUser query, CancellationToken ct)
     {
         // Read-only, no shared mutable state
@@ -409,11 +409,11 @@ public class GetUserHandler : IQueryHandler<GetUser, OperationOutcome<UserDto, N
 }
 
 // ❌ NOT safe to make singleton - has mutable state
-public class CreateUserHandler : ICommandHandler<CreateUser, OperationOutcome<int, ValidationError>>
+public class CreateUserHandler : ICommandHandler<CreateUser, Outcome<int, ValidationError>>
 {
     private int lastCreatedId = 0;  // Shared mutable state - concurrency bug
 
-    public async Task<OperationOutcome<int, ValidationError>> Handle(
+    public async Task<Outcome<int, ValidationError>> Handle(
         CreateUser command, CancellationToken ct)
     {
         return lastCreatedId++;

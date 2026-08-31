@@ -12,11 +12,11 @@ using TodoTasks.Api.Domain;
 /// write means no transaction needs to open for this request at all.
 /// </summary>
 public sealed class GetUserByIdHandler(IDomainRepository<User, int> users)
-    : IQueryHandler<GetUserByIdQuery, OperationOutcome<UserDto, NotFound>>
+    : IQueryHandler<GetUserByIdQuery, Outcome<UserDto, NotFound>>
 {
     /// <inheritdoc/>
-    public Task<OperationOutcome<UserDto, NotFound>> Handle(GetUserByIdQuery query, CancellationToken ct) =>
-        Task.FromResult<OperationOutcome<UserDto, NotFound>>(
+    public Task<Outcome<UserDto, NotFound>> Handle(GetUserByIdQuery query, CancellationToken ct) =>
+        Task.FromResult<Outcome<UserDto, NotFound>>(
             users.GetById(query.Id) is { } user ? UserDto.FromEntity(user) : new NotFound($"User {query.Id}")
         );
 }

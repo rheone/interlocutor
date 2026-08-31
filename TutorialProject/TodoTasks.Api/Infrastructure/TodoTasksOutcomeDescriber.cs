@@ -15,7 +15,7 @@ using TodoTasks.Api.Domain;
 /// every pipeline behavior falls back to when nothing else is registered - is pre-seeded only with
 /// this library's own kernel case types (<c>Success</c>, <c>NotFound</c>, <c>Forbidden</c>,
 /// <c>Conflict</c>, <c>ValidationErrors</c>, <c>Failure</c>, ...). Any other type used as an
-/// <c>OperationOutcome&lt;TSuccess, ...&gt;</c>'s success case - <see cref="UserDto"/>, and every
+/// <c>Outcome&lt;TSuccess, ...&gt;</c>'s success case - <see cref="UserDto"/>, and every
 /// other DTO this project's handlers return - is not one of those, so the default classifier's
 /// fail-closed policy treats it as a failure.
 /// </para>

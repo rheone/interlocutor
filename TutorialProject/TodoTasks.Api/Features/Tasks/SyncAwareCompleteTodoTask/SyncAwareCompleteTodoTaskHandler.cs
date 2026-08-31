@@ -32,13 +32,10 @@ public sealed class SyncAwareCompleteTodoTaskHandler(
     IDomainRepository<TodoTask, int> tasks,
     IUnitOfWork unitOfWork,
     IExternalTaskSyncClient externalSync
-) : ICommandHandler<SyncAwareCompleteTodoTaskCommand, OperationOutcome<TodoTaskDto, NotFound>>
+) : ICommandHandler<SyncAwareCompleteTodoTaskCommand, Outcome<TodoTaskDto, NotFound>>
 {
     /// <inheritdoc/>
-    public async Task<OperationOutcome<TodoTaskDto, NotFound>> Handle(
-        SyncAwareCompleteTodoTaskCommand command,
-        CancellationToken ct
-    )
+    public async Task<Outcome<TodoTaskDto, NotFound>> Handle(SyncAwareCompleteTodoTaskCommand command, CancellationToken ct)
     {
         if (tasks.GetById(command.Id) is not { } task)
         {

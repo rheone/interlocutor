@@ -12,8 +12,8 @@ public class DelegatePipelineStageTests
     public async Task OnBeforeAsync_WithSuppliedDelegate_InvokesIt()
     {
         // Arrange
-        var expected = StageResult<OperationOutcome<string, Failure>>.ShortCircuit(new Failure("declined"));
-        var stage = new DelegatePipelineStage<TestRequest, OperationOutcome<string, Failure>>(
+        var expected = StageResult<Outcome<string, Failure>>.ShortCircuit(new Failure("declined"));
+        var stage = new DelegatePipelineStage<TestRequest, Outcome<string, Failure>>(
             (_, _) => Task.FromResult(expected),
             onAfter: null
         );
@@ -31,7 +31,7 @@ public class DelegatePipelineStageTests
     public async Task OnBeforeAsync_WithNoSuppliedDelegate_FallsBackToBaseNoOpContinue()
     {
         // Arrange
-        var stage = new DelegatePipelineStage<TestRequest, OperationOutcome<string, Failure>>(onBefore: null, onAfter: null);
+        var stage = new DelegatePipelineStage<TestRequest, Outcome<string, Failure>>(onBefore: null, onAfter: null);
 
         // Act
         var result = await stage.OnBeforeAsync(new TestRequest(), CancellationToken.None);
@@ -46,8 +46,8 @@ public class DelegatePipelineStageTests
     {
         // Arrange
         TestRequest? observedRequest = null;
-        OperationOutcome<string, Failure>? observedResult = null;
-        var stage = new DelegatePipelineStage<TestRequest, OperationOutcome<string, Failure>>(
+        Outcome<string, Failure>? observedResult = null;
+        var stage = new DelegatePipelineStage<TestRequest, Outcome<string, Failure>>(
             onBefore: null,
             (request, result, _) =>
             {
@@ -57,7 +57,7 @@ public class DelegatePipelineStageTests
             }
         );
         var request = new TestRequest();
-        OperationOutcome<string, Failure> response = "done";
+        Outcome<string, Failure> response = "done";
 
         // Act
         await stage.OnAfterAsync(request, response, CancellationToken.None);
@@ -72,7 +72,7 @@ public class DelegatePipelineStageTests
     public async Task OnAfterAsync_WithNoSuppliedDelegate_CompletesAsANoOp()
     {
         // Arrange
-        var stage = new DelegatePipelineStage<TestRequest, OperationOutcome<string, Failure>>(onBefore: null, onAfter: null);
+        var stage = new DelegatePipelineStage<TestRequest, Outcome<string, Failure>>(onBefore: null, onAfter: null);
 
         // Act - completing without throwing proves the base no-op hook ran.
         var exception = await Record.ExceptionAsync(() =>

@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.TestHost;
 /// <summary>
 /// Manual sanity check: a minimal, in-memory ASP.NET Core test host with one endpoint returning a built-in
 /// arity-4 union (bound to its dedicated <see cref="ResultExtensions"/> overload) and one endpoint returning
-/// a hand-rolled, non-union <see cref="IOperationOutcome"/> (bound to the generic catch-all overload), hit
+/// a hand-rolled, non-union <see cref="IOutcome"/> (bound to the generic catch-all overload), hit
 /// with a real <see cref="HttpClient"/> to confirm both produce the expected response shape and status code
 /// over an actual HTTP round trip - not just against the in-process <see cref="Microsoft.AspNetCore.Http.IResult"/>/
 /// <see cref="Microsoft.AspNetCore.Mvc.IActionResult"/> objects the other tests in this project assert against
@@ -19,8 +19,8 @@ using Microsoft.AspNetCore.TestHost;
 public sealed class ResultExtensionsHttpHostTests : IAsyncLifetime
 {
     private static readonly IOutcomeCaseRegistry Registry = new OutcomeCaseRegistryBuilder()
-        .RegisterExtractor<CustomOperationOutcome>(
-            (CustomOperationOutcome response, out Type caseType, out object? caseValue) =>
+        .RegisterExtractor<CustomOutcome>(
+            (CustomOutcome response, out Type caseType, out object? caseValue) =>
             {
                 caseType = response.CaseType;
                 caseValue = response.CaseValue;
@@ -46,7 +46,7 @@ public sealed class ResultExtensionsHttpHostTests : IAsyncLifetime
             "/union-success",
             () =>
             {
-                OperationOutcome<string, NotFound, Forbidden, Failure> result = "hello from a union";
+                Outcome<string, NotFound, Forbidden, Failure> result = "hello from a union";
                 return result.ToMinimalApiResult();
             }
         );
@@ -54,7 +54,7 @@ public sealed class ResultExtensionsHttpHostTests : IAsyncLifetime
             "/union-notfound",
             () =>
             {
-                OperationOutcome<string, NotFound, Forbidden, Failure> result = new NotFound("Widget not found");
+                Outcome<string, NotFound, Forbidden, Failure> result = new NotFound("Widget not found");
                 return result.ToMinimalApiResult();
             }
         );
@@ -62,7 +62,7 @@ public sealed class ResultExtensionsHttpHostTests : IAsyncLifetime
             "/custom-success",
             () =>
             {
-                var result = CustomOperationOutcome.FromSuccess(default(Success));
+                var result = CustomOutcome.FromSuccess(default(Success));
                 return result.ToMinimalApiResult(caseRegistry: Registry);
             }
         );
@@ -70,7 +70,7 @@ public sealed class ResultExtensionsHttpHostTests : IAsyncLifetime
             "/custom-conflict",
             () =>
             {
-                var result = CustomOperationOutcome.FromFailure(new Conflict("Data changed", "stale.data"));
+                var result = CustomOutcome.FromFailure(new Conflict("Data changed", "stale.data"));
                 return result.ToMinimalApiResult(caseRegistry: Registry);
             }
         );

@@ -97,19 +97,19 @@ public interface IDomainRepository<TEntity, TKey>
 ```
 
 - **`Query`** is the escape hatch for ad hoc composition beyond the fixed method set - both EF Core's `DbContext` and NHibernate's `ISession` expose LINQ providers, so this one member covers both implementations.
-- **`GetById`** ships as a default interface method built entirely on `Query` and `IdSelector` - implementations never override it. It returns a nullable result, not an `OperationOutcome` case: only the handler decides which `OperationOutcome<...>` case a "not found" maps to.
+- **`GetById`** ships as a default interface method built entirely on `Query` and `IdSelector` - implementations never override it. It returns a nullable result, not an `Outcome` case: only the handler decides which `Outcome<...>` case a "not found" maps to.
 - **`GetManyAsync`/`GetPagedAsync`** take an optional `Expression<Func<TEntity, bool>>` filter and an ordered `SortCriterion<TEntity>` list for multi-column sort - the first entry is the primary sort key, each subsequent entry a tiebreaker. Filter, sort, and paging are all composed onto the query before either implementation materializes it, so filtering, ordering, and row-limiting happen in the database.
 
 ### Using a repository in a handler
 
 ```csharp
 public sealed class GetOrderHandler(IDomainRepository<Order, int> orders)
-    : IQueryHandler<GetOrder, OperationOutcome<OrderDto, NotFound>>
+    : IQueryHandler<GetOrder, Outcome<OrderDto, NotFound>>
 {
-    public Task<OperationOutcome<OrderDto, NotFound>> Handle(GetOrder query, CancellationToken ct)
+    public Task<Outcome<OrderDto, NotFound>> Handle(GetOrder query, CancellationToken ct)
     {
         var order = orders.GetById(query.OrderId);
-        return Task.FromResult<OperationOutcome<OrderDto, NotFound>>(
+        return Task.FromResult<Outcome<OrderDto, NotFound>>(
             order is null ? new NotFound($"Order {query.OrderId}") : OrderDto.From(order)
         );
     }
@@ -120,9 +120,9 @@ public sealed class GetOrderHandler(IDomainRepository<Order, int> orders)
 // No ITransactionalRequest marker needed here - InsertAsync/SaveChangesAsync below are this dispatch's
 // first write, so UnitOfWorkBehavior opens a transaction for it automatically.
 public sealed class CreateOrderHandler(IDomainRepository<Order, int> orders, IUnitOfWork unitOfWork)
-    : ICommandHandler<CreateOrder, OperationOutcome<int, ValidationError>>
+    : ICommandHandler<CreateOrder, Outcome<int, ValidationError>>
 {
-    public async Task<OperationOutcome<int, ValidationError>> Handle(CreateOrder command, CancellationToken ct)
+    public async Task<Outcome<int, ValidationError>> Handle(CreateOrder command, CancellationToken ct)
     {
         var order = new Order(command.CustomerId, command.Items);
         await orders.InsertAsync(order, ct);
@@ -144,7 +144,7 @@ public sealed record Page<T>(IReadOnlyList<T> Items, int PageNumber, int PageSiz
 ```
 
 > [!NOTE]
-> `Page<T>` is a different type, for a different concern, than a consumer-defined `PagedResult<T>` (see the [glossary](glossary.md#pagination)): `Page<T>` is this package's repository-return-shape vocabulary, not an `OperationOutcome` success-case type. A handler is free to map a `Page<T>` into its own success-case type, or return it unwrapped.
+> `Page<T>` is a different type, for a different concern, than a consumer-defined `PagedResult<T>` (see the [glossary](glossary.md#pagination)): `Page<T>` is this package's repository-return-shape vocabulary, not an `Outcome` success-case type. A handler is free to map a `Page<T>` into its own success-case type, or return it unwrapped.
 
 ## Registering a repository per container
 

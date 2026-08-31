@@ -51,7 +51,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
 
     /// <inheritdoc/>
     public Task<TResponse> Send<TResponse>(IQuery<TResponse> query, CancellationToken ct = default)
-        where TResponse : IOperationOutcome
+        where TResponse : IOutcome
     {
         // Look up or create the handler wrapper for this query type. The wrapper composes the pipeline
         // behavior chain at invocation time. Caching by query type avoids expensive reflection for every dispatch.
@@ -76,7 +76,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
 
     /// <inheritdoc/>
     public Task<TResponse> Send<TResponse>(ICommand<TResponse> command, CancellationToken ct = default)
-        where TResponse : IOperationOutcome
+        where TResponse : IOutcome
     {
         // Look up or create the handler wrapper for this command type. The wrapper composes the pipeline
         // behavior chain at invocation time. Caching by command type avoids expensive reflection for every dispatch.
@@ -98,7 +98,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
 
     /// <inheritdoc/>
     public Task<TResult> Send<TResult>(ICommand command, CancellationToken ct = default)
-        where TResult : IOperationOutcome
+        where TResult : IOutcome
     {
         // For void commands, cache by both command type and result type because the same command can be
         // handled with different outcome shapes depending on what the caller needs (e.g., caller may want
@@ -126,7 +126,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     [RequiresDynamicCode(
         "Send(object, CancellationToken) may run the runtime-typed dispatch fallback - see documentation/trim-and-aot-support.md."
     )]
-    public Task<IOperationOutcome> Send(object request, CancellationToken ct = default)
+    public Task<IOutcome> Send(object request, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -144,7 +144,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     /// Wraps a dispatch with activity tracing: tags the request type up front, invokes <paramref name="dispatch"/>
     /// (a closure over the resolved handler wrapper/routing call that tags the resolved handler type once it
     /// resolves it), tags the resulting outcome case on success when <typeparamref name="TResult"/> is an
-    /// <see cref="IOperationOutcome"/>, and records a thrown exception as an <see cref="ActivityStatusCode.Error"/>
+    /// <see cref="IOutcome"/>, and records a thrown exception as an <see cref="ActivityStatusCode.Error"/>
     /// status rather than an outcome - before, either way, stopping the activity.
     /// </summary>
     /// <remarks>
@@ -156,9 +156,9 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     /// </para>
     /// <para>
     /// Serves all three dispatch shapes the mediator traces - <c>Send&lt;TResponse&gt;</c>'s and the runtime-typed
-    /// <see cref="Send(object, CancellationToken)"/>'s <see cref="IOperationOutcome"/> result, and <c>Publish</c>'s
+    /// <see cref="Send(object, CancellationToken)"/>'s <see cref="IOutcome"/> result, and <c>Publish</c>'s
     /// no-result <see cref="Task"/> - by checking <paramref name="dispatch"/>'s result for
-    /// <see cref="IOperationOutcome"/> at run time rather than constraining <typeparamref name="TResult"/> to it: a
+    /// <see cref="IOutcome"/> at run time rather than constraining <typeparamref name="TResult"/> to it: a
     /// notification publish has no single outcome to tag (it may fan out to several handlers), so that call site
     /// passes a <see langword="null"/>-shaped <typeparamref name="TResult"/> and this method simply skips the
     /// outcome tag for it.
@@ -183,9 +183,9 @@ public sealed class Mediator(IServiceProvider services) : IMediator
             {
                 var result = await dispatch(activity).ConfigureAwait(false);
 
-                // An OperationOutcome failure case is an expected business outcome, not a bug - record it as the
+                // An Outcome failure case is an expected business outcome, not a bug - record it as the
                 // outcome it is, via the same classifier LoggingBehavior uses, rather than as an activity error.
-                if (result is IOperationOutcome outcome)
+                if (result is IOutcome outcome)
                 {
                     activity.SetTag(
                         MediatorActivitySource.OutcomeTag,
@@ -228,7 +228,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     [RequiresDynamicCode(
         "The runtime-typed dispatch fallback closes generic types/methods reflectively - see documentation/trim-and-aot-support.md."
     )]
-    private Task<IOperationOutcome> DispatchAsync(object request, CancellationToken ct)
+    private Task<IOutcome> DispatchAsync(object request, CancellationToken ct)
     {
         var generatedDispatcher = (IGeneratedRequestDispatcher?)services.GetService(typeof(IGeneratedRequestDispatcher));
         return generatedDispatcher is not null
@@ -302,7 +302,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
 
         var activity = MediatorActivitySource.Source.StartActivity();
 
-        // Publish has no IOperationOutcome to tag - notifications return Task, not an outcome, and may fan out
+        // Publish has no IOutcome to tag - notifications return Task, not an outcome, and may fan out
         // to several handlers - so TraceAsync's generic TResult is a placeholder, always-null nullable object.
         // TraceAsync's own outcome-tagging check is simply a no-op for it. See TraceAsync's remarks.
         return activity is null

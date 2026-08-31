@@ -283,7 +283,7 @@ internal static class GeneratorTestHarness
             var assembly in new[]
             {
                 typeof(IQuery<>).Assembly, // Interlocutor.Abstractions
-                typeof(IOperationOutcome).Assembly, // Interlocutor.CommonKernel
+                typeof(IOutcome).Assembly, // Interlocutor.CommonKernel
                 typeof(InterlocutorRegistration).Assembly, // Interlocutor.DependencyInjection.Abstractions
             }
         )

@@ -19,10 +19,10 @@ public sealed class DeleteUserHandler(
     IDomainRepository<User, int> users,
     IDomainRepository<TodoTask, int> tasks,
     IUnitOfWork unitOfWork
-) : ICommandHandler<DeleteUserCommand, OperationOutcome<Success, NotFound>>
+) : ICommandHandler<DeleteUserCommand, Outcome<Success, NotFound>>
 {
     /// <inheritdoc/>
-    public async Task<OperationOutcome<Success, NotFound>> Handle(DeleteUserCommand command, CancellationToken ct)
+    public async Task<Outcome<Success, NotFound>> Handle(DeleteUserCommand command, CancellationToken ct)
     {
         if (users.GetById(command.Id) is not { } user)
         {

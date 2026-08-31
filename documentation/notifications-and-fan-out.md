@@ -259,9 +259,9 @@ Handlers often publish notifications, triggering a chain of follow-up work:
 
 ```csharp
 public record CreateOrder(int CustomerId, List<OrderItem> Items)
-    : ICommand<OperationOutcome<int>>;
+    : ICommand<Outcome<int>>;
 
-public class CreateOrderHandler : ICommandHandler<CreateOrder, OperationOutcome<int>>
+public class CreateOrderHandler : ICommandHandler<CreateOrder, Outcome<int>>
 {
     private readonly IOrderRepository repository;
     private readonly IPublisher publisher;  // Injected
@@ -272,7 +272,7 @@ public class CreateOrderHandler : ICommandHandler<CreateOrder, OperationOutcome<
         this.publisher = publisher;
     }
 
-    public async Task<OperationOutcome<int>> Handle(CreateOrder command, CancellationToken ct)
+    public async Task<Outcome<int>> Handle(CreateOrder command, CancellationToken ct)
     {
         var order = await this.repository.CreateAsync(command, ct);
 

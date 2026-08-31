@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 /// <summary>
-/// Converts Interlocutor <c>OperationOutcome</c> unions to ASP.NET Core result types.
+/// Converts Interlocutor <c>Outcome</c> unions to ASP.NET Core result types.
 /// Provides both controller-based (<see cref="IActionResult"/>) and minimal API mappings, both delegating to
 /// an <see cref="IOutcomeStatusMapper"/> for the failure-to-status-code decision so the two cannot drift.
 /// </summary>
@@ -29,10 +29,10 @@ using Microsoft.AspNetCore.Mvc;
 /// </remarks>
 public static class ResultExtensions
 {
-    extension<TSuccess, TFailure>(OperationOutcome<TSuccess, TFailure> result)
+    extension<TSuccess, TFailure>(Outcome<TSuccess, TFailure> result)
     {
         /// <summary>
-        /// Converts a <see cref="OperationOutcome{TSuccessResult, TFailureResult}"/> to an <see cref="IActionResult"/>
+        /// Converts a <see cref="Outcome{TSuccessResult, TFailureResult}"/> to an <see cref="IActionResult"/>
         /// with the appropriate HTTP status code.
         /// </summary>
         /// <param name="mapper">
@@ -49,13 +49,13 @@ public static class ResultExtensions
             };
 
         /// <summary>
-        /// Converts a <see cref="OperationOutcome{TSuccessResult, TFailureResult}"/> to a minimal API result
+        /// Converts a <see cref="Outcome{TSuccessResult, TFailureResult}"/> to a minimal API result
         /// with the appropriate HTTP status code.
         /// </summary>
         /// <param name="mapper">
         /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
         /// <see cref="DefaultHttpOutcomeStatusMapper"/> is used - the same instance the controller-based
-        /// <see cref="ResultExtensions.ToActionResult{TSuccess, TFailure}(OperationOutcome{TSuccess, TFailure}, IOutcomeStatusMapper?)"/>
+        /// <see cref="ResultExtensions.ToActionResult{TSuccess, TFailure}(Outcome{TSuccess, TFailure}, IOutcomeStatusMapper?)"/>
         /// defaults to, so the two paths cannot drift.
         /// </param>
         /// <returns>An HTTP 200 with the success value on success, or the mapped error result on failure.</returns>
@@ -68,9 +68,9 @@ public static class ResultExtensions
             };
     }
 
-    extension(OperationOutcome result)
+    extension(Outcome result)
     {
-        /// <summary>Converts a void <see cref="OperationOutcome"/> to an <see cref="IActionResult"/> with the appropriate HTTP status code.</summary>
+        /// <summary>Converts a void <see cref="Outcome"/> to an <see cref="IActionResult"/> with the appropriate HTTP status code.</summary>
         /// <param name="mapper">
         /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
         /// <see cref="DefaultHttpOutcomeStatusMapper"/> is used, preserving today's status codes.
@@ -84,7 +84,7 @@ public static class ResultExtensions
                 _ => throw new NotImplementedException(),
             };
 
-        /// <summary>Converts a void <see cref="OperationOutcome"/> to a minimal API result with the appropriate HTTP status code.</summary>
+        /// <summary>Converts a void <see cref="Outcome"/> to a minimal API result with the appropriate HTTP status code.</summary>
         /// <param name="mapper">
         /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
         /// <see cref="DefaultHttpOutcomeStatusMapper"/> is used, preserving today's status codes.
@@ -99,10 +99,10 @@ public static class ResultExtensions
             };
     }
 
-    extension<TSuccess, TCase2, TCase3>(OperationOutcome<TSuccess, TCase2, TCase3> result)
+    extension<TSuccess, TCase2, TCase3>(Outcome<TSuccess, TCase2, TCase3> result)
     {
         /// <summary>
-        /// Converts a <see cref="OperationOutcome{TSuccessResult, TCase2, TCase3}"/> to an <see cref="IActionResult"/>
+        /// Converts a <see cref="Outcome{TSuccessResult, TCase2, TCase3}"/> to an <see cref="IActionResult"/>
         /// with the appropriate HTTP status code.
         /// </summary>
         /// <param name="mapper">
@@ -120,7 +120,7 @@ public static class ResultExtensions
             };
 
         /// <summary>
-        /// Converts a <see cref="OperationOutcome{TSuccessResult, TCase2, TCase3}"/> to a minimal API result
+        /// Converts a <see cref="Outcome{TSuccessResult, TCase2, TCase3}"/> to a minimal API result
         /// with the appropriate HTTP status code.
         /// </summary>
         /// <param name="mapper">
@@ -138,10 +138,10 @@ public static class ResultExtensions
             };
     }
 
-    extension<TSuccess, TCase2, TCase3, TCase4>(OperationOutcome<TSuccess, TCase2, TCase3, TCase4> result)
+    extension<TSuccess, TCase2, TCase3, TCase4>(Outcome<TSuccess, TCase2, TCase3, TCase4> result)
     {
         /// <summary>
-        /// Converts a <see cref="OperationOutcome{TSuccessResult, TCase2, TCase3, TCase4}"/> to an <see cref="IActionResult"/>
+        /// Converts a <see cref="Outcome{TSuccessResult, TCase2, TCase3, TCase4}"/> to an <see cref="IActionResult"/>
         /// with the appropriate HTTP status code.
         /// </summary>
         /// <param name="mapper">
@@ -160,7 +160,7 @@ public static class ResultExtensions
             };
 
         /// <summary>
-        /// Converts a <see cref="OperationOutcome{TSuccessResult, TCase2, TCase3, TCase4}"/> to a minimal API result
+        /// Converts a <see cref="Outcome{TSuccessResult, TCase2, TCase3, TCase4}"/> to a minimal API result
         /// with the appropriate HTTP status code.
         /// </summary>
         /// <param name="mapper">
@@ -179,10 +179,10 @@ public static class ResultExtensions
             };
     }
 
-    extension<TSuccess, TCase2, TCase3, TCase4, TCase5>(OperationOutcome<TSuccess, TCase2, TCase3, TCase4, TCase5> result)
+    extension<TSuccess, TCase2, TCase3, TCase4, TCase5>(Outcome<TSuccess, TCase2, TCase3, TCase4, TCase5> result)
     {
         /// <summary>
-        /// Converts a <see cref="OperationOutcome{TSuccessResult, TCase2, TCase3, TCase4, TCase5}"/> to an
+        /// Converts a <see cref="Outcome{TSuccessResult, TCase2, TCase3, TCase4, TCase5}"/> to an
         /// <see cref="IActionResult"/> with the appropriate HTTP status code.
         /// </summary>
         /// <param name="mapper">
@@ -202,7 +202,7 @@ public static class ResultExtensions
             };
 
         /// <summary>
-        /// Converts a <see cref="OperationOutcome{TSuccessResult, TCase2, TCase3, TCase4, TCase5}"/> to a minimal API
+        /// Converts a <see cref="Outcome{TSuccessResult, TCase2, TCase3, TCase4, TCase5}"/> to a minimal API
         /// result with the appropriate HTTP status code.
         /// </summary>
         /// <param name="mapper">
@@ -223,11 +223,11 @@ public static class ResultExtensions
     }
 
     extension<TSuccess, TCase2, TCase3, TCase4, TCase5, TCase6>(
-        OperationOutcome<TSuccess, TCase2, TCase3, TCase4, TCase5, TCase6> result
+        Outcome<TSuccess, TCase2, TCase3, TCase4, TCase5, TCase6> result
     )
     {
         /// <summary>
-        /// Converts a <see cref="OperationOutcome{TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6}"/> to an
+        /// Converts a <see cref="Outcome{TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6}"/> to an
         /// <see cref="IActionResult"/> with the appropriate HTTP status code.
         /// </summary>
         /// <param name="mapper">
@@ -248,7 +248,7 @@ public static class ResultExtensions
             };
 
         /// <summary>
-        /// Converts a <see cref="OperationOutcome{TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6}"/> to a
+        /// Converts a <see cref="Outcome{TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6}"/> to a
         /// minimal API result with the appropriate HTTP status code.
         /// </summary>
         /// <param name="mapper">
@@ -270,17 +270,17 @@ public static class ResultExtensions
     }
 
     extension<TResponse>(TResponse response)
-        where TResponse : IOperationOutcome
+        where TResponse : IOutcome
     {
         /// <summary>
-        /// Converts an arbitrary <see cref="IOperationOutcome"/> to an <see cref="IActionResult"/> with the
+        /// Converts an arbitrary <see cref="IOutcome"/> to an <see cref="IActionResult"/> with the
         /// appropriate HTTP status code.
         /// </summary>
         /// <remarks>
         /// <para>
         /// Unlike the dedicated arity overloads above, this overload is constrained only to
-        /// <see cref="IOperationOutcome"/>, so it works for a hand-rolled response type as well as any of the
-        /// built-in <c>OperationOutcome</c> union arities. It uses <paramref name="caseRegistry"/> to extract the
+        /// <see cref="IOutcome"/>, so it works for a hand-rolled response type as well as any of the
+        /// built-in <c>Outcome</c> union arities. It uses <paramref name="caseRegistry"/> to extract the
         /// active case at runtime, then dispatches to <paramref name="mapper"/> reflectively for failures - the
         /// dedicated overloads above dispatch to the same mapper via a compile-time <c>switch</c> instead.
         /// </para>
@@ -299,7 +299,7 @@ public static class ResultExtensions
         /// </para>
         /// <para>
         /// C# overload resolution always prefers a dedicated overload over this one for the six built-in union
-        /// arities: a constructed generic formal parameter (e.g. <c>OperationOutcome&lt;TSuccess, TFailure&gt;</c>)
+        /// arities: a constructed generic formal parameter (e.g. <c>Outcome&lt;TSuccess, TFailure&gt;</c>)
         /// is more specific than this overload's bare type-parameter formal parameter (<typeparamref name="TResponse"/>),
         /// so callers get the faster, compile-time-checked path automatically and only pay for reflection when
         /// this overload is genuinely the only option.
@@ -322,7 +322,7 @@ public static class ResultExtensions
         /// The registry used to extract <paramref name="response"/>'s active case. Pass
         /// <see langword="null"/> (or <see cref="DefaultOutcomeCaseRegistry.Instance"/> explicitly) to use the
         /// default registry, which handles any compiler-generated union but throws for a hand-rolled
-        /// <see cref="IOperationOutcome"/> implementation unless a custom registry covering it is supplied.
+        /// <see cref="IOutcome"/> implementation unless a custom registry covering it is supplied.
         /// </param>
         /// <param name="mapper">
         /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
@@ -338,7 +338,7 @@ public static class ResultExtensions
         }
 
         /// <summary>
-        /// Converts an arbitrary <see cref="IOperationOutcome"/> to a minimal API result with the appropriate
+        /// Converts an arbitrary <see cref="IOutcome"/> to a minimal API result with the appropriate
         /// HTTP status code.
         /// </summary>
         /// <remarks>
@@ -351,7 +351,7 @@ public static class ResultExtensions
         /// The registry used to extract <paramref name="response"/>'s active case. Pass
         /// <see langword="null"/> (or <see cref="DefaultOutcomeCaseRegistry.Instance"/> explicitly) to use the
         /// default registry, which handles any compiler-generated union but throws for a hand-rolled
-        /// <see cref="IOperationOutcome"/> implementation unless a custom registry covering it is supplied.
+        /// <see cref="IOutcome"/> implementation unless a custom registry covering it is supplied.
         /// </param>
         /// <param name="mapper">
         /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
@@ -420,7 +420,7 @@ public static class ResultExtensions
     /// Extracts <paramref name="response"/>'s active case via <paramref name="caseRegistry"/> (or the default
     /// registry) and classifies it as success or failure via <see cref="OutcomeClassifierBuilder.DefaultClassifier"/>.
     /// </summary>
-    /// <typeparam name="TResponse">The <see cref="IOperationOutcome"/> type to extract from.</typeparam>
+    /// <typeparam name="TResponse">The <see cref="IOutcome"/> type to extract from.</typeparam>
     /// <param name="response">The response to extract the active case from.</param>
     /// <param name="caseRegistry">The registry to use, or <see langword="null"/> to use the default registry.</param>
     /// <returns>Whether the active case is a failure, its runtime type, and its value.</returns>
@@ -428,7 +428,7 @@ public static class ResultExtensions
         TResponse response,
         IOutcomeCaseRegistry? caseRegistry
     )
-        where TResponse : IOperationOutcome
+        where TResponse : IOutcome
     {
         var registry = caseRegistry ?? DefaultOutcomeCaseRegistry.Instance;
         registry.TryGetActiveCase(response, out var caseType, out var caseValue);
