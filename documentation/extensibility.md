@@ -107,7 +107,7 @@ dotnet_diagnostic.INTERLOC009.severity = error
 
 ### Custom-arity outcome unions: `GenerateOutcomeMembersAttribute`
 
-Every shipped `Outcome`/`Outcome<...>` arity gets its `Match`/`Switch`/`TryGetValue`/`ToString`/`IsSuccess` member set from `GenerateOutcomeMembersAttribute` (`Interlocutor.CommonKernel`, zero dependency) - not from anything the shipped family gets that a consumer's own union can't. Decorate your own `partial union` with the same attribute and it gets the identical generated surface, including for an arity the shipped family doesn't cover (2-6 only) or a non-default case ordering.
+Every shipped `Outcome`/`Outcome<...>` arity gets its `Match`/`Switch`/`TryGetValue`/`ToString`/`IsSuccess`/equality (`Equals`, `GetHashCode`, `IEquatable<TSelf>`, `==`/`!=`) member set from `GenerateOutcomeMembersAttribute` (`Interlocutor.CommonKernel`, zero dependency) - not from anything the shipped family gets that a consumer's own union can't. Decorate your own `partial union` with the same attribute and it gets the identical generated surface, including for an arity the shipped family doesn't cover (2-6 only) or a non-default case ordering.
 
 This is an escape hatch for a genuine outlier, not a routine choice - see [Messages, Result Types & Variance § Choosing Arities](messages-and-result-types.md#choosing-arities): an operation needing more cases than the shipped family's six is usually a sign it's trying to do too much, not that the type needs to grow. A payment gateway integration is a plausible exception - one success case plus several genuinely independent decline/error reasons a caller needs to branch on individually:
 
@@ -156,6 +156,11 @@ if (outcome.TryGetValue(out CardDeclined declined))
 {
     Log(declined.ReasonCode);
 }
+
+// Equality - delegates to the active case value's own equality, same as any shipped arity
+PaymentOutcome sameDecline = new CardDeclined("do_not_honor");
+Assert.Equal(outcome, sameDecline);
+Assert.True(outcome == sameDecline);
 ```
 
 The duplicate case type analyzer above covers a custom-arity union identically to a shipped one. See `Interlocutor.CommonKernel.Tests.CustomArityOutcomeTests` (and its `PaymentOutcome` fixture) for this example compiled and exercised end to end.

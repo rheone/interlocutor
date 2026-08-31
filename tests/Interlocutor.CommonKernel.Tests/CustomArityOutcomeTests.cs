@@ -80,4 +80,29 @@ public class CustomArityOutcomeTests
         // Act & Assert
         Assert.Equal("txn_123", success.ToString());
     }
+
+    [Fact]
+    public void Equals_SameCaseValue_AreEqual()
+    {
+        // Arrange
+        PaymentOutcome outcome = new CardDeclined("do_not_honor");
+        PaymentOutcome sameDecline = new CardDeclined("do_not_honor");
+
+        // Act & Assert
+        Assert.Equal(outcome, sameDecline);
+        Assert.True(outcome == sameDecline);
+        Assert.Equal(outcome.GetHashCode(), sameDecline.GetHashCode());
+    }
+
+    [Fact]
+    public void Equals_DifferentCaseValue_AreUnequal()
+    {
+        // Arrange
+        PaymentOutcome declined = new CardDeclined("do_not_honor");
+        PaymentOutcome timedOut = default(GatewayTimeout);
+
+        // Act & Assert
+        Assert.NotEqual(declined, timedOut);
+        Assert.True(declined != timedOut);
+    }
 }

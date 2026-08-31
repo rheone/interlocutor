@@ -7,7 +7,8 @@ using System.Text;
 /// <summary>
 /// Emits the second partial declaration <see cref="OutcomeMemberGenerator"/> adds for one attributed
 /// <see cref="OutcomeUnionModel"/>: <c>Match</c>, <c>Switch</c>, per-case <c>TryGetValue</c>, <c>ToString</c>,
-/// and <c>IsSuccess</c>.
+/// <c>IsSuccess</c>, and value-based equality (<c>Equals</c>, <c>GetHashCode</c>, <c>IEquatable&lt;TSelf&gt;</c>,
+/// <c>==</c>/<c>!=</c>).
 /// </summary>
 internal static class OutcomeMemberEmitter
 {
@@ -31,8 +32,16 @@ internal static class OutcomeMemberEmitter
         var typeParameterList = model.TypeParameterNames.IsEmpty
             ? string.Empty
             : $"<{string.Join(", ", model.TypeParameterNames)}>";
+        var selfType = model.TypeName + typeParameterList;
 
-        builder.Append(model.ModifiersText).Append(" union ").Append(model.TypeName).Append(typeParameterList).AppendLine();
+        builder
+            .Append(model.ModifiersText)
+            .Append(" union ")
+            .Append(model.TypeName)
+            .Append(typeParameterList)
+            .Append(" : global::System.IEquatable<")
+            .Append(selfType)
+            .AppendLine(">");
         builder.AppendLine("{");
 
         EmitIsSuccess(builder, model);
@@ -44,6 +53,8 @@ internal static class OutcomeMemberEmitter
         EmitSwitch(builder, model);
         builder.AppendLine();
         EmitToString(builder);
+        builder.AppendLine();
+        EmitEquality(builder, selfType);
 
         builder.AppendLine("}");
 
@@ -154,6 +165,56 @@ internal static class OutcomeMemberEmitter
             "    /// <summary>Forwards to the active case value's own <see cref=\"object.ToString\"/> override.</summary>"
         );
         builder.AppendLine("    public override string ToString() => this.Value?.ToString() ?? string.Empty;");
+    }
+
+    /// <summary>
+    /// Emits <c>Equals</c>/<c>GetHashCode</c>/<c>==</c>/<c>!=</c>, all delegating to the boxed <c>Value</c>'s own
+    /// equality. Checking <c>obj is </c><paramref name="selfType"/> before delegating means two different case
+    /// types boxed into the same union never compare equal by coincidence (each case type is already a
+    /// distinctly-typed <c>readonly record struct</c>), and a value boxed into one union arity never equals the
+    /// "same" value boxed into a different arity (a different runtime type entirely) - the same way record
+    /// equality already behaves.
+    /// </summary>
+    private static void EmitEquality(StringBuilder builder, string selfType)
+    {
+        builder.AppendLine(
+            "    /// <summary>Determines whether this result and <paramref name=\"other\"/> hold equal case values.</summary>"
+        );
+        builder
+            .Append("    public bool Equals(")
+            .Append(selfType)
+            .AppendLine(" other) => global::System.Object.Equals(this.Value, other.Value);");
+        builder.AppendLine();
+        builder.AppendLine(
+            "    /// <summary>Determines whether this result and <paramref name=\"obj\"/> hold equal case values.</summary>"
+        );
+        builder
+            .Append("    public override bool Equals(object? obj) => obj is ")
+            .Append(selfType)
+            .AppendLine(" other && this.Equals(other);");
+        builder.AppendLine();
+        builder.AppendLine("    /// <summary>Returns a hash code derived from the active case value.</summary>");
+        builder.AppendLine("    public override int GetHashCode() => this.Value?.GetHashCode() ?? 0;");
+        builder.AppendLine();
+        builder.AppendLine(
+            "    /// <summary>Determines whether <paramref name=\"left\"/> and <paramref name=\"right\"/> hold equal case values.</summary>"
+        );
+        builder
+            .Append("    public static bool operator ==(")
+            .Append(selfType)
+            .Append(" left, ")
+            .Append(selfType)
+            .AppendLine(" right) => left.Equals(right);");
+        builder.AppendLine();
+        builder.AppendLine(
+            "    /// <summary>Determines whether <paramref name=\"left\"/> and <paramref name=\"right\"/> hold unequal case values.</summary>"
+        );
+        builder
+            .Append("    public static bool operator !=(")
+            .Append(selfType)
+            .Append(" left, ")
+            .Append(selfType)
+            .AppendLine(" right) => !left.Equals(right);");
     }
 
     /// <summary>Projects each case type (with its 0-based index) through <paramref name="selector"/>.</summary>

@@ -51,6 +51,12 @@ public sealed class OutcomeMemberGeneratorTests
         Assert.Contains("public TResult Match<TResult>(", generatedText, StringComparison.Ordinal);
         Assert.Contains("public void Switch(", generatedText, StringComparison.Ordinal);
         Assert.Contains("public override string ToString()", generatedText, StringComparison.Ordinal);
+        Assert.Contains("global::System.IEquatable<TestOutcome<TSuccess, TFailure>>", generatedText, StringComparison.Ordinal);
+        Assert.Contains("public bool Equals(TestOutcome<TSuccess, TFailure> other)", generatedText, StringComparison.Ordinal);
+        Assert.Contains("public override bool Equals(object? obj)", generatedText, StringComparison.Ordinal);
+        Assert.Contains("public override int GetHashCode()", generatedText, StringComparison.Ordinal);
+        Assert.Contains("public static bool operator ==(", generatedText, StringComparison.Ordinal);
+        Assert.Contains("public static bool operator !=(", generatedText, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -125,6 +131,19 @@ public sealed class OutcomeMemberGeneratorTests
 
                 public static bool TryGetFailure(TestOutcome<string, int> outcome, out int value) =>
                     outcome.TryGetValue(out value);
+
+                public static bool ObjectEquals(TestOutcome<string, int> left, object? right) => left.Equals(right);
+
+                public static bool TypedEquals(TestOutcome<string, int> left, TestOutcome<string, int> right) =>
+                    left.Equals(right);
+
+                public static bool OperatorEquals(TestOutcome<string, int> left, TestOutcome<string, int> right) =>
+                    left == right;
+
+                public static bool OperatorNotEquals(TestOutcome<string, int> left, TestOutcome<string, int> right) =>
+                    left != right;
+
+                public static int HashCode(TestOutcome<string, int> outcome) => outcome.GetHashCode();
             }
             """;
 
@@ -172,5 +191,23 @@ public sealed class OutcomeMemberGeneratorTests
         var tryFailureArgsOnSuccess = new object?[] { success, 0 };
         Assert.False((bool)factory.GetMethod("TryGetFailure")!.Invoke(null, tryFailureArgsOnSuccess)!);
         Assert.Equal(0, tryFailureArgsOnSuccess[1]);
+
+        // Act & Assert - equality: same case value, equal hash codes
+        var successAgain = factory.GetMethod("SuccessCase")!.Invoke(null, ["hello"]);
+        Assert.True((bool)factory.GetMethod("TypedEquals")!.Invoke(null, [success, successAgain])!);
+        Assert.True((bool)factory.GetMethod("ObjectEquals")!.Invoke(null, [success, successAgain])!);
+        Assert.True((bool)factory.GetMethod("OperatorEquals")!.Invoke(null, [success, successAgain])!);
+        Assert.False((bool)factory.GetMethod("OperatorNotEquals")!.Invoke(null, [success, successAgain])!);
+        Assert.Equal(
+            factory.GetMethod("HashCode")!.Invoke(null, [success]),
+            factory.GetMethod("HashCode")!.Invoke(null, [successAgain])
+        );
+
+        // Act & Assert - equality: different case values are unequal
+        Assert.False((bool)factory.GetMethod("TypedEquals")!.Invoke(null, [success, failure])!);
+        Assert.True((bool)factory.GetMethod("OperatorNotEquals")!.Invoke(null, [success, failure])!);
+
+        // Act & Assert - Equals(object?) against an unrelated type is false, never throws
+        Assert.False((bool)factory.GetMethod("ObjectEquals")!.Invoke(null, [success, "not an outcome"])!);
     }
 }

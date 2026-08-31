@@ -302,7 +302,7 @@ public readonly union Outcome<TSuccess, TCase2, TCase3>(
     TSuccess, TCase2, TCase3);
 ```
 
-Every shipped arity - the non-generic `Outcome` and every generic form from two cases through six - carries the identical generated member set: `Match`, `Switch`, a per-case `TryGetValue`, `ToString`, and `IsSuccess`. None of it is hand-written; each arity is declared as a `partial union` attributed with `GenerateOutcomeMembersAttribute`, and a source generator emits the second partial declaration - see [Pattern Matching](#pattern-matching) below for how to use the generated surface, and [Extensibility § Duplicate case type detection](extensibility.md#duplicate-case-type-detection-interloc009) for the companion analyzer that keeps every arity's case types distinct.
+Every shipped arity - the non-generic `Outcome` and every generic form from two cases through six - carries the identical generated member set: `Match`, `Switch`, a per-case `TryGetValue`, `ToString`, `IsSuccess`, and value equality (`Equals`, `GetHashCode`, `IEquatable<TSelf>`, `==`/`!=`). None of it is hand-written; each arity is declared as a `partial union` attributed with `GenerateOutcomeMembersAttribute`, and a source generator emits the second partial declaration - see [Pattern Matching](#pattern-matching) below for how to use the generated surface, [Value Equality](#value-equality) for how the generated equality members behave, and [Extensibility § Duplicate case type detection](extensibility.md#duplicate-case-type-detection-interloc009) for the companion analyzer that keeps every arity's case types distinct.
 
 ### Pattern Matching
 
@@ -366,6 +366,34 @@ if (result.TryGetValue(out UserDto user))
 ```
 
 `ToString()` is generated too, forwarding to the active case's own `ToString()` override - `result.ToString()` reads whatever the active case's own override produces (`NotFound`'s message, or a success DTO's own `ToString()`), rather than a default struct dump.
+
+### Value Equality
+
+`Equals`, `GetHashCode`, `IEquatable<TSelf>`, and `==`/`!=` are generated too, and every one of them delegates to the active case value's own equality (`this.Value.Equals(other.Value)`) rather than switching per case type:
+
+```csharp
+Outcome<UserDto, NotFound> left = new NotFound("missing");
+Outcome<UserDto, NotFound> right = new NotFound("missing");
+
+left == right;              // true - both hold an equal NotFound
+left.Equals(right);         // true
+left.GetHashCode() == right.GetHashCode(); // true
+```
+
+Two semantics are load-bearing here:
+
+- **Union-type identity matters.** `Equals(object?)` checks `obj is TSelf` before delegating, so two different case types boxed into the same union never compare equal by coincidence, and a value boxed into one union arity never equals the "same" value boxed into a different arity - `Outcome<string, NotFound>` and `Outcome<string, NotFound, Forbidden>` are different runtime types even when both hold the success string `"hello"`.
+- **Item order never matters for a collection-bearing case.** `Failures`, `Conflicts`, `ValidationErrors`, and their `<TErrorCode>`/FluentValidation counterparts already compare equal for the same distinct items regardless of the order those items were collected in - a result assembled from concurrent/async work that completes in a different order is still the same result. Because the union's own equality just delegates to `Value.Equals(other.Value)`, this order-independence carries straight through an `Outcome<TSuccess, Failures>` (or any arity pairing one of these aggregate types) with no extra work:
+
+```csharp
+var failureA = new Failure("a");
+var failureB = new Failure("b");
+
+Outcome<Success, Failures> collectedAThenB = new Failures([failureA, failureB]);
+Outcome<Success, Failures> collectedBThenA = new Failures([failureB, failureA]);
+
+collectedAThenB == collectedBThenA; // true - same distinct items, different collection order
+```
 
 ## Choosing Arities
 
