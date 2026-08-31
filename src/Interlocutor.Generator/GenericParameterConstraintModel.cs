@@ -1,6 +1,7 @@
 namespace Interlocutor.Generator;
 
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 
 /// <summary>
@@ -26,6 +27,7 @@ using System.Linq;
 /// constraint type this generator cannot resolve that way (a generic constraint type) - such an entry is
 /// treated as satisfied rather than rejected, since it cannot be soundly checked from a metadata name alone.
 /// </param>
+[DebuggerDisplay("{ParameterName}")]
 internal sealed record GenericParameterConstraintModel(
     string ParameterName,
     bool HasReferenceTypeConstraint,

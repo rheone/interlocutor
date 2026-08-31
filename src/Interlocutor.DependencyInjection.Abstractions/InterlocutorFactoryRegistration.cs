@@ -1,5 +1,7 @@
 namespace Interlocutor.DependencyInjection.Abstractions;
 
+using System.Diagnostics;
+
 /// <summary>
 /// A container-neutral description of a single factory-backed service registration - the delegate-form
 /// counterpart to <see cref="InterlocutorRegistration"/>, used where a registration is a caller-supplied
@@ -20,6 +22,7 @@ namespace Interlocutor.DependencyInjection.Abstractions;
 /// </param>
 /// <param name="Lifetime">The service lifetime the registration should use.</param>
 /// <param name="Kind">The role this registration plays, used by translators and future override policy.</param>
+[DebuggerDisplay("{Kind} {ServiceType.Name} (factory, {Lifetime})")]
 public readonly record struct InterlocutorFactoryRegistration(
     Type ServiceType,
     Func<IServiceProvider, object> Factory,

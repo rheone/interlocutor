@@ -9,6 +9,7 @@
       OutputItemType="Analyzer"
       ReferenceOutputAssembly="false"
     />
+    <ProjectReference Include="..\Interlocutor.TestSupport\Interlocutor.TestSupport.csproj" />
   </ItemGroup>
 
   <ItemGroup>

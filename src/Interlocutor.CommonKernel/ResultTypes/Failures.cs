@@ -1,5 +1,6 @@
 namespace Interlocutor.CommonKernel.ResultTypes;
 
+using System.Diagnostics;
 using Interlocutor.CommonKernel.ResultTypes.Internal;
 
 #pragma warning disable SA1402 // Allowing multiple types of same name with differet arity
@@ -22,6 +23,7 @@ using Interlocutor.CommonKernel.ResultTypes.Internal;
 /// </remarks>
 public readonly record struct Failures
 {
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private readonly DistinctItemSet<Failure> _failures;
 
     /// <summary>
@@ -106,7 +108,10 @@ public readonly record struct Failures
 public readonly record struct Failures<TErrorCode>
     where TErrorCode : notnull, IEquatable<TErrorCode>
 {
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private readonly DistinctItemSet<Failure<TErrorCode>> _failures;
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private readonly DistinctItemSet<TErrorCode> _uniqueErrorCodes;
 
     /// <summary>

@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Shared test-support code, not a shipped package - referenced only by other test projects. -->
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+</Project>

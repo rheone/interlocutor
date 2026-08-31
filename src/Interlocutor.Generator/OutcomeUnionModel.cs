@@ -1,6 +1,7 @@
 namespace Interlocutor.Generator;
 
 using System.Collections.Immutable;
+using System.Diagnostics;
 using Microsoft.CodeAnalysis;
 
 /// <summary>
@@ -29,6 +30,7 @@ using Microsoft.CodeAnalysis;
 /// <param name="DisplayName">The union's fully-qualified display name, for diagnostic messages.</param>
 /// <param name="HintName">The unique hint name <see cref="OutcomeMemberGenerator"/> passes to <c>AddSource</c>.</param>
 /// <param name="Location">The union declaration's identifier location, for diagnostic anchoring.</param>
+[DebuggerDisplay("{DisplayName}")]
 internal sealed record OutcomeUnionModel(
     string Namespace,
     string ModifiersText,

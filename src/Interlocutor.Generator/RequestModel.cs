@@ -1,5 +1,6 @@
 namespace Interlocutor.Generator;
 
+using System.Diagnostics;
 using Microsoft.CodeAnalysis;
 
 /// <summary>
@@ -26,6 +27,7 @@ using Microsoft.CodeAnalysis;
 /// whether this request declaration itself changed, which would otherwise defeat incremental-pipeline caching
 /// for reasons unrelated to this request's own content.
 /// </remarks>
+[DebuggerDisplay("{Kind} {RequestTypeName}")]
 internal sealed record RequestModel(RequestKind Kind, string RequestTypeName, string? ResponseTypeName, Location Location)
 {
     /// <inheritdoc/>

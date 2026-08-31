@@ -4,6 +4,7 @@ namespace Interlocutor.CommonKernel.ResultTypes;
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Interlocutor.CommonKernel.ResultTypes.Internal;
 
 /// <summary>
@@ -26,6 +27,7 @@ using Interlocutor.CommonKernel.ResultTypes.Internal;
 /// </remarks>
 public readonly record struct ValidationErrors : IValidationFailureCase
 {
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private readonly DistinctItemSet<ValidationError> _errors;
 
     /// <summary>
@@ -139,8 +141,13 @@ public readonly record struct ValidationErrors : IValidationFailureCase
 public readonly record struct ValidationErrors<TErrorCode>
     where TErrorCode : notnull, IEquatable<TErrorCode>
 {
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private readonly DistinctItemSet<ValidationError<TErrorCode>> _errors;
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private readonly DistinctItemSet<string> _uniqueMessages;
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private readonly DistinctItemSet<TErrorCode> _uniqueErrorCodes;
 
     /// <summary>

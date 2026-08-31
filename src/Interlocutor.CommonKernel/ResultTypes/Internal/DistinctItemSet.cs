@@ -1,6 +1,7 @@
 namespace Interlocutor.CommonKernel.ResultTypes.Internal;
 
 using System.Collections.Immutable;
+using System.Diagnostics;
 
 /// <summary>
 /// Shared storage for the plural aggregate result types (<see cref="Conflicts"/>, <see cref="Failures"/>,
@@ -17,6 +18,7 @@ using System.Collections.Immutable;
 /// dedup-preserving-order, and default-value-is-inert logic four times over.
 /// </para>
 /// </remarks>
+[DebuggerDisplay("Count = {Count}")]
 internal readonly record struct DistinctItemSet<TItem>
 {
     private readonly ImmutableArray<TItem> _items;
@@ -79,6 +81,7 @@ internal readonly record struct DistinctItemSet<TItem>
     /// empty collection, rather than throwing. This permits the composing type's own default value to behave
     /// the same way. Explicitly constructing this type with an empty sequence still throws.
     /// </remarks>
+    [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
     public IReadOnlyList<TItem> Items => this._items.IsDefault ? [] : this._items;
 
     /// <inheritdoc/>
@@ -91,7 +94,8 @@ internal readonly record struct DistinctItemSet<TItem>
     /// display - a caller who needs a specific order for their own comparison can already impose one over
     /// <see cref="Items"/> themselves.
     /// </remarks>
-    public bool Equals(DistinctItemSet<TItem> other) => this.Count == other.Count && this.Items.ToHashSet().SetEquals(other.Items);
+    public bool Equals(DistinctItemSet<TItem> other) =>
+        this.Count == other.Count && this.Items.ToHashSet().SetEquals(other.Items);
 
     /// <inheritdoc/>
     /// <remarks>

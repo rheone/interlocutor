@@ -1,6 +1,7 @@
 namespace Interlocutor.FluentValidation;
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using global::FluentValidation.Results;
 using Interlocutor.CommonKernel.ResultTypes;
 
@@ -28,6 +29,11 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </remarks>
 public readonly record struct FluentValidationErrors : IFieldValidationFailureCase
 {
+    // Not DistinctItemSet<TItem>-typed like the other five aggregate types' backing fields (this type
+    // preserves every failure verbatim rather than deduplicating), but hidden the same way for the same
+    // reason: expanding this type in the debugger should show only its public Failures/Messages/FieldMessages
+    // surface, not the private backing field a second time.
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private readonly IReadOnlyList<ValidationFailure>? _failures;
 
     /// <summary>

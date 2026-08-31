@@ -1,6 +1,7 @@
 namespace Interlocutor.Generator;
 
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 
@@ -40,6 +41,7 @@ using Microsoft.CodeAnalysis;
 /// <param name="RunBefore">
 /// The mirror image of <see cref="RunAfter"/>, from <c>NotificationHandlerRunBeforeAttribute</c>.
 /// </param>
+[DebuggerDisplay("{Kind} {HandlerTypeName} ({RequestTypeName})")]
 internal sealed record HandlerModel(
     HandlerKind Kind,
     string HandlerTypeName,

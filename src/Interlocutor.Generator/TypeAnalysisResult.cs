@@ -1,6 +1,7 @@
 namespace Interlocutor.Generator;
 
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 
 /// <summary>
@@ -16,6 +17,7 @@ using System.Linq;
 /// <param name="Handlers">The closed handler-contract matches this type declaration produced, if any.</param>
 /// <param name="OpenGenericHandlers">The open generic handler-contract matches this type declaration produced, if any (see <see cref="OpenGenericHandlerModel"/>).</param>
 /// <param name="Request">The request-marker match this type declaration produced, or <see langword="null"/>.</param>
+[DebuggerDisplay("{Handlers.Length} handlers, {OpenGenericHandlers.Length} open, Request = {Request}")]
 internal sealed record TypeAnalysisResult(
     ImmutableArray<HandlerModel> Handlers,
     ImmutableArray<OpenGenericHandlerModel> OpenGenericHandlers,

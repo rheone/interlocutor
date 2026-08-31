@@ -1,6 +1,7 @@
 namespace Interlocutor.Generator;
 
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 
 /// <summary>
@@ -35,6 +36,7 @@ using System.Linq;
 /// <see cref="ExternalModules"/> element-wise instead. See <see cref="InterlocutorSourceGenerator.Initialize"/>'s
 /// remarks for why this step being cached does not, on its own, make the whole generator skip re-emission.
 /// </remarks>
+[DebuggerDisplay("{AssemblyNamespaceSegment} ({ExternalModules.Length} external modules)")]
 internal sealed record CompilationInfo(
     string AssemblyNamespaceSegment,
     ImmutableArray<ExternalModuleInfo> ExternalModules,

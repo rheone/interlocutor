@@ -1,5 +1,7 @@
 namespace Interlocutor.Persistence.Abstractions;
 
+using System.Diagnostics;
+
 /// <summary>
 /// One materialized page of results returned by <see cref="IDomainRepository{TEntity, TKey}.GetPagedAsync"/>,
 /// together with the paging metadata needed to render pagination controls.
@@ -18,7 +20,13 @@ namespace Interlocutor.Persistence.Abstractions;
 /// a consumer's handler is free to map it into its own success-case type, or return it unwrapped.
 /// </para>
 /// </remarks>
-public sealed record Page<T>(IReadOnlyList<T> Items, int PageNumber, int PageSize, int TotalCount)
+[DebuggerDisplay("Page {PageNumber}/{TotalPageCount}, {Items.Count} of {TotalCount} items")]
+public sealed record Page<T>(
+    [property: DebuggerBrowsable(DebuggerBrowsableState.RootHidden)] IReadOnlyList<T> Items,
+    int PageNumber,
+    int PageSize,
+    int TotalCount
+)
 {
     /// <summary>Gets the total number of pages, given <see cref="TotalCount"/> and <see cref="PageSize"/>.</summary>
     /// <value>
