@@ -191,6 +191,10 @@ public sealed class PipelineOrderingIntegrationTests
 #pragma warning restore S1144
 
     /// <summary>A validator whose single always-passing rule records that it ran, proving Validation's inbound side effect.</summary>
+    // Deliberately shaped against OrderedRequest's Outcome<Success, Forbidden> response (no validation case) -
+    // this validator's rule never fails, so ValidationBehavior never needs to construct one; it exists only to
+    // prove ordering, not real validation-shape correctness.
+#pragma warning disable INTERLOC010
     private sealed class RecordingValidator : AbstractValidator<OrderedRequest>
     {
         public RecordingValidator(List<string> log) =>
@@ -201,6 +205,7 @@ public sealed class PipelineOrderingIntegrationTests
                     return true;
                 });
     }
+#pragma warning restore INTERLOC010
 
     /// <summary>An <see cref="IPolicyEvaluator"/> that always authorizes, recording that it ran - Authorization's inbound side effect.</summary>
     private sealed class RecordingPolicyEvaluator(List<string> log) : IPolicyEvaluator

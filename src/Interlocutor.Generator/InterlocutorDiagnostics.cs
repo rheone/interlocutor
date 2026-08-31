@@ -275,4 +275,36 @@ internal static class InterlocutorDiagnostics
             + "defeating the point of picking a specific arity for what an operation can actually produce. "
             + "Replace the repeated position with a distinct case type."
     );
+
+    /// <summary>
+    /// Reported when a <c>FluentValidation.AbstractValidator&lt;TCommand&gt;</c>/<c>AbstractValidator&lt;TQuery&gt;</c>
+    /// exists for a request whose declared response arity has no validation-shaped case.
+    /// </summary>
+    /// <remarks>
+    /// <c>ResourceCommandHandler</c>'s response shape is fixed to <c>Outcome&lt;TSuccess, NotFound, Failure&gt;</c>,
+    /// which has no case an <c>Interlocutor.FluentValidation.ValidationBehavior</c> failure can occupy -
+    /// registering a validator for a command shaped like that doesn't fail at compile time today, it throws the
+    /// first time a real validation failure happens at runtime, because the behavior has nowhere to put the
+    /// result. Reported by <see cref="ValidationShapeMismatchAnalyzer"/> for any request/response pair shaped
+    /// this way, whether or not <c>ResourceCommandHandler</c> is involved. Default severity is
+    /// <see cref="DiagnosticSeverity.Warning"/>, escalated the same way as <see cref="MissingHandler"/>:
+    /// <code>
+    /// dotnet_diagnostic.INTERLOC010.severity = error
+    /// </code>
+    /// </remarks>
+    public static readonly DiagnosticDescriptor ValidationShapeMismatch = new(
+        id: "INTERLOC010",
+        title: "Validator exists for a request with no validation-shaped response case",
+        messageFormat: "'{0}' has a FluentValidation validator ('{1}') but its response type '{2}' has no "
+            + "validation-shaped case among its case types ({3}) - add a case implementing "
+            + "IValidationFailureCase (or ValidationError/ValidationErrors), or remove the validator",
+        category: "Interlocutor.Validation",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "An AbstractValidator<TCommand>/AbstractValidator<TQuery> exists for a request whose "
+            + "declared response type has no case implementing IValidationFailureCase (or the concrete "
+            + "ValidationError/ValidationErrors types). ValidationBehavior has nowhere to put a real validation "
+            + "failure for this request, so it throws at the first validation failure instead of returning an "
+            + "outcome. Add a validation-shaped case to the response arity, or remove the validator."
+    );
 }

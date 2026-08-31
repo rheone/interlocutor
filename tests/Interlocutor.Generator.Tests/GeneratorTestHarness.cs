@@ -307,6 +307,7 @@ internal static class GeneratorTestHarness
                 typeof(IQuery<>).Assembly, // Interlocutor.Abstractions
                 typeof(IOutcome).Assembly, // Interlocutor.CommonKernel
                 typeof(InterlocutorRegistration).Assembly, // Interlocutor.DependencyInjection.Abstractions
+                typeof(FluentValidation.IValidator).Assembly, // FluentValidation
             }
         )
         {

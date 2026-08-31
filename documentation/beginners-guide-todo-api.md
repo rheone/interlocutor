@@ -912,7 +912,7 @@ public sealed class UpdateTodoTaskHandler(IDomainRepository<TodoTask, int> repos
 ```
 
 > [!IMPORTANT]
-> Don't stack FluentValidation on top of a `ResourceCommandHandler` command without checking the arity first. `ValidationBehavior` needs to construct a `ValidationError`/`ValidationErrors` case on a validation failure - but `ResourceCommandHandler`'s response shape is fixed to `Outcome<TSuccess, NotFound, Failure>`, which has no such case. Registering a validator for `UpdateTodoTaskCommand` would throw at the first validation failure, not silently do nothing. Fold input checks like this into `Authorize` (returning a `Failure`) or `HandleAsync` instead.
+> Don't stack FluentValidation on top of a `ResourceCommandHandler` command without checking the arity first. `ValidationBehavior` needs to construct a `ValidationError`/`ValidationErrors` case on a validation failure - but `ResourceCommandHandler`'s response shape is fixed to `Outcome<TSuccess, NotFound, Failure>`, which has no such case. This is no longer a runtime surprise: registering a validator for `UpdateTodoTaskCommand` in this shape is now a build-time `INTERLOC010` diagnostic naming the request, the validator, and the missing case, rather than a first-validation-failure exception. Fold input checks like this into `Authorize` (returning a `Failure`) or `HandleAsync` instead.
 
 Endpoint:
 
