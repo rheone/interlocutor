@@ -97,6 +97,14 @@ Anything left unregistered still falls back to `DefaultOutcomeCaseRegistry`, so 
 
 A related but separate extension point: `LoggingBehavior`, `AuditingBehavior`, and both store-specific `UnitOfWorkBehavior` implementations need to describe a response for a log/audit line and classify it as success or failure, which is a different question from constructing/extracting a case. That's `IResponseOutcomeDescriber`, built on `OutcomeClassifierBuilder` - see [Pipeline & Behavior Composition § Outcome Description & Classification](pipeline-and-behaviors.md#outcome-description--classification) for the worked example. And at the HTTP boundary, `IOutcomeStatusMapper` maps a failure case to a status code and body - see [ASP.NET Core Integration § Custom HTTP Mapping](aspnetcore-integration.md#custom-http-mapping).
 
+### Duplicate case type detection (`INTERLOC009`)
+
+C# has no generic constraint expressing "these type arguments must all be distinct," so nothing stops a caller from closing an outcome union with the same type in two case positions - e.g. `Outcome<Success, Failure, Failure>` - which silently collapses two supposedly-independent failure cases into one. A build-time analyzer flags this for any closed generic type implementing `IOutcome`, whether it's this library's own `Outcome<...>` family or a consumer's own generic union closed the same way - the check is driven by `IOutcome` membership, never by the type's name. Default severity is a warning, escalated to an error the same way as every other Interlocutor diagnostic:
+
+```
+dotnet_diagnostic.INTERLOC009.severity = error
+```
+
 ## Mapping failure cases to any output shape: `IOutcomeMapper<TResult>`
 
 `IOutcomeStatusMapper` (the HTTP mapper above) is a specialization of a transport-agnostic contract that lives one layer down, in `Interlocutor.Abstractions.Pipeline.Mapping`:

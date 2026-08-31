@@ -11,6 +11,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 using Interlocutor.DependencyInjection.Abstractions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Diagnostics;
 
 /// <summary>
 /// Compiles a snippet of source against the real Interlocutor assemblies and runs
@@ -84,6 +85,27 @@ internal static class GeneratorTestHarness
         var driver = CSharpGeneratorDriver.Create(new InterlocutorSourceGenerator());
         driver = (CSharpGeneratorDriver)driver.RunGenerators(CreateCompilation(source, extraReferences: extraReferences));
         return driver.GetRunResult();
+    }
+
+    /// <summary>
+    /// Compiles <paramref name="source"/> and runs <paramref name="analyzer"/> over it directly via
+    /// <see cref="CompilationWithAnalyzers"/> - for a standalone <see cref="DiagnosticAnalyzer"/> (e.g.
+    /// <see cref="DuplicateOutcomeCaseTypeAnalyzer"/>), as opposed to <see cref="Run"/>, which drives
+    /// <see cref="InterlocutorSourceGenerator"/>'s own <see cref="Microsoft.CodeAnalysis.IIncrementalGenerator"/> pipeline.
+    /// </summary>
+    /// <param name="analyzer">The analyzer to run.</param>
+    /// <param name="source">The C# source to compile and analyze.</param>
+    /// <param name="extraReferences">Additional references - see <see cref="CreateCompilation"/>.</param>
+    /// <returns>Every diagnostic the analyzer reported (compiler diagnostics are not included).</returns>
+    public static Task<ImmutableArray<Diagnostic>> RunAnalyzer(
+        DiagnosticAnalyzer analyzer,
+        string source,
+        IEnumerable<MetadataReference>? extraReferences = null
+    )
+    {
+        var compilation = CreateCompilation(source, extraReferences: extraReferences);
+        var withAnalyzers = compilation.WithAnalyzers([analyzer]);
+        return withAnalyzers.GetAnalyzerDiagnosticsAsync();
     }
 
     /// <summary>

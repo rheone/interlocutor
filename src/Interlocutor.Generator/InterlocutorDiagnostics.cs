@@ -244,4 +244,35 @@ internal static class InterlocutorDiagnostics
             + "generic handler closing only spans the current compilation's own syntax trees - move the usage "
             + "into the handler's own assembly, or add an explicit closed handler for it here."
     );
+
+    /// <summary>
+    /// Reported when a closed generic type implementing <c>IOutcome</c> repeats the same type in more than one
+    /// type-argument position - e.g. <c>Outcome&lt;Success, Failure, Failure&gt;</c>.
+    /// </summary>
+    /// <remarks>
+    /// C# has no generic constraint expressing "these type arguments must all be distinct," so nothing at the
+    /// language level stops a caller from closing an outcome union this way, silently collapsing two
+    /// supposedly-independent case positions into one. Reported by <see cref="DuplicateOutcomeCaseTypeAnalyzer"/>
+    /// for any closed generic <c>IOutcome</c> implementer found anywhere in the compilation - the library's own
+    /// shipped <c>Outcome&lt;...&gt;</c> family and an arbitrary consumer-declared union alike, since the check
+    /// is driven purely by <c>IOutcome</c> membership, never by the closed type's name. Default severity is
+    /// <see cref="DiagnosticSeverity.Warning"/>, escalated the same way as <see cref="MissingHandler"/>:
+    /// <code>
+    /// dotnet_diagnostic.INTERLOC009.severity = error
+    /// </code>
+    /// </remarks>
+    public static readonly DiagnosticDescriptor DuplicateOutcomeCaseType = new(
+        id: "INTERLOC009",
+        title: "Duplicate outcome case type",
+        messageFormat: "'{0}' repeats case type '{1}' in type-argument positions {2} - each case position must "
+            + "be a distinct type",
+        category: "Interlocutor.Outcomes",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "A closed generic type implementing IOutcome repeated the same type in more than one "
+            + "type-argument position. C# has no generic constraint expressing 'these type arguments must all "
+            + "be distinct,' so this silently collapses two supposedly-independent case positions into one, "
+            + "defeating the point of picking a specific arity for what an operation can actually produce. "
+            + "Replace the repeated position with a distinct case type."
+    );
 }
