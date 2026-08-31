@@ -48,7 +48,7 @@ Registering the library and understanding how a dispatch's scope and context flo
 
 ### Extending the library
 
-- [Extensibility](extensibility.md) - a map of every point where a consumer plugs their own type in: marker interfaces, custom `IPipelineBehavior`/`IPipelineStage`, custom `IOutcome` implementations, predicate-based registration, extending ambiguity checking to your own contracts, and per-request-type pipeline overrides.
+- [Extensibility](extensibility.md) - a map of every point where a consumer plugs their own type in: marker interfaces, custom `IPipelineBehavior`/`IPipelineStage`, custom `IOutcome` implementations, custom-arity outcome unions via `GenerateOutcomeMembersAttribute`, predicate-based registration, extending ambiguity checking to your own contracts, and per-request-type pipeline overrides.
 
 ### Testing
 

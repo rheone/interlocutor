@@ -105,6 +105,61 @@ C# has no generic constraint expressing "these type arguments must all be distin
 dotnet_diagnostic.INTERLOC009.severity = error
 ```
 
+### Custom-arity outcome unions: `GenerateOutcomeMembersAttribute`
+
+Every shipped `Outcome`/`Outcome<...>` arity gets its `Match`/`Switch`/`TryGetValue`/`ToString`/`IsSuccess` member set from `GenerateOutcomeMembersAttribute` (`Interlocutor.CommonKernel`, zero dependency) - not from anything the shipped family gets that a consumer's own union can't. Decorate your own `partial union` with the same attribute and it gets the identical generated surface, including for an arity the shipped family doesn't cover (2-6 only) or a non-default case ordering.
+
+This is an escape hatch for a genuine outlier, not a routine choice - see [Messages, Result Types & Variance § Choosing Arities](messages-and-result-types.md#choosing-arities): an operation needing more cases than the shipped family's six is usually a sign it's trying to do too much, not that the type needs to grow. A payment gateway integration is a plausible exception - one success case plus several genuinely independent decline/error reasons a caller needs to branch on individually:
+
+```csharp
+[GenerateOutcomeMembers]
+public readonly partial union PaymentOutcome(
+    Receipt,
+    InsufficientFunds,
+    CardExpired,
+    CardDeclined,
+    FraudSuspected,
+    GatewayTimeout,
+    NetworkError
+) : IOutcome;
+
+public readonly record struct Receipt(string TransactionId);
+public readonly record struct InsufficientFunds(decimal ShortfallAmount);
+public readonly record struct CardExpired;
+public readonly record struct CardDeclined(string ReasonCode);
+public readonly record struct FraudSuspected;
+public readonly record struct GatewayTimeout;
+public readonly record struct NetworkError(string Detail);
+```
+
+That single attribute is everything needed beyond referencing `Interlocutor.CommonKernel`, which every consumer already does. The full generated member set follows, exactly as for any shipped arity:
+
+```csharp
+PaymentOutcome outcome = new CardDeclined("do_not_honor");
+
+// IsSuccess
+Assert.False(outcome.IsSuccess);
+
+// Match - one delegate per case, compiler-enforced exhaustive
+var message = outcome.Match(
+    receipt => $"charged, receipt {receipt.TransactionId}",
+    shortfall => $"insufficient funds, short {shortfall.ShortfallAmount}",
+    _ => "card expired",
+    declined => $"declined: {declined.ReasonCode}",
+    _ => "fraud suspected",
+    _ => "gateway timeout",
+    error => $"network error: {error.Detail}"
+);
+
+// TryGetValue - reads one specific case without boxing a value-type case
+if (outcome.TryGetValue(out CardDeclined declined))
+{
+    Log(declined.ReasonCode);
+}
+```
+
+The duplicate case type analyzer above covers a custom-arity union identically to a shipped one. See `Interlocutor.CommonKernel.Tests.CustomArityOutcomeTests` (and its `PaymentOutcome` fixture) for this example compiled and exercised end to end.
+
 ## Mapping failure cases to any output shape: `IOutcomeMapper<TResult>`
 
 `IOutcomeStatusMapper` (the HTTP mapper above) is a specialization of a transport-agnostic contract that lives one layer down, in `Interlocutor.Abstractions.Pipeline.Mapping`:
