@@ -147,6 +147,13 @@ Anything left unregistered still falls back to `DefaultOutcomeCaseRegistry`, so 
 
 `Interlocutor.CommonKernel` ships the standard failure case types and outcome unions - these are the standard shapes. See [Composing Outcome Arities](composing-outcome-arities.md) for worked examples of picking between them for a given command or query.
 
+> [!NOTE]
+> **Naming convention.** The case types below follow one deliberate pattern:
+>
+> - **Singular default** (`Conflict`, `NotFound`, `Failure`, `ValidationError`, ...) - one occurrence of that failure.
+> - **Plural aggregate** (`Conflicts`, `Failures`, `ValidationErrors`, ...) - a collection of one or more occurrences of the same singular case, for a handler that can fail for more than one independent reason in a single response. Reach for the plural aggregate instead of collecting your own `List<T>` of the singular: it de-duplicates, is safe at its default value, and exposes the same `.Items`-plus-semantic-projection shape (`.Reasons`, `.Messages`, `.ErrorCodes`, ...) across every aggregate, so callers pattern-match one familiar shape regardless of which aggregate they're holding.
+> - **`I<Concept>FailureCase` marker** (`IForbiddenFailureCase`, `IRateLimitedFailureCase`, `ITimeoutFailureCase`, `IValidationFailureCase`, `IFieldValidationFailureCase`) - a minimal interface the matching built-in case type implements, naming just enough shape (a `Message`, or `Messages`) for a consumer to recognize *any* implementer of that concept generically. Implementing one on your own case type buys substitutability: `OutcomeMapperBase` (and anything built on it, like `DefaultHttpOutcomeStatusMapper`) already recognizes the marker rather than the concrete built-in type, so a domain-specific replacement - a richer `Forbidden`, a technology-specific `RateLimited` - maps correctly with zero mapper changes. This mirrors the [`IOutcome`](#ioutcome-constraint) extension-point shape one level down: `IOutcome` lets you substitute the whole union, an `I<Concept>FailureCase` marker lets you substitute one of its cases.
+
 ### Success
 
 Marker type for unit command success - carries no payload:
