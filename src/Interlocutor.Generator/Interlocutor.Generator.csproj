@@ -12,6 +12,13 @@
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
     <IsRoslynComponent>true</IsRoslynComponent>
+
+    <!-- OutcomeMemberGenerator reads a partial union declaration's case-type list via
+         Microsoft.CodeAnalysis.CSharp.Syntax.UnionDeclarationSyntax - the only way to introspect a union's
+         case types today, since no stable public symbol-level API exposes them (the language feature itself
+         is still preview). Roslyn marks that syntax type [Experimental] (RSEXPERIMENTAL006); suppressed
+         project-wide rather than per call site. -->
+    <NoWarn>$(NoWarn);RSEXPERIMENTAL006</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

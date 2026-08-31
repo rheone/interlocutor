@@ -307,4 +307,29 @@ internal static class InterlocutorDiagnostics
             + "failure for this request, so it throws at the first validation failure instead of returning an "
             + "outcome. Add a validation-shaped case to the response arity, or remove the validator."
     );
+
+    /// <summary>
+    /// Reported when a <c>partial union</c> decorated with <c>GenerateOutcomeMembersAttribute</c> declares
+    /// fewer than two case types.
+    /// </summary>
+    /// <remarks>
+    /// A single-case union has no alternative for a <c>switch</c> to be exhaustive over, so it isn't a
+    /// meaningful outcome - <see cref="OutcomeMemberGenerator"/> refuses to emit <c>Match</c>/<c>Switch</c>
+    /// members for it rather than silently emitting a no-op or a member set that can never do anything useful.
+    /// Always <see cref="DiagnosticSeverity.Error"/> - unlike <see cref="MissingHandler"/> or
+    /// <see cref="DuplicateHandler"/>, there is no meaningful partial member set to fall back to.
+    /// </remarks>
+    public static readonly DiagnosticDescriptor TooFewOutcomeCaseTypes = new(
+        id: "INTERLOC011",
+        title: "Attributed union declares fewer than two case types",
+        messageFormat: "'{0}' is decorated with GenerateOutcomeMembersAttribute but declares {1} case type(s) - "
+            + "at least two are required for a meaningful outcome union",
+        category: "Interlocutor.Outcomes",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "GenerateOutcomeMembersAttribute marks a partial union declaration for source-generated "
+            + "Match/Switch/TryGetValue/ToString/IsSuccess members. A union with fewer than two case types has "
+            + "no alternative for a switch to be exhaustive over, so it isn't a meaningful outcome - add at "
+            + "least one more case type, or remove the attribute."
+    );
 }

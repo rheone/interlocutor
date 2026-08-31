@@ -1,4 +1,6 @@
 #nullable enable
+Interlocutor.CommonKernel.GenerateOutcomeMembersAttribute
+Interlocutor.CommonKernel.GenerateOutcomeMembersAttribute.GenerateOutcomeMembersAttribute() -> void
 Interlocutor.CommonKernel.Outcome
 Interlocutor.CommonKernel.Outcome.IsSuccess.get -> bool
 Interlocutor.CommonKernel.Outcome.Outcome() -> void
@@ -45,9 +47,14 @@ Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3>.Outcome(TSucce
 Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3>.Value.get -> object?
 Interlocutor.CommonKernel.Outcome<TSuccessResult, TFailureResult>
 Interlocutor.CommonKernel.Outcome<TSuccessResult, TFailureResult>.IsSuccess.get -> bool
+Interlocutor.CommonKernel.Outcome<TSuccessResult, TFailureResult>.Match<TResult>(System.Func<TSuccessResult, TResult>! onCase1, System.Func<TFailureResult, TResult>! onCase2) -> TResult
 Interlocutor.CommonKernel.Outcome<TSuccessResult, TFailureResult>.Outcome() -> void
 Interlocutor.CommonKernel.Outcome<TSuccessResult, TFailureResult>.Outcome(TFailureResult value) -> void
 Interlocutor.CommonKernel.Outcome<TSuccessResult, TFailureResult>.Outcome(TSuccessResult value) -> void
+Interlocutor.CommonKernel.Outcome<TSuccessResult, TFailureResult>.Switch(System.Action<TSuccessResult>! onCase1, System.Action<TFailureResult>! onCase2) -> void
+override Interlocutor.CommonKernel.Outcome<TSuccessResult, TFailureResult>.ToString() -> string!
+Interlocutor.CommonKernel.Outcome<TSuccessResult, TFailureResult>.TryGetValue(out TFailureResult value) -> bool
+Interlocutor.CommonKernel.Outcome<TSuccessResult, TFailureResult>.TryGetValue(out TSuccessResult value) -> bool
 Interlocutor.CommonKernel.Outcome<TSuccessResult, TFailureResult>.Value.get -> object?
 Interlocutor.CommonKernel.ResultTypes.Cancelled
 Interlocutor.CommonKernel.ResultTypes.Cancelled.Cancelled() -> void

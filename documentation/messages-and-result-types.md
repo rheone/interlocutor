@@ -338,6 +338,33 @@ var message = result.Value switch
 };
 ```
 
+A raw `switch` on `.Value` always works and needs nothing beyond the union itself, but every shipped arity also carries a generated `Match`/`Switch`/`TryGetValue` surface as an alternative, not a replacement:
+
+```csharp
+var query = new GetUser(42);
+Outcome<UserDto, NotFound> result = await mediator.Send(query);
+
+// Match projects to a value - one delegate per case, compiler-enforced exhaustive
+var message = result.Match(
+    user => $"Found: {user.Name}",
+    notFound => notFound.Message ?? "User not found"
+);
+
+// Switch is Match's void-returning, side-effecting sibling
+result.Switch(
+    user => logger.LogInformation("Found {UserId}", user.Id),
+    notFound => logger.LogWarning("Missing: {Message}", notFound.Message)
+);
+
+// TryGetValue reads one specific case without boxing a value-type case
+if (result.TryGetValue(out UserDto user))
+{
+    return user;
+}
+```
+
+`ToString()` is generated too, forwarding to the active case's own `ToString()` override - `result.ToString()` reads whatever the active case's own override produces (`NotFound`'s message, or a success DTO's own `ToString()`), rather than a default struct dump.
+
 ## Choosing Arities
 
 Don't route every failure through a single `Failure`. Pick the arity that an operation can actually produce:

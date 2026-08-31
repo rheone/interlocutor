@@ -111,13 +111,13 @@ public sealed class CrossAssemblyContainerResolutionTests
     /// reference would - and loads that too. Returns everything a test needs to build a container and
     /// dispatch: the app's aggregated <c>Registrations</c> (read by reflection, but cast to the real,
     /// already-loaded <see cref="InterlocutorRegistration"/> type - see
-    /// <see cref="GeneratorTestHarness.EmitAndLoadAssembly"/>'s remarks), the library's own <c>IGreeter</c>
+    /// <see cref="GeneratorTestHarness.EmitAndLoadAssembly(string, string, System.Collections.Generic.IEnumerable{MetadataReference}?)"/>'s remarks), the library's own <c>IGreeter</c>
     /// runtime <see cref="Type"/>, and a factory for a request instance from the loaded library assembly.
     /// </summary>
     /// <param name="runId">
     /// A per-test-run-unique token folded into both emitted assemblies' names, so the two test methods in this
     /// class never collide in the shared default <see cref="System.Runtime.Loader.AssemblyLoadContext"/> - see
-    /// <see cref="GeneratorTestHarness.EmitAndLoadAssembly"/>'s remarks on assembly name uniqueness.
+    /// <see cref="GeneratorTestHarness.EmitAndLoadAssembly(string, string, System.Collections.Generic.IEnumerable{MetadataReference}?)"/>'s remarks on assembly name uniqueness.
     /// </param>
     private static AggregatedApp BuildAggregatedApp(string runId)
     {

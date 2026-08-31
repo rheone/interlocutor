@@ -91,4 +91,10 @@ internal static class WellKnownTypeNames
     /// this exact metadata name rather than by inspecting type arguments it doesn't have.
     /// </summary>
     public const string ConcreteNonGenericOutcome = "Interlocutor.CommonKernel.Outcome";
+
+    /// <summary>
+    /// The member-generation marker attribute, <c>GenerateOutcomeMembersAttribute</c> - see
+    /// <see cref="OutcomeMemberGenerator"/>.
+    /// </summary>
+    public const string GenerateOutcomeMembersAttribute = "Interlocutor.CommonKernel.GenerateOutcomeMembersAttribute";
 }

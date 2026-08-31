@@ -14,3 +14,4 @@ INTERLOC007 | Interlocutor.Discovery | Error | Handler override reference is not
 INTERLOC008 | Interlocutor.Discovery | Warning | Unresolved generic request usage
 INTERLOC009 | Interlocutor.Outcomes | Warning | Duplicate outcome case type
 INTERLOC010 | Interlocutor.Validation | Warning | Validator exists for a request with no validation-shaped response case
+INTERLOC011 | Interlocutor.Outcomes | Error | Attributed union declares fewer than two case types
