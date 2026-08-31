@@ -101,7 +101,7 @@ public class OutcomeMapperBaseTests
         Outcome<string, NotFound, Forbidden, Conflict, ValidationErrors> outcome = new(new Conflict("stale", "conflict.code"));
 
         // Act
-        var exitCode = this.mapper.Map(outcome.GetValue()!);
+        var exitCode = this.mapper.Map(outcome.Value);
 
         // Assert
         Assert.Equal(ExitCodeOutcomeMapper.ConflictExitCode, exitCode);

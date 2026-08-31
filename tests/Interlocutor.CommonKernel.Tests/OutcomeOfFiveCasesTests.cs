@@ -4,8 +4,8 @@ using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
 /// Covers the five-case generic <see cref="Outcome{TSuccessResult, TCase2, TCase3, TCase4, TCase5}"/>
-/// union: construction from each case type, implicit conversion from a bare case value, and exhaustive switch
-/// pattern matching.
+/// union: construction from each case type, implicit conversion from a bare case value, exhaustive switch
+/// pattern matching, and the generated <c>Match</c>/<c>Switch</c>/<c>TryGetValue</c>/<c>ToString</c> member set.
 /// </summary>
 public class OutcomeOfFiveCasesTests
 {
@@ -187,29 +187,122 @@ public class OutcomeOfFiveCasesTests
     }
 
     [Fact]
-    public void GetValue_OverSuccess_ReturnsUnderlyingValue()
+    public void Value_OverSuccess_ReturnsUnderlyingValue()
     {
         // Arrange
         Outcome<string, NotFound, Forbidden, Conflict, ValidationError> result = "hello";
 
-        // Act
-        var value = result.GetValue();
-
-        // Assert
-        Assert.Equal("hello", value);
+        // Act & Assert
+        Assert.Equal("hello", result.Value);
     }
 
     [Fact]
-    public void GetValue_OverCase5_ReturnsUnderlyingValue()
+    public void Value_OverCase5_ReturnsUnderlyingValue()
     {
         // Arrange
         var validationError = new ValidationError("Name is required");
         Outcome<string, NotFound, Forbidden, Conflict, ValidationError> result = validationError;
 
-        // Act
-        var value = result.GetValue();
+        // Act & Assert
+        Assert.Equal(validationError, result.Value);
+    }
 
-        // Assert
-        Assert.Equal(validationError, value);
+    [Fact]
+    public void Match_OverEachCase_InvokesMatchingDelegate()
+    {
+        // Arrange
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError> success = "hello";
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError> case2 = new NotFound("missing");
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError> case3 = new Forbidden("denied");
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError> case4 = new Conflict("stale", "CONFLICT");
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError> case5 = new ValidationError("Name is required");
+
+        static string Project(Outcome<string, NotFound, Forbidden, Conflict, ValidationError> outcome) =>
+            outcome.Match(
+                s => "success:" + s,
+                notFound => "case2:" + notFound.Message,
+                forbidden => "case3:" + forbidden.Reason,
+                conflict => "case4:" + conflict.Message,
+                validationError => "case5:" + validationError.Message
+            );
+
+        // Act & Assert
+        Assert.Equal("success:hello", Project(success));
+        Assert.Equal("case2:missing", Project(case2));
+        Assert.Equal("case3:denied", Project(case3));
+        Assert.Equal("case4:stale", Project(case4));
+        Assert.Equal("case5:Name is required", Project(case5));
+    }
+
+    [Fact]
+    public void Switch_GeneratedOverload_DispatchesToMatchingAction()
+    {
+        // Arrange
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError> success = "hello";
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError> case2 = new NotFound("missing");
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError> case3 = new Forbidden("denied");
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError> case4 = new Conflict("stale", "CONFLICT");
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError> case5 = new ValidationError("Name is required");
+
+        static string Observe(Outcome<string, NotFound, Forbidden, Conflict, ValidationError> outcome)
+        {
+            string result = "unset";
+            outcome.Switch(
+                s => result = "success:" + s,
+                notFound => result = "case2:" + notFound.Message,
+                forbidden => result = "case3:" + forbidden.Reason,
+                conflict => result = "case4:" + conflict.Message,
+                validationError => result = "case5:" + validationError.Message
+            );
+            return result;
+        }
+
+        // Act & Assert
+        Assert.Equal("success:hello", Observe(success));
+        Assert.Equal("case2:missing", Observe(case2));
+        Assert.Equal("case3:denied", Observe(case3));
+        Assert.Equal("case4:stale", Observe(case4));
+        Assert.Equal("case5:Name is required", Observe(case5));
+    }
+
+    [Fact]
+    public void TryGetValue_Success_HitAndMiss()
+    {
+        // Arrange
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError> success = "hello";
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError> other = new NotFound("missing");
+
+        // Act & Assert
+        Assert.True(success.TryGetValue(out string hit));
+        Assert.Equal("hello", hit);
+        Assert.False(other.TryGetValue(out string miss));
+        Assert.Null(miss);
+    }
+
+    [Fact]
+    public void TryGetValue_Case5_HitAndMiss()
+    {
+        // Arrange
+        var validationError = new ValidationError("Name is required");
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError> hitOutcome = validationError;
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError> missOutcome = "hello";
+
+        // Act & Assert
+        Assert.True(hitOutcome.TryGetValue(out ValidationError hit));
+        Assert.Equal(validationError, hit);
+        Assert.False(missOutcome.TryGetValue(out ValidationError miss));
+        Assert.Equal(default, miss);
+    }
+
+    [Fact]
+    public void ToString_ForwardsToActiveCasesOwnToString()
+    {
+        // Arrange
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError> success = "hello";
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError> case5 = new ValidationError("Name is required");
+
+        // Act & Assert
+        Assert.Equal("hello", success.ToString());
+        Assert.Equal(new ValidationError("Name is required").ToString(), case5.ToString());
     }
 }

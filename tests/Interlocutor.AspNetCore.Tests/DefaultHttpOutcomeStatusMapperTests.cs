@@ -350,7 +350,7 @@ public class DefaultHttpOutcomeStatusMapperTests
         Outcome<string, NotFound, Forbidden, Conflict, ValidationErrors> outcome = new(new NotFound("missing"));
 
         // Act
-        var mapping = this.mapper.Map(outcome.GetValue()!);
+        var mapping = this.mapper.Map(outcome.Value);
 
         // Assert
         Assert.Equal(StatusCodes.Status404NotFound, mapping.StatusCode);
@@ -363,7 +363,7 @@ public class DefaultHttpOutcomeStatusMapperTests
         Outcome<string, NotFound, Forbidden, Conflict, ValidationErrors> outcome = new(new Forbidden("denied"));
 
         // Act
-        var mapping = this.mapper.Map(outcome.GetValue()!);
+        var mapping = this.mapper.Map(outcome.Value);
 
         // Assert
         Assert.Equal(StatusCodes.Status403Forbidden, mapping.StatusCode);
@@ -376,7 +376,7 @@ public class DefaultHttpOutcomeStatusMapperTests
         Outcome<string, NotFound, Forbidden, Conflict, ValidationErrors> outcome = new(new Conflict("stale", "conflict.code"));
 
         // Act
-        var mapping = this.mapper.Map(outcome.GetValue()!);
+        var mapping = this.mapper.Map(outcome.Value);
 
         // Assert
         Assert.Equal(StatusCodes.Status409Conflict, mapping.StatusCode);
@@ -389,7 +389,7 @@ public class DefaultHttpOutcomeStatusMapperTests
         Outcome<string, NotFound, Forbidden, Conflict, ValidationErrors> outcome = new(new ValidationErrors("required"));
 
         // Act
-        var mapping = this.mapper.Map(outcome.GetValue()!);
+        var mapping = this.mapper.Map(outcome.Value);
 
         // Assert
         Assert.Equal(StatusCodes.Status400BadRequest, mapping.StatusCode);
@@ -399,13 +399,13 @@ public class DefaultHttpOutcomeStatusMapperTests
     public void Map_AcrossFiveArityOutcome_WithSuccessCase_IsNotMappedAsFailure()
     {
         // Arrange - the success case is never handed to the mapper in production - ResultExtensions branches
-        // on IsSuccess before calling Map - but proving it round-trips through GetValue() confirms the
+        // on IsSuccess before calling Map - but proving it round-trips through .Value confirms the
         // multi-arity outcome itself distinguishes the success case from all four failure cases correctly.
         Outcome<string, NotFound, Forbidden, Conflict, ValidationErrors> outcome = new("ok");
 
         // Act & Assert
         Assert.True(outcome.IsSuccess);
-        Assert.Equal("ok", outcome.GetValue());
+        Assert.Equal("ok", outcome.Value);
     }
 
     /// <summary>
