@@ -80,4 +80,33 @@ internal readonly record struct DistinctItemSet<TItem>
     /// the same way. Explicitly constructing this type with an empty sequence still throws.
     /// </remarks>
     public IReadOnlyList<TItem> Items => this._items.IsDefault ? [] : this._items;
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Overridden because the compiler-synthesized record equality this type would otherwise get compares
+    /// <see cref="_items"/> - an <see cref="ImmutableArray{T}"/> - by reference to its backing array, not by
+    /// content. Compared by content instead, and order-independently: two instances collected from the same
+    /// distinct items are the same result even when concurrent/async work filled them in a different
+    /// completion order. <see cref="Items"/> still preserves first-occurrence order for enumeration and
+    /// display - a caller who needs a specific order for their own comparison can already impose one over
+    /// <see cref="Items"/> themselves.
+    /// </remarks>
+    public bool Equals(DistinctItemSet<TItem> other) => this.Count == other.Count && this.Items.ToHashSet().SetEquals(other.Items);
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Combined order-independently (XOR rather than a rolling multiply-and-add) to stay consistent with
+    /// <see cref="Equals(DistinctItemSet{TItem})"/> - two instances holding the same distinct items in a
+    /// different order must still produce the same hash code.
+    /// </remarks>
+    public override int GetHashCode()
+    {
+        var hash = 0;
+        foreach (var item in this.Items)
+        {
+            hash ^= item?.GetHashCode() ?? 0;
+        }
+
+        return hash;
+    }
 }
