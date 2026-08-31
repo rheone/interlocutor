@@ -42,7 +42,10 @@ internal static class WellKnownTypeNames
     /// <summary>The open generic pipeline-behavior contract, <c>IPipelineBehavior&lt;TRequest, TResponse&gt;</c>.</summary>
     public const string PipelineBehavior = "Interlocutor.Abstractions.Pipeline.IPipelineBehavior`2";
 
-    /// <summary>The base outcome marker interface, <c>IOutcome</c>.</summary>
+    /// <summary>
+    /// The base outcome marker interface, <c>IOutcome</c> - not to be confused with
+    /// <see cref="ConcreteNonGenericOutcome"/>, the concrete non-generic <c>Outcome</c> union that implements it.
+    /// </summary>
     public const string Outcome = "Interlocutor.CommonKernel.ResultTypes.IOutcome";
 
     /// <summary>The open-generic-handler-ambiguity escape hatch, <c>HandlerOverrideAttribute</c>.</summary>

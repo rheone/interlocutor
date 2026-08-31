@@ -322,6 +322,66 @@ public class OutcomeOfSixCasesTests
     }
 
     [Fact]
+    public void TryGetValue_Case2_HitAndMiss()
+    {
+        // Arrange
+        var notFound = new NotFound("missing");
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure> hitOutcome = notFound;
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure> missOutcome = "hello";
+
+        // Act & Assert
+        Assert.True(hitOutcome.TryGetValue(out NotFound hit));
+        Assert.Equal(notFound, hit);
+        Assert.False(missOutcome.TryGetValue(out NotFound miss));
+        Assert.Equal(default, miss);
+    }
+
+    [Fact]
+    public void TryGetValue_Case3_HitAndMiss()
+    {
+        // Arrange
+        var forbidden = new Forbidden("denied");
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure> hitOutcome = forbidden;
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure> missOutcome = "hello";
+
+        // Act & Assert
+        Assert.True(hitOutcome.TryGetValue(out Forbidden hit));
+        Assert.Equal(forbidden, hit);
+        Assert.False(missOutcome.TryGetValue(out Forbidden miss));
+        Assert.Equal(default, miss);
+    }
+
+    [Fact]
+    public void TryGetValue_Case4_HitAndMiss()
+    {
+        // Arrange
+        var conflict = new Conflict("stale", "CONFLICT");
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure> hitOutcome = conflict;
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure> missOutcome = "hello";
+
+        // Act & Assert
+        Assert.True(hitOutcome.TryGetValue(out Conflict hit));
+        Assert.Equal(conflict, hit);
+        Assert.False(missOutcome.TryGetValue(out Conflict miss));
+        Assert.Equal(default, miss);
+    }
+
+    [Fact]
+    public void TryGetValue_Case5_HitAndMiss()
+    {
+        // Arrange
+        var validationError = new ValidationError("Name is required");
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure> hitOutcome = validationError;
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure> missOutcome = "hello";
+
+        // Act & Assert
+        Assert.True(hitOutcome.TryGetValue(out ValidationError hit));
+        Assert.Equal(validationError, hit);
+        Assert.False(missOutcome.TryGetValue(out ValidationError miss));
+        Assert.Equal(default, miss);
+    }
+
+    [Fact]
     public void TryGetValue_Case6_HitAndMiss()
     {
         // Arrange

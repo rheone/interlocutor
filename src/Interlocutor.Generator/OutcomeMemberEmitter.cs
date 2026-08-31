@@ -43,7 +43,7 @@ internal static class OutcomeMemberEmitter
         builder.AppendLine();
         EmitSwitch(builder, model);
         builder.AppendLine();
-        EmitToString(builder, model);
+        EmitToString(builder);
 
         builder.AppendLine("}");
 
@@ -148,9 +148,8 @@ internal static class OutcomeMemberEmitter
         builder.AppendLine("    }");
     }
 
-    private static void EmitToString(StringBuilder builder, OutcomeUnionModel model)
+    private static void EmitToString(StringBuilder builder)
     {
-        _ = model;
         builder.AppendLine(
             "    /// <summary>Forwards to the active case value's own <see cref=\"object.ToString\"/> override.</summary>"
         );

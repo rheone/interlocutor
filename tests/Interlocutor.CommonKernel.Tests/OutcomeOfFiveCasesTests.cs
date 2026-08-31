@@ -280,6 +280,51 @@ public class OutcomeOfFiveCasesTests
     }
 
     [Fact]
+    public void TryGetValue_Case2_HitAndMiss()
+    {
+        // Arrange
+        var notFound = new NotFound("missing");
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError> hitOutcome = notFound;
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError> missOutcome = "hello";
+
+        // Act & Assert
+        Assert.True(hitOutcome.TryGetValue(out NotFound hit));
+        Assert.Equal(notFound, hit);
+        Assert.False(missOutcome.TryGetValue(out NotFound miss));
+        Assert.Equal(default, miss);
+    }
+
+    [Fact]
+    public void TryGetValue_Case3_HitAndMiss()
+    {
+        // Arrange
+        var forbidden = new Forbidden("denied");
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError> hitOutcome = forbidden;
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError> missOutcome = "hello";
+
+        // Act & Assert
+        Assert.True(hitOutcome.TryGetValue(out Forbidden hit));
+        Assert.Equal(forbidden, hit);
+        Assert.False(missOutcome.TryGetValue(out Forbidden miss));
+        Assert.Equal(default, miss);
+    }
+
+    [Fact]
+    public void TryGetValue_Case4_HitAndMiss()
+    {
+        // Arrange
+        var conflict = new Conflict("stale", "CONFLICT");
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError> hitOutcome = conflict;
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationError> missOutcome = "hello";
+
+        // Act & Assert
+        Assert.True(hitOutcome.TryGetValue(out Conflict hit));
+        Assert.Equal(conflict, hit);
+        Assert.False(missOutcome.TryGetValue(out Conflict miss));
+        Assert.Equal(default, miss);
+    }
+
+    [Fact]
     public void TryGetValue_Case5_HitAndMiss()
     {
         // Arrange
