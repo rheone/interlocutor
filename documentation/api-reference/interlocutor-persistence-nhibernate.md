@@ -1,6 +1,6 @@
 # Interlocutor.Persistence.NHibernate API Reference
 
-Every public type in `Interlocutor.Persistence.NHibernate`, grouped by namespace - the NHibernate implementation of the persistence abstraction, including its [transaction model](glossary.md#transaction-model)'s commit-gate behavior.
+Every public type in `Interlocutor.Persistence.NHibernate`, grouped by namespace - the NHibernate implementation of the persistence abstraction, including its [transaction model](../glossary.md#transaction-model)'s commit-gate behavior.
 
 ## Interlocutor.Persistence.NHibernate
 

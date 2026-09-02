@@ -1,6 +1,6 @@
 # Interlocutor.DependencyInjection.Abstractions API Reference
 
-Every public type in `Interlocutor.DependencyInjection.Abstractions`, grouped by namespace - the container-neutral [DI registration](glossary.md#di-registration) model shared by the Microsoft and Autofac packages.
+Every public type in `Interlocutor.DependencyInjection.Abstractions`, grouped by namespace - the container-neutral [DI registration](../glossary.md#di-registration) model shared by the Microsoft and Autofac packages.
 
 ## Interlocutor.DependencyInjection.Abstractions
 
@@ -131,7 +131,7 @@ Container-neutral fluent builder for pipeline composition alone - behaviors, sta
 | `public InterlocutorPipelineBuilder AddStageHost(RegistrationLifetime lifetime = Scoped)` | Adds `PipelineStageBehavior` - the single host behavior that aggregates every registered `IPipelineStage` - at the current position in the chain. An ordinary behavior entry: position it anywhere, and register it more than once if different stage groupings should sit at different depths. |
 | `public InterlocutorPipelineBuilder AddTimeoutBehavior()` | Adds `TimeoutBehavior` at the current position in the chain, and try-adds its default dependencies, `ITimeoutPolicy` (`DefaultTimeoutPolicy`) and `IOutcomeCaseRegistry` (`DefaultOutcomeCaseRegistry`), unless a default has already been set for either. |
 | `public InterlocutorPipelineBuilder AddUnitOfWorkBehavior()` | Adds the EF Core or NHibernate UnitOfWorkBehavior - the unit-of-work-owned transaction commit/rollback gate - at the current position in the chain, preferring EF Core, if either store-specific persistence package is referenced by the application. A no-op when neither package is loaded. |
-| `public InterlocutorPipelineBuilder AddValidationBehavior()` | Adds Interlocutor.FluentValidation.ValidationBehavior<,> at the current position in the chain, if the Interlocutor.FluentValidation package is referenced by the application, and try-adds its default dependency, `IOutcomeCaseRegistry` (`DefaultOutcomeCaseRegistry`), unless a default has already been set. A no-op when that package is not loaded. |
+| `public InterlocutorPipelineBuilder AddValidationBehavior()` | Adds ValidationBehavior<,> at the current position in the chain, if the Interlocutor.FluentValidation package is referenced by the application, and try-adds its default dependency, `IOutcomeCaseRegistry` (`DefaultOutcomeCaseRegistry`), unless a default has already been set. A no-op when that package is not loaded. |
 | `public InterlocutorPipelineBuilder OverrideAuditSink<TSink>(RegistrationLifetime lifetime = Scoped)` | Replaces the default `IAuditSink` implementation `AuditingBehavior` receives when no application-level registration is present. Wins regardless of whether it is called before or after `AddAuditingBehavior` in the same chain. |
 | `public InterlocutorPipelineBuilder OverrideOutcomeCaseRegistry<TRegistry>(RegistrationLifetime lifetime = Scoped)` | Replaces the default `IOutcomeCaseRegistry` implementation `AuthorizationBehavior`, `CancellationBehavior`, `TimeoutBehavior`, `RateLimitedBehavior`, and the FluentValidation ValidationBehavior receive when no application-level registration is present. Wins regardless of whether it is called before or after the corresponding Add*Behavior call in the same chain. |
 | `public InterlocutorPipelineBuilder OverrideOutcomeDescriber<TDescriber>(RegistrationLifetime lifetime = Singleton)` | Replaces the default `IResponseOutcomeDescriber` implementation `LoggingBehavior` and `AuditingBehavior` optionally consume when no application-level registration is present. Wins regardless of whether it is called before or after `AddLoggingBehavior` / `AddAuditingBehavior` in the same chain. |
@@ -174,7 +174,7 @@ Thrown by AddInterlocutor() when `ValidateOnBuild` is configured and `DescribeRe
 
 ### `PipelineOverrideRegistry` sealed class
 
-The container-neutral `IPipelineOverrideRegistry` implementation both Interlocutor.DependencyInjection.Microsoft and Interlocutor.DependencyInjection.Autofac register as a singleton from `OverrideRules`, so PipelineChainResolver resolves an identical answer regardless of which container built it.
+The container-neutral `IPipelineOverrideRegistry` implementation both Microsoft and Autofac register as a singleton from `OverrideRules`, so PipelineChainResolver resolves an identical answer regardless of which container built it.
 
 | Member | Summary |
 | --- | --- |

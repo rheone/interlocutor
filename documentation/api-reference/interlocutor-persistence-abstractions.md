@@ -1,6 +1,6 @@
 # Interlocutor.Persistence.Abstractions API Reference
 
-Every public type in `Interlocutor.Persistence.Abstractions`, grouped by namespace - the store-neutral unit-of-work/repository abstraction behind the [transaction model](glossary.md#transaction-model) and [pagination](glossary.md#pagination).
+Every public type in `Interlocutor.Persistence.Abstractions`, grouped by namespace - the store-neutral unit-of-work/repository abstraction behind the [transaction model](../glossary.md#transaction-model) and [pagination](../glossary.md#pagination).
 
 ## Interlocutor.Persistence.Abstractions
 

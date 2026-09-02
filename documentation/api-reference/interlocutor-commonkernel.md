@@ -1,6 +1,6 @@
 # Interlocutor.CommonKernel API Reference
 
-Every public type in `Interlocutor.CommonKernel`, grouped by namespace - the [result types](glossary.md#result-types) every handler response is built from.
+Every public type in `Interlocutor.CommonKernel`, grouped by namespace - the [result types](../glossary.md#result-types) every handler response is built from.
 
 ## Interlocutor.CommonKernel
 
@@ -29,8 +29,8 @@ Represents the outcome of a void operation as one of two possible cases: success
 | `public TResult Match<TResult>(Func<Success, TResult> onCase1, Func<Failure, TResult> onCase2)` | Projects this result to a `TResult` by dispatching to the delegate matching its active case. |
 | `public void Switch(Action<Success> onCase1, Action<Failure> onCase2)` | Dispatches to the action matching this result's active case. |
 | `public override string ToString()` | Forwards to the active case value's own `ToString` override. |
-| `public bool TryGetValue(out Success value)` | Attempts to read this result's value as its Interlocutor.CommonKernel.ResultTypes.Success case. |
-| `public bool TryGetValue(out Failure value)` | Attempts to read this result's value as its Interlocutor.CommonKernel.ResultTypes.Failure case. |
+| `public bool TryGetValue(out Success value)` | Attempts to read this result's value as its Success case. |
+| `public bool TryGetValue(out Failure value)` | Attempts to read this result's value as its Failure case. |
 | `public static bool operator ==(Outcome left, Outcome right)` | Determines whether `left` and `right` hold equal case values. |
 | `public static bool operator !=(Outcome left, Outcome right)` | Determines whether `left` and `right` hold unequal case values. |
 

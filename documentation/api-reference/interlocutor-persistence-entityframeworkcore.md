@@ -1,6 +1,6 @@
 # Interlocutor.Persistence.EntityFrameworkCore API Reference
 
-Every public type in `Interlocutor.Persistence.EntityFrameworkCore`, grouped by namespace - the EF Core implementation of the persistence abstraction, including its [transaction model](glossary.md#transaction-model)'s commit-gate behavior.
+Every public type in `Interlocutor.Persistence.EntityFrameworkCore`, grouped by namespace - the EF Core implementation of the persistence abstraction, including its [transaction model](../glossary.md#transaction-model)'s commit-gate behavior.
 
 ## Interlocutor.Persistence.EntityFrameworkCore
 

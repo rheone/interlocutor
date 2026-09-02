@@ -1,6 +1,6 @@
 # Interlocutor.FluentValidation API Reference
 
-Every public type in `Interlocutor.FluentValidation`, grouped by namespace - a [validation-shaped failure case](glossary.md#failure-case-types) preserving full FluentValidation fidelity, plus the pipeline behaviors that produce it.
+Every public type in `Interlocutor.FluentValidation`, grouped by namespace - a [validation-shaped failure case](../glossary.md#failure-case-types) preserving full FluentValidation fidelity, plus the pipeline behaviors that produce it.
 
 ## Interlocutor.FluentValidation
 

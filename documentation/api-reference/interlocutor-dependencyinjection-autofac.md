@@ -1,6 +1,6 @@
 # Interlocutor.DependencyInjection.Autofac API Reference
 
-Every public type in `Interlocutor.DependencyInjection.Autofac`, grouped by namespace - [DI registration](glossary.md#di-registration) for Autofac.
+Every public type in `Interlocutor.DependencyInjection.Autofac`, grouped by namespace - [DI registration](../glossary.md#di-registration) for Autofac.
 
 ## Interlocutor.DependencyInjection.Autofac
 
@@ -18,6 +18,6 @@ Extension methods for opting an Autofac `ContainerBuilder` into Interlocutor's o
 
 | Member | Summary |
 | --- | --- |
-| `public static ContainerBuilder AddInterlocutorRepository<TEntity, TKey, TImplementation>(ContainerBuilder builder, Func<IComponentContext, TImplementation> implementationFactory)` |  |
-| `public static ContainerBuilder AddInterlocutorUnitOfWork<TImplementation>(ContainerBuilder builder, Func<IComponentContext, TImplementation> implementationFactory)` |  |
+| `public static ContainerBuilder AddInterlocutorRepository<TEntity, TKey, TImplementation>(ContainerBuilder builder, Func<IComponentContext, TImplementation> implementationFactory)` | Registers a scoped (InstancePerLifetimeScope) `IDomainRepository` for `TEntity`/`TKey`, built by `implementationFactory`. |
+| `public static ContainerBuilder AddInterlocutorUnitOfWork<TImplementation>(ContainerBuilder builder, Func<IComponentContext, TImplementation> implementationFactory)` | Registers a scoped (InstancePerLifetimeScope) `IUnitOfWork`, built by `implementationFactory`. |
 

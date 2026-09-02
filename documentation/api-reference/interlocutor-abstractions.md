@@ -1,6 +1,6 @@
 # Interlocutor.Abstractions API Reference
 
-Every public type in `Interlocutor.Abstractions`, grouped by namespace - the mediator core, [handlers](glossary.md#cqrs), and [pipeline behaviors](glossary.md#pipeline).
+Every public type in `Interlocutor.Abstractions`, grouped by namespace - the mediator core, [handlers](../glossary.md#cqrs), and [pipeline behaviors](../glossary.md#pipeline).
 
 ## Interlocutor.Abstractions
 
@@ -695,7 +695,7 @@ Maps a failure case value from an Interlocutor Outcome union to a `TResult` repr
 
 ### `OutcomeMapperBase<TResult>` abstract class
 
-Recognizes the built-in Interlocutor.CommonKernel.ResultTypes failure cases and their aggregate forms, dispatching each to its own protected abstract method - a concrete `TResult`- specific mapper (e.g. Interlocutor.AspNetCore.DefaultHttpOutcomeStatusMapper) implements one method per case instead of writing the dispatch itself. Anything else - including a consumer's own custom failure type - falls back to `MapUnrecognized`.
+Recognizes the built-in ResultTypes failure cases and their aggregate forms, dispatching each to its own protected abstract method - a concrete `TResult`- specific mapper (e.g. DefaultHttpOutcomeStatusMapper) implements one method per case instead of writing the dispatch itself. Anything else - including a consumer's own custom failure type - falls back to `MapUnrecognized`.
 
 | Member | Summary |
 | --- | --- |

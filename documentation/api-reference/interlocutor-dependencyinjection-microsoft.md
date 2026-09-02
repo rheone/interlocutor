@@ -1,6 +1,6 @@
 # Interlocutor.DependencyInjection.Microsoft API Reference
 
-Every public type in `Interlocutor.DependencyInjection.Microsoft`, grouped by namespace - [DI registration](glossary.md#di-registration) for Microsoft.Extensions.DependencyInjection.
+Every public type in `Interlocutor.DependencyInjection.Microsoft`, grouped by namespace - [DI registration](../glossary.md#di-registration) for Microsoft.Extensions.DependencyInjection.
 
 ## Interlocutor.DependencyInjection.Microsoft
 

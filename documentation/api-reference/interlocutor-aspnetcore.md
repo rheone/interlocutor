@@ -1,6 +1,6 @@
 # Interlocutor.AspNetCore API Reference
 
-Every public type in `Interlocutor.AspNetCore`, grouped by namespace - [outcome-to-HTTP mapping](glossary.md#outcome-mapping) for both controller-based and minimal API endpoints.
+Every public type in `Interlocutor.AspNetCore`, grouped by namespace - [outcome-to-HTTP mapping](../glossary.md#outcome-mapping) for both controller-based and minimal API endpoints. See [ASP.NET Core Integration](../aspnetcore-integration.md) for the status-code mapping table itself.
 
 ## Interlocutor.AspNetCore
 
@@ -15,7 +15,7 @@ ASP.NET Core `IRequestContextAccessor` implementation that populates request con
 
 ### `DefaultHttpOutcomeStatusMapper` class
 
-The `IOutcomeStatusMapper` applied by `ResultExtensions` when a consumer registers none of their own. Recognizes the built-in Interlocutor.CommonKernel.ResultTypes failure cases and their aggregate forms via `OutcomeMapperBase`'s dispatch; anything else - including a consumer's own custom failure type - falls back to `MapUnrecognized`.
+The `IOutcomeStatusMapper` applied by `ResultExtensions` when a consumer registers none of their own. Recognizes the built-in ResultTypes failure cases and their aggregate forms via `OutcomeMapperBase`'s dispatch; anything else - including a consumer's own custom failure type - falls back to `MapUnrecognized`.
 
 | Member | Summary |
 | --- | --- |
