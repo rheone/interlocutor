@@ -1,4 +1,11 @@
-> **Status: needs-triage** - scope/format decided by the repo owner 2026-08-30 (see Decisions below), but held awaiting developer triage before an agent picks it up.
+> **Status: done** - triaged and picked up 2026-09-02. Generated from the compiled `src/*` assemblies plus their
+> shipped XML doc comments (Roslyn metadata symbols + `GetDocumentationCommentXml`, resolving the `<inheritdoc>`
+> pointer C# 14 extension-block members compile down to) rather than hand-transcribed, so every signature and
+> summary is a direct reflection of the shipped API. One deviation from a strict "just what's in the XML docs"
+> reproduction: a handful of source XML doc comments cite ADR numbers inline (`ADR-0007`, `ADR-0008`, `ADR-0009`,
+> `ADR-0011`, `ADR-0018`) - those citations are fine in source code comments, but reproducing them verbatim into
+> `documentation/*.md` would violate this file's own house-style rule (no `maintainer_docs/` citations), so they
+> were stripped/rephrased in the generated output specifically, not in the source XML comments themselves.
 
 ## Labels
 
@@ -16,9 +23,9 @@ A full public API reference, broken down by package and namespace, covering ever
 
 ## Acceptance criteria
 
-- [ ] One file per package under `documentation/api-reference/`, per the Decisions above, covering every `src/*` package's public surface listed above (excluding `Interlocutor.Generator`)
-- [ ] Each public type/member appears as a signature-plus-summary table entry, grouped by namespace within its package's file
-- [ ] Follows this repo's house style for `documentation/` (see CLAUDE.md's House Style Conventions - no enumerated counts, glossary linking on first mention, no `maintainer_docs/` citations, HTTP status codes only in `aspnetcore-integration.md`)
-- [ ] Every code example/signature is verified against the shipped `src/` API, not assumed
-- [ ] Linked from wherever `documentation/`'s existing index/README references the rest of the `documentation/` tree
-- [ ] `dotnet build` and `dotnet test` remain green (no code changes expected, but confirms nothing was disturbed)
+- [x] One file per package under `documentation/api-reference/`, per the Decisions above, covering every `src/*` package's public surface listed above (excluding `Interlocutor.Generator`)
+- [x] Each public type/member appears as a signature-plus-summary table entry, grouped by namespace within its package's file
+- [x] Follows this repo's house style for `documentation/` (see CLAUDE.md's House Style Conventions - no enumerated counts, glossary linking on first mention, no `maintainer_docs/` citations, HTTP status codes only in `aspnetcore-integration.md`)
+- [x] Every code example/signature is verified against the shipped `src/` API, not assumed
+- [x] Linked from wherever `documentation/`'s existing index/README references the rest of the `documentation/` tree
+- [x] `dotnet build` and `dotnet test` remain green (no code changes expected, but confirms nothing was disturbed)
