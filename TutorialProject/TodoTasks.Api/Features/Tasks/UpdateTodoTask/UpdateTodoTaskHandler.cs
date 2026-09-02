@@ -25,7 +25,7 @@ using TodoTasks.Api.Domain;
 /// </remarks>
 public sealed class UpdateTodoTaskHandler(IDomainRepository<TodoTask, int> tasks, IUnitOfWork unitOfWork)
     : ResourceCommandHandler<UpdateTodoTaskCommand, TodoTask, TodoTaskDto>,
-        ICommandHandler<UpdateTodoTaskCommand, OperationOutcome<TodoTaskDto, NotFound, Failure>>
+        ICommandHandler<UpdateTodoTaskCommand, Outcome<TodoTaskDto, NotFound, Failure>>
 {
     /// <summary>Loads the task to update. A <see langword="null"/> result short-circuits with <see cref="NotFound"/> before <see cref="Authorize"/> ever runs.</summary>
     /// <param name="command">The update command, carrying the task's id.</param>
@@ -46,7 +46,7 @@ public sealed class UpdateTodoTaskHandler(IDomainRepository<TodoTask, int> tasks
     /// <param name="entity">The loaded, authorized task.</param>
     /// <param name="ct">A token to observe while saving.</param>
     /// <returns>The updated task's response shape.</returns>
-    protected override async Task<OperationOutcome<TodoTaskDto, NotFound, Failure>> HandleAsync(
+    protected override async Task<Outcome<TodoTaskDto, NotFound, Failure>> HandleAsync(
         UpdateTodoTaskCommand command,
         TodoTask entity,
         CancellationToken ct

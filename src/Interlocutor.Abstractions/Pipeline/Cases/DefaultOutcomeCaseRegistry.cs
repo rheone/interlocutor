@@ -6,14 +6,14 @@ using System.Runtime.CompilerServices;
 using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
-/// Zero-config <see cref="IOutcomeCaseRegistry"/> that handles any <see cref="IOperationOutcome"/> which is a
+/// Zero-config <see cref="IOutcomeCaseRegistry"/> that handles any <see cref="IOutcome"/> which is a
 /// compiler-generated <c>union</c>: construction via <see cref="UnionCaseFactory"/>'s case-constructor
 /// reflection, extraction via pattern-matching the compiler-generated <see cref="IUnion"/> marker interface.
 /// </summary>
 /// <remarks>
 /// This is what <see cref="OutcomeCaseRegistryBuilder"/> falls back to for any response type a consumer has
 /// not registered a custom factory or extractor for - use <see cref="Instance"/> directly when no custom
-/// <see cref="IOperationOutcome"/> implementations are in play.
+/// <see cref="IOutcome"/> implementations are in play.
 /// </remarks>
 public sealed class DefaultOutcomeCaseRegistry : IOutcomeCaseRegistry
 {
@@ -29,7 +29,7 @@ public sealed class DefaultOutcomeCaseRegistry : IOutcomeCaseRegistry
 
     /// <inheritdoc/>
     public TResponse Construct<TResponse, TCase>(TCase caseValue)
-        where TResponse : IOperationOutcome
+        where TResponse : IOutcome
     {
         var constructor = ConstructorCache.GetOrAdd(
             (typeof(TResponse), typeof(TCase)),
@@ -53,7 +53,7 @@ public sealed class DefaultOutcomeCaseRegistry : IOutcomeCaseRegistry
 
     /// <inheritdoc/>
     public bool TryGetActiveCase<TResponse>(TResponse response, out Type caseType, out object? caseValue)
-        where TResponse : IOperationOutcome
+        where TResponse : IOutcome
     {
         if (response is null)
         {

@@ -219,10 +219,10 @@ public class OutcomeClassifierBuilderTests
     [Fact]
     public void IsFailure_CompilerGeneratedUnion_UnwrapsToTheActiveCaseBeforeClassifying()
     {
-        // Arrange - OperationOutcome<TSuccess, TFailure> implements IUnion; the classifier must unwrap it to
+        // Arrange - Outcome<TSuccess, TFailure> implements IUnion; the classifier must unwrap it to
         // the active case value (a Failure here) rather than classifying the union wrapper's own type.
         var classifier = OutcomeClassifierBuilder.DefaultClassifier;
-        OperationOutcome<string, Failure> response = new Failure("boom");
+        Outcome<string, Failure> response = new Failure("boom");
 
         // Act
         var isFailure = classifier.IsFailure(response);

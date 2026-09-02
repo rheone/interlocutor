@@ -32,7 +32,7 @@ public class BehaviorSubsetConstraintTests
         var provider = services.BuildServiceProvider();
 
         // Assert
-        Assert.Empty(provider.GetServices<IPipelineBehavior<PlainCommand, OperationOutcome<string, Forbidden>>>());
+        Assert.Empty(provider.GetServices<IPipelineBehavior<PlainCommand, Outcome<string, Forbidden>>>());
     }
 
     [Fact]
@@ -46,13 +46,11 @@ public class BehaviorSubsetConstraintTests
 
         // Act
         var provider = services.BuildServiceProvider();
-        var resolved = provider
-            .GetServices<IPipelineBehavior<AuditableCommand, OperationOutcome<string, Forbidden>>>()
-            .ToList();
+        var resolved = provider.GetServices<IPipelineBehavior<AuditableCommand, Outcome<string, Forbidden>>>().ToList();
 
         // Assert
         Assert.Single(resolved);
-        Assert.IsType<AuditingBehavior<AuditableCommand, OperationOutcome<string, Forbidden>>>(resolved[0]);
+        Assert.IsType<AuditingBehavior<AuditableCommand, Outcome<string, Forbidden>>>(resolved[0]);
     }
 
     [Fact]
@@ -68,7 +66,7 @@ public class BehaviorSubsetConstraintTests
         var provider = services.BuildServiceProvider();
 
         // Assert
-        Assert.Empty(provider.GetServices<IPipelineBehavior<PlainCommand, OperationOutcome<string, Forbidden>>>());
+        Assert.Empty(provider.GetServices<IPipelineBehavior<PlainCommand, Outcome<string, Forbidden>>>());
     }
 
     [Fact]
@@ -86,11 +84,11 @@ public class BehaviorSubsetConstraintTests
 
         // Act
         var provider = services.BuildServiceProvider();
-        var resolved = provider.GetServices<IPipelineBehavior<PolicyCommand, OperationOutcome<string, Forbidden>>>().ToList();
+        var resolved = provider.GetServices<IPipelineBehavior<PolicyCommand, Outcome<string, Forbidden>>>().ToList();
 
         // Assert
         Assert.Single(resolved);
-        Assert.IsType<AuthorizationBehavior<PolicyCommand, OperationOutcome<string, Forbidden>>>(resolved[0]);
+        Assert.IsType<AuthorizationBehavior<PolicyCommand, Outcome<string, Forbidden>>>(resolved[0]);
     }
 
     [Fact]
@@ -108,11 +106,11 @@ public class BehaviorSubsetConstraintTests
         // Act
         var provider = services.BuildServiceProvider();
         var auditableChain = provider
-            .GetServices<IPipelineBehavior<AuditableCommand, OperationOutcome<string, Forbidden>>>()
+            .GetServices<IPipelineBehavior<AuditableCommand, Outcome<string, Forbidden>>>()
             .Select(b => b.GetType().Name)
             .ToList();
         var plainChain = provider
-            .GetServices<IPipelineBehavior<PlainCommand, OperationOutcome<string, Forbidden>>>()
+            .GetServices<IPipelineBehavior<PlainCommand, Outcome<string, Forbidden>>>()
             .Select(b => b.GetType().Name)
             .ToList();
 
@@ -141,15 +139,15 @@ public class BehaviorSubsetConstraintTests
         // Act
         var provider = services.BuildServiceProvider();
         var auditableChain = provider
-            .GetServices<IPipelineBehavior<AuditableCommand, OperationOutcome<string, Forbidden>>>()
+            .GetServices<IPipelineBehavior<AuditableCommand, Outcome<string, Forbidden>>>()
             .Select(b => b.GetType().Name)
             .ToList();
         var policyChain = provider
-            .GetServices<IPipelineBehavior<PolicyCommand, OperationOutcome<string, Forbidden>>>()
+            .GetServices<IPipelineBehavior<PolicyCommand, Outcome<string, Forbidden>>>()
             .Select(b => b.GetType().Name)
             .ToList();
         var plainChain = provider
-            .GetServices<IPipelineBehavior<PlainCommand, OperationOutcome<string, Forbidden>>>()
+            .GetServices<IPipelineBehavior<PlainCommand, Outcome<string, Forbidden>>>()
             .Select(b => b.GetType().Name)
             .ToList();
 
@@ -181,11 +179,8 @@ public class BehaviorSubsetConstraintTests
         var provider = services.BuildServiceProvider();
 
         // Assert
-        Assert.Equal(
-            2,
-            provider.GetServices<IPipelineBehavior<AuditableCommand, OperationOutcome<string, Forbidden>>>().Count()
-        );
-        Assert.Empty(provider.GetServices<IPipelineBehavior<PlainCommand, OperationOutcome<string, Forbidden>>>());
+        Assert.Equal(2, provider.GetServices<IPipelineBehavior<AuditableCommand, Outcome<string, Forbidden>>>().Count());
+        Assert.Empty(provider.GetServices<IPipelineBehavior<PlainCommand, Outcome<string, Forbidden>>>());
     }
 
     [Fact]
@@ -203,16 +198,13 @@ public class BehaviorSubsetConstraintTests
 
         // Act
         var provider = services.BuildServiceProvider();
-        var resolved = provider
-            .GetServices<IPipelineBehavior<PlainCommand, OperationOutcome<string, ValidationErrors>>>()
-            .ToList();
+        var resolved = provider.GetServices<IPipelineBehavior<PlainCommand, Outcome<string, ValidationErrors>>>().ToList();
 
         // Assert
         Assert.Single(resolved);
-        Assert.IsType<Interlocutor.FluentValidation.ValidationBehavior<
-            PlainCommand,
-            OperationOutcome<string, ValidationErrors>
-        >>(resolved[0]);
+        Assert.IsType<Interlocutor.FluentValidation.ValidationBehavior<PlainCommand, Outcome<string, ValidationErrors>>>(
+            resolved[0]
+        );
     }
 
     /// <summary>
@@ -227,15 +219,15 @@ public class BehaviorSubsetConstraintTests
         return services;
     }
 
-    private sealed record AuditableCommand(string Name) : ICommand<OperationOutcome<string, Forbidden>>, IAuditableRequest
+    private sealed record AuditableCommand(string Name) : ICommand<Outcome<string, Forbidden>>, IAuditableRequest
     {
         public string ActionName => "Test.Audit";
     }
 
-    private sealed record PolicyCommand(string Name) : ICommand<OperationOutcome<string, Forbidden>>, IRequiresPolicy
+    private sealed record PolicyCommand(string Name) : ICommand<Outcome<string, Forbidden>>, IRequiresPolicy
     {
         public string PolicyName => "Test.Policy";
     }
 
-    private sealed record PlainCommand(string Name) : ICommand<OperationOutcome<string, Forbidden>>;
+    private sealed record PlainCommand(string Name) : ICommand<Outcome<string, Forbidden>>;
 }

@@ -187,7 +187,7 @@ public sealed class TodoTasksControllerTests : IClassFixture<TodoTasksApiFactory
         );
 
         // Assert - 200, not 204: DeleteTodoTaskCommand's success case is the generic union's TSuccess, not
-        // the bare non-generic OperationOutcome ClearCompleted uses below.
+        // the bare non-generic Outcome ClearCompleted uses below.
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         using var getResponse = await client.GetAsync(
             new Uri($"/api/todo-tasks/{task.Id}", UriKind.Relative),
@@ -217,7 +217,7 @@ public sealed class TodoTasksControllerTests : IClassFixture<TodoTasksApiFactory
             TestContext.Current.CancellationToken
         );
 
-        // Assert - bare ICommand dispatched as sender.Send<OperationOutcome>(...), whose Success case
+        // Assert - bare ICommand dispatched as sender.Send<Outcome>(...), whose Success case
         // maps to 204, not 200 - the same non-generic overload the minimal-API endpoint uses.
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         using var completedGetResponse = await client.GetAsync(

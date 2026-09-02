@@ -41,7 +41,7 @@ public sealed class UnitOfWorkBehaviorTests : IDisposable
         // Act
         var result = await behavior.Handle(
             new PlainRequest(),
-            () => Task.FromResult<OperationOutcome<Success, Failure>>(default(Success)),
+            () => Task.FromResult<Outcome<Success, Failure>>(default(Success)),
             CancellationToken.None
         );
 
@@ -63,7 +63,9 @@ public sealed class UnitOfWorkBehaviorTests : IDisposable
             {
                 // Direct DbContext access, bypassing IUnitOfWork/IDomainRepository entirely - the escape hatch
                 // ADR-0018 requires begin-on-first-write to cover too.
-                await this.context.Widgets.AddAsync(new Widget { Name = "direct-write" }, CancellationToken.None).ConfigureAwait(false);
+                await this
+                    .context.Widgets.AddAsync(new Widget { Name = "direct-write" }, CancellationToken.None)
+                    .ConfigureAwait(false);
                 return default(Success);
             },
             CancellationToken.None
@@ -86,7 +88,9 @@ public sealed class UnitOfWorkBehaviorTests : IDisposable
             new PlainRequest(),
             async () =>
             {
-                await this.context.Widgets.AddAsync(new Widget { Name = "never-persisted" }, CancellationToken.None).ConfigureAwait(false);
+                await this
+                    .context.Widgets.AddAsync(new Widget { Name = "never-persisted" }, CancellationToken.None)
+                    .ConfigureAwait(false);
                 return new Failure("rejected");
             },
             CancellationToken.None
@@ -102,9 +106,7 @@ public sealed class UnitOfWorkBehaviorTests : IDisposable
     public async Task Handle_TransactionalRequest_BeginsEagerly_BeforeHandlerWrites()
     {
         // Arrange
-        var behavior = new UnitOfWorkBehavior<TransactionalRequest, OperationOutcome<Success, Failure>, TestDbContext>(
-            this.lazyContext
-        );
+        var behavior = new UnitOfWorkBehavior<TransactionalRequest, Outcome<Success, Failure>, TestDbContext>(this.lazyContext);
         var transactionOpenBeforeWrite = false;
 
         // Act
@@ -115,7 +117,7 @@ public sealed class UnitOfWorkBehaviorTests : IDisposable
                 // Observed before any write happens - only an eager begin at pipeline start explains a
                 // non-null CurrentTransaction at this point.
                 transactionOpenBeforeWrite = this.context.Database.CurrentTransaction is not null;
-                return Task.FromResult<OperationOutcome<Success, Failure>>(default(Success));
+                return Task.FromResult<Outcome<Success, Failure>>(default(Success));
             },
             CancellationToken.None
         );
@@ -128,16 +130,16 @@ public sealed class UnitOfWorkBehaviorTests : IDisposable
     public async Task Handle_ExternalStoreRequest_NeverOpensLocalTransaction_EvenWhenItWrites()
     {
         // Arrange
-        var behavior = new UnitOfWorkBehavior<ExternalStoreRequest, OperationOutcome<Success, Failure>, TestDbContext>(
-            this.lazyContext
-        );
+        var behavior = new UnitOfWorkBehavior<ExternalStoreRequest, Outcome<Success, Failure>, TestDbContext>(this.lazyContext);
 
         // Act
         var result = await behavior.Handle(
             new ExternalStoreRequest(),
             async () =>
             {
-                await this.context.Widgets.AddAsync(new Widget { Name = "external" }, CancellationToken.None).ConfigureAwait(false);
+                await this
+                    .context.Widgets.AddAsync(new Widget { Name = "external" }, CancellationToken.None)
+                    .ConfigureAwait(false);
                 // A raw SaveChangesAsync call, with no ambient transaction, auto-commits immediately under
                 // EF Core's own per-call implicit transaction - proving this request's write really did skip
                 // this behavior's local transaction machinery, not merely that nothing was staged.
@@ -164,7 +166,9 @@ public sealed class UnitOfWorkBehaviorTests : IDisposable
             new PlainRequest(),
             async () =>
             {
-                await this.context.Widgets.AddAsync(new Widget { Name = "cancelled" }, CancellationToken.None).ConfigureAwait(false);
+                await this
+                    .context.Widgets.AddAsync(new Widget { Name = "cancelled" }, CancellationToken.None)
+                    .ConfigureAwait(false);
                 await unitOfWork.SaveChangesAsync(CancellationToken.None).ConfigureAwait(false);
 
                 // The handler cancels, then still returns its own Success outcome - Cancel is not a
@@ -192,7 +196,7 @@ public sealed class UnitOfWorkBehaviorTests : IDisposable
         // Arrange
         var classifier = Substitute.For<IOutcomeClassifier>();
         classifier.IsFailure(Arg.Any<object?>()).Returns(true);
-        var behavior = new UnitOfWorkBehavior<PlainRequest, OperationOutcome<Success, Failure>, TestDbContext>(
+        var behavior = new UnitOfWorkBehavior<PlainRequest, Outcome<Success, Failure>, TestDbContext>(
             this.lazyContext,
             classifier
         );
@@ -202,7 +206,9 @@ public sealed class UnitOfWorkBehaviorTests : IDisposable
             new PlainRequest(),
             async () =>
             {
-                await this.context.Widgets.AddAsync(new Widget { Name = "should-not-persist" }, CancellationToken.None).ConfigureAwait(false);
+                await this
+                    .context.Widgets.AddAsync(new Widget { Name = "should-not-persist" }, CancellationToken.None)
+                    .ConfigureAwait(false);
                 return default(Success);
             },
             CancellationToken.None
@@ -223,7 +229,7 @@ public sealed class UnitOfWorkBehaviorTests : IDisposable
         this.connection.Dispose();
     }
 
-    private UnitOfWorkBehavior<PlainRequest, OperationOutcome<Success, Failure>, TestDbContext> CreateBehavior() =>
+    private UnitOfWorkBehavior<PlainRequest, Outcome<Success, Failure>, TestDbContext> CreateBehavior() =>
         new(this.lazyContext);
 
     private TestDbContext CreateVerificationContext()
@@ -232,11 +238,11 @@ public sealed class UnitOfWorkBehaviorTests : IDisposable
         return new TestDbContext(options);
     }
 
-    private sealed record PlainRequest : ICommand<OperationOutcome<Success, Failure>>;
+    private sealed record PlainRequest : ICommand<Outcome<Success, Failure>>;
 
-    private sealed record TransactionalRequest : ICommand<OperationOutcome<Success, Failure>>, ITransactionalRequest;
+    private sealed record TransactionalRequest : ICommand<Outcome<Success, Failure>>, ITransactionalRequest;
 
-    private sealed record ExternalStoreRequest : ICommand<OperationOutcome<Success, Failure>>, IExternalStoreRequest;
+    private sealed record ExternalStoreRequest : ICommand<Outcome<Success, Failure>>, IExternalStoreRequest;
 
     private sealed class TestDbContext(DbContextOptions<TestDbContext> options) : DbContext(options)
     {

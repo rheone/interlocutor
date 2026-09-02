@@ -7,7 +7,7 @@
 
 ## 1. Summary
 
-Interlocutor is a mediator/CQRS pipeline library for .NET built on C# 15 union types. Handlers return a closed, compiler-checked `OperationOutcome`/`OperationOutcome<...>` union instead of throwing exceptions for expected outcomes (not found, forbidden, validation failure, conflict). Cross-cutting concerns compose around handlers via `IPipelineBehavior<TRequest, TResponse>` in an onion/Russian-doll model, empty by default. Exceptions remain reserved for bugs and infrastructure faults.
+Interlocutor is a mediator/CQRS pipeline library for .NET built on C# 15 union types. Handlers return a closed, compiler-checked `Outcome`/`Outcome<...>` union instead of throwing exceptions for expected outcomes (not found, forbidden, validation failure, conflict). Cross-cutting concerns compose around handlers via `IPipelineBehavior<TRequest, TResponse>` in an onion/Russian-doll model, empty by default. Exceptions remain reserved for bugs and infrastructure faults.
 
 ## 2. Problem statement
 
@@ -32,7 +32,7 @@ Before this library, "what can go wrong" for a given handler was implicit - disc
 
 | Package | Contents | Depends on |
 |---|---|---|
-| `Interlocutor.CommonKernel` | `OperationOutcome`/`OperationOutcome<...>` (2-6 arities), `Success`, `Failure`/`Failures`, `NotFound`, `Forbidden`, `Conflict`/`Conflicts`, `ValidationError`/`ValidationErrors` | .NET BCL only |
+| `Interlocutor.CommonKernel` | `Outcome`/`Outcome<...>` (2-6 arities), `Success`, `Failure`/`Failures`, `NotFound`, `Forbidden`, `Conflict`/`Conflicts`, `ValidationError`/`ValidationErrors` | .NET BCL only |
 | `Interlocutor.Abstractions` | `IMediator`/`ISender`/`IPublisher`, handler contracts, marker interfaces, `Mediator`, `ResourceCommandHandler`, `InterlocutorStartupValidation`, built-in pipeline behaviors (Logging, Authorization, Auditing, Cancellation, Timeout, RateLimited, PipelineStage), `IOutcomeCaseRegistry`/`IOutcomeClassifier` | `Interlocutor.CommonKernel` |
 | `Interlocutor.Generator` | Roslyn incremental source generator behind compile-time handler discovery (ADR-0008); analyzer reference only, never a runtime dependency | - |
 | `Interlocutor.AspNetCore` | `ToActionResult()`/`ToMinimalApiResult()`, `IOutcomeStatusMapper`/`DefaultHttpOutcomeStatusMapper` | `Interlocutor.CommonKernel`, `Interlocutor.Abstractions`, ASP.NET Core |
@@ -58,17 +58,17 @@ Before this library, "what can go wrong" for a given handler was implicit - disc
 | `ValidationError` / `ValidationError<TErrorCode>` | `readonly record struct` | A single validation failure |
 | `ValidationErrors` / `ValidationErrors<TErrorCode>` | `readonly record struct` | De-duplicated aggregate of `ValidationError` instances |
 | `Cancelled`, `Timeout`, `RateLimited` | `readonly record struct` | Cross-cutting opt-in behavior outcomes |
-| `OperationOutcome` | `union` | `union OperationOutcome(Success, Failure)` - void command outcome |
-| `OperationOutcome<TSuccess, TFailure...>` | `union` | Generic in 2-6 case types; first is success, the rest independent failure cases |
+| `Outcome` | `union` | `union Outcome(Success, Failure)` - void command outcome |
+| `Outcome<TSuccess, TFailure...>` | `union` | Generic in 2-6 case types; first is success, the rest independent failure cases |
 
-There is no closed `Failure` union of sub-cases - every failure type above is an independent case type usable directly in an `OperationOutcome<...>`'s type argument list, per the operation's own choice of arity (see [documentation/composing-operationoutcome-arities.md](../documentation/composing-operationoutcome-arities.md)).
+There is no closed `Failure` union of sub-cases - every failure type above is an independent case type usable directly in an `Outcome<...>`'s type argument list, per the operation's own choice of arity (see [documentation/composing-outcome-arities.md](../documentation/composing-outcome-arities.md)).
 
 ## 7. CQRS interfaces
 
 | Interface | Purpose |
 |---|---|
-| `IQuery<TResponse>` | Marker for a read request; `TResponse : IOperationOutcome` |
-| `ICommand<TResponse>` | Marker for a value-returning write request; `TResponse : IOperationOutcome` |
+| `IQuery<TResponse>` | Marker for a read request; `TResponse : IOutcome` |
+| `ICommand<TResponse>` | Marker for a value-returning write request; `TResponse : IOutcome` |
 | `ICommand` | Marker for a unit (no-payload) write request - the outcome type is chosen by the *caller*, via `ISender.Send<TResult>(ICommand, ...)`'s type argument, not fixed by the command |
 
 There are no shipped `IEnumerableQuery<T>`, `IBulkCommand<T>`, or `IPagedQuery<T>` marker interfaces. A query or command that returns a list, a paged result, or does per-item bulk validation is expressed with the three markers above plus a consumer-defined response type - see `documentation/glossary.md`'s `PagedResult<T>` entry.
@@ -80,7 +80,7 @@ There are no shipped `IEnumerableQuery<T>`, `IBulkCommand<T>`, or `IPagedQuery<T
 | `IQueryHandler<TQuery, TResponse>` | Handles `IQuery<TResponse>` |
 | `ICommandHandler<TCommand, TResponse>` | Handles `ICommand<TResponse>` |
 | `IVoidCommandHandler<TCommand, TResult>` | Handles `ICommand`, paired with whichever outcome type the call site requests |
-| `ResourceCommandHandler<TCommand, TEntity, TSuccess>` | Template method: load → authorize → handle; returns `OperationOutcome<TSuccess, NotFound, Failure>` |
+| `ResourceCommandHandler<TCommand, TEntity, TSuccess>` | Template method: load → authorize → handle; returns `Outcome<TSuccess, NotFound, Failure>` |
 | `INotificationHandler<TNotification>` | Handles `INotification` (fire-and-forget, contravariant fan-out - more than one handler is normal) |
 
 ## 9. Pipeline behaviors
@@ -191,4 +191,4 @@ Design decisions and their rationale live in `maintainer_docs/adr/` as immutable
 
 - C# 15 union syntax is preview until .NET 11 GA (~November 2026). Usage is isolated to `Interlocutor.CommonKernel`'s result types.
 - Marker interface opt-in has no compiler enforcement that a request implementing one marker also implements a related one it probably needs (e.g. a write command with no `ITransactionalRequest`/`IExternalStoreRequest` reasoning documented). Not currently covered by `tests/Interlocutor.Architecture.Tests`; a candidate for a future architecture test if this proves a real source of bugs.
-- Struct-based unions box a value-type success/case payload at points where `IOperationOutcome`/`object` typing is required (`IOutcomeCaseRegistry`, runtime-typed dispatch). Acceptable for mediator dispatch; the underlying constraint is also what blocks Native AOT support today - see ADR-0016 for the full evidence.
+- Struct-based unions box a value-type success/case payload at points where `IOutcome`/`object` typing is required (`IOutcomeCaseRegistry`, runtime-typed dispatch). Acceptable for mediator dispatch; the underlying constraint is also what blocks Native AOT support today - see ADR-0016 for the full evidence.

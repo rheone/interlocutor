@@ -23,12 +23,12 @@ public sealed class CrossAssemblyOpenGenericHandlerTests
 
         public interface IEntity;
 
-        public sealed class GenericQuery<T> : IQuery<OperationOutcome<T, string>> where T : IEntity;
+        public sealed class GenericQuery<T> : IQuery<Outcome<T, string>> where T : IEntity;
 
-        public sealed class GenericQueryHandler<T> : IQueryHandler<GenericQuery<T>, OperationOutcome<T, string>>
+        public sealed class GenericQueryHandler<T> : IQueryHandler<GenericQuery<T>, Outcome<T, string>>
             where T : IEntity
         {
-            public Task<OperationOutcome<T, string>> Handle(GenericQuery<T> query, CancellationToken ct) =>
+            public Task<Outcome<T, string>> Handle(GenericQuery<T> query, CancellationToken ct) =>
                 throw new System.NotImplementedException();
         }
         """;

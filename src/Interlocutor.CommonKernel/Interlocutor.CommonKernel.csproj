@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Description>Interlocutor shared kernel: OperationOutcome types and Failure vocabulary - pure data with no framework dependencies.</Description>
-    <!-- Trim-compatible, deliberately NOT IsAotCompatible: OperationOutcome<...> is a value type, so the
+    <Description>Interlocutor shared kernel: Outcome types and Failure vocabulary - pure data with no framework dependencies.</Description>
+    <!-- Trim-compatible, deliberately NOT IsAotCompatible: Outcome<...> is a value type, so the
          container cannot close IPipelineBehavior<TRequest,TResponse> over it without a JIT. Tracked at
          .scratch/aot-support/map.md; see maintainer_docs/research/native-aot-and-trimming-options.md for the evidence. -->
     <IsTrimmable>true</IsTrimmable>
@@ -11,5 +11,19 @@
        being recorded in PublicAPI.Shipped.txt/PublicAPI.Unshipped.txt. -->
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- Analyzer-only reference: OutcomeMemberGenerator must run over this project's own compilation, since
+       Outcome/Outcome<...>'s generated Match/Switch/TryGetValue/ToString/IsSuccess members have to exist in
+       the shipped Interlocutor.CommonKernel.dll itself, not merely in some downstream consumer that happens to
+       reference the generator. ReferenceOutputAssembly="false" means this adds no actual assembly dependency -
+       DependencyTests.cs's zero-dependency check inspects compiled IL, which never references
+       Interlocutor.Generator (IncludeBuildOutput is false there; it never ships an assembly to reference). -->
+  <ItemGroup>
+    <ProjectReference
+      Include="..\Interlocutor.Generator\Interlocutor.Generator.csproj"
+      OutputItemType="Analyzer"
+      ReferenceOutputAssembly="false"
+    />
   </ItemGroup>
 </Project>

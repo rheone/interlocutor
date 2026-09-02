@@ -39,7 +39,7 @@ public interface IGeneratedRequestDispatcher
     /// <param name="services">The service provider to resolve the handler and behaviors from.</param>
     /// <param name="ct">A token that may be used to cancel the operation.</param>
     /// <returns>
-    /// A <see cref="Task{TResult}"/> whose result is the handler's response as an <see cref="IOperationOutcome"/>.
+    /// A <see cref="Task{TResult}"/> whose result is the handler's response as an <see cref="IOutcome"/>.
     /// </returns>
     /// <exception cref="HandlerNotRegisteredException">
     /// <paramref name="request"/>'s runtime type is a request shape the generator saw in the compilation, but
@@ -49,5 +49,5 @@ public interface IGeneratedRequestDispatcher
     /// <paramref name="request"/>'s runtime type does not match any case in the generated switch - either it
     /// is not a request at all, or it is a request type the generator never saw.
     /// </exception>
-    Task<IOperationOutcome> Dispatch(object request, IServiceProvider services, CancellationToken ct);
+    Task<IOutcome> Dispatch(object request, IServiceProvider services, CancellationToken ct);
 }

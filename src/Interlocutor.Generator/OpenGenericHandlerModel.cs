@@ -1,6 +1,7 @@
 namespace Interlocutor.Generator;
 
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 
@@ -43,6 +44,7 @@ using Microsoft.CodeAnalysis;
 /// </param>
 /// <param name="OverrideTargetDisplayNames">The display name of each entry in <see cref="OverrideTargetKeys"/>, for diagnostics.</param>
 /// <param name="Location">The handler type declaration's identifier location, used to anchor diagnostics.</param>
+[DebuggerDisplay("{Kind} {HandlerDisplayName}")]
 internal sealed record OpenGenericHandlerModel(
     HandlerKind Kind,
     string HandlerDefinitionKey,

@@ -18,11 +18,11 @@ public sealed class HandlerDiscoveryEmissionTests
 
         public interface ISomeDependency;
 
-        public sealed class GetFooQuery : IQuery<OperationOutcome>;
+        public sealed class GetFooQuery : IQuery<Outcome>;
 
-        public sealed class GetFooQueryHandler(ISomeDependency dependency) : IQueryHandler<GetFooQuery, OperationOutcome>
+        public sealed class GetFooQueryHandler(ISomeDependency dependency) : IQueryHandler<GetFooQuery, Outcome>
         {
-            public Task<OperationOutcome> Handle(GetFooQuery query, CancellationToken ct) => throw new System.NotImplementedException();
+            public Task<Outcome> Handle(GetFooQuery query, CancellationToken ct) => throw new System.NotImplementedException();
         }
         """;
 
@@ -61,7 +61,7 @@ public sealed class HandlerDiscoveryEmissionTests
             StringComparison.Ordinal
         );
         Assert.Contains(
-            "registrations.Add(new global::Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration(typeof(global::Interlocutor.Abstractions.Queries.IQueryHandler<global::TestApp.GetFooQuery, global::Interlocutor.CommonKernel.OperationOutcome>), typeof(global::TestApp.GetFooQueryHandler), global::Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Scoped, global::Interlocutor.DependencyInjection.Abstractions.RegistrationKind.Handler));",
+            "registrations.Add(new global::Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration(typeof(global::Interlocutor.Abstractions.Queries.IQueryHandler<global::TestApp.GetFooQuery, global::Interlocutor.CommonKernel.Outcome>), typeof(global::TestApp.GetFooQueryHandler), global::Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Scoped, global::Interlocutor.DependencyInjection.Abstractions.RegistrationKind.Handler));",
             registrationsSource,
             StringComparison.Ordinal
         );
@@ -72,7 +72,7 @@ public sealed class HandlerDiscoveryEmissionTests
             StringComparison.Ordinal
         );
         Assert.Contains(
-            "[assembly: global::Interlocutor.DependencyInjection.Abstractions.InterlocutorGeneratedHandlerAttribute(typeof(global::TestApp.GetFooQuery), typeof(global::Interlocutor.CommonKernel.OperationOutcome), global::Interlocutor.DependencyInjection.Abstractions.GeneratedHandlerKind.Query)]",
+            "[assembly: global::Interlocutor.DependencyInjection.Abstractions.InterlocutorGeneratedHandlerAttribute(typeof(global::TestApp.GetFooQuery), typeof(global::Interlocutor.CommonKernel.Outcome), global::Interlocutor.DependencyInjection.Abstractions.GeneratedHandlerKind.Query)]",
             attributeSource,
             StringComparison.Ordinal
         );
@@ -100,12 +100,12 @@ public sealed class HandlerDiscoveryEmissionTests
         Assert.DoesNotContain("Activator.CreateInstance", dispatchSource, StringComparison.Ordinal);
         Assert.DoesNotContain("MakeGenericType", dispatchSource, StringComparison.Ordinal);
         Assert.Contains(
-            "services.GetService(typeof(global::Interlocutor.Abstractions.Queries.IQueryHandler<global::TestApp.GetFooQuery, global::Interlocutor.CommonKernel.OperationOutcome>))",
+            "services.GetService(typeof(global::Interlocutor.Abstractions.Queries.IQueryHandler<global::TestApp.GetFooQuery, global::Interlocutor.CommonKernel.Outcome>))",
             dispatchSource,
             StringComparison.Ordinal
         );
         Assert.Contains(
-            "global::Interlocutor.Abstractions.Pipeline.PipelineChainResolver.ResolveChain<global::TestApp.GetFooQuery, global::Interlocutor.CommonKernel.OperationOutcome>(services)",
+            "global::Interlocutor.Abstractions.Pipeline.PipelineChainResolver.ResolveChain<global::TestApp.GetFooQuery, global::Interlocutor.CommonKernel.Outcome>(services)",
             dispatchSource,
             StringComparison.Ordinal
         );

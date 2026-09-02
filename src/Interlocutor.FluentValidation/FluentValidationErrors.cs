@@ -1,6 +1,7 @@
 namespace Interlocutor.FluentValidation;
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using global::FluentValidation.Results;
 using Interlocutor.CommonKernel.ResultTypes;
 
@@ -20,7 +21,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// <para>
 /// Produced by <see cref="FluentValidationErrorsBehavior{TRequest, TResponse}"/> when one or more registered
 /// validators report failures. Example outcome type:
-/// <c>OperationOutcome&lt;UserDto, FluentValidationErrors&gt;</c>. Unlike
+/// <c>Outcome&lt;UserDto, FluentValidationErrors&gt;</c>. Unlike
 /// <see cref="CommonKernel.ResultTypes.ValidationErrors"/>, <see cref="Failures"/> is not de-duplicated -
 /// every <see cref="ValidationFailure"/> reported by every validator is preserved verbatim, in the order
 /// each validator produced it.
@@ -28,6 +29,11 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </remarks>
 public readonly record struct FluentValidationErrors : IFieldValidationFailureCase
 {
+    // Not DistinctItemSet<TItem>-typed like the other five aggregate types' backing fields (this type
+    // preserves every failure verbatim rather than deduplicating), but hidden the same way for the same
+    // reason: expanding this type in the debugger should show only its public Failures/Messages/FieldMessages
+    // surface, not the private backing field a second time.
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private readonly IReadOnlyList<ValidationFailure>? _failures;
 
     /// <summary>

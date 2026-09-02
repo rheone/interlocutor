@@ -152,15 +152,15 @@ public class ServiceCollectionExtensionsTests
         }
     }
 
-    public sealed class ClosedGenericBehavior : IPipelineBehavior<RegressionQuery, OperationOutcome<string, Failure>>
+    public sealed class ClosedGenericBehavior : IPipelineBehavior<RegressionQuery, Outcome<string, Failure>>
     {
         private readonly List<string> _executionOrder;
 
         public ClosedGenericBehavior(List<string> executionOrder) => this._executionOrder = executionOrder;
 
-        public async Task<OperationOutcome<string, Failure>> Handle(
+        public async Task<Outcome<string, Failure>> Handle(
             RegressionQuery request,
-            Func<Task<OperationOutcome<string, Failure>>> next,
+            Func<Task<Outcome<string, Failure>>> next,
             CancellationToken ct
         )
         {
@@ -171,15 +171,15 @@ public class ServiceCollectionExtensionsTests
         }
     }
 
-    public sealed record RegressionQuery : IQuery<OperationOutcome<string, Failure>>;
+    public sealed record RegressionQuery : IQuery<Outcome<string, Failure>>;
 
     public sealed class RegressionQueryHandler(List<string> executionOrder)
-        : IQueryHandler<RegressionQuery, OperationOutcome<string, Failure>>
+        : IQueryHandler<RegressionQuery, Outcome<string, Failure>>
     {
-        public Task<OperationOutcome<string, Failure>> Handle(RegressionQuery query, CancellationToken ct)
+        public Task<Outcome<string, Failure>> Handle(RegressionQuery query, CancellationToken ct)
         {
             executionOrder.Add("handle");
-            return Task.FromResult<OperationOutcome<string, Failure>>("regression-handled");
+            return Task.FromResult<Outcome<string, Failure>>("regression-handled");
         }
     }
 }

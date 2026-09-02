@@ -8,10 +8,10 @@ using TodoTasks.Api.Domain;
 
 /// <summary>Handles <see cref="ListTodoTasksPagedQuery"/> via <see cref="IDomainRepository{TEntity,TKey}.GetPagedAsync"/>.</summary>
 public sealed class ListTodoTasksPagedHandler(IDomainRepository<TodoTask, int> tasks)
-    : IQueryHandler<ListTodoTasksPagedQuery, OperationOutcome<PagedTodoTasksDto, Failure>>
+    : IQueryHandler<ListTodoTasksPagedQuery, Outcome<PagedTodoTasksDto, Failure>>
 {
     /// <inheritdoc/>
-    public async Task<OperationOutcome<PagedTodoTasksDto, Failure>> Handle(ListTodoTasksPagedQuery query, CancellationToken ct)
+    public async Task<Outcome<PagedTodoTasksDto, Failure>> Handle(ListTodoTasksPagedQuery query, CancellationToken ct)
     {
         var page = await tasks
             .GetPagedAsync(

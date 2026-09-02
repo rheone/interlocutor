@@ -41,7 +41,7 @@ public sealed class UsersController(ISender sender) : ControllerBase
     /// <remarks>
     /// Uses <see cref="ResultExtensions.ToActionResult{TSuccess,TFailure}"/>, the convenience path -
     /// deliberate contrast with <c>TodoTasksController.GetById</c>, which handles the identically-shaped
-    /// <c>OperationOutcome&lt;TodoTaskDto, NotFound&gt;</c> union via a manual pattern-match instead. Read
+    /// <c>Outcome&lt;TodoTaskDto, NotFound&gt;</c> union via a manual pattern-match instead. Read
     /// the two together to see both styles applied to the same union shape: this one delegates the
     /// success/<see cref="NotFound"/> mapping once, to code shared by every other action in both
     /// controllers; the other spells the same two cases out by hand.
@@ -65,7 +65,7 @@ public sealed class UsersController(ISender sender) : ControllerBase
     /// <param name="ct">A token to observe while dispatching.</param>
     /// <returns>
     /// 200 with an empty <see cref="Success"/> body on success (<see cref="DeleteUserCommand"/> returns
-    /// <c>OperationOutcome&lt;Success, NotFound&gt;</c>, whose success case <c>ToActionResult()</c> maps
+    /// <c>Outcome&lt;Success, NotFound&gt;</c>, whose success case <c>ToActionResult()</c> maps
     /// the same way as any other generic union success case), or 404 if the user doesn't exist. Every
     /// <see cref="TodoTask"/> the user owns is deleted along with them, in one unit of work - see
     /// <c>DeleteUserHandler</c>'s own remarks for the multi-repository cascade.

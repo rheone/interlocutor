@@ -18,8 +18,8 @@ A suggested reading order - each section builds on the ones above it. Jump strai
 
 The fundamentals of writing a request and getting a response back.
 
-- [Messages, Result Types & Variance](messages-and-result-types.md) - `IQuery<T>`, `ICommand<T>`, `ICommand`; the `IOperationOutcome` constraint; outcome unions and arities; pattern matching; choosing specific arities; marker interfaces; [!CAUTION] why response-type variance is impossible.
-- [Composing OperationOutcome Arities](composing-operationoutcome-arities.md) - worked examples across three arities (a command, a query, and DI composition root for each) showing how to pick the right shape for a given operation.
+- [Messages, Result Types & Variance](messages-and-result-types.md) - `IQuery<T>`, `ICommand<T>`, `ICommand`; the `IOutcome` constraint; outcome unions and arities; pattern matching; choosing specific arities; marker interfaces; [!CAUTION] why response-type variance is impossible.
+- [Composing Outcome Arities](composing-outcome-arities.md) - worked examples across three arities (a command, a query, and DI composition root for each) showing how to pick the right shape for a given operation.
 - [Handler Selection & Dispatch](handler-selection-and-dispatch.md) - compile-time discovery, closed beats open, duplicate/ambiguous-handler diagnostics, resource-based authorization, multiple handlers for notifications, runtime-typed dispatch.
 - [Pipeline & Behavior Composition](pipeline-and-behaviors.md) - the no-default-pipeline model, the flat ordered behavior list, the recommended chain with its rationale, validation/authorization/auditing behaviors, pipeline stages & short-circuiting.
 
@@ -36,7 +36,7 @@ Registering the library and understanding how a dispatch's scope and context flo
 ### Cross-cutting features
 
 - [Notifications & Fan-out](notifications-and-fan-out.md) - `INotification` and multiple handlers (contravariant fan-out), execution order, Sequential vs. Parallel publish strategies, failure semantics, the notification+command pattern.
-- [Runtime-Typed Dispatch](runtime-typed-dispatch.md) - dispatching when the request type is only known at runtime, outbox/inbox/queue patterns, the `IOperationOutcome` base interface, error handling.
+- [Runtime-Typed Dispatch](runtime-typed-dispatch.md) - dispatching when the request type is only known at runtime, outbox/inbox/queue patterns, the `IOutcome` base interface, error handling.
 
 ### Framework & store integration
 
@@ -48,7 +48,7 @@ Registering the library and understanding how a dispatch's scope and context flo
 
 ### Extending the library
 
-- [Extensibility](extensibility.md) - a map of every point where a consumer plugs their own type in: marker interfaces, custom `IPipelineBehavior`/`IPipelineStage`, custom `IOperationOutcome` implementations, predicate-based registration, extending ambiguity checking to your own contracts, and per-request-type pipeline overrides.
+- [Extensibility](extensibility.md) - a map of every point where a consumer plugs their own type in: marker interfaces, custom `IPipelineBehavior`/`IPipelineStage`, custom `IOutcome` implementations, custom-arity outcome unions via `GenerateOutcomeMembersAttribute`, predicate-based registration, extending ambiguity checking to your own contracts, and per-request-type pipeline overrides.
 
 ### Testing
 

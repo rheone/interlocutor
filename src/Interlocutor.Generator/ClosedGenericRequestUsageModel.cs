@@ -1,6 +1,7 @@
 namespace Interlocutor.Generator;
 
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 
@@ -39,6 +40,7 @@ using Microsoft.CodeAnalysis;
 /// <c>IQuery&lt;TResponse&gt;</c>), matching <see cref="HandlerModel.ResponseTypeName"/>'s format so the two
 /// can be compared directly. <see langword="null"/> whenever <see cref="RequestKind"/> is <see langword="null"/>.
 /// </param>
+[DebuggerDisplay("{ClosedRequestDisplayName}")]
 internal sealed record ClosedGenericRequestUsageModel(
     string RequestDefinitionKey,
     string ClosedRequestDisplayName,

@@ -8,7 +8,7 @@ using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 using Interlocutor.FluentValidation;
 using NSubstitute;
-using GuardedResponse = Interlocutor.CommonKernel.OperationOutcome<
+using GuardedResponse = Interlocutor.CommonKernel.Outcome<
     string,
     Interlocutor.CommonKernel.ResultTypes.ValidationErrors,
     Interlocutor.CommonKernel.ResultTypes.Forbidden

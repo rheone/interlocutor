@@ -1,6 +1,7 @@
 namespace Interlocutor.Generator;
 
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 
 /// <summary>
@@ -14,6 +15,17 @@ using System.Linq;
 /// <see cref="IdentifierSanitizer.ToNamespaceSegment(string)"/>.
 /// </param>
 /// <param name="ExternalModules">Every referenced assembly's generated registration module, if any.</param>
+/// <param name="HasAbstractionsReference">
+/// Whether this compilation references <c>Interlocutor.Abstractions</c> at all (resolved via
+/// <see cref="WellKnownTypeNames.Query"/>, never by matching the assembly name as text). <see cref="InterlocutorSourceGenerator.Execute"/>
+/// skips every diagnostic and every <c>AddSource</c> call when this is <see langword="false"/> - its emitted
+/// boilerplate (the registration module, dispatch wrappers, the generated-module attribute) unconditionally
+/// names <c>Interlocutor.Abstractions</c>/<c>Interlocutor.DependencyInjection.Abstractions</c> types, which
+/// don't exist in a compilation that never references either package - <c>Interlocutor.CommonKernel</c>'s own
+/// build being the one that matters in practice, since it references <c>Interlocutor.Generator</c> as an
+/// analyzer-only dependency purely so <see cref="OutcomeMemberGenerator"/> runs over it (ticket 05), without
+/// pulling in a real dependency on either Abstractions package.
+/// </param>
 /// <remarks>
 /// Structural equality on <see cref="ExternalModules"/> is what lets this pipeline step itself be cached when a
 /// rebuild's reference graph is unchanged (a re-run whose <see cref="CompilationInfo"/> compares equal to the
@@ -24,12 +36,18 @@ using System.Linq;
 /// <see cref="ExternalModules"/> element-wise instead. See <see cref="InterlocutorSourceGenerator.Initialize"/>'s
 /// remarks for why this step being cached does not, on its own, make the whole generator skip re-emission.
 /// </remarks>
-internal sealed record CompilationInfo(string AssemblyNamespaceSegment, ImmutableArray<ExternalModuleInfo> ExternalModules)
+[DebuggerDisplay("{AssemblyNamespaceSegment} ({ExternalModules.Length} external modules)")]
+internal sealed record CompilationInfo(
+    string AssemblyNamespaceSegment,
+    ImmutableArray<ExternalModuleInfo> ExternalModules,
+    bool HasAbstractionsReference
+)
 {
     /// <inheritdoc/>
     public bool Equals(CompilationInfo? other) =>
         other is not null
         && this.AssemblyNamespaceSegment == other.AssemblyNamespaceSegment
+        && this.HasAbstractionsReference == other.HasAbstractionsReference
         && this.ExternalModules.SequenceEqual(other.ExternalModules);
 
     /// <inheritdoc/>
@@ -39,6 +57,7 @@ internal sealed record CompilationInfo(string AssemblyNamespaceSegment, Immutabl
         // rather than pull in a polyfill package for one method.
         var hash = 17;
         hash = (hash * 31) + this.AssemblyNamespaceSegment.GetHashCode();
+        hash = (hash * 31) + this.HasAbstractionsReference.GetHashCode();
         foreach (var module in this.ExternalModules)
         {
             hash = (hash * 31) + module.GetHashCode();

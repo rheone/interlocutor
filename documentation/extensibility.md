@@ -17,7 +17,7 @@ public interface IIdempotent
 public sealed class IdempotencyBehavior<TRequest, TResponse>(IIdempotencyStore store)
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IIdempotent
-    where TResponse : IOperationOutcome
+    where TResponse : IOutcome
 {
     public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
@@ -33,7 +33,7 @@ public sealed class IdempotencyBehavior<TRequest, TResponse>(IIdempotencyStore s
 }
 
 // 3. A request opts in simply by implementing the marker
-public record ChargeCard(string IdempotencyKey, decimal Amount) : ICommand<OperationOutcome<Receipt, Failure>>, IIdempotent;
+public record ChargeCard(string IdempotencyKey, decimal Amount) : ICommand<Outcome<Receipt, Failure>>, IIdempotent;
 ```
 
 Register it as an open generic, exactly like a built-in behavior - the container only constructs `IdempotencyBehavior<,>` for a request type that satisfies the `where TRequest : IIdempotent` constraint:
@@ -48,12 +48,12 @@ See [Pipeline & Behavior Composition](pipeline-and-behaviors.md) for the full be
 
 When a behavior only needs a before/after hook - no need to own the `next()` delegate - `IPipelineStage<TRequest, TResponse>` (via `PipelineStageBase<TRequest, TResponse>`) is the lighter alternative, registered via `builder.Pipeline.AddStage(...)`/`.AddStageHost()`. See [Pipeline & Behavior Composition § Pipeline Stages](pipeline-and-behaviors.md#pipeline-stages-ipipelinestage) for the full contract, including short-circuiting.
 
-## Custom `IOperationOutcome` implementations
+## Custom `IOutcome` implementations
 
-`IOperationOutcome` is a bare marker - any type can implement it, not only the library's own compiler-generated `OperationOutcome<...>` unions. A hand-rolled response type is legal anywhere a handler response is expected:
+`IOutcome` is a bare marker - any type can implement it, not only the library's own compiler-generated `Outcome<...>` unions. A hand-rolled response type is legal anywhere a handler response is expected:
 
 ```csharp
-public sealed class PaymentOutcome : IOperationOutcome
+public sealed class PaymentOutcome : IOutcome
 {
     private PaymentOutcome(Type caseType, object? caseValue) => (this.CaseType, this.CaseValue) = (caseType, caseValue);
 
@@ -82,20 +82,88 @@ public sealed class PaymentOutcomeCaseRegistry : IOutcomeCaseRegistry
         })
         .Build();
 
-    public TResponse Construct<TResponse, TCase>(TCase caseValue) where TResponse : IOperationOutcome =>
+    public TResponse Construct<TResponse, TCase>(TCase caseValue) where TResponse : IOutcome =>
         Inner.Construct<TResponse, TCase>(caseValue);
 
     public bool TryGetActiveCase<TResponse>(TResponse response, out Type caseType, out object? caseValue)
-        where TResponse : IOperationOutcome =>
+        where TResponse : IOutcome =>
         Inner.TryGetActiveCase(response, out caseType, out caseValue);
 }
 
 builder.Pipeline.OverrideOutcomeCaseRegistry<PaymentOutcomeCaseRegistry>();
 ```
 
-Anything left unregistered still falls back to `DefaultOutcomeCaseRegistry`, so you only register the response types that aren't compiler-generated unions. See [Messages, Result Types & Variance § IOperationOutcome as an Extension Point](messages-and-result-types.md#ioperationoutcome-as-an-extension-point) for the full walkthrough.
+Anything left unregistered still falls back to `DefaultOutcomeCaseRegistry`, so you only register the response types that aren't compiler-generated unions. See [Messages, Result Types & Variance § IOutcome as an Extension Point](messages-and-result-types.md#ioutcome-as-an-extension-point) for the full walkthrough.
 
 A related but separate extension point: `LoggingBehavior`, `AuditingBehavior`, and both store-specific `UnitOfWorkBehavior` implementations need to describe a response for a log/audit line and classify it as success or failure, which is a different question from constructing/extracting a case. That's `IResponseOutcomeDescriber`, built on `OutcomeClassifierBuilder` - see [Pipeline & Behavior Composition § Outcome Description & Classification](pipeline-and-behaviors.md#outcome-description--classification) for the worked example. And at the HTTP boundary, `IOutcomeStatusMapper` maps a failure case to a status code and body - see [ASP.NET Core Integration § Custom HTTP Mapping](aspnetcore-integration.md#custom-http-mapping).
+
+### Duplicate case type detection (`INTERLOC009`)
+
+C# has no generic constraint expressing "these type arguments must all be distinct," so nothing stops a caller from closing an outcome union with the same type in two case positions - e.g. `Outcome<Success, Failure, Failure>` - which silently collapses two supposedly-independent failure cases into one. A build-time analyzer flags this for any closed generic type implementing `IOutcome`, whether it's this library's own `Outcome<...>` family or a consumer's own generic union closed the same way - the check is driven by `IOutcome` membership, never by the type's name. Default severity is a warning, escalated to an error the same way as every other Interlocutor diagnostic:
+
+```
+dotnet_diagnostic.INTERLOC009.severity = error
+```
+
+### Custom-arity outcome unions: `GenerateOutcomeMembersAttribute`
+
+Every shipped `Outcome`/`Outcome<...>` arity gets its `Match`/`Switch`/`TryGetValue`/`ToString`/`IsSuccess`/equality (`Equals`, `GetHashCode`, `IEquatable<TSelf>`, `==`/`!=`) member set from `GenerateOutcomeMembersAttribute` (`Interlocutor.CommonKernel`, zero dependency) - not from anything the shipped family gets that a consumer's own union can't. Decorate your own `partial union` with the same attribute and it gets the identical generated surface, including for an arity the shipped family doesn't cover (2-6 only) or a non-default case ordering.
+
+This is an escape hatch for a genuine outlier, not a routine choice - see [Messages, Result Types & Variance § Choosing Arities](messages-and-result-types.md#choosing-arities): an operation needing more cases than the shipped family's six is usually a sign it's trying to do too much, not that the type needs to grow. A payment gateway integration is a plausible exception - one success case plus several genuinely independent decline/error reasons a caller needs to branch on individually:
+
+```csharp
+[GenerateOutcomeMembers]
+public readonly partial union PaymentOutcome(
+    Receipt,
+    InsufficientFunds,
+    CardExpired,
+    CardDeclined,
+    FraudSuspected,
+    GatewayTimeout,
+    NetworkError
+) : IOutcome;
+
+public readonly record struct Receipt(string TransactionId);
+public readonly record struct InsufficientFunds(decimal ShortfallAmount);
+public readonly record struct CardExpired;
+public readonly record struct CardDeclined(string ReasonCode);
+public readonly record struct FraudSuspected;
+public readonly record struct GatewayTimeout;
+public readonly record struct NetworkError(string Detail);
+```
+
+That single attribute is everything needed beyond referencing `Interlocutor.CommonKernel`, which every consumer already does. The full generated member set follows, exactly as for any shipped arity:
+
+```csharp
+PaymentOutcome outcome = new CardDeclined("do_not_honor");
+
+// IsSuccess
+Assert.False(outcome.IsSuccess);
+
+// Match - one delegate per case, compiler-enforced exhaustive
+var message = outcome.Match(
+    receipt => $"charged, receipt {receipt.TransactionId}",
+    shortfall => $"insufficient funds, short {shortfall.ShortfallAmount}",
+    _ => "card expired",
+    declined => $"declined: {declined.ReasonCode}",
+    _ => "fraud suspected",
+    _ => "gateway timeout",
+    error => $"network error: {error.Detail}"
+);
+
+// TryGetValue - reads one specific case without boxing a value-type case
+if (outcome.TryGetValue(out CardDeclined declined))
+{
+    Log(declined.ReasonCode);
+}
+
+// Equality - delegates to the active case value's own equality, same as any shipped arity
+PaymentOutcome sameDecline = new CardDeclined("do_not_honor");
+Assert.Equal(outcome, sameDecline);
+Assert.True(outcome == sameDecline);
+```
+
+The duplicate case type analyzer above covers a custom-arity union identically to a shipped one. See `Interlocutor.CommonKernel.Tests.CustomArityOutcomeTests` (and its `PaymentOutcome` fixture) for this example compiled and exercised end to end.
 
 ## Mapping failure cases to any output shape: `IOutcomeMapper<TResult>`
 
@@ -128,7 +196,7 @@ public sealed class GrpcOutcomeMapper : OutcomeMapperBase<Status>
 }
 ```
 
-Like `IOutcomeStatusMapper`, there's no DI registration to configure - construct an instance and call `Map` directly, the same way `ResultExtensions.ToActionResult` does internally, by pattern-matching `OperationOutcome<TSuccess, TFailure>.Value`:
+Like `IOutcomeStatusMapper`, there's no DI registration to configure - construct an instance and call `Map` directly, the same way `ResultExtensions.ToActionResult` does internally, by pattern-matching `Outcome<TSuccess, TFailure>.Value`:
 
 ```csharp
 private static readonly GrpcOutcomeMapper Mapper = new();
@@ -153,7 +221,7 @@ opts into `FluentValidationErrors` instead, by declaring it as a case and regist
 
 ```csharp
 public record CreateUser(string Name, string Email)
-    : ICommand<OperationOutcome<int, FluentValidationErrors>>;
+    : ICommand<Outcome<int, FluentValidationErrors>>;
 
 builder.Pipeline.AddBehavior(typeof(FluentValidationErrorsBehavior<,>));
 ```
@@ -163,7 +231,7 @@ projected away - while still implementing [`IValidationFailureCase`](glossary.md
 minimal interface `ValidationErrors` implements. A consumer that recognizes `IValidationFailureCase` - such as
 `DefaultHttpOutcomeStatusMapper` (see [ASP.NET Core Integration § Status Code Mapping](aspnetcore-integration.md#status-code-mapping))
 - handles either case type the same way, without needing to know which validation technology produced it.
-This is the same extension-point shape as a custom `IOperationOutcome` implementation above: a minimal marker
+This is the same extension-point shape as a custom `IOutcome` implementation above: a minimal marker
 interface a technology-specific case type implements, rather than a base type every case would need to
 inherit from - record structs can't be inherited from at all, which is exactly why this couldn't be modeled
 as `FluentValidationErrors : ValidationErrors`.

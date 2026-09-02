@@ -8,6 +8,7 @@
          via AddUnitOfWorkBehavior's EF-preferred `??` fallback. -->
     <ProjectReference Include="..\..\src\Interlocutor.FluentValidation\Interlocutor.FluentValidation.csproj" />
     <ProjectReference Include="..\..\src\Interlocutor.Persistence.NHibernate\Interlocutor.Persistence.NHibernate.csproj" />
+    <ProjectReference Include="..\Interlocutor.TestSupport\Interlocutor.TestSupport.csproj" />
   </ItemGroup>
 
   <ItemGroup>

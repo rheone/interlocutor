@@ -48,7 +48,7 @@ public interface IUnitOfWork
     /// <remarks>
     /// <para>
     /// This is a rare-case escape hatch for a handler that wants to force a rollback without being obligated
-    /// to also return a classified failure-shaped <c>OperationOutcome</c>. <see cref="Cancel"/> is not a
+    /// to also return a classified failure-shaped <c>Outcome</c>. <see cref="Cancel"/> is not a
     /// short-circuit primitive and does not throw or otherwise interrupt control flow - it rolls back and
     /// returns, and the handler decides what outcome to return afterward. The pipeline's automatic commit
     /// gate simply finds nothing pending to commit at completion, the same as if the dispatch had never

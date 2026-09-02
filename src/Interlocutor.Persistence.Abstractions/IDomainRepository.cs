@@ -16,8 +16,8 @@ using System.Linq.Expressions;
 /// existing constructor-injection idiom.
 /// </para>
 /// <para>
-/// <see cref="GetById"/> returns a nullable result rather than an <c>OperationOutcome</c> case - per
-/// <c>CLAUDE.md</c>'s result-type convention, only the handler decides which <c>OperationOutcome&lt;...&gt;</c>
+/// <see cref="GetById"/> returns a nullable result rather than an <c>Outcome</c> case - per
+/// <c>CLAUDE.md</c>'s result-type convention, only the handler decides which <c>Outcome&lt;...&gt;</c>
 /// case a "not found" maps to. This package does not take a dependency on outcome-case semantics beyond
 /// what <c>Interlocutor.Abstractions</c> already brings in.
 /// </para>

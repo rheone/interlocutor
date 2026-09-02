@@ -19,7 +19,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </remarks>
 internal sealed class QueryHandlerWrapper<TQuery, TResponse> : IHandlerWrapper<TResponse>
     where TQuery : IQuery<TResponse>
-    where TResponse : IOperationOutcome
+    where TResponse : IOutcome
 {
     /// <summary>
     /// Executes the query with its handler and pipeline behaviors.

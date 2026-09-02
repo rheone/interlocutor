@@ -8,13 +8,10 @@ using TodoTasks.Api.Domain;
 
 /// <summary>Handles <see cref="CreateUserCommand"/>.</summary>
 public sealed class CreateUserHandler(IDomainRepository<User, int> users, IUnitOfWork unitOfWork)
-    : ICommandHandler<CreateUserCommand, OperationOutcome<UserDto, ValidationErrors, Conflict>>
+    : ICommandHandler<CreateUserCommand, Outcome<UserDto, ValidationErrors, Conflict>>
 {
     /// <inheritdoc/>
-    public async Task<OperationOutcome<UserDto, ValidationErrors, Conflict>> Handle(
-        CreateUserCommand command,
-        CancellationToken ct
-    )
+    public async Task<Outcome<UserDto, ValidationErrors, Conflict>> Handle(CreateUserCommand command, CancellationToken ct)
     {
         // Shares CreateUserCommand's ITransactionalRequest-eager transaction with the insert below - see
         // that command's own remarks for why this specific ordering needs one.

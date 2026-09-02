@@ -7,7 +7,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// dispatch to end immediately with a developer-chosen <typeparamref name="TResponse"/>, from anywhere inside
 /// a handler's or pipeline behavior's own call graph.
 /// </summary>
-/// <typeparam name="TResponse">The <see cref="IOperationOutcome"/> type the ejecting dispatch returns.</typeparam>
+/// <typeparam name="TResponse">The <see cref="IOutcome"/> type the ejecting dispatch returns.</typeparam>
 /// <remarks>
 /// <para>
 /// <b>Not related to <see cref="CancellationBehavior{TRequest, TResponse}"/>/<see cref="Cancelled"/>.</b> This
@@ -18,7 +18,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </para>
 /// <para>
 /// <b>This is an internal signal, never an expected-outcome exception.</b> Per this library's own convention
-/// (handlers return <see cref="IOperationOutcome"/> unions for expected failures; exceptions are reserved for
+/// (handlers return <see cref="IOutcome"/> unions for expected failures; exceptions are reserved for
 /// bugs or infrastructure faults), this type must never be observed by a caller of
 /// <c>Interlocutor.Abstractions.Core.IMediator</c>. Every place that composes a pipeline behavior chain around
 /// a handler call (<c>CommandHandlerWrapper</c>, <c>VoidCommandHandlerWrapper</c>, <c>QueryHandlerWrapper</c>,
@@ -39,7 +39,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 // HandlerNotRegisteredException's identical rationale.
 #pragma warning disable RCS1194
 public sealed class PipelineEjectException<TResponse> : Exception
-    where TResponse : IOperationOutcome
+    where TResponse : IOutcome
 {
     /// <summary>Initializes a new instance of the <see cref="PipelineEjectException{TResponse}"/> class.</summary>
     /// <param name="response">The outcome the ejecting dispatch should return.</param>

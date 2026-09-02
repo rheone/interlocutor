@@ -201,35 +201,32 @@ public class RegistrationValidatorTests
         Assert.Contains(problems, p => p.Kind == RegistrationProblemKind.ConflictingLifetime);
     }
 
-    private sealed record SampleQuery : IQuery<OperationOutcome>;
+    private sealed record SampleQuery : IQuery<Outcome>;
 
-    private sealed record UnhandledQuery : IQuery<OperationOutcome>;
+    private sealed record UnhandledQuery : IQuery<Outcome>;
 
     // Uniquely named (unlike SampleQuery/SampleQueryHandler, which several sibling test classes in this
     // shared assembly also declare with the same simple name) so ValidateOnBuild_WithAHandlerRegistered_...'s
     // description-text assertion can't accidentally match another class's unrelated request type.
-    private sealed record HandledByValidateOnBuildTestQuery : IQuery<OperationOutcome>;
+    private sealed record HandledByValidateOnBuildTestQuery : IQuery<Outcome>;
 
-    private sealed class HandledByValidateOnBuildTestQueryHandler
-        : IQueryHandler<HandledByValidateOnBuildTestQuery, OperationOutcome>
+    private sealed class HandledByValidateOnBuildTestQueryHandler : IQueryHandler<HandledByValidateOnBuildTestQuery, Outcome>
     {
-        public Task<OperationOutcome> Handle(HandledByValidateOnBuildTestQuery query, CancellationToken ct) =>
-            Task.FromResult(default(OperationOutcome));
+        public Task<Outcome> Handle(HandledByValidateOnBuildTestQuery query, CancellationToken ct) =>
+            Task.FromResult(default(Outcome));
     }
 
-    private sealed class SampleQueryHandler : IQueryHandler<SampleQuery, OperationOutcome>
+    private sealed class SampleQueryHandler : IQueryHandler<SampleQuery, Outcome>
     {
-        public Task<OperationOutcome> Handle(SampleQuery query, CancellationToken ct) =>
-            Task.FromResult(default(OperationOutcome));
+        public Task<Outcome> Handle(SampleQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 
-    private sealed record OverriddenQuery : IQuery<OperationOutcome>;
+    private sealed record OverriddenQuery : IQuery<Outcome>;
 
 #pragma warning disable S1144 // Resolved only via AddInterlocutor()'s assembly scanning, invisible to static analysis.
-    private sealed class OverriddenQueryHandler : IQueryHandler<OverriddenQuery, OperationOutcome>
+    private sealed class OverriddenQueryHandler : IQueryHandler<OverriddenQuery, Outcome>
     {
-        public Task<OperationOutcome> Handle(OverriddenQuery query, CancellationToken ct) =>
-            Task.FromResult(default(OperationOutcome));
+        public Task<Outcome> Handle(OverriddenQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 #pragma warning restore S1144
 

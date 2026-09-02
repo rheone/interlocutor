@@ -17,6 +17,8 @@
     <Project Path="tests/TodoTasks.Api.Tests/TodoTasks.Api.Tests.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Interlocutor.TestSupport/Interlocutor.TestSupport.csproj" />
+    <Project Path="tests/Interlocutor.TestSupport.Tests/Interlocutor.TestSupport.Tests.csproj" />
     <Project Path="tests/Interlocutor.CommonKernel.Tests/Interlocutor.CommonKernel.Tests.csproj" />
     <Project Path="tests/Interlocutor.Abstractions.Tests/Interlocutor.Abstractions.Tests.csproj" />
     <Project Path="tests/Interlocutor.DependencyInjection.Abstractions.Tests/Interlocutor.DependencyInjection.Abstractions.Tests.csproj" />

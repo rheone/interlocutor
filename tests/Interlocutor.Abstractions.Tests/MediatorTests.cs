@@ -11,28 +11,28 @@ using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 using Microsoft.Extensions.DependencyInjection;
 
-public record TestQuery(int Value) : IQuery<OperationOutcome<int, Failure>>;
+public record TestQuery(int Value) : IQuery<Outcome<int, Failure>>;
 
-public class TestQueryHandler : IQueryHandler<TestQuery, OperationOutcome<int, Failure>>
+public class TestQueryHandler : IQueryHandler<TestQuery, Outcome<int, Failure>>
 {
-    public Task<OperationOutcome<int, Failure>> Handle(TestQuery query, CancellationToken ct) =>
-        Task.FromResult(new OperationOutcome<int, Failure>(query.Value * 2));
+    public Task<Outcome<int, Failure>> Handle(TestQuery query, CancellationToken ct) =>
+        Task.FromResult(new Outcome<int, Failure>(query.Value * 2));
 }
 
-public record GreetCommand(string PersonName) : ICommand<OperationOutcome<string, Failure>>;
+public record GreetCommand(string PersonName) : ICommand<Outcome<string, Failure>>;
 
-public class GreetCommandHandler : ICommandHandler<GreetCommand, OperationOutcome<string, Failure>>
+public class GreetCommandHandler : ICommandHandler<GreetCommand, Outcome<string, Failure>>
 {
-    public Task<OperationOutcome<string, Failure>> Handle(GreetCommand command, CancellationToken ct) =>
-        Task.FromResult(new OperationOutcome<string, Failure>($"Hello {command.PersonName}"));
+    public Task<Outcome<string, Failure>> Handle(GreetCommand command, CancellationToken ct) =>
+        Task.FromResult(new Outcome<string, Failure>($"Hello {command.PersonName}"));
 }
 
 public record TestVoidCommand(string Value) : ICommand;
 
-public class TestVoidHandler : IVoidCommandHandler<TestVoidCommand, OperationOutcome>
+public class TestVoidHandler : IVoidCommandHandler<TestVoidCommand, Outcome>
 {
-    public Task<OperationOutcome> Handle(TestVoidCommand command, CancellationToken ct) =>
-        Task.FromResult(new OperationOutcome(default(Success)));
+    public Task<Outcome> Handle(TestVoidCommand command, CancellationToken ct) =>
+        Task.FromResult(new Outcome(default(Success)));
 }
 
 public record TestNotification(string Message) : INotification;
@@ -40,15 +40,15 @@ public record TestNotification(string Message) : INotification;
 /// <summary>A query that also satisfies <see cref="IAuditableRequest"/> - used to prove the marker-leak-prevention
 /// guarantee: an override rule matching this request excludes a marker-constrained behavior it does not name,
 /// even though the request structurally satisfies that behavior's generic constraint.</summary>
-public record AuditableTestQuery(int Value) : IQuery<OperationOutcome<int, Failure>>, IAuditableRequest
+public record AuditableTestQuery(int Value) : IQuery<Outcome<int, Failure>>, IAuditableRequest
 {
     public string ActionName => "Test.Action";
 }
 
-public class AuditableTestQueryHandler : IQueryHandler<AuditableTestQuery, OperationOutcome<int, Failure>>
+public class AuditableTestQueryHandler : IQueryHandler<AuditableTestQuery, Outcome<int, Failure>>
 {
-    public Task<OperationOutcome<int, Failure>> Handle(AuditableTestQuery query, CancellationToken ct) =>
-        Task.FromResult(new OperationOutcome<int, Failure>(query.Value));
+    public Task<Outcome<int, Failure>> Handle(AuditableTestQuery query, CancellationToken ct) =>
+        Task.FromResult(new Outcome<int, Failure>(query.Value));
 }
 
 /// <summary>A marker-constrained behavior - registered as an open generic, like the library's own
@@ -78,23 +78,23 @@ public class TrackingBehavior<TRequest, TResponse>(Action track) : IPipelineBeha
 
 /// <summary>A query handler that ejects from several method calls deep in its own logic, proving
 /// <see cref="Eject"/> works without manually threading the chosen outcome back up through every frame.</summary>
-public class EjectingQueryHandler : IQueryHandler<TestQuery, OperationOutcome<int, Failure>>
+public class EjectingQueryHandler : IQueryHandler<TestQuery, Outcome<int, Failure>>
 {
-    public Task<OperationOutcome<int, Failure>> Handle(TestQuery query, CancellationToken ct) => Inner(query);
+    public Task<Outcome<int, Failure>> Handle(TestQuery query, CancellationToken ct) => Inner(query);
 
-    private static Task<OperationOutcome<int, Failure>> Inner(TestQuery query) => Deepest(query);
+    private static Task<Outcome<int, Failure>> Inner(TestQuery query) => Deepest(query);
 
-    private static Task<OperationOutcome<int, Failure>> Deepest(TestQuery query) =>
-        Task.FromResult(Eject.With<OperationOutcome<int, Failure>>(new Failure($"ejected for {query.Value}")));
+    private static Task<Outcome<int, Failure>> Deepest(TestQuery query) =>
+        Task.FromResult(Eject.With<Outcome<int, Failure>>(new Failure($"ejected for {query.Value}")));
 }
 
 /// <summary>A behavior that ejects before calling <c>next()</c> - the handler (and any behavior further in)
 /// must never run.</summary>
 /// <typeparam name="TRequest">The request type, unconstrained since this behavior never inspects it.</typeparam>
-/// <typeparam name="TResponse">The response type, constrained to <see cref="IOperationOutcome"/> so
+/// <typeparam name="TResponse">The response type, constrained to <see cref="IOutcome"/> so
 /// <paramref name="response"/> can be ejected via <see cref="Eject.With{TResult}(TResult)"/>.</typeparam>
 public class EjectingBeforeNextBehavior<TRequest, TResponse>(TResponse response) : IPipelineBehavior<TRequest, TResponse>
-    where TResponse : IOperationOutcome
+    where TResponse : IOutcome
 {
     public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
         Task.FromResult(Eject.With(response));
@@ -116,10 +116,10 @@ public class ThrowingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest,
 /// proving the eject is recovered at this behavior's own call site, not only when thrown straight from a
 /// handler.</summary>
 /// <typeparam name="TRequest">The request type, unconstrained since this behavior never inspects it.</typeparam>
-/// <typeparam name="TResponse">The response type, constrained to <see cref="IOperationOutcome"/> so
+/// <typeparam name="TResponse">The response type, constrained to <see cref="IOutcome"/> so
 /// <paramref name="response"/> can be ejected via <see cref="Eject.With{TResult}(TResult)"/>.</typeparam>
 public class EjectingAfterNextBehavior<TRequest, TResponse>(TResponse response) : IPipelineBehavior<TRequest, TResponse>
-    where TResponse : IOperationOutcome
+    where TResponse : IOutcome
 {
     public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
@@ -194,8 +194,8 @@ public class MediatorTests
         var invoked = false;
         var mediator = CreateMediator<TestQueryHandler>(services =>
         {
-            services.AddSingleton<IPipelineBehavior<TestQuery, OperationOutcome<int, Failure>>>(
-                new TrackingBehavior<TestQuery, OperationOutcome<int, Failure>>(() => invoked = true)
+            services.AddSingleton<IPipelineBehavior<TestQuery, Outcome<int, Failure>>>(
+                new TrackingBehavior<TestQuery, Outcome<int, Failure>>(() => invoked = true)
             );
         });
 
@@ -214,15 +214,15 @@ public class MediatorTests
         var executed = new List<string>();
         var mediator = CreateMediator<TestQueryHandler>(services =>
         {
-            services.AddSingleton<IPipelineBehavior<TestQuery, OperationOutcome<int, Failure>>>(
-                new DroppedTrackingBehavior<TestQuery, OperationOutcome<int, Failure>>(executed.Add)
+            services.AddSingleton<IPipelineBehavior<TestQuery, Outcome<int, Failure>>>(
+                new DroppedTrackingBehavior<TestQuery, Outcome<int, Failure>>(executed.Add)
             );
-            services.AddSingleton<IPipelineBehavior<TestQuery, OperationOutcome<int, Failure>>>(
-                new KeptTrackingBehavior<TestQuery, OperationOutcome<int, Failure>>(executed.Add)
+            services.AddSingleton<IPipelineBehavior<TestQuery, Outcome<int, Failure>>>(
+                new KeptTrackingBehavior<TestQuery, Outcome<int, Failure>>(executed.Add)
             );
             services.AddSingleton<IPipelineOverrideRegistry>(
                 new FakeOverrideRegistry(t =>
-                    t == typeof(TestQuery) ? [typeof(KeptTrackingBehavior<TestQuery, OperationOutcome<int, Failure>>)] : null
+                    t == typeof(TestQuery) ? [typeof(KeptTrackingBehavior<TestQuery, Outcome<int, Failure>>)] : null
                 )
             );
         });
@@ -243,19 +243,17 @@ public class MediatorTests
         // behavior must not run.
         var executed = new List<string>();
         var services = new ServiceCollection();
-        services.AddSingleton<IQueryHandler<AuditableTestQuery, OperationOutcome<int, Failure>>, AuditableTestQueryHandler>();
-        services.AddSingleton<IPipelineBehavior<AuditableTestQuery, OperationOutcome<int, Failure>>>(
-            new MarkerConstrainedTrackingBehavior<AuditableTestQuery, OperationOutcome<int, Failure>>(() =>
-                executed.Add("marker")
-            )
+        services.AddSingleton<IQueryHandler<AuditableTestQuery, Outcome<int, Failure>>, AuditableTestQueryHandler>();
+        services.AddSingleton<IPipelineBehavior<AuditableTestQuery, Outcome<int, Failure>>>(
+            new MarkerConstrainedTrackingBehavior<AuditableTestQuery, Outcome<int, Failure>>(() => executed.Add("marker"))
         );
-        services.AddSingleton<IPipelineBehavior<AuditableTestQuery, OperationOutcome<int, Failure>>>(
-            new KeptTrackingBehavior<AuditableTestQuery, OperationOutcome<int, Failure>>(executed.Add)
+        services.AddSingleton<IPipelineBehavior<AuditableTestQuery, Outcome<int, Failure>>>(
+            new KeptTrackingBehavior<AuditableTestQuery, Outcome<int, Failure>>(executed.Add)
         );
         services.AddSingleton<IPipelineOverrideRegistry>(
             new FakeOverrideRegistry(t =>
                 t == typeof(AuditableTestQuery)
-                    ? [typeof(KeptTrackingBehavior<AuditableTestQuery, OperationOutcome<int, Failure>>)]
+                    ? [typeof(KeptTrackingBehavior<AuditableTestQuery, Outcome<int, Failure>>)]
                     : null
             )
         );
@@ -291,13 +289,13 @@ public class MediatorTests
         var handlerRan = false;
         var mediator = CreateMediator<TestQueryHandler>(services =>
         {
-            services.AddSingleton<IPipelineBehavior<TestQuery, OperationOutcome<int, Failure>>>(
-                new EjectingBeforeNextBehavior<TestQuery, OperationOutcome<int, Failure>>(
-                    new OperationOutcome<int, Failure>(new Failure("dead end"))
+            services.AddSingleton<IPipelineBehavior<TestQuery, Outcome<int, Failure>>>(
+                new EjectingBeforeNextBehavior<TestQuery, Outcome<int, Failure>>(
+                    new Outcome<int, Failure>(new Failure("dead end"))
                 )
             );
-            services.AddSingleton<IPipelineBehavior<TestQuery, OperationOutcome<int, Failure>>>(
-                new TrackingBehavior<TestQuery, OperationOutcome<int, Failure>>(() => handlerRan = true)
+            services.AddSingleton<IPipelineBehavior<TestQuery, Outcome<int, Failure>>>(
+                new TrackingBehavior<TestQuery, Outcome<int, Failure>>(() => handlerRan = true)
             );
         });
 
@@ -319,12 +317,12 @@ public class MediatorTests
         var outerRan = false;
         var mediator = CreateMediator<TestQueryHandler>(services =>
         {
-            services.AddSingleton<IPipelineBehavior<TestQuery, OperationOutcome<int, Failure>>>(
-                new TrackingBehavior<TestQuery, OperationOutcome<int, Failure>>(() => outerRan = true)
+            services.AddSingleton<IPipelineBehavior<TestQuery, Outcome<int, Failure>>>(
+                new TrackingBehavior<TestQuery, Outcome<int, Failure>>(() => outerRan = true)
             );
-            services.AddSingleton<IPipelineBehavior<TestQuery, OperationOutcome<int, Failure>>>(
-                new EjectingAfterNextBehavior<TestQuery, OperationOutcome<int, Failure>>(
-                    new OperationOutcome<int, Failure>(new Failure("dead end after next"))
+            services.AddSingleton<IPipelineBehavior<TestQuery, Outcome<int, Failure>>>(
+                new EjectingAfterNextBehavior<TestQuery, Outcome<int, Failure>>(
+                    new Outcome<int, Failure>(new Failure("dead end after next"))
                 )
             );
         });
@@ -344,8 +342,8 @@ public class MediatorTests
         var invoked = false;
         var mediator = CreateMediator<GreetCommandHandler>(services =>
         {
-            services.AddSingleton<IPipelineBehavior<GreetCommand, OperationOutcome<string, Failure>>>(
-                new TrackingBehavior<GreetCommand, OperationOutcome<string, Failure>>(() => invoked = true)
+            services.AddSingleton<IPipelineBehavior<GreetCommand, Outcome<string, Failure>>>(
+                new TrackingBehavior<GreetCommand, Outcome<string, Failure>>(() => invoked = true)
             );
         });
 
@@ -362,9 +360,9 @@ public class MediatorTests
         // Arrange - covers CommandHandlerWrapper's composition site, distinct from QueryHandlerWrapper's.
         var mediator = CreateMediator<GreetCommandHandler>(services =>
         {
-            services.AddSingleton<IPipelineBehavior<GreetCommand, OperationOutcome<string, Failure>>>(
-                new EjectingBeforeNextBehavior<GreetCommand, OperationOutcome<string, Failure>>(
-                    new OperationOutcome<string, Failure>(new Failure("dead end"))
+            services.AddSingleton<IPipelineBehavior<GreetCommand, Outcome<string, Failure>>>(
+                new EjectingBeforeNextBehavior<GreetCommand, Outcome<string, Failure>>(
+                    new Outcome<string, Failure>(new Failure("dead end"))
                 )
             );
         });
@@ -383,13 +381,13 @@ public class MediatorTests
         var invoked = false;
         var mediator = CreateMediator<TestVoidHandler>(services =>
         {
-            services.AddSingleton<IPipelineBehavior<TestVoidCommand, OperationOutcome>>(
-                new TrackingBehavior<TestVoidCommand, OperationOutcome>(() => invoked = true)
+            services.AddSingleton<IPipelineBehavior<TestVoidCommand, Outcome>>(
+                new TrackingBehavior<TestVoidCommand, Outcome>(() => invoked = true)
             );
         });
 
         // Act
-        await mediator.Send<OperationOutcome>(new TestVoidCommand("test"), CancellationToken.None);
+        await mediator.Send<Outcome>(new TestVoidCommand("test"), CancellationToken.None);
 
         // Assert
         Assert.True(invoked);
@@ -401,13 +399,13 @@ public class MediatorTests
         // Arrange - covers VoidCommandHandlerWrapper's composition site, distinct from the other two wrappers.
         var mediator = CreateMediator<TestVoidHandler>(services =>
         {
-            services.AddSingleton<IPipelineBehavior<TestVoidCommand, OperationOutcome>>(
-                new EjectingBeforeNextBehavior<TestVoidCommand, OperationOutcome>(new OperationOutcome(new Failure("dead end")))
+            services.AddSingleton<IPipelineBehavior<TestVoidCommand, Outcome>>(
+                new EjectingBeforeNextBehavior<TestVoidCommand, Outcome>(new Outcome(new Failure("dead end")))
             );
         });
 
         // Act
-        var result = await mediator.Send<OperationOutcome>(new TestVoidCommand("test"), CancellationToken.None);
+        var result = await mediator.Send<Outcome>(new TestVoidCommand("test"), CancellationToken.None);
 
         // Assert
         Assert.Equal(new Failure("dead end"), result.Value);
@@ -420,8 +418,8 @@ public class MediatorTests
         // PipelineEjectException<TResponse> only; any other exception must still propagate out of Send.
         var mediator = CreateMediator<TestQueryHandler>(services =>
         {
-            services.AddSingleton<IPipelineBehavior<TestQuery, OperationOutcome<int, Failure>>>(
-                new ThrowingBehavior<TestQuery, OperationOutcome<int, Failure>>()
+            services.AddSingleton<IPipelineBehavior<TestQuery, Outcome<int, Failure>>>(
+                new ThrowingBehavior<TestQuery, Outcome<int, Failure>>()
             );
         });
 
@@ -436,7 +434,7 @@ public class MediatorTests
         var mediator = CreateMediator<TestVoidHandler>(_ => { });
 
         // Act
-        var result = await mediator.Send<OperationOutcome>(new TestVoidCommand("test"), CancellationToken.None);
+        var result = await mediator.Send<Outcome>(new TestVoidCommand("test"), CancellationToken.None);
 
         // Assert
         var isSuccess = result.Value switch
@@ -552,19 +550,19 @@ public class MediatorTests
 
         if (typeof(THandler) == typeof(TestQueryHandler))
         {
-            services.AddSingleton<IQueryHandler<TestQuery, OperationOutcome<int, Failure>>, TestQueryHandler>();
+            services.AddSingleton<IQueryHandler<TestQuery, Outcome<int, Failure>>, TestQueryHandler>();
         }
         else if (typeof(THandler) == typeof(EjectingQueryHandler))
         {
-            services.AddSingleton<IQueryHandler<TestQuery, OperationOutcome<int, Failure>>, EjectingQueryHandler>();
+            services.AddSingleton<IQueryHandler<TestQuery, Outcome<int, Failure>>, EjectingQueryHandler>();
         }
         else if (typeof(THandler) == typeof(GreetCommandHandler))
         {
-            services.AddSingleton<ICommandHandler<GreetCommand, OperationOutcome<string, Failure>>, GreetCommandHandler>();
+            services.AddSingleton<ICommandHandler<GreetCommand, Outcome<string, Failure>>, GreetCommandHandler>();
         }
         else if (typeof(THandler) == typeof(TestVoidHandler))
         {
-            services.AddSingleton<IVoidCommandHandler<TestVoidCommand, OperationOutcome>, TestVoidHandler>();
+            services.AddSingleton<IVoidCommandHandler<TestVoidCommand, Outcome>, TestVoidHandler>();
         }
 
         configure(services);

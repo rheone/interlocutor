@@ -21,7 +21,7 @@ public sealed class HandlerDiagnosticAnalyzerTests
             using Interlocutor.Abstractions.Queries;
             using Interlocutor.CommonKernel;
 
-            public sealed class OrphanQuery : IQuery<OperationOutcome>;
+            public sealed class OrphanQuery : IQuery<Outcome>;
             """;
 
         // Act
@@ -45,16 +45,16 @@ public sealed class HandlerDiagnosticAnalyzerTests
             using Interlocutor.Abstractions.Queries;
             using Interlocutor.CommonKernel;
 
-            public sealed class DuplicatedQuery : IQuery<OperationOutcome>;
+            public sealed class DuplicatedQuery : IQuery<Outcome>;
 
-            public sealed class DuplicatedQueryHandlerA : IQueryHandler<DuplicatedQuery, OperationOutcome>
+            public sealed class DuplicatedQueryHandlerA : IQueryHandler<DuplicatedQuery, Outcome>
             {
-                public Task<OperationOutcome> Handle(DuplicatedQuery query, CancellationToken ct) => throw new System.NotImplementedException();
+                public Task<Outcome> Handle(DuplicatedQuery query, CancellationToken ct) => throw new System.NotImplementedException();
             }
 
-            public sealed class DuplicatedQueryHandlerB : IQueryHandler<DuplicatedQuery, OperationOutcome>
+            public sealed class DuplicatedQueryHandlerB : IQueryHandler<DuplicatedQuery, Outcome>
             {
-                public Task<OperationOutcome> Handle(DuplicatedQuery query, CancellationToken ct) => throw new System.NotImplementedException();
+                public Task<Outcome> Handle(DuplicatedQuery query, CancellationToken ct) => throw new System.NotImplementedException();
             }
             """;
 

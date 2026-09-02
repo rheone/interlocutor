@@ -1,9 +1,9 @@
 namespace Interlocutor.DependencyInjection.Microsoft.Tests;
 
 using global::FluentValidation;
+using global::NHibernate;
 using global::Microsoft.Extensions.DependencyInjection;
 using global::Microsoft.Extensions.Logging;
-using global::NHibernate;
 using Interlocutor.Abstractions;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
@@ -155,7 +155,7 @@ public sealed class PipelineOrderingIntegrationTests
     }
 
     private sealed record OrderedRequest
-        : ICommand<OperationOutcome<Success, Forbidden>>,
+        : ICommand<Outcome<Success, Forbidden>>,
             ITransactionalRequest,
             IAuditableRequest,
             IRequiresPolicy
@@ -169,9 +169,9 @@ public sealed class PipelineOrderingIntegrationTests
     // typeof'd directly, so this constructor is invisible to static analysis.
 #pragma warning disable S1144
     private sealed class OrderedRequestHandler(Lazy<ISession> session, List<string> log)
-        : ICommandHandler<OrderedRequest, OperationOutcome<Success, Forbidden>>
+        : ICommandHandler<OrderedRequest, Outcome<Success, Forbidden>>
     {
-        public Task<OperationOutcome<Success, Forbidden>> Handle(OrderedRequest command, CancellationToken ct)
+        public Task<Outcome<Success, Forbidden>> Handle(OrderedRequest command, CancellationToken ct)
         {
             // UnitOfWorkBehavior<,> begins a transaction eagerly for ITransactionalRequest, before next()
             // runs - checking the real session here proves that already happened, rather than assuming it
@@ -185,12 +185,16 @@ public sealed class PipelineOrderingIntegrationTests
             // The success payload must be the kernel's own Success type, not an arbitrary value: the default
             // outcome classifier - which every real behavior in this chain shares - fail-closes on unknown
             // success types, and UnitOfWorkBehavior would (correctly) roll back instead of commit for one.
-            return Task.FromResult<OperationOutcome<Success, Forbidden>>(default(Success));
+            return Task.FromResult<Outcome<Success, Forbidden>>(default(Success));
         }
     }
 #pragma warning restore S1144
 
     /// <summary>A validator whose single always-passing rule records that it ran, proving Validation's inbound side effect.</summary>
+    // Deliberately shaped against OrderedRequest's Outcome<Success, Forbidden> response (no validation case) -
+    // this validator's rule never fails, so ValidationBehavior never needs to construct one; it exists only to
+    // prove ordering, not real validation-shape correctness.
+#pragma warning disable INTERLOC010
     private sealed class RecordingValidator : AbstractValidator<OrderedRequest>
     {
         public RecordingValidator(List<string> log) =>
@@ -201,6 +205,7 @@ public sealed class PipelineOrderingIntegrationTests
                     return true;
                 });
     }
+#pragma warning restore INTERLOC010
 
     /// <summary>An <see cref="IPolicyEvaluator"/> that always authorizes, recording that it ran - Authorization's inbound side effect.</summary>
     private sealed class RecordingPolicyEvaluator(List<string> log) : IPolicyEvaluator

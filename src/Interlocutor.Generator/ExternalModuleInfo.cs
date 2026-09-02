@@ -1,6 +1,7 @@
 namespace Interlocutor.Generator;
 
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 
 /// <summary>
@@ -30,6 +31,7 @@ using System.Linq;
 /// identical contents never compare equal). <see cref="Equals(ExternalModuleInfo?)"/>/<see cref="GetHashCode"/>
 /// are overridden below to compare <see cref="Handlers"/> element-wise instead.
 /// </remarks>
+[DebuggerDisplay("{AssemblyIdentity} ({Handlers.Length} handlers)")]
 internal sealed record ExternalModuleInfo(
     string AssemblyIdentity,
     string QualifiedModuleTypeName,

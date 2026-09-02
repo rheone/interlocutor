@@ -63,7 +63,7 @@ public class AuditingBehaviorAspNetCoreIntegrationTests
         await sink.Received(1).RecordAsync(Arg.Is<AuditEntry>(e => e.UserId == null), CancellationToken.None);
     }
 
-    public record AuditableQuery(string Name) : IQuery<OperationOutcome<string, Failure>>, IAuditableRequest
+    public record AuditableQuery(string Name) : IQuery<Outcome<string, Failure>>, IAuditableRequest
     {
         public string ActionName => "Query.Read";
     }

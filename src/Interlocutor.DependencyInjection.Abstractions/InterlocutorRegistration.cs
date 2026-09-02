@@ -1,5 +1,6 @@
 namespace Interlocutor.DependencyInjection.Abstractions;
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 /// <summary>
@@ -33,6 +34,7 @@ using System.Diagnostics.CodeAnalysis;
 /// <see cref="TypeMatchRule.Name"/>, or its position among <see cref="InterlocutorBuilder.MatchRules"/> when
 /// unnamed. <see langword="null"/> for every other <paramref name="Provenance"/>.
 /// </param>
+[DebuggerDisplay("{Kind} {ServiceType.Name} -> {ImplementationType.Name} ({Lifetime})")]
 public readonly record struct InterlocutorRegistration(
     Type ServiceType,
     // Both targets are required: [property: ...] alone annotates the generated property but leaves the

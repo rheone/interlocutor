@@ -48,13 +48,13 @@ This is vertical-slice structure **by directory within one project**, not one pr
 [`GetTodoTaskByIdQuery`](../TutorialProject/TodoTasks.Api/Features/Tasks/GetTodoTaskById/GetTodoTaskByIdQuery.cs) and its handler are the plainest possible shape - a record implementing `IQuery<TResponse>`, a handler implementing `IQueryHandler<TRequest, TResponse>`, no marker interfaces:
 
 ```csharp
-public sealed record GetTodoTaskByIdQuery(int Id) : IQuery<OperationOutcome<TodoTaskDto, NotFound>>;
+public sealed record GetTodoTaskByIdQuery(int Id) : IQuery<Outcome<TodoTaskDto, NotFound>>;
 
 public sealed class GetTodoTaskByIdHandler(IDomainRepository<TodoTask, int> tasks)
-    : IQueryHandler<GetTodoTaskByIdQuery, OperationOutcome<TodoTaskDto, NotFound>>
+    : IQueryHandler<GetTodoTaskByIdQuery, Outcome<TodoTaskDto, NotFound>>
 {
-    public Task<OperationOutcome<TodoTaskDto, NotFound>> Handle(GetTodoTaskByIdQuery query, CancellationToken ct) =>
-        Task.FromResult<OperationOutcome<TodoTaskDto, NotFound>>(
+    public Task<Outcome<TodoTaskDto, NotFound>> Handle(GetTodoTaskByIdQuery query, CancellationToken ct) =>
+        Task.FromResult<Outcome<TodoTaskDto, NotFound>>(
             tasks.GetById(query.Id) is { } task ? TodoTaskDto.FromEntity(task) : new NotFound($"TodoTask {query.Id}")
         );
 }
@@ -68,7 +68,7 @@ Two cases, `TodoTaskDto` or `NotFound` - the query never writes, so `UnitOfWorkB
 
 ```csharp
 public sealed record CreateTodoTaskCommand(string Title, string? Notes, string OwnerId)
-    : ICommand<OperationOutcome<TodoTaskDto, ValidationErrors, Conflict>>,
+    : ICommand<Outcome<TodoTaskDto, ValidationErrors, Conflict>>,
         ITransactionalRequest,
         IAuditableRequest
 {
@@ -87,7 +87,7 @@ Three cases: `TodoTaskDto` on success, `ValidationErrors` from [`CreateTodoTaskV
 ```csharp
 public sealed class UpdateTodoTaskHandler(IDomainRepository<TodoTask, int> tasks, IUnitOfWork unitOfWork)
     : ResourceCommandHandler<UpdateTodoTaskCommand, TodoTask, TodoTaskDto>,
-        ICommandHandler<UpdateTodoTaskCommand, OperationOutcome<TodoTaskDto, NotFound, Failure>>
+        ICommandHandler<UpdateTodoTaskCommand, Outcome<TodoTaskDto, NotFound, Failure>>
 {
     protected override Task<TodoTask?> LoadAsync(UpdateTodoTaskCommand command, CancellationToken ct) =>
         Task.FromResult(tasks.GetById(command.Id));
@@ -95,7 +95,7 @@ public sealed class UpdateTodoTaskHandler(IDomainRepository<TodoTask, int> tasks
     protected override Failure? Authorize(TodoTask entity, UpdateTodoTaskCommand command) =>
         entity.OwnerId == command.RequestedByUserId ? null : new Failure("Only the task's owner can update it.");
 
-    protected override async Task<OperationOutcome<TodoTaskDto, NotFound, Failure>> HandleAsync(
+    protected override async Task<Outcome<TodoTaskDto, NotFound, Failure>> HandleAsync(
         UpdateTodoTaskCommand command, TodoTask entity, CancellationToken ct)
     {
         entity.Title = command.Title;
@@ -120,9 +120,9 @@ public sealed class DeleteUserHandler(
     IDomainRepository<User, int> users,
     IDomainRepository<TodoTask, int> tasks,
     IUnitOfWork unitOfWork
-) : ICommandHandler<DeleteUserCommand, OperationOutcome<Success, NotFound>>
+) : ICommandHandler<DeleteUserCommand, Outcome<Success, NotFound>>
 {
-    public async Task<OperationOutcome<Success, NotFound>> Handle(DeleteUserCommand command, CancellationToken ct)
+    public async Task<Outcome<Success, NotFound>> Handle(DeleteUserCommand command, CancellationToken ct)
     {
         if (users.GetById(command.Id) is not { } user)
         {
@@ -228,7 +228,7 @@ public async Task<IActionResult> GetById(int id, CancellationToken ct)
 }
 ```
 
-This is a real, compiler-checked exhaustive switch over the union - the same thing `ToActionResult()` does internally, spelled out by hand. `UsersController.GetById` handles the identically-shaped `OperationOutcome<UserDto, NotFound>` union via `ToActionResult()` instead, so the two actions together show both styles applied to the same union shape: manual matching gives one action full control over its response, at the cost of keeping that mapping in sync by hand; `ToActionResult()` centralizes it once for every other action in both controllers.
+This is a real, compiler-checked exhaustive switch over the union - the same thing `ToActionResult()` does internally, spelled out by hand. `UsersController.GetById` handles the identically-shaped `Outcome<UserDto, NotFound>` union via `ToActionResult()` instead, so the two actions together show both styles applied to the same union shape: manual matching gives one action full control over its response, at the cost of keeping that mapping in sync by hand; `ToActionResult()` centralizes it once for every other action in both controllers.
 
 Neither controller changes anything about the pipeline. Both dispatch through `ISender.Send()` exactly like the minimal-API endpoints do, so the same registered chain (Logging → Auditing → Authorization → Validation → UnitOfWork) runs regardless of which transport a request came in through - see the next section for a `curl` example that shows identical `LoggingBehavior` output for both.
 

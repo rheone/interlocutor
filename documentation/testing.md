@@ -7,15 +7,15 @@ Strategies for testing code built on Interlocutor.
 Handlers are plain classes with injected dependencies - test them directly without the mediator:
 
 ```csharp
-public record GetUser(int UserId) : IQuery<OperationOutcome<UserDto, NotFound>>;
+public record GetUser(int UserId) : IQuery<Outcome<UserDto, NotFound>>;
 
-public class GetUserHandler : IQueryHandler<GetUser, OperationOutcome<UserDto, NotFound>>
+public class GetUserHandler : IQueryHandler<GetUser, Outcome<UserDto, NotFound>>
 {
     private readonly IUserRepository repository;
 
     public GetUserHandler(IUserRepository repository) => this.repository = repository;
 
-    public async Task<OperationOutcome<UserDto, NotFound>> Handle(
+    public async Task<Outcome<UserDto, NotFound>> Handle(
         GetUser query, CancellationToken ct)
     {
         var user = await this.repository.FindAsync(query.UserId, ct);
@@ -165,13 +165,13 @@ public class LoggingBehaviorTests
     public async Task LoggingBehavior_LogsRequestAndResponse()
     {
         // Arrange
-        var logger = new Mock<ILogger<LoggingBehavior<GetUser, OperationOutcome<UserDto, NotFound>>>>();
-        var behavior = new LoggingBehavior<GetUser, OperationOutcome<UserDto, NotFound>>(logger.Object);
+        var logger = new Mock<ILogger<LoggingBehavior<GetUser, Outcome<UserDto, NotFound>>>>();
+        var behavior = new LoggingBehavior<GetUser, Outcome<UserDto, NotFound>>(logger.Object);
 
         var query = new GetUser(1);
-        var response = new OperationOutcome<UserDto, NotFound>(new UserDto(1, "Alice"));
+        var response = new Outcome<UserDto, NotFound>(new UserDto(1, "Alice"));
 
-        Func<Task<OperationOutcome<UserDto, NotFound>>> next = () => Task.FromResult(response);
+        Func<Task<Outcome<UserDto, NotFound>>> next = () => Task.FromResult(response);
 
         // Act
         var result = await behavior.Handle(query, next, CancellationToken.None);
@@ -300,8 +300,8 @@ public async Task CachingStage_HitReturnsFromCache()
     var cachedUser = new UserDto(1, "Alice");
     cache[query.ToString()] = cachedUser;
 
-    Func<Task<OperationOutcome<UserDto, NotFound>>> next = () =>
-        Task.FromResult(new OperationOutcome<UserDto, NotFound>(new UserDto(1, "Bob")));  // Different
+    Func<Task<Outcome<UserDto, NotFound>>> next = () =>
+        Task.FromResult(new Outcome<UserDto, NotFound>(new UserDto(1, "Bob")));  // Different
 
     // Act
     var result = await stage.OnBeforeAsync(query, CancellationToken.None);

@@ -49,7 +49,7 @@ A request's actual chain is the registered behavior list, filtered to entries wh
 
 ```csharp
 public record CreateOrder(int CustomerId, List<OrderItem> Items)
-    : ICommand<OperationOutcome<int, ValidationError>>,
+    : ICommand<Outcome<int, ValidationError>>,
       IAuditableRequest         // Runs only AuditingBehavior (if registered)
 {
     // ValidationBehavior and UnitOfWorkBehavior run if registered, regardless of marker
@@ -57,7 +57,7 @@ public record CreateOrder(int CustomerId, List<OrderItem> Items)
 }
 
 public record GetSetting(string Key)
-    : IQuery<OperationOutcome<string, Failure>>
+    : IQuery<Outcome<string, Failure>>
 {
     // This request doesn't implement any markers, so it skips all scoped behaviors
     // (but still runs behaviors with no marker constraint, if you register any)
@@ -104,7 +104,7 @@ Say most of your application uses the recommended chain, but a background archiv
 ```csharp
 public interface IArchivalRequest;
 
-public sealed record ArchiveOrder(Guid OrderId) : ICommand<OperationOutcome<Success, Failure>>, IArchivalRequest;
+public sealed record ArchiveOrder(Guid OrderId) : ICommand<Outcome<Success, Failure>>, IArchivalRequest;
 
 public sealed class ArchivalAuditBehavior<TRequest, TResponse>(IAuditSink sink) : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IArchivalRequest
@@ -156,11 +156,11 @@ Validates the request shape against registered FluentValidation rules. Returns `
 
 - Requires: `Interlocutor.FluentValidation` package
 - Marker: no marker - validates all requests, regardless of opt-in
-- Constraint: `TResponse : IOperationOutcome` (must be able to construct a `ValidationError` case)
+- Constraint: `TResponse : IOutcome` (must be able to construct a `ValidationError` case)
 
 ```csharp
 public record CreateUser(string Name, string Email)
-    : ICommand<OperationOutcome<int, ValidationError>>;
+    : ICommand<Outcome<int, ValidationError>>;
 
 public class CreateUserValidator : AbstractValidator<CreateUser>
 {
@@ -182,15 +182,15 @@ Same validation, full fidelity: validates the request against registered FluentV
 `Interlocutor.FluentValidation.FluentValidationErrors` - every `FluentValidation.Results.ValidationFailure`
 preserved verbatim (property name, severity, error code, custom state, attempted value), not just its message.
 An alternative to `ValidationBehavior` for a handler that wants full fidelity, not an addition to it - register
-whichever one matches the case type your `OperationOutcome<...>` union declares.
+whichever one matches the case type your `Outcome<...>` union declares.
 
 - Requires: `Interlocutor.FluentValidation` package
 - Marker: no marker - validates all requests, regardless of opt-in
-- Constraint: `TResponse : IOperationOutcome` (must be able to construct a `FluentValidationErrors` case)
+- Constraint: `TResponse : IOutcome` (must be able to construct a `FluentValidationErrors` case)
 
 ```csharp
 public record CreateUser(string Name, string Email)
-    : ICommand<OperationOutcome<int, FluentValidationErrors>>;
+    : ICommand<Outcome<int, FluentValidationErrors>>;
 
 builder.Pipeline.AddBehavior(typeof(FluentValidationErrorsBehavior<,>));
 
@@ -210,10 +210,10 @@ Enforces policy-based, non-resource authorization. Short-circuits with `Forbidde
 
 - Requires: nothing beyond the try-added `IOutcomeCaseRegistry` default (`DefaultOutcomeCaseRegistry`) and `IPolicyEvaluator` default (see the warning below)
 - Marker: `IRequiresPolicy` (carries the `PolicyName` to evaluate)
-- Constraint: `TResponse : IOperationOutcome` (must be able to construct a `Forbidden` case)
+- Constraint: `TResponse : IOutcome` (must be able to construct a `Forbidden` case)
 
 ```csharp
-public record DeleteAllUsers() : ICommand<OperationOutcome>, IRequiresPolicy
+public record DeleteAllUsers() : ICommand<Outcome>, IRequiresPolicy
 {
     public string PolicyName => "AdminOnly";
 }
@@ -235,7 +235,7 @@ Records an audit trail of what ran and its outcome.
 
 ```csharp
 public record TransferFunds(int FromAccountId, int ToAccountId, decimal Amount)
-    : ICommand<OperationOutcome>, IAuditableRequest
+    : ICommand<Outcome>, IAuditableRequest
 {
     public string ActionName => "transfer_funds";
 }
@@ -267,7 +267,7 @@ public interface IResponseOutcomeDescriber
 
 ### Overriding the Default
 
-Reach for `InterlocutorPipelineBuilder.OverrideOutcomeDescriber<TDescriber>()` (reachable via `builder.Pipeline`) when the default classifier doesn't recognize your response types - most commonly because your handlers return a custom union type instead of `OperationOutcome<...>`. The default classifier is fail-closed: any response type it hasn't seen is treated as a failure, so an unrecognized custom type would log misleading outcome labels and force every transaction to roll back even on success.
+Reach for `InterlocutorPipelineBuilder.OverrideOutcomeDescriber<TDescriber>()` (reachable via `builder.Pipeline`) when the default classifier doesn't recognize your response types - most commonly because your handlers return a custom union type instead of `Outcome<...>`. The default classifier is fail-closed: any response type it hasn't seen is treated as a failure, so an unrecognized custom type would log misleading outcome labels and force every transaction to roll back even on success.
 
 ```csharp
 services.AddInterlocutor(builder =>
@@ -296,7 +296,7 @@ services.AddInterlocutor(builder =>
 
 #### Worked example: classifying a custom union type
 
-Say your handlers return a hand-rolled payment outcome instead of `OperationOutcome<...>`:
+Say your handlers return a hand-rolled payment outcome instead of `Outcome<...>`:
 
 ```csharp
 public sealed record PaymentApproved(string ConfirmationCode);
@@ -338,11 +338,11 @@ Converts cooperative cancellation of the ambient request into a `Cancelled` outc
 
 - Requires: nothing beyond the try-added `IOutcomeCaseRegistry` default (`DefaultOutcomeCaseRegistry`)
 - Marker: `ICancellable` (no members - opts the request in)
-- Constraint: `TResponse : IOperationOutcome` (must be able to construct a `Cancelled` case)
+- Constraint: `TResponse : IOutcome` (must be able to construct a `Cancelled` case)
 
 ```csharp
 public record ExportReport(int ReportId)
-    : ICommand<OperationOutcome<Success, Cancelled>>, ICancellable;
+    : ICommand<Outcome<Success, Cancelled>>, ICancellable;
 
 // builder.Pipeline.AddCancellationBehavior();
 // CancellationBehavior only converts cancellation tied to the ambient CancellationToken passed to
@@ -356,11 +356,11 @@ Races the rest of the pipeline against a time budget resolved via `ITimeoutPolic
 
 - Requires: `ITimeoutPolicy` (you register your own, or accept the try-added `DefaultTimeoutPolicy`, which returns the request's own declared budget unchanged)
 - Marker: `IHasTimeout` (carries the request's declared `Budget`)
-- Constraint: `TResponse : IOperationOutcome` (must be able to construct a `Timeout` case)
+- Constraint: `TResponse : IOutcome` (must be able to construct a `Timeout` case)
 
 ```csharp
 public record ExportReport(int ReportId)
-    : ICommand<OperationOutcome<Success, Timeout>>, IHasTimeout
+    : ICommand<Outcome<Success, Timeout>>, IHasTimeout
 {
     public TimeSpan Budget => TimeSpan.FromSeconds(30);
 }
@@ -389,11 +389,11 @@ Checks a rate limit via `IRateLimiter`, short-circuiting with `RateLimited` if t
 
 - Requires: `IRateLimiter` (you register your own, or accept the try-added `DefaultRateLimiter`)
 - Marker: `IRateLimited` (carries `LimitKey`, identifying which limiter/bucket applies)
-- Constraint: `TResponse : IOperationOutcome` (must be able to construct a `RateLimited` case)
+- Constraint: `TResponse : IOutcome` (must be able to construct a `RateLimited` case)
 
 ```csharp
 public record ExportReport(int ReportId)
-    : ICommand<OperationOutcome<Success, RateLimited>>, IRateLimited
+    : ICommand<Outcome<Success, RateLimited>>, IRateLimited
 {
     public string LimitKey => "exports";
 }
@@ -491,16 +491,16 @@ When a stage short-circuits:
 That's fine when the decision to stop can be made right where `Handle` returns (a behavior can already just not call `next()` and return any response it likes - `AuthorizationBehavior` does exactly this for `Forbidden`). It's not fine when the decision is discovered several method calls deep inside a handler's own logic, and manually threading the chosen outcome back up through every intermediate frame would turn a three-line early exit into a cascade of early returns. `Eject.With` is for that case:
 
 ```csharp
-private Task<OperationOutcome<Success, Conflict>> ApplyDiscount(Order order)
+private Task<Outcome<Success, Conflict>> ApplyDiscount(Order order)
 {
     if (!TryReserveInventory(order))
     {
         // Several calls deep in a handler's own logic - hand back the chosen outcome directly rather than
         // threading it up through every intermediate frame.
-        return Task.FromResult(Eject.With<OperationOutcome<Success, Conflict>>(new Conflict("Inventory already reserved")));
+        return Task.FromResult(Eject.With<Outcome<Success, Conflict>>(new Conflict("Inventory already reserved")));
     }
 
-    return Task.FromResult<OperationOutcome<Success, Conflict>>(new Success());
+    return Task.FromResult<Outcome<Success, Conflict>>(new Success());
 }
 ```
 

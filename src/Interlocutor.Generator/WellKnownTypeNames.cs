@@ -42,8 +42,11 @@ internal static class WellKnownTypeNames
     /// <summary>The open generic pipeline-behavior contract, <c>IPipelineBehavior&lt;TRequest, TResponse&gt;</c>.</summary>
     public const string PipelineBehavior = "Interlocutor.Abstractions.Pipeline.IPipelineBehavior`2";
 
-    /// <summary>The base outcome marker interface, <c>IOperationOutcome</c>.</summary>
-    public const string OperationOutcome = "Interlocutor.CommonKernel.ResultTypes.IOperationOutcome";
+    /// <summary>
+    /// The base outcome marker interface, <c>IOutcome</c> - not to be confused with
+    /// <see cref="ConcreteNonGenericOutcome"/>, the concrete non-generic <c>Outcome</c> union that implements it.
+    /// </summary>
+    public const string Outcome = "Interlocutor.CommonKernel.ResultTypes.IOutcome";
 
     /// <summary>The open-generic-handler-ambiguity escape hatch, <c>HandlerOverrideAttribute</c>.</summary>
     public const string HandlerOverride = "Interlocutor.Abstractions.Core.HandlerOverrideAttribute";
@@ -61,4 +64,40 @@ internal static class WellKnownTypeNames
     /// </summary>
     public const string GeneratedHandlerAttribute =
         "Interlocutor.DependencyInjection.Abstractions.InterlocutorGeneratedHandlerAttribute";
+
+    /// <summary>
+    /// FluentValidation's open generic validator base class, <c>AbstractValidator&lt;T&gt;</c>. Resolved by
+    /// name only - <c>Interlocutor.Generator</c> takes no compile-time dependency on FluentValidation itself,
+    /// so this resolves to <see langword="null"/> in a compilation that doesn't reference it.
+    /// </summary>
+    public const string AbstractValidator = "FluentValidation.AbstractValidator`1";
+
+    /// <summary>The minimal validation-shaped failure case marker, <c>IValidationFailureCase</c>.</summary>
+    public const string ValidationFailureCase = "Interlocutor.CommonKernel.ResultTypes.IValidationFailureCase";
+
+    /// <summary>
+    /// The reason-only, single validation failure case type, <c>ValidationError</c>. Unlike
+    /// <see cref="ValidationErrors"/>, this type does not itself implement <see cref="ValidationFailureCase"/> -
+    /// see <c>documentation/messages-and-result-types.md</c>'s naming convention callout.
+    /// </summary>
+    public const string ValidationError = "Interlocutor.CommonKernel.ResultTypes.ValidationError";
+
+    /// <summary>The error-code-carrying single validation failure case type, <c>ValidationError&lt;TErrorCode&gt;</c>.</summary>
+    public const string ValidationErrorOfErrorCode = "Interlocutor.CommonKernel.ResultTypes.ValidationError`1";
+
+    /// <summary>The aggregate validation failure case type, <c>ValidationErrors</c> - implements <see cref="ValidationFailureCase"/> directly.</summary>
+    public const string ValidationErrors = "Interlocutor.CommonKernel.ResultTypes.ValidationErrors";
+
+    /// <summary>
+    /// The library's own non-generic, fixed-shape <c>Outcome</c> union (<c>Success | Failure</c>) - unlike
+    /// every generic arity, its case set can never include a validation-shaped case, so it is recognized by
+    /// this exact metadata name rather than by inspecting type arguments it doesn't have.
+    /// </summary>
+    public const string ConcreteNonGenericOutcome = "Interlocutor.CommonKernel.Outcome";
+
+    /// <summary>
+    /// The member-generation marker attribute, <c>GenerateOutcomeMembersAttribute</c> - see
+    /// <see cref="OutcomeMemberGenerator"/>.
+    /// </summary>
+    public const string GenerateOutcomeMembersAttribute = "Interlocutor.CommonKernel.GenerateOutcomeMembersAttribute";
 }

@@ -17,7 +17,7 @@ public class OutcomeCaseRegistryTests
         var registry = DefaultOutcomeCaseRegistry.Instance;
 
         // Act
-        var response = registry.Construct<OperationOutcome<string, Failure>, Failure>(new Failure("boom"));
+        var response = registry.Construct<Outcome<string, Failure>, Failure>(new Failure("boom"));
 
         // Assert
         var failure = Assert.IsType<Failure>(response.Value);
@@ -32,11 +32,11 @@ public class OutcomeCaseRegistryTests
 
         // Act
         var ex = Assert.Throws<OutcomeCaseNotSupportedException>(() =>
-            registry.Construct<OperationOutcome<string, Failure>, NotFound>(default)
+            registry.Construct<Outcome<string, Failure>, NotFound>(default)
         );
 
         // Assert
-        Assert.Equal(typeof(OperationOutcome<string, Failure>), ex.ResponseType);
+        Assert.Equal(typeof(Outcome<string, Failure>), ex.ResponseType);
         Assert.Equal(typeof(NotFound), ex.CaseType);
         Assert.Contains(nameof(NotFound), ex.Message);
     }
@@ -46,7 +46,7 @@ public class OutcomeCaseRegistryTests
     {
         // Arrange
         var registry = DefaultOutcomeCaseRegistry.Instance;
-        OperationOutcome<string, Failure> response = new Failure("boom");
+        Outcome<string, Failure> response = new Failure("boom");
 
         // Act
         var found = registry.TryGetActiveCase(response, out var caseType, out var caseValue);
@@ -63,7 +63,7 @@ public class OutcomeCaseRegistryTests
     {
         // Arrange
         var registry = DefaultOutcomeCaseRegistry.Instance;
-        OperationOutcome<string, Failure> response = "ok";
+        Outcome<string, Failure> response = "ok";
 
         // Act
         var found = registry.TryGetActiveCase(response, out var caseType, out var caseValue);
@@ -105,7 +105,7 @@ public class OutcomeCaseRegistryTests
         Assert.Null(ex.CaseType);
     }
 
-    // --- OutcomeCaseRegistryBuilder against a hand-rolled, non-union IOperationOutcome ---
+    // --- OutcomeCaseRegistryBuilder against a hand-rolled, non-union IOutcome ---
 
     [Fact]
     public void Construct_RegisteredCustomFactory_UsedInsteadOfDefault()
@@ -171,18 +171,18 @@ public class OutcomeCaseRegistryTests
         var registry = new OutcomeCaseRegistryBuilder().Build();
 
         // Act
-        var response = registry.Construct<OperationOutcome<string, Failure>, Failure>(new Failure("boom"));
+        var response = registry.Construct<Outcome<string, Failure>, Failure>(new Failure("boom"));
 
         // Assert
         var failure = Assert.IsType<Failure>(response.Value);
         Assert.Equal("boom", failure.Reason);
     }
 
-    /// <summary>A hand-rolled, non-union <see cref="IOperationOutcome"/> implementation - the shape
+    /// <summary>A hand-rolled, non-union <see cref="IOutcome"/> implementation - the shape
     /// <see cref="DefaultOutcomeCaseRegistry"/> cannot handle reflectively (no compiler-generated case
     /// constructor, no <c>IUnion</c> marker), and so must be covered by a custom factory/extractor
     /// registered via <see cref="OutcomeCaseRegistryBuilder"/>.</summary>
-    public sealed class HandRolledOutcome : IOperationOutcome
+    public sealed class HandRolledOutcome : IOutcome
     {
         private HandRolledOutcome(Type caseType, object? caseValue)
         {

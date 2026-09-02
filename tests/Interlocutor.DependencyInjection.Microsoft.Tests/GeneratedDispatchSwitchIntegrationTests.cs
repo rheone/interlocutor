@@ -128,34 +128,33 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
         return scope.ServiceProvider.GetRequiredService<ISender>();
     }
 
-    public sealed record GeneratedSwitchQuery(int Value) : IQuery<OperationOutcome<int, Failure>>;
+    public sealed record GeneratedSwitchQuery(int Value) : IQuery<Outcome<int, Failure>>;
 
-    public sealed class GeneratedSwitchQueryHandler : IQueryHandler<GeneratedSwitchQuery, OperationOutcome<int, Failure>>
+    public sealed class GeneratedSwitchQueryHandler : IQueryHandler<GeneratedSwitchQuery, Outcome<int, Failure>>
     {
-        public Task<OperationOutcome<int, Failure>> Handle(GeneratedSwitchQuery query, CancellationToken ct) =>
-            Task.FromResult<OperationOutcome<int, Failure>>(query.Value * 2);
+        public Task<Outcome<int, Failure>> Handle(GeneratedSwitchQuery query, CancellationToken ct) =>
+            Task.FromResult<Outcome<int, Failure>>(query.Value * 2);
     }
 
-    public sealed record GeneratedSwitchCommand(string Name) : ICommand<OperationOutcome<string, Failure>>;
+    public sealed record GeneratedSwitchCommand(string Name) : ICommand<Outcome<string, Failure>>;
 
-    public sealed class GeneratedSwitchCommandHandler
-        : ICommandHandler<GeneratedSwitchCommand, OperationOutcome<string, Failure>>
+    public sealed class GeneratedSwitchCommandHandler : ICommandHandler<GeneratedSwitchCommand, Outcome<string, Failure>>
     {
-        public Task<OperationOutcome<string, Failure>> Handle(GeneratedSwitchCommand command, CancellationToken ct) =>
-            Task.FromResult<OperationOutcome<string, Failure>>($"Hello {command.Name}");
+        public Task<Outcome<string, Failure>> Handle(GeneratedSwitchCommand command, CancellationToken ct) =>
+            Task.FromResult<Outcome<string, Failure>>($"Hello {command.Name}");
     }
 
     public sealed record GeneratedSwitchVoidCommand : ICommand;
 
-    public sealed class GeneratedSwitchVoidCommandHandler : IVoidCommandHandler<GeneratedSwitchVoidCommand, OperationOutcome>
+    public sealed class GeneratedSwitchVoidCommandHandler : IVoidCommandHandler<GeneratedSwitchVoidCommand, Outcome>
     {
-        public Task<OperationOutcome> Handle(GeneratedSwitchVoidCommand command, CancellationToken ct) =>
-            Task.FromResult(new OperationOutcome(default(Success)));
+        public Task<Outcome> Handle(GeneratedSwitchVoidCommand command, CancellationToken ct) =>
+            Task.FromResult(new Outcome(default(Success)));
     }
 
     /// <summary>A query with no handler anywhere in this compilation - proves the generated switch's
     /// "recognized shape, no handler" case throws the same named exception the reflection path does.</summary>
 #pragma warning disable INTERLOC001 // Deliberately unregistered - this type exists to exercise that diagnostic's runtime counterpart
-    public sealed record GeneratedSwitchUnregisteredQuery : IQuery<OperationOutcome<int, Failure>>;
+    public sealed record GeneratedSwitchUnregisteredQuery : IQuery<Outcome<int, Failure>>;
 #pragma warning restore INTERLOC001
 }

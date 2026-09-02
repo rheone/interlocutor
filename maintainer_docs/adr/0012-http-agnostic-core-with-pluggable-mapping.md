@@ -4,7 +4,7 @@
 
 ## Context
 
-The core result types (`OperationOutcome<T>`, `Failure`, `NotFound`, `Forbidden`, `Conflict`, `ValidationFailed`, ...) live in `Interlocutor.CommonKernel` and `Interlocutor.Abstractions`, packages that must never depend on ASP.NET Core (see the package-layering rules in `CLAUDE.md`/`AGENTS.md`). Despite that dependency boundary being enforced in code, the project's own documentation - the glossary in particular - describes several result types by the HTTP status code they map to, and disagrees in places with what the ASP.NET Core package's mapping code actually does. That is a library that is architecturally HTTP-agnostic but describes itself as if it weren't, which misleads a consumer who isn't using ASP.NET Core at all (a queue consumer, a console job, a gRPC service) into thinking a transport concern belongs to the domain type.
+The core result types (`Outcome<T>`, `Failure`, `NotFound`, `Forbidden`, `Conflict`, `ValidationFailed`, ...) live in `Interlocutor.CommonKernel` and `Interlocutor.Abstractions`, packages that must never depend on ASP.NET Core (see the package-layering rules in `CLAUDE.md`/`AGENTS.md`). Despite that dependency boundary being enforced in code, the project's own documentation - the glossary in particular - describes several result types by the HTTP status code they map to, and disagrees in places with what the ASP.NET Core package's mapping code actually does. That is a library that is architecturally HTTP-agnostic but describes itself as if it weren't, which misleads a consumer who isn't using ASP.NET Core at all (a queue consumer, a console job, a gRPC service) into thinking a transport concern belongs to the domain type.
 
 ## Decision
 

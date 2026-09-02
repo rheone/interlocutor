@@ -20,7 +20,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </remarks>
 internal sealed class CommandHandlerWrapper<TCommand, TResponse> : IHandlerWrapper<TResponse>
     where TCommand : ICommand<TResponse>
-    where TResponse : IOperationOutcome
+    where TResponse : IOutcome
 {
     /// <summary>
     /// Executes the command with its handler and pipeline behaviors.

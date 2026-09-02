@@ -8,9 +8,11 @@
          already uses to emit and load real assemblies. -->
     <ProjectReference Include="..\..\src\Interlocutor.DependencyInjection.Microsoft\Interlocutor.DependencyInjection.Microsoft.csproj" />
     <ProjectReference Include="..\..\src\Interlocutor.DependencyInjection.Autofac\Interlocutor.DependencyInjection.Autofac.csproj" />
+    <ProjectReference Include="..\Interlocutor.TestSupport\Interlocutor.TestSupport.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="FluentValidation" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="xunit.runner.visualstudio" />

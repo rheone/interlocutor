@@ -13,8 +13,8 @@ using Xunit;
 /// </summary>
 public class PipelineStageBehaviorTests
 {
-    private static ILogger<PipelineStageBehavior<TestRequest, OperationOutcome<TestResponse, Failure>>> NewLogger() =>
-        Substitute.For<ILogger<PipelineStageBehavior<TestRequest, OperationOutcome<TestResponse, Failure>>>>();
+    private static ILogger<PipelineStageBehavior<TestRequest, Outcome<TestResponse, Failure>>> NewLogger() =>
+        Substitute.For<ILogger<PipelineStageBehavior<TestRequest, Outcome<TestResponse, Failure>>>>();
 
     [Fact]
     public async Task Handle_WithAllStagesCompleted_InvokesAfterHooksInReverseOrder()
@@ -25,13 +25,13 @@ public class PipelineStageBehaviorTests
         var stage2 = new TrackingStage("S2", callOrder);
         var stage3 = new TrackingStage("S3", callOrder);
 
-        var behavior = new PipelineStageBehavior<TestRequest, OperationOutcome<TestResponse, Failure>>(
+        var behavior = new PipelineStageBehavior<TestRequest, Outcome<TestResponse, Failure>>(
             [stage1, stage2, stage3],
             NewLogger()
         );
 
         var request = new TestRequest();
-        var expectedResult = new OperationOutcome<TestResponse, Failure>(new TestResponse());
+        var expectedResult = new Outcome<TestResponse, Failure>(new TestResponse());
 
         // Act
         var result = await behavior.Handle(
@@ -58,7 +58,7 @@ public class PipelineStageBehaviorTests
         var stage2 = new FailingBeforeStage("S2", callOrder);
         var stage3 = new TrackingStage("S3", callOrder);
 
-        var behavior = new PipelineStageBehavior<TestRequest, OperationOutcome<TestResponse, Failure>>(
+        var behavior = new PipelineStageBehavior<TestRequest, Outcome<TestResponse, Failure>>(
             [stage1, stage2, stage3],
             NewLogger()
         );
@@ -90,7 +90,7 @@ public class PipelineStageBehaviorTests
         var stage2 = new TrackingStage("S2", callOrder);
         var stage3 = new TrackingStage("S3", callOrder);
 
-        var behavior = new PipelineStageBehavior<TestRequest, OperationOutcome<TestResponse, Failure>>(
+        var behavior = new PipelineStageBehavior<TestRequest, Outcome<TestResponse, Failure>>(
             [stage1, stage2, stage3],
             NewLogger()
         );
@@ -118,7 +118,7 @@ public class PipelineStageBehaviorTests
         var stage2 = new FailingBeforeStage("S2", callOrder);
         var logger = NewLogger();
 
-        var behavior = new PipelineStageBehavior<TestRequest, OperationOutcome<TestResponse, Failure>>(
+        var behavior = new PipelineStageBehavior<TestRequest, Outcome<TestResponse, Failure>>(
             [failingAfterStage, stage2],
             logger
         );
@@ -160,13 +160,10 @@ public class PipelineStageBehaviorTests
         var stage3 = new TrackingStage("S3", callOrder);
         var logger = NewLogger();
 
-        var behavior = new PipelineStageBehavior<TestRequest, OperationOutcome<TestResponse, Failure>>(
-            [stage1, stage2, stage3],
-            logger
-        );
+        var behavior = new PipelineStageBehavior<TestRequest, Outcome<TestResponse, Failure>>([stage1, stage2, stage3], logger);
 
         var request = new TestRequest();
-        var expectedResult = new OperationOutcome<TestResponse, Failure>(new TestResponse());
+        var expectedResult = new Outcome<TestResponse, Failure>(new TestResponse());
 
         // Act
         var result = await behavior.Handle(request, async () => expectedResult, CancellationToken.None);
@@ -196,14 +193,14 @@ public class PipelineStageBehaviorTests
         var stage3 = new TrackingStage("S3", callOrder);
         var logger = NewLogger();
 
-        var behavior = new PipelineStageBehavior<TestRequest, OperationOutcome<TestResponse, Failure>>(
+        var behavior = new PipelineStageBehavior<TestRequest, Outcome<TestResponse, Failure>>(
             [stage1, stage2, stage3],
             logger,
             rethrowAfterHookExceptions: true
         );
 
         var request = new TestRequest();
-        var expectedResult = new OperationOutcome<TestResponse, Failure>(new TestResponse());
+        var expectedResult = new Outcome<TestResponse, Failure>(new TestResponse());
 
         // Act & Assert
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
@@ -220,9 +217,9 @@ public class PipelineStageBehaviorTests
     public async Task Handle_WithNoStages_CallsHandlerDirectly()
     {
         // Arrange
-        var behavior = new PipelineStageBehavior<TestRequest, OperationOutcome<TestResponse, Failure>>([], NewLogger());
+        var behavior = new PipelineStageBehavior<TestRequest, Outcome<TestResponse, Failure>>([], NewLogger());
         var request = new TestRequest();
-        var expectedResult = new OperationOutcome<TestResponse, Failure>(new TestResponse());
+        var expectedResult = new Outcome<TestResponse, Failure>(new TestResponse());
 
         // Act
         var result = await behavior.Handle(request, async () => expectedResult, CancellationToken.None);
@@ -236,13 +233,13 @@ public class PipelineStageBehaviorTests
     {
         // Arrange
         var callOrder = new List<string>();
-        var shortCircuitResponse = new OperationOutcome<TestResponse, Failure>(new Failure("declined"));
+        var shortCircuitResponse = new Outcome<TestResponse, Failure>(new Failure("declined"));
         var stage1 = new TrackingStage("S1", callOrder);
         var stage2 = new ShortCircuitingStage("S2", callOrder, shortCircuitResponse);
         var stage3 = new TrackingStage("S3", callOrder);
         var handlerRan = false;
 
-        var behavior = new PipelineStageBehavior<TestRequest, OperationOutcome<TestResponse, Failure>>(
+        var behavior = new PipelineStageBehavior<TestRequest, Outcome<TestResponse, Failure>>(
             [stage1, stage2, stage3],
             NewLogger()
         );
@@ -255,7 +252,7 @@ public class PipelineStageBehaviorTests
             async () =>
             {
                 handlerRan = true;
-                return new OperationOutcome<TestResponse, Failure>(new TestResponse());
+                return new Outcome<TestResponse, Failure>(new TestResponse());
             },
             CancellationToken.None
         );
@@ -276,14 +273,11 @@ public class PipelineStageBehaviorTests
         // the TResponse value that came back from calling next(), which is PipelineStageBehavior.Handle.
         // Arrange
         var callOrder = new List<string>();
-        var shortCircuitResponse = new OperationOutcome<TestResponse, Failure>(new Failure("declined"));
+        var shortCircuitResponse = new Outcome<TestResponse, Failure>(new Failure("declined"));
         var stage = new ShortCircuitingStage("S1", callOrder, shortCircuitResponse);
         var handlerRan = false;
 
-        var stageBehavior = new PipelineStageBehavior<TestRequest, OperationOutcome<TestResponse, Failure>>(
-            [stage],
-            NewLogger()
-        );
+        var stageBehavior = new PipelineStageBehavior<TestRequest, Outcome<TestResponse, Failure>>([stage], NewLogger());
         var outerBehavior = new RecordingOuterBehavior();
 
         var request = new TestRequest();
@@ -297,7 +291,7 @@ public class PipelineStageBehaviorTests
                     async () =>
                     {
                         handlerRan = true;
-                        return new OperationOutcome<TestResponse, Failure>(new TestResponse());
+                        return new Outcome<TestResponse, Failure>(new TestResponse());
                     },
                     CancellationToken.None
                 ),
@@ -314,12 +308,12 @@ public class PipelineStageBehaviorTests
     [Fact]
     public async Task Handle_WhenBeforeHookShortCircuitsWithDefaultValuedResponse_IsDistinguishableFromContinue()
     {
-        // Arrange: OperationOutcome<TestResponse, Failure> is a struct, so its default value is
+        // Arrange: Outcome<TestResponse, Failure> is a struct, so its default value is
         // distinguishable from a real short-circuit only via StageResult.ShortCircuited, not by value.
         var handlerRan = false;
         var stage = new ShortCircuitingStage("S1", [], default);
 
-        var behavior = new PipelineStageBehavior<TestRequest, OperationOutcome<TestResponse, Failure>>([stage], NewLogger());
+        var behavior = new PipelineStageBehavior<TestRequest, Outcome<TestResponse, Failure>>([stage], NewLogger());
 
         // Act
         var result = await behavior.Handle(
@@ -327,7 +321,7 @@ public class PipelineStageBehaviorTests
             async () =>
             {
                 handlerRan = true;
-                return new OperationOutcome<TestResponse, Failure>(new TestResponse());
+                return new Outcome<TestResponse, Failure>(new TestResponse());
             },
             CancellationToken.None
         );
@@ -342,11 +336,8 @@ public class PipelineStageBehaviorTests
     public async Task Handle_WithBaseClassStage_DefaultHooksAreNoOpAndContinue()
     {
         // Arrange: a stage that overrides neither hook should behave exactly like no stage at all.
-        var behavior = new PipelineStageBehavior<TestRequest, OperationOutcome<TestResponse, Failure>>(
-            [new NoOpStage()],
-            NewLogger()
-        );
-        var expectedResult = new OperationOutcome<TestResponse, Failure>(new TestResponse());
+        var behavior = new PipelineStageBehavior<TestRequest, Outcome<TestResponse, Failure>>([new NoOpStage()], NewLogger());
+        var expectedResult = new Outcome<TestResponse, Failure>(new TestResponse());
 
         // Act
         var result = await behavior.Handle(new TestRequest(), async () => expectedResult, CancellationToken.None);
@@ -362,24 +353,24 @@ public class PipelineStageBehaviorTests
     public class TestResponse { }
 #pragma warning restore S2094
 
-    private sealed class NoOpStage : PipelineStageBase<TestRequest, OperationOutcome<TestResponse, Failure>>;
+    private sealed class NoOpStage : PipelineStageBase<TestRequest, Outcome<TestResponse, Failure>>;
 
     private sealed class TrackingStage(string name, List<string> callOrder)
-        : PipelineStageBase<TestRequest, OperationOutcome<TestResponse, Failure>>
+        : PipelineStageBase<TestRequest, Outcome<TestResponse, Failure>>
     {
-        public override async Task<StageResult<OperationOutcome<TestResponse, Failure>>> OnBeforeAsync(
+        public override async Task<StageResult<Outcome<TestResponse, Failure>>> OnBeforeAsync(
             TestRequest request,
             CancellationToken ct
         )
         {
             callOrder.Add($"{name}.Before");
             await Task.CompletedTask.ConfigureAwait(false);
-            return StageResult<OperationOutcome<TestResponse, Failure>>.Continue;
+            return StageResult<Outcome<TestResponse, Failure>>.Continue;
         }
 
         public override async Task OnAfterAsync(
             TestRequest request,
-            OperationOutcome<TestResponse, Failure> result,
+            Outcome<TestResponse, Failure> result,
             CancellationToken ct
         )
         {
@@ -388,25 +379,22 @@ public class PipelineStageBehaviorTests
         }
     }
 
-    private sealed class ShortCircuitingStage(
-        string name,
-        List<string> callOrder,
-        OperationOutcome<TestResponse, Failure> response
-    ) : PipelineStageBase<TestRequest, OperationOutcome<TestResponse, Failure>>
+    private sealed class ShortCircuitingStage(string name, List<string> callOrder, Outcome<TestResponse, Failure> response)
+        : PipelineStageBase<TestRequest, Outcome<TestResponse, Failure>>
     {
-        public override async Task<StageResult<OperationOutcome<TestResponse, Failure>>> OnBeforeAsync(
+        public override async Task<StageResult<Outcome<TestResponse, Failure>>> OnBeforeAsync(
             TestRequest request,
             CancellationToken ct
         )
         {
             callOrder.Add($"{name}.Before");
             await Task.CompletedTask.ConfigureAwait(false);
-            return StageResult<OperationOutcome<TestResponse, Failure>>.ShortCircuit(response);
+            return StageResult<Outcome<TestResponse, Failure>>.ShortCircuit(response);
         }
 
         public override async Task OnAfterAsync(
             TestRequest request,
-            OperationOutcome<TestResponse, Failure> result,
+            Outcome<TestResponse, Failure> result,
             CancellationToken ct
         )
         {
@@ -420,22 +408,22 @@ public class PipelineStageBehaviorTests
     /// Records only what an outer behavior can actually observe - the <c>TResponse</c> value <c>next()</c>
     /// returned - never anything about whether a stage short-circuited, because nothing in that value says so.
     /// </summary>
-    private sealed class RecordingOuterBehavior : IPipelineBehavior<TestRequest, OperationOutcome<TestResponse, Failure>>
+    private sealed class RecordingOuterBehavior : IPipelineBehavior<TestRequest, Outcome<TestResponse, Failure>>
     {
         public bool ObservedResponse { get; private set; }
 
         public bool ObservedShortCircuit { get; private set; }
 
-        public async Task<OperationOutcome<TestResponse, Failure>> Handle(
+        public async Task<Outcome<TestResponse, Failure>> Handle(
             TestRequest request,
-            Func<Task<OperationOutcome<TestResponse, Failure>>> next,
+            Func<Task<Outcome<TestResponse, Failure>>> next,
             CancellationToken ct
         )
         {
             var result = await next().ConfigureAwait(false);
             this.ObservedResponse = true;
 
-            // There is no member on OperationOutcome<,> - or anything else visible here - that could ever
+            // There is no member on Outcome<,> - or anything else visible here - that could ever
             // set this true. It exists to make explicit, in the assertion, that "ordinary response" isn't
             // merely unasserted; there is structurally nothing to distinguish here.
             this.ObservedShortCircuit = false;
@@ -444,16 +432,16 @@ public class PipelineStageBehaviorTests
     }
 
     private sealed class FailingBeforeStage(string name, List<string> callOrder)
-        : PipelineStageBase<TestRequest, OperationOutcome<TestResponse, Failure>>
+        : PipelineStageBase<TestRequest, Outcome<TestResponse, Failure>>
     {
-        public override Task<StageResult<OperationOutcome<TestResponse, Failure>>> OnBeforeAsync(
+        public override Task<StageResult<Outcome<TestResponse, Failure>>> OnBeforeAsync(
             TestRequest request,
             CancellationToken ct
         ) => throw new InvalidOperationException($"Stage {name} failed during Before");
 
         public override async Task OnAfterAsync(
             TestRequest request,
-            OperationOutcome<TestResponse, Failure> result,
+            Outcome<TestResponse, Failure> result,
             CancellationToken ct
         )
         {
@@ -463,23 +451,19 @@ public class PipelineStageBehaviorTests
     }
 
     private sealed class FailingAfterStage(string name, List<string> callOrder)
-        : PipelineStageBase<TestRequest, OperationOutcome<TestResponse, Failure>>
+        : PipelineStageBase<TestRequest, Outcome<TestResponse, Failure>>
     {
-        public override async Task<StageResult<OperationOutcome<TestResponse, Failure>>> OnBeforeAsync(
+        public override async Task<StageResult<Outcome<TestResponse, Failure>>> OnBeforeAsync(
             TestRequest request,
             CancellationToken ct
         )
         {
             callOrder.Add($"{name}.Before");
             await Task.CompletedTask.ConfigureAwait(false);
-            return StageResult<OperationOutcome<TestResponse, Failure>>.Continue;
+            return StageResult<Outcome<TestResponse, Failure>>.Continue;
         }
 
-        public override Task OnAfterAsync(
-            TestRequest request,
-            OperationOutcome<TestResponse, Failure> result,
-            CancellationToken ct
-        )
+        public override Task OnAfterAsync(TestRequest request, Outcome<TestResponse, Failure> result, CancellationToken ct)
         {
             callOrder.Add($"{name}.After");
             throw new InvalidOperationException($"Stage {name} failed during After");

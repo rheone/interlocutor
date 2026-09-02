@@ -98,7 +98,8 @@ public sealed class InterlocutorSourceGenerator : IIncrementalGenerator
                 static (compilation, ct) =>
                     new CompilationInfo(
                         IdentifierSanitizer.ToNamespaceSegment(compilation.AssemblyName ?? "GeneratedAssembly"),
-                        ReferencedModuleDiscovery.Discover(compilation, ct)
+                        ReferencedModuleDiscovery.Discover(compilation, ct),
+                        compilation.GetTypeByMetadataName(WellKnownTypeNames.Query) is not null
                     )
             )
             .WithTrackingName(CompilationInfoTrackingName);
@@ -172,6 +173,15 @@ public sealed class InterlocutorSourceGenerator : IIncrementalGenerator
         SourceProductionContext context
     )
     {
+        if (!compilationInfo.HasAbstractionsReference)
+        {
+            // This compilation never references Interlocutor.Abstractions at all (Interlocutor.CommonKernel's
+            // own build, wiring this assembly in purely for OutcomeMemberGenerator - ticket 05) - every emitter
+            // below unconditionally names Abstractions/DependencyInjection.Abstractions types, so there is
+            // nothing safe to emit here.
+            return;
+        }
+
         var handlers = results.SelectMany(static r => r.Handlers).ToImmutableArray();
         var openGenericHandlers = results.SelectMany(static r => r.OpenGenericHandlers).ToImmutableArray();
         var requests = results

@@ -1,35 +1,35 @@
-# Composing commands, queries, and handlers around each `OperationOutcome` arity
+# Composing commands, queries, and handlers around each `Outcome` arity
 
-Worked examples for choosing an `OperationOutcome` arity for a given command or query. Assumes [Messages, Result Types & Variance](messages-and-result-types.md)'s vocabulary - read that first if `OperationOutcome`, arities, and marker interfaces are new.
+Worked examples for choosing an `Outcome` arity for a given command or query. Assumes [Messages, Result Types & Variance](messages-and-result-types.md)'s vocabulary - read that first if `Outcome`, arities, and marker interfaces are new.
 
-`Interlocutor.CommonKernel` declares a family of `IOperationOutcome`-implementing unions, distinguished purely
+`Interlocutor.CommonKernel` declares a family of `IOutcome`-implementing unions, distinguished purely
 by how many outcome shapes ("arms") they carry:
 
 | Type | Arms | Declared as |
 |---|---|---|
-| `OperationOutcome` | 2, fixed | `union OperationOutcome(Success, Failure)` |
-| `OperationOutcome<TSuccessResult, TFailureResult>` | 2, generic | `union OperationOutcome<TSuccessResult, TFailureResult>(TSuccessResult, TFailureResult)` |
-| `OperationOutcome<TSuccessResult, TCase2, TCase3>` | 3, generic | `union OperationOutcome<TSuccessResult, TCase2, TCase3>(TSuccessResult, TCase2, TCase3)` |
-| `OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4>` | 4, generic | `union OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4>(TSuccessResult, TCase2, TCase3, TCase4)` |
-| `OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>` | 5, generic | `union OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>(TSuccessResult, TCase2, TCase3, TCase4, TCase5)` |
+| `Outcome` | 2, fixed | `union Outcome(Success, Failure)` |
+| `Outcome<TSuccessResult, TFailureResult>` | 2, generic | `union Outcome<TSuccessResult, TFailureResult>(TSuccessResult, TFailureResult)` |
+| `Outcome<TSuccessResult, TCase2, TCase3>` | 3, generic | `union Outcome<TSuccessResult, TCase2, TCase3>(TSuccessResult, TCase2, TCase3)` |
+| `Outcome<TSuccessResult, TCase2, TCase3, TCase4>` | 4, generic | `union Outcome<TSuccessResult, TCase2, TCase3, TCase4>(TSuccessResult, TCase2, TCase3, TCase4)` |
+| `Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>` | 5, generic | `union Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>(TSuccessResult, TCase2, TCase3, TCase4, TCase5)` |
 
 They coexist by arity, the same way `Action`/`Action<T>`/`Action<T1,TCase2>` coexist in the BCL -
-`OperationOutcome` is not a special case of `OperationOutcome<T1,TCase2>`, it's a sibling declaration with its own fixed
+`Outcome` is not a special case of `Outcome<T1,TCase2>`, it's a sibling declaration with its own fixed
 two cases (`Success`/`Failure`).
 
 Nothing in the mediator, the pipeline, or the DI wiring is hardcoded to one arity.
 `ICommandHandler<TCommand,TResponse>`, `IQueryHandler<TQuery,TResponse>`,
 `IVoidCommandHandler<TCommand,TResult>`, and `IPipelineBehavior<TRequest,TResponse>` are all
-generic over `TResponse`/`TResult` - that type parameter can be `OperationOutcome`, `OperationOutcome<A,B>`,
-`OperationOutcome<A,B,C,D,E>`, or a plain non-`OperationOutcome` type. `IResponseOutcomeDescriber` (used by
+generic over `TResponse`/`TResult` - that type parameter can be `Outcome`, `Outcome<A,B>`,
+`Outcome<A,B,C,D,E>`, or a plain non-`Outcome` type. `IResponseOutcomeDescriber` (used by
 `LoggingBehavior`, `AuditingBehavior`, and `UnitOfWorkBehavior`) never inspects which arity
 produced a response either - it unwraps the union via `IUnion.Value` and pattern-matches on the
 *case type* (`NotFound`, `Forbidden`, `Conflict`, `ValidationError`, `Failure`), so those three
 behaviors work identically no matter which arity you choose.
 
 The three examples below build a full vertical slice - a command, a query, their handlers, and
-the DI composition root - for `OperationOutcome`, `OperationOutcome<TSuccessResult, TFailureResult>`, and
-`OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>` respectively, so the differences show up in real code
+the DI composition root - for `Outcome`, `Outcome<TSuccessResult, TFailureResult>`, and
+`Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>` respectively, so the differences show up in real code
 rather than in isolated type signatures. (The 3- and 4-arm forms sit between examples 2 and 3 on
 the same spectrum - same mechanics, just more or fewer arms.)
 
@@ -70,9 +70,9 @@ public sealed class AppDbUnitOfWorkBehavior<TRequest, TResponse>(Lazy<AppDbConte
 
 ---
 
-## Example 1 - `OperationOutcome` (Success, Failure): "Deactivate User"
+## Example 1 - `Outcome` (Success, Failure): "Deactivate User"
 
-Use the fixed `OperationOutcome` when a command or query has **no meaningful success payload and exactly
+Use the fixed `Outcome` when a command or query has **no meaningful success payload and exactly
 one failure shape** - the caller only needs to know whether it worked. `IsSuccess` is the only
 member: there's no data to project out of either arm.
 
@@ -91,9 +91,9 @@ public sealed record DeactivateUserCommand(Guid UserId) : ICommand, IAuditableRe
     public string ActionName => "User.Deactivate";
 }
 
-public sealed class DeactivateUserCommandHandler(AppDbContext db) : IVoidCommandHandler<DeactivateUserCommand, OperationOutcome>
+public sealed class DeactivateUserCommandHandler(AppDbContext db) : IVoidCommandHandler<DeactivateUserCommand, Outcome>
 {
-    public async Task<OperationOutcome> Handle(DeactivateUserCommand command, CancellationToken ct)
+    public async Task<Outcome> Handle(DeactivateUserCommand command, CancellationToken ct)
     {
         // Step 1 - load
         var user = await db.Users.FirstOrDefaultAsync(u => u.Id == command.UserId, ct);
@@ -109,7 +109,7 @@ public sealed class DeactivateUserCommandHandler(AppDbContext db) : IVoidCommand
         }
 
         // Step 3 - the operation. No SaveChangesAsync here - AppDbUnitOfWorkBehavior commits
-        // once the pipeline returns a non-failure OperationOutcome, because this command is
+        // once the pipeline returns a non-failure Outcome, because this command is
         // ITransactionalRequest.
         user.IsActive = false;
         return new Success();
@@ -118,11 +118,11 @@ public sealed class DeactivateUserCommandHandler(AppDbContext db) : IVoidCommand
 
 // --- Query: no payload, plain outcome ---------------------------------------
 
-public sealed record CheckUsernameAvailableQuery(string Username) : IQuery<OperationOutcome>;
+public sealed record CheckUsernameAvailableQuery(string Username) : IQuery<Outcome>;
 
-public sealed class CheckUsernameAvailableQueryHandler(AppDbContext db) : IQueryHandler<CheckUsernameAvailableQuery, OperationOutcome>
+public sealed class CheckUsernameAvailableQueryHandler(AppDbContext db) : IQueryHandler<CheckUsernameAvailableQuery, Outcome>
 {
-    public async Task<OperationOutcome> Handle(CheckUsernameAvailableQuery query, CancellationToken ct)
+    public async Task<Outcome> Handle(CheckUsernameAvailableQuery query, CancellationToken ct)
     {
         var normalized = query.Username.Trim().ToLowerInvariant();
         var taken = await db.Users.AnyAsync(u => u.Username.ToLower() == normalized, ct);
@@ -135,8 +135,8 @@ public sealed class CheckUsernameAvailableQueryHandler(AppDbContext db) : IQuery
 **Composition root:**
 
 ```csharp
-services.AddScoped<IVoidCommandHandler<DeactivateUserCommand, OperationOutcome>, DeactivateUserCommandHandler>();
-services.AddScoped<IQueryHandler<CheckUsernameAvailableQuery, OperationOutcome>, CheckUsernameAvailableQueryHandler>();
+services.AddScoped<IVoidCommandHandler<DeactivateUserCommand, Outcome>, DeactivateUserCommandHandler>();
+services.AddScoped<IQueryHandler<CheckUsernameAvailableQuery, Outcome>, CheckUsernameAvailableQueryHandler>();
 
 // Open-generic - applies to every request in the app, regardless of arity:
 services.AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
@@ -147,7 +147,7 @@ services.AddScoped(typeof(IPipelineBehavior<,>), typeof(AppDbUnitOfWorkBehavior<
 **Call site:**
 
 ```csharp
-var result = await sender.Send<OperationOutcome>(new DeactivateUserCommand(userId), ct);
+var result = await sender.Send<Outcome>(new DeactivateUserCommand(userId), ct);
 
 var response = result.Value switch
 {
@@ -157,15 +157,15 @@ var response = result.Value switch
 };
 ```
 
-Note the explicit `Send<OperationOutcome>(...)` type argument - `ICommand` (non-generic) carries no
-information about which `IOperationOutcome` its handler returns, so the caller must say which one it wants
+Note the explicit `Send<Outcome>(...)` type argument - `ICommand` (non-generic) carries no
+information about which `IOutcome` its handler returns, so the caller must say which one it wants
 resolved. Compare this to the query call (`sender.Send(new CheckUsernameAvailableQuery(...), ct)`)
 which needs no type argument at all, because `IQuery<TResponse>` declares its response type
 directly on the query itself.
 
 ---
 
-## Example 2 - `OperationOutcome<TSuccessResult, TFailureResult>`: "Approve Time-Off Request"
+## Example 2 - `Outcome<TSuccessResult, TFailureResult>`: "Approve Time-Off Request"
 
 Use the 2-arm generic form when there **is** a success payload, but only **one** distinguishable
 failure shape. Picking a well-known `ResultTypes` case as `TFailureResult` - here, `Forbidden` -
@@ -185,29 +185,29 @@ public sealed record TimeOffRequestDto(Guid Id, string Status);
 // --- Command -----------------------------------------------------------------
 
 public sealed record ApproveTimeOffRequestCommand(Guid RequestId)
-    : ICommand<OperationOutcome<TimeOffRequestDto, Forbidden>>, IRequiresPolicy, ITransactionalRequest, IAuditableRequest
+    : ICommand<Outcome<TimeOffRequestDto, Forbidden>>, IRequiresPolicy, ITransactionalRequest, IAuditableRequest
 {
     public string PolicyName => "timeoff.approve"; // <-- checked by AuthorizationBehavior, below
     public string ActionName => "TimeOff.Approve";
 }
 
 public sealed class ApproveTimeOffRequestCommandHandler(AppDbContext db)
-    : ICommandHandler<ApproveTimeOffRequestCommand, OperationOutcome<TimeOffRequestDto, Forbidden>>
+    : ICommandHandler<ApproveTimeOffRequestCommand, Outcome<TimeOffRequestDto, Forbidden>>
 {
-    public async Task<OperationOutcome<TimeOffRequestDto, Forbidden>> Handle(ApproveTimeOffRequestCommand command, CancellationToken ct)
+    public async Task<Outcome<TimeOffRequestDto, Forbidden>> Handle(ApproveTimeOffRequestCommand command, CancellationToken ct)
     {
         // Authorization already ran in the pipeline (AuthorizationBehavior short-circuits with
         // Forbidden before this method is ever called if the policy fails) - so the only step
         // left here is the operation itself.
         //
-        // Note what this shape *can't* express: there's no NotFound arm. A 2-arm OperationOutcome<TSuccess,
+        // Note what this shape *can't* express: there's no NotFound arm. A 2-arm Outcome<TSuccess,
         // TFailure> assumes the entity exists by the time the handler runs. If "the request might
         // not exist" is a real case you need to report distinctly from "forbidden", reach for
-        // OperationOutcome<TSuccess, NotFound, Forbidden> (3 arms) instead - see Example 3 for the pattern.
+        // Outcome<TSuccess, NotFound, Forbidden> (3 arms) instead - see Example 3 for the pattern.
         var request = await db.TimeOffRequests.FirstAsync(r => r.Id == command.RequestId, ct);
         request.Status = "Approved";
 
-        // No SaveChangesAsync - AppDbUnitOfWorkBehavior commits on a non-failure OperationOutcome.
+        // No SaveChangesAsync - AppDbUnitOfWorkBehavior commits on a non-failure Outcome.
         return new TimeOffRequestDto(request.Id, request.Status);
     }
 }
@@ -215,15 +215,15 @@ public sealed class ApproveTimeOffRequestCommandHandler(AppDbContext db)
 // --- Query: same shape, same policy ------------------------------------------
 
 public sealed record GetTimeOffRequestByIdQuery(Guid RequestId)
-    : IQuery<OperationOutcome<TimeOffRequestDto, Forbidden>>, IRequiresPolicy
+    : IQuery<Outcome<TimeOffRequestDto, Forbidden>>, IRequiresPolicy
 {
     public string PolicyName => "timeoff.view";
 }
 
 public sealed class GetTimeOffRequestByIdQueryHandler(AppDbContext db)
-    : IQueryHandler<GetTimeOffRequestByIdQuery, OperationOutcome<TimeOffRequestDto, Forbidden>>
+    : IQueryHandler<GetTimeOffRequestByIdQuery, Outcome<TimeOffRequestDto, Forbidden>>
 {
-    public async Task<OperationOutcome<TimeOffRequestDto, Forbidden>> Handle(GetTimeOffRequestByIdQuery query, CancellationToken ct)
+    public async Task<Outcome<TimeOffRequestDto, Forbidden>> Handle(GetTimeOffRequestByIdQuery query, CancellationToken ct)
     {
         var request = await db.TimeOffRequests.AsNoTracking().FirstAsync(r => r.Id == query.RequestId, ct);
         return new TimeOffRequestDto(request.Id, request.Status);
@@ -234,11 +234,11 @@ public sealed class GetTimeOffRequestByIdQueryHandler(AppDbContext db)
 **Composition root:**
 
 ```csharp
-services.AddScoped<ICommandHandler<ApproveTimeOffRequestCommand, OperationOutcome<TimeOffRequestDto, Forbidden>>, ApproveTimeOffRequestCommandHandler>();
-services.AddScoped<IQueryHandler<GetTimeOffRequestByIdQuery, OperationOutcome<TimeOffRequestDto, Forbidden>>, GetTimeOffRequestByIdQueryHandler>();
+services.AddScoped<ICommandHandler<ApproveTimeOffRequestCommand, Outcome<TimeOffRequestDto, Forbidden>>, ApproveTimeOffRequestCommandHandler>();
+services.AddScoped<IQueryHandler<GetTimeOffRequestByIdQuery, Outcome<TimeOffRequestDto, Forbidden>>, GetTimeOffRequestByIdQueryHandler>();
 
 // AuthorizationBehavior<TRequest, TResponse> is an ordinary open-generic behavior, constrained to
-// TRequest : IRequiresPolicy and TResponse : IOperationOutcome - nothing pins TResponse to any
+// TRequest : IRequiresPolicy and TResponse : IOutcome - nothing pins TResponse to any
 // particular arity. It constructs its Forbidden short-circuit generically via IOutcomeCaseRegistry,
 // so one open-generic registration covers every request/response shape that implements IRequiresPolicy
 // and has a Forbidden case, regardless of arity:
@@ -268,7 +268,7 @@ on the command itself, so it's inferred.
 
 ---
 
-## Example 3 - `OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>`: "Submit Payment"
+## Example 3 - `Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>`: "Submit Payment"
 
 Use the widest generic form for operations with several genuinely distinct outcomes that callers
 need to handle differently. The ownership check below can't move into `AuthorizationBehavior`
@@ -294,7 +294,7 @@ public sealed record PaymentEligibilityDto(Guid OrderId, decimal RemainingBalanc
 // --- Command -------------------------------------------------------------------
 
 public sealed record SubmitPaymentCommand(Guid OrderId, decimal Amount)
-    : ICommand<OperationOutcome<PaymentReceiptDto, NotFound, Forbidden, Conflict, ValidationError>>,
+    : ICommand<Outcome<PaymentReceiptDto, NotFound, Forbidden, Conflict, ValidationError>>,
         ITransactionalRequest,
         IAuditableRequest
 {
@@ -302,9 +302,9 @@ public sealed record SubmitPaymentCommand(Guid OrderId, decimal Amount)
 }
 
 public sealed class SubmitPaymentCommandHandler(AppDbContext db, ICurrentUser currentUser)
-    : ICommandHandler<SubmitPaymentCommand, OperationOutcome<PaymentReceiptDto, NotFound, Forbidden, Conflict, ValidationError>>
+    : ICommandHandler<SubmitPaymentCommand, Outcome<PaymentReceiptDto, NotFound, Forbidden, Conflict, ValidationError>>
 {
-    public async Task<OperationOutcome<PaymentReceiptDto, NotFound, Forbidden, Conflict, ValidationError>> Handle(
+    public async Task<Outcome<PaymentReceiptDto, NotFound, Forbidden, Conflict, ValidationError>> Handle(
         SubmitPaymentCommand command,
         CancellationToken ct
     )
@@ -341,7 +341,7 @@ public sealed class SubmitPaymentCommandHandler(AppDbContext db, ICurrentUser cu
         }
 
         // Step 5 - the operation. No SaveChangesAsync - AppDbUnitOfWorkBehavior commits on a
-        // non-failure OperationOutcome.
+        // non-failure Outcome.
         order.IsPaid = true;
         return new PaymentReceiptDto(order.Id, command.Amount, DateTime.UtcNow);
     }
@@ -350,12 +350,12 @@ public sealed class SubmitPaymentCommandHandler(AppDbContext db, ICurrentUser cu
 // --- Query: a "dry run" of the same five outcomes -------------------------------
 
 public sealed record CheckPaymentEligibilityQuery(Guid OrderId, decimal Amount)
-    : IQuery<OperationOutcome<PaymentEligibilityDto, NotFound, Forbidden, Conflict, ValidationError>>;
+    : IQuery<Outcome<PaymentEligibilityDto, NotFound, Forbidden, Conflict, ValidationError>>;
 
 public sealed class CheckPaymentEligibilityQueryHandler(AppDbContext db, ICurrentUser currentUser)
-    : IQueryHandler<CheckPaymentEligibilityQuery, OperationOutcome<PaymentEligibilityDto, NotFound, Forbidden, Conflict, ValidationError>>
+    : IQueryHandler<CheckPaymentEligibilityQuery, Outcome<PaymentEligibilityDto, NotFound, Forbidden, Conflict, ValidationError>>
 {
-    public async Task<OperationOutcome<PaymentEligibilityDto, NotFound, Forbidden, Conflict, ValidationError>> Handle(
+    public async Task<Outcome<PaymentEligibilityDto, NotFound, Forbidden, Conflict, ValidationError>> Handle(
         CheckPaymentEligibilityQuery query,
         CancellationToken ct
     )
@@ -390,17 +390,17 @@ public sealed class CheckPaymentEligibilityQueryHandler(AppDbContext db, ICurren
 
 ```csharp
 services.AddScoped<
-    ICommandHandler<SubmitPaymentCommand, OperationOutcome<PaymentReceiptDto, NotFound, Forbidden, Conflict, ValidationError>>,
+    ICommandHandler<SubmitPaymentCommand, Outcome<PaymentReceiptDto, NotFound, Forbidden, Conflict, ValidationError>>,
     SubmitPaymentCommandHandler
 >();
 services.AddScoped<
-    IQueryHandler<CheckPaymentEligibilityQuery, OperationOutcome<PaymentEligibilityDto, NotFound, Forbidden, Conflict, ValidationError>>,
+    IQueryHandler<CheckPaymentEligibilityQuery, Outcome<PaymentEligibilityDto, NotFound, Forbidden, Conflict, ValidationError>>,
     CheckPaymentEligibilityQueryHandler
 >();
 
 // Nothing new needed here - LoggingBehavior, AuditingBehavior, and AppDbUnitOfWorkBehavior are
 // already registered open-generic from Example 1 and apply to this 5-arm shape exactly as they
-// do to OperationOutcome and OperationOutcome<TSuccess,TFailure>, with zero changes.
+// do to Outcome and Outcome<TSuccess,TFailure>, with zero changes.
 ```
 
 **Call site:**
@@ -418,7 +418,7 @@ var response = result.Value switch
     _ => throw new UnreachableException(),
 };
 
-// OperationOutcome<T1..TCase5>.GetValue() is also available for callers that just need an untyped peek
+// Outcome<T1..TCase5>.GetValue() is also available for callers that just need an untyped peek
 // at whichever arm is present, without an exhaustive switch - e.g. generic logging:
 object? arm = result.GetValue();
 ```
@@ -427,13 +427,13 @@ object? arm = result.GetValue();
 
 ## Summary
 
-| | `OperationOutcome` | `OperationOutcome<TSuccessResult, TFailureResult>` | `OperationOutcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>` |
+| | `Outcome` | `Outcome<TSuccessResult, TFailureResult>` | `Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>` |
 |---|---|---|---|
 | Success payload | none | `TSuccessResult` | `TSuccessResult` |
 | Distinguishable failure shapes | 1 (`Failure`, fixed) | 1 (`TFailureResult`, your choice) | up to 4 (`TCase2`..`TCase5`, your choice) |
 | Failure detail available | `Failure.Reason` / `Failure.ErrorCode` | whatever `TFailureResult` carries | whatever each of `TCase2..TCase5` carries |
-| Dispatch path | `ICommand` + `IVoidCommandHandler<,>`, or `IQuery<OperationOutcome>` | `ICommand<TResponse>` / `IQuery<TResponse>` with `TResponse = OperationOutcome<...>` | same, just a wider `TResponse` |
+| Dispatch path | `ICommand` + `IVoidCommandHandler<,>`, or `IQuery<Outcome>` | `ICommand<TResponse>` / `IQuery<TResponse>` with `TResponse = Outcome<...>` | same, just a wider `TResponse` |
 | Works with Logging / Auditing / Transaction behaviors | yes, unmodified | yes, unmodified | yes, unmodified |
-| Works with `AuthorizationBehavior<TRequest, TResponse>` for non-resource (`IRequiresPolicy`) checks | no - `OperationOutcome` has no `Forbidden` case to construct | yes, when `TFailureResult = Forbidden` | yes, if one of `TCase2..TCase5` is `Forbidden` - arity never limits it, only whether a `Forbidden` case exists |
+| Works with `AuthorizationBehavior<TRequest, TResponse>` for non-resource (`IRequiresPolicy`) checks | no - `Outcome` has no `Forbidden` case to construct | yes, when `TFailureResult = Forbidden` | yes, if one of `TCase2..TCase5` is `Forbidden` - arity never limits it, only whether a `Forbidden` case exists |
 | Works for resource-dependent checks (ownership, entity state) | n/a | n/a | no, at any arity - always needs `ResourceCommandHandler` or an inline check after loading, never a pre-handler behavior |
 | Best for | outcome-only operations, no payload | one payload, one well-known failure mode | rich operations with several distinguishable outcomes |

@@ -85,18 +85,18 @@ public class RootScopeGuardTests
         public List<Guid> RecordedIds { get; } = [];
     }
 
-    private sealed record SharedScopeQuery : IQuery<OperationOutcome<Guid, Failure>>;
+    private sealed record SharedScopeQuery : IQuery<Outcome<Guid, Failure>>;
 
     // Resolved only via AddInterlocutor()'s assembly-scanning DI registration - never new'd or
     // typeof'd directly, so this constructor is invisible to static analysis.
 #pragma warning disable S1144
     private sealed class SharedScopeQueryHandler(ScopedThing scopedThing, ScopedDependencyRecorder recorder)
-        : IQueryHandler<SharedScopeQuery, OperationOutcome<Guid, Failure>>
+        : IQueryHandler<SharedScopeQuery, Outcome<Guid, Failure>>
     {
-        public Task<OperationOutcome<Guid, Failure>> Handle(SharedScopeQuery query, CancellationToken ct)
+        public Task<Outcome<Guid, Failure>> Handle(SharedScopeQuery query, CancellationToken ct)
         {
             recorder.RecordedIds.Add(scopedThing.Id);
-            return Task.FromResult<OperationOutcome<Guid, Failure>>(scopedThing.Id);
+            return Task.FromResult<Outcome<Guid, Failure>>(scopedThing.Id);
         }
     }
 #pragma warning restore S1144
@@ -118,7 +118,6 @@ public class RootScopeGuardTests
     /// dispatch when reached this way.</summary>
     private sealed class SingletonMediatorConsumer(IMediator mediator)
     {
-        public Task<OperationOutcome<Guid, Failure>> DispatchAsync(CancellationToken ct) =>
-            mediator.Send(new SharedScopeQuery(), ct);
+        public Task<Outcome<Guid, Failure>> DispatchAsync(CancellationToken ct) => mediator.Send(new SharedScopeQuery(), ct);
     }
 }

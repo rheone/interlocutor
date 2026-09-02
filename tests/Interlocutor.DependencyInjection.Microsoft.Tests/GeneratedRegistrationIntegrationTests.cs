@@ -92,15 +92,15 @@ public sealed class GeneratedRegistrationIntegrationTests
         Assert.Equal("hi from Microsoft DI", result.Value);
     }
 
-    public sealed class OrderTrackingBehavior1 : IPipelineBehavior<GeneratedQuery, OperationOutcome<string, Failure>>
+    public sealed class OrderTrackingBehavior1 : IPipelineBehavior<GeneratedQuery, Outcome<string, Failure>>
     {
         private readonly List<string> _executionOrder;
 
         public OrderTrackingBehavior1(List<string> executionOrder) => _executionOrder = executionOrder;
 
-        public async Task<OperationOutcome<string, Failure>> Handle(
+        public async Task<Outcome<string, Failure>> Handle(
             GeneratedQuery request,
-            Func<Task<OperationOutcome<string, Failure>>> next,
+            Func<Task<Outcome<string, Failure>>> next,
             CancellationToken ct
         )
         {
@@ -111,15 +111,15 @@ public sealed class GeneratedRegistrationIntegrationTests
         }
     }
 
-    public sealed class OrderTrackingBehavior2 : IPipelineBehavior<GeneratedQuery, OperationOutcome<string, Failure>>
+    public sealed class OrderTrackingBehavior2 : IPipelineBehavior<GeneratedQuery, Outcome<string, Failure>>
     {
         private readonly List<string> _executionOrder;
 
         public OrderTrackingBehavior2(List<string> executionOrder) => _executionOrder = executionOrder;
 
-        public async Task<OperationOutcome<string, Failure>> Handle(
+        public async Task<Outcome<string, Failure>> Handle(
             GeneratedQuery request,
-            Func<Task<OperationOutcome<string, Failure>>> next,
+            Func<Task<Outcome<string, Failure>>> next,
             CancellationToken ct
         )
         {
@@ -130,15 +130,15 @@ public sealed class GeneratedRegistrationIntegrationTests
         }
     }
 
-    public sealed class OrderTrackingBehavior3 : IPipelineBehavior<GeneratedQuery, OperationOutcome<string, Failure>>
+    public sealed class OrderTrackingBehavior3 : IPipelineBehavior<GeneratedQuery, Outcome<string, Failure>>
     {
         private readonly List<string> _executionOrder;
 
         public OrderTrackingBehavior3(List<string> executionOrder) => _executionOrder = executionOrder;
 
-        public async Task<OperationOutcome<string, Failure>> Handle(
+        public async Task<Outcome<string, Failure>> Handle(
             GeneratedQuery request,
-            Func<Task<OperationOutcome<string, Failure>>> next,
+            Func<Task<Outcome<string, Failure>>> next,
             CancellationToken ct
         )
         {
@@ -149,15 +149,15 @@ public sealed class GeneratedRegistrationIntegrationTests
         }
     }
 
-    public sealed record GeneratedQuery : IQuery<OperationOutcome<string, Failure>>;
+    public sealed record GeneratedQuery : IQuery<Outcome<string, Failure>>;
 
     public sealed class GeneratedQueryHandler(IGreeter greeter, List<string>? executionOrder = null)
-        : IQueryHandler<GeneratedQuery, OperationOutcome<string, Failure>>
+        : IQueryHandler<GeneratedQuery, Outcome<string, Failure>>
     {
-        public Task<OperationOutcome<string, Failure>> Handle(GeneratedQuery query, CancellationToken ct)
+        public Task<Outcome<string, Failure>> Handle(GeneratedQuery query, CancellationToken ct)
         {
             executionOrder?.Add("handle");
-            return Task.FromResult<OperationOutcome<string, Failure>>(greeter.Greet());
+            return Task.FromResult<Outcome<string, Failure>>(greeter.Greet());
         }
     }
 

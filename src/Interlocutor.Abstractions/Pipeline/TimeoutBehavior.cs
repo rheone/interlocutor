@@ -13,7 +13,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// this generic - a container-neutral, compile-time-checked replacement for a runtime <c>is</c> check.
 /// </typeparam>
 /// <typeparam name="TResponse">
-/// The response type, constrained only to <see cref="IOperationOutcome"/>, mirroring
+/// The response type, constrained only to <see cref="IOutcome"/>, mirroring
 /// <see cref="AuthorizationBehavior{TRequest, TResponse}"/>'s <c>TResponse</c> shape for the same reason: both
 /// type parameters must map 1:1 onto <see cref="IPipelineBehavior{TRequest, TResponse}"/>'s so Microsoft
 /// DI's open-generic resolver can construct this behavior.
@@ -48,7 +48,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 public class TimeoutBehavior<TRequest, TResponse>(ITimeoutPolicy timeoutPolicy, IOutcomeCaseRegistry caseRegistry)
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IHasTimeout
-    where TResponse : IOperationOutcome
+    where TResponse : IOutcome
 {
     /// <summary>
     /// Handles the request, racing it against the resolved time budget and short-circuiting with

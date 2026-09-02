@@ -1,6 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="..\..\src\Interlocutor.CommonKernel\Interlocutor.CommonKernel.csproj" />
+    <!-- Analyzer-only reference: runs OutcomeMemberGenerator over this project's own compilation so
+         CustomArityOutcomeTests' consumer-declared seven-case union gets its generated members - the worked
+         example documentation/extensibility.md's custom-arity section draws from (ticket 07). -->
+    <ProjectReference
+      Include="..\..\src\Interlocutor.Generator\Interlocutor.Generator.csproj"
+      OutputItemType="Analyzer"
+      ReferenceOutputAssembly="false"
+    />
+    <ProjectReference Include="..\Interlocutor.TestSupport\Interlocutor.TestSupport.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -17,8 +17,8 @@ Running the sample as an ordinary framework-dependent app - `dotnet bin/Release/
 
 ```
 System.InvalidOperationException: Unable to create a generic service for type
-'Interlocutor.Abstractions.Pipeline.IPipelineBehavior`2[GetTodoByIdQuery, OperationOutcome`2[TodoItem, NotFound]]'
-because 'OperationOutcome`2[TodoItem, NotFound]' is a ValueType.
+'Interlocutor.Abstractions.Pipeline.IPipelineBehavior`2[GetTodoByIdQuery, Outcome`2[TodoItem, NotFound]]'
+because 'Outcome`2[TodoItem, NotFound]' is a ValueType.
 Native code to support creating generic services might not be available with native AOT.
    at Microsoft.Extensions.DependencyInjection.ServiceLookup.CallSiteFactory.VerifyOpenGenericAotCompatibility(...)
 ```
@@ -67,7 +67,7 @@ internal static bool IsDynamicCodeSupported =>
 #endif
 ```
 
-A second, separate guard fires when the *enumerated item type itself* is a value type ([`CallSiteFactory.cs:275-280`](https://github.com/dotnet/runtime/blob/258621c819334857be3be891228429bb31c6eab8/src/libraries/Microsoft.Extensions.DependencyInjection/src/ServiceLookup/CallSiteFactory.cs#L275-L280)). That one does not apply to us - `IPipelineBehavior<,>` is an interface. It *would* apply to anyone doing `GetServices<OperationOutcome<...>>()`, which nothing in this library does.
+A second, separate guard fires when the *enumerated item type itself* is a value type ([`CallSiteFactory.cs:275-280`](https://github.com/dotnet/runtime/blob/258621c819334857be3be891228429bb31c6eab8/src/libraries/Microsoft.Extensions.DependencyInjection/src/ServiceLookup/CallSiteFactory.cs#L275-L280)). That one does not apply to us - `IPipelineBehavior<,>` is an interface. It *would* apply to anyone doing `GetServices<Outcome<...>>()`, which nothing in this library does.
 
 ### 1.3 Which feature switch drives it
 
@@ -161,8 +161,8 @@ The native-AOT probe row "**Microsoft DI**, closed registration, struct response
 
 ```csharp
 services.AddScoped<
-    IPipelineBehavior<PlainRequest, OperationOutcome<Widget, NotFound>>,
-    Noop<PlainRequest, OperationOutcome<Widget, NotFound>>>();
+    IPipelineBehavior<PlainRequest, Outcome<Widget, NotFound>>,
+    Noop<PlainRequest, Outcome<Widget, NotFound>>>();
 ```
 
 both avoids `CreateOpenGeneric` entirely and gives ILCompiler the instantiation in generic-argument position, which is enough for it to pre-generate the code. Resolution succeeded in a stripped, JIT-free ELF binary.
@@ -216,7 +216,7 @@ if (Symbol.SatisfiesConstraints([messageSymbol, responseSymbol], compilation))
 > **Under a genuine native binary the failure is earlier and different from the one reported.** DI is never reached. `Mediator.Send<TResponse>` fails first:
 >
 > ```
-> System.NotSupportedException: 'Interlocutor.Abstractions.Queries.QueryHandlerWrapper`2[GetTodoByIdQuery, OperationOutcome`2[TodoItem, NotFound]]'
+> System.NotSupportedException: 'Interlocutor.Abstractions.Queries.QueryHandlerWrapper`2[GetTodoByIdQuery, Outcome`2[TodoItem, NotFound]]'
 > is missing native code or metadata. …
 >    at System.ActivatorImplementation.CreateInstance(Type, Boolean)
 >    at Interlocutor.Abstractions.Mediator.Send[TResponse](IQuery`1, CancellationToken)
@@ -278,7 +278,7 @@ Wolverine composes middleware by generating and compiling C# at runtime. Its doc
 
 ---
 
-## 5. Would a reference-type `OperationOutcome` fix it?
+## 5. Would a reference-type `Outcome` fix it?
 
 Mechanically, yes. Practically, it is not available.
 
@@ -299,11 +299,11 @@ Reference-type instantiations share one canonical code body, which is why the do
 > | `public union class U(A, B);` | `error CS1001` / `CS1514` - not valid syntax |
 > | `public sealed union U(A, B);` | `error CS0106: The modifier 'sealed' is not valid for this item` |
 >
-> The `readonly` modifier is optional and changes nothing about the type's kind. `src/Interlocutor.CommonKernel/OperationOutcome.cs` declares every arity as `public readonly union OperationOutcome<...>(...) : IOperationOutcome`, which the compiler lowers to a sealed struct.
+> The `readonly` modifier is optional and changes nothing about the type's kind. `src/Interlocutor.CommonKernel/Outcome.cs` declares every arity as `public readonly union Outcome<...>(...) : IOutcome`, which the compiler lowers to a sealed struct.
 
 So option (C) is not "change `record struct` to `record class`." It is **abandon the `union` language feature and hand-write a closed class hierarchy** - which is precisely what [ADR-0001](../adr/0001-use-csharp-15-unions-for-result-types.md) chose unions over. The concrete losses:
 
-- **Compiler-verified exhaustiveness.** A hand-written sealed hierarchy gets exhaustiveness only where the compiler can prove closure over an abstract base with `private protected` constructors; for the generic arities here (`OperationOutcome<TSuccess, TCase2, TCase3>` over open type parameters) that proof is not available, so switch expressions would need discard arms. This is the single load-bearing property of the whole result-type design per ADR-0001 and the README's "Result Types Are Building Blocks" section.
+- **Compiler-verified exhaustiveness.** A hand-written sealed hierarchy gets exhaustiveness only where the compiler can prove closure over an abstract base with `private protected` constructors; for the generic arities here (`Outcome<TSuccess, TCase2, TCase3>` over open type parameters) that proof is not available, so switch expressions would need discard arms. This is the single load-bearing property of the whole result-type design per ADR-0001 and the README's "Result Types Are Building Blocks" section.
 - **Implicit conversions from case types.** Reproducible by hand with `implicit operator`, but with the arity explosion the union syntax currently hides.
 - **Struct equality and `default`.** Reference semantics change `==`, and `default` becomes `null` rather than the first case - a behavioural break for every consumer.
 - **One allocation per dispatch**, per behavior hop, plus GC pressure - directly against the performance framing.
@@ -327,7 +327,7 @@ So option (C) is not "change `record struct` to `record class`." It is **abandon
 "System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported": true
 ```
 
-Note the second line: **`PublishTrimmed` explicitly sets `IsDynamicCodeSupported` to `true`.** The AOT guard is therefore off, and every probe case - including open-generic Microsoft DI registration over `OperationOutcome<,>`, and Autofac `RegisterGeneric` over an instantiation present nowhere statically - passes. **Level (b) works today, on both containers, exactly as the premise claimed, and for exactly the reason claimed: the JIT can still synthesize value-type instantiations.**
+Note the second line: **`PublishTrimmed` explicitly sets `IsDynamicCodeSupported` to `true`.** The AOT guard is therefore off, and every probe case - including open-generic Microsoft DI registration over `Outcome<,>`, and Autofac `RegisterGeneric` over an instantiation present nowhere statically - passes. **Level (b) works today, on both containers, exactly as the premise claimed, and for exactly the reason claimed: the JIT can still synthesize value-type instantiations.**
 
 **(c) Native AOT.** `PublishAot=true`, no JIT. Fails today at both points identified above.
 
@@ -403,10 +403,10 @@ Also materially different from the framing given: under a **genuine** native bin
 
 Four `UnconditionalSuppressMessage` justifications assert something the type system contradicts:
 
-- `src/Interlocutor.Abstractions/Mediator.cs:73-83`, `:111-118`, `:144-151`, `:545-553` - "QueryHandlerWrapper<,> is closed only over reference types (query and IOperationOutcome records/classes)"
+- `src/Interlocutor.Abstractions/Mediator.cs:73-83`, `:111-118`, `:144-151`, `:545-553` - "QueryHandlerWrapper<,> is closed only over reference types (query and IOutcome records/classes)"
 - `src/Interlocutor.DependencyInjection.Autofac/ContainerBuilderExtensions.cs:128-134`, `:183-188` - "Every open generic Interlocutor registers … is closed only over reference types at resolution time"
 
-`TResponse` is `OperationOutcome<...>`, which is a **struct** ([§5.2](#52-but-a-c-union-is-always-a-struct)). Universal reference-type generic sharing does not apply. These suppressions are what allow the analyzer-clean build to coexist with a runtime that fails on every dispatch. They should be corrected or removed regardless of which option below is chosen - they are actively misleading.
+`TResponse` is `Outcome<...>`, which is a **struct** ([§5.2](#52-but-a-c-union-is-always-a-struct)). Universal reference-type generic sharing does not apply. These suppressions are what allow the analyzer-clean build to coexist with a runtime that fails on every dispatch. They should be corrected or removed regardless of which option below is chosen - they are actively misleading.
 
 ---
 
@@ -443,7 +443,7 @@ Four `UnconditionalSuppressMessage` justifications assert something the type sys
 
 **Containers.** Microsoft DI and Autofac verified. Any container that can accept a pre-closed registration inherits the fix.
 
-### (C) Make `OperationOutcome` a reference type
+### (C) Make `Outcome` a reference type
 
 **Evidence.** Reference-type sharing is real and would sidestep the problem entirely - but the C# `union` feature has no reference-type form, so this means abandoning unions for a hand-written hierarchy ([§5.2](#52-but-a-c-union-is-always-a-struct)).
 

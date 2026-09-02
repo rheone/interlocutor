@@ -1,5 +1,6 @@
 namespace Interlocutor.DependencyInjection.Abstractions;
 
+using System.Diagnostics;
 using System.Text;
 
 /// <summary>
@@ -20,6 +21,9 @@ using System.Text;
 /// either way.
 /// </para>
 /// </remarks>
+[DebuggerDisplay(
+    "Registrations = {Registrations.Count}, Problems = {Problems.Count}, Skipped = {Skipped.Count}, TypeLoadFailures = {TypeLoadFailures.Count}"
+)]
 public sealed class RegistrationReport
 {
     /// <summary>Initializes a new instance of the <see cref="RegistrationReport"/> class.</summary>

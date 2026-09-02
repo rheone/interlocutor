@@ -11,13 +11,13 @@ using Microsoft.AspNetCore.Mvc;
 /// Tests for the generic <c>ToActionResult&lt;TResponse&gt;</c>/<c>ToMinimalApiResult&lt;TResponse&gt;</c>
 /// catch-all overloads on <see cref="ResultExtensions"/>: that the six built-in union arities still bind to
 /// their dedicated overloads at compile time (ticket 13's overloads), and that the catch-all is what finally
-/// lets a hand-rolled, non-union <see cref="IOperationOutcome"/> implementation produce an HTTP result at all.
+/// lets a hand-rolled, non-union <see cref="IOutcome"/> implementation produce an HTTP result at all.
 /// </summary>
 public class GenericCatchAllResultExtensionsTests
 {
     private static readonly IOutcomeCaseRegistry Registry = new OutcomeCaseRegistryBuilder()
-        .RegisterExtractor<CustomOperationOutcome>(
-            (CustomOperationOutcome response, out Type caseType, out object? caseValue) =>
+        .RegisterExtractor<CustomOutcome>(
+            (CustomOutcome response, out Type caseType, out object? caseValue) =>
             {
                 caseType = response.CaseType;
                 caseValue = response.CaseValue;
@@ -40,13 +40,13 @@ public class GenericCatchAllResultExtensionsTests
     public void ToActionResult_ArityTwoOverload_BindsDedicatedOverloadNotCatchAll()
     {
         // Arrange
-        Expression<Func<OperationOutcome<string, Failure>, IActionResult>> expression = result => result.ToActionResult();
+        Expression<Func<Outcome<string, Failure>, IActionResult>> expression = result => result.ToActionResult();
 
         // Act
         var method = ((MethodCallExpression)expression.Body).Method;
 
         // Assert - the dedicated arity-2 overload is `ToActionResult<TSuccess, TFailure>(this
-        // OperationOutcome<TSuccess, TFailure>, IOutcomeStatusMapper? mapper = null)` - two type arguments,
+        // Outcome<TSuccess, TFailure>, IOutcomeStatusMapper? mapper = null)` - two type arguments,
         // two parameters (result, mapper). The catch-all is `ToActionResult<TResponse>(this TResponse,
         // IOutcomeStatusMapper?, IOutcomeCaseRegistry?)` - one type argument, three parameters. The two
         // overloads are distinguishable by shape alone.
@@ -59,7 +59,7 @@ public class GenericCatchAllResultExtensionsTests
     public void ToMinimalApiResult_ArityTwoOverload_BindsDedicatedOverloadNotCatchAll()
     {
         // Arrange
-        Expression<Func<OperationOutcome<string, Failure>, IResult>> expression = result => result.ToMinimalApiResult();
+        Expression<Func<Outcome<string, Failure>, IResult>> expression = result => result.ToMinimalApiResult();
 
         // Act
         var method = ((MethodCallExpression)expression.Body).Method;
@@ -74,8 +74,8 @@ public class GenericCatchAllResultExtensionsTests
     public void ToActionResult_ArityFiveOverload_BindsDedicatedOverloadNotCatchAll()
     {
         // Arrange
-        Expression<Func<OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationErrors>, IActionResult>> expression =
-            result => result.ToActionResult();
+        Expression<Func<Outcome<string, NotFound, Forbidden, Conflict, ValidationErrors>, IActionResult>> expression = result =>
+            result.ToActionResult();
 
         // Act
         var method = ((MethodCallExpression)expression.Body).Method;
@@ -90,7 +90,7 @@ public class GenericCatchAllResultExtensionsTests
     public void ToActionResult_VoidOutcome_BindsDedicatedNonGenericOverloadNotCatchAll()
     {
         // Arrange
-        Expression<Func<OperationOutcome, IActionResult>> expression = result => result.ToActionResult();
+        Expression<Func<Outcome, IActionResult>> expression = result => result.ToActionResult();
 
         // Act
         var method = ((MethodCallExpression)expression.Body).Method;
@@ -100,13 +100,13 @@ public class GenericCatchAllResultExtensionsTests
         Assert.Equal(2, method.GetParameters().Length);
     }
 
-    // --- Catch-all end to end, against a hand-rolled, non-union IOperationOutcome ---
+    // --- Catch-all end to end, against a hand-rolled, non-union IOutcome ---
 
     [Fact]
     public void ToActionResult_CatchAll_HandRolledOutcome_WithSuccess_ReturnsOkObjectResult()
     {
         // Arrange
-        var response = CustomOperationOutcome.FromSuccess(default(Success));
+        var response = CustomOutcome.FromSuccess(default(Success));
 
         // Act
         var actionResult = response.ToActionResult(caseRegistry: Registry);
@@ -120,7 +120,7 @@ public class GenericCatchAllResultExtensionsTests
     public void ToActionResult_CatchAll_HandRolledOutcome_WithFailure_MapsThroughStatusMapper()
     {
         // Arrange
-        var response = CustomOperationOutcome.FromFailure(new NotFound("Widget not found"));
+        var response = CustomOutcome.FromFailure(new NotFound("Widget not found"));
 
         // Act
         var actionResult = response.ToActionResult(caseRegistry: Registry);
@@ -135,7 +135,7 @@ public class GenericCatchAllResultExtensionsTests
     public void ToActionResult_CatchAll_HandRolledOutcome_WithCustomMapper_UsesCustomMapping()
     {
         // Arrange
-        var response = CustomOperationOutcome.FromFailure(new Forbidden("No access"));
+        var response = CustomOutcome.FromFailure(new Forbidden("No access"));
 
         // Act
         var actionResult = response.ToActionResult(Registry, new TeapotOutcomeStatusMapper());
@@ -149,7 +149,7 @@ public class GenericCatchAllResultExtensionsTests
     public void ToMinimalApiResult_CatchAll_HandRolledOutcome_WithSuccess_CreatesOkResult()
     {
         // Arrange
-        var response = CustomOperationOutcome.FromSuccess(default(Success));
+        var response = CustomOutcome.FromSuccess(default(Success));
 
         // Act
         var minimalResult = response.ToMinimalApiResult(caseRegistry: Registry);
@@ -162,7 +162,7 @@ public class GenericCatchAllResultExtensionsTests
     public void ToMinimalApiResult_CatchAll_HandRolledOutcome_WithFailure_MapsThroughStatusMapper()
     {
         // Arrange
-        var response = CustomOperationOutcome.FromFailure(new Conflict("Data changed", "stale.data"));
+        var response = CustomOutcome.FromFailure(new Conflict("Data changed", "stale.data"));
 
         // Act
         var minimalResult = response.ToMinimalApiResult(caseRegistry: Registry);
@@ -176,9 +176,9 @@ public class GenericCatchAllResultExtensionsTests
     public void ToActionResult_CatchAll_HandRolledOutcome_WithoutRegisteredRegistry_ThrowsOutcomeCaseNotSupportedException()
     {
         // Arrange - a null caseRegistry falls back to DefaultOutcomeCaseRegistry, which cannot decompose a
-        // non-union IOperationOutcome reflectively (this is exactly what registering a custom registry, as the
+        // non-union IOutcome reflectively (this is exactly what registering a custom registry, as the
         // tests above do, is for).
-        var response = CustomOperationOutcome.FromSuccess(default(Success));
+        var response = CustomOutcome.FromSuccess(default(Success));
 
         // Act & Assert
         Assert.Throws<OutcomeCaseNotSupportedException>(() => response.ToActionResult(caseRegistry: null));
@@ -192,11 +192,11 @@ public class GenericCatchAllResultExtensionsTests
     public void ToActionResult_CatchAll_CalledExplicitlyAgainstRealUnion_BehavesLikeDedicatedOverload()
     {
         // Arrange
-        OperationOutcome<string, Failure> result = new(new Failure("boom"));
+        Outcome<string, Failure> result = new(new Failure("boom"));
 
         // Act - explicit type argument forces the compiler to bind this specific generic method rather than
         // let overload resolution pick for it, so this exercises the catch-all's own logic directly.
-        var actionResult = ResultExtensions.ToActionResult<OperationOutcome<string, Failure>>(result, caseRegistry: null);
+        var actionResult = ResultExtensions.ToActionResult<Outcome<string, Failure>>(result, caseRegistry: null);
 
         // Assert
         var objectResult = Assert.IsType<ObjectResult>(actionResult);

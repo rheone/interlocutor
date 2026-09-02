@@ -7,4 +7,4 @@ using TodoTasks.Api.Domain;
 
 /// <summary>Looks up one <see cref="TodoTask"/> by id.</summary>
 /// <param name="Id">The task's identifier.</param>
-public sealed record GetTodoTaskByIdQuery(int Id) : IQuery<OperationOutcome<TodoTaskDto, NotFound>>;
+public sealed record GetTodoTaskByIdQuery(int Id) : IQuery<Outcome<TodoTaskDto, NotFound>>;

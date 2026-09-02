@@ -12,7 +12,7 @@ public sealed class CompleteTodoTaskHandler(
     IDomainRepository<TodoTask, int> tasks,
     IUnitOfWork unitOfWork,
     IPublisher publisher
-) : ICommandHandler<CompleteTodoTaskCommand, OperationOutcome<TodoTaskDto, NotFound, Conflict>>
+) : ICommandHandler<CompleteTodoTaskCommand, Outcome<TodoTaskDto, NotFound, Conflict>>
 {
     /// <inheritdoc/>
     /// <remarks>
@@ -28,10 +28,7 @@ public sealed class CompleteTodoTaskHandler(
     /// 8's own example - this is the guide's own worked example of that trade-off, not a fix applied
     /// only to this project.
     /// </remarks>
-    public async Task<OperationOutcome<TodoTaskDto, NotFound, Conflict>> Handle(
-        CompleteTodoTaskCommand command,
-        CancellationToken ct
-    )
+    public async Task<Outcome<TodoTaskDto, NotFound, Conflict>> Handle(CompleteTodoTaskCommand command, CancellationToken ct)
     {
         if (tasks.GetById(command.Id) is not { } task)
         {

@@ -8,10 +8,10 @@ using TodoTasks.Api.Domain;
 
 /// <summary>Handles <see cref="CreateTodoTaskCommand"/>.</summary>
 public sealed class CreateTodoTaskHandler(IDomainRepository<TodoTask, int> tasks, IUnitOfWork unitOfWork)
-    : ICommandHandler<CreateTodoTaskCommand, OperationOutcome<TodoTaskDto, ValidationErrors, Conflict>>
+    : ICommandHandler<CreateTodoTaskCommand, Outcome<TodoTaskDto, ValidationErrors, Conflict>>
 {
     /// <inheritdoc/>
-    public async Task<OperationOutcome<TodoTaskDto, ValidationErrors, Conflict>> Handle(
+    public async Task<Outcome<TodoTaskDto, ValidationErrors, Conflict>> Handle(
         CreateTodoTaskCommand command,
         CancellationToken ct
     )

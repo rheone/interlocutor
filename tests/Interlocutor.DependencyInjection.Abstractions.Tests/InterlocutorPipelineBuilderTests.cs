@@ -512,10 +512,10 @@ public class InterlocutorPipelineBuilderTests
     private sealed class CustomOutcomeCaseRegistry : IOutcomeCaseRegistry
     {
         public TResponse Construct<TResponse, TCase>(TCase caseValue)
-            where TResponse : IOperationOutcome => throw new NotSupportedException();
+            where TResponse : IOutcome => throw new NotSupportedException();
 
         public bool TryGetActiveCase<TResponse>(TResponse response, out Type caseType, out object? caseValue)
-            where TResponse : IOperationOutcome
+            where TResponse : IOutcome
         {
             caseType = typeof(TResponse);
             caseValue = null;

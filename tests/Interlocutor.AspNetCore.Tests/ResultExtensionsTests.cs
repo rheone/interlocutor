@@ -17,7 +17,7 @@ public class ResultExtensionsTests
     public void ToActionResult_WithSuccessValue_ReturnsOkObjectResult()
     {
         // Arrange
-        OperationOutcome<string, Failure> result = new("hello");
+        Outcome<string, Failure> result = new("hello");
 
         // Act
         var actionResult = result.ToActionResult();
@@ -31,7 +31,7 @@ public class ResultExtensionsTests
     public void ToActionResult_WithSuccessNoPayload_ReturnsNoContent()
     {
         // Arrange
-        OperationOutcome result = new(default(Success));
+        Outcome result = new(default(Success));
 
         // Act
         var actionResult = result.ToActionResult();
@@ -44,7 +44,7 @@ public class ResultExtensionsTests
     public void ToActionResult_WithNotFoundSingular_Returns404()
     {
         // Arrange
-        OperationOutcome<string, NotFound> result = new(new NotFound("Widget not found"));
+        Outcome<string, NotFound> result = new(new NotFound("Widget not found"));
 
         // Act
         var actionResult = result.ToActionResult();
@@ -59,9 +59,7 @@ public class ResultExtensionsTests
     public void ToActionResult_WithNotFoundGeneric_Returns404()
     {
         // Arrange
-        OperationOutcome<string, NotFound<int>> result = new(
-            new NotFound<int>(typeof(string), 42, "Widget with ID 42 not found")
-        );
+        Outcome<string, NotFound<int>> result = new(new NotFound<int>(typeof(string), 42, "Widget with ID 42 not found"));
 
         // Act
         var actionResult = result.ToActionResult();
@@ -76,7 +74,7 @@ public class ResultExtensionsTests
     public void ToActionResult_WithForbidden_ReturnsStatusCode403()
     {
         // Arrange
-        OperationOutcome<string, Forbidden> result = new(new Forbidden("No access"));
+        Outcome<string, Forbidden> result = new(new Forbidden("No access"));
 
         // Act
         var actionResult = result.ToActionResult();
@@ -91,7 +89,7 @@ public class ResultExtensionsTests
     {
         // Arrange
         var errors = new ValidationErrors(["Name is required", "Email is invalid"]);
-        OperationOutcome<string, ValidationErrors> result = new(errors);
+        Outcome<string, ValidationErrors> result = new(errors);
 
         // Act
         var actionResult = result.ToActionResult();
@@ -112,10 +110,10 @@ public class ResultExtensionsTests
         // same way a mediator pipeline would), rather than constructing FluentValidationErrors by hand, so
         // this proves the field-keyed body survives the real pipeline hop into ToActionResult() end-to-end.
         var request = new CreateWidgetCommand(string.Empty, -1);
-        var behavior = new FluentValidationErrorsBehavior<
-            CreateWidgetCommand,
-            OperationOutcome<string, FluentValidationErrors>
-        >([new CreateWidgetCommandValidator()], DefaultOutcomeCaseRegistry.Instance);
+        var behavior = new FluentValidationErrorsBehavior<CreateWidgetCommand, Outcome<string, FluentValidationErrors>>(
+            [new CreateWidgetCommandValidator()],
+            DefaultOutcomeCaseRegistry.Instance
+        );
 
         // Act
         var result = await behavior.Handle(
@@ -139,7 +137,7 @@ public class ResultExtensionsTests
     public void ToActionResult_WithConflict_Returns409()
     {
         // Arrange
-        OperationOutcome<string, Conflict> result = new(new Conflict("Data changed", "stale.data"));
+        Outcome<string, Conflict> result = new(new Conflict("Data changed", "stale.data"));
 
         // Act
         var actionResult = result.ToActionResult();
@@ -158,7 +156,7 @@ public class ResultExtensionsTests
     {
         // Arrange
         var failures = new Failures([new Failure("First failure"), new Failure("Second failure")]);
-        OperationOutcome<string, Failures> result = new(failures);
+        Outcome<string, Failures> result = new(failures);
 
         // Act
         var actionResult = result.ToActionResult();
@@ -176,7 +174,7 @@ public class ResultExtensionsTests
     public void ToActionResult_WithSingleFailure_Returns400()
     {
         // Arrange
-        OperationOutcome<string, Failure> result = new(new Failure("Operation failed"));
+        Outcome<string, Failure> result = new(new Failure("Operation failed"));
 
         // Act
         var actionResult = result.ToActionResult();
@@ -192,7 +190,7 @@ public class ResultExtensionsTests
     public void ToActionResult_WithUnknownFailureType_Returns500()
     {
         // Arrange
-        var result = new OperationOutcome<string, int>(42);
+        var result = new Outcome<string, int>(42);
 
         // Act
         var actionResult = result.ToActionResult();
@@ -207,7 +205,7 @@ public class ResultExtensionsTests
     public void ToActionResult_WithCustomMapper_UsesCustomMapping()
     {
         // Arrange
-        OperationOutcome<string, Forbidden> result = new(new Forbidden("No access"));
+        Outcome<string, Forbidden> result = new(new Forbidden("No access"));
 
         // Act
         var actionResult = result.ToActionResult(new TeapotOutcomeStatusMapper());
@@ -221,7 +219,7 @@ public class ResultExtensionsTests
     public void ToActionResult_WithCustomAggregateFailureType_IsMappable()
     {
         // Arrange
-        OperationOutcome<string, CustomRateLimited> result = new(new CustomRateLimited(TimeSpan.FromSeconds(30)));
+        Outcome<string, CustomRateLimited> result = new(new CustomRateLimited(TimeSpan.FromSeconds(30)));
 
         // Act
         var actionResult = result.ToActionResult(new TeapotOutcomeStatusMapper());
@@ -242,7 +240,7 @@ public class ResultExtensionsTests
     public void ToActionResult_ThreeArity_WithSuccess_ReturnsOkObjectResult()
     {
         // Arrange
-        OperationOutcome<string, NotFound, ValidationErrors> result = new("hello");
+        Outcome<string, NotFound, ValidationErrors> result = new("hello");
 
         // Act
         var actionResult = result.ToActionResult();
@@ -256,7 +254,7 @@ public class ResultExtensionsTests
     public void ToActionResult_ThreeArity_WithNotFound_Returns404()
     {
         // Arrange
-        OperationOutcome<string, NotFound, ValidationErrors> result = new(new NotFound("Widget not found"));
+        Outcome<string, NotFound, ValidationErrors> result = new(new NotFound("Widget not found"));
 
         // Act
         var actionResult = result.ToActionResult();
@@ -272,7 +270,7 @@ public class ResultExtensionsTests
     {
         // Arrange
         var errors = new ValidationErrors(["Name is required"]);
-        OperationOutcome<string, NotFound, ValidationErrors> result = new(errors);
+        Outcome<string, NotFound, ValidationErrors> result = new(errors);
 
         // Act
         var actionResult = result.ToActionResult();
@@ -292,7 +290,7 @@ public class ResultExtensionsTests
     public void ToActionResult_FourArity_WithSuccess_ReturnsOkObjectResult()
     {
         // Arrange
-        OperationOutcome<string, NotFound, Forbidden, ValidationErrors> result = new("hello");
+        Outcome<string, NotFound, Forbidden, ValidationErrors> result = new("hello");
 
         // Act
         var actionResult = result.ToActionResult();
@@ -306,7 +304,7 @@ public class ResultExtensionsTests
     public void ToActionResult_FourArity_WithNotFound_Returns404()
     {
         // Arrange
-        OperationOutcome<string, NotFound, Forbidden, ValidationErrors> result = new(new NotFound("Widget not found"));
+        Outcome<string, NotFound, Forbidden, ValidationErrors> result = new(new NotFound("Widget not found"));
 
         // Act
         var actionResult = result.ToActionResult();
@@ -321,7 +319,7 @@ public class ResultExtensionsTests
     public void ToActionResult_FourArity_WithForbidden_Returns403()
     {
         // Arrange
-        OperationOutcome<string, NotFound, Forbidden, ValidationErrors> result = new(new Forbidden("No access"));
+        Outcome<string, NotFound, Forbidden, ValidationErrors> result = new(new Forbidden("No access"));
 
         // Act
         var actionResult = result.ToActionResult();
@@ -336,7 +334,7 @@ public class ResultExtensionsTests
     {
         // Arrange
         var errors = new ValidationErrors(["Name is required"]);
-        OperationOutcome<string, NotFound, Forbidden, ValidationErrors> result = new(errors);
+        Outcome<string, NotFound, Forbidden, ValidationErrors> result = new(errors);
 
         // Act
         var actionResult = result.ToActionResult();
@@ -352,7 +350,7 @@ public class ResultExtensionsTests
     public void ToActionResult_FiveArity_WithSuccess_ReturnsOkObjectResult()
     {
         // Arrange
-        OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationErrors> result = new("hello");
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationErrors> result = new("hello");
 
         // Act
         var actionResult = result.ToActionResult();
@@ -366,9 +364,7 @@ public class ResultExtensionsTests
     public void ToActionResult_FiveArity_WithNotFound_Returns404()
     {
         // Arrange
-        OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationErrors> result = new(
-            new NotFound("Widget not found")
-        );
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationErrors> result = new(new NotFound("Widget not found"));
 
         // Act
         var actionResult = result.ToActionResult();
@@ -383,7 +379,7 @@ public class ResultExtensionsTests
     public void ToActionResult_FiveArity_WithForbidden_Returns403()
     {
         // Arrange
-        OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationErrors> result = new(new Forbidden("No access"));
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationErrors> result = new(new Forbidden("No access"));
 
         // Act
         var actionResult = result.ToActionResult();
@@ -397,7 +393,7 @@ public class ResultExtensionsTests
     public void ToActionResult_FiveArity_WithConflict_Returns409()
     {
         // Arrange
-        OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationErrors> result = new(
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationErrors> result = new(
             new Conflict("Data changed", "stale.data")
         );
 
@@ -416,7 +412,7 @@ public class ResultExtensionsTests
     {
         // Arrange
         var errors = new ValidationErrors(["Name is required", "Email is invalid"]);
-        OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationErrors> result = new(errors);
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationErrors> result = new(errors);
 
         // Act
         var actionResult = result.ToActionResult();
@@ -438,7 +434,7 @@ public class ResultExtensionsTests
     public void ToActionResult_SixArity_WithSuccess_ReturnsOkObjectResult()
     {
         // Arrange
-        OperationOutcome<string, NotFound, Forbidden, Cancelled, Timeout, RateLimited> result = new("hello");
+        Outcome<string, NotFound, Forbidden, Cancelled, Timeout, RateLimited> result = new("hello");
 
         // Act
         var actionResult = result.ToActionResult();
@@ -452,9 +448,7 @@ public class ResultExtensionsTests
     public void ToActionResult_SixArity_WithNotFound_Returns404()
     {
         // Arrange
-        OperationOutcome<string, NotFound, Forbidden, Cancelled, Timeout, RateLimited> result = new(
-            new NotFound("Widget not found")
-        );
+        Outcome<string, NotFound, Forbidden, Cancelled, Timeout, RateLimited> result = new(new NotFound("Widget not found"));
 
         // Act
         var actionResult = result.ToActionResult();
@@ -469,7 +463,7 @@ public class ResultExtensionsTests
     public void ToActionResult_SixArity_WithForbidden_Returns403()
     {
         // Arrange
-        OperationOutcome<string, NotFound, Forbidden, Cancelled, Timeout, RateLimited> result = new(new Forbidden("No access"));
+        Outcome<string, NotFound, Forbidden, Cancelled, Timeout, RateLimited> result = new(new Forbidden("No access"));
 
         // Act
         var actionResult = result.ToActionResult();
@@ -483,9 +477,7 @@ public class ResultExtensionsTests
     public void ToActionResult_SixArity_WithCancelled_Returns499NoBody()
     {
         // Arrange
-        OperationOutcome<string, NotFound, Forbidden, Cancelled, Timeout, RateLimited> result = new(
-            new Cancelled("caller went away")
-        );
+        Outcome<string, NotFound, Forbidden, Cancelled, Timeout, RateLimited> result = new(new Cancelled("caller went away"));
 
         // Act
         var actionResult = result.ToActionResult();
@@ -499,7 +491,7 @@ public class ResultExtensionsTests
     public void ToActionResult_SixArity_WithTimeout_Returns504()
     {
         // Arrange
-        OperationOutcome<string, NotFound, Forbidden, Cancelled, Timeout, RateLimited> result = new(
+        Outcome<string, NotFound, Forbidden, Cancelled, Timeout, RateLimited> result = new(
             new Timeout(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2), "downstream slow")
         );
 
@@ -517,7 +509,7 @@ public class ResultExtensionsTests
     public void ToActionResult_SixArity_WithRateLimited_Returns429()
     {
         // Arrange
-        OperationOutcome<string, NotFound, Forbidden, Cancelled, Timeout, RateLimited> result = new(
+        Outcome<string, NotFound, Forbidden, Cancelled, Timeout, RateLimited> result = new(
             new RateLimited("per-user", TimeSpan.FromSeconds(30), "slow down")
         );
 
@@ -532,8 +524,7 @@ public class ResultExtensionsTests
     }
 
     /// <summary>Request fixture for <see cref="ToActionResult_WithFluentValidationErrorsRoutedThroughBehavior_Returns400WithFieldKeyedValidationProblemDetails"/> only.</summary>
-    private sealed record CreateWidgetCommand(string Name, int Quantity)
-        : ICommand<OperationOutcome<string, FluentValidationErrors>>;
+    private sealed record CreateWidgetCommand(string Name, int Quantity) : ICommand<Outcome<string, FluentValidationErrors>>;
 
     /// <summary>Validator fixture for <see cref="ToActionResult_WithFluentValidationErrorsRoutedThroughBehavior_Returns400WithFieldKeyedValidationProblemDetails"/> only.</summary>
     private sealed class CreateWidgetCommandValidator : AbstractValidator<CreateWidgetCommand>

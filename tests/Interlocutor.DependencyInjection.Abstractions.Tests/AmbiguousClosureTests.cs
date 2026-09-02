@@ -343,18 +343,16 @@ public class AmbiguousClosureTests
         Assert.Contains(typeof(IClosureTestExportStrategy<>), builder.UniqueClosureContracts);
     }
 
-    private sealed record ConflictedCommand : ICommand<OperationOutcome>;
+    private sealed record ConflictedCommand : ICommand<Outcome>;
 
-    private sealed class ConflictedCommandHandlerA : ICommandHandler<ConflictedCommand, OperationOutcome>
+    private sealed class ConflictedCommandHandlerA : ICommandHandler<ConflictedCommand, Outcome>
     {
-        public Task<OperationOutcome> Handle(ConflictedCommand command, CancellationToken ct) =>
-            Task.FromResult(default(OperationOutcome));
+        public Task<Outcome> Handle(ConflictedCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 
-    private sealed class ConflictedCommandHandlerB : ICommandHandler<ConflictedCommand, OperationOutcome>
+    private sealed class ConflictedCommandHandlerB : ICommandHandler<ConflictedCommand, Outcome>
     {
-        public Task<OperationOutcome> Handle(ConflictedCommand command, CancellationToken ct) =>
-            Task.FromResult(default(OperationOutcome));
+        public Task<Outcome> Handle(ConflictedCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 
     private sealed record ClosureTestNotification : INotification;

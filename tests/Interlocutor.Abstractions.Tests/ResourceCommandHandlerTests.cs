@@ -6,7 +6,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 
 #pragma warning disable SA1402
 
-public record TestCommand(int EntityId) : ICommand<OperationOutcome<string, NotFound, Failure>>;
+public record TestCommand(int EntityId) : ICommand<Outcome<string, NotFound, Failure>>;
 
 public class TestEntity
 {
@@ -19,12 +19,12 @@ public class TestResourceCommandHandler : ResourceCommandHandler<TestCommand, Te
 {
     private readonly TestEntity? _loadedEntity;
     private readonly Failure? _authorizationFailure;
-    private readonly OperationOutcome<string, NotFound, Failure> _handleResult;
+    private readonly Outcome<string, NotFound, Failure> _handleResult;
 
     public TestResourceCommandHandler(
         TestEntity? loadedEntity,
         Failure? authorizationFailure,
-        OperationOutcome<string, NotFound, Failure> handleResult
+        Outcome<string, NotFound, Failure> handleResult
     )
     {
         this._loadedEntity = loadedEntity;
@@ -37,7 +37,7 @@ public class TestResourceCommandHandler : ResourceCommandHandler<TestCommand, Te
 
     protected override Failure? Authorize(TestEntity entity, TestCommand command) => this._authorizationFailure;
 
-    protected override Task<OperationOutcome<string, NotFound, Failure>> HandleAsync(
+    protected override Task<Outcome<string, NotFound, Failure>> HandleAsync(
         TestCommand command,
         TestEntity entity,
         CancellationToken ct
@@ -51,7 +51,7 @@ public class ResourceCommandHandlerTests
     {
         // Arrange
         var entity = new TestEntity { Id = 1, Name = "Test" };
-        var expectedResult = new OperationOutcome<string, NotFound, Failure>("Success");
+        var expectedResult = new Outcome<string, NotFound, Failure>("Success");
         var handler = new TestResourceCommandHandler(entity, null, expectedResult);
 
         // Act
@@ -66,7 +66,7 @@ public class ResourceCommandHandlerTests
     public async Task Handle_WithMissingEntity_ReturnsNotFound()
     {
         // Arrange
-        var handler = new TestResourceCommandHandler(null, null, new OperationOutcome<string, NotFound, Failure>("unused"));
+        var handler = new TestResourceCommandHandler(null, null, new Outcome<string, NotFound, Failure>("unused"));
 
         // Act
         var result = await handler.Handle(new TestCommand(999), CancellationToken.None);
@@ -84,11 +84,7 @@ public class ResourceCommandHandlerTests
         // Arrange
         var entity = new TestEntity { Id = 1, Name = "Test" };
         var authFailure = new Failure("Access denied");
-        var handler = new TestResourceCommandHandler(
-            entity,
-            authFailure,
-            new OperationOutcome<string, NotFound, Failure>("unused")
-        );
+        var handler = new TestResourceCommandHandler(entity, authFailure, new Outcome<string, NotFound, Failure>("unused"));
 
         // Act
         var result = await handler.Handle(new TestCommand(1), CancellationToken.None);
@@ -122,7 +118,7 @@ public class ResourceCommandHandlerTests
 
         protected override Failure? Authorize(TestEntity entity, TestCommand command) => null;
 
-        protected override Task<OperationOutcome<string, NotFound, Failure>> HandleAsync(
+        protected override Task<Outcome<string, NotFound, Failure>> HandleAsync(
             TestCommand command,
             TestEntity entity,
             CancellationToken ct

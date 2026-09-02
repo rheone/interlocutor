@@ -153,28 +153,28 @@ public class PipelineOverrideParityTests
         }
     }
 
-    private sealed record OverriddenCommand(string Name) : ICommand<OperationOutcome<string, Forbidden>>, IOverrideTarget;
+    private sealed record OverriddenCommand(string Name) : ICommand<Outcome<string, Forbidden>>, IOverrideTarget;
 
     // The three handler classes below are resolved only via AddInterlocutor()'s assembly-scanning DI
     // registration - never new'd or typeof'd directly in this file - so their constructors are
     // invisible to static analysis.
 #pragma warning disable S1144
-    private sealed class OverriddenCommandHandler : ICommandHandler<OverriddenCommand, OperationOutcome<string, Forbidden>>
+    private sealed class OverriddenCommandHandler : ICommandHandler<OverriddenCommand, Outcome<string, Forbidden>>
     {
-        public Task<OperationOutcome<string, Forbidden>> Handle(OverriddenCommand command, CancellationToken ct) =>
-            Task.FromResult(new OperationOutcome<string, Forbidden>(command.Name));
+        public Task<Outcome<string, Forbidden>> Handle(OverriddenCommand command, CancellationToken ct) =>
+            Task.FromResult(new Outcome<string, Forbidden>(command.Name));
     }
 
-    private sealed record UnrelatedCommand(string Name) : ICommand<OperationOutcome<string, Forbidden>>;
+    private sealed record UnrelatedCommand(string Name) : ICommand<Outcome<string, Forbidden>>;
 
-    private sealed class UnrelatedCommandHandler : ICommandHandler<UnrelatedCommand, OperationOutcome<string, Forbidden>>
+    private sealed class UnrelatedCommandHandler : ICommandHandler<UnrelatedCommand, Outcome<string, Forbidden>>
     {
-        public Task<OperationOutcome<string, Forbidden>> Handle(UnrelatedCommand command, CancellationToken ct) =>
-            Task.FromResult(new OperationOutcome<string, Forbidden>(command.Name));
+        public Task<Outcome<string, Forbidden>> Handle(UnrelatedCommand command, CancellationToken ct) =>
+            Task.FromResult(new Outcome<string, Forbidden>(command.Name));
     }
 
     private sealed record AuditableOverriddenCommand(string Name)
-        : ICommand<OperationOutcome<string, Forbidden>>,
+        : ICommand<Outcome<string, Forbidden>>,
             IAuditableRequest,
             IOverrideTarget
     {
@@ -182,10 +182,10 @@ public class PipelineOverrideParityTests
     }
 
     private sealed class AuditableOverriddenCommandHandler
-        : ICommandHandler<AuditableOverriddenCommand, OperationOutcome<string, Forbidden>>
+        : ICommandHandler<AuditableOverriddenCommand, Outcome<string, Forbidden>>
     {
-        public Task<OperationOutcome<string, Forbidden>> Handle(AuditableOverriddenCommand command, CancellationToken ct) =>
-            Task.FromResult(new OperationOutcome<string, Forbidden>(command.Name));
+        public Task<Outcome<string, Forbidden>> Handle(AuditableOverriddenCommand command, CancellationToken ct) =>
+            Task.FromResult(new Outcome<string, Forbidden>(command.Name));
     }
 #pragma warning restore S1144
 }

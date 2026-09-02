@@ -98,12 +98,10 @@ public class OutcomeMapperBaseTests
     {
         // Arrange - proves per-case selection generalizes beyond a single failure type, matching a handler
         // that reports several distinct failure cases from one operation.
-        OperationOutcome<string, NotFound, Forbidden, Conflict, ValidationErrors> outcome = new(
-            new Conflict("stale", "conflict.code")
-        );
+        Outcome<string, NotFound, Forbidden, Conflict, ValidationErrors> outcome = new(new Conflict("stale", "conflict.code"));
 
         // Act
-        var exitCode = this.mapper.Map(outcome.GetValue()!);
+        var exitCode = this.mapper.Map(outcome.Value);
 
         // Assert
         Assert.Equal(ExitCodeOutcomeMapper.ConflictExitCode, exitCode);

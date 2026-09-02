@@ -11,6 +11,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 using Interlocutor.DependencyInjection.Abstractions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Diagnostics;
 
 /// <summary>
 /// Compiles a snippet of source against the real Interlocutor assemblies and runs
@@ -51,17 +52,21 @@ internal static class GeneratorTestHarness
     /// own output (see <see cref="RunAndUpdate(string, string, System.Collections.Generic.IEnumerable{MetadataReference}?, out ImmutableArray{Diagnostic})"/>),
     /// for simulating a project reference between two generator-run projects.
     /// </param>
+    /// <param name="languageVersion">
+    /// The parse options' language version - <see cref="LanguageVersion.Preview"/> for source declaring a new
+    /// <c>union</c> type (the preview discriminated-union feature itself), <see cref="LanguageVersion.Latest"/>
+    /// (the default) for source that only ever references an already-compiled union, which needs no special
+    /// grammar to parse.
+    /// </param>
     /// <returns>The resulting compilation.</returns>
     public static CSharpCompilation CreateCompilation(
         string source,
         string assemblyName = "Interlocutor.Generator.Tests.Compilation",
-        IEnumerable<MetadataReference>? extraReferences = null
+        IEnumerable<MetadataReference>? extraReferences = null,
+        LanguageVersion languageVersion = LanguageVersion.Latest
     )
     {
-        var syntaxTree = CSharpSyntaxTree.ParseText(
-            source,
-            new CSharpParseOptions(Microsoft.CodeAnalysis.CSharp.LanguageVersion.Latest)
-        );
+        var syntaxTree = CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(languageVersion));
         var references = extraReferences is null ? References : References.AddRange(extraReferences);
         return CSharpCompilation.Create(
             assemblyName,
@@ -87,6 +92,27 @@ internal static class GeneratorTestHarness
     }
 
     /// <summary>
+    /// Compiles <paramref name="source"/> and runs <paramref name="analyzer"/> over it directly via
+    /// <see cref="CompilationWithAnalyzers"/> - for a standalone <see cref="DiagnosticAnalyzer"/> (e.g.
+    /// <see cref="DuplicateOutcomeCaseTypeAnalyzer"/>), as opposed to <see cref="Run"/>, which drives
+    /// <see cref="InterlocutorSourceGenerator"/>'s own <see cref="Microsoft.CodeAnalysis.IIncrementalGenerator"/> pipeline.
+    /// </summary>
+    /// <param name="analyzer">The analyzer to run.</param>
+    /// <param name="source">The C# source to compile and analyze.</param>
+    /// <param name="extraReferences">Additional references - see <see cref="CreateCompilation"/>.</param>
+    /// <returns>Every diagnostic the analyzer reported (compiler diagnostics are not included).</returns>
+    public static Task<ImmutableArray<Diagnostic>> RunAnalyzer(
+        DiagnosticAnalyzer analyzer,
+        string source,
+        IEnumerable<MetadataReference>? extraReferences = null
+    )
+    {
+        var compilation = CreateCompilation(source, extraReferences: extraReferences);
+        var withAnalyzers = compilation.WithAnalyzers([analyzer]);
+        return withAnalyzers.GetAnalyzerDiagnosticsAsync();
+    }
+
+    /// <summary>
     /// Compiles <paramref name="source"/>, runs <see cref="InterlocutorSourceGenerator"/> over it, and returns
     /// the resulting compilation with the generated sources merged in - for asserting that the emitted code
     /// itself compiles cleanly alongside the source it was generated from, or for chaining into
@@ -102,11 +128,48 @@ internal static class GeneratorTestHarness
         string assemblyName,
         IEnumerable<MetadataReference>? extraReferences,
         out ImmutableArray<Diagnostic> generatorDiagnostics
+    ) =>
+        RunAndUpdate(
+            new InterlocutorSourceGenerator(),
+            source,
+            assemblyName,
+            extraReferences,
+            LanguageVersion.Latest,
+            out generatorDiagnostics
+        );
+
+    /// <summary>
+    /// Compiles <paramref name="source"/> and runs <paramref name="generator"/> over it, returning the
+    /// resulting compilation with the generator's emitted sources merged in - the generator-parameterized,
+    /// language-version-parameterized sibling of <see cref="RunAndUpdate(string, string, System.Collections.Generic.IEnumerable{MetadataReference}?, out ImmutableArray{Diagnostic})"/>,
+    /// for a generator other than <see cref="InterlocutorSourceGenerator"/> (e.g. <see cref="OutcomeMemberGenerator"/>)
+    /// or source that declares a new <c>union</c> type and needs <see cref="LanguageVersion.Preview"/> to parse.
+    /// </summary>
+    /// <param name="generator">The incremental generator to run.</param>
+    /// <param name="source">The C# source to compile and analyze.</param>
+    /// <param name="assemblyName">The compilation's assembly name.</param>
+    /// <param name="extraReferences">Additional references - see <see cref="CreateCompilation"/>.</param>
+    /// <param name="languageVersion">The parse options' language version - see <see cref="CreateCompilation"/>.</param>
+    /// <param name="generatorDiagnostics">Diagnostics the generator itself reported (not compiler diagnostics).</param>
+    /// <returns>The output compilation with the generator's emitted sources merged in.</returns>
+    public static Compilation RunAndUpdate(
+        IIncrementalGenerator generator,
+        string source,
+        string assemblyName,
+        IEnumerable<MetadataReference>? extraReferences,
+        LanguageVersion languageVersion,
+        out ImmutableArray<Diagnostic> generatorDiagnostics
     )
     {
-        var driver = CSharpGeneratorDriver.Create(new InterlocutorSourceGenerator());
+        // The driver's own generated-source parse options default independently of the input compilation's -
+        // passing languageVersion here too keeps a Preview-parsed input and its generated output consistent
+        // (mismatched language versions across one compilation's syntax trees is a hard error).
+        var driver = CSharpGeneratorDriver.Create(
+            [generator.AsSourceGenerator()],
+            parseOptions: new CSharpParseOptions(languageVersion)
+        );
         _ = driver.RunGeneratorsAndUpdateCompilation(
-            CreateCompilation(source, assemblyName, extraReferences),
+            CreateCompilation(source, assemblyName, extraReferences, languageVersion),
             out var outputCompilation,
             out generatorDiagnostics
         );
@@ -157,9 +220,29 @@ internal static class GeneratorTestHarness
         string source,
         string assemblyName,
         IEnumerable<MetadataReference>? extraReferences = null
+    ) => EmitAndLoadAssembly(new InterlocutorSourceGenerator(), source, assemblyName, extraReferences, LanguageVersion.Latest);
+
+    /// <summary>
+    /// The generator-parameterized, language-version-parameterized sibling of
+    /// <see cref="EmitAndLoadAssembly(string, string, System.Collections.Generic.IEnumerable{MetadataReference}?)"/> -
+    /// see its remarks.
+    /// </summary>
+    /// <param name="generator">The incremental generator to run.</param>
+    /// <param name="source">The C# source to compile and analyze.</param>
+    /// <param name="assemblyName">The compilation's assembly name - see the other overload's remarks on uniqueness.</param>
+    /// <param name="extraReferences">Additional references - see <see cref="CreateCompilation"/>.</param>
+    /// <param name="languageVersion">The parse options' language version - see <see cref="CreateCompilation"/>.</param>
+    /// <returns>The loaded assembly and the raw PE bytes it was loaded from.</returns>
+    /// <exception cref="InvalidOperationException">Emission failed - the message includes every reported <see cref="Diagnostic"/>.</exception>
+    public static (Assembly Assembly, ImmutableArray<byte> PeBytes) EmitAndLoadAssembly(
+        IIncrementalGenerator generator,
+        string source,
+        string assemblyName,
+        IEnumerable<MetadataReference>? extraReferences,
+        LanguageVersion languageVersion
     )
     {
-        var compilation = RunAndUpdate(source, assemblyName, extraReferences, out _);
+        var compilation = RunAndUpdate(generator, source, assemblyName, extraReferences, languageVersion, out _);
 
         using var peStream = new MemoryStream();
         var emitResult = compilation.Emit(peStream);
@@ -178,7 +261,7 @@ internal static class GeneratorTestHarness
     /// <summary>
     /// Wires <see cref="System.Runtime.Loader.AssemblyLoadContext.Resolving"/> on the default context once,
     /// falling back to <see cref="LoadedAssembliesByName"/> for any reference the runtime's own default
-    /// resolution cannot find - see <see cref="EmitAndLoadAssembly"/>'s remarks.
+    /// resolution cannot find - see <see cref="EmitAndLoadAssembly(string, string, System.Collections.Generic.IEnumerable{MetadataReference}?)"/>'s remarks.
     /// </summary>
     /// <returns><see langword="true"/> unconditionally - a marker return value so this can run from a field initializer.</returns>
     private static bool RegisterResolvingHandler()
@@ -283,8 +366,9 @@ internal static class GeneratorTestHarness
             var assembly in new[]
             {
                 typeof(IQuery<>).Assembly, // Interlocutor.Abstractions
-                typeof(IOperationOutcome).Assembly, // Interlocutor.CommonKernel
+                typeof(IOutcome).Assembly, // Interlocutor.CommonKernel
                 typeof(InterlocutorRegistration).Assembly, // Interlocutor.DependencyInjection.Abstractions
+                typeof(FluentValidation.IValidator).Assembly, // FluentValidation
             }
         )
         {

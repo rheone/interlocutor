@@ -1,5 +1,7 @@
 namespace Interlocutor.Generator;
 
+using System.Diagnostics;
+
 /// <summary>
 /// One concrete generic type argument's value-type/reference-type/parameterless-constructor facts, resolved
 /// once from its CLR metadata name - see <see cref="GenericConstraintSnapshot.ArgumentTypeFacts"/>.
@@ -16,6 +18,7 @@ namespace Interlocutor.Generator;
 /// field, so the compiler-generated equality this type gets is already correct element-wise, unlike
 /// <see cref="GenericConstraintSnapshot"/> itself.
 /// </remarks>
+[DebuggerDisplay("{MetadataName} (IsValueType={IsValueType})")]
 internal readonly record struct ResolvedArgumentTypeFact(
     string MetadataName,
     bool IsValueType,

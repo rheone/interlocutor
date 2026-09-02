@@ -163,5 +163,5 @@ public class LoggingBehaviorTests
         Assert.Equal(expectedValue, result);
     }
 
-    public record LoggedQuery(int Value) : IQuery<OperationOutcome<int, Failure>>;
+    public record LoggedQuery(int Value) : IQuery<Outcome<int, Failure>>;
 }

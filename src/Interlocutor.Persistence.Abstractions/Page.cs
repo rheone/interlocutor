@@ -1,5 +1,7 @@
 namespace Interlocutor.Persistence.Abstractions;
 
+using System.Diagnostics;
+
 /// <summary>
 /// One materialized page of results returned by <see cref="IDomainRepository{TEntity, TKey}.GetPagedAsync"/>,
 /// together with the paging metadata needed to render pagination controls.
@@ -13,12 +15,18 @@ namespace Interlocutor.Persistence.Abstractions;
 /// <para>
 /// This is a different type, for a different concern, than the consumer-defined <c>PagedResult&lt;T&gt;</c>
 /// documented in <c>documentation/glossary.md</c>: that type is a consumer's own success-case payload for an
-/// <c>OperationOutcome&lt;PagedResult&lt;T&gt;, ...&gt;</c>, and <c>Interlocutor.CommonKernel</c> still ships
+/// <c>Outcome&lt;PagedResult&lt;T&gt;, ...&gt;</c>, and <c>Interlocutor.CommonKernel</c> still ships
 /// no opinion about pagination. <see cref="Page{T}"/> is this package's repository-return-shape vocabulary -
 /// a consumer's handler is free to map it into its own success-case type, or return it unwrapped.
 /// </para>
 /// </remarks>
-public sealed record Page<T>(IReadOnlyList<T> Items, int PageNumber, int PageSize, int TotalCount)
+[DebuggerDisplay("Page {PageNumber}/{TotalPageCount}, {Items.Count} of {TotalCount} items")]
+public sealed record Page<T>(
+    [property: DebuggerBrowsable(DebuggerBrowsableState.RootHidden)] IReadOnlyList<T> Items,
+    int PageNumber,
+    int PageSize,
+    int TotalCount
+)
 {
     /// <summary>Gets the total number of pages, given <see cref="TotalCount"/> and <see cref="PageSize"/>.</summary>
     /// <value>

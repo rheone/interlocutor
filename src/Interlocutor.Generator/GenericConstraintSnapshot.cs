@@ -1,6 +1,7 @@
 namespace Interlocutor.Generator;
 
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 
 /// <summary>
@@ -37,6 +38,7 @@ using System.Linq;
 /// ticket 12 - <see cref="Equals(GenericConstraintSnapshot?)"/>/<see cref="GetHashCode"/> are overridden below
 /// to compare both arrays element-wise instead.
 /// </remarks>
+[DebuggerDisplay("{ArgumentTypeFacts.Length} argument facts, {ConversionFacts.Length} conversion facts")]
 internal sealed record GenericConstraintSnapshot(
     ImmutableArray<ResolvedArgumentTypeFact> ArgumentTypeFacts,
     ImmutableArray<ConstraintConversionFact> ConversionFacts

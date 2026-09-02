@@ -22,7 +22,7 @@ public class RegistrationApplierTests
             .AddHandler(typeof(MarkerHandler))
             .AddGeneratedRegistrations([
                 new InterlocutorRegistration(
-                    typeof(IQueryHandler<MarkerGeneratedQuery, OperationOutcome>),
+                    typeof(IQueryHandler<MarkerGeneratedQuery, Outcome>),
                     typeof(MarkerGeneratedHandler),
                     RegistrationLifetime.Scoped,
                     RegistrationKind.Handler
@@ -176,27 +176,24 @@ public class RegistrationApplierTests
             Task.CompletedTask;
     }
 
-    private sealed record MarkerQuery : IQuery<OperationOutcome>;
+    private sealed record MarkerQuery : IQuery<Outcome>;
 
-    private sealed class MarkerHandler : IQueryHandler<MarkerQuery, OperationOutcome>
+    private sealed class MarkerHandler : IQueryHandler<MarkerQuery, Outcome>
     {
-        public Task<OperationOutcome> Handle(MarkerQuery query, CancellationToken ct) =>
-            Task.FromResult(default(OperationOutcome));
+        public Task<Outcome> Handle(MarkerQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 
-    private sealed record MarkerGeneratedQuery : IQuery<OperationOutcome>;
+    private sealed record MarkerGeneratedQuery : IQuery<Outcome>;
 
-    private sealed class MarkerGeneratedHandler : IQueryHandler<MarkerGeneratedQuery, OperationOutcome>
+    private sealed class MarkerGeneratedHandler : IQueryHandler<MarkerGeneratedQuery, Outcome>
     {
-        public Task<OperationOutcome> Handle(MarkerGeneratedQuery query, CancellationToken ct) =>
-            Task.FromResult(default(OperationOutcome));
+        public Task<Outcome> Handle(MarkerGeneratedQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 
-    private sealed record MarkerMatchedQuery : IQuery<OperationOutcome>;
+    private sealed record MarkerMatchedQuery : IQuery<Outcome>;
 
-    private sealed class MarkerMatchedHandler : IQueryHandler<MarkerMatchedQuery, OperationOutcome>
+    private sealed class MarkerMatchedHandler : IQueryHandler<MarkerMatchedQuery, Outcome>
     {
-        public Task<OperationOutcome> Handle(MarkerMatchedQuery query, CancellationToken ct) =>
-            Task.FromResult(default(OperationOutcome));
+        public Task<Outcome> Handle(MarkerMatchedQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 }

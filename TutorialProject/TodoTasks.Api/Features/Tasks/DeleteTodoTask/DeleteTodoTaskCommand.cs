@@ -20,7 +20,7 @@ using TodoTasks.Api.Domain;
 /// only run *after* loading, since it needs to inspect the loaded entity's own state.
 /// </remarks>
 public sealed record DeleteTodoTaskCommand(int Id)
-    : ICommand<OperationOutcome<Success, NotFound, Forbidden>>,
+    : ICommand<Outcome<Success, NotFound, Forbidden>>,
         IRequiresPolicy,
         IAuditableRequest
 {

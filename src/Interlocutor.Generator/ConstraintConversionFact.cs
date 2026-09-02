@@ -1,5 +1,7 @@
 namespace Interlocutor.Generator;
 
+using System.Diagnostics;
+
 /// <summary>
 /// Whether a conversion from one concrete argument type to one open generic handler constraint type is an
 /// identity or implicit conversion - the only conversions <see cref="GenericConstraintChecker.Satisfies"/>
@@ -11,6 +13,7 @@ namespace Interlocutor.Generator;
 /// Whether <see cref="Microsoft.CodeAnalysis.CSharp.CSharpCompilation.ClassifyConversion(Microsoft.CodeAnalysis.ITypeSymbol, Microsoft.CodeAnalysis.ITypeSymbol)"/>
 /// found an identity or implicit conversion from the argument type to the constraint type.
 /// </param>
+[DebuggerDisplay("{ArgumentMetadataName} -> {ConstraintTypeMetadataName}: {IsSatisfyingConversion}")]
 internal readonly record struct ConstraintConversionFact(
     string ArgumentMetadataName,
     string ConstraintTypeMetadataName,

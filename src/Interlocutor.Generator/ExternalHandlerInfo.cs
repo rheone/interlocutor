@@ -1,5 +1,7 @@
 namespace Interlocutor.Generator;
 
+using System.Diagnostics;
+
 /// <summary>
 /// An equatable, incremental-pipeline-safe snapshot of one query, command, or void-command handler declared
 /// by a referenced assembly's <see cref="ExternalHandlerInfo"/>-emitting generator run, read back from that
@@ -12,4 +14,5 @@ namespace Interlocutor.Generator;
 /// The response type's fully-qualified (<c>global::</c>-prefixed) type name, or <see langword="null"/> for a
 /// void-command handler (mirrors <see cref="HandlerModel.ResponseTypeName"/>'s void-command convention).
 /// </param>
+[DebuggerDisplay("{Kind} {RequestTypeName}")]
 internal sealed record ExternalHandlerInfo(HandlerKind Kind, string RequestTypeName, string? ResponseTypeName);

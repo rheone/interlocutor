@@ -1,10 +1,10 @@
 namespace Interlocutor.Persistence.NHibernate.Tests;
 
 using System.Data.SQLite;
+using global::NHibernate;
 using FluentNHibernate.Cfg;
 using FluentNHibernate.Cfg.Db;
 using FluentNHibernate.Mapping;
-using global::NHibernate;
 using global::NHibernate.Tool.hbm2ddl;
 
 /// <summary>

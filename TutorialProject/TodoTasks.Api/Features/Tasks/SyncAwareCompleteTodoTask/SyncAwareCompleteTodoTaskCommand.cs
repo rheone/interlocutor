@@ -18,4 +18,4 @@ using TodoTasks.Api.Domain;
 /// second handler for it, and why it is deliberately not wired into <c>Program.cs</c> as the project's
 /// real completion path.
 /// </remarks>
-public sealed record SyncAwareCompleteTodoTaskCommand(int Id) : ICommand<OperationOutcome<TodoTaskDto, NotFound>>;
+public sealed record SyncAwareCompleteTodoTaskCommand(int Id) : ICommand<Outcome<TodoTaskDto, NotFound>>;

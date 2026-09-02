@@ -24,12 +24,12 @@ public sealed class OpenGenericHandlerTests
             public Foo() { }
         }
 
-        public sealed class GenericQuery<T> : IQuery<OperationOutcome<T, string>>;
+        public sealed class GenericQuery<T> : IQuery<Outcome<T, string>>;
 
-        public sealed class GenericQueryHandler<T> : IQueryHandler<GenericQuery<T>, OperationOutcome<T, string>>
+        public sealed class GenericQueryHandler<T> : IQueryHandler<GenericQuery<T>, Outcome<T, string>>
             where T : IEntity, new()
         {
-            public Task<OperationOutcome<T, string>> Handle(GenericQuery<T> query, CancellationToken ct) =>
+            public Task<Outcome<T, string>> Handle(GenericQuery<T> query, CancellationToken ct) =>
                 throw new System.NotImplementedException();
         }
 
@@ -55,14 +55,14 @@ public sealed class OpenGenericHandlerTests
 
         var registrationsSource = GetGeneratedSource(result, "InterlocutorGeneratedRegistrations.g.cs");
         Assert.Contains(
-            "new global::Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration(typeof(global::Interlocutor.Abstractions.Queries.IQueryHandler<global::TestApp.GenericQuery<global::TestApp.Foo>, global::Interlocutor.CommonKernel.OperationOutcome<global::TestApp.Foo, string>>), typeof(global::TestApp.GenericQueryHandler<global::TestApp.Foo>), global::Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Scoped, global::Interlocutor.DependencyInjection.Abstractions.RegistrationKind.Handler)",
+            "new global::Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration(typeof(global::Interlocutor.Abstractions.Queries.IQueryHandler<global::TestApp.GenericQuery<global::TestApp.Foo>, global::Interlocutor.CommonKernel.Outcome<global::TestApp.Foo, string>>), typeof(global::TestApp.GenericQueryHandler<global::TestApp.Foo>), global::Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Scoped, global::Interlocutor.DependencyInjection.Abstractions.RegistrationKind.Handler)",
             registrationsSource,
             StringComparison.Ordinal
         );
 
         var dispatchSource = GetGeneratedSource(result, "InterlocutorGeneratedDispatch.g.cs");
         Assert.Contains(
-            "global::Interlocutor.Abstractions.Queries.IQueryHandler<global::TestApp.GenericQuery<global::TestApp.Foo>, global::Interlocutor.CommonKernel.OperationOutcome<global::TestApp.Foo, string>>",
+            "global::Interlocutor.Abstractions.Queries.IQueryHandler<global::TestApp.GenericQuery<global::TestApp.Foo>, global::Interlocutor.CommonKernel.Outcome<global::TestApp.Foo, string>>",
             dispatchSource,
             StringComparison.Ordinal
         );
@@ -118,12 +118,12 @@ public sealed class OpenGenericHandlerTests
                 public Baz() { }
             }
 
-            public sealed class GenericQuery<T> : IQuery<OperationOutcome<T, string>>;
+            public sealed class GenericQuery<T> : IQuery<Outcome<T, string>>;
 
-            public sealed class GenericQueryHandler<T> : IQueryHandler<GenericQuery<T>, OperationOutcome<T, string>>
+            public sealed class GenericQueryHandler<T> : IQueryHandler<GenericQuery<T>, Outcome<T, string>>
                 where T : IEntity, new()
             {
-                public Task<OperationOutcome<T, string>> Handle(GenericQuery<T> query, CancellationToken ct) =>
+                public Task<Outcome<T, string>> Handle(GenericQuery<T> query, CancellationToken ct) =>
                     throw new System.NotImplementedException();
             }
 
@@ -176,12 +176,12 @@ public sealed class OpenGenericHandlerTests
                 public NotAnEntity() { }
             }
 
-            public sealed class GenericQuery<T> : IQuery<OperationOutcome<T, string>>;
+            public sealed class GenericQuery<T> : IQuery<Outcome<T, string>>;
 
-            public sealed class GenericQueryHandler<T> : IQueryHandler<GenericQuery<T>, OperationOutcome<T, string>>
+            public sealed class GenericQueryHandler<T> : IQueryHandler<GenericQuery<T>, Outcome<T, string>>
                 where T : IEntity, new()
             {
-                public Task<OperationOutcome<T, string>> Handle(GenericQuery<T> query, CancellationToken ct) =>
+                public Task<Outcome<T, string>> Handle(GenericQuery<T> query, CancellationToken ct) =>
                     throw new System.NotImplementedException();
             }
 
@@ -223,19 +223,19 @@ public sealed class OpenGenericHandlerTests
                 public Foo() { }
             }
 
-            public sealed class GenericQuery<T> : IQuery<OperationOutcome<T, string>>;
+            public sealed class GenericQuery<T> : IQuery<Outcome<T, string>>;
 
-            public sealed class GenericQueryHandler<T> : IQueryHandler<GenericQuery<T>, OperationOutcome<T, string>>
+            public sealed class GenericQueryHandler<T> : IQueryHandler<GenericQuery<T>, Outcome<T, string>>
                 where T : IEntity, new()
             {
-                public Task<OperationOutcome<T, string>> Handle(GenericQuery<T> query, CancellationToken ct) =>
+                public Task<Outcome<T, string>> Handle(GenericQuery<T> query, CancellationToken ct) =>
                     throw new System.NotImplementedException();
             }
 
             // Special-cases Foo: this concrete handler must win over the open generic one above.
-            public sealed class FooQueryHandler : IQueryHandler<GenericQuery<Foo>, OperationOutcome<Foo, string>>
+            public sealed class FooQueryHandler : IQueryHandler<GenericQuery<Foo>, Outcome<Foo, string>>
             {
-                public Task<OperationOutcome<Foo, string>> Handle(GenericQuery<Foo> query, CancellationToken ct) =>
+                public Task<Outcome<Foo, string>> Handle(GenericQuery<Foo> query, CancellationToken ct) =>
                     throw new System.NotImplementedException();
             }
 
@@ -282,19 +282,19 @@ public sealed class OpenGenericHandlerTests
                 public Foo() { }
             }
 
-            public sealed class GenericQuery<T> : IQuery<OperationOutcome<T, string>>;
+            public sealed class GenericQuery<T> : IQuery<Outcome<T, string>>;
 
-            public sealed class GenericQueryHandlerOne<T> : IQueryHandler<GenericQuery<T>, OperationOutcome<T, string>>
+            public sealed class GenericQueryHandlerOne<T> : IQueryHandler<GenericQuery<T>, Outcome<T, string>>
                 where T : IEntity, new()
             {
-                public Task<OperationOutcome<T, string>> Handle(GenericQuery<T> query, CancellationToken ct) =>
+                public Task<Outcome<T, string>> Handle(GenericQuery<T> query, CancellationToken ct) =>
                     throw new System.NotImplementedException();
             }
 
-            public sealed class GenericQueryHandlerTwo<T> : IQueryHandler<GenericQuery<T>, OperationOutcome<T, string>>
+            public sealed class GenericQueryHandlerTwo<T> : IQueryHandler<GenericQuery<T>, Outcome<T, string>>
                 where T : IEntity, new()
             {
-                public Task<OperationOutcome<T, string>> Handle(GenericQuery<T> query, CancellationToken ct) =>
+                public Task<Outcome<T, string>> Handle(GenericQuery<T> query, CancellationToken ct) =>
                     throw new System.NotImplementedException();
             }
 
@@ -351,19 +351,19 @@ public sealed class OpenGenericHandlerTests
                 public Foo() { }
             }
 
-            public sealed class GenericQuery<T> : IQuery<OperationOutcome<T, string>>;
+            public sealed class GenericQuery<T> : IQuery<Outcome<T, string>>;
 
-            public sealed class GenericQueryHandlerOne<T> : IQueryHandler<GenericQuery<T>, OperationOutcome<T, string>>
+            public sealed class GenericQueryHandlerOne<T> : IQueryHandler<GenericQuery<T>, Outcome<T, string>>
                 where T : IEntity, new()
             {
-                public Task<OperationOutcome<T, string>> Handle(GenericQuery<T> query, CancellationToken ct) =>
+                public Task<Outcome<T, string>> Handle(GenericQuery<T> query, CancellationToken ct) =>
                     throw new System.NotImplementedException();
             }
 
-            public sealed class GenericQueryHandlerTwo<T> : IQueryHandler<GenericQuery<T>, OperationOutcome<T, string>>
+            public sealed class GenericQueryHandlerTwo<T> : IQueryHandler<GenericQuery<T>, Outcome<T, string>>
                 where T : IEntity, new()
             {
-                public Task<OperationOutcome<T, string>> Handle(GenericQuery<T> query, CancellationToken ct) =>
+                public Task<Outcome<T, string>> Handle(GenericQuery<T> query, CancellationToken ct) =>
                     throw new System.NotImplementedException();
             }
 
@@ -407,20 +407,20 @@ public sealed class OpenGenericHandlerTests
                 public Foo() { }
             }
 
-            public sealed class GenericQuery<T> : IQuery<OperationOutcome<T, string>>;
+            public sealed class GenericQuery<T> : IQuery<Outcome<T, string>>;
 
-            public sealed class GenericQueryHandlerLosing<T> : IQueryHandler<GenericQuery<T>, OperationOutcome<T, string>>
+            public sealed class GenericQueryHandlerLosing<T> : IQueryHandler<GenericQuery<T>, Outcome<T, string>>
                 where T : IEntity, new()
             {
-                public Task<OperationOutcome<T, string>> Handle(GenericQuery<T> query, CancellationToken ct) =>
+                public Task<Outcome<T, string>> Handle(GenericQuery<T> query, CancellationToken ct) =>
                     throw new System.NotImplementedException();
             }
 
             [HandlerOverride(typeof(GenericQueryHandlerLosing<>))]
-            public sealed class GenericQueryHandlerWinning<T> : IQueryHandler<GenericQuery<T>, OperationOutcome<T, string>>
+            public sealed class GenericQueryHandlerWinning<T> : IQueryHandler<GenericQuery<T>, Outcome<T, string>>
                 where T : IEntity, new()
             {
-                public Task<OperationOutcome<T, string>> Handle(GenericQuery<T> query, CancellationToken ct) =>
+                public Task<Outcome<T, string>> Handle(GenericQuery<T> query, CancellationToken ct) =>
                     throw new System.NotImplementedException();
             }
 
@@ -463,15 +463,15 @@ public sealed class OpenGenericHandlerTests
 
             public interface IEntity;
 
-            public sealed class GenericQuery<T> : IQuery<OperationOutcome<T, string>>;
+            public sealed class GenericQuery<T> : IQuery<Outcome<T, string>>;
 
             public sealed class DoesNotExistElsewhere;
 
             [HandlerOverride(typeof(DoesNotExistElsewhere))]
-            public sealed class GenericQueryHandler<T> : IQueryHandler<GenericQuery<T>, OperationOutcome<T, string>>
+            public sealed class GenericQueryHandler<T> : IQueryHandler<GenericQuery<T>, Outcome<T, string>>
                 where T : IEntity, new()
             {
-                public Task<OperationOutcome<T, string>> Handle(GenericQuery<T> query, CancellationToken ct) =>
+                public Task<Outcome<T, string>> Handle(GenericQuery<T> query, CancellationToken ct) =>
                     throw new System.NotImplementedException();
             }
             """;
@@ -501,16 +501,16 @@ public sealed class OpenGenericHandlerTests
 
             public interface IEntity;
 
-            public sealed class GenericQuery<T> : IQuery<OperationOutcome<T, string>>;
+            public sealed class GenericQuery<T> : IQuery<Outcome<T, string>>;
 
             // A real type in the compilation, but not a handler at all.
             public sealed class NotAHandler;
 
             [HandlerOverride(typeof(NotAHandler))]
-            public sealed class GenericQueryHandler<T> : IQueryHandler<GenericQuery<T>, OperationOutcome<T, string>>
+            public sealed class GenericQueryHandler<T> : IQueryHandler<GenericQuery<T>, Outcome<T, string>>
                 where T : IEntity, new()
             {
-                public Task<OperationOutcome<T, string>> Handle(GenericQuery<T> query, CancellationToken ct) =>
+                public Task<Outcome<T, string>> Handle(GenericQuery<T> query, CancellationToken ct) =>
                     throw new System.NotImplementedException();
             }
             """;
@@ -543,12 +543,12 @@ public sealed class OpenGenericHandlerTests
                 public Foo() { }
             }
 
-            public sealed class GenericQuery<T> : IQuery<OperationOutcome<T, string>>;
+            public sealed class GenericQuery<T> : IQuery<Outcome<T, string>>;
 
-            public sealed class GenericQueryHandler<T> : IQueryHandler<GenericQuery<T>, OperationOutcome<T, string>>
+            public sealed class GenericQueryHandler<T> : IQueryHandler<GenericQuery<T>, Outcome<T, string>>
                 where T : IEntity, new()
             {
-                public Task<OperationOutcome<T, string>> Handle(GenericQuery<T> query, CancellationToken ct) =>
+                public Task<Outcome<T, string>> Handle(GenericQuery<T> query, CancellationToken ct) =>
                     throw new System.NotImplementedException();
             }
 
@@ -596,12 +596,12 @@ public sealed class OpenGenericHandlerTests
                 public Foo() { }
             }
 
-            public sealed class GenericQuery<T> : IQuery<OperationOutcome<T, string>>;
+            public sealed class GenericQuery<T> : IQuery<Outcome<T, string>>;
 
-            public sealed class GenericQueryHandler<T>(ISomeDependency dependency) : IQueryHandler<GenericQuery<T>, OperationOutcome<T, string>>
+            public sealed class GenericQueryHandler<T>(ISomeDependency dependency) : IQueryHandler<GenericQuery<T>, Outcome<T, string>>
                 where T : IEntity, new()
             {
-                public Task<OperationOutcome<T, string>> Handle(GenericQuery<T> query, CancellationToken ct) =>
+                public Task<Outcome<T, string>> Handle(GenericQuery<T> query, CancellationToken ct) =>
                     throw new System.NotImplementedException();
             }
 
@@ -633,7 +633,7 @@ public sealed class OpenGenericHandlerTests
         // The closed handler is resolved by its closed service interface type, exactly like any other closed
         // handler - never via reflection over its constructor.
         Assert.Contains(
-            "services.GetService(typeof(global::Interlocutor.Abstractions.Queries.IQueryHandler<global::TestApp.GenericQuery<global::TestApp.Foo>, global::Interlocutor.CommonKernel.OperationOutcome<global::TestApp.Foo, string>>))",
+            "services.GetService(typeof(global::Interlocutor.Abstractions.Queries.IQueryHandler<global::TestApp.GenericQuery<global::TestApp.Foo>, global::Interlocutor.CommonKernel.Outcome<global::TestApp.Foo, string>>))",
             dispatchSource,
             StringComparison.Ordinal
         );

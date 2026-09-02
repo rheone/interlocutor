@@ -244,4 +244,92 @@ internal static class InterlocutorDiagnostics
             + "generic handler closing only spans the current compilation's own syntax trees - move the usage "
             + "into the handler's own assembly, or add an explicit closed handler for it here."
     );
+
+    /// <summary>
+    /// Reported when a closed generic type implementing <c>IOutcome</c> repeats the same type in more than one
+    /// type-argument position - e.g. <c>Outcome&lt;Success, Failure, Failure&gt;</c>.
+    /// </summary>
+    /// <remarks>
+    /// C# has no generic constraint expressing "these type arguments must all be distinct," so nothing at the
+    /// language level stops a caller from closing an outcome union this way, silently collapsing two
+    /// supposedly-independent case positions into one. Reported by <see cref="DuplicateOutcomeCaseTypeAnalyzer"/>
+    /// for any closed generic <c>IOutcome</c> implementer found anywhere in the compilation - the library's own
+    /// shipped <c>Outcome&lt;...&gt;</c> family and an arbitrary consumer-declared union alike, since the check
+    /// is driven purely by <c>IOutcome</c> membership, never by the closed type's name. Default severity is
+    /// <see cref="DiagnosticSeverity.Warning"/>, escalated the same way as <see cref="MissingHandler"/>:
+    /// <code>
+    /// dotnet_diagnostic.INTERLOC009.severity = error
+    /// </code>
+    /// </remarks>
+    public static readonly DiagnosticDescriptor DuplicateOutcomeCaseType = new(
+        id: "INTERLOC009",
+        title: "Duplicate outcome case type",
+        messageFormat: "'{0}' repeats case type '{1}' in type-argument positions {2} - each case position must "
+            + "be a distinct type",
+        category: "Interlocutor.Outcomes",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "A closed generic type implementing IOutcome repeated the same type in more than one "
+            + "type-argument position. C# has no generic constraint expressing 'these type arguments must all "
+            + "be distinct,' so this silently collapses two supposedly-independent case positions into one, "
+            + "defeating the point of picking a specific arity for what an operation can actually produce. "
+            + "Replace the repeated position with a distinct case type."
+    );
+
+    /// <summary>
+    /// Reported when a <c>FluentValidation.AbstractValidator&lt;TCommand&gt;</c>/<c>AbstractValidator&lt;TQuery&gt;</c>
+    /// exists for a request whose declared response arity has no validation-shaped case.
+    /// </summary>
+    /// <remarks>
+    /// <c>ResourceCommandHandler</c>'s response shape is fixed to <c>Outcome&lt;TSuccess, NotFound, Failure&gt;</c>,
+    /// which has no case an <c>Interlocutor.FluentValidation.ValidationBehavior</c> failure can occupy -
+    /// registering a validator for a command shaped like that doesn't fail at compile time today, it throws the
+    /// first time a real validation failure happens at runtime, because the behavior has nowhere to put the
+    /// result. Reported by <see cref="ValidationShapeMismatchAnalyzer"/> for any request/response pair shaped
+    /// this way, whether or not <c>ResourceCommandHandler</c> is involved. Default severity is
+    /// <see cref="DiagnosticSeverity.Warning"/>, escalated the same way as <see cref="MissingHandler"/>:
+    /// <code>
+    /// dotnet_diagnostic.INTERLOC010.severity = error
+    /// </code>
+    /// </remarks>
+    public static readonly DiagnosticDescriptor ValidationShapeMismatch = new(
+        id: "INTERLOC010",
+        title: "Validator exists for a request with no validation-shaped response case",
+        messageFormat: "'{0}' has a FluentValidation validator ('{1}') but its response type '{2}' has no "
+            + "validation-shaped case among its case types ({3}) - add a case implementing "
+            + "IValidationFailureCase (or ValidationError/ValidationErrors), or remove the validator",
+        category: "Interlocutor.Validation",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "An AbstractValidator<TCommand>/AbstractValidator<TQuery> exists for a request whose "
+            + "declared response type has no case implementing IValidationFailureCase (or the concrete "
+            + "ValidationError/ValidationErrors types). ValidationBehavior has nowhere to put a real validation "
+            + "failure for this request, so it throws at the first validation failure instead of returning an "
+            + "outcome. Add a validation-shaped case to the response arity, or remove the validator."
+    );
+
+    /// <summary>
+    /// Reported when a <c>partial union</c> decorated with <c>GenerateOutcomeMembersAttribute</c> declares
+    /// fewer than two case types.
+    /// </summary>
+    /// <remarks>
+    /// A single-case union has no alternative for a <c>switch</c> to be exhaustive over, so it isn't a
+    /// meaningful outcome - <see cref="OutcomeMemberGenerator"/> refuses to emit <c>Match</c>/<c>Switch</c>
+    /// members for it rather than silently emitting a no-op or a member set that can never do anything useful.
+    /// Always <see cref="DiagnosticSeverity.Error"/> - unlike <see cref="MissingHandler"/> or
+    /// <see cref="DuplicateHandler"/>, there is no meaningful partial member set to fall back to.
+    /// </remarks>
+    public static readonly DiagnosticDescriptor TooFewOutcomeCaseTypes = new(
+        id: "INTERLOC011",
+        title: "Attributed union declares fewer than two case types",
+        messageFormat: "'{0}' is decorated with GenerateOutcomeMembersAttribute but declares {1} case type(s) - "
+            + "at least two are required for a meaningful outcome union",
+        category: "Interlocutor.Outcomes",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "GenerateOutcomeMembersAttribute marks a partial union declaration for source-generated "
+            + "Match/Switch/TryGetValue/ToString/IsSuccess members. A union with fewer than two case types has "
+            + "no alternative for a switch to be exhaustive over, so it isn't a meaningful outcome - add at "
+            + "least one more case type, or remove the attribute."
+    );
 }

@@ -49,7 +49,7 @@ public class InterlocutorBuilderIntegrationTests
 
         // Assert
         Assert.Contains(services, s => s.ServiceType == typeof(IMediator));
-        Assert.Contains(services, s => s.ServiceType == typeof(IQueryHandler<SampleQuery, OperationOutcome>));
+        Assert.Contains(services, s => s.ServiceType == typeof(IQueryHandler<SampleQuery, Outcome>));
         Assert.DoesNotContain(services, s => s.ServiceType == typeof(IPipelineBehavior<,>));
     }
 
@@ -65,7 +65,7 @@ public class InterlocutorBuilderIntegrationTests
         using var scope = provider.CreateScope();
 
         // Assert
-        Assert.NotNull(scope.ServiceProvider.GetService<IQueryHandler<SampleQuery, OperationOutcome>>());
+        Assert.NotNull(scope.ServiceProvider.GetService<IQueryHandler<SampleQuery, Outcome>>());
     }
 
     [Fact]
@@ -83,14 +83,14 @@ public class InterlocutorBuilderIntegrationTests
         using var provider = services.BuildServiceProvider();
         using var firstScope = provider.CreateScope();
         using var secondScope = provider.CreateScope();
-        var first = firstScope.ServiceProvider.GetRequiredService<IQueryHandler<SampleQuery, OperationOutcome>>();
-        var second = secondScope.ServiceProvider.GetRequiredService<IQueryHandler<SampleQuery, OperationOutcome>>();
+        var first = firstScope.ServiceProvider.GetRequiredService<IQueryHandler<SampleQuery, Outcome>>();
+        var second = secondScope.ServiceProvider.GetRequiredService<IQueryHandler<SampleQuery, Outcome>>();
 
         // Assert
         // A single Singleton registration for this handler - not one Scoped copy from scanning plus a
         // second Singleton copy from AddHandler - proves the explicit registration replaced, rather than
         // duplicated, the scanned one.
-        var descriptor = Assert.Single(services, s => s.ServiceType == typeof(IQueryHandler<SampleQuery, OperationOutcome>));
+        var descriptor = Assert.Single(services, s => s.ServiceType == typeof(IQueryHandler<SampleQuery, Outcome>));
         Assert.Equal(ServiceLifetime.Singleton, descriptor.Lifetime);
         Assert.Same(first, second);
     }
@@ -418,13 +418,13 @@ public class InterlocutorBuilderIntegrationTests
         services.AddSingleton(new HandlerRanFlag(() => handlerRan = true));
         services.AddLogging();
 
-        var declined = new OperationOutcome(new Interlocutor.CommonKernel.ResultTypes.Failure("declined by stage"));
+        var declined = new Outcome(new Interlocutor.CommonKernel.ResultTypes.Failure("declined by stage"));
 
         services.AddInterlocutor(builder =>
             builder
                 .ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly)
-                .Pipeline.AddStage<ShortCircuitQuery, OperationOutcome>(
-                    (_, _) => Task.FromResult(StageResult<OperationOutcome>.ShortCircuit(declined)),
+                .Pipeline.AddStage<ShortCircuitQuery, Outcome>(
+                    (_, _) => Task.FromResult(StageResult<Outcome>.ShortCircuit(declined)),
                     null
                 )
                 .AddStageHost()
@@ -457,7 +457,7 @@ public class InterlocutorBuilderIntegrationTests
         services.AddInterlocutor(builder =>
             builder
                 .ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly)
-                .Pipeline.AddStage<SampleQuery, OperationOutcome>(
+                .Pipeline.AddStage<SampleQuery, Outcome>(
                     null,
                     (_, _, _) => throw new InvalidOperationException("after-hook boom")
                 )
@@ -495,7 +495,7 @@ public class InterlocutorBuilderIntegrationTests
         using var scope = provider.CreateScope();
 
         var behaviors = scope
-            .ServiceProvider.GetServices<IPipelineBehavior<CancellableQuery, OperationOutcome<string, Cancelled>>>()
+            .ServiceProvider.GetServices<IPipelineBehavior<CancellableQuery, Outcome<string, Cancelled>>>()
             .ToList();
 
         // Assert
@@ -517,7 +517,7 @@ public class InterlocutorBuilderIntegrationTests
         using var scope = provider.CreateScope();
 
         var behaviors = scope
-            .ServiceProvider.GetServices<IPipelineBehavior<TimeBoundQuery, OperationOutcome<string, Timeout>>>()
+            .ServiceProvider.GetServices<IPipelineBehavior<TimeBoundQuery, Outcome<string, Timeout>>>()
             .ToList();
 
         // Assert
@@ -539,89 +539,88 @@ public class InterlocutorBuilderIntegrationTests
         using var scope = provider.CreateScope();
 
         var behaviors = scope
-            .ServiceProvider.GetServices<IPipelineBehavior<ThrottledQuery, OperationOutcome<string, RateLimited>>>()
+            .ServiceProvider.GetServices<IPipelineBehavior<ThrottledQuery, Outcome<string, RateLimited>>>()
             .ToList();
 
         // Assert
         Assert.Contains(behaviors, b => b.GetType().Name.StartsWith("RateLimitedBehavior"));
     }
 
-    private sealed record CancellableQuery : IQuery<OperationOutcome<string, Cancelled>>, ICancellable;
+    private sealed record CancellableQuery : IQuery<Outcome<string, Cancelled>>, ICancellable;
 
     // The four handler classes through AuthorizableQueryHandler below are resolved only via
     // AddInterlocutor()'s assembly-scanning DI registration - never new'd or typeof'd directly in
     // this file - so their constructors are invisible to static analysis.
 #pragma warning disable S1144
-    private sealed class CancellableQueryHandler : IQueryHandler<CancellableQuery, OperationOutcome<string, Cancelled>>
+    private sealed class CancellableQueryHandler : IQueryHandler<CancellableQuery, Outcome<string, Cancelled>>
     {
-        public Task<OperationOutcome<string, Cancelled>> Handle(CancellableQuery query, CancellationToken ct) =>
-            Task.FromResult<OperationOutcome<string, Cancelled>>("ok");
+        public Task<Outcome<string, Cancelled>> Handle(CancellableQuery query, CancellationToken ct) =>
+            Task.FromResult<Outcome<string, Cancelled>>("ok");
     }
 
-    private sealed record TimeBoundQuery : IQuery<OperationOutcome<string, Timeout>>, IHasTimeout
+    private sealed record TimeBoundQuery : IQuery<Outcome<string, Timeout>>, IHasTimeout
     {
         public TimeSpan Budget => TimeSpan.FromSeconds(30);
     }
 
-    private sealed class TimeBoundQueryHandler : IQueryHandler<TimeBoundQuery, OperationOutcome<string, Timeout>>
+    private sealed class TimeBoundQueryHandler : IQueryHandler<TimeBoundQuery, Outcome<string, Timeout>>
     {
-        public Task<OperationOutcome<string, Timeout>> Handle(TimeBoundQuery query, CancellationToken ct) =>
-            Task.FromResult<OperationOutcome<string, Timeout>>("ok");
+        public Task<Outcome<string, Timeout>> Handle(TimeBoundQuery query, CancellationToken ct) =>
+            Task.FromResult<Outcome<string, Timeout>>("ok");
     }
 
-    private sealed record ThrottledQuery : IQuery<OperationOutcome<string, RateLimited>>, IRateLimited
+    private sealed record ThrottledQuery : IQuery<Outcome<string, RateLimited>>, IRateLimited
     {
         public string LimitKey => "test-limit";
     }
 
-    private sealed class ThrottledQueryHandler : IQueryHandler<ThrottledQuery, OperationOutcome<string, RateLimited>>
+    private sealed class ThrottledQueryHandler : IQueryHandler<ThrottledQuery, Outcome<string, RateLimited>>
     {
-        public Task<OperationOutcome<string, RateLimited>> Handle(ThrottledQuery query, CancellationToken ct) =>
-            Task.FromResult<OperationOutcome<string, RateLimited>>("ok");
+        public Task<Outcome<string, RateLimited>> Handle(ThrottledQuery query, CancellationToken ct) =>
+            Task.FromResult<Outcome<string, RateLimited>>("ok");
     }
 
-    private sealed record AuthorizableQuery : IQuery<OperationOutcome<string, Forbidden>>, IAuditableRequest, IRequiresPolicy
+    private sealed record AuthorizableQuery : IQuery<Outcome<string, Forbidden>>, IAuditableRequest, IRequiresPolicy
     {
         public string ActionName => "Test.Audit";
 
         public string PolicyName => "Test.Policy";
     }
 
-    private sealed class AuthorizableQueryHandler : IQueryHandler<AuthorizableQuery, OperationOutcome<string, Forbidden>>
+    private sealed class AuthorizableQueryHandler : IQueryHandler<AuthorizableQuery, Outcome<string, Forbidden>>
     {
-        public Task<OperationOutcome<string, Forbidden>> Handle(AuthorizableQuery query, CancellationToken ct) =>
-            Task.FromResult<OperationOutcome<string, Forbidden>>("ok");
+        public Task<Outcome<string, Forbidden>> Handle(AuthorizableQuery query, CancellationToken ct) =>
+            Task.FromResult<Outcome<string, Forbidden>>("ok");
     }
 #pragma warning restore S1144
 
-    private sealed record SampleQuery : IQuery<OperationOutcome>;
+    private sealed record SampleQuery : IQuery<Outcome>;
 
-    private sealed class SampleQueryHandler : IQueryHandler<SampleQuery, OperationOutcome>
+    private sealed class SampleQueryHandler : IQueryHandler<SampleQuery, Outcome>
     {
-        public Task<OperationOutcome> Handle(SampleQuery query, CancellationToken ct) =>
-            Task.FromResult(default(OperationOutcome));
+        public Task<Outcome> Handle(SampleQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 
     /// <summary>Deliberately has no handler, so ValidateOnBuild() tests have a deterministic problem to find.</summary>
-    private sealed record UnhandledValidationQuery : IQuery<OperationOutcome>;
+    private sealed record UnhandledValidationQuery : IQuery<Outcome>;
 
-    private sealed class RecordingStage(List<string> log) : PipelineStageBase<SampleQuery, OperationOutcome>
+    private sealed class RecordingStage(List<string> log) : PipelineStageBase<SampleQuery, Outcome>
     {
-        public override async Task<StageResult<OperationOutcome>> OnBeforeAsync(SampleQuery request, CancellationToken ct)
+        public override async Task<StageResult<Outcome>> OnBeforeAsync(SampleQuery request, CancellationToken ct)
         {
             log.Add("stage-before");
             await Task.CompletedTask.ConfigureAwait(false);
-            return StageResult<OperationOutcome>.Continue;
+            return StageResult<Outcome>.Continue;
         }
 
-        public override async Task OnAfterAsync(SampleQuery request, OperationOutcome result, CancellationToken ct)
+        public override async Task OnAfterAsync(SampleQuery request, Outcome result, CancellationToken ct)
         {
             log.Add("stage-after");
             await Task.CompletedTask.ConfigureAwait(false);
         }
     }
 
-    private sealed record ShortCircuitQuery : IQuery<OperationOutcome>;
+    private sealed record ShortCircuitQuery : IQuery<Outcome>;
 
     private sealed class HandlerRanFlag(Action onHandled)
     {
@@ -631,12 +630,12 @@ public class InterlocutorBuilderIntegrationTests
     // Resolved only via AddInterlocutor()'s assembly-scanning DI registration - never new'd or
     // typeof'd directly, so this constructor is invisible to static analysis.
 #pragma warning disable S1144
-    private sealed class ShortCircuitQueryHandler(HandlerRanFlag flag) : IQueryHandler<ShortCircuitQuery, OperationOutcome>
+    private sealed class ShortCircuitQueryHandler(HandlerRanFlag flag) : IQueryHandler<ShortCircuitQuery, Outcome>
     {
-        public Task<OperationOutcome> Handle(ShortCircuitQuery query, CancellationToken ct)
+        public Task<Outcome> Handle(ShortCircuitQuery query, CancellationToken ct)
         {
             flag.MarkHandled();
-            return Task.FromResult(default(OperationOutcome));
+            return Task.FromResult(default(Outcome));
         }
     }
 #pragma warning restore S1144
@@ -646,7 +645,7 @@ public class InterlocutorBuilderIntegrationTests
         public Task RecordAsync(AuditEntry entry, CancellationToken ct) => Task.CompletedTask;
     }
 
-    private sealed record AuditOnlyQuery : IQuery<OperationOutcome>, IAuditableRequest
+    private sealed record AuditOnlyQuery : IQuery<Outcome>, IAuditableRequest
     {
         public string ActionName => "Test.AuditOnly";
     }
@@ -654,10 +653,9 @@ public class InterlocutorBuilderIntegrationTests
     // Resolved only via AddInterlocutor()'s assembly-scanning DI registration - never new'd or
     // typeof'd directly, so this constructor is invisible to static analysis.
 #pragma warning disable S1144
-    private sealed class AuditOnlyQueryHandler : IQueryHandler<AuditOnlyQuery, OperationOutcome>
+    private sealed class AuditOnlyQueryHandler : IQueryHandler<AuditOnlyQuery, Outcome>
     {
-        public Task<OperationOutcome> Handle(AuditOnlyQuery query, CancellationToken ct) =>
-            Task.FromResult(default(OperationOutcome));
+        public Task<Outcome> Handle(AuditOnlyQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 #pragma warning restore S1144
 

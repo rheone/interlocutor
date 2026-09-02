@@ -32,11 +32,11 @@ public sealed class IncrementalCachingTests
         using Interlocutor.Abstractions.Queries;
         using Interlocutor.CommonKernel;
 
-        public sealed class GetFooQuery : IQuery<OperationOutcome>;
+        public sealed class GetFooQuery : IQuery<Outcome>;
 
-        public sealed class GetFooQueryHandler : IQueryHandler<GetFooQuery, OperationOutcome>
+        public sealed class GetFooQueryHandler : IQueryHandler<GetFooQuery, Outcome>
         {
-            public Task<OperationOutcome> Handle(GetFooQuery query, CancellationToken ct) => throw new System.NotImplementedException();
+            public Task<Outcome> Handle(GetFooQuery query, CancellationToken ct) => throw new System.NotImplementedException();
         }
         """;
 

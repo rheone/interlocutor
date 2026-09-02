@@ -1,5 +1,7 @@
 namespace Interlocutor.FluentValidation.Tests;
 
+using System.Diagnostics;
+using System.Reflection;
 using global::FluentValidation;
 using global::FluentValidation.Results;
 using Interlocutor.CommonKernel.ResultTypes;
@@ -187,5 +189,20 @@ public class FluentValidationErrorsTests
 
         // Assert
         Assert.Equal("FluentValidationErrors: Name is required, Age must be non-negative", result);
+    }
+
+    [Fact]
+    public void BackingField_IsNeverBrowsable()
+    {
+        // Arrange - hidden from the debugger the same way the other five aggregate result types' composed
+        // DistinctItemSet<TItem> field(s) are (ticket 06), even though this field isn't DistinctItemSet-typed.
+        var field = typeof(FluentValidationErrors).GetField("_failures", BindingFlags.NonPublic | BindingFlags.Instance);
+
+        // Act
+        var attribute = field?.GetCustomAttribute<DebuggerBrowsableAttribute>();
+
+        // Assert
+        Assert.NotNull(attribute);
+        Assert.Equal(DebuggerBrowsableState.Never, attribute.State);
     }
 }

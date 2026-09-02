@@ -8,9 +8,9 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </summary>
 /// <typeparam name="TCommand">The command type that this handler processes.</typeparam>
 /// <typeparam name="TResult">
-/// The <see cref="IOperationOutcome"/>-shaped union describing the outcome. Chosen by the handler/call site
-/// - may be any public union type in <c>Interlocutor.CommonKernel</c> (<see cref="OperationOutcome"/>,
-/// <see cref="OperationOutcome{TSuccessResult, TFailureResult}"/>, etc.).
+/// The <see cref="IOutcome"/>-shaped union describing the outcome. Chosen by the handler/call site
+/// - may be any public union type in <c>Interlocutor.CommonKernel</c> (<see cref="Outcome"/>,
+/// <see cref="Outcome{TSuccessResult, TFailureResult}"/>, etc.).
 /// </typeparam>
 /// <remarks>
 /// <para>
@@ -29,7 +29,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </remarks>
 public interface IVoidCommandHandler<in TCommand, TResult>
     where TCommand : ICommand
-    where TResult : IOperationOutcome
+    where TResult : IOutcome
 {
     /// <summary>
     /// Handles the specified command and returns the outcome.

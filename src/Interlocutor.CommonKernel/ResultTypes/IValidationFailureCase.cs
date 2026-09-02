@@ -3,11 +3,11 @@ namespace Interlocutor.CommonKernel.ResultTypes;
 using System.Collections.Generic;
 
 /// <summary>
-/// Marks a type as a validation-shaped failure case usable in an <see cref="OperationOutcome"/> union.
+/// Marks a type as a validation-shaped failure case usable in an <see cref="Outcome"/> union.
 /// </summary>
 /// <remarks>
 /// <para>
-/// Mirrors <see cref="IOperationOutcome"/> as an extension point: a minimal, zero-dependency contract any
+/// Mirrors <see cref="IOutcome"/> as an extension point: a minimal, zero-dependency contract any
 /// validation-shaped failure case can implement, rather than every technology-specific validation failure
 /// being forced through one concrete type. <see cref="ValidationErrors"/> implements it directly;
 /// <c>Interlocutor.FluentValidation.FluentValidationErrors</c> implements it too, preserving the full fidelity

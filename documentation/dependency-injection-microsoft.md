@@ -194,10 +194,10 @@ public sealed class OrderPollingService(IServiceScopeFactory scopeFactory) : Bac
 
 ```csharp
 public sealed class CreateOrderHandler(IDomainRepository<Order, int> orders, IUnitOfWork unitOfWork)
-    : ICommandHandler<CreateOrder, OperationOutcome<int, ValidationError>>,
+    : ICommandHandler<CreateOrder, Outcome<int, ValidationError>>,
       ITransactionalRequest
 {
-    public async Task<OperationOutcome<int, ValidationError>> Handle(CreateOrder command, CancellationToken ct)
+    public async Task<Outcome<int, ValidationError>> Handle(CreateOrder command, CancellationToken ct)
     {
         var order = new Order(command.CustomerId, command.Items);
         await orders.InsertAsync(order, ct);

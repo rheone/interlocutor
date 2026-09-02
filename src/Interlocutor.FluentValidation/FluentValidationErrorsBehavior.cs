@@ -11,7 +11,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </summary>
 /// <typeparam name="TRequest">The type of the request being validated.</typeparam>
 /// <typeparam name="TResponse">
-/// The response type, constrained only to <see cref="IOperationOutcome"/> - deliberately unconstrained
+/// The response type, constrained only to <see cref="IOutcome"/> - deliberately unconstrained
 /// beyond that. See the Remarks for why, and for the same reasoning applied to <see cref="AuthorizationBehavior{TRequest, TResponse}"/>.
 /// </typeparam>
 /// <remarks>
@@ -23,20 +23,20 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// <see cref="ValidationFailure"/> reported by every validator reaches the caller. This is strictly additive:
 /// <see cref="ValidationBehavior{TRequest, TResponse}"/> is not modified, deprecated, or touched. A consumer
 /// opts into full fidelity by declaring <see cref="FluentValidationErrors"/> as a case in their own
-/// <c>OperationOutcome&lt;...&gt;</c> union and registering this behavior instead of (or, though not
+/// <c>Outcome&lt;...&gt;</c> union and registering this behavior instead of (or, though not
 /// recommended, alongside) <see cref="ValidationBehavior{TRequest, TResponse}"/>.
 /// </para>
 /// <para>
-/// <typeparamref name="TResponse"/> is constrained only to <see cref="IOperationOutcome"/> for the same
+/// <typeparamref name="TResponse"/> is constrained only to <see cref="IOutcome"/> for the same
 /// reason <see cref="ValidationBehavior{TRequest, TResponse}"/>'s remarks give in full. Constructing the
 /// <see cref="FluentValidationErrors"/> case of an unconstrained <typeparamref name="TResponse"/> is
 /// delegated to an injected <see cref="IOutcomeCaseRegistry"/> rather than performed reflectively inline, so a
-/// consumer with a hand-rolled, non-union <see cref="IOperationOutcome"/> implementation can register a
+/// consumer with a hand-rolled, non-union <see cref="IOutcome"/> implementation can register a
 /// custom factory for it instead of being limited to compiler-generated unions.
 /// </para>
 /// </remarks>
 public sealed class FluentValidationErrorsBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
-    where TResponse : IOperationOutcome
+    where TResponse : IOutcome
 {
     private readonly IOutcomeCaseRegistry caseRegistry;
     private readonly IEnumerable<global::FluentValidation.IValidator<TRequest>> validators;

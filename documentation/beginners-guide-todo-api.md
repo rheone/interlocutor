@@ -58,7 +58,7 @@ flowchart TD
     Handler --> UoW
     Session --> Database[("your database")]
 
-    Handler --> Outcome["OperationOutcome&lt;...&gt;"]
+    Handler --> Outcome["Outcome&lt;...&gt;"]
     Outcome --> Result["ToMinimalApiResult()"]
     Result --> Response(["HTTP response"])
 ```
@@ -472,7 +472,7 @@ namespace TodoTasks.Api.Application.TodoTasks;
 // OwnerId is filled in by the endpoint from the authenticated caller (Step 6) - it's part of the
 // command, not the request body, so it can never come from client-supplied JSON.
 public sealed record CreateTodoTaskCommand(string Title, string? Notes, string OwnerId)
-    : ICommand<OperationOutcome<TodoTaskDto, ValidationErrors, Conflict>>,
+    : ICommand<Outcome<TodoTaskDto, ValidationErrors, Conflict>>,
       ITransactionalRequest,   // Begin the transaction eagerly - see why below
       IAuditableRequest
 {
@@ -481,10 +481,10 @@ public sealed record CreateTodoTaskCommand(string Title, string? Notes, string O
 ```
 
 > [!NOTE]
-> `OperationOutcome<...>` here is the library's own built-in implementation of `IOperationOutcome` - the actual compiler constraint every `IQuery<TResponse>`/`ICommand<TResponse>` response type must satisfy, and the thing `ValidationBehavior`, `AuthorizationBehavior`, and the rest of the pipeline genuinely depend on. It isn't the only legal implementation: a hand-rolled class implementing `IOperationOutcome` directly works too, once it's teachable to `IOutcomeCaseRegistry` (the seam the pipeline uses to build and inspect a response's active case without knowing its concrete shape). This guide uses `OperationOutcome<...>` throughout because it's the batteries-included default, not because anything requires it - see [Messages, Result Types & Variance § IOperationOutcome as an Extension Point](messages-and-result-types.md#ioperationoutcome-as-an-extension-point) for a worked example of a fully custom outcome type (useful for, say, wrapping a third-party SDK's own result shape instead of translating it).
+> `Outcome<...>` here is the library's own built-in implementation of `IOutcome` - the actual compiler constraint every `IQuery<TResponse>`/`ICommand<TResponse>` response type must satisfy, and the thing `ValidationBehavior`, `AuthorizationBehavior`, and the rest of the pipeline genuinely depend on. It isn't the only legal implementation: a hand-rolled class implementing `IOutcome` directly works too, once it's teachable to `IOutcomeCaseRegistry` (the seam the pipeline uses to build and inspect a response's active case without knowing its concrete shape). This guide uses `Outcome<...>` throughout because it's the batteries-included default, not because anything requires it - see [Messages, Result Types & Variance § IOutcome as an Extension Point](messages-and-result-types.md#ioutcome-as-an-extension-point) for a worked example of a fully custom outcome type (useful for, say, wrapping a third-party SDK's own result shape instead of translating it).
 
 > [!IMPORTANT]
-> FYI: if you do reach for a custom outcome type, also register a matching `IResponseOutcomeDescriber` (via `interlocutor.Pipeline.OverrideOutcomeDescriber<TDescriber>()`). `LoggingBehavior`, `AuditingBehavior`, and `UnitOfWorkBehavior` all use it to decide what to log and whether a response counts as a failure worth rolling back - and the default classifier is fail-closed, so a response type it's never seen is treated as a failure, silently rolling back a genuine success. Every type this guide actually uses (`OperationOutcome<...>` and its case types) is already pre-seeded, so this only matters if you go custom.
+> FYI: if you do reach for a custom outcome type, also register a matching `IResponseOutcomeDescriber` (via `interlocutor.Pipeline.OverrideOutcomeDescriber<TDescriber>()`). `LoggingBehavior`, `AuditingBehavior`, and `UnitOfWorkBehavior` all use it to decide what to log and whether a response counts as a failure worth rolling back - and the default classifier is fail-closed, so a response type it's never seen is treated as a failure, silently rolling back a genuine success. Every type this guide actually uses (`Outcome<...>` and its case types) is already pre-seeded, so this only matters if you go custom.
 
 **`Application/TodoTasks/CreateTodoTaskValidator.cs`**
 
@@ -517,9 +517,9 @@ using Interlocutor.Persistence.Abstractions;
 namespace TodoTasks.Api.Application.TodoTasks;
 
 public sealed class CreateTodoTaskHandler(IDomainRepository<TodoTask, int> repository, IUnitOfWork unitOfWork)
-    : ICommandHandler<CreateTodoTaskCommand, OperationOutcome<TodoTaskDto, ValidationErrors, Conflict>>
+    : ICommandHandler<CreateTodoTaskCommand, Outcome<TodoTaskDto, ValidationErrors, Conflict>>
 {
-    public async Task<OperationOutcome<TodoTaskDto, ValidationErrors, Conflict>> Handle(
+    public async Task<Outcome<TodoTaskDto, ValidationErrors, Conflict>> Handle(
         CreateTodoTaskCommand command, CancellationToken ct)
     {
         // The read below and the insert that follows it need to share one transaction, or two
@@ -575,7 +575,7 @@ Not part of the running example above - this is here for when the default mappin
 
 <summary>Show the manual-response example (Minimal API + MVC controller)</summary>
 
-`ToMinimalApiResult()`/`ToActionResult()` cover the default mapping - not every outcome case, but every case *this guide's* commands and queries actually produce. Sometimes you need more control per endpoint: a response envelope that doesn't match the default shape, an extra header, or a status code the default mapper doesn't assign. Since `OperationOutcome<...>` is a discriminated union, a `switch` on `.Value` is all `ToMinimalApiResult()` is doing under the hood - nothing stops you from writing that switch yourself instead:
+`ToMinimalApiResult()`/`ToActionResult()` cover the default mapping - not every outcome case, but every case *this guide's* commands and queries actually produce. Sometimes you need more control per endpoint: a response envelope that doesn't match the default shape, an extra header, or a status code the default mapper doesn't assign. Since `Outcome<...>` is a discriminated union, a `switch` on `.Value` is all `ToMinimalApiResult()` is doing under the hood - nothing stops you from writing that switch yourself instead:
 
 ```csharp
 app.MapGet("/todo-tasks/{id:int}/manual", async (int id, ISender sender, CancellationToken ct) =>
@@ -668,13 +668,13 @@ using Interlocutor.Persistence.Abstractions;
 
 namespace TodoTasks.Api.Application.TodoTasks;
 
-public sealed record GetTodoTaskByIdQuery(int Id) : IQuery<OperationOutcome<TodoTaskDto, NotFound>>;
+public sealed record GetTodoTaskByIdQuery(int Id) : IQuery<Outcome<TodoTaskDto, NotFound>>;
 
 public sealed class GetTodoTaskByIdHandler(IDomainRepository<TodoTask, int> repository)
-    : IQueryHandler<GetTodoTaskByIdQuery, OperationOutcome<TodoTaskDto, NotFound>>
+    : IQueryHandler<GetTodoTaskByIdQuery, Outcome<TodoTaskDto, NotFound>>
 {
-    public Task<OperationOutcome<TodoTaskDto, NotFound>> Handle(GetTodoTaskByIdQuery query, CancellationToken ct) =>
-        Task.FromResult<OperationOutcome<TodoTaskDto, NotFound>>(
+    public Task<Outcome<TodoTaskDto, NotFound>> Handle(GetTodoTaskByIdQuery query, CancellationToken ct) =>
+        Task.FromResult<Outcome<TodoTaskDto, NotFound>>(
             repository.GetById(query.Id) is { } task ? TodoTaskDto.FromEntity(task) : new NotFound($"TodoTask {query.Id}"));
 }
 ```
@@ -690,12 +690,12 @@ using Interlocutor.Persistence.Abstractions;
 namespace TodoTasks.Api.Application.TodoTasks;
 
 public sealed record ListTodoTasksQuery(bool OnlyIncomplete)
-    : IQuery<OperationOutcome<IReadOnlyList<TodoTaskDto>, Failure>>;
+    : IQuery<Outcome<IReadOnlyList<TodoTaskDto>, Failure>>;
 
 public sealed class ListTodoTasksHandler(IDomainRepository<TodoTask, int> repository)
-    : IQueryHandler<ListTodoTasksQuery, OperationOutcome<IReadOnlyList<TodoTaskDto>, Failure>>
+    : IQueryHandler<ListTodoTasksQuery, Outcome<IReadOnlyList<TodoTaskDto>, Failure>>
 {
-    public async Task<OperationOutcome<IReadOnlyList<TodoTaskDto>, Failure>> Handle(
+    public async Task<Outcome<IReadOnlyList<TodoTaskDto>, Failure>> Handle(
         ListTodoTasksQuery query, CancellationToken ct)
     {
         var tasks = await repository.GetManyAsync(
@@ -751,12 +751,12 @@ using NHibernate.Criterion;
 namespace TodoTasks.Api.Application.TodoTasks;
 
 public sealed record SearchTodoTasksQuery(string OwnerId, string TitleContains)
-    : IQuery<OperationOutcome<IReadOnlyList<TodoTaskDto>, Failure>>;
+    : IQuery<Outcome<IReadOnlyList<TodoTaskDto>, Failure>>;
 
 public sealed class SearchTodoTasksHandler(Lazy<ISession> session)
-    : IQueryHandler<SearchTodoTasksQuery, OperationOutcome<IReadOnlyList<TodoTaskDto>, Failure>>
+    : IQueryHandler<SearchTodoTasksQuery, Outcome<IReadOnlyList<TodoTaskDto>, Failure>>
 {
-    public async Task<OperationOutcome<IReadOnlyList<TodoTaskDto>, Failure>> Handle(
+    public async Task<Outcome<IReadOnlyList<TodoTaskDto>, Failure>> Handle(
         SearchTodoTasksQuery query, CancellationToken ct)
     {
         var tasks = await session.Value.QueryOver<TodoTask>()
@@ -794,7 +794,7 @@ Not part of the running example above - `ListTodoTasksHandler` stays unpaged thr
 
 <summary>Show the paged query example</summary>
 
-`Page<T>` (from `Interlocutor.Persistence.Abstractions`) is repository-return-shape vocabulary, not an `OperationOutcome` success-case type - map it into your own success type rather than returning it unwrapped, the same way `TodoTaskDto` stands in front of the `TodoTask` entity everywhere else in this guide:
+`Page<T>` (from `Interlocutor.Persistence.Abstractions`) is repository-return-shape vocabulary, not an `Outcome` success-case type - map it into your own success type rather than returning it unwrapped, the same way `TodoTaskDto` stands in front of the `TodoTask` entity everywhere else in this guide:
 
 > [!NOTE]
 > FYI: this - a materialized page, one outcome - is the only shape a query can return. There's no `IAsyncEnumerable<T>`/streaming response type; it's deliberately out of scope permanently, because a partial stream can fail mid-flight and a transaction's "all or nothing" commit/rollback boundary can't express that. Paging is the supported way to bound a large result set.
@@ -818,12 +818,12 @@ using Interlocutor.Persistence.Abstractions;
 namespace TodoTasks.Api.Application.TodoTasks;
 
 public sealed record ListTodoTasksPagedQuery(string OwnerId, int Page, int PageSize)
-    : IQuery<OperationOutcome<PagedTodoTasksDto, Failure>>;
+    : IQuery<Outcome<PagedTodoTasksDto, Failure>>;
 
 public sealed class ListTodoTasksPagedHandler(IDomainRepository<TodoTask, int> repository)
-    : IQueryHandler<ListTodoTasksPagedQuery, OperationOutcome<PagedTodoTasksDto, Failure>>
+    : IQueryHandler<ListTodoTasksPagedQuery, Outcome<PagedTodoTasksDto, Failure>>
 {
-    public async Task<OperationOutcome<PagedTodoTasksDto, Failure>> Handle(
+    public async Task<Outcome<PagedTodoTasksDto, Failure>> Handle(
         ListTodoTasksPagedQuery query, CancellationToken ct)
     {
         var page = await repository.GetPagedAsync(
@@ -869,13 +869,13 @@ namespace TodoTasks.Api.Application.TodoTasks;
 // RequestedByUserId is filled in by the endpoint from the authenticated caller, exactly like
 // CreateTodoTaskCommand.OwnerId - never trust an identity field from the request body.
 public sealed record UpdateTodoTaskCommand(int Id, string Title, string? Notes, string RequestedByUserId)
-    : ICommand<OperationOutcome<TodoTaskDto, NotFound, Failure>>, IAuditableRequest
+    : ICommand<Outcome<TodoTaskDto, NotFound, Failure>>, IAuditableRequest
 {
     public string ActionName => "update_todo_task";
 }
 ```
 
-`ResourceCommandHandler` fixes the response shape to `OperationOutcome<TSuccess, NotFound, Failure>` - it's the load/authorize/handle template's own contract, not something you choose per command.
+`ResourceCommandHandler` fixes the response shape to `Outcome<TSuccess, NotFound, Failure>` - it's the load/authorize/handle template's own contract, not something you choose per command.
 
 **`Application/TodoTasks/UpdateTodoTaskHandler.cs`**
 
@@ -899,7 +899,7 @@ public sealed class UpdateTodoTaskHandler(IDomainRepository<TodoTask, int> repos
         entity.OwnerId == command.RequestedByUserId ? null : new Failure("Only the task's owner can update it.");
 
     // 3. Handle - entity is already loaded and authorized by the time this runs.
-    protected override async Task<OperationOutcome<TodoTaskDto, NotFound, Failure>> HandleAsync(
+    protected override async Task<Outcome<TodoTaskDto, NotFound, Failure>> HandleAsync(
         UpdateTodoTaskCommand command, TodoTask entity, CancellationToken ct)
     {
         entity.Title = command.Title;
@@ -912,7 +912,7 @@ public sealed class UpdateTodoTaskHandler(IDomainRepository<TodoTask, int> repos
 ```
 
 > [!IMPORTANT]
-> Don't stack FluentValidation on top of a `ResourceCommandHandler` command without checking the arity first. `ValidationBehavior` needs to construct a `ValidationError`/`ValidationErrors` case on a validation failure - but `ResourceCommandHandler`'s response shape is fixed to `OperationOutcome<TSuccess, NotFound, Failure>`, which has no such case. Registering a validator for `UpdateTodoTaskCommand` would throw at the first validation failure, not silently do nothing. Fold input checks like this into `Authorize` (returning a `Failure`) or `HandleAsync` instead.
+> Don't stack FluentValidation on top of a `ResourceCommandHandler` command without checking the arity first. `ValidationBehavior` needs to construct a `ValidationError`/`ValidationErrors` case on a validation failure - but `ResourceCommandHandler`'s response shape is fixed to `Outcome<TSuccess, NotFound, Failure>`, which has no such case. This is no longer a runtime surprise: registering a validator for `UpdateTodoTaskCommand` in this shape is now a build-time `INTERLOC010` diagnostic naming the request, the validator, and the missing case, rather than a first-validation-failure exception. Fold input checks like this into `Authorize` (returning a `Failure`) or `HandleAsync` instead.
 
 Endpoint:
 
@@ -964,16 +964,16 @@ using Interlocutor.Persistence.Abstractions;
 namespace TodoTasks.Api.Application.TodoTasks;
 
 public sealed record CompleteTodoTaskCommand(int Id)
-    : ICommand<OperationOutcome<TodoTaskDto, NotFound, Conflict>>, IAuditableRequest
+    : ICommand<Outcome<TodoTaskDto, NotFound, Conflict>>, IAuditableRequest
 {
     public string ActionName => "complete_todo_task";
 }
 
 public sealed class CompleteTodoTaskHandler(
     IDomainRepository<TodoTask, int> repository, IUnitOfWork unitOfWork, IPublisher publisher)
-    : ICommandHandler<CompleteTodoTaskCommand, OperationOutcome<TodoTaskDto, NotFound, Conflict>>
+    : ICommandHandler<CompleteTodoTaskCommand, Outcome<TodoTaskDto, NotFound, Conflict>>
 {
-    public async Task<OperationOutcome<TodoTaskDto, NotFound, Conflict>> Handle(
+    public async Task<Outcome<TodoTaskDto, NotFound, Conflict>> Handle(
         CompleteTodoTaskCommand command, CancellationToken ct)
     {
         if (repository.GetById(command.Id) is not { } task)
@@ -1096,9 +1096,9 @@ public sealed class SyncAwareCompleteTodoTaskHandler(
     IDomainRepository<TodoTask, int> repository,
     IUnitOfWork unitOfWork,
     ICalendarSyncClient calendarSync)  // Illustrative - not a package Interlocutor ships
-    : ICommandHandler<CompleteTodoTaskCommand, OperationOutcome<TodoTaskDto, NotFound, Conflict>>
+    : ICommandHandler<CompleteTodoTaskCommand, Outcome<TodoTaskDto, NotFound, Conflict>>
 {
-    public async Task<OperationOutcome<TodoTaskDto, NotFound, Conflict>> Handle(
+    public async Task<Outcome<TodoTaskDto, NotFound, Conflict>> Handle(
         CompleteTodoTaskCommand command, CancellationToken ct)
     {
         if (repository.GetById(command.Id) is not { } task)
@@ -1208,9 +1208,9 @@ public sealed class CompleteTodoTaskWithActivityLogHandler(
     IDomainRepository<TodoTaskActivityLogEntry, int> activityLog,
     IUnitOfWork unitOfWork,
     IPublisher publisher)
-    : ICommandHandler<CompleteTodoTaskCommand, OperationOutcome<TodoTaskDto, NotFound, Conflict>>
+    : ICommandHandler<CompleteTodoTaskCommand, Outcome<TodoTaskDto, NotFound, Conflict>>
 {
-    public async Task<OperationOutcome<TodoTaskDto, NotFound, Conflict>> Handle(
+    public async Task<Outcome<TodoTaskDto, NotFound, Conflict>> Handle(
         CompleteTodoTaskCommand command, CancellationToken ct)
     {
         if (tasks.GetById(command.Id) is not { } task)
@@ -1257,15 +1257,15 @@ using Interlocutor.Persistence.Abstractions;
 namespace TodoTasks.Api.Application.TodoTasks;
 
 public sealed record ReopenTodoTaskCommand(int Id)
-    : ICommand<OperationOutcome<TodoTaskDto, NotFound, Conflict>>, IAuditableRequest
+    : ICommand<Outcome<TodoTaskDto, NotFound, Conflict>>, IAuditableRequest
 {
     public string ActionName => "reopen_todo_task";
 }
 
 public sealed class ReopenTodoTaskHandler(IDomainRepository<TodoTask, int> repository, IUnitOfWork unitOfWork)
-    : ICommandHandler<ReopenTodoTaskCommand, OperationOutcome<TodoTaskDto, NotFound, Conflict>>
+    : ICommandHandler<ReopenTodoTaskCommand, Outcome<TodoTaskDto, NotFound, Conflict>>
 {
-    public async Task<OperationOutcome<TodoTaskDto, NotFound, Conflict>> Handle(
+    public async Task<Outcome<TodoTaskDto, NotFound, Conflict>> Handle(
         ReopenTodoTaskCommand command, CancellationToken ct)
     {
         if (repository.GetById(command.Id) is not { } task)
@@ -1318,7 +1318,7 @@ using Interlocutor.Persistence.Abstractions;
 namespace TodoTasks.Api.Application.TodoTasks;
 
 public sealed record DeleteTodoTaskCommand(int Id)
-    : ICommand<OperationOutcome<Success, NotFound, Forbidden>>, IRequiresPolicy, IAuditableRequest
+    : ICommand<Outcome<Success, NotFound, Forbidden>>, IRequiresPolicy, IAuditableRequest
 {
     public string PolicyName => "DeleteTodoTask";
 
@@ -1326,9 +1326,9 @@ public sealed record DeleteTodoTaskCommand(int Id)
 }
 
 public sealed class DeleteTodoTaskHandler(IDomainRepository<TodoTask, int> repository, IUnitOfWork unitOfWork)
-    : ICommandHandler<DeleteTodoTaskCommand, OperationOutcome<Success, NotFound, Forbidden>>
+    : ICommandHandler<DeleteTodoTaskCommand, Outcome<Success, NotFound, Forbidden>>
 {
-    public async Task<OperationOutcome<Success, NotFound, Forbidden>> Handle(
+    public async Task<Outcome<Success, NotFound, Forbidden>> Handle(
         DeleteTodoTaskCommand command, CancellationToken ct)
     {
         if (repository.GetById(command.Id) is not { } task)
@@ -1388,7 +1388,7 @@ That's all five recommended-chain behaviors exercised: Logging and Auditing from
 
 ### One more command: no payload, caller-chosen outcome type
 
-Every command so far implements `ICommand<TResponse>` - a response type fixed in the command's own declaration. The bare `ICommand` marker (no type parameter) works differently: its handler contract is `IVoidCommandHandler<TCommand, TResult>`, where `TResult` - any `IOperationOutcome`-implementing type - is chosen by the *caller*, via the type argument on `ISender.Send<TResult>(ICommand, CancellationToken)`, not fixed by the command or baked into the handler's registration.
+Every command so far implements `ICommand<TResponse>` - a response type fixed in the command's own declaration. The bare `ICommand` marker (no type parameter) works differently: its handler contract is `IVoidCommandHandler<TCommand, TResult>`, where `TResult` - any `IOutcome`-implementing type - is chosen by the *caller*, via the type argument on `ISender.Send<TResult>(ICommand, CancellationToken)`, not fixed by the command or baked into the handler's registration.
 
 Clearing every completed task for a caller is a natural fit for this - there's no domain data to hand back, only whether it worked:
 
@@ -1421,9 +1421,9 @@ namespace TodoTasks.Api.Application.TodoTasks;
 // IVoidCommandHandler<TCommand, TResult> is the contract for a bare ICommand - registered against
 // the specific TResult this handler produces. This one only ever needs Success or Failure.
 public sealed class ClearCompletedTodoTasksHandler(IDomainRepository<TodoTask, int> repository, IUnitOfWork unitOfWork)
-    : IVoidCommandHandler<ClearCompletedTodoTasksCommand, OperationOutcome>
+    : IVoidCommandHandler<ClearCompletedTodoTasksCommand, Outcome>
 {
-    public async Task<OperationOutcome> Handle(ClearCompletedTodoTasksCommand command, CancellationToken ct)
+    public async Task<Outcome> Handle(ClearCompletedTodoTasksCommand command, CancellationToken ct)
     {
         var completed = await repository.GetManyAsync(
             t => t.OwnerId == command.OwnerId && t.IsCompleted, cancellationToken: ct);
@@ -1448,13 +1448,13 @@ app.MapPost("/todo-tasks/clear-completed", async (
     var ownerId = contextAccessor.Context?.UserId
         ?? throw new InvalidOperationException("This endpoint requires an authenticated caller.");
 
-    var result = await sender.Send<OperationOutcome>(new ClearCompletedTodoTasksCommand(ownerId), ct);
+    var result = await sender.Send<Outcome>(new ClearCompletedTodoTasksCommand(ownerId), ct);
     return result.ToMinimalApiResult();
 });
 ```
 
 > [!TIP]
-> Because `TResult` is chosen by the caller rather than fixed by the command, a second `IVoidCommandHandler<ClearCompletedTodoTasksCommand, OperationOutcome<int, Failure>>` could exist alongside this one and report how many tasks were cleared - a different call site (or a v2 endpoint) opts into the richer outcome without changing this handler or the command itself.
+> Because `TResult` is chosen by the caller rather than fixed by the command, a second `IVoidCommandHandler<ClearCompletedTodoTasksCommand, Outcome<int, Failure>>` could exist alongside this one and report how many tasks were cleared - a different call site (or a v2 endpoint) opts into the richer outcome without changing this handler or the command itself.
 
 ## Step 10: Putting it together
 
@@ -1571,7 +1571,7 @@ app.MapPost("/todo-tasks/clear-completed", async (
 {
     var ownerId = contextAccessor.Context?.UserId
         ?? throw new InvalidOperationException("This endpoint requires an authenticated caller.");
-    var result = await sender.Send<OperationOutcome>(new ClearCompletedTodoTasksCommand(ownerId), ct);
+    var result = await sender.Send<Outcome>(new ClearCompletedTodoTasksCommand(ownerId), ct);
     return result.ToMinimalApiResult();
 });
 
@@ -1586,14 +1586,14 @@ The whole request/response surface, for reference:
 
 | Request | Kind | Response arity | Markers |
 |---|---|---|---|
-| `CreateTodoTaskCommand` | Command | `OperationOutcome<TodoTaskDto, ValidationErrors, Conflict>` | `ITransactionalRequest`, `IAuditableRequest` |
-| `GetTodoTaskByIdQuery` | Query | `OperationOutcome<TodoTaskDto, NotFound>` | - |
-| `ListTodoTasksQuery` | Query | `OperationOutcome<IReadOnlyList<TodoTaskDto>, Failure>` | - |
-| `UpdateTodoTaskCommand` | Command (`ResourceCommandHandler`) | `OperationOutcome<TodoTaskDto, NotFound, Failure>` | `IAuditableRequest` |
-| `CompleteTodoTaskCommand` | Command | `OperationOutcome<TodoTaskDto, NotFound, Conflict>` | `IAuditableRequest` |
-| `ReopenTodoTaskCommand` | Command | `OperationOutcome<TodoTaskDto, NotFound, Conflict>` | `IAuditableRequest` |
-| `DeleteTodoTaskCommand` | Command | `OperationOutcome<Success, NotFound, Forbidden>` | `IRequiresPolicy`, `IAuditableRequest` |
-| `ClearCompletedTodoTasksCommand` | Command (bare `ICommand`, via `IVoidCommandHandler<,>`) | `OperationOutcome` (chosen by the caller) | `IAuditableRequest` |
+| `CreateTodoTaskCommand` | Command | `Outcome<TodoTaskDto, ValidationErrors, Conflict>` | `ITransactionalRequest`, `IAuditableRequest` |
+| `GetTodoTaskByIdQuery` | Query | `Outcome<TodoTaskDto, NotFound>` | - |
+| `ListTodoTasksQuery` | Query | `Outcome<IReadOnlyList<TodoTaskDto>, Failure>` | - |
+| `UpdateTodoTaskCommand` | Command (`ResourceCommandHandler`) | `Outcome<TodoTaskDto, NotFound, Failure>` | `IAuditableRequest` |
+| `CompleteTodoTaskCommand` | Command | `Outcome<TodoTaskDto, NotFound, Conflict>` | `IAuditableRequest` |
+| `ReopenTodoTaskCommand` | Command | `Outcome<TodoTaskDto, NotFound, Conflict>` | `IAuditableRequest` |
+| `DeleteTodoTaskCommand` | Command | `Outcome<Success, NotFound, Forbidden>` | `IRequiresPolicy`, `IAuditableRequest` |
+| `ClearCompletedTodoTasksCommand` | Command (bare `ICommand`, via `IVoidCommandHandler<,>`) | `Outcome` (chosen by the caller) | `IAuditableRequest` |
 
 Each row's arity is exactly what that operation can produce - no request routes an outcome it can't actually reach through a generic catch-all `Failure`, per [Choosing Arities](messages-and-result-types.md#choosing-arities). The "Bonus" sections throughout (manual response mapping, a raw-session/QueryOver search, a paged query, a custom pipeline behavior) are deliberately left out of this table and out of `Program.cs` above - they're optional deep-dives, not part of the finished project.
 
@@ -1762,7 +1762,7 @@ This guide deliberately left a few things out - not because they don't matter, b
 - **Trimming/AOT.** If you plan to publish trimmed, see [Trim & AOT Support](trim-and-aot-support.md) for what's currently supported and what isn't yet.
 - **The root-scope guard.** Every endpoint in this guide is a Minimal API route handler, and ASP.NET Core hands those a per-request scope automatically, so `ISender sender` as a parameter always resolves cleanly - this guide never hits the guard that stops `IMediator`/`ISender`/`IPublisher` from resolving directly against the root container. The moment you add anything that runs outside a request (a `BackgroundService`, a console tool, a test host), you need `container.BeginLifetimeScope()` (Autofac) or `serviceProvider.CreateScope()` (Microsoft DI) yourself - see [Mediator, Lifetimes, Scope & Ambient Context § Root-Scope Exception & Guard](mediator-lifetimes-and-scope.md#root-scope-exception--guard).
 - **Compile-time registration.** `ScanAssembly` (used throughout this guide) is a reflection-based scan resolved at DI-configuration time - a missing handler surfaces at first dispatch, unless caught earlier by `ValidateOnBuild()` (Step 2's "Advanced" section). There's a separate, additive compile-time path via `Interlocutor.Generator`/`AddGeneratedRegistrations` that this guide doesn't use - see [Builder & Registration § Assembly Scanning](builder-and-registration.md#assembly-scanning) and [Handler Selection & Dispatch](handler-selection-and-dispatch.md) for how the two relate.
-- **Response type variance.** Every handler in this guide implements its interface with the exact response type the request declares, so this never comes up - but it's worth knowing the boundary exists: `IQueryHandler<TQuery, TResponse>`/`ICommandHandler<TCommand, TResponse>` can't be implemented against a *more specific* `OperationOutcome<...>` than the request declares and substituted in where the less-specific one is expected, or vice versa. `TResponse` is invariant everywhere in the library, permanently, for reasons that go beyond a missing feature - see [Messages, Result Types & Variance § Variance: Response Type Is Never Variant](messages-and-result-types.md#variance-response-type-is-never-variant).
+- **Response type variance.** Every handler in this guide implements its interface with the exact response type the request declares, so this never comes up - but it's worth knowing the boundary exists: `IQueryHandler<TQuery, TResponse>`/`ICommandHandler<TCommand, TResponse>` can't be implemented against a *more specific* `Outcome<...>` than the request declares and substituted in where the less-specific one is expected, or vice versa. `TResponse` is invariant everywhere in the library, permanently, for reasons that go beyond a missing feature - see [Messages, Result Types & Variance § Variance: Response Type Is Never Variant](messages-and-result-types.md#variance-response-type-is-never-variant).
 
 And the two swaps this guide called out inline throughout, gathered in one place:
 

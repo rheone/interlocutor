@@ -19,7 +19,7 @@ public sealed class MissingHandlerDiagnosticTests
             using Interlocutor.Abstractions.Queries;
             using Interlocutor.CommonKernel;
 
-            public sealed class GetFooQuery : IQuery<OperationOutcome>;
+            public sealed class GetFooQuery : IQuery<Outcome>;
             """;
 
         // Act
@@ -47,7 +47,7 @@ public sealed class MissingHandlerDiagnosticTests
             using Interlocutor.Abstractions.Commands;
             using Interlocutor.CommonKernel;
 
-            public sealed class CreateFooCommand : ICommand<OperationOutcome>;
+            public sealed class CreateFooCommand : ICommand<Outcome>;
             """;
 
         // Act
@@ -92,11 +92,11 @@ public sealed class MissingHandlerDiagnosticTests
             using Interlocutor.Abstractions.Queries;
             using Interlocutor.CommonKernel;
 
-            public sealed class GetFooQuery : IQuery<OperationOutcome>;
+            public sealed class GetFooQuery : IQuery<Outcome>;
 
-            public sealed class GetFooQueryHandler : IQueryHandler<GetFooQuery, OperationOutcome>
+            public sealed class GetFooQueryHandler : IQueryHandler<GetFooQuery, Outcome>
             {
-                public Task<OperationOutcome> Handle(GetFooQuery query, CancellationToken ct) => throw new System.NotImplementedException();
+                public Task<Outcome> Handle(GetFooQuery query, CancellationToken ct) => throw new System.NotImplementedException();
             }
             """;
 
@@ -121,9 +121,9 @@ public sealed class MissingHandlerDiagnosticTests
 
             public sealed class DeleteFooCommand : ICommand;
 
-            public sealed class DeleteFooCommandHandler : IVoidCommandHandler<DeleteFooCommand, OperationOutcome<int, string>>
+            public sealed class DeleteFooCommandHandler : IVoidCommandHandler<DeleteFooCommand, Outcome<int, string>>
             {
-                public Task<OperationOutcome<int, string>> Handle(DeleteFooCommand command, CancellationToken ct) =>
+                public Task<Outcome<int, string>> Handle(DeleteFooCommand command, CancellationToken ct) =>
                     throw new System.NotImplementedException();
             }
             """;
@@ -227,16 +227,16 @@ public sealed class MissingHandlerDiagnosticTests
             using Interlocutor.Abstractions.Queries;
             using Interlocutor.CommonKernel;
 
-            public sealed class GetFooQuery : IQuery<OperationOutcome>;
+            public sealed class GetFooQuery : IQuery<Outcome>;
 
-            public sealed class GetFooQueryHandlerOne : IQueryHandler<GetFooQuery, OperationOutcome>
+            public sealed class GetFooQueryHandlerOne : IQueryHandler<GetFooQuery, Outcome>
             {
-                public Task<OperationOutcome> Handle(GetFooQuery query, CancellationToken ct) => throw new System.NotImplementedException();
+                public Task<Outcome> Handle(GetFooQuery query, CancellationToken ct) => throw new System.NotImplementedException();
             }
 
-            public sealed class GetFooQueryHandlerTwo : IQueryHandler<GetFooQuery, OperationOutcome>
+            public sealed class GetFooQueryHandlerTwo : IQueryHandler<GetFooQuery, Outcome>
             {
-                public Task<OperationOutcome> Handle(GetFooQuery query, CancellationToken ct) => throw new System.NotImplementedException();
+                public Task<Outcome> Handle(GetFooQuery query, CancellationToken ct) => throw new System.NotImplementedException();
             }
             """;
 
@@ -263,16 +263,16 @@ public sealed class MissingHandlerDiagnosticTests
             using Interlocutor.Abstractions.Commands;
             using Interlocutor.CommonKernel;
 
-            public sealed class CreateFooCommand : ICommand<OperationOutcome>;
+            public sealed class CreateFooCommand : ICommand<Outcome>;
 
-            public sealed class CreateFooCommandHandlerOne : ICommandHandler<CreateFooCommand, OperationOutcome>
+            public sealed class CreateFooCommandHandlerOne : ICommandHandler<CreateFooCommand, Outcome>
             {
-                public Task<OperationOutcome> Handle(CreateFooCommand command, CancellationToken ct) => throw new System.NotImplementedException();
+                public Task<Outcome> Handle(CreateFooCommand command, CancellationToken ct) => throw new System.NotImplementedException();
             }
 
-            public sealed class CreateFooCommandHandlerTwo : ICommandHandler<CreateFooCommand, OperationOutcome>
+            public sealed class CreateFooCommandHandlerTwo : ICommandHandler<CreateFooCommand, Outcome>
             {
-                public Task<OperationOutcome> Handle(CreateFooCommand command, CancellationToken ct) => throw new System.NotImplementedException();
+                public Task<Outcome> Handle(CreateFooCommand command, CancellationToken ct) => throw new System.NotImplementedException();
             }
             """;
 
@@ -306,7 +306,7 @@ public sealed class MissingHandlerDiagnosticTests
             using Interlocutor.Abstractions.Queries;
             using Interlocutor.CommonKernel;
 
-            public sealed class GetFooQuery : IQuery<OperationOutcome>;
+            public sealed class GetFooQuery : IQuery<Outcome>;
             """;
 
         var compilation = GeneratorTestHarness.CreateCompilation(source);

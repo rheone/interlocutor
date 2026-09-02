@@ -8,13 +8,10 @@ using TodoTasks.Api.Domain;
 
 /// <summary>Handles <see cref="ReopenTodoTaskCommand"/>.</summary>
 public sealed class ReopenTodoTaskHandler(IDomainRepository<TodoTask, int> tasks, IUnitOfWork unitOfWork)
-    : ICommandHandler<ReopenTodoTaskCommand, OperationOutcome<TodoTaskDto, NotFound, Conflict>>
+    : ICommandHandler<ReopenTodoTaskCommand, Outcome<TodoTaskDto, NotFound, Conflict>>
 {
     /// <inheritdoc/>
-    public async Task<OperationOutcome<TodoTaskDto, NotFound, Conflict>> Handle(
-        ReopenTodoTaskCommand command,
-        CancellationToken ct
-    )
+    public async Task<Outcome<TodoTaskDto, NotFound, Conflict>> Handle(ReopenTodoTaskCommand command, CancellationToken ct)
     {
         if (tasks.GetById(command.Id) is not { } task)
         {

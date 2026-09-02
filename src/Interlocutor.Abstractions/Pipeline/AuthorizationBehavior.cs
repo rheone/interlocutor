@@ -12,7 +12,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// close this generic - a container-neutral, compile-time-checked replacement for a runtime <c>is</c> check.
 /// </typeparam>
 /// <typeparam name="TResponse">
-/// The response type, constrained only to <see cref="IOperationOutcome"/> - deliberately unconstrained
+/// The response type, constrained only to <see cref="IOutcome"/> - deliberately unconstrained
 /// beyond that. See the Remarks for why.
 /// </typeparam>
 /// <remarks>
@@ -20,14 +20,14 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// <b>Why <typeparamref name="TResponse"/> isn't decomposed into a success-type parameter with
 /// <see cref="Forbidden"/> pinned as the failure case:</b> an earlier version of this type was
 /// <c>AuthorizationBehavior&lt;TRequest, TSuccess&gt; : IPipelineBehavior&lt;TRequest,
-/// OperationOutcome&lt;TSuccess, Forbidden&gt;&gt;</c> - compile-time safe (the response shape was guaranteed
+/// Outcome&lt;TSuccess, Forbidden&gt;&gt;</c> - compile-time safe (the response shape was guaranteed
 /// to have a <see cref="Forbidden"/> case), but unusable on Microsoft.Extensions.DependencyInjection. That
 /// container's open-generic resolver performs positional substitution
 /// (<c>implementationType.MakeGenericType(serviceType's generic arguments)</c>) and requires an
 /// implementation's type parameters to map 1:1 onto the interface's generic arguments - exactly what every
 /// other built-in behavior does (<c>LoggingBehavior&lt;TRequest,TResponse&gt; : IPipelineBehavior&lt;TRequest,
 /// TResponse&gt;</c>), and exactly what the old shape did not, since <c>TSuccess</c> was nested inside
-/// <c>OperationOutcome&lt;TSuccess, Forbidden&gt;</c> rather than mapped directly. That mismatch made
+/// <c>Outcome&lt;TSuccess, Forbidden&gt;</c> rather than mapped directly. That mismatch made
 /// <c>GetServices&lt;IPipelineBehavior&lt;TRequest,TResponse&gt;&gt;()</c> - what <see cref="Interlocutor.Abstractions.Mediator"/> calls
 /// on every dispatch - throw <see cref="ArgumentException"/> unconditionally, for every request, the instant
 /// this behavior was registered. Autofac's <c>RegisterGeneric</c> performs real structural unification and
@@ -37,7 +37,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// <para>
 /// The trade-off: constructing the <see cref="Forbidden"/> case of an unconstrained <typeparamref name="TResponse"/>
 /// can't be done at compile time, so it's delegated to <see cref="IOutcomeCaseRegistry"/> - the same
-/// construction/extraction extension point every hand-rolled, non-union <see cref="IOperationOutcome"/>
+/// construction/extraction extension point every hand-rolled, non-union <see cref="IOutcome"/>
 /// implementation participates in. A <typeparamref name="TResponse"/> with no <see cref="Forbidden"/> case
 /// throws a clear, named exception the first time authorization is actually denied for it - a configuration
 /// mistake (pairing <see cref="IRequiresPolicy"/> with a response shape that can't express denial), not a
@@ -52,7 +52,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 public class AuthorizationBehavior<TRequest, TResponse>(IPolicyEvaluator policyEvaluator, IOutcomeCaseRegistry caseRegistry)
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequiresPolicy
-    where TResponse : IOperationOutcome
+    where TResponse : IOutcome
 {
     /// <summary>
     /// Handles the request, evaluating the authorization policy and short-circuiting with <see cref="Forbidden"/>

@@ -1,5 +1,6 @@
 namespace Interlocutor.CommonKernel.ResultTypes;
 
+using System.Diagnostics;
 using Interlocutor.CommonKernel.ResultTypes.Internal;
 
 /// <summary>
@@ -17,6 +18,7 @@ using Interlocutor.CommonKernel.ResultTypes.Internal;
 /// </remarks>
 public readonly record struct Conflicts
 {
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private readonly DistinctItemSet<Conflict> _conflicts;
 
     /// <summary>
