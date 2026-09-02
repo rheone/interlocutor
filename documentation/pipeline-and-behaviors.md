@@ -31,10 +31,12 @@ builder.Pipeline.AddUnitOfWorkBehavior();     // Innermost
 // Handler executes here
 ```
 
+Each behavior implements a single `Handle(request, next, ct)` method - there's no separate ingress/egress pair to override. The code on either side of its own `await next()` call *is* the inbound/outbound split: everything before that call runs on the way in, everything after runs on the way out, and one nested call chain carries both directions.
+
 When a request dispatches:
 
-1. **Inbound:** `Logging.OnIngress()` → `Auditing.OnIngress()` → `Validation.OnIngress()` → `Transaction.OnIngress()` → handler
-2. **Outbound:** handler result flows back out; behaviors run their egress in reverse order: `Transaction.OnEgress()` → `Validation.OnEgress()` → `Auditing.OnEgress()` → `Logging.OnEgress()`
+1. **Inbound:** `Logging.Handle()` runs its pre-`next()` code, calls `next()`, which runs `Auditing.Handle()`'s pre-`next()` code, and so on through `Validation.Handle()` and `Transaction.Handle()`, until the innermost `next()` call reaches the handler.
+2. **Outbound:** the handler's result flows back out through the same chain in reverse - each behavior's post-`next()` code runs on the awaited result, from `Transaction.Handle()` back up through `Validation.Handle()`, `Auditing.Handle()`, and finally `Logging.Handle()`.
 
 ### Filtered by Marker Interface
 

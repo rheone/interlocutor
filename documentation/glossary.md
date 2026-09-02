@@ -198,4 +198,4 @@ These are not shipped types. `Interlocutor.CommonKernel` has no opinion about pa
 | **Interlocutor.Persistence.Abstractions** | Optional, opt-in `IUnitOfWork`/`IDomainRepository<TEntity, TKey>` CRUD/paging surface. Zero ORM dependency; depends on Abstractions only - see [Persistence Abstraction](persistence-abstraction.md). |
 | **Interlocutor.Persistence.EntityFrameworkCore** | EF Core implementation of the persistence abstraction, plus `UnitOfWorkBehavior` for EF Core `DbContext`. |
 | **Interlocutor.Persistence.NHibernate** | NHibernate implementation of the persistence abstraction, plus `UnitOfWorkBehavior` for NHibernate `ISession`. |
-| **Interlocutor.Generator** | The Roslyn incremental source generator behind compile-time handler discovery (ADR-0008). An analyzer reference pulled in by Abstractions; never ships in build output. |
+| **Interlocutor.Generator** | The Roslyn incremental source generator behind compile-time handler discovery. Opt-in: a consumer references it directly as a `PrivateAssets="all"` analyzer package - Abstractions carries no reference to it, so it is never pulled in transitively. Never ships in build output either way. |

@@ -124,6 +124,9 @@ Interlocutor.CommonKernel.ResultTypes.Forbidden.Reason.init -> void
 Interlocutor.CommonKernel.ResultTypes.IForbiddenFailureCase
 Interlocutor.CommonKernel.ResultTypes.IForbiddenFailureCase.Reason.get -> string?
 Interlocutor.CommonKernel.ResultTypes.IOutcome
+Interlocutor.CommonKernel.ResultTypes.IOutcomeCase
+Interlocutor.CommonKernel.ResultTypes.IOutcomeCase.ActiveCaseType.get -> System.Type?
+Interlocutor.CommonKernel.ResultTypes.IOutcomeCase.IsSuccess.get -> bool
 Interlocutor.CommonKernel.ResultTypes.IRateLimitedFailureCase
 Interlocutor.CommonKernel.ResultTypes.IRateLimitedFailureCase.Message.get -> string?
 Interlocutor.CommonKernel.ResultTypes.ITimeoutFailureCase
@@ -313,6 +316,12 @@ static Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage.operator !=(
 static Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage.operator ==(Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage left, Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage right) -> bool
 ~override Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage.Equals(object obj) -> bool
 ~override Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage.ToString() -> string
+Interlocutor.CommonKernel.Outcome.ActiveCaseType.get -> System.Type?
+Interlocutor.CommonKernel.Outcome<TSuccessResult, TFailureResult>.ActiveCaseType.get -> System.Type?
+Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3>.ActiveCaseType.get -> System.Type?
+Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4>.ActiveCaseType.get -> System.Type?
+Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>.ActiveCaseType.get -> System.Type?
+Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>.ActiveCaseType.get -> System.Type?
 Interlocutor.CommonKernel.Outcome.Match<TResult>(System.Func<Interlocutor.CommonKernel.ResultTypes.Success, TResult>! onCase1, System.Func<Interlocutor.CommonKernel.ResultTypes.Failure, TResult>! onCase2) -> TResult
 Interlocutor.CommonKernel.Outcome.Switch(System.Action<Interlocutor.CommonKernel.ResultTypes.Success>! onCase1, System.Action<Interlocutor.CommonKernel.ResultTypes.Failure>! onCase2) -> void
 Interlocutor.CommonKernel.Outcome.TryGetValue(out Interlocutor.CommonKernel.ResultTypes.Failure value) -> bool

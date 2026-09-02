@@ -7,8 +7,8 @@ using System.Text;
 /// <summary>
 /// Emits the second partial declaration <see cref="OutcomeMemberGenerator"/> adds for one attributed
 /// <see cref="OutcomeUnionModel"/>: <c>Match</c>, <c>Switch</c>, per-case <c>TryGetValue</c>, <c>ToString</c>,
-/// <c>IsSuccess</c>, and value-based equality (<c>Equals</c>, <c>GetHashCode</c>, <c>IEquatable&lt;TSelf&gt;</c>,
-/// <c>==</c>/<c>!=</c>).
+/// <c>IsSuccess</c>, <c>ActiveCaseType</c>, and value-based equality (<c>Equals</c>, <c>GetHashCode</c>,
+/// <c>IEquatable&lt;TSelf&gt;</c>, <c>==</c>/<c>!=</c>).
 /// </summary>
 internal static class OutcomeMemberEmitter
 {
@@ -41,10 +41,15 @@ internal static class OutcomeMemberEmitter
             .Append(typeParameterList)
             .Append(" : global::System.IEquatable<")
             .Append(selfType)
-            .AppendLine(">");
+            .Append(">, global::Interlocutor.CommonKernel.ResultTypes.IOutcomeCase")
+            .AppendLine();
         builder.AppendLine("{");
 
-        EmitIsSuccess(builder, model);
+        EmitGetActiveCaseIndex(builder, model);
+        builder.AppendLine();
+        EmitIsSuccess(builder);
+        builder.AppendLine();
+        EmitActiveCaseType(builder, model);
         builder.AppendLine();
         EmitTryGetValueOverloads(builder, model);
         builder.AppendLine();
@@ -61,13 +66,76 @@ internal static class OutcomeMemberEmitter
         return builder.ToString();
     }
 
-    private static void EmitIsSuccess(StringBuilder builder, OutcomeUnionModel model)
+    /// <summary>
+    /// Emits the private helper every other generated member consults to learn which case is active. A
+    /// <c>union</c> type may declare no instance fields beyond the compiler-synthesized boxed
+    /// <c>object? Value</c>, so there is nowhere to store a discriminator distinguishing "case N was
+    /// constructed with a null value" from "no case was ever constructed" - both leave <c>Value</c> null.
+    /// This helper resolves that ambiguity without extra storage: a non-null <c>Value</c> still identifies its
+    /// case by a type-pattern match (unambiguous, since each case type is distinctly typed), and a null
+    /// <c>Value</c> is attributed to the first-declared case type whose own default value is null (a nullable
+    /// reference type, or a <see cref="Nullable{T}"/>) - the only case type(s) a null <c>Value</c> could
+    /// legitimately have come from. Only when no declared case type accepts null does a null <c>Value</c> mean
+    /// what it always meant: the union was never assigned a case.
+    /// </summary>
+    private static void EmitGetActiveCaseIndex(StringBuilder builder, OutcomeUnionModel model)
     {
-        builder
-            .Append("    /// <summary>Gets a value indicating whether this result holds the success case, ")
-            .Append(model.CaseTypeDisplayStrings[0])
-            .AppendLine(".</summary>");
-        builder.Append("    public bool IsSuccess => this.Value is ").Append(model.CaseTypeDisplayStrings[0]).AppendLine(";");
+        builder.AppendLine(
+            "    /// <summary>Resolves the 1-based index of the active case, or 0 if no case was ever set.</summary>"
+        );
+        builder.AppendLine("    private int GetActiveCaseIndex()");
+        builder.AppendLine("    {");
+        foreach (var line in Enumerate(model, static (caseType, i) => $"        if (this.Value is {caseType}) return {i + 1};"))
+        {
+            builder.AppendLine(line);
+        }
+
+        builder.AppendLine();
+        builder.AppendLine("        if (this.Value is null)");
+        builder.AppendLine("        {");
+        foreach (
+            var line in Enumerate(
+                model,
+                // Cast through object before the null pattern: a concrete, statically non-nullable case type
+                // (e.g. a plain readonly record struct) makes "default(T) is null" a compile error (CS0037),
+                // not just always-false, since null isn't a valid literal for that type. Boxing first makes the
+                // check legal for every case type - concrete or generic, value or reference - while still
+                // evaluating to true only for a nullable reference type or an empty Nullable<T>.
+                static (caseType, i) => $"            if ((object?)default({caseType}) is null) return {i + 1};"
+            )
+        )
+        {
+            builder.AppendLine(line);
+        }
+
+        builder.AppendLine("        }");
+        builder.AppendLine();
+        builder.AppendLine("        return 0;");
+        builder.AppendLine("    }");
+    }
+
+    private static void EmitIsSuccess(StringBuilder builder)
+    {
+        builder.AppendLine(
+            "    /// <summary>Gets a value indicating whether this result holds the success case (the first declared case type).</summary>"
+        );
+        builder.AppendLine("    public bool IsSuccess => this.GetActiveCaseIndex() == 1;");
+    }
+
+    private static void EmitActiveCaseType(StringBuilder builder, OutcomeUnionModel model)
+    {
+        builder.AppendLine(
+            "    /// <summary>Gets the active case's declared type, or <see langword=\"null\"/> if no case was ever set.</summary>"
+        );
+        builder.AppendLine("    public global::System.Type? ActiveCaseType => this.GetActiveCaseIndex() switch");
+        builder.AppendLine("    {");
+        foreach (var line in Enumerate(model, static (caseType, i) => $"        {i + 1} => typeof({caseType}),"))
+        {
+            builder.AppendLine(line);
+        }
+
+        builder.AppendLine("        _ => null,");
+        builder.AppendLine("    };");
     }
 
     private static void EmitTryGetValueOverloads(StringBuilder builder, OutcomeUnionModel model)
@@ -81,9 +149,9 @@ internal static class OutcomeMemberEmitter
                 .AppendLine(" case.</summary>");
             builder.Append("    public bool TryGetValue(out ").Append(caseType).AppendLine(" value)");
             builder.AppendLine("    {");
-            builder.Append("        if (this.Value is ").Append(caseType).AppendLine(" matched)");
+            builder.Append("        if (this.GetActiveCaseIndex() == ").Append(i + 1).AppendLine(")");
             builder.AppendLine("        {");
-            builder.AppendLine("            value = matched;");
+            builder.Append("            value = (").Append(caseType).AppendLine(")this.Value!;");
             builder.AppendLine("            return true;");
             builder.AppendLine("        }");
             builder.AppendLine();
@@ -112,12 +180,12 @@ internal static class OutcomeMemberEmitter
         );
         builder.AppendLine(")");
         builder.AppendLine("    {");
-        builder.AppendLine("        return this.Value switch");
+        builder.AppendLine("        return this.GetActiveCaseIndex() switch");
         builder.AppendLine("        {");
         foreach (
             var line in Enumerate(
                 model,
-                static (caseType, i) => $"            {caseType} case{i + 1} => onCase{i + 1}(case{i + 1}),"
+                static (caseType, i) => $"            {i + 1} => onCase{i + 1}(({caseType})this.Value!),"
             )
         )
         {
@@ -140,12 +208,12 @@ internal static class OutcomeMemberEmitter
         );
         builder.AppendLine(")");
         builder.AppendLine("    {");
-        builder.AppendLine("        switch (this.Value)");
+        builder.AppendLine("        switch (this.GetActiveCaseIndex())");
         builder.AppendLine("        {");
         foreach (
             var line in Enumerate(
                 model,
-                static (caseType, i) => $"            case {caseType} case{i + 1}: onCase{i + 1}(case{i + 1}); return;"
+                static (caseType, i) => $"            case {i + 1}: onCase{i + 1}(({caseType})this.Value!); return;"
             )
         )
         {

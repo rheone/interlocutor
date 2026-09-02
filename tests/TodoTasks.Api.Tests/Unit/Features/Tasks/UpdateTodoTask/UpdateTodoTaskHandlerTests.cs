@@ -54,7 +54,7 @@ public sealed class UpdateTodoTaskHandlerTests
     }
 
     [Fact]
-    public async Task Handle_CallerIsNotTheOwner_ReturnsFailure_WithoutSaving_Test()
+    public async Task Handle_CallerIsNotTheOwner_ReturnsForbidden_WithoutSaving_Test()
     {
         // Arrange
         var task = new TodoTask("Buy milk", "owner-1", null);
@@ -65,7 +65,7 @@ public sealed class UpdateTodoTaskHandlerTests
         var result = await this.handler.Handle(command, CancellationToken.None);
 
         // Assert
-        Assert.IsType<Failure>(result.Value);
+        Assert.IsType<Forbidden>(result.Value);
         Assert.Equal("Buy milk", task.Title); // Untouched.
         await this.unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }

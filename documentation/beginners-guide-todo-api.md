@@ -869,13 +869,13 @@ namespace TodoTasks.Api.Application.TodoTasks;
 // RequestedByUserId is filled in by the endpoint from the authenticated caller, exactly like
 // CreateTodoTaskCommand.OwnerId - never trust an identity field from the request body.
 public sealed record UpdateTodoTaskCommand(int Id, string Title, string? Notes, string RequestedByUserId)
-    : ICommand<Outcome<TodoTaskDto, NotFound, Failure>>, IAuditableRequest
+    : ICommand<Outcome<TodoTaskDto, NotFound, Forbidden>>, IAuditableRequest
 {
     public string ActionName => "update_todo_task";
 }
 ```
 
-`ResourceCommandHandler` fixes the response shape to `Outcome<TSuccess, NotFound, Failure>` - it's the load/authorize/handle template's own contract, not something you choose per command.
+`ResourceCommandHandler` fixes the response shape to `Outcome<TSuccess, NotFound, Forbidden>` - it's the load/authorize/handle template's own contract, not something you choose per command.
 
 **`Application/TodoTasks/UpdateTodoTaskHandler.cs`**
 
@@ -895,11 +895,11 @@ public sealed class UpdateTodoTaskHandler(IDomainRepository<TodoTask, int> repos
         Task.FromResult(repository.GetById(command.Id));
 
     // 2. Authorize against the *loaded* entity's state - the part AuthorizationBehavior can't do.
-    protected override Failure? Authorize(TodoTask entity, UpdateTodoTaskCommand command) =>
-        entity.OwnerId == command.RequestedByUserId ? null : new Failure("Only the task's owner can update it.");
+    protected override Forbidden? Authorize(TodoTask entity, UpdateTodoTaskCommand command) =>
+        entity.OwnerId == command.RequestedByUserId ? null : new Forbidden("Only the task's owner can update it.");
 
     // 3. Handle - entity is already loaded and authorized by the time this runs.
-    protected override async Task<Outcome<TodoTaskDto, NotFound, Failure>> HandleAsync(
+    protected override async Task<Outcome<TodoTaskDto, NotFound, Forbidden>> HandleAsync(
         UpdateTodoTaskCommand command, TodoTask entity, CancellationToken ct)
     {
         entity.Title = command.Title;
@@ -912,7 +912,7 @@ public sealed class UpdateTodoTaskHandler(IDomainRepository<TodoTask, int> repos
 ```
 
 > [!IMPORTANT]
-> Don't stack FluentValidation on top of a `ResourceCommandHandler` command without checking the arity first. `ValidationBehavior` needs to construct a `ValidationError`/`ValidationErrors` case on a validation failure - but `ResourceCommandHandler`'s response shape is fixed to `Outcome<TSuccess, NotFound, Failure>`, which has no such case. This is no longer a runtime surprise: registering a validator for `UpdateTodoTaskCommand` in this shape is now a build-time `INTERLOC010` diagnostic naming the request, the validator, and the missing case, rather than a first-validation-failure exception. Fold input checks like this into `Authorize` (returning a `Failure`) or `HandleAsync` instead.
+> Don't stack FluentValidation on top of a `ResourceCommandHandler` command without checking the arity first. `ValidationBehavior` needs to construct a `ValidationError`/`ValidationErrors` case on a validation failure - but `ResourceCommandHandler`'s response shape is fixed to `Outcome<TSuccess, NotFound, Forbidden>`, which has no such case. This is no longer a runtime surprise: registering a validator for `UpdateTodoTaskCommand` in this shape is now a build-time `INTERLOC010` diagnostic naming the request, the validator, and the missing case, rather than a first-validation-failure exception. Fold input checks like this into `Authorize` (returning a `Forbidden`) or `HandleAsync` instead.
 
 Endpoint:
 
@@ -1589,7 +1589,7 @@ The whole request/response surface, for reference:
 | `CreateTodoTaskCommand` | Command | `Outcome<TodoTaskDto, ValidationErrors, Conflict>` | `ITransactionalRequest`, `IAuditableRequest` |
 | `GetTodoTaskByIdQuery` | Query | `Outcome<TodoTaskDto, NotFound>` | - |
 | `ListTodoTasksQuery` | Query | `Outcome<IReadOnlyList<TodoTaskDto>, Failure>` | - |
-| `UpdateTodoTaskCommand` | Command (`ResourceCommandHandler`) | `Outcome<TodoTaskDto, NotFound, Failure>` | `IAuditableRequest` |
+| `UpdateTodoTaskCommand` | Command (`ResourceCommandHandler`) | `Outcome<TodoTaskDto, NotFound, Forbidden>` | `IAuditableRequest` |
 | `CompleteTodoTaskCommand` | Command | `Outcome<TodoTaskDto, NotFound, Conflict>` | `IAuditableRequest` |
 | `ReopenTodoTaskCommand` | Command | `Outcome<TodoTaskDto, NotFound, Conflict>` | `IAuditableRequest` |
 | `DeleteTodoTaskCommand` | Command | `Outcome<Success, NotFound, Forbidden>` | `IRequiresPolicy`, `IAuditableRequest` |

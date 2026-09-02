@@ -523,6 +523,37 @@ public class ResultExtensionsTests
         Assert.Equal("slow down", problemDetails.Detail);
     }
 
+    [Fact]
+    public void ToActionResult_WithNullPayloadSuccess_ReturnsOkObjectResultWithNullValue()
+    {
+        // Arrange - a legitimately null success payload (see finding 01/07): the dedicated arity-2 overload's
+        // Match-based dispatch must still route to the success branch instead of throwing or mis-mapping.
+        Outcome<string?, NotFound> result = (string?)null;
+
+        // Act
+        var actionResult = result.ToActionResult();
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(actionResult);
+        Assert.Null(okResult.Value);
+    }
+
+    [Fact]
+    public void ToActionResult_CatchAll_WithNullPayloadSuccess_ReturnsOkObjectResultWithNullValue()
+    {
+        // Arrange - the reflective catch-all path (DefaultOutcomeCaseRegistry.TryGetActiveCase +
+        // OutcomeClassifierBuilder.DefaultClassifier) must resolve the same null-payload success correctly,
+        // not report the outcome's own container type or fail-close it to a mapped error.
+        Outcome<string?, NotFound> result = (string?)null;
+
+        // Act
+        var actionResult = result.ToActionResult(caseRegistry: null);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(actionResult);
+        Assert.Null(okResult.Value);
+    }
+
     /// <summary>Request fixture for <see cref="ToActionResult_WithFluentValidationErrorsRoutedThroughBehavior_Returns400WithFieldKeyedValidationProblemDetails"/> only.</summary>
     private sealed record CreateWidgetCommand(string Name, int Quantity) : ICommand<Outcome<string, FluentValidationErrors>>;
 

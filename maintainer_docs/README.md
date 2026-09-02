@@ -60,4 +60,4 @@ Immutable once accepted - a changed decision gets a new ADR that supersedes the 
 ## Historical: bootstrapreference/
 
 > [!NOTE]
-> Superseded. `bootstrapreference/` holds the original bootstrap PRD, ADR, and code sketches that predate this repo's implementation. It has been reconciled into [PRD.md §15](PRD.md#15-comparison-with-bootstrap-prd), which is the current source of truth. Consult `bootstrapreference/` only for historical context on why an early design differs from what shipped - never as an authoritative source for current behavior.
+> Superseded. `bootstrapreference/` holds the original bootstrap PRD, ADR, and code sketches that predate this repo's implementation. It has been reconciled into [PRD.md §15](PRD.md#15-architecture-decisions), which is the current source of truth. Consult `bootstrapreference/` only for historical context on why an early design differs from what shipped - never as an authoritative source for current behavior.

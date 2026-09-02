@@ -146,7 +146,7 @@ Some commands need to authorize based on the loaded entity (ownership, entity st
 
 ```csharp
 public record DeleteDocument(int DocumentId, int RequestedByUserId)
-    : ICommand<Outcome<Success, NotFound, Failure>>;
+    : ICommand<Outcome<Success, NotFound, Forbidden>>;
 
 public class DeleteDocumentHandler
     : ResourceCommandHandler<DeleteDocument, Document, Success>
@@ -161,16 +161,16 @@ public class DeleteDocumentHandler
         => this.repository.FindAsync(command.DocumentId, ct);
 
     // Step 2: Check authorization against the loaded entity
-    protected override Failure? Authorize(Document entity, DeleteDocument command)
+    protected override Forbidden? Authorize(Document entity, DeleteDocument command)
     {
-        // Return null if authorized, a Failure if denied
+        // Return null if authorized, a Forbidden if denied
         return entity.OwnerId == command.RequestedByUserId
             ? null
-            : new Failure("Only the document owner can delete it");
+            : new Forbidden("Only the document owner can delete it");
     }
 
     // Step 3: Handle the command (entity is already loaded and authorized)
-    protected override async Task<Outcome<Success, NotFound, Failure>> HandleAsync(
+    protected override async Task<Outcome<Success, NotFound, Forbidden>> HandleAsync(
         DeleteDocument command, Document entity, CancellationToken ct)
     {
         await this.repository.DeleteAsync(entity, ct);
@@ -180,13 +180,13 @@ public class DeleteDocumentHandler
 
 // Dispatch is normal:
 var result = await mediator.Send(new DeleteDocument(42, currentUserId));
-// result is Success, NotFound, or Failure depending on what Authorize/HandleAsync produce
+// result is Success, NotFound, or Forbidden depending on what Authorize/HandleAsync produce
 ```
 
 **Why is this not a pipeline behavior?** A behavior cannot express "if this specific part fails, produce this specific outcome" for a reason that depends on data loaded mid-pipeline. Resource authorization needs the entity that was just loaded, and passing it forward would require shared mutable state - exactly the architectural pattern Interlocutor avoids. The template method encapsulates the load, authorize, handle sequence as a single cohesive unit, rather than splitting it across multiple layers.
 
 > [!NOTE]
-> `ResourceCommandHandler` always returns `Outcome<TSuccess, NotFound, Failure>` - it can produce `NotFound` (when `LoadAsync` returns null) and `Failure` (when `Authorize` returns a failure), and any other outcome depends on what `HandleAsync` produces. The shape is fixed and enforced by the handler's own contract.
+> `ResourceCommandHandler` always returns `Outcome<TSuccess, NotFound, Forbidden>` - it can produce `NotFound` (when `LoadAsync` returns null) and `Forbidden` (when `Authorize` returns a denial), and any other outcome depends on what `HandleAsync` produces. The shape is fixed and enforced by the handler's own contract, and matches `AuthorizationBehavior`'s own `Forbidden` case for its equivalent denial (see CLAUDE.md's result-type convention: a denied authorization check is a classified case, not generic `Failure`).
 
 ## Contrast: Resource vs. Non-Resource Authorization
 
@@ -198,7 +198,7 @@ Both are useful and solve different problems:
 ```csharp
 // Non-resource: "Can this user DELETE (any) document?"
 public record DeleteDocument(int DocumentId, int RequestedByUserId)
-    : ICommand<Outcome<Success, NotFound, Failure>>,
+    : ICommand<Outcome<Success, NotFound, Forbidden>>,
       IRequiresPolicy  // Evaluated before loading
 {
     public string PolicyName => "DeleteDocument";
@@ -211,14 +211,14 @@ public class AdminOnlyPolicyEvaluator : IPolicyEvaluator
 
 // Resource: "Can this user DELETE *this specific* document?"
 public record DeleteDocument(int DocumentId, int RequestedByUserId)
-    : ICommand<Outcome<Success, NotFound, Failure>>;  // No marker
+    : ICommand<Outcome<Success, NotFound, Forbidden>>;  // No marker
 
 public class DeleteDocumentHandler : ResourceCommandHandler<DeleteDocument, Document, Success>
 {
-    protected override Failure? Authorize(Document entity, DeleteDocument command)
+    protected override Forbidden? Authorize(Document entity, DeleteDocument command)
     {
         // Checked after loading - based on entity ownership, status, etc.
-        return entity.OwnerId == command.RequestedByUserId ? null : new Failure("Not the owner");
+        return entity.OwnerId == command.RequestedByUserId ? null : new Forbidden("Not the owner");
     }
 }
 ```
@@ -267,7 +267,7 @@ sequenceDiagram
     else entity found
         Handler->>Handler: Authorize(entity, command)
         alt authorization denied
-            Handler-->>Caller: Failure (short-circuit before HandleAsync runs)
+            Handler-->>Caller: Forbidden (short-circuit before HandleAsync runs)
         else authorization allowed
             Handler->>Handler: HandleAsync(command, entity)
             Handler-->>Caller: Success

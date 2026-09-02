@@ -45,7 +45,7 @@ public sealed class UpdateTodoTaskEndpointTests : IClassFixture<TodoTasksApiFact
     }
 
     [Fact]
-    public async Task Put_ADifferentAuthenticatedUser_ReturnsFailure_Test()
+    public async Task Put_ADifferentAuthenticatedUser_ReturnsForbidden_Test()
     {
         // Arrange
         using var client = this.factory.CreateClient();
@@ -63,9 +63,9 @@ public sealed class UpdateTodoTaskEndpointTests : IClassFixture<TodoTasksApiFact
             TestContext.Current.CancellationToken
         );
 
-        // Assert - ResourceCommandHandler's fixed Outcome<TSuccess,NotFound,Failure> arity
-        // has no dedicated "forbidden" case, so Failure maps to the default's generic failure status.
-        Assert.False(response.IsSuccessStatusCode);
+        // Assert - ResourceCommandHandler's fixed Outcome<TSuccess,NotFound,Forbidden> arity gives this a
+        // dedicated case, mapped to 403 by DefaultHttpOutcomeStatusMapper.
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
     [Fact]

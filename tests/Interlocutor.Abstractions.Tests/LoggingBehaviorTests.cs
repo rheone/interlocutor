@@ -68,6 +68,41 @@ public class LoggingBehaviorTests
     }
 
     [Fact]
+    public async Task Handle_LogsNullPayloadSuccessOutcome_AtInformationLevel()
+    {
+        // Arrange - a legitimately null success payload (see finding 01) must log at the same level a normal
+        // success does, not the error path an unhandled exception would take.
+        var logger = Substitute.For<ILogger<LoggingBehavior<LoggedQuery, Outcome<string?, Failure>>>>();
+        var behavior = new LoggingBehavior<LoggedQuery, Outcome<string?, Failure>>(logger);
+        var request = new LoggedQuery(1);
+        static Task<Outcome<string?, Failure>> Next() => Task.FromResult<Outcome<string?, Failure>>((string?)null);
+
+        // Act
+        var result = await behavior.Handle(request, Next, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        logger
+            .Received(1)
+            .Log(
+                Arg.Is(LogLevel.Information),
+                Arg.Any<EventId>(),
+                Arg.Any<object>(),
+                Arg.Any<Exception>(),
+                Arg.Any<Func<object, Exception?, string>>()
+            );
+        logger
+            .DidNotReceive()
+            .Log(
+                Arg.Is(LogLevel.Error),
+                Arg.Any<EventId>(),
+                Arg.Any<object>(),
+                Arg.Any<Exception>(),
+                Arg.Any<Func<object, Exception?, string>>()
+            );
+    }
+
+    [Fact]
     public async Task Handle_LogsFailureOutcome()
     {
         // Arrange

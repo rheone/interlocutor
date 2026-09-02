@@ -280,7 +280,30 @@ public class AuditingBehaviorTests
         await sink.Received(1).RecordAsync(Arg.Is<AuditEntry>(e => e.UserId == null), CancellationToken.None);
     }
 
+    [Fact]
+    public async Task Handle_NullPayloadSuccess_RecordsSuccessCaseTypeNotNone()
+    {
+        // Arrange - a legitimately null success payload (see finding 01) must audit as the success case's
+        // type, not the generic "None" label a genuinely unset union would (mis)report as.
+        var sink = Substitute.For<IAuditSink>();
+        var behavior = new AuditingBehavior<AuditableNullableQuery, Outcome<string?, Failure>>(sink);
+        var request = new AuditableNullableQuery("test");
+        static Task<Outcome<string?, Failure>> Next() => Task.FromResult<Outcome<string?, Failure>>((string?)null);
+
+        // Act
+        var result = await behavior.Handle(request, Next, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        await sink.Received(1).RecordAsync(Arg.Is<AuditEntry>(e => e.Outcome == nameof(String)), CancellationToken.None);
+    }
+
     public record AuditableQuery(string Name) : IQuery<Outcome<string, Failure>>, IAuditableRequest
+    {
+        public string ActionName => "Query.Read";
+    }
+
+    public record AuditableNullableQuery(string Name) : IQuery<Outcome<string?, Failure>>, IAuditableRequest
     {
         public string ActionName => "Query.Read";
     }

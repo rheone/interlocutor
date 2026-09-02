@@ -74,9 +74,8 @@ var result = await mediator.Send(new GetUser(42), cancellationToken);
 // Pattern-match the result - the compiler forces you to handle every case
 var message = result switch
 {
-    Outcome.SuccessCase<UserDto> success => $"Found: {success.Value.Name}",
+    UserDto success => $"Found: {success.Name}",
     NotFound notfound => $"Not found: {notfound.Message}",
-    _ => "Unexpected"
 };
 ```
 
@@ -94,9 +93,9 @@ var message = result switch
 | `Interlocutor.Persistence.Abstractions` | Optional, opt-in `IUnitOfWork`/`IDomainRepository<TEntity, TKey>` persistence abstraction - see [persistence-abstraction.md](documentation/persistence-abstraction.md). Zero ORM dependency. |
 | `Interlocutor.Persistence.EntityFrameworkCore` | EF Core implementation of the persistence abstraction, plus `UnitOfWorkBehavior` - the unit-of-work-owned transaction commit/rollback gate - see [persistence-implementations.md](documentation/persistence-implementations.md) and [transactions-and-store-integration.md](documentation/transactions-and-store-integration.md). |
 | `Interlocutor.Persistence.NHibernate` | NHibernate implementation of the persistence abstraction, plus `UnitOfWorkBehavior` - see the same two docs. |
-| `Interlocutor.Generator` | The Roslyn incremental source generator behind compile-time handler discovery - see [handler-selection-and-dispatch.md](documentation/handler-selection-and-dispatch.md). A `PrivateAssets="all"` analyzer reference pulled in by `Interlocutor.Abstractions`; it never ships in your build output. |
+| `Interlocutor.Generator` | The Roslyn incremental source generator behind compile-time handler discovery - see [handler-selection-and-dispatch.md](documentation/handler-selection-and-dispatch.md). Opt-in: reference it directly as a `PrivateAssets="all"` analyzer package in your own project - `Interlocutor.Abstractions` carries no reference to it, so it is not pulled in transitively. Skip it and use `ScanAssembly`'s runtime-reflection discovery instead if you don't need compile-time dispatch. Never ships in your build output either way. |
 
-`Interlocutor.CommonKernel` has zero dependencies; every other package builds on `Interlocutor.Abstractions`, directly or transitively. `Interlocutor.Generator` rides along as an analyzer on `Interlocutor.Abstractions` rather than a normal dependency edge, so it's omitted below. The `Interlocutor.Persistence.*` packages build on `Interlocutor.Persistence.Abstractions` instead, which itself builds only on `Interlocutor.Abstractions` - independently adoptable, and neither depends on the other:
+`Interlocutor.CommonKernel` has zero dependencies; every other package builds on `Interlocutor.Abstractions`, directly or transitively. `Interlocutor.Generator` is opt-in - a consumer references it directly rather than getting it transitively from `Interlocutor.Abstractions` - so it's omitted below. The `Interlocutor.Persistence.*` packages build on `Interlocutor.Persistence.Abstractions` instead, which itself builds only on `Interlocutor.Abstractions` - independently adoptable, and neither depends on the other:
 
 ```mermaid
 flowchart TD

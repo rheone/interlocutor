@@ -40,7 +40,11 @@ public class DependencyTests
                 "Interlocutor.AspNetCore",
                 "Interlocutor.Persistence.EntityFrameworkCore",
                 "Interlocutor.FluentValidation",
-                "Interlocutor.Persistence.NHibernate"
+                "Interlocutor.Persistence.NHibernate",
+                "Interlocutor.DependencyInjection.Abstractions",
+                "Interlocutor.DependencyInjection.Microsoft",
+                "Interlocutor.DependencyInjection.Autofac",
+                "Interlocutor.Persistence.Abstractions"
             )
             .GetResult();
 
@@ -225,7 +229,7 @@ public class DependencyTests
         var doesNotDependOnNHibernateResult = Types
             .InAssembly(PersistenceEntityFrameworkCoreAssembly)
             .ShouldNot()
-            .HaveDependencyOn("Interlocutor.Persistence.NHibernate")
+            .HaveDependencyOnAny("Interlocutor.Persistence.NHibernate", "Interlocutor.FluentValidation")
             .GetResult();
 
         // Assert
@@ -250,7 +254,7 @@ public class DependencyTests
         var doesNotDependOnEntityFrameworkCoreResult = Types
             .InAssembly(PersistenceNHibernateAssembly)
             .ShouldNot()
-            .HaveDependencyOn("Interlocutor.Persistence.EntityFrameworkCore")
+            .HaveDependencyOnAny("Interlocutor.Persistence.EntityFrameworkCore", "Interlocutor.FluentValidation")
             .GetResult();
 
         // Assert
@@ -305,5 +309,23 @@ public class DependencyTests
             implementsPipelineBehavior,
             "Interlocutor.Persistence.NHibernate should contain an IPipelineBehavior<,> named UnitOfWorkBehavior"
         );
+    }
+
+    [Fact]
+    public void Abstractions_ReferencedAssembly_HasNoDependencyOnGenerator_Test()
+    {
+        // Pins the decision recorded in CLAUDE.md/README.md/glossary.md (finding 04/ticket 07):
+        // Interlocutor.Generator is an opt-in package a consumer references directly for compile-time handler
+        // discovery, not one Interlocutor.Abstractions pulls in transitively as an analyzer. An analyzer
+        // reference never appears in GetReferencedAssemblies() regardless, so this specifically guards against
+        // someone later adding a real ProjectReference from Abstractions to Generator, which would.
+        // Arrange
+        // (static class-level assembly references serve as fixture)
+
+        // Act
+        var referencesGenerator = AbstractionsAssembly.GetReferencedAssemblies().Any(a => a.Name == "Interlocutor.Generator");
+
+        // Assert
+        Assert.False(referencesGenerator, "Interlocutor.Abstractions should not reference Interlocutor.Generator");
     }
 }
