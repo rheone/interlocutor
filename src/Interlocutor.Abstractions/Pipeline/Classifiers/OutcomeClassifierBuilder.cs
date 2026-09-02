@@ -189,9 +189,9 @@ public sealed class OutcomeClassifierBuilder
             // what lets a legitimately null case payload (unwrapped above to a null Value the type table can't
             // look anything up by) still classify correctly, and also covers a custom case type nobody
             // registered, as long as the response is a union at all.
-            if (response is IOutcomeCase outcomeCase)
+            if (response.AsOutcomeCaseIsSuccess() is { } isSuccess)
             {
-                return !outcomeCase.IsSuccess;
+                return !isSuccess;
             }
 
             // Fail-closed policy: unregistered types are failures, so consumers
@@ -221,7 +221,7 @@ public sealed class OutcomeClassifierBuilder
 
             // A null Value alone can't say whether this is a legitimate null case payload or a genuinely
             // unset union - ask the union itself before falling back to the generic "None"/"Unknown" labels.
-            if (unwrapped is null && response is IOutcomeCase { ActiveCaseType: { } activeCaseType })
+            if (unwrapped is null && response.AsOutcomeCaseActiveType() is { } activeCaseType)
             {
                 return activeCaseType.Name;
             }

@@ -413,8 +413,8 @@ public static class ResultExtensions
         // one from a hand-rolled IOutcome the registry decomposed via a custom extractor, keeps classifying
         // through the registered types/predicates exactly as before.
         var isFailure =
-            caseValue is null && response is IOutcomeCase outcomeCase
-                ? !outcomeCase.IsSuccess
+            caseValue is null && response.AsOutcomeCaseIsSuccess() is { } isSuccess
+                ? !isSuccess
                 : OutcomeClassifierBuilder.DefaultClassifier.IsFailure(caseValue);
 
         return (isFailure, caseType, caseValue);

@@ -74,7 +74,7 @@ public sealed class DefaultOutcomeCaseRegistry : IOutcomeCaseRegistry
             // A null Value alone can't say whether this is a legitimate null case payload or a genuinely
             // unset union (see finding 07) - IOutcomeCase.ActiveCaseType resolves that ambiguity from inside
             // the union itself, where the declared case types are known even when the boxed value isn't.
-            if (response is IOutcomeCase { ActiveCaseType: { } activeCaseType })
+            if (response.AsOutcomeCaseActiveType() is { } activeCaseType)
             {
                 caseType = activeCaseType;
                 return true;

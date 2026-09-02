@@ -127,6 +127,12 @@ Interlocutor.CommonKernel.ResultTypes.IOutcome
 Interlocutor.CommonKernel.ResultTypes.IOutcomeCase
 Interlocutor.CommonKernel.ResultTypes.IOutcomeCase.ActiveCaseType.get -> System.Type?
 Interlocutor.CommonKernel.ResultTypes.IOutcomeCase.IsSuccess.get -> bool
+Interlocutor.CommonKernel.ResultTypes.OutcomeCaseExtensions
+Interlocutor.CommonKernel.ResultTypes.OutcomeCaseExtensions.extension(object?)
+Interlocutor.CommonKernel.ResultTypes.OutcomeCaseExtensions.extension(object?).AsOutcomeCaseActiveType() -> System.Type?
+Interlocutor.CommonKernel.ResultTypes.OutcomeCaseExtensions.extension(object?).AsOutcomeCaseIsSuccess() -> bool?
+static Interlocutor.CommonKernel.ResultTypes.OutcomeCaseExtensions.AsOutcomeCaseActiveType(this object? response) -> System.Type?
+static Interlocutor.CommonKernel.ResultTypes.OutcomeCaseExtensions.AsOutcomeCaseIsSuccess(this object? response) -> bool?
 Interlocutor.CommonKernel.ResultTypes.IRateLimitedFailureCase
 Interlocutor.CommonKernel.ResultTypes.IRateLimitedFailureCase.Message.get -> string?
 Interlocutor.CommonKernel.ResultTypes.ITimeoutFailureCase
