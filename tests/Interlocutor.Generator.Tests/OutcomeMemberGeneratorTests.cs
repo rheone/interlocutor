@@ -462,7 +462,10 @@ public sealed class OutcomeMemberGeneratorTests
         // the Message field distinguishes a real hit from that default.
         var notFoundArgsOnNotFound = new object?[] { notFound, null };
         Assert.True((bool)factory.GetMethod("TryGetNotFound")!.Invoke(null, notFoundArgsOnNotFound)!);
-        Assert.Equal("missing", notFoundArgsOnNotFound[1]!.GetType().GetProperty("Message")!.GetValue(notFoundArgsOnNotFound[1]));
+        Assert.Equal(
+            "missing",
+            notFoundArgsOnNotFound[1]!.GetType().GetProperty("Message")!.GetValue(notFoundArgsOnNotFound[1])
+        );
 
         var notFoundArgsOnSuccess = new object?[] { success, null };
         Assert.False((bool)factory.GetMethod("TryGetNotFound")!.Invoke(null, notFoundArgsOnSuccess)!);
@@ -566,7 +569,11 @@ public sealed class OutcomeMemberGeneratorTests
     [Fact]
     public void OutcomeMemberGenerator_CaseTypeNameCollidesWithReservedMemberName_ReportsAccessorCollision_Test()
     {
-        // Arrange - a case type literally named "Match" collides with the generated Match<TResult> method
+        // Arrange - a case type literally named "Match" is flagged defensively: its own bare name matches an
+        // already-reserved generated member name, even though the TryGet-prefixed accessor scheme this
+        // specific case would produce ("TryGetMatch") wouldn't itself collide with the real Match<TResult>
+        // method - see InterlocutorDiagnostics.AccessorNameCollision's remarks for why all nine reserved names
+        // are guarded uniformly rather than only the one ("Value" -> "TryGetValue") that literally can collide.
         const string source = """
             namespace Test;
 

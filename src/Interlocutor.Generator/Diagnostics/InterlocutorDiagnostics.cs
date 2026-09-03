@@ -354,10 +354,14 @@ internal static class InterlocutorDiagnostics
     /// <para>
     /// A case type that is one of the union's own type parameters never participates - it gets no named
     /// accessor in the first place (see <c>OutcomeUnionModel.CaseAccessorNames</c>'s remarks), so it can never
-    /// collide with anything by name. Always <see cref="DiagnosticSeverity.Error"/>, same posture as
-    /// <see cref="TooFewOutcomeCaseTypes"/>: silently emitting an ambiguous overload set (resolvable only by
-    /// explicit type, never by <c>out var</c>) or a member that duplicates an existing one outright (<c>CS0111</c>)
-    /// is worse than refusing to compile, escalated the same way as every other diagnostic in this file:
+    /// collide with anything by name. The reserved-name shape guards all nine names uniformly, even though only
+    /// <c>Value</c> (whose accessor, <c>TryGetValue</c>, literally duplicates the anonymous overload - a real
+    /// <c>CS0111</c>) can produce an outright compile error under today's <c>TryGet</c>-prefixed scheme; the
+    /// other eight are reserved defensively, so a case type never claims a name this type's own vocabulary
+    /// already owns. Always <see cref="DiagnosticSeverity.Error"/>, same posture as
+    /// <see cref="TooFewOutcomeCaseTypes"/>: silently emitting an ambiguous overload set (a peer-name collision
+    /// is resolvable only by explicit type, never by <c>out var</c>) is worse than refusing to compile,
+    /// escalated the same way as every other diagnostic in this file:
     /// <code>
     /// dotnet_diagnostic.INTERLOC012.severity = warning
     /// </code>

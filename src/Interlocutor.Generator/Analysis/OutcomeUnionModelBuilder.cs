@@ -3,7 +3,6 @@ namespace Interlocutor.Generator.Analysis;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
-using Interlocutor.Generator;
 using Interlocutor.Generator.Models;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
