@@ -3,6 +3,7 @@ namespace Interlocutor.Generator.Analysis;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
+using Interlocutor.Generator;
 using Interlocutor.Generator.Models;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -46,6 +47,10 @@ internal static class OutcomeUnionModelBuilder
         var namespaceSymbol = symbol.ContainingNamespace;
         var namespaceName = namespaceSymbol is { IsGlobalNamespace: false } ? namespaceSymbol.ToDisplayString() : string.Empty;
 
+        var outcomeInterface = context.SemanticModel.Compilation.GetTypeByMetadataName(WellKnownTypeNames.Outcome);
+        var implementsIOutcome =
+            outcomeInterface is not null && symbol.AllInterfaces.Contains(outcomeInterface, SymbolEqualityComparer.Default);
+
         return new OutcomeUnionModel(
             Namespace: namespaceName,
             ModifiersText: string.Join(" ", unionDeclaration.Modifiers.Select(static m => m.Text)),
@@ -54,7 +59,8 @@ internal static class OutcomeUnionModelBuilder
             CaseTypeDisplayStrings: caseTypeDisplayStrings,
             DisplayName: symbol.ToDisplayString(),
             HintName: BuildHintName(symbol, namespaceName),
-            Location: unionDeclaration.Identifier.GetLocation()
+            Location: unionDeclaration.Identifier.GetLocation(),
+            ImplementsIOutcome: implementsIOutcome
         );
     }
 

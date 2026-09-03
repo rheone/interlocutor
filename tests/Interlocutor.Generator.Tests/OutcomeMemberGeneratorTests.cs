@@ -211,4 +211,87 @@ public sealed class OutcomeMemberGeneratorTests
         // Act & Assert - Equals(object?) against an unrelated type is false, never throws
         Assert.False((bool)factory.GetMethod("ObjectEquals")!.Invoke(null, [success, "not an outcome"])!);
     }
+
+    [Fact]
+    public void OutcomeMemberGenerator_UnionWithoutIOutcome_OmitsClassificationSurface_Test()
+    {
+        // Arrange - no `: IOutcome` in the base list, unlike AttributedTwoCaseUnion above
+        const string source = """
+            namespace Test;
+
+            using Interlocutor.CommonKernel;
+
+            [GenerateOutcomeMembers]
+            public readonly partial union PlainUnion<TFirst, TSecond>(TFirst, TSecond)
+            {
+            }
+            """;
+
+        // Act
+        var result = GeneratorTestHarness.RunAndUpdate(
+            new OutcomeMemberGenerator(),
+            source,
+            "OutcomeMemberGenerator.Tests.PlainUnion",
+            null,
+            LanguageVersion.Preview,
+            out var diagnostics
+        );
+
+        // Assert
+        Assert.Empty(diagnostics);
+        var emitResult = result.GetDiagnostics(TestContext.Current.CancellationToken);
+        Assert.Empty(emitResult.Where(static d => d.Severity == DiagnosticSeverity.Error));
+
+        var generatedText = string.Join(
+            System.Environment.NewLine,
+            result
+                .SyntaxTrees.Where(static t => t.FilePath.Contains("OutcomeMembers", StringComparison.Ordinal))
+                .Select(static t => t.ToString())
+        );
+
+        // The sum-type surface is unconditional.
+        Assert.Contains("public bool TryGetValue(out", generatedText, StringComparison.Ordinal);
+        Assert.Contains("public TResult Match<TResult>(", generatedText, StringComparison.Ordinal);
+        Assert.Contains("public void Switch(", generatedText, StringComparison.Ordinal);
+        Assert.Contains("public override string ToString()", generatedText, StringComparison.Ordinal);
+        Assert.Contains("public bool Equals(PlainUnion<TFirst, TSecond> other)", generatedText, StringComparison.Ordinal);
+
+        // The classification surface is opt-in via `: IOutcome` and must not appear here.
+        Assert.DoesNotContain("IOutcomeCase", generatedText, StringComparison.Ordinal);
+        Assert.DoesNotContain("IsSuccess", generatedText, StringComparison.Ordinal);
+        Assert.DoesNotContain("ActiveCaseType", generatedText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void OutcomeMemberGenerator_UnionWithoutIOutcome_NeverImplementsIOutcomeCase_AtRuntime_Test()
+    {
+        // Arrange
+        const string source = """
+            namespace Test;
+
+            using Interlocutor.CommonKernel;
+
+            [GenerateOutcomeMembers]
+            public readonly partial union PlainUnion<TFirst, TSecond>(TFirst, TSecond)
+            {
+            }
+            """;
+
+        // Act
+        var (assembly, _) = GeneratorTestHarness.EmitAndLoadAssembly(
+            new OutcomeMemberGenerator(),
+            source,
+            "OutcomeMemberGenerator.Tests.PlainUnionRuntime",
+            null,
+            LanguageVersion.Preview
+        );
+
+        // Assert - never enters OutcomeClassifierBuilder's positional-IsSuccess fallback, since that fallback
+        // is reached only through an IOutcomeCase cast (see OutcomeCaseExtensions.AsOutcomeCaseIsSuccess).
+        var plainUnionType = assembly.GetType("Test.PlainUnion`2", throwOnError: true)!;
+        Assert.DoesNotContain(
+            plainUnionType.GetInterfaces(),
+            i => i.FullName == "Interlocutor.CommonKernel.ResultTypes.IOutcomeCase"
+        );
+    }
 }

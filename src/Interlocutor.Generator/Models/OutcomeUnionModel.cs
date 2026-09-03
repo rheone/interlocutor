@@ -31,6 +31,15 @@ using Microsoft.CodeAnalysis;
 /// <param name="DisplayName">The union's fully-qualified display name, for diagnostic messages.</param>
 /// <param name="HintName">The unique hint name <see cref="OutcomeMemberGenerator"/> passes to <c>AddSource</c>.</param>
 /// <param name="Location">The union declaration's identifier location, for diagnostic anchoring.</param>
+/// <param name="ImplementsIOutcome">
+/// Whether the union's own declaration lists <c>IOutcome</c> in its base list (resolved semantically against
+/// <c>Interlocutor.CommonKernel.ResultTypes.IOutcome</c>, never by matching source text). Gates the
+/// classification surface - <c>IOutcomeCase</c>, <c>IsSuccess</c>, <c>ActiveCaseType</c> - which
+/// <see cref="OutcomeMemberEmitter"/> only emits when this is <see langword="true"/>. The sum-type members
+/// (<c>Match</c>, <c>Switch</c>, per-case <c>TryGetValue</c>, <c>ToString</c>, equality) are unconditional -
+/// a union declared without <c>: IOutcome</c> is a plain tagged union with no success/failure opinion, not a
+/// lesser outcome.
+/// </param>
 [DebuggerDisplay("{DisplayName}")]
 internal sealed record OutcomeUnionModel(
     string Namespace,
@@ -40,5 +49,6 @@ internal sealed record OutcomeUnionModel(
     ImmutableArray<string> CaseTypeDisplayStrings,
     string DisplayName,
     string HintName,
-    Location Location
+    Location Location,
+    bool ImplementsIOutcome
 );

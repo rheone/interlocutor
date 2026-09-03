@@ -7,9 +7,10 @@ using Interlocutor.Generator.Models;
 
 /// <summary>
 /// Emits the second partial declaration <see cref="OutcomeMemberGenerator"/> adds for one attributed
-/// <see cref="OutcomeUnionModel"/>: <c>Match</c>, <c>Switch</c>, per-case <c>TryGetValue</c>, <c>ToString</c>,
-/// <c>IsSuccess</c>, <c>ActiveCaseType</c>, and value-based equality (<c>Equals</c>, <c>GetHashCode</c>,
-/// <c>IEquatable&lt;TSelf&gt;</c>, <c>==</c>/<c>!=</c>).
+/// <see cref="OutcomeUnionModel"/>: unconditionally, <c>Match</c>, <c>Switch</c>, per-case <c>TryGetValue</c>,
+/// <c>ToString</c>, and value-based equality (<c>Equals</c>, <c>GetHashCode</c>, <c>IEquatable&lt;TSelf&gt;</c>,
+/// <c>==</c>/<c>!=</c>); additionally, <c>IOutcomeCase</c>, <c>IsSuccess</c>, and <c>ActiveCaseType</c> when
+/// <see cref="OutcomeUnionModel.ImplementsIOutcome"/> is <see langword="true"/>.
 /// </summary>
 internal static class OutcomeMemberEmitter
 {
@@ -35,23 +36,29 @@ internal static class OutcomeMemberEmitter
             : $"<{string.Join(", ", model.TypeParameterNames)}>";
         var selfType = model.TypeName + typeParameterList;
 
-        builder
-            .Append(model.ModifiersText)
-            .Append(" union ")
-            .Append(model.TypeName)
-            .Append(typeParameterList)
-            .Append(" : global::System.IEquatable<")
-            .Append(selfType)
-            .Append(">, global::Interlocutor.CommonKernel.ResultTypes.IOutcomeCase")
-            .AppendLine();
+        builder.Append(model.ModifiersText).Append(" union ").Append(model.TypeName).Append(typeParameterList);
+        builder.Append(" : global::System.IEquatable<").Append(selfType).Append('>');
+        if (model.ImplementsIOutcome)
+        {
+            // Only a union that opted into the classification surface (declared `: IOutcome`) implements
+            // IOutcomeCase - see OutcomeUnionModel.ImplementsIOutcome's remarks for why this is opt-in rather
+            // than unconditional.
+            builder.Append(", global::Interlocutor.CommonKernel.ResultTypes.IOutcomeCase");
+        }
+
+        builder.AppendLine();
         builder.AppendLine("{");
 
         EmitGetActiveCaseIndex(builder, model);
         builder.AppendLine();
-        EmitIsSuccess(builder);
-        builder.AppendLine();
-        EmitActiveCaseType(builder, model);
-        builder.AppendLine();
+        if (model.ImplementsIOutcome)
+        {
+            EmitIsSuccess(builder);
+            builder.AppendLine();
+            EmitActiveCaseType(builder, model);
+            builder.AppendLine();
+        }
+
         EmitTryGetValueOverloads(builder, model);
         builder.AppendLine();
         EmitMatch(builder, model);
