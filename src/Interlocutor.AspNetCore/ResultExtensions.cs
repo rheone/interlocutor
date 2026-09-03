@@ -17,231 +17,30 @@ using Microsoft.AspNetCore.Mvc;
 /// an <see cref="IOutcomeStatusMapper"/> for the failure-to-status-code decision so the two cannot drift.
 /// </summary>
 /// <remarks>
-/// The type's members are ordered public-surface-first (every <c>extension</c> block, in arity order) then
-/// private implementation last (fields, then the private helpers) rather than the usual fields-first
-/// canonical order - StyleCop.Analyzers 1.2.0-beta.556 (this repo's pinned version) doesn't classify C# 14
-/// extension block declarations for its SA1201 member-ordering check, so it misreports "A &lt;unknown&gt;
-/// should not follow a field/method" whenever an extension block sits immediately after a field or method.
-/// The diagnostic carries no source location, so it can't be suppressed per-line or per-block; this ordering
-/// simply never produces that adjacency, keeping SA1201 fully live (not switched off) for the rest of the
-/// file. Tracked as .scratch/extension-members/issues/06-stylecop-extension-block-support.md - revisit this
-/// ordering once StyleCop.Analyzers ships extension-block support.
+/// <para>
+/// The dedicated, per-case-arity <c>ToActionResult</c>/<c>ToMinimalApiResult</c> overloads (the non-generic
+/// <c>Outcome</c> and every <c>Outcome&lt;TSuccess, ...&gt;</c> arity) are source-generated into a second
+/// partial declaration by <c>Interlocutor.Generator</c>'s <c>ResultExtensionsGenerator</c>, marked via
+/// <see cref="GenerateResultExtensionsAttribute"/> above - see that attribute's remarks. This file keeps only
+/// the reflective catch-all overload (for a hand-rolled <see cref="IOutcome"/> implementation) and the
+/// private <see cref="OutcomeHttpMapping"/> rendering helpers both partials share.
+/// </para>
+/// <para>
+/// The type's members are ordered public-surface-first (the catch-all <c>extension</c> block, then the
+/// private <see cref="OutcomeHttpMapping"/> one) then private implementation last (fields, then the private
+/// helpers) rather than the usual fields-first canonical order - StyleCop.Analyzers 1.2.0-beta.556 (this
+/// repo's pinned version) doesn't classify C# 14 extension block declarations for its SA1201 member-ordering
+/// check, so it misreports "A &lt;unknown&gt; should not follow a field/method" whenever an extension block
+/// sits immediately after a field or method. The diagnostic carries no source location, so it can't be
+/// suppressed per-line or per-block; this ordering simply never produces that adjacency, keeping SA1201 fully
+/// live (not switched off) for the rest of the file. Tracked as
+/// .scratch/extension-members/issues/06-stylecop-extension-block-support.md - revisit this ordering once
+/// StyleCop.Analyzers ships extension-block support.
+/// </para>
 /// </remarks>
-public static class ResultExtensions
+[GenerateResultExtensions]
+public static partial class ResultExtensions
 {
-    extension<TSuccess, TFailure>(Outcome<TSuccess, TFailure> result)
-    {
-        /// <summary>
-        /// Converts a <see cref="Outcome{TSuccessResult, TFailureResult}"/> to an <see cref="IActionResult"/>
-        /// with the appropriate HTTP status code.
-        /// </summary>
-        /// <param name="mapper">
-        /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
-        /// <see cref="DefaultHttpOutcomeStatusMapper"/> is used, preserving today's status codes.
-        /// </param>
-        /// <returns>An <see cref="OkObjectResult"/> on success, or the mapped error result on failure.</returns>
-        public IActionResult ToActionResult(IOutcomeStatusMapper? mapper = null) =>
-            result.Match<IActionResult>(
-                ok => new OkObjectResult(ok),
-                failure => (mapper ?? DefaultMapper).Map(failure).ToActionResult()
-            );
-
-        /// <summary>
-        /// Converts a <see cref="Outcome{TSuccessResult, TFailureResult}"/> to a minimal API result
-        /// with the appropriate HTTP status code.
-        /// </summary>
-        /// <param name="mapper">
-        /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
-        /// <see cref="DefaultHttpOutcomeStatusMapper"/> is used - the same instance the controller-based
-        /// <see cref="ResultExtensions.ToActionResult{TSuccess, TFailure}(Outcome{TSuccess, TFailure}, IOutcomeStatusMapper?)"/>
-        /// defaults to, so the two paths cannot drift.
-        /// </param>
-        /// <returns>An HTTP 200 with the success value on success, or the mapped error result on failure.</returns>
-        public IResult ToMinimalApiResult(IOutcomeStatusMapper? mapper = null) =>
-            result.Match<IResult>(ok => Results.Ok(ok), failure => (mapper ?? DefaultMapper).Map(failure).ToMinimalApiResult());
-    }
-
-    extension(Outcome result)
-    {
-        /// <summary>Converts a void <see cref="Outcome"/> to an <see cref="IActionResult"/> with the appropriate HTTP status code.</summary>
-        /// <param name="mapper">
-        /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
-        /// <see cref="DefaultHttpOutcomeStatusMapper"/> is used, preserving today's status codes.
-        /// </param>
-        /// <returns>A <see cref="NoContentResult"/> on success, or the mapped error result on failure.</returns>
-        public IActionResult ToActionResult(IOutcomeStatusMapper? mapper = null) =>
-            result.Match<IActionResult>(
-                static _ => new NoContentResult(),
-                failure => (mapper ?? DefaultMapper).Map(failure).ToActionResult()
-            );
-
-        /// <summary>Converts a void <see cref="Outcome"/> to a minimal API result with the appropriate HTTP status code.</summary>
-        /// <param name="mapper">
-        /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
-        /// <see cref="DefaultHttpOutcomeStatusMapper"/> is used, preserving today's status codes.
-        /// </param>
-        /// <returns>HTTP 204 No Content on success, or the mapped error result on failure.</returns>
-        public IResult ToMinimalApiResult(IOutcomeStatusMapper? mapper = null) =>
-            result.Match<IResult>(
-                static _ => Results.NoContent(),
-                failure => (mapper ?? DefaultMapper).Map(failure).ToMinimalApiResult()
-            );
-    }
-
-    extension<TSuccess, TCase2, TCase3>(Outcome<TSuccess, TCase2, TCase3> result)
-    {
-        /// <summary>
-        /// Converts a <see cref="Outcome{TSuccessResult, TCase2, TCase3}"/> to an <see cref="IActionResult"/>
-        /// with the appropriate HTTP status code.
-        /// </summary>
-        /// <param name="mapper">
-        /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
-        /// <see cref="DefaultHttpOutcomeStatusMapper"/> is used, preserving today's status codes.
-        /// </param>
-        /// <returns>An <see cref="OkObjectResult"/> on success, or the mapped error result on failure.</returns>
-        public IActionResult ToActionResult(IOutcomeStatusMapper? mapper = null) =>
-            result.Match<IActionResult>(
-                ok => new OkObjectResult(ok),
-                case2 => (mapper ?? DefaultMapper).Map(case2).ToActionResult(),
-                case3 => (mapper ?? DefaultMapper).Map(case3).ToActionResult()
-            );
-
-        /// <summary>
-        /// Converts a <see cref="Outcome{TSuccessResult, TCase2, TCase3}"/> to a minimal API result
-        /// with the appropriate HTTP status code.
-        /// </summary>
-        /// <param name="mapper">
-        /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
-        /// <see cref="DefaultHttpOutcomeStatusMapper"/> is used, preserving today's status codes.
-        /// </param>
-        /// <returns>An HTTP 200 with the success value on success, or the mapped error result on failure.</returns>
-        public IResult ToMinimalApiResult(IOutcomeStatusMapper? mapper = null) =>
-            result.Match<IResult>(
-                ok => Results.Ok(ok),
-                case2 => (mapper ?? DefaultMapper).Map(case2).ToMinimalApiResult(),
-                case3 => (mapper ?? DefaultMapper).Map(case3).ToMinimalApiResult()
-            );
-    }
-
-    extension<TSuccess, TCase2, TCase3, TCase4>(Outcome<TSuccess, TCase2, TCase3, TCase4> result)
-    {
-        /// <summary>
-        /// Converts a <see cref="Outcome{TSuccessResult, TCase2, TCase3, TCase4}"/> to an <see cref="IActionResult"/>
-        /// with the appropriate HTTP status code.
-        /// </summary>
-        /// <param name="mapper">
-        /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
-        /// <see cref="DefaultHttpOutcomeStatusMapper"/> is used, preserving today's status codes.
-        /// </param>
-        /// <returns>An <see cref="OkObjectResult"/> on success, or the mapped error result on failure.</returns>
-        public IActionResult ToActionResult(IOutcomeStatusMapper? mapper = null) =>
-            result.Match<IActionResult>(
-                ok => new OkObjectResult(ok),
-                case2 => (mapper ?? DefaultMapper).Map(case2).ToActionResult(),
-                case3 => (mapper ?? DefaultMapper).Map(case3).ToActionResult(),
-                case4 => (mapper ?? DefaultMapper).Map(case4).ToActionResult()
-            );
-
-        /// <summary>
-        /// Converts a <see cref="Outcome{TSuccessResult, TCase2, TCase3, TCase4}"/> to a minimal API result
-        /// with the appropriate HTTP status code.
-        /// </summary>
-        /// <param name="mapper">
-        /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
-        /// <see cref="DefaultHttpOutcomeStatusMapper"/> is used, preserving today's status codes.
-        /// </param>
-        /// <returns>An HTTP 200 with the success value on success, or the mapped error result on failure.</returns>
-        public IResult ToMinimalApiResult(IOutcomeStatusMapper? mapper = null) =>
-            result.Match<IResult>(
-                ok => Results.Ok(ok),
-                case2 => (mapper ?? DefaultMapper).Map(case2).ToMinimalApiResult(),
-                case3 => (mapper ?? DefaultMapper).Map(case3).ToMinimalApiResult(),
-                case4 => (mapper ?? DefaultMapper).Map(case4).ToMinimalApiResult()
-            );
-    }
-
-    extension<TSuccess, TCase2, TCase3, TCase4, TCase5>(Outcome<TSuccess, TCase2, TCase3, TCase4, TCase5> result)
-    {
-        /// <summary>
-        /// Converts a <see cref="Outcome{TSuccessResult, TCase2, TCase3, TCase4, TCase5}"/> to an
-        /// <see cref="IActionResult"/> with the appropriate HTTP status code.
-        /// </summary>
-        /// <param name="mapper">
-        /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
-        /// <see cref="DefaultHttpOutcomeStatusMapper"/> is used, preserving today's status codes.
-        /// </param>
-        /// <returns>An <see cref="OkObjectResult"/> on success, or the mapped error result on failure.</returns>
-        public IActionResult ToActionResult(IOutcomeStatusMapper? mapper = null) =>
-            result.Match<IActionResult>(
-                ok => new OkObjectResult(ok),
-                case2 => (mapper ?? DefaultMapper).Map(case2).ToActionResult(),
-                case3 => (mapper ?? DefaultMapper).Map(case3).ToActionResult(),
-                case4 => (mapper ?? DefaultMapper).Map(case4).ToActionResult(),
-                case5 => (mapper ?? DefaultMapper).Map(case5).ToActionResult()
-            );
-
-        /// <summary>
-        /// Converts a <see cref="Outcome{TSuccessResult, TCase2, TCase3, TCase4, TCase5}"/> to a minimal API
-        /// result with the appropriate HTTP status code.
-        /// </summary>
-        /// <param name="mapper">
-        /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
-        /// <see cref="DefaultHttpOutcomeStatusMapper"/> is used, preserving today's status codes.
-        /// </param>
-        /// <returns>An HTTP 200 with the success value on success, or the mapped error result on failure.</returns>
-        public IResult ToMinimalApiResult(IOutcomeStatusMapper? mapper = null) =>
-            result.Match<IResult>(
-                ok => Results.Ok(ok),
-                case2 => (mapper ?? DefaultMapper).Map(case2).ToMinimalApiResult(),
-                case3 => (mapper ?? DefaultMapper).Map(case3).ToMinimalApiResult(),
-                case4 => (mapper ?? DefaultMapper).Map(case4).ToMinimalApiResult(),
-                case5 => (mapper ?? DefaultMapper).Map(case5).ToMinimalApiResult()
-            );
-    }
-
-    extension<TSuccess, TCase2, TCase3, TCase4, TCase5, TCase6>(
-        Outcome<TSuccess, TCase2, TCase3, TCase4, TCase5, TCase6> result
-    )
-    {
-        /// <summary>
-        /// Converts a <see cref="Outcome{TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6}"/> to an
-        /// <see cref="IActionResult"/> with the appropriate HTTP status code.
-        /// </summary>
-        /// <param name="mapper">
-        /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
-        /// <see cref="DefaultHttpOutcomeStatusMapper"/> is used, preserving today's status codes.
-        /// </param>
-        /// <returns>An <see cref="OkObjectResult"/> on success, or the mapped error result on failure.</returns>
-        public IActionResult ToActionResult(IOutcomeStatusMapper? mapper = null) =>
-            result.Match<IActionResult>(
-                ok => new OkObjectResult(ok),
-                case2 => (mapper ?? DefaultMapper).Map(case2).ToActionResult(),
-                case3 => (mapper ?? DefaultMapper).Map(case3).ToActionResult(),
-                case4 => (mapper ?? DefaultMapper).Map(case4).ToActionResult(),
-                case5 => (mapper ?? DefaultMapper).Map(case5).ToActionResult(),
-                case6 => (mapper ?? DefaultMapper).Map(case6).ToActionResult()
-            );
-
-        /// <summary>
-        /// Converts a <see cref="Outcome{TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6}"/> to a
-        /// minimal API result with the appropriate HTTP status code.
-        /// </summary>
-        /// <param name="mapper">
-        /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
-        /// <see cref="DefaultHttpOutcomeStatusMapper"/> is used, preserving today's status codes.
-        /// </param>
-        /// <returns>An HTTP 200 with the success value on success, or the mapped error result on failure.</returns>
-        public IResult ToMinimalApiResult(IOutcomeStatusMapper? mapper = null) =>
-            result.Match<IResult>(
-                ok => Results.Ok(ok),
-                case2 => (mapper ?? DefaultMapper).Map(case2).ToMinimalApiResult(),
-                case3 => (mapper ?? DefaultMapper).Map(case3).ToMinimalApiResult(),
-                case4 => (mapper ?? DefaultMapper).Map(case4).ToMinimalApiResult(),
-                case5 => (mapper ?? DefaultMapper).Map(case5).ToMinimalApiResult(),
-                case6 => (mapper ?? DefaultMapper).Map(case6).ToMinimalApiResult()
-            );
-    }
-
     extension<TResponse>(TResponse response)
         where TResponse : IOutcome
     {

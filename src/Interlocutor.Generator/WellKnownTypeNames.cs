@@ -100,4 +100,10 @@ internal static class WellKnownTypeNames
     /// <see cref="OutcomeMemberGenerator"/>.
     /// </summary>
     public const string GenerateOutcomeMembersAttribute = "Interlocutor.CommonKernel.GenerateOutcomeMembersAttribute";
+
+    /// <summary>
+    /// The HTTP-result-overload-generation marker attribute, <c>GenerateResultExtensionsAttribute</c> - see
+    /// <see cref="ResultExtensionsGenerator"/>.
+    /// </summary>
+    public const string GenerateResultExtensionsAttribute = "Interlocutor.AspNetCore.GenerateResultExtensionsAttribute";
 }

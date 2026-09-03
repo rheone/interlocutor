@@ -15,16 +15,18 @@ using System.Linq;
 /// <see cref="IdentifierSanitizer.ToNamespaceSegment(string)"/>.
 /// </param>
 /// <param name="ExternalModules">Every referenced assembly's generated registration module, if any.</param>
-/// <param name="HasAbstractionsReference">
-/// Whether this compilation references <c>Interlocutor.Abstractions</c> at all (resolved via
-/// <see cref="WellKnownTypeNames.Query"/>, never by matching the assembly name as text). <see cref="InterlocutorSourceGenerator.Execute"/>
-/// skips every diagnostic and every <c>AddSource</c> call when this is <see langword="false"/> - its emitted
-/// boilerplate (the registration module, dispatch wrappers, the generated-module attribute) unconditionally
-/// names <c>Interlocutor.Abstractions</c>/<c>Interlocutor.DependencyInjection.Abstractions</c> types, which
-/// don't exist in a compilation that never references either package - <c>Interlocutor.CommonKernel</c>'s own
-/// build being the one that matters in practice, since it references <c>Interlocutor.Generator</c> as an
-/// analyzer-only dependency purely so <see cref="OutcomeMemberGenerator"/> runs over it (ticket 05), without
-/// pulling in a real dependency on either Abstractions package.
+/// <param name="CanEmitGeneratedOutput">
+/// Whether this compilation references both <c>Interlocutor.Abstractions</c> (resolved via
+/// <see cref="WellKnownTypeNames.Query"/>) and <c>Interlocutor.DependencyInjection.Abstractions</c> (resolved
+/// via <see cref="WellKnownTypeNames.GeneratedModuleAttribute"/>) - never by matching either assembly name as
+/// text. <see cref="InterlocutorSourceGenerator.Execute"/> skips every diagnostic and every <c>AddSource</c>
+/// call when this is <see langword="false"/> - its emitted boilerplate (the registration module, dispatch
+/// wrappers, the generated-module attribute) unconditionally names types from both packages, which don't
+/// exist in a compilation that references neither, or only one. Two real builds hit this: <c>Interlocutor.CommonKernel</c>'s
+/// own (references neither package, wiring <c>Interlocutor.Generator</c> in purely so
+/// <see cref="OutcomeMemberGenerator"/> runs over it - ticket 05) and <c>Interlocutor.AspNetCore</c>'s own
+/// (references Abstractions but not DependencyInjection.Abstractions, wiring <c>Interlocutor.Generator</c> in
+/// purely so <c>ResultExtensionsGenerator</c> runs over it).
 /// </param>
 /// <remarks>
 /// Structural equality on <see cref="ExternalModules"/> is what lets this pipeline step itself be cached when a
@@ -40,14 +42,14 @@ using System.Linq;
 internal sealed record CompilationInfo(
     string AssemblyNamespaceSegment,
     ImmutableArray<ExternalModuleInfo> ExternalModules,
-    bool HasAbstractionsReference
+    bool CanEmitGeneratedOutput
 )
 {
     /// <inheritdoc/>
     public bool Equals(CompilationInfo? other) =>
         other is not null
         && this.AssemblyNamespaceSegment == other.AssemblyNamespaceSegment
-        && this.HasAbstractionsReference == other.HasAbstractionsReference
+        && this.CanEmitGeneratedOutput == other.CanEmitGeneratedOutput
         && this.ExternalModules.SequenceEqual(other.ExternalModules);
 
     /// <inheritdoc/>
@@ -57,7 +59,7 @@ internal sealed record CompilationInfo(
         // rather than pull in a polyfill package for one method.
         var hash = 17;
         hash = (hash * 31) + this.AssemblyNamespaceSegment.GetHashCode();
-        hash = (hash * 31) + this.HasAbstractionsReference.GetHashCode();
+        hash = (hash * 31) + this.CanEmitGeneratedOutput.GetHashCode();
         foreach (var module in this.ExternalModules)
         {
             hash = (hash * 31) + module.GetHashCode();
