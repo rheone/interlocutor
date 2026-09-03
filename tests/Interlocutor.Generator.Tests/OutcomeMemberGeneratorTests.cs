@@ -1,6 +1,7 @@
 namespace Interlocutor.Generator.Tests;
 
 using System.Linq;
+using Interlocutor.Generator.Diagnostics;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 

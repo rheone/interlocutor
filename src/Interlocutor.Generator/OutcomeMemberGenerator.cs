@@ -1,6 +1,10 @@
 namespace Interlocutor.Generator;
 
 using System.Linq;
+using Interlocutor.Generator.Analysis;
+using Interlocutor.Generator.Diagnostics;
+using Interlocutor.Generator.Emission;
+using Interlocutor.Generator.Models;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
