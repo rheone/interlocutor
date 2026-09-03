@@ -26,6 +26,15 @@ jobs:
       - name: Test
         run: dotnet test Interlocutor.slnx -c Release --no-build
 
+      - name: Format check
+        # --syntax-errors-as-warnings tolerates (not fails the build on) the three files using preview
+        # union/partial union syntax - dotnet-csharpier's bundled parser can't parse that syntax at all yet
+        # (see .scratch/repo-review-2026-09-02/findings/16-csharpier-union-parse-gap.md), so those specific
+        # files report as warnings instead of failing this step. Genuine formatting drift in every other file
+        # still fails it. Drop this flag once a csharpier version bump adds union-syntax parsing support
+        # upstream.
+        run: dotnet tool restore && dotnet csharpier check . --syntax-errors-as-warnings
+
   trim-compatibility:
     name: Trim compatibility (analyzer-level only - see documentation/trim-and-aot-support.md)
     runs-on: ubuntu-24.04

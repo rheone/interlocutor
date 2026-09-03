@@ -65,8 +65,24 @@ public sealed class DefaultOutcomeCaseRegistry : IOutcomeCaseRegistry
         if (response is IUnion union)
         {
             caseValue = union.Value;
-            caseType = caseValue?.GetType() ?? typeof(TResponse);
-            return true;
+            if (caseValue is not null)
+            {
+                caseType = caseValue.GetType();
+                return true;
+            }
+
+            // A null Value alone can't say whether this is a legitimate null case payload or a genuinely
+            // unset union (see finding 07) - IOutcomeCase.ActiveCaseType resolves that ambiguity from inside
+            // the union itself, where the declared case types are known even when the boxed value isn't.
+            if (response.AsOutcomeCaseActiveType() is { } activeCaseType)
+            {
+                caseType = activeCaseType;
+                return true;
+            }
+
+            // Genuinely unset union: no case was ever constructed.
+            caseType = typeof(TResponse);
+            return false;
         }
 
         throw new OutcomeCaseNotSupportedException(

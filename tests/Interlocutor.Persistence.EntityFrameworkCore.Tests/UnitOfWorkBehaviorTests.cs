@@ -78,6 +78,59 @@ public sealed class UnitOfWorkBehaviorTests : IDisposable
     }
 
     [Fact]
+    public async Task Handle_NullPayloadSuccess_CommitsNotRollsBack()
+    {
+        // Arrange - a handler that legitimately succeeds with a null case payload (see finding 01) must
+        // still commit, not roll back a genuine write as if it had failed.
+        var behavior = new UnitOfWorkBehavior<PlainRequest, Outcome<string?, Failure>, TestDbContext>(this.lazyContext);
+
+        // Act
+        var result = await behavior.Handle(
+            new PlainRequest(),
+            async () =>
+            {
+                await this
+                    .context.Widgets.AddAsync(new Widget { Name = "null-payload-success" }, CancellationToken.None)
+                    .ConfigureAwait(false);
+                return (string?)null;
+            },
+            CancellationToken.None
+        );
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        await using var verify = this.CreateVerificationContext();
+        Assert.Equal(["null-payload-success"], verify.Widgets.Select(w => w.Name));
+    }
+
+    [Fact]
+    public async Task Handle_NullPayloadSuccessRoutedThroughResourceCommandHandler_CommitsNotRollsBack()
+    {
+        // Arrange - the realistic trigger from finding 01: ResourceCommandHandler<TCommand, TEntity, TSuccess>
+        // (the library's own built-in resource-authorization template) lets a consumer pick a nullable
+        // TSuccess, not just a bare hand-constructed Outcome<...>.
+        var behavior = new UnitOfWorkBehavior<
+            NullableSuccessResourceCommand,
+            Outcome<string?, NotFound, Forbidden>,
+            TestDbContext
+        >(this.lazyContext);
+        var resourceHandler = new NullableSuccessResourceCommandHandler(this.context);
+        var command = new NullableSuccessResourceCommand();
+
+        // Act
+        var result = await behavior.Handle(
+            command,
+            () => resourceHandler.Handle(command, CancellationToken.None),
+            CancellationToken.None
+        );
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        await using var verify = this.CreateVerificationContext();
+        Assert.Equal(["resource-handler-write"], verify.Widgets.Select(w => w.Name));
+    }
+
+    [Fact]
     public async Task Handle_ClassifiedFailure_RollsBack_NoRowPersisted()
     {
         // Arrange
@@ -239,6 +292,28 @@ public sealed class UnitOfWorkBehaviorTests : IDisposable
     }
 
     private sealed record PlainRequest : ICommand<Outcome<Success, Failure>>;
+
+    private sealed record NullableSuccessResourceCommand : ICommand<Outcome<string?, NotFound, Forbidden>>;
+
+    /// <summary>Loads/authorizes trivially, writes a <see cref="Widget"/>, and succeeds with a null payload.</summary>
+    private sealed class NullableSuccessResourceCommandHandler(TestDbContext context)
+        : ResourceCommandHandler<NullableSuccessResourceCommand, Widget, string?>
+    {
+        protected override Task<Widget?> LoadAsync(NullableSuccessResourceCommand command, CancellationToken ct) =>
+            Task.FromResult<Widget?>(new Widget());
+
+        protected override Forbidden? Authorize(Widget entity, NullableSuccessResourceCommand command) => null;
+
+        protected override async Task<Outcome<string?, NotFound, Forbidden>> HandleAsync(
+            NullableSuccessResourceCommand command,
+            Widget entity,
+            CancellationToken ct
+        )
+        {
+            await context.Widgets.AddAsync(new Widget { Name = "resource-handler-write" }, ct).ConfigureAwait(false);
+            return (string?)null;
+        }
+    }
 
     private sealed record TransactionalRequest : ICommand<Outcome<Success, Failure>>, ITransactionalRequest;
 

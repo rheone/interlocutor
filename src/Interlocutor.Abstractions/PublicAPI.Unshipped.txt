@@ -1,6 +1,6 @@
 #nullable enable
-abstract Interlocutor.Abstractions.Commands.ResourceCommandHandler<TCommand, TEntity, TSuccess>.Authorize(TEntity entity, TCommand command) -> Interlocutor.CommonKernel.ResultTypes.Failure?
-abstract Interlocutor.Abstractions.Commands.ResourceCommandHandler<TCommand, TEntity, TSuccess>.HandleAsync(TCommand command, TEntity entity, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Interlocutor.CommonKernel.Outcome<TSuccess, Interlocutor.CommonKernel.ResultTypes.NotFound, Interlocutor.CommonKernel.ResultTypes.Failure>>!
+abstract Interlocutor.Abstractions.Commands.ResourceCommandHandler<TCommand, TEntity, TSuccess>.Authorize(TEntity entity, TCommand command) -> Interlocutor.CommonKernel.ResultTypes.Forbidden?
+abstract Interlocutor.Abstractions.Commands.ResourceCommandHandler<TCommand, TEntity, TSuccess>.HandleAsync(TCommand command, TEntity entity, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Interlocutor.CommonKernel.Outcome<TSuccess, Interlocutor.CommonKernel.ResultTypes.NotFound, Interlocutor.CommonKernel.ResultTypes.Forbidden>>!
 abstract Interlocutor.Abstractions.Commands.ResourceCommandHandler<TCommand, TEntity, TSuccess>.LoadAsync(TCommand command, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TEntity?>!
 const Interlocutor.Abstractions.Diagnostics.MediatorActivitySource.HandlerTypeTag = "interlocutor.handler_type" -> string!
 const Interlocutor.Abstractions.Diagnostics.MediatorActivitySource.Name = "Interlocutor.Mediator" -> string!
@@ -13,7 +13,7 @@ Interlocutor.Abstractions.Commands.ICommandHandler<TCommand, TResponse>.Handle(T
 Interlocutor.Abstractions.Commands.IVoidCommandHandler<TCommand, TResult>
 Interlocutor.Abstractions.Commands.IVoidCommandHandler<TCommand, TResult>.Handle(TCommand command, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResult>!
 Interlocutor.Abstractions.Commands.ResourceCommandHandler<TCommand, TEntity, TSuccess>
-Interlocutor.Abstractions.Commands.ResourceCommandHandler<TCommand, TEntity, TSuccess>.Handle(TCommand command, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Interlocutor.CommonKernel.Outcome<TSuccess, Interlocutor.CommonKernel.ResultTypes.NotFound, Interlocutor.CommonKernel.ResultTypes.Failure>>!
+Interlocutor.Abstractions.Commands.ResourceCommandHandler<TCommand, TEntity, TSuccess>.Handle(TCommand command, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Interlocutor.CommonKernel.Outcome<TSuccess, Interlocutor.CommonKernel.ResultTypes.NotFound, Interlocutor.CommonKernel.ResultTypes.Forbidden>>!
 Interlocutor.Abstractions.Commands.ResourceCommandHandler<TCommand, TEntity, TSuccess>.ResourceCommandHandler() -> void
 Interlocutor.Abstractions.Core.AmbientRequestContextAccessor
 Interlocutor.Abstractions.Core.AmbientRequestContextAccessor.AmbientRequestContextAccessor() -> void

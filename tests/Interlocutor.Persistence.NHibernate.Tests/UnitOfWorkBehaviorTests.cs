@@ -96,6 +96,31 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<RealSessionFixture>
     }
 
     [Fact]
+    public async Task Handle_NullPayloadSuccess_CommitsNotRollsBack()
+    {
+        // Arrange - a handler that legitimately succeeds with a null case payload (see finding 01) must
+        // still commit, not roll back a genuine write as if it had failed.
+        using var session = this.fixture.OpenSession();
+        var behavior = new UnitOfWorkBehavior<PlainRequest, Outcome<string?, Failure>>(new Lazy<ISession>(() => session));
+        var widget = new Widget();
+
+        // Act
+        var result = await behavior.Handle(
+            new PlainRequest(),
+            async () =>
+            {
+                await session.SaveAsync(widget, CancellationToken.None).ConfigureAwait(false);
+                return (string?)null;
+            },
+            CancellationToken.None
+        );
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        this.AssertPersisted(widget.Id);
+    }
+
+    [Fact]
     public async Task Handle_ClassifiedFailure_RollsBack_NotCommit()
     {
         // Arrange

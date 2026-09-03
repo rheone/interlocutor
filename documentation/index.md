@@ -57,3 +57,18 @@ Registering the library and understanding how a dispatch's scope and context flo
 ### Worked example
 
 - [Sample App Walkthrough](sample-app-walkthrough.md) - a guided tour of `TutorialProject/TodoTasks.Api`, a full runnable implementation of the Beginner's Guide: query/command handlers, fine- and coarse-grained authorization, a multi-repository unit-of-work example, a multi-subscriber notification, and transport conversion at the edge.
+
+### API reference
+
+Every public type and member, one file per package, grouped by namespace - a scannable signature-plus-summary lookup rather than a narrative guide. Start with the sections above for how and why; come here for exactly what a given type or member does.
+
+- [Interlocutor.CommonKernel](api-reference/interlocutor-commonkernel.md)
+- [Interlocutor.Abstractions](api-reference/interlocutor-abstractions.md)
+- [Interlocutor.AspNetCore](api-reference/interlocutor-aspnetcore.md)
+- [Interlocutor.DependencyInjection.Abstractions](api-reference/interlocutor-dependencyinjection-abstractions.md)
+- [Interlocutor.DependencyInjection.Microsoft](api-reference/interlocutor-dependencyinjection-microsoft.md)
+- [Interlocutor.DependencyInjection.Autofac](api-reference/interlocutor-dependencyinjection-autofac.md)
+- [Interlocutor.FluentValidation](api-reference/interlocutor-fluentvalidation.md)
+- [Interlocutor.Persistence.Abstractions](api-reference/interlocutor-persistence-abstractions.md)
+- [Interlocutor.Persistence.EntityFrameworkCore](api-reference/interlocutor-persistence-entityframeworkcore.md)
+- [Interlocutor.Persistence.NHibernate](api-reference/interlocutor-persistence-nhibernate.md)

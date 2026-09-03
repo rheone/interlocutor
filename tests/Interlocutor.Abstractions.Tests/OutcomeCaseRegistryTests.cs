@@ -59,6 +59,40 @@ public class OutcomeCaseRegistryTests
     }
 
     [Fact]
+    public void TryGetActiveCase_RealUnion_NullPayloadSuccess_ExtractsSuccessCaseTypeNotContainerType()
+    {
+        // Arrange - a legitimately null success payload (see finding 07): the reported case type must be the
+        // success case's own declared type, not Outcome<string?, NotFound> itself.
+        var registry = DefaultOutcomeCaseRegistry.Instance;
+        Outcome<string?, NotFound> response = (string?)null;
+
+        // Act
+        var found = registry.TryGetActiveCase(response, out var caseType, out var caseValue);
+
+        // Assert
+        Assert.True(found);
+        Assert.Equal(typeof(string), caseType);
+        Assert.Null(caseValue);
+    }
+
+    [Fact]
+    public void TryGetActiveCase_GenuinelyUnsetUnion_ReturnsFalse()
+    {
+        // Arrange - neither case type of Outcome<Success, Failure> can ever be null, so a default (never
+        // constructed) union is still distinguishable from a null-payload success.
+        var registry = DefaultOutcomeCaseRegistry.Instance;
+        var response = default(Outcome<Success, Failure>);
+
+        // Act
+        var found = registry.TryGetActiveCase(response, out var caseType, out var caseValue);
+
+        // Assert
+        Assert.False(found);
+        Assert.Equal(typeof(Outcome<Success, Failure>), caseType);
+        Assert.Null(caseValue);
+    }
+
+    [Fact]
     public void TryGetActiveCase_RealUnion_SuccessCase_ExtractsSuccessValue()
     {
         // Arrange

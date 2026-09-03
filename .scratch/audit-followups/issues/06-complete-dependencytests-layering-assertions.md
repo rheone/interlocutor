@@ -1,4 +1,16 @@
 > **Status: done** - merged in `a207156`.
+>
+> **Reopened note (2026-09-02):** this ticket's criteria weren't durable across later package additions -
+> `.scratch/repo-review-2026-09-02/findings/08-dependencytests-layering-gaps.md` found
+> `Interlocutor.Persistence.EntityFrameworkCore`/`.NHibernate` were never checked against `Interlocutor.FluentValidation`
+> (criterion 4's store-specific-package renames aside, the FluentValidation half of that check was never added for
+> the packages that actually shipped), and `Interlocutor.CommonKernel` was never checked against
+> `Interlocutor.DependencyInjection.Abstractions`/`.Microsoft`/`.Autofac` or `Interlocutor.Persistence.Abstractions`,
+> despite CLAUDE.md's unqualified "must never depend on any other Interlocutor package" rule for CommonKernel. Closed
+> again via `.scratch/repo-review-2026-09-02/issues/09-dependencytests-layering-gaps.md`, which added both gaps to
+> `DependencyTests.cs`. Left as "done" rather than reverted to open, since the original criteria are still met -
+> this note exists so a future ticket-completeness check doesn't cite this file as evidence the case is fully closed
+> without also checking the newer ticket.
 
 ## Labels
 

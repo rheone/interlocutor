@@ -25,7 +25,7 @@ using TodoTasks.Api.Domain;
 /// </remarks>
 public sealed class UpdateTodoTaskHandler(IDomainRepository<TodoTask, int> tasks, IUnitOfWork unitOfWork)
     : ResourceCommandHandler<UpdateTodoTaskCommand, TodoTask, TodoTaskDto>,
-        ICommandHandler<UpdateTodoTaskCommand, Outcome<TodoTaskDto, NotFound, Failure>>
+        ICommandHandler<UpdateTodoTaskCommand, Outcome<TodoTaskDto, NotFound, Forbidden>>
 {
     /// <summary>Loads the task to update. A <see langword="null"/> result short-circuits with <see cref="NotFound"/> before <see cref="Authorize"/> ever runs.</summary>
     /// <param name="command">The update command, carrying the task's id.</param>
@@ -37,16 +37,16 @@ public sealed class UpdateTodoTaskHandler(IDomainRepository<TodoTask, int> tasks
     /// <summary>Authorizes against the *loaded* entity's own state - the ownership check <c>AuthorizationBehavior</c> cannot express, since it runs before anything is loaded.</summary>
     /// <param name="entity">The loaded task.</param>
     /// <param name="command">The update command, carrying the requesting caller's id.</param>
-    /// <returns>A <see cref="Failure"/> if the caller isn't the task's owner; otherwise <see langword="null"/>.</returns>
-    protected override Failure? Authorize(TodoTask entity, UpdateTodoTaskCommand command) =>
-        entity.OwnerId == command.RequestedByUserId ? null : new Failure("Only the task's owner can update it.");
+    /// <returns>A <see cref="Forbidden"/> if the caller isn't the task's owner; otherwise <see langword="null"/>.</returns>
+    protected override Forbidden? Authorize(TodoTask entity, UpdateTodoTaskCommand command) =>
+        entity.OwnerId == command.RequestedByUserId ? null : new Forbidden("Only the task's owner can update it.");
 
     /// <summary>Applies the update. The entity is already loaded and authorized by the time this runs.</summary>
     /// <param name="command">The update command, carrying the new title/notes.</param>
     /// <param name="entity">The loaded, authorized task.</param>
     /// <param name="ct">A token to observe while saving.</param>
     /// <returns>The updated task's response shape.</returns>
-    protected override async Task<Outcome<TodoTaskDto, NotFound, Failure>> HandleAsync(
+    protected override async Task<Outcome<TodoTaskDto, NotFound, Forbidden>> HandleAsync(
         UpdateTodoTaskCommand command,
         TodoTask entity,
         CancellationToken ct

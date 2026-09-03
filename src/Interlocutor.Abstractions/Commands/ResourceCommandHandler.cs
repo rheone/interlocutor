@@ -16,14 +16,17 @@ using Interlocutor.CommonKernel.ResultTypes;
 ///   <item><description><see cref="HandleAsync"/> - performs the business operation.</description></item>
 /// </list>
 /// If loading returns <c>null</c> the pipeline short-circuits with <see cref="NotFound"/>.
-/// If authorization returns a <see cref="Failure"/> the pipeline short-circuits with that failure.
+/// If authorization returns a <see cref="Forbidden"/> the pipeline short-circuits with that denial - the same
+/// case <see cref="Interlocutor.Abstractions.Pipeline.AuthorizationBehavior{TRequest, TResponse}"/> uses for
+/// its own, coarser-grained denial, per CLAUDE.md's result-type convention: a denied authorization check is a
+/// classified case a caller can pattern-match on, not unclassified <see cref="Failure"/>.
 /// </para>
 /// </remarks>
 /// <typeparam name="TCommand">The command type that this handler processes.</typeparam>
 /// <typeparam name="TEntity">The domain entity type loaded and used by this handler.</typeparam>
 /// <typeparam name="TSuccess">The type of data returned when the command succeeds.</typeparam>
 public abstract class ResourceCommandHandler<TCommand, TEntity, TSuccess>
-    where TCommand : ICommand<Outcome<TSuccess, NotFound, Failure>>
+    where TCommand : ICommand<Outcome<TSuccess, NotFound, Forbidden>>
 {
     /// <summary>
     /// Loads the target entity for the given command.
@@ -38,8 +41,8 @@ public abstract class ResourceCommandHandler<TCommand, TEntity, TSuccess>
     /// </summary>
     /// <param name="entity">The loaded domain entity.</param>
     /// <param name="command">The command being handled.</param>
-    /// <returns>A <see cref="Failure"/> if authorization is denied, or <c>null</c> if authorized.</returns>
-    protected abstract Failure? Authorize(TEntity entity, TCommand command);
+    /// <returns>A <see cref="Forbidden"/> if authorization is denied, or <c>null</c> if authorized.</returns>
+    protected abstract Forbidden? Authorize(TEntity entity, TCommand command);
 
     /// <summary>
     /// Performs the actual business operation on the loaded and authorized entity.
@@ -48,7 +51,7 @@ public abstract class ResourceCommandHandler<TCommand, TEntity, TSuccess>
     /// <param name="entity">The loaded entity that passed authorization.</param>
     /// <param name="ct">Cancellation token to cancel the operation.</param>
     /// <returns>The response, or a failure reason.</returns>
-    protected abstract Task<Outcome<TSuccess, NotFound, Failure>> HandleAsync(
+    protected abstract Task<Outcome<TSuccess, NotFound, Forbidden>> HandleAsync(
         TCommand command,
         TEntity entity,
         CancellationToken ct
@@ -60,7 +63,7 @@ public abstract class ResourceCommandHandler<TCommand, TEntity, TSuccess>
     /// <param name="command">The command to handle.</param>
     /// <param name="ct">Cancellation token to cancel the operation.</param>
     /// <returns>The response, or a failure reason.</returns>
-    public async Task<Outcome<TSuccess, NotFound, Failure>> Handle(TCommand command, CancellationToken ct)
+    public async Task<Outcome<TSuccess, NotFound, Forbidden>> Handle(TCommand command, CancellationToken ct)
     {
         var entity = await this.LoadAsync(command, ct).ConfigureAwait(false);
 
@@ -73,9 +76,9 @@ public abstract class ResourceCommandHandler<TCommand, TEntity, TSuccess>
         var authorizationResult = this.Authorize(entity, command);
 
         // Short-circuit if the caller is not authorized to act on this entity.
-        if (authorizationResult is Failure failure)
+        if (authorizationResult is Forbidden forbidden)
         {
-            return new Outcome<TSuccess, NotFound, Failure>(failure);
+            return new Outcome<TSuccess, NotFound, Forbidden>(forbidden);
         }
 
         // Entity exists and caller is authorized - delegate to the subclass business logic.

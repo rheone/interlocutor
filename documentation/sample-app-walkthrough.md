@@ -6,7 +6,7 @@ If you haven't read [Glossary](glossary.md), [Messages, Result Types & Variance]
 
 ## What it is
 
-A to-do list API with two features: **Tasks** (create, look up by id, list, update, complete, reopen, delete, clear completed) and **Users** (create, look up by id, delete). Every piece maps to a piece of Interlocutor's design:
+A to-do list API with two features: **Tasks** (create, look up by id, list, list paged, search, update, complete - including a sync-aware, cancel-without-failure variant - reopen, delete, clear completed) and **Users** (create, look up by id, delete). Every piece maps to a piece of Interlocutor's design:
 
 | Project piece | What it demonstrates |
 | --- | --- |
@@ -31,7 +31,8 @@ TutorialProject/TodoTasks.Api/
 ├── Infrastructure/             # dev auth handler, policy evaluator, outcome describer, completion counter
 ├── Features/
 │   ├── Tasks/                  # one folder per use case: CreateTodoTask, GetTodoTaskById, ListTodoTasks,
-│   │   │                       # UpdateTodoTask, CompleteTodoTask, ReopenTodoTask, DeleteTodoTask,
+│   │   │                       # ListTodoTasksPaged, SearchTodoTasks, UpdateTodoTask, CompleteTodoTask,
+│   │   │                       # SyncAwareCompleteTodoTask, ReopenTodoTask, DeleteTodoTask,
 │   │   │                       # ClearCompletedTodoTasks
 │   │   └── TodoTasksController.cs  # MVC-controller transport for the whole domain, under /api/todo-tasks
 │   └── Users/                  # CreateUser, GetUserById, DeleteUser
@@ -87,15 +88,15 @@ Three cases: `TodoTaskDto` on success, `ValidationErrors` from [`CreateTodoTaskV
 ```csharp
 public sealed class UpdateTodoTaskHandler(IDomainRepository<TodoTask, int> tasks, IUnitOfWork unitOfWork)
     : ResourceCommandHandler<UpdateTodoTaskCommand, TodoTask, TodoTaskDto>,
-        ICommandHandler<UpdateTodoTaskCommand, Outcome<TodoTaskDto, NotFound, Failure>>
+        ICommandHandler<UpdateTodoTaskCommand, Outcome<TodoTaskDto, NotFound, Forbidden>>
 {
     protected override Task<TodoTask?> LoadAsync(UpdateTodoTaskCommand command, CancellationToken ct) =>
         Task.FromResult(tasks.GetById(command.Id));
 
-    protected override Failure? Authorize(TodoTask entity, UpdateTodoTaskCommand command) =>
-        entity.OwnerId == command.RequestedByUserId ? null : new Failure("Only the task's owner can update it.");
+    protected override Forbidden? Authorize(TodoTask entity, UpdateTodoTaskCommand command) =>
+        entity.OwnerId == command.RequestedByUserId ? null : new Forbidden("Only the task's owner can update it.");
 
-    protected override async Task<Outcome<TodoTaskDto, NotFound, Failure>> HandleAsync(
+    protected override async Task<Outcome<TodoTaskDto, NotFound, Forbidden>> HandleAsync(
         UpdateTodoTaskCommand command, TodoTask entity, CancellationToken ct)
     {
         entity.Title = command.Title;
@@ -109,7 +110,7 @@ public sealed class UpdateTodoTaskHandler(IDomainRepository<TodoTask, int> tasks
 > [!IMPORTANT]
 > `ResourceCommandHandler<TCommand, TEntity, TSuccess>` does not itself implement `ICommandHandler<TCommand, TResponse>` - a plain subclass is invisible to handler discovery. The explicit interface declaration above is required, not decorative; the base class's own `Handle` method already satisfies it, so no override body is needed.
 
-`LoadAsync` returning `null` short-circuits with `NotFound` before `Authorize` ever runs; `Authorize` returning non-null short-circuits with that `Failure` before `HandleAsync` ever runs. Neither `NotFound` nor the ownership `Failure` reaches `HandleAsync` - it only ever sees an entity that was both found and authorized.
+`LoadAsync` returning `null` short-circuits with `NotFound` before `Authorize` ever runs; `Authorize` returning non-null short-circuits with that `Forbidden` before `HandleAsync` ever runs. Neither `NotFound` nor the ownership `Forbidden` reaches `HandleAsync` - it only ever sees an entity that was both found and authorized.
 
 ## Multi-repository unit-of-work example
 
@@ -148,6 +149,16 @@ public sealed class DeleteUserHandler(
 ```
 
 Both repositories are built over the same scoped NHibernate session `IUnitOfWork` commits, so this one `SaveChangesAsync` call is what actually makes the deletion atomic - a task deletion that succeeded while the user deletion failed (or vice versa) is not a state this handler can leave behind. `TodoTask.OwnerId` stays an opaque string rather than a database foreign key to `User.Id` (see [ASP.NET Core Integration & HTTP Mapping](aspnetcore-integration.md) for how that string arrives from an authenticated caller in the first place), so the owned-tasks lookup is a string comparison, not a relational join.
+
+## Paging and cancel-without-failure
+
+Two further Tasks slices demonstrate library features the rest of this walkthrough doesn't reach:
+
+[`ListTodoTasksPagedQuery`](../TutorialProject/TodoTasks.Api/Features/Tasks/ListTodoTasksPaged/ListTodoTasksPagedQuery.cs) is the bounded alternative to the unpaged `ListTodoTasksQuery` shown above. Its handler calls `IDomainRepository<TEntity, TKey>.GetPagedAsync`, which returns `Interlocutor.Persistence.Abstractions.Page<T>` - repository-return-shape vocabulary, not an `Outcome` success-case type (see [Persistence Abstraction](persistence-abstraction.md)). [`PagedTodoTasksDto`](../TutorialProject/TodoTasks.Api/Features/Tasks/ListTodoTasksPaged/PagedTodoTasksDto.cs) maps that `Page<TodoTask>` into a project-owned response type carrying `Items`, `Page`, `PageSize`, and `TotalCount`, the same way `TodoTaskDto` stands in front of the `TodoTask` entity everywhere else in this project.
+
+[`SyncAwareCompleteTodoTaskCommand`](../TutorialProject/TodoTasks.Api/Features/Tasks/SyncAwareCompleteTodoTask/SyncAwareCompleteTodoTaskCommand.cs) demonstrates `IUnitOfWork.Cancel` - the rare escape hatch for a handler that stages a write, then discovers mid-flight it shouldn't commit, without that being a `Failure`-shaped outcome. Its handler stages a task-completion write, then checks whether an external system already completed the same task independently; if so, it calls `unitOfWork.Cancel(ct)` to abandon the staged write and still returns success, since the task ends up completed either way. This is a distinct command/handler pair from `CompleteTodoTaskCommand` rather than a second handler registered for it - two closed handlers matching the same request/response pair is a compile-time `INTERLOC002` diagnostic, not a runtime choice - and it is deliberately not wired into `Program.cs` as the project's real completion path. See [Transactions & Store Integration § Cancel](transactions-and-store-integration.md) for the full semantics.
+
+[`SearchTodoTasksQuery`](../TutorialProject/TodoTasks.Api/Features/Tasks/SearchTodoTasks/SearchTodoTasksQuery.cs) rounds out the Tasks read paths - a case-insensitive title search whose handler drops to NHibernate's QueryOver API directly against the scoped session instead of going through `IDomainRepository<TEntity, TKey>`, for the substring-match query that repository interface doesn't expose.
 
 ## Multi-subscriber notification
 

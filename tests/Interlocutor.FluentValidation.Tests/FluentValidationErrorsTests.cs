@@ -192,6 +192,86 @@ public class FluentValidationErrorsTests
     }
 
     [Fact]
+    public void Equals_SameFailuresDifferentBackingInstances_AreEqualWithMatchingHashCodes()
+    {
+        // Arrange - two distinct ValidationFailure instances (not the same reference) with the same content,
+        // in two distinct backing lists (see finding 02: the previous compiler-synthesized equality compared
+        // the backing list by reference and always failed here).
+        var left = new FluentValidationErrors([
+            new ValidationFailure("Email", "'Email' is not a valid email address.") { ErrorCode = "EmailValidator" },
+        ]);
+        var right = new FluentValidationErrors([
+            new ValidationFailure("Email", "'Email' is not a valid email address.") { ErrorCode = "EmailValidator" },
+        ]);
+
+        // Act & Assert
+        Assert.Equal(left, right);
+        Assert.True(left == right);
+        Assert.Equal(left.GetHashCode(), right.GetHashCode());
+    }
+
+    [Fact]
+    public void Equals_SameFailuresDifferentOrder_AreEqualWithMatchingHashCodes()
+    {
+        // Arrange - order-independent, the same guarantee the other five aggregate result types have.
+        var a = new ValidationFailure("Email", "'Email' is not a valid email address.");
+        var b = new ValidationFailure("Name", "Name is required");
+        var collectedAThenB = new FluentValidationErrors([a, b]);
+        var collectedBThenA = new FluentValidationErrors([b, a]);
+
+        // Act & Assert
+        Assert.Equal(collectedAThenB, collectedBThenA);
+        Assert.True(collectedAThenB == collectedBThenA);
+        Assert.Equal(collectedAThenB.GetHashCode(), collectedBThenA.GetHashCode());
+    }
+
+    [Fact]
+    public void Equals_DuplicateFailureCounts_AreNotCollapsedLikeASet()
+    {
+        // Arrange - verbatim, non-deduplicating semantics (unlike the other five aggregate types) must
+        // survive the equality fix: [A, A, B] and [A, B] are unequal because A appears a different number
+        // of times, not just "the same distinct items".
+        var failureA = new ValidationFailure("Email", "'Email' is not a valid email address.");
+        var failureB = new ValidationFailure("Name", "Name is required");
+        var withDuplicate = new FluentValidationErrors([failureA, failureA, failureB]);
+        var withoutDuplicate = new FluentValidationErrors([failureA, failureB]);
+
+        // Act & Assert
+        Assert.NotEqual(withDuplicate, withoutDuplicate);
+    }
+
+    [Fact]
+    public void Equals_DifferentFailures_AreUnequal()
+    {
+        // Arrange
+        var left = new FluentValidationErrors([new ValidationFailure("Email", "'Email' is not a valid email address.")]);
+        var right = new FluentValidationErrors([new ValidationFailure("Name", "Name is required")]);
+
+        // Act & Assert
+        Assert.NotEqual(left, right);
+        Assert.True(left != right);
+    }
+
+    [Fact]
+    public void Equals_DefaultVsDefault_AreEqual()
+    {
+        // Arrange & Act & Assert
+        Assert.Equal(default(FluentValidationErrors), default(FluentValidationErrors));
+    }
+
+    [Fact]
+    public void Equals_DefaultVsExplicit_AreUnequal()
+    {
+        // Arrange
+        var explicitValue = new FluentValidationErrors([
+            new ValidationFailure("Email", "'Email' is not a valid email address."),
+        ]);
+
+        // Act & Assert
+        Assert.NotEqual(default, explicitValue);
+    }
+
+    [Fact]
     public void BackingField_IsNeverBrowsable()
     {
         // Arrange - hidden from the debugger the same way the other five aggregate result types' composed

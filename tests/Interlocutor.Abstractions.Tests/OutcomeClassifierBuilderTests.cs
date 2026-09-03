@@ -231,5 +231,68 @@ public class OutcomeClassifierBuilderTests
         Assert.True(isFailure);
     }
 
+    // Auto Generated, verify expected behavior:
+    [Fact]
+    public void IsFailure_NullPayloadSuccess_ConsultsTheUnionsOwnIsSuccessInsteadOfFailingClosed()
+    {
+        // Arrange - a null Value alone can't say whether this is a legitimate null success payload or an
+        // unset union (see finding 01); the classifier must consult IOutcomeCase rather than fail-closed.
+        var classifier = OutcomeClassifierBuilder.DefaultClassifier;
+        Outcome<string?, NotFound> response = (string?)null;
+
+        // Act
+        var isFailure = classifier.IsFailure(response);
+
+        // Assert
+        Assert.False(isFailure);
+    }
+
+    // Auto Generated, verify expected behavior:
+    [Fact]
+    public void IsFailure_UnregisteredCustomSuccessType_ConsultsTheUnionsOwnIsSuccess()
+    {
+        // Arrange - a custom success payload type nobody registered still classifies correctly as long as
+        // the response is a compiler-generated union, which already knows its own active case.
+        var classifier = OutcomeClassifierBuilder.DefaultClassifier;
+        Outcome<CustomFailure, NotFound> response = new CustomFailure("unregistered payload type");
+
+        // Act
+        var isFailure = classifier.IsFailure(response);
+
+        // Assert
+        Assert.False(isFailure);
+    }
+
+    // Auto Generated, verify expected behavior:
+    [Fact]
+    public void GetLabel_NullPayloadSuccess_UsesTheActiveCaseTypeNameInsteadOfNone()
+    {
+        // Arrange
+        var classifier = OutcomeClassifierBuilder.DefaultClassifier;
+        Outcome<string?, NotFound> response = (string?)null;
+
+        // Act
+        var label = classifier.GetLabel(response);
+
+        // Assert
+        Assert.Equal(nameof(String), label);
+    }
+
+    // Auto Generated, verify expected behavior:
+    [Fact]
+    public void IsFailure_GenuinelyUnsetUnion_StaysFailClosed()
+    {
+        // Arrange - neither case type of Outcome<Success, Failure> can ever be null, so a default (never
+        // constructed) union still fails closed rather than being mistaken for a null-payload success.
+        var classifier = OutcomeClassifierBuilder.DefaultClassifier;
+        var response = default(Outcome<Success, Failure>);
+
+        // Act
+        var isFailure = classifier.IsFailure(response);
+
+        // Assert
+        Assert.True(isFailure);
+    }
+
     private sealed record CustomFailure(string Reason);
 }

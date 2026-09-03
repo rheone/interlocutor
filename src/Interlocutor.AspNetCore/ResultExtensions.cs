@@ -41,12 +41,10 @@ public static class ResultExtensions
         /// </param>
         /// <returns>An <see cref="OkObjectResult"/> on success, or the mapped error result on failure.</returns>
         public IActionResult ToActionResult(IOutcomeStatusMapper? mapper = null) =>
-            result.Value switch
-            {
-                TSuccess ok => new OkObjectResult(ok),
-                TFailure failure => (mapper ?? DefaultMapper).Map(failure).ToActionResult(),
-                _ => throw new NotImplementedException(),
-            };
+            result.Match<IActionResult>(
+                ok => new OkObjectResult(ok),
+                failure => (mapper ?? DefaultMapper).Map(failure).ToActionResult()
+            );
 
         /// <summary>
         /// Converts a <see cref="Outcome{TSuccessResult, TFailureResult}"/> to a minimal API result
@@ -60,12 +58,7 @@ public static class ResultExtensions
         /// </param>
         /// <returns>An HTTP 200 with the success value on success, or the mapped error result on failure.</returns>
         public IResult ToMinimalApiResult(IOutcomeStatusMapper? mapper = null) =>
-            result.Value switch
-            {
-                TSuccess ok => Results.Ok(ok),
-                TFailure failure => (mapper ?? DefaultMapper).Map(failure).ToMinimalApiResult(),
-                _ => throw new NotImplementedException(),
-            };
+            result.Match<IResult>(ok => Results.Ok(ok), failure => (mapper ?? DefaultMapper).Map(failure).ToMinimalApiResult());
     }
 
     extension(Outcome result)
@@ -77,12 +70,10 @@ public static class ResultExtensions
         /// </param>
         /// <returns>A <see cref="NoContentResult"/> on success, or the mapped error result on failure.</returns>
         public IActionResult ToActionResult(IOutcomeStatusMapper? mapper = null) =>
-            result.Value switch
-            {
-                Success => new NoContentResult(),
-                Failure failure => (mapper ?? DefaultMapper).Map(failure).ToActionResult(),
-                _ => throw new NotImplementedException(),
-            };
+            result.Match<IActionResult>(
+                static _ => new NoContentResult(),
+                failure => (mapper ?? DefaultMapper).Map(failure).ToActionResult()
+            );
 
         /// <summary>Converts a void <see cref="Outcome"/> to a minimal API result with the appropriate HTTP status code.</summary>
         /// <param name="mapper">
@@ -91,12 +82,10 @@ public static class ResultExtensions
         /// </param>
         /// <returns>HTTP 204 No Content on success, or the mapped error result on failure.</returns>
         public IResult ToMinimalApiResult(IOutcomeStatusMapper? mapper = null) =>
-            result.Value switch
-            {
-                Success => Results.NoContent(),
-                Failure failure => (mapper ?? DefaultMapper).Map(failure).ToMinimalApiResult(),
-                _ => throw new NotImplementedException(),
-            };
+            result.Match<IResult>(
+                static _ => Results.NoContent(),
+                failure => (mapper ?? DefaultMapper).Map(failure).ToMinimalApiResult()
+            );
     }
 
     extension<TSuccess, TCase2, TCase3>(Outcome<TSuccess, TCase2, TCase3> result)
@@ -111,13 +100,11 @@ public static class ResultExtensions
         /// </param>
         /// <returns>An <see cref="OkObjectResult"/> on success, or the mapped error result on failure.</returns>
         public IActionResult ToActionResult(IOutcomeStatusMapper? mapper = null) =>
-            result.Value switch
-            {
-                TSuccess ok => new OkObjectResult(ok),
-                TCase2 case2 => (mapper ?? DefaultMapper).Map(case2).ToActionResult(),
-                TCase3 case3 => (mapper ?? DefaultMapper).Map(case3).ToActionResult(),
-                _ => throw new NotImplementedException(),
-            };
+            result.Match<IActionResult>(
+                ok => new OkObjectResult(ok),
+                case2 => (mapper ?? DefaultMapper).Map(case2).ToActionResult(),
+                case3 => (mapper ?? DefaultMapper).Map(case3).ToActionResult()
+            );
 
         /// <summary>
         /// Converts a <see cref="Outcome{TSuccessResult, TCase2, TCase3}"/> to a minimal API result
@@ -129,13 +116,11 @@ public static class ResultExtensions
         /// </param>
         /// <returns>An HTTP 200 with the success value on success, or the mapped error result on failure.</returns>
         public IResult ToMinimalApiResult(IOutcomeStatusMapper? mapper = null) =>
-            result.Value switch
-            {
-                TSuccess ok => Results.Ok(ok),
-                TCase2 case2 => (mapper ?? DefaultMapper).Map(case2).ToMinimalApiResult(),
-                TCase3 case3 => (mapper ?? DefaultMapper).Map(case3).ToMinimalApiResult(),
-                _ => throw new NotImplementedException(),
-            };
+            result.Match<IResult>(
+                ok => Results.Ok(ok),
+                case2 => (mapper ?? DefaultMapper).Map(case2).ToMinimalApiResult(),
+                case3 => (mapper ?? DefaultMapper).Map(case3).ToMinimalApiResult()
+            );
     }
 
     extension<TSuccess, TCase2, TCase3, TCase4>(Outcome<TSuccess, TCase2, TCase3, TCase4> result)
@@ -150,14 +135,12 @@ public static class ResultExtensions
         /// </param>
         /// <returns>An <see cref="OkObjectResult"/> on success, or the mapped error result on failure.</returns>
         public IActionResult ToActionResult(IOutcomeStatusMapper? mapper = null) =>
-            result.Value switch
-            {
-                TSuccess ok => new OkObjectResult(ok),
-                TCase2 case2 => (mapper ?? DefaultMapper).Map(case2).ToActionResult(),
-                TCase3 case3 => (mapper ?? DefaultMapper).Map(case3).ToActionResult(),
-                TCase4 case4 => (mapper ?? DefaultMapper).Map(case4).ToActionResult(),
-                _ => throw new NotImplementedException(),
-            };
+            result.Match<IActionResult>(
+                ok => new OkObjectResult(ok),
+                case2 => (mapper ?? DefaultMapper).Map(case2).ToActionResult(),
+                case3 => (mapper ?? DefaultMapper).Map(case3).ToActionResult(),
+                case4 => (mapper ?? DefaultMapper).Map(case4).ToActionResult()
+            );
 
         /// <summary>
         /// Converts a <see cref="Outcome{TSuccessResult, TCase2, TCase3, TCase4}"/> to a minimal API result
@@ -169,14 +152,12 @@ public static class ResultExtensions
         /// </param>
         /// <returns>An HTTP 200 with the success value on success, or the mapped error result on failure.</returns>
         public IResult ToMinimalApiResult(IOutcomeStatusMapper? mapper = null) =>
-            result.Value switch
-            {
-                TSuccess ok => Results.Ok(ok),
-                TCase2 case2 => (mapper ?? DefaultMapper).Map(case2).ToMinimalApiResult(),
-                TCase3 case3 => (mapper ?? DefaultMapper).Map(case3).ToMinimalApiResult(),
-                TCase4 case4 => (mapper ?? DefaultMapper).Map(case4).ToMinimalApiResult(),
-                _ => throw new NotImplementedException(),
-            };
+            result.Match<IResult>(
+                ok => Results.Ok(ok),
+                case2 => (mapper ?? DefaultMapper).Map(case2).ToMinimalApiResult(),
+                case3 => (mapper ?? DefaultMapper).Map(case3).ToMinimalApiResult(),
+                case4 => (mapper ?? DefaultMapper).Map(case4).ToMinimalApiResult()
+            );
     }
 
     extension<TSuccess, TCase2, TCase3, TCase4, TCase5>(Outcome<TSuccess, TCase2, TCase3, TCase4, TCase5> result)
@@ -191,15 +172,13 @@ public static class ResultExtensions
         /// </param>
         /// <returns>An <see cref="OkObjectResult"/> on success, or the mapped error result on failure.</returns>
         public IActionResult ToActionResult(IOutcomeStatusMapper? mapper = null) =>
-            result.Value switch
-            {
-                TSuccess ok => new OkObjectResult(ok),
-                TCase2 case2 => (mapper ?? DefaultMapper).Map(case2).ToActionResult(),
-                TCase3 case3 => (mapper ?? DefaultMapper).Map(case3).ToActionResult(),
-                TCase4 case4 => (mapper ?? DefaultMapper).Map(case4).ToActionResult(),
-                TCase5 case5 => (mapper ?? DefaultMapper).Map(case5).ToActionResult(),
-                _ => throw new NotImplementedException(),
-            };
+            result.Match<IActionResult>(
+                ok => new OkObjectResult(ok),
+                case2 => (mapper ?? DefaultMapper).Map(case2).ToActionResult(),
+                case3 => (mapper ?? DefaultMapper).Map(case3).ToActionResult(),
+                case4 => (mapper ?? DefaultMapper).Map(case4).ToActionResult(),
+                case5 => (mapper ?? DefaultMapper).Map(case5).ToActionResult()
+            );
 
         /// <summary>
         /// Converts a <see cref="Outcome{TSuccessResult, TCase2, TCase3, TCase4, TCase5}"/> to a minimal API
@@ -211,15 +190,13 @@ public static class ResultExtensions
         /// </param>
         /// <returns>An HTTP 200 with the success value on success, or the mapped error result on failure.</returns>
         public IResult ToMinimalApiResult(IOutcomeStatusMapper? mapper = null) =>
-            result.Value switch
-            {
-                TSuccess ok => Results.Ok(ok),
-                TCase2 case2 => (mapper ?? DefaultMapper).Map(case2).ToMinimalApiResult(),
-                TCase3 case3 => (mapper ?? DefaultMapper).Map(case3).ToMinimalApiResult(),
-                TCase4 case4 => (mapper ?? DefaultMapper).Map(case4).ToMinimalApiResult(),
-                TCase5 case5 => (mapper ?? DefaultMapper).Map(case5).ToMinimalApiResult(),
-                _ => throw new NotImplementedException(),
-            };
+            result.Match<IResult>(
+                ok => Results.Ok(ok),
+                case2 => (mapper ?? DefaultMapper).Map(case2).ToMinimalApiResult(),
+                case3 => (mapper ?? DefaultMapper).Map(case3).ToMinimalApiResult(),
+                case4 => (mapper ?? DefaultMapper).Map(case4).ToMinimalApiResult(),
+                case5 => (mapper ?? DefaultMapper).Map(case5).ToMinimalApiResult()
+            );
     }
 
     extension<TSuccess, TCase2, TCase3, TCase4, TCase5, TCase6>(
@@ -236,16 +213,14 @@ public static class ResultExtensions
         /// </param>
         /// <returns>An <see cref="OkObjectResult"/> on success, or the mapped error result on failure.</returns>
         public IActionResult ToActionResult(IOutcomeStatusMapper? mapper = null) =>
-            result.Value switch
-            {
-                TSuccess ok => new OkObjectResult(ok),
-                TCase2 case2 => (mapper ?? DefaultMapper).Map(case2).ToActionResult(),
-                TCase3 case3 => (mapper ?? DefaultMapper).Map(case3).ToActionResult(),
-                TCase4 case4 => (mapper ?? DefaultMapper).Map(case4).ToActionResult(),
-                TCase5 case5 => (mapper ?? DefaultMapper).Map(case5).ToActionResult(),
-                TCase6 case6 => (mapper ?? DefaultMapper).Map(case6).ToActionResult(),
-                _ => throw new NotImplementedException(),
-            };
+            result.Match<IActionResult>(
+                ok => new OkObjectResult(ok),
+                case2 => (mapper ?? DefaultMapper).Map(case2).ToActionResult(),
+                case3 => (mapper ?? DefaultMapper).Map(case3).ToActionResult(),
+                case4 => (mapper ?? DefaultMapper).Map(case4).ToActionResult(),
+                case5 => (mapper ?? DefaultMapper).Map(case5).ToActionResult(),
+                case6 => (mapper ?? DefaultMapper).Map(case6).ToActionResult()
+            );
 
         /// <summary>
         /// Converts a <see cref="Outcome{TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6}"/> to a
@@ -257,16 +232,14 @@ public static class ResultExtensions
         /// </param>
         /// <returns>An HTTP 200 with the success value on success, or the mapped error result on failure.</returns>
         public IResult ToMinimalApiResult(IOutcomeStatusMapper? mapper = null) =>
-            result.Value switch
-            {
-                TSuccess ok => Results.Ok(ok),
-                TCase2 case2 => (mapper ?? DefaultMapper).Map(case2).ToMinimalApiResult(),
-                TCase3 case3 => (mapper ?? DefaultMapper).Map(case3).ToMinimalApiResult(),
-                TCase4 case4 => (mapper ?? DefaultMapper).Map(case4).ToMinimalApiResult(),
-                TCase5 case5 => (mapper ?? DefaultMapper).Map(case5).ToMinimalApiResult(),
-                TCase6 case6 => (mapper ?? DefaultMapper).Map(case6).ToMinimalApiResult(),
-                _ => throw new NotImplementedException(),
-            };
+            result.Match<IResult>(
+                ok => Results.Ok(ok),
+                case2 => (mapper ?? DefaultMapper).Map(case2).ToMinimalApiResult(),
+                case3 => (mapper ?? DefaultMapper).Map(case3).ToMinimalApiResult(),
+                case4 => (mapper ?? DefaultMapper).Map(case4).ToMinimalApiResult(),
+                case5 => (mapper ?? DefaultMapper).Map(case5).ToMinimalApiResult(),
+                case6 => (mapper ?? DefaultMapper).Map(case6).ToMinimalApiResult()
+            );
     }
 
     extension<TResponse>(TResponse response)
@@ -432,7 +405,19 @@ public static class ResultExtensions
     {
         var registry = caseRegistry ?? DefaultOutcomeCaseRegistry.Instance;
         registry.TryGetActiveCase(response, out var caseType, out var caseValue);
-        return (OutcomeClassifierBuilder.DefaultClassifier.IsFailure(caseValue), caseType, caseValue);
+
+        // A null caseValue is ambiguous on its own (see finding 07) - a legitimate null case payload and "no
+        // case extracted" both look identical once extracted. When response is a compiler-generated union,
+        // ask it directly rather than routing a null value back through the classifier's type-based lookup,
+        // which can't recover the case identity a null value already lost. A non-null caseValue, or a null
+        // one from a hand-rolled IOutcome the registry decomposed via a custom extractor, keeps classifying
+        // through the registered types/predicates exactly as before.
+        var isFailure =
+            caseValue is null && response.AsOutcomeCaseIsSuccess() is { } isSuccess
+                ? !isSuccess
+                : OutcomeClassifierBuilder.DefaultClassifier.IsFailure(caseValue);
+
+        return (isFailure, caseType, caseValue);
     }
 
     /// <summary>

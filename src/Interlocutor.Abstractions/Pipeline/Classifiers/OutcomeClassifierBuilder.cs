@@ -184,6 +184,16 @@ public sealed class OutcomeClassifierBuilder
                 }
             }
 
+            // A compiler-generated union already knows its own active case - case 1 is always the success
+            // case, by this library's convention - so consult it before falling back to fail-closed. This is
+            // what lets a legitimately null case payload (unwrapped above to a null Value the type table can't
+            // look anything up by) still classify correctly, and also covers a custom case type nobody
+            // registered, as long as the response is a union at all.
+            if (response.AsOutcomeCaseIsSuccess() is { } isSuccess)
+            {
+                return !isSuccess;
+            }
+
             // Fail-closed policy: unregistered types are failures, so consumers
             // see immediate loud rollbacks.
             return true;
@@ -193,12 +203,6 @@ public sealed class OutcomeClassifierBuilder
         {
             var unwrapped = Unwrap(response);
             var type = unwrapped?.GetType();
-
-            // Null/None outcome.
-            if (unwrapped is null)
-            {
-                return "None";
-            }
 
             // Check type registrations first.
             if (type is not null && this._classifications.TryGetValue(type, out var classification))
@@ -213,6 +217,19 @@ public sealed class OutcomeClassifierBuilder
                 {
                     return label;
                 }
+            }
+
+            // A null Value alone can't say whether this is a legitimate null case payload or a genuinely
+            // unset union - ask the union itself before falling back to the generic "None"/"Unknown" labels.
+            if (unwrapped is null && response.AsOutcomeCaseActiveType() is { } activeCaseType)
+            {
+                return activeCaseType.Name;
+            }
+
+            // Null/None outcome (a genuinely unset union, or a non-union null response).
+            if (unwrapped is null)
+            {
+                return "None";
             }
 
             // Fallback: use runtime type name for unregistered types.
