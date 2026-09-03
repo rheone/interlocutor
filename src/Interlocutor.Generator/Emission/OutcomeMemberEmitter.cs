@@ -7,10 +7,12 @@ using Interlocutor.Generator.Models;
 
 /// <summary>
 /// Emits the second partial declaration <see cref="OutcomeMemberGenerator"/> adds for one attributed
-/// <see cref="OutcomeUnionModel"/>: unconditionally, <c>Match</c>, <c>Switch</c>, per-case <c>TryGetValue</c>,
-/// <c>ToString</c>, and value-based equality (<c>Equals</c>, <c>GetHashCode</c>, <c>IEquatable&lt;TSelf&gt;</c>,
-/// <c>==</c>/<c>!=</c>); additionally, <c>IOutcomeCase</c>, <c>IsSuccess</c>, and <c>ActiveCaseType</c> when
-/// <see cref="OutcomeUnionModel.ImplementsIOutcome"/> is <see langword="true"/>.
+/// <see cref="OutcomeUnionModel"/>: unconditionally, <c>Match</c>, <c>Switch</c>, per-case anonymous
+/// <c>TryGetValue</c> (plus a named <c>TryGet{TypeName}</c> counterpart for every concrete case type - see
+/// <see cref="OutcomeUnionModel.CaseAccessorNames"/>), <c>ToString</c>, and value-based equality (<c>Equals</c>,
+/// <c>GetHashCode</c>, <c>IEquatable&lt;TSelf&gt;</c>, <c>==</c>/<c>!=</c>); additionally, <c>IOutcomeCase</c>,
+/// <c>IsSuccess</c>, and <c>ActiveCaseType</c> when <see cref="OutcomeUnionModel.ImplementsIOutcome"/> is
+/// <see langword="true"/>.
 /// </summary>
 internal static class OutcomeMemberEmitter
 {
@@ -151,27 +153,53 @@ internal static class OutcomeMemberEmitter
         for (var i = 0; i < model.CaseTypeDisplayStrings.Length; i++)
         {
             var caseType = model.CaseTypeDisplayStrings[i];
+            var caseIndex = i + 1;
+
             builder
                 .Append("    /// <summary>Attempts to read this result's value as its ")
                 .Append(caseType)
                 .AppendLine(" case.</summary>");
-            builder.Append("    public bool TryGetValue(out ").Append(caseType).AppendLine(" value)");
-            builder.AppendLine("    {");
-            builder.Append("        if (this.GetActiveCaseIndex() == ").Append(i + 1).AppendLine(")");
-            builder.AppendLine("        {");
-            builder.Append("            value = (").Append(caseType).AppendLine(")this.Value!;");
-            builder.AppendLine("            return true;");
-            builder.AppendLine("        }");
-            builder.AppendLine();
-            builder.AppendLine("        value = default!;");
-            builder.AppendLine("        return false;");
-            builder.AppendLine("    }");
+            EmitTryGetAccessorBody(builder, "TryGetValue", caseType, caseIndex);
+
+            // A concrete case type additionally gets a named accessor - see
+            // OutcomeUnionModel.CaseAccessorNames' remarks for why a type-parameter case (null here) doesn't.
+            var accessorName = model.CaseAccessorNames[i];
+            if (accessorName is not null)
+            {
+                builder.AppendLine();
+                builder
+                    .Append("    /// <summary>Attempts to read this result's value as its ")
+                    .Append(caseType)
+                    .AppendLine(" case.</summary>");
+                EmitTryGetAccessorBody(builder, "TryGet" + accessorName, caseType, caseIndex);
+            }
 
             if (i < model.CaseTypeDisplayStrings.Length - 1)
             {
                 builder.AppendLine();
             }
         }
+    }
+
+    /// <summary>
+    /// Emits one <c>TryGetValue</c>/named-accessor method body: <see langword="true"/> and
+    /// <paramref name="caseType"/>'s value when <paramref name="caseIndex"/> is the active case,
+    /// <see langword="false"/> and <c>default</c> otherwise. Shared by <see cref="EmitTryGetValueOverloads"/>'s
+    /// anonymous and named accessor for the same case, which differ only in method name.
+    /// </summary>
+    private static void EmitTryGetAccessorBody(StringBuilder builder, string methodName, string caseType, int caseIndex)
+    {
+        builder.Append("    public bool ").Append(methodName).Append("(out ").Append(caseType).AppendLine(" value)");
+        builder.AppendLine("    {");
+        builder.Append("        if (this.GetActiveCaseIndex() == ").Append(caseIndex).AppendLine(")");
+        builder.AppendLine("        {");
+        builder.Append("            value = (").Append(caseType).AppendLine(")this.Value!;");
+        builder.AppendLine("            return true;");
+        builder.AppendLine("        }");
+        builder.AppendLine();
+        builder.AppendLine("        value = default!;");
+        builder.AppendLine("        return false;");
+        builder.AppendLine("    }");
     }
 
     private static void EmitMatch(StringBuilder builder, OutcomeUnionModel model)

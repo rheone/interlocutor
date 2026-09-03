@@ -157,6 +157,15 @@ if (outcome.TryGetValue(out CardDeclined declined))
     Log(declined.ReasonCode);
 }
 
+// TryGet{TypeName} - a named counterpart to TryGetValue, additive rather than a replacement, for every
+// concrete case type (skipped for a case type that is one of the union's own type parameters, since a type
+// parameter's name carries no case-specific meaning - the shipped Outcome<TSuccessResult, ...> family has no
+// named accessors for exactly that reason). Same behavior as TryGetValue above, just self-documenting by name.
+if (outcome.TryGetCardDeclined(out CardDeclined sameByName))
+{
+    Log(sameByName.ReasonCode);
+}
+
 // Equality - delegates to the active case value's own equality, same as any shipped arity
 PaymentOutcome sameDecline = new CardDeclined("do_not_honor");
 Assert.Equal(outcome, sameDecline);

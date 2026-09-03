@@ -40,6 +40,16 @@ using Microsoft.CodeAnalysis;
 /// a union declared without <c>: IOutcome</c> is a plain tagged union with no success/failure opinion, not a
 /// lesser outcome.
 /// </param>
+/// <param name="CaseAccessorNames">
+/// Parallel to <see cref="CaseTypeDisplayStrings"/>: each concrete case type's simple name (e.g.
+/// <c>"NotFound"</c>, or <c>"ValidationError"</c> for a closed <c>ValidationError&lt;string&gt;</c> - generic
+/// arguments never appear in the accessor name), or <see langword="null"/> when that case type is one of the
+/// union's own declared type parameters. <see cref="OutcomeMemberEmitter"/> emits a named
+/// <c>TryGet{Name}(out {Type} value)</c> accessor, additive alongside the anonymous <c>TryGetValue</c>
+/// overload, for every non-null entry - a type parameter's name carries no case-specific meaning (every case
+/// type at the shipped <c>Outcome&lt;TSuccessResult, TCase2, ...&gt;</c> family's declaration site *is* a type
+/// parameter), so those stay reachable only through the anonymous, type-inferred overload.
+/// </param>
 [DebuggerDisplay("{DisplayName}")]
 internal sealed record OutcomeUnionModel(
     string Namespace,
@@ -50,5 +60,6 @@ internal sealed record OutcomeUnionModel(
     string DisplayName,
     string HintName,
     Location Location,
-    bool ImplementsIOutcome
+    bool ImplementsIOutcome,
+    ImmutableArray<string?> CaseAccessorNames
 );

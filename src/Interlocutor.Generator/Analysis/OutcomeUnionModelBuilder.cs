@@ -32,16 +32,26 @@ internal static class OutcomeUnionModelBuilder
             return null;
         }
 
-        var caseTypeDisplayStrings = (unionDeclaration.ParameterList?.Parameters ?? default)
+        var caseTypes = (unionDeclaration.ParameterList?.Parameters ?? default)
             .Where(static parameter => parameter.Type is not null)
-            .Select(parameter =>
-            {
-                var caseType = context.SemanticModel.GetTypeInfo(parameter.Type!, cancellationToken).Type;
+            .Select(parameter => context.SemanticModel.GetTypeInfo(parameter.Type!, cancellationToken).Type)
+            .ToImmutableArray();
 
-                // Falling back to the parameter's own source text only matters if the type genuinely failed to
-                // bind (a compile error elsewhere) - in every normal case this resolves to a real symbol.
-                return caseType?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) ?? parameter.Type!.ToString();
-            })
+        var caseTypeDisplayStrings = caseTypes
+            .Select(
+                (caseType, i) =>
+                    // Falling back to the parameter's own source text only matters if the type genuinely
+                    // failed to bind (a compile error elsewhere) - in every normal case this resolves to a
+                    // real symbol.
+                    caseType?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
+                    ?? unionDeclaration.ParameterList!.Parameters[i].Type!.ToString()
+            )
+            .ToImmutableArray();
+
+        // A case type that is one of the union's own type parameters gets no named accessor - see
+        // OutcomeUnionModel.CaseAccessorNames' remarks.
+        var caseAccessorNames = caseTypes
+            .Select(static caseType => caseType is null or ITypeParameterSymbol ? null : caseType.Name)
             .ToImmutableArray();
 
         var namespaceSymbol = symbol.ContainingNamespace;
@@ -60,7 +70,8 @@ internal static class OutcomeUnionModelBuilder
             DisplayName: symbol.ToDisplayString(),
             HintName: BuildHintName(symbol, namespaceName),
             Location: unionDeclaration.Identifier.GetLocation(),
-            ImplementsIOutcome: implementsIOutcome
+            ImplementsIOutcome: implementsIOutcome,
+            CaseAccessorNames: caseAccessorNames
         );
     }
 
