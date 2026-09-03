@@ -334,4 +334,47 @@ internal static class InterlocutorDiagnostics
             + "no alternative for a switch to be exhaustive over, so it isn't a meaningful outcome - add at "
             + "least one more case type, or remove the attribute."
     );
+
+    /// <summary>
+    /// Reported when a <c>partial union</c> decorated with <c>GenerateOutcomeMembersAttribute</c> would
+    /// generate two case types' named <c>TryGet{TypeName}</c> accessor to the same method name, or a case
+    /// type's own name collides with an already-reserved generated member name.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Three shapes reach this diagnostic, all reported by <see cref="OutcomeAccessorCollisionAnalyzer"/> once
+    /// per colliding case: two peer case types sharing the same simple name from different namespaces (e.g.
+    /// <c>MyApp.Http.NotFound</c> and <c>MyApp.Domain.NotFound</c>); two closed instantiations of the same open
+    /// generic case type as peer cases (e.g. <c>ValidationError&lt;string&gt;</c> and
+    /// <c>ValidationError&lt;int&gt;</c> would both want <c>TryGetValidationError</c>); and a case type whose
+    /// own simple name exactly matches a reserved generated member name (<c>Value</c>, <c>Match</c>,
+    /// <c>Switch</c>, <c>ToString</c>, <c>Equals</c>, <c>GetHashCode</c>, <c>TryGetValue</c>, <c>IsSuccess</c>,
+    /// <c>ActiveCaseType</c>).
+    /// </para>
+    /// <para>
+    /// A case type that is one of the union's own type parameters never participates - it gets no named
+    /// accessor in the first place (see <c>OutcomeUnionModel.CaseAccessorNames</c>'s remarks), so it can never
+    /// collide with anything by name. Always <see cref="DiagnosticSeverity.Error"/>, same posture as
+    /// <see cref="TooFewOutcomeCaseTypes"/>: silently emitting an ambiguous overload set (resolvable only by
+    /// explicit type, never by <c>out var</c>) or a member that duplicates an existing one outright (<c>CS0111</c>)
+    /// is worse than refusing to compile, escalated the same way as every other diagnostic in this file:
+    /// <code>
+    /// dotnet_diagnostic.INTERLOC012.severity = warning
+    /// </code>
+    /// </para>
+    /// </remarks>
+    public static readonly DiagnosticDescriptor AccessorNameCollision = new(
+        id: "INTERLOC012",
+        title: "Colliding TryGet accessor name among a union's case types",
+        messageFormat: "'{0}' would generate a colliding 'TryGet{1}' accessor: {2}",
+        category: "Interlocutor.Outcomes",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "GenerateOutcomeMembersAttribute generates a named TryGet{TypeName} accessor for every "
+            + "concrete case type. Two peer case types that resolve to the same simple name - whether from "
+            + "different namespaces, or two closed instantiations of the same open generic type - would "
+            + "generate the same accessor name with different, non-var-inferable signatures; a case type whose "
+            + "own name matches an already-reserved generated member name would generate a duplicate member "
+            + "outright. Rename the colliding case type(s), or use distinct case types."
+    );
 }

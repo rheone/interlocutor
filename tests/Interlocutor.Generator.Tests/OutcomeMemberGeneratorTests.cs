@@ -485,4 +485,157 @@ public sealed class OutcomeMemberGeneratorTests
 
         return count;
     }
+
+    [Fact]
+    public void OutcomeMemberGenerator_PeerCaseTypesWithSameSimpleName_ReportsAccessorCollision_Test()
+    {
+        // Arrange - Http.NotFound and Domain.NotFound would both want TryGetNotFound
+        const string source = """
+            namespace Test.Http
+            {
+                public readonly record struct NotFound;
+            }
+
+            namespace Test.Domain
+            {
+                public readonly record struct NotFound;
+            }
+
+            namespace Test
+            {
+                using Interlocutor.CommonKernel;
+                using Interlocutor.CommonKernel.ResultTypes;
+
+                [GenerateOutcomeMembers]
+                public readonly partial union ConfusingOutcome(Success, Http.NotFound, Domain.NotFound) : IOutcome
+                {
+                }
+            }
+            """;
+
+        // Act
+        _ = GeneratorTestHarness.RunAndUpdate(
+            new OutcomeMemberGenerator(),
+            source,
+            "OutcomeMemberGenerator.Tests.SameSimpleNameCollision",
+            null,
+            LanguageVersion.Preview,
+            out var diagnostics
+        );
+
+        // Assert
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("INTERLOC012", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Contains("TryGetNotFound", diagnostic.GetMessage(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void OutcomeMemberGenerator_ClosedGenericCaseTypesOfTheSameOpenGeneric_ReportsAccessorCollision_Test()
+    {
+        // Arrange - ValidationError<string> and ValidationError<int> would both want TryGetValidationError
+        const string source = """
+            namespace Test;
+
+            using Interlocutor.CommonKernel;
+            using Interlocutor.CommonKernel.ResultTypes;
+
+            [GenerateOutcomeMembers]
+            public readonly partial union ConfusingOutcome(Success, ValidationError<string>, ValidationError<int>) : IOutcome
+            {
+            }
+            """;
+
+        // Act
+        _ = GeneratorTestHarness.RunAndUpdate(
+            new OutcomeMemberGenerator(),
+            source,
+            "OutcomeMemberGenerator.Tests.ClosedGenericCollision",
+            null,
+            LanguageVersion.Preview,
+            out var diagnostics
+        );
+
+        // Assert
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("INTERLOC012", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Contains("TryGetValidationError", diagnostic.GetMessage(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void OutcomeMemberGenerator_CaseTypeNameCollidesWithReservedMemberName_ReportsAccessorCollision_Test()
+    {
+        // Arrange - a case type literally named "Match" collides with the generated Match<TResult> method
+        const string source = """
+            namespace Test;
+
+            using Interlocutor.CommonKernel;
+            using Interlocutor.CommonKernel.ResultTypes;
+
+            public readonly record struct Match;
+
+            [GenerateOutcomeMembers]
+            public readonly partial union ConfusingOutcome(Success, Match) : IOutcome
+            {
+            }
+            """;
+
+        // Act
+        _ = GeneratorTestHarness.RunAndUpdate(
+            new OutcomeMemberGenerator(),
+            source,
+            "OutcomeMemberGenerator.Tests.ReservedNameCollision",
+            null,
+            LanguageVersion.Preview,
+            out var diagnostics
+        );
+
+        // Assert
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("INTERLOC012", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Contains("reserved generated member", diagnostic.GetMessage(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void OutcomeMemberGenerator_NoCollidingAccessorNames_ReportsNoDiagnosticAndKeepsNamedAccessors_Test()
+    {
+        // Arrange - PaymentOutcome's own shape: seven distinct concrete case types, no collision
+        const string source = """
+            namespace Test;
+
+            using Interlocutor.CommonKernel;
+            using Interlocutor.CommonKernel.ResultTypes;
+
+            [GenerateOutcomeMembers]
+            public readonly partial union PaymentLikeOutcome(Success, NotFound, Conflict) : IOutcome
+            {
+            }
+            """;
+
+        // Act
+        var result = GeneratorTestHarness.RunAndUpdate(
+            new OutcomeMemberGenerator(),
+            source,
+            "OutcomeMemberGenerator.Tests.NoCollision",
+            null,
+            LanguageVersion.Preview,
+            out var diagnostics
+        );
+
+        // Assert
+        Assert.Empty(diagnostics);
+        var emitResult = result.GetDiagnostics(TestContext.Current.CancellationToken);
+        Assert.Empty(emitResult.Where(static d => d.Severity == DiagnosticSeverity.Error));
+
+        var generatedText = string.Join(
+            System.Environment.NewLine,
+            result
+                .SyntaxTrees.Where(static t => t.FilePath.Contains("OutcomeMembers", StringComparison.Ordinal))
+                .Select(static t => t.ToString())
+        );
+        Assert.Contains("public bool TryGetNotFound(out", generatedText, StringComparison.Ordinal);
+        Assert.Contains("public bool TryGetConflict(out", generatedText, StringComparison.Ordinal);
+    }
 }

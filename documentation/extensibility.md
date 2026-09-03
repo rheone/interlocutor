@@ -176,6 +176,14 @@ The duplicate case type analyzer above covers a custom-arity union identically t
 
 `: IOutcome` on the union declaration is opt-in, not required for `GenerateOutcomeMembersAttribute` to run: it gates only the classification surface (`IOutcomeCase`, `IsSuccess`, `ActiveCaseType`), never the sum-type surface above. A `[GenerateOutcomeMembers] partial union` declared *without* `: IOutcome` still gets `Match`/`Switch`/`TryGetValue`/`ToString`/equality in full - it's a plain tagged union with no success/failure opinion, useful when a type's cases genuinely aren't "one succeeded, the rest are alternatives" (a state machine's phases, say, where every case is equally valid and none is privileged as "the" success). Include `: IOutcome` - as `PaymentOutcome` above does - whenever the union *is* meant to be usable as a handler response: `AuthorizationBehavior`, `CancellationBehavior`, `TimeoutBehavior`, `RateLimitedBehavior`, and the FluentValidation `ValidationBehavior` all classify a response via `IOutcomeCaseRegistry`/the outcome classifier, and both fall back to `IOutcomeCase.IsSuccess` positionally for a response type they have no other registration for. A union that never implements `IOutcomeCase` in the first place never enters that fallback - it's excluded from ambiguous positional classification entirely rather than silently misclassified as if position implied meaning it never claimed.
 
+### Colliding accessor names (`INTERLOC012`)
+
+A named `TryGet{TypeName}` accessor is derived from each concrete case type's simple name, so two peer case types can end up wanting the same accessor. A build-time analyzer flags three shapes: two case types with the same simple name from different namespaces (`MyApp.Http.NotFound` and `MyApp.Domain.NotFound` as peer cases would both want `TryGetNotFound`); two closed instantiations of the same open generic case type as peer cases (`ValidationError<string>` and `ValidationError<int>` would both want `TryGetValidationError`); and a case type whose own name matches an already-reserved generated member name (`Value`, `Match`, `Switch`, `ToString`, `Equals`, `GetHashCode`, `TryGetValue`, `IsSuccess`, `ActiveCaseType`). A case type that is one of the union's own type parameters never triggers this - it gets no named accessor in the first place. Unlike `INTERLOC009`, this defaults to an error - not a warning - since silently emitting the collision would mean either an ambiguous overload set (unresolvable by `outcome.TryGetNotFound(out var x)`, only by spelling out the type explicitly) or an outright duplicate member, still configurable the same way:
+
+```
+dotnet_diagnostic.INTERLOC012.severity = warning
+```
+
 ## Mapping failure cases to any output shape: `IOutcomeMapper<TResult>`
 
 `IOutcomeStatusMapper` (the HTTP mapper above) is a specialization of a transport-agnostic contract that lives one layer down, in `Interlocutor.Abstractions.Pipeline.Mapping`:
