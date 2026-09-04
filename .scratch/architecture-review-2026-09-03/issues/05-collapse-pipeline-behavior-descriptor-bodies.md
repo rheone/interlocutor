@@ -8,12 +8,14 @@ Add a small private `BehaviorDescriptor` (behavior type + an array of `(Type Ser
 
 **Blocked by:** Ticket 03 (spike) - decision recorded there.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `BehaviorDescriptor` and `AddFromDescriptor` exist as `private`/`internal` implementation detail - no new public API surface (`PublicAPI.Unshipped.txt` for `Interlocutor.DependencyInjection.Abstractions` untouched)
-- [ ] Each of the six `Add*Behavior` methods keeps its existing XML doc comment verbatim and becomes a one-line expression body
-- [ ] `AddValidationBehavior` and `AddUnitOfWorkBehavior` are unchanged
-- [ ] Registration order and try-add-default precedence are identical to today for all six methods (existing `InterlocutorPipelineBuilderTests.cs` behavioral assertions pass with no modification)
-- [ ] Every existing test in `tests/Interlocutor.DependencyInjection.Abstractions.Tests`, plus the Microsoft/Autofac DI integration suites that exercise `UseRecommendedChain`/individual `Add*Behavior` calls, passes with no modification
+- [x] `BehaviorDescriptor` and `AddFromDescriptor` exist as `private`/`internal` implementation detail - no new public API surface (`PublicAPI.Unshipped.txt` for `Interlocutor.DependencyInjection.Abstractions` untouched)
+- [x] Each of the six `Add*Behavior` methods keeps its existing XML doc comment verbatim and becomes a one-line expression body
+- [x] `AddValidationBehavior` and `AddUnitOfWorkBehavior` are unchanged
+- [x] Registration order and try-add-default precedence are identical to today for all six methods (existing `InterlocutorPipelineBuilderTests.cs` behavioral assertions pass with no modification)
+- [x] Every existing test in `tests/Interlocutor.DependencyInjection.Abstractions.Tests`, plus the Microsoft/Autofac DI integration suites that exercise `UseRecommendedChain`/individual `Add*Behavior` calls, passes with no modification
 
 ## Comments
+
+**2026-09-04** - Implemented: added a private `BehaviorDescriptor` record struct (behavior type + default-dependency pairs) and an `AddFromDescriptor` helper in `InterlocutorPipelineBuilder.cs`; all six `Add*Behavior` methods now one-line expression bodies over `private static readonly BehaviorDescriptor` fields, XML docs preserved verbatim. `AddFromDescriptor` carries an `[UnconditionalSuppressMessage("Trimming", "IL2072")]` since a plain tuple array can't carry the `DynamicallyAccessedMembers` annotation `AddBehavior`/`TryAddDefault` expect - same pattern as the existing `OverridePipelineFor` suppression in the same file. Full solution build and test (1189/1189) green; `PublicAPI.Unshipped.txt` untouched.
