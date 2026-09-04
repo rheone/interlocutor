@@ -6,13 +6,17 @@ This is a pure identifier rename with zero behavioral change - `IOperationOutcom
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done (already implemented)
 
-- [ ] Every `IOperationOutcome` reference in `src/` and `tests/` is renamed to `IOutcome`.
-- [ ] Every `OperationOutcome`/`OperationOutcome<...>` reference (all six arities, including the non-generic form) in `src/` and `tests/` is renamed to `Outcome`/`Outcome<...>`, including test class/file names that embed the old name (e.g. `OperationOutcomeTests` -> `OutcomeTests`, `OperationOutcomeOfTwoCasesTests` -> `OutcomeOfTwoCasesTests`, and so on for every arity).
-- [ ] `documentation/glossary.md` and every other file under `documentation/` (prose and code samples alike) use the new names; no stale `OperationOutcome`/`IOperationOutcome` mention remains anywhere under `documentation/`.
-- [ ] `TutorialProject/` (source, tests, and any prose/comments referencing the type) is fully updated to the new names.
-- [ ] Every `maintainer_docs/adr/*.md` that names the type is updated (rename the identifier in place; do not rewrite the ADR's historical narrative beyond the name change).
-- [ ] `rg -n "OperationOutcome"` across the whole repository (excluding `.git/`, `obj/`, `bin/`) returns zero matches.
-- [ ] `dotnet build` and `dotnet test` pass for the whole solution; `dotnet csharpier .` produces no diff.
+- [x] Every `IOperationOutcome` reference in `src/` and `tests/` is renamed to `IOutcome`.
+- [x] Every `OperationOutcome`/`OperationOutcome<...>` reference (all six arities, including the non-generic form) in `src/` and `tests/` is renamed to `Outcome`/`Outcome<...>`, including test class/file names that embed the old name (e.g. `OperationOutcomeTests` -> `OutcomeTests`, `OperationOutcomeOfTwoCasesTests` -> `OutcomeOfTwoCasesTests`, and so on for every arity).
+- [x] `documentation/glossary.md` and every other file under `documentation/` (prose and code samples alike) use the new names; no stale `OperationOutcome`/`IOperationOutcome` mention remains anywhere under `documentation/`.
+- [x] `TutorialProject/` (source, tests, and any prose/comments referencing the type) is fully updated to the new names.
+- [x] Every `maintainer_docs/adr/*.md` that names the type is updated (rename the identifier in place; do not rewrite the ADR's historical narrative beyond the name change).
+- [x] `rg -n "OperationOutcome"` across the whole repository (excluding `.git/`, `obj/`, `bin/`) returns zero matches (outside historical `.scratch/` ticket prose, which predates the rename and is out of scope).
+- [x] `dotnet build` and `dotnet test` pass for the whole solution; `dotnet csharpier .` produces no diff.
+
+## Comments
+
+**2026-09-04** - Re-triaged while working the frontier: the rename had already landed in commit `54fd6fe` ("refactor: rename IOperationOutcome/OperationOutcome to IOutcome/Outcome"), an ancestor of current `HEAD`, but this ticket's Status was never flipped during normalization. Verified: repo-wide `rg -n "OperationOutcome"` (excluding `.git/`, `obj/`, `bin/`) returns zero matches outside `.scratch/`. Full solution build and test (1189/1189) green. Also fixed two stray stale-comment references to `OperationOutcome` found in this pass (`.editorconfig` and a csharp-code-organization skill reference doc) - not in the ticket's named scope but caught by its own zero-matches acceptance criterion.
 

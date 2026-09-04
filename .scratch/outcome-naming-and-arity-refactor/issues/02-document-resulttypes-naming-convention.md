@@ -6,11 +6,15 @@ Add a short, explicit callout to `documentation/messages-and-result-types.md`'s 
 
 **Blocked by:** Ticket 01 (touches the same file - landing the rename first avoids rework/merge noise).
 
-**Status:** ready-for-agent
+**Status:** done (already implemented)
 
-- [ ] `documentation/messages-and-result-types.md` states the singular-default / plural-aggregate / `I<Concept>FailureCase`-marker naming convention explicitly, in prose, near the existing `## Result Types` walkthrough of `Success`, `NotFound`, `Forbidden`, `ValidationError`, `Conflict`, `Failure`, `Cancelled`, `Timeout`, and `RateLimited`.
-- [ ] The callout cross-references the existing `I<Concept>FailureCase` marker interfaces and the pipeline behaviors that already depend on them, rather than re-explaining substitutability from scratch.
-- [ ] `documentation/glossary.md` gains (or updates) an entry pointing a reader to this convention if one doesn't already cover it.
-- [ ] No `ResultTypes` type is renamed, added, or removed by this ticket - documentation only.
-- [ ] `dotnet build` and `dotnet test` pass for the whole solution (no source changes expected, but confirms nothing was accidentally touched).
+- [x] `documentation/messages-and-result-types.md` states the singular-default / plural-aggregate / `I<Concept>FailureCase`-marker naming convention explicitly, in prose, near the existing `## Result Types` walkthrough of `Success`, `NotFound`, `Forbidden`, `ValidationError`, `Conflict`, `Failure`, `Cancelled`, `Timeout`, and `RateLimited`.
+- [x] The callout cross-references the existing `I<Concept>FailureCase` marker interfaces and the pipeline behaviors that already depend on them, rather than re-explaining substitutability from scratch.
+- [x] `documentation/glossary.md` gains (or updates) an entry pointing a reader to this convention if one doesn't already cover it.
+- [x] No `ResultTypes` type is renamed, added, or removed by this ticket - documentation only.
+- [x] `dotnet build` and `dotnet test` pass for the whole solution (no source changes expected, but confirms nothing was accidentally touched).
+
+## Comments
+
+**2026-09-04** - Re-triaged while working the frontier: already implemented. `documentation/messages-and-result-types.md`'s `## Result Types` section carries a `[!NOTE]` callout naming the singular-default/plural-aggregate/`I<Concept>FailureCase`-marker convention, cross-referencing `OutcomeMapperBase`/`DefaultHttpOutcomeStatusMapper` rather than re-explaining substitutability. `documentation/glossary.md` has a "Singular/plural/marker naming convention" entry pointing back to it. No source changes were needed - Status flipped without a code commit.
 
