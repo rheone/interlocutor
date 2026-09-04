@@ -1,9 +1,13 @@
+using FluentValidation;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.AspNetCore;
 using Interlocutor.DependencyInjection.Microsoft;
 using Interlocutor.Persistence.EntityFrameworkCore;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using TodoTasks.Api.Domain;
+using TodoTasks.Api.Features.Users.CreateUser;
+using TodoTasks.Api.Features.Users.GetUserById;
 using TodoTasks.Api.Infrastructure;
 using TodoTasks.Api.Persistence;
 
@@ -49,6 +53,21 @@ builder.Services.AddInterlocutorUnitOfWork(services => new EntityFrameworkUnitOf
 // documentation/beginners-guide-todo-api.md Step 4 for the shape every one of these follows. Every
 // repository added here should be built over the same scoped Lazy<TodoTasksDbContext> as the unit of
 // work above, which is the actual mechanism behind "one unit of work, many repositories".
+builder.Services.AddInterlocutorRepository<User, int, EntityFrameworkRepository<User, int, TodoTasksDbContext>>(
+    services => new EntityFrameworkRepository<User, int, TodoTasksDbContext>(
+        services.GetRequiredService<Lazy<TodoTasksDbContext>>(),
+        u => u.Id
+    )
+);
+
+// FluentValidation's own IValidator<T> implementations (CreateUserValidator, and future features'
+// equivalents) - not something interlocutor.ScanAssembly below covers. AddValidationBehavior() (called
+// below) only wires up ValidationBehavior<,> itself, conditionally, when Interlocutor.FluentValidation is
+// referenced - it deliberately leaves *which* validators exist to ordinary FluentValidation registration,
+// exactly like this - without it, ValidationBehavior finds zero validators for every request and silently
+// skips validation entirely (no error, just nothing enforced), which is worth knowing before you go
+// looking for why a validator "isn't running."
+builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
 
 builder.Services.AddInterlocutor(interlocutor =>
 {
@@ -89,6 +108,8 @@ await using (var scope = app.Services.CreateAsyncScope())
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 
 // One line per feature endpoint, added as each feature lands - see each Features/**/Map*Endpoint.cs.
+app.MapCreateUserEndpoint();
+app.MapGetUserByIdEndpoint();
 
 await app.RunAsync().ConfigureAwait(false);
 

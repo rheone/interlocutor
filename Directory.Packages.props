@@ -61,6 +61,10 @@
   <!-- FluentValidation -->
   <ItemGroup>
     <PackageVersion Include="FluentValidation" Version="12.1.1" />
+    <!-- MS DI's AddValidatorsFromAssembly, used by TutorialProject/TodoTasks.Api to register its
+         FluentValidation validators - MS DI (unlike Autofac) has no built-in assembly-scanning
+         registration of its own for this to build on. -->
+    <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
   </ItemGroup>
   <!-- NHibernate -->
   <ItemGroup>
