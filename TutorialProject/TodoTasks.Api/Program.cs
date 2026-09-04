@@ -1,0 +1,114 @@
+using Interlocutor.Abstractions.Core;
+using Interlocutor.AspNetCore;
+using Interlocutor.DependencyInjection.Microsoft;
+using Interlocutor.Persistence.EntityFrameworkCore;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+using TodoTasks.Api.Infrastructure;
+using TodoTasks.Api.Persistence;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// AspNetCoreRequestContextAccessor (registered below) needs this to read the caller's identity off
+// the current HttpContext.
+builder.Services.AddHttpContextAccessor();
+
+// See that type's own remarks - its own try-added default (AmbientRequestContextAccessor) is guarded
+// with TryAdd semantics, so registering this one first makes it win. Once a later ticket's
+// authentication handler populates HttpContext.User, this accessor reads the caller's id off it
+// automatically - nothing bespoke needed on Interlocutor's side.
+builder.Services.AddScoped<IRequestContextAccessor, AspNetCoreRequestContextAccessor>();
+
+// A single, kept-open ADO.NET connection to an in-memory SQLite database (Data Source=:memory:),
+// registered as a singleton so it stays open for the app's entire lifetime. SQLite discards an
+// in-memory database the instant its last connection closes - keeping this one connection object
+// alive, and handing that exact same object to every scoped DbContext below (rather than a fresh
+// connection per scope), is what lets one request's writes stay visible to the next request's reads.
+// See tests/TodoTasks.Api.Tests/Persistence for the smoke test that proves this actually holds across
+// scope boundaries, not just within one.
+builder.Services.AddSingleton(_ =>
+{
+    var connection = new SqliteConnection("Data Source=:memory:");
+    connection.Open();
+    return connection;
+});
+
+builder.Services.AddDbContext<TodoTasksDbContext>(
+    (services, options) => options.UseSqlite(services.GetRequiredService<SqliteConnection>()),
+    contextLifetime: ServiceLifetime.Scoped
+);
+
+// Scoped so the whole dispatch - repository reads, IUnitOfWork writes - shares one DbContext instance.
+builder.Services.AddScoped(services => new Lazy<TodoTasksDbContext>(services.GetRequiredService<TodoTasksDbContext>));
+
+builder.Services.AddInterlocutorUnitOfWork(services => new EntityFrameworkUnitOfWork<TodoTasksDbContext>(
+    services.GetRequiredService<Lazy<TodoTasksDbContext>>()
+));
+
+// Each feature registers its own IDomainRepository<TEntity, TKey> here as it lands - see
+// documentation/beginners-guide-todo-api.md Step 4 for the shape every one of these follows. Every
+// repository added here should be built over the same scoped Lazy<TodoTasksDbContext> as the unit of
+// work above, which is the actual mechanism behind "one unit of work, many repositories".
+
+builder.Services.AddInterlocutor(interlocutor =>
+{
+    interlocutor.ScanAssembly(typeof(Program).Assembly);
+
+    // Logging -> Auditing -> Authorization -> Validation -> Transaction, in that order - see
+    // documentation/beginners-guide-todo-api.md Step 2 and documentation/pipeline-and-behaviors.md for
+    // the reasoning behind this specific order. This is spelled out as the individual Add*Behavior
+    // calls UseRecommendedChain() is sugar for, rather than calling UseRecommendedChain() itself:
+    // under Microsoft.Extensions.DependencyInjection specifically, its last step
+    // (AddUnitOfWorkBehavior()) throws at registration time once Interlocutor.Persistence.EntityFrameworkCore
+    // is referenced, because EF Core's UnitOfWorkBehavior<TRequest,TResponse,TContext> has one more open
+    // type parameter than Microsoft DI allows an open-generic registration to carry. See
+    // TodoTasksUnitOfWorkBehavior's own remarks, and documentation/transactions-and-store-integration.md's
+    // "EntityFramework Core Integration" section, for the closed-subclass workaround registered here via
+    // the general-purpose AddBehavior escape hatch instead.
+    interlocutor
+        .Pipeline.AddLoggingBehavior()
+        .AddAuditingBehavior()
+        .AddAuthorizationBehavior()
+        .AddValidationBehavior()
+        .AddBehavior(typeof(TodoTasksUnitOfWorkBehavior<,>));
+});
+
+var app = builder.Build();
+
+// There are no migrations for this proof-of-concept - the schema is (re)created from the current
+// DbContext model every time the app starts, against the one kept-open connection above so it's
+// visible to every DbContext resolved afterward against that same in-memory database.
+await using (var scope = app.Services.CreateAsyncScope())
+{
+    await scope.ServiceProvider.GetRequiredService<TodoTasksDbContext>().Database.EnsureCreatedAsync().ConfigureAwait(false);
+}
+
+// A trivially cheap liveness check - also doubles as proof, for TodoTasks.Api.Tests' HTTP fixture,
+// that the whole host (DI container, EF Core schema creation, pipeline registration) came up cleanly
+// before any feature endpoint exists to exercise instead.
+app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+
+// One line per feature endpoint, added as each feature lands - see each Features/**/Map*Endpoint.cs.
+
+await app.RunAsync().ConfigureAwait(false);
+
+/// <summary>
+/// Exposes this file's top-level-statements entry point as a named type so
+/// <c>WebApplicationFactory&lt;Program&gt;</c> (used throughout <c>TodoTasks.Api.Tests</c>' HTTP
+/// integration tests) can host this application in-process.
+/// </summary>
+/// <remarks>
+/// Not <see langword="static"/>: <c>WebApplicationFactory&lt;TEntryPoint&gt;</c> requires its type
+/// argument to be an instantiable class, so this type must stay non-static. The explicit
+/// <see langword="protected"/> constructor instead blocks direct external instantiation while
+/// still satisfying that generic constraint.
+/// </remarks>
+public partial class Program
+{
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Program"/> class. Not callable from outside this
+    /// assembly or a derived type - this class exists only as a type marker for
+    /// <c>WebApplicationFactory&lt;Program&gt;</c>.
+    /// </summary>
+    protected Program() { }
+}

@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <Description>
+      Proof-of-concept ASP.NET Core minimal API that fully implements documentation/beginners-guide-todo-api.md
+      end to end - Microsoft.Extensions.DependencyInjection, Entity Framework Core, and FluentValidation, the
+      common .NET stack. Vertical slices by directory under Features/. Never published, never released - see
+      .scratch/tutorial-project-common-stack/PRD.md.
+    </Description>
+    <!-- Overrides Directory.Build.props' repo-wide default: this project is never packaged or shipped. -->
+    <IsPackable>false</IsPackable>
+    <RootNamespace>TodoTasks.Api</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Interlocutor.Abstractions\Interlocutor.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\Interlocutor.AspNetCore\Interlocutor.AspNetCore.csproj" />
+    <ProjectReference Include="..\..\src\Interlocutor.DependencyInjection.Microsoft\Interlocutor.DependencyInjection.Microsoft.csproj" />
+    <ProjectReference Include="..\..\src\Interlocutor.FluentValidation\Interlocutor.FluentValidation.csproj" />
+    <ProjectReference Include="..\..\src\Interlocutor.Persistence.EntityFrameworkCore\Interlocutor.Persistence.EntityFrameworkCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+  </ItemGroup>
+</Project>
