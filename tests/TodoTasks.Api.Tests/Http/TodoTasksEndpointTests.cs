@@ -5,6 +5,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using TodoTasks.Api.Domain;
 using TodoTasks.Api.Features.Tasks.CreateTodoTask;
+using TodoTasks.Api.Features.Tasks.ListTodoTasksPaged;
 using TodoTasks.Api.Features.Tasks.UpdateTodoTask;
 using TodoTasks.Api.Features.Users.CreateUser;
 using TodoTasks.Api.Infrastructure;
@@ -295,6 +296,99 @@ public sealed class TodoTasksEndpointTests : IClassFixture<TodoTasksApiFactory>
         Assert.NotNull(tasks);
         Assert.Contains(tasks, t => t.Title == firstTitle);
         Assert.DoesNotContain(tasks, t => t.Title == secondTitle);
+    }
+
+    [Fact]
+    public async Task Paged_NoAuthenticatedCaller_ReturnsUnauthorized_Test()
+    {
+        // Arrange
+        using var client = this.factory.CreateClient();
+
+        // Act
+        using var response = await client.GetAsync(
+            new Uri("/todo-tasks/paged?page=1&pageSize=10", UriKind.Relative),
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Paged_AuthenticatedCaller_ReturnsAPartialPage_ScopedToTheCallersOwnTasks_WithAccurateMetadata_Test()
+    {
+        // Arrange - two owners, three tasks for the requesting caller and one for the other owner; a page
+        // size of five means every one of the caller's own tasks fits on one partial page.
+        using var client = this.factory.CreateClient();
+        await CreateAuthenticatedUserAsync(client);
+        var suffix = Guid.NewGuid().ToString("N");
+        foreach (var title in new[] { $"Task A-{suffix}", $"Task B-{suffix}", $"Task C-{suffix}" })
+        {
+            using var createResponse = await client.PostAsJsonAsync(
+                new Uri("/todo-tasks", UriKind.Relative),
+                new CreateTodoTaskRequest(title, null),
+                TestContext.Current.CancellationToken
+            );
+            Assert.Equal(HttpStatusCode.OK, createResponse.StatusCode); // Sanity-check the fixture before the real assertion.
+        }
+
+        using var otherClient = this.factory.CreateClient();
+        await CreateAuthenticatedUserAsync(otherClient);
+        using var otherCreate = await otherClient.PostAsJsonAsync(
+            new Uri("/todo-tasks", UriKind.Relative),
+            new CreateTodoTaskRequest($"Other owner's task-{suffix}", null),
+            TestContext.Current.CancellationToken
+        );
+        Assert.Equal(HttpStatusCode.OK, otherCreate.StatusCode);
+
+        // Act
+        using var response = await client.GetAsync(
+            new Uri("/todo-tasks/paged?page=1&pageSize=5", UriKind.Relative),
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var page = await response.Content.ReadFromJsonAsync<PagedTodoTasksDto>(
+            WebJsonOptions,
+            TestContext.Current.CancellationToken
+        );
+        Assert.NotNull(page);
+        Assert.Equal(3, page.Items.Count);
+        Assert.Equal(3, page.TotalCount);
+        Assert.Equal(1, page.Page);
+        Assert.Equal(5, page.PageSize);
+        Assert.All(page.Items, t => Assert.StartsWith("Task ", t.Title, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task Paged_PageNumberBeyondTheCallersAvailableData_ReturnsAnEmptyPage_WithTheRealTotalCount_Test()
+    {
+        // Arrange - one task for the caller, but page 10 is requested.
+        using var client = this.factory.CreateClient();
+        await CreateAuthenticatedUserAsync(client);
+        using var createResponse = await client.PostAsJsonAsync(
+            new Uri("/todo-tasks", UriKind.Relative),
+            new CreateTodoTaskRequest("Buy milk", null),
+            TestContext.Current.CancellationToken
+        );
+        Assert.Equal(HttpStatusCode.OK, createResponse.StatusCode); // Sanity-check the fixture before the real assertion.
+
+        // Act
+        using var response = await client.GetAsync(
+            new Uri("/todo-tasks/paged?page=10&pageSize=5", UriKind.Relative),
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var page = await response.Content.ReadFromJsonAsync<PagedTodoTasksDto>(
+            WebJsonOptions,
+            TestContext.Current.CancellationToken
+        );
+        Assert.NotNull(page);
+        Assert.Empty(page.Items);
+        Assert.Equal(1, page.TotalCount);
     }
 
     [Fact]

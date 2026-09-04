@@ -12,6 +12,7 @@ using TodoTasks.Api.Features.Tasks.CompleteTodoTask;
 using TodoTasks.Api.Features.Tasks.DeleteTodoTask;
 using TodoTasks.Api.Features.Tasks.GetTodoTaskById;
 using TodoTasks.Api.Features.Tasks.ListTodoTasks;
+using TodoTasks.Api.Features.Tasks.ListTodoTasksPaged;
 using TodoTasks.Api.Features.Tasks.ReopenTodoTask;
 using TodoTasks.Api.Features.Tasks.SearchTodoTasks;
 using TodoTasks.Api.Features.Tasks.UpdateTodoTask;
@@ -180,6 +181,113 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
         var dtos = Assert.IsAssignableFrom<IReadOnlyList<TodoTaskDto>>(result.Value);
         Assert.Equal(2, dtos.Count);
         Assert.All(dtos, dto => Assert.StartsWith("Requested owner,", dto.Title, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task ListTodoTasksPagedHandler_FewerMatchingTasksThanThePageSize_ReturnsAPartialPage_AgainstARealDatabase_Test()
+    {
+        // Arrange - three tasks for this owner, a page size of five: the requested page has room for
+        // more than exists, so the returned page should hold exactly the three that exist.
+        using var scope = this.factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<TodoTasksDbContext>();
+        var owner = $"owner-{Guid.NewGuid():N}";
+        await context.Tasks.AddRangeAsync(
+            [
+                new TodoTask("Buy milk", owner, null),
+                new TodoTask("Wash car", owner, null),
+                new TodoTask("Pay bills", owner, null),
+            ],
+            TestContext.Current.CancellationToken
+        );
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var tasks = scope.ServiceProvider.GetRequiredService<IDomainRepository<TodoTask, int>>();
+        var handler = new ListTodoTasksPagedHandler(tasks);
+
+        // Act
+        var result = await handler.Handle(
+            new ListTodoTasksPagedQuery(owner, Page: 1, PageSize: 5),
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        var dto = Assert.IsType<PagedTodoTasksDto>(result.Value);
+        Assert.Equal(3, dto.Items.Count);
+        Assert.Equal(3, dto.TotalCount);
+        Assert.Equal(1, dto.Page);
+        Assert.Equal(5, dto.PageSize);
+    }
+
+    [Fact]
+    public async Task ListTodoTasksPagedHandler_PageNumberBeyondTheAvailableData_ReturnsAnEmptyPage_ButAnAccurateTotalCount_AgainstARealDatabase_Test()
+    {
+        // Arrange - two tasks for this owner, but page 5 is requested: no tasks fall on that page, yet
+        // TotalCount still reports the owner's real, unpaged total rather than 0.
+        using var scope = this.factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<TodoTasksDbContext>();
+        var owner = $"owner-{Guid.NewGuid():N}";
+        await context.Tasks.AddRangeAsync(
+            [new TodoTask("Buy milk", owner, null), new TodoTask("Wash car", owner, null)],
+            TestContext.Current.CancellationToken
+        );
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var tasks = scope.ServiceProvider.GetRequiredService<IDomainRepository<TodoTask, int>>();
+        var handler = new ListTodoTasksPagedHandler(tasks);
+
+        // Act
+        var result = await handler.Handle(
+            new ListTodoTasksPagedQuery(owner, Page: 5, PageSize: 10),
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        var dto = Assert.IsType<PagedTodoTasksDto>(result.Value);
+        Assert.Empty(dto.Items);
+        Assert.Equal(2, dto.TotalCount);
+        Assert.Equal(5, dto.Page);
+    }
+
+    [Fact]
+    public async Task ListTodoTasksPagedHandler_ExactlyTwoPagesOfMatchingTasks_ReturnsAFullFirstPage_AndAFullBoundaryLastPage_AgainstARealDatabase_Test()
+    {
+        // Arrange - four tasks for this owner and a page size of two: this owner's data divides into
+        // exactly two full pages, with no partial remainder on either one.
+        using var scope = this.factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<TodoTasksDbContext>();
+        var owner = $"owner-{Guid.NewGuid():N}";
+        await context.Tasks.AddRangeAsync(
+            [
+                new TodoTask("Task A", owner, null),
+                new TodoTask("Task B", owner, null),
+                new TodoTask("Task C", owner, null),
+                new TodoTask("Task D", owner, null),
+            ],
+            TestContext.Current.CancellationToken
+        );
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var tasks = scope.ServiceProvider.GetRequiredService<IDomainRepository<TodoTask, int>>();
+        var handler = new ListTodoTasksPagedHandler(tasks);
+
+        // Act
+        var firstPage = await handler.Handle(
+            new ListTodoTasksPagedQuery(owner, Page: 1, PageSize: 2),
+            TestContext.Current.CancellationToken
+        );
+        var lastPage = await handler.Handle(
+            new ListTodoTasksPagedQuery(owner, Page: 2, PageSize: 2),
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert - both pages are exactly full (the boundary case: the last page has exactly the
+        // remainder, with nothing partial and nothing spilling onto a third page), and together they
+        // cover every task for this owner exactly once.
+        var firstDto = Assert.IsType<PagedTodoTasksDto>(firstPage.Value);
+        var lastDto = Assert.IsType<PagedTodoTasksDto>(lastPage.Value);
+        Assert.Equal(2, firstDto.Items.Count);
+        Assert.Equal(2, lastDto.Items.Count);
+        Assert.Equal(4, firstDto.TotalCount);
+        Assert.Equal(4, lastDto.TotalCount);
+        var allTitles = firstDto.Items.Select(i => i.Title).Concat(lastDto.Items.Select(i => i.Title)).ToList();
+        Assert.Equal(["Task A", "Task B", "Task C", "Task D"], allTitles.OrderBy(t => t, StringComparer.Ordinal));
     }
 
     [Fact]
