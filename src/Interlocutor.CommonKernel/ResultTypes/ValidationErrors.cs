@@ -114,7 +114,7 @@ public readonly record struct ValidationErrors : IValidationFailureCase
     /// rather than throwing. This permits the pipeline to pass a default response value when a handler has not yet
     /// produced one. Explicitly constructing this type with an empty sequence still throws.
     /// </remarks>
-    public IReadOnlyList<string> Messages => this.Items.Count == 0 ? [] : [.. this.Items.Select(e => e.Message).Distinct()];
+    public IReadOnlyList<string> Messages => this._errors.DistinctProjection(e => e.Message);
 
     /// <summary>
     /// Returns a human-readable representation of this validation error set.
@@ -124,8 +124,7 @@ public readonly record struct ValidationErrors : IValidationFailureCase
     /// <c>"ValidationErrors: {messages joined by ", "}"</c>. Joins <see cref="Messages"/> rather than each item's
     /// own <see cref="ValidationError.ToString"/>, to avoid a doubled "ValidationErrors: ValidationError: ..." prefix.
     /// </returns>
-    public override string ToString() =>
-        this.Messages.Count == 0 ? "ValidationErrors" : $"ValidationErrors: {string.Join(", ", this.Messages)}";
+    public override string ToString() => DistinctItemSetExtensions.ToDisplayString("ValidationErrors", this.Messages);
 }
 
 /// <summary>
@@ -300,6 +299,5 @@ public readonly record struct ValidationErrors<TErrorCode>
     /// own <see cref="ValidationError{TErrorCode}.ToString"/>, to avoid a doubled
     /// "ValidationErrors: ValidationError: ..." prefix.
     /// </returns>
-    public override string ToString() =>
-        this.Messages.Count == 0 ? "ValidationErrors" : $"ValidationErrors: {string.Join(", ", this.Messages)}";
+    public override string ToString() => DistinctItemSetExtensions.ToDisplayString("ValidationErrors", this.Messages);
 }
