@@ -12,10 +12,6 @@
     <Project Path="src/Interlocutor.Persistence.EntityFrameworkCore/Interlocutor.Persistence.EntityFrameworkCore.csproj" />
     <Project Path="src/Interlocutor.Persistence.NHibernate/Interlocutor.Persistence.NHibernate.csproj" />
   </Folder>
-  <Folder Name="/TutorialProject/">
-    <Project Path="TutorialProject/TodoTasks.Api/TodoTasks.Api.csproj" />
-    <Project Path="tests/TodoTasks.Api.Tests/TodoTasks.Api.Tests.csproj" />
-  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Interlocutor.TestSupport/Interlocutor.TestSupport.csproj" />
     <Project Path="tests/Interlocutor.TestSupport.Tests/Interlocutor.TestSupport.Tests.csproj" />
