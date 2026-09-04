@@ -2,6 +2,7 @@ namespace TodoTasks.Api.Features.Tasks.CreateTodoTask;
 
 using Interlocutor.Abstractions.Core;
 using Interlocutor.AspNetCore;
+using TodoTasks.Api.Infrastructure;
 
 /// <summary>Maps <c>POST /todo-tasks</c> - the first authenticated endpoint in this project.</summary>
 public static class CreateTodoTaskEndpoint
@@ -22,11 +23,9 @@ public static class CreateTodoTaskEndpoint
                 {
                     // A missing authenticated caller here is a bug, not an outcome the caller can trigger -
                     // RequireAuthorization() below means this endpoint is never reachable without one; see
-                    // documentation/beginners-guide-todo-api.md's "Before you start" for why this throws
-                    // rather than returning a Forbidden/Failure case.
-                    var ownerId =
-                        contextAccessor.Context?.UserId
-                        ?? throw new InvalidOperationException("This endpoint requires an authenticated caller.");
+                    // RequireUserId()'s remarks for why this throws rather than returning a
+                    // Forbidden/Failure case.
+                    var ownerId = contextAccessor.RequireUserId();
 
                     var result = await sender
                         .Send(new CreateTodoTaskCommand(request.Title, request.Notes, ownerId), ct)
