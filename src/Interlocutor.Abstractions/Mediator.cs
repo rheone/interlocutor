@@ -274,13 +274,13 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     private Task PublishAsync<TNotification>(TNotification notification, PublishStrategy strategy, CancellationToken ct)
         where TNotification : INotification
     {
-        // Select the appropriate wrapper cache based on the publish strategy. Each strategy (sequential vs parallel)
-        // has its own cache to avoid mixing handler execution modes. Falls back to sequential for unrecognized strategies.
-        var cache = strategy switch
+        // Select the wrapper cache and its matching wrapper type together, in one switch, based on the publish
+        // strategy. Each strategy (sequential vs parallel) has its own cache to avoid mixing handler execution
+        // modes. Falls back to sequential for unrecognized strategies.
+        var (cache, wrapperType) = strategy switch
         {
-            PublishStrategy.Sequential => SequentialNotificationWrappers,
-            PublishStrategy.Parallel => ParallelNotificationWrappers,
-            _ => SequentialNotificationWrappers,
+            PublishStrategy.Parallel => (ParallelNotificationWrappers, typeof(ParallelNotificationHandlerWrapper<>)),
+            _ => (SequentialNotificationWrappers, typeof(SequentialNotificationHandlerWrapper<>)),
         };
 
         // Get or create a notification wrapper (sequential or parallel) for this notification type.
@@ -288,16 +288,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
         var wrapper = cache.GetOrAdd(
             notification.GetType(),
             notificationType =>
-            {
-                var wrapperType = strategy switch
-                {
-                    PublishStrategy.Sequential => typeof(SequentialNotificationHandlerWrapper<>),
-                    PublishStrategy.Parallel => typeof(ParallelNotificationHandlerWrapper<>),
-                    _ => typeof(SequentialNotificationHandlerWrapper<>),
-                };
-
-                return (NotificationHandlerWrapper)Activator.CreateInstance(wrapperType.MakeGenericType(notificationType))!;
-            }
+                (NotificationHandlerWrapper)Activator.CreateInstance(wrapperType.MakeGenericType(notificationType))!
         );
 
         var activity = MediatorActivitySource.Source.StartActivity();

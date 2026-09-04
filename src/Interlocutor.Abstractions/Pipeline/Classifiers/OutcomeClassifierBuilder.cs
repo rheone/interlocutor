@@ -41,7 +41,6 @@ public sealed class OutcomeClassifierBuilder
         this.RegisterFailureType<Conflict>("Conflict");
         this.RegisterFailureType<ValidationErrors>("ValidationError");
         this.RegisterFailureType<Failures>("Failure");
-        this.RegisterFailureType<Conflict>("Conflict");
         this.RegisterFailureType<Conflicts>("Conflict");
         this.RegisterFailureType<Failure>("Failure");
         this.RegisterFailureType<Cancelled>("Cancelled");
