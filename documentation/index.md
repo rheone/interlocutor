@@ -9,6 +9,7 @@ A suggested reading order - each section builds on the ones above it. Jump strai
 ### Start here
 
 - [Glossary](glossary.md) - domain vocabulary used throughout the project. Skim this first; every other doc assumes these terms.
+- [Best Practices](best-practices.md) - a growing set of settled guidelines for using Interlocutor well in your own application, cross-linking the reasoning that lives in the topic guides below rather than restating it.
 
 ### Tutorial
 
