@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using TodoTasks.Api.Domain;
 using TodoTasks.Api.Features.Tasks.CompleteTodoTask;
+using TodoTasks.Api.Features.Tasks.DeleteTodoTask;
 using TodoTasks.Api.Features.Tasks.GetTodoTaskById;
 using TodoTasks.Api.Features.Tasks.ListTodoTasks;
 using TodoTasks.Api.Features.Tasks.ReopenTodoTask;
@@ -377,5 +378,51 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
         var reloaded = await readContext.Tasks.FirstOrDefaultAsync(t => t.Id == task.Id, TestContext.Current.CancellationToken);
         Assert.NotNull(reloaded);
         Assert.True(reloaded.IsCompleted);
+    }
+
+    [Fact]
+    public async Task DeleteTodoTaskHandler_TaskExists_RemovesItFromTheDatabase_AgainstARealDatabase_Test()
+    {
+        // Arrange - direct handler construction against a real repository/database, proving the
+        // handler's own DeleteAsync/SaveChangesAsync path actually removes the row. This deliberately
+        // bypasses the pipeline's AuthorizationBehavior/TodoTasksPolicyEvaluator ownership check - that
+        // evaluator reads IRequestContextAccessor.Context, which is only populated inside a real HTTP
+        // request, so proving *that* enforcement holds needs the real in-process host instead; see
+        // Http/TodoTasksEndpointTests' Delete_* tests for that half of the coverage.
+        using var writeScope = this.factory.Services.CreateScope();
+        var writeContext = writeScope.ServiceProvider.GetRequiredService<TodoTasksDbContext>();
+        var owner = $"owner-{Guid.NewGuid():N}";
+        var task = new TodoTask("Buy milk", owner, null);
+        await writeContext.Tasks.AddAsync(task, TestContext.Current.CancellationToken);
+        await writeContext.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var tasks = writeScope.ServiceProvider.GetRequiredService<IDomainRepository<TodoTask, int>>();
+        var unitOfWork = writeScope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+        var handler = new DeleteTodoTaskHandler(tasks, unitOfWork);
+
+        // Act
+        var result = await handler.Handle(new DeleteTodoTaskCommand(task.Id), TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.IsType<Success>(result.Value);
+        using var readScope = this.factory.Services.CreateScope();
+        var readContext = readScope.ServiceProvider.GetRequiredService<TodoTasksDbContext>();
+        var reloaded = await readContext.Tasks.FirstOrDefaultAsync(t => t.Id == task.Id, TestContext.Current.CancellationToken);
+        Assert.Null(reloaded);
+    }
+
+    [Fact]
+    public async Task DeleteTodoTaskHandler_NoTaskWithThatId_ReturnsNotFound_AgainstARealDatabase_Test()
+    {
+        // Arrange
+        using var scope = this.factory.Services.CreateScope();
+        var tasks = scope.ServiceProvider.GetRequiredService<IDomainRepository<TodoTask, int>>();
+        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+        var handler = new DeleteTodoTaskHandler(tasks, unitOfWork);
+
+        // Act
+        var result = await handler.Handle(new DeleteTodoTaskCommand(999_999), TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.IsType<NotFound>(result.Value);
     }
 }

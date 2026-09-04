@@ -418,6 +418,111 @@ public sealed class TodoTasksEndpointTests : IClassFixture<TodoTasksApiFactory>
         Assert.Equal("Buy milk", stillOwnedTask!.Title);
     }
 
+    [Fact]
+    public async Task Delete_NoAuthenticatedCaller_ReturnsUnauthorized_Test()
+    {
+        // Arrange
+        using var client = this.factory.CreateClient();
+
+        // Act
+        using var response = await client.DeleteAsync(
+            new Uri("/todo-tasks/1", UriKind.Relative),
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Delete_TaskOwnedByTheAuthenticatedCaller_DeletesItAndPersists_Test()
+    {
+        // Arrange
+        using var client = this.factory.CreateClient();
+        await CreateAuthenticatedUserAsync(client);
+        using var createResponse = await client.PostAsJsonAsync(
+            new Uri("/todo-tasks", UriKind.Relative),
+            new CreateTodoTaskRequest("Buy milk", null),
+            TestContext.Current.CancellationToken
+        );
+        var created = await createResponse.Content.ReadFromJsonAsync<TodoTaskDto>(
+            WebJsonOptions,
+            TestContext.Current.CancellationToken
+        );
+
+        // Act
+        using var response = await client.DeleteAsync(
+            new Uri($"/todo-tasks/{created!.Id}", UriKind.Relative),
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var getResponse = await client.GetAsync(
+            new Uri($"/todo-tasks/{created.Id}", UriKind.Relative),
+            TestContext.Current.CancellationToken
+        );
+        Assert.Equal(HttpStatusCode.NotFound, getResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task Delete_UnknownTaskId_ReturnsNotFound_Test()
+    {
+        // Arrange
+        using var client = this.factory.CreateClient();
+        await CreateAuthenticatedUserAsync(client);
+
+        // Act
+        using var response = await client.DeleteAsync(
+            new Uri("/todo-tasks/999999", UriKind.Relative),
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert - TodoTasksPolicyEvaluator lets a nonexistent task id through (see its own remarks), so
+        // this NotFound comes from DeleteTodoTaskHandler itself, not the policy - contrast with the
+        // Forbidden case below, which never reaches the handler at all.
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Delete_TaskExistsButIsOwnedBySomeoneElse_ReturnsForbidden_BeforeTheHandlerRuns_AndDoesNotDeleteIt_Test()
+    {
+        // Arrange - proves TodoTasksPolicyEvaluator's ownership check happens inside AuthorizationBehavior,
+        // before DeleteTodoTaskHandler ever runs. The task's continued existence afterward is the direct
+        // evidence: if the handler's DeleteAsync/SaveChangesAsync had run, the task would be gone the same
+        // way Delete_TaskOwnedByTheAuthenticatedCaller_DeletesItAndPersists_Test above proves it does for
+        // an owner. Getting Forbidden (403) here rather than the NotFound (404) the unknown-id case above
+        // gets is only possible because the policy denial and the handler's own not-found check are two
+        // genuinely different code paths, run at two different points in the pipeline.
+        using var ownerClient = this.factory.CreateClient();
+        await CreateAuthenticatedUserAsync(ownerClient);
+        using var createResponse = await ownerClient.PostAsJsonAsync(
+            new Uri("/todo-tasks", UriKind.Relative),
+            new CreateTodoTaskRequest("Buy milk", null),
+            TestContext.Current.CancellationToken
+        );
+        var created = await createResponse.Content.ReadFromJsonAsync<TodoTaskDto>(
+            WebJsonOptions,
+            TestContext.Current.CancellationToken
+        );
+        using var otherClient = this.factory.CreateClient();
+        await CreateAuthenticatedUserAsync(otherClient);
+
+        // Act
+        using var response = await otherClient.DeleteAsync(
+            new Uri($"/todo-tasks/{created!.Id}", UriKind.Relative),
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        using var getResponse = await ownerClient.GetAsync(
+            new Uri($"/todo-tasks/{created.Id}", UriKind.Relative),
+            TestContext.Current.CancellationToken
+        );
+        Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
+    }
+
     /// <summary>
     /// Registers a new <see cref="User"/> through the real <c>POST /users</c> endpoint, then attaches
     /// the dev/test authentication header to <paramref name="client"/> so subsequent requests on it are

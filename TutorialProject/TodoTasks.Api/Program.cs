@@ -1,5 +1,6 @@
 using FluentValidation;
 using Interlocutor.Abstractions.Core;
+using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.AspNetCore;
 using Interlocutor.DependencyInjection.Microsoft;
 using Interlocutor.Persistence.EntityFrameworkCore;
@@ -9,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using TodoTasks.Api.Domain;
 using TodoTasks.Api.Features.Tasks.CompleteTodoTask;
 using TodoTasks.Api.Features.Tasks.CreateTodoTask;
+using TodoTasks.Api.Features.Tasks.DeleteTodoTask;
 using TodoTasks.Api.Features.Tasks.GetTodoTaskById;
 using TodoTasks.Api.Features.Tasks.ListTodoTasks;
 using TodoTasks.Api.Features.Tasks.ReopenTodoTask;
@@ -90,6 +92,12 @@ builder.Services.AddInterlocutorRepository<TodoTask, int, EntityFrameworkReposit
 // TodoTaskCompletionCounterHandler, the notification subscriber this backs.
 builder.Services.AddSingleton<ICompletionCounter, InMemoryCompletionCounter>();
 
+// Registered before AddInterlocutor() below, same reasoning as AspNetCoreRequestContextAccessor above:
+// AddAuthorizationBehavior() only try-adds its own default (DefaultPolicyEvaluator, which grants every
+// policy), so registering this one first makes it win. Scoped because it depends on the scoped
+// IDomainRepository<TodoTask, int> and IRequestContextAccessor.
+builder.Services.AddScoped<IPolicyEvaluator, TodoTasksPolicyEvaluator>();
+
 // FluentValidation's own IValidator<T> implementations (CreateUserValidator, and future features'
 // equivalents) - not something interlocutor.ScanAssembly below covers. AddValidationBehavior() (called
 // below) only wires up ValidationBehavior<,> itself, conditionally, when Interlocutor.FluentValidation is
@@ -160,6 +168,7 @@ app.MapListTodoTasksEndpoint();
 app.MapUpdateTodoTaskEndpoint();
 app.MapCompleteTodoTaskEndpoint();
 app.MapReopenTodoTaskEndpoint();
+app.MapDeleteTodoTaskEndpoint();
 
 await app.RunAsync().ConfigureAwait(false);
 
