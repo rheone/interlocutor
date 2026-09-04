@@ -6,9 +6,13 @@ Note: these are `readonly record struct` types with no inheritance available, so
 
 **Blocked by:** None - can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `Count`, `Items`, the distinct-projection, and `ToString()` for all six types are backed by one shared implementation
-- [ ] Each type's public API (property names, `ToString()` output format) is unchanged - this is an internal deduplication, not a breaking change
-- [ ] `Interlocutor.CommonKernel.Tests` pass without modification to test expectations
-- [ ] `tests/Interlocutor.Architecture.Tests` still passes (CommonKernel remains zero-dependency)
+- [x] `Count`, `Items`, the distinct-projection, and `ToString()` for all six types are backed by one shared implementation
+- [x] Each type's public API (property names, `ToString()` output format) is unchanged - this is an internal deduplication, not a breaking change
+- [x] `Interlocutor.CommonKernel.Tests` pass without modification to test expectations
+- [x] `tests/Interlocutor.Architecture.Tests` still passes (CommonKernel remains zero-dependency)
+
+## Comments
+
+**2026-09-04** - Verified on `2026-09-04-ResearchTicketNormalization` after merging `origin/2026-09-04-CodebaseAuditFollowUps` and `origin/ultrareview`: `Failures`, `Conflicts`, and `ValidationErrors` (plus their `<TErrorCode>` variants) all route `Count`/projection/`ToString()` through the shared `DistinctItemSetExtensions` helper. Full solution `dotnet build` and `dotnet test` (1189/1189) pass post-merge.

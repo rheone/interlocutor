@@ -6,8 +6,12 @@ This is a speculative/low-priority cleanup - the duplication is mechanical, not 
 
 **Blocked by:** None - can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A single shared dispatch-and-trace helper backs all three `Send` overloads
-- [ ] Each overload supplies only its own cache, key, and wrapper type to the shared helper
-- [ ] `Interlocutor.Abstractions.Tests` (`MediatorTests.cs`) pass without change to their assertions
+- [x] A single shared dispatch-and-trace helper backs all three `Send` overloads
+- [x] Each overload supplies only its own cache, key, and wrapper type to the shared helper
+- [x] `Interlocutor.Abstractions.Tests` (`MediatorTests.cs`) pass without change to their assertions
+
+## Comments
+
+**2026-09-04** - Verified on `2026-09-04-ResearchTicketNormalization` after merging `origin/2026-09-04-CodebaseAuditFollowUps` and `origin/ultrareview`: Superseded by ticket 17's fuller extraction, landed together - see ticket 17 for the final shared `DispatchWithTrace` shape. Full solution `dotnet build` and `dotnet test` (1189/1189) pass post-merge.

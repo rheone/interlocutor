@@ -7,8 +7,12 @@
 
 **Blocked by:** None - can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `OutcomeClassifierBuilder` registers `Conflict` exactly once
-- [ ] `Mediator.PublishAsync` contains a single switch over `strategy`, not two
-- [ ] Existing behavior is unchanged - `Interlocutor.Abstractions.Tests` pass without modification to test expectations
+- [x] `OutcomeClassifierBuilder` registers `Conflict` exactly once
+- [x] `Mediator.PublishAsync` contains a single switch over `strategy`, not two
+- [x] Existing behavior is unchanged - `Interlocutor.Abstractions.Tests` pass without modification to test expectations
+
+## Comments
+
+**2026-09-04** - Verified on `2026-09-04-ResearchTicketNormalization` after merging `origin/2026-09-04-CodebaseAuditFollowUps` and `origin/ultrareview`: `OutcomeClassifierBuilder` registers `Conflict` exactly once; `Mediator.PublishAsync` now uses a single `strategy switch` expression yielding `(cache, wrapperType)` together. Full solution `dotnet build` and `dotnet test` (1189/1189) pass post-merge.

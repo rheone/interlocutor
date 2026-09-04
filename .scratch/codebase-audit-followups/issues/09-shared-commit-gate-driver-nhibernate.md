@@ -6,9 +6,13 @@ This does not contradict ADR-0018 - that ADR concerns each store's advanced-surf
 
 **Blocked by:** None - can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `Interlocutor.Persistence.Abstractions` gains a shared commit-gate driver and a store-facing seam it drives
-- [ ] `Interlocutor.Persistence.NHibernate`'s `UnitOfWorkBehavior` implements only the store-specific primitives; the begin/run/check/commit/rollback/log control flow lives in the shared driver
-- [ ] `Interlocutor.Persistence.NHibernate` still depends only on `Persistence.Abstractions` (verified by `tests/Interlocutor.Architecture.Tests`)
-- [ ] Observable behavior is unchanged - `Interlocutor.Persistence.NHibernate.Tests` (including `UnitOfWorkBehaviorTests`, `SharedSessionIntegrationTests`) pass without change to their assertions
+- [x] `Interlocutor.Persistence.Abstractions` gains a shared commit-gate driver and a store-facing seam it drives
+- [x] `Interlocutor.Persistence.NHibernate`'s `UnitOfWorkBehavior` implements only the store-specific primitives; the begin/run/check/commit/rollback/log control flow lives in the shared driver
+- [x] `Interlocutor.Persistence.NHibernate` still depends only on `Persistence.Abstractions` (verified by `tests/Interlocutor.Architecture.Tests`)
+- [x] Observable behavior is unchanged - `Interlocutor.Persistence.NHibernate.Tests` (including `UnitOfWorkBehaviorTests`, `SharedSessionIntegrationTests`) pass without change to their assertions
+
+## Comments
+
+**2026-09-04** - Verified on `2026-09-04-ResearchTicketNormalization` after merging `origin/2026-09-04-CodebaseAuditFollowUps` and `origin/ultrareview`: `CommitGateDriver`/`ICommitGateSession` now live in `Interlocutor.Persistence.Abstractions`; NHibernate's `UnitOfWorkBehavior` delegates to `CommitGateDriver.Handle` via `NHibernateCommitGateSession`. Full solution `dotnet build` and `dotnet test` (1189/1189) pass post-merge.

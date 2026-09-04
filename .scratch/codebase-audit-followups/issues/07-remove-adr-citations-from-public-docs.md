@@ -4,8 +4,12 @@
 
 **Blocked by:** None - can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] No public XML doc comment in `src/` links to `maintainer_docs/adr/` or any other `maintainer_docs/` path
-- [ ] Each affected doc comment states the underlying rationale inline instead
-- [ ] `dotnet build` succeeds with no new doc warnings
+- [x] No public XML doc comment in `src/` links to `maintainer_docs/adr/` or any other `maintainer_docs/` path
+- [x] Each affected doc comment states the underlying rationale inline instead
+- [x] `dotnet build` succeeds with no new doc warnings
+
+## Comments
+
+**2026-09-04** - Verified on `2026-09-04-ResearchTicketNormalization` after merging `origin/2026-09-04-CodebaseAuditFollowUps` and `origin/ultrareview`: No `maintainer_docs/adr` citation remains in any `src/` file (only stale build-output XML under `bin/obj`, which is gitignored and regenerates from source). Full solution `dotnet build` and `dotnet test` (1189/1189) pass post-merge.

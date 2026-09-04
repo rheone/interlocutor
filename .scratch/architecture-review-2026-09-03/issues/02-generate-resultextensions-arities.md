@@ -4,11 +4,15 @@
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A generator emitter produces the arity 2-6 (plus non-generic) `ToActionResult()`/`ToMinimalApiResult()` overloads from one template
-- [ ] `Interlocutor.AspNetCore` references `Interlocutor.Generator` as a `PrivateAssets="all"` analyzer only - no new runtime dependency, nothing new ships in a consumer's build output
-- [ ] Generated output is behaviorally identical to the current hand-written overloads, including trimming/AOT annotations
-- [ ] Every existing test in `tests/Interlocutor.AspNetCore.Tests` (including `ResultExtensionsTests`) passes with no modification
-- [ ] Adding a 7th arity in the future requires touching only the template, not six hand-written blocks
-- [ ] No public API changes - `PublicAPI.Unshipped.txt` for `Interlocutor.AspNetCore` is untouched
+- [x] A generator emitter produces the arity 2-6 (plus non-generic) `ToActionResult()`/`ToMinimalApiResult()` overloads from one template
+- [x] `Interlocutor.AspNetCore` references `Interlocutor.Generator` as a `PrivateAssets="all"` analyzer only - no new runtime dependency, nothing new ships in a consumer's build output
+- [x] Generated output is behaviorally identical to the current hand-written overloads, including trimming/AOT annotations
+- [x] Every existing test in `tests/Interlocutor.AspNetCore.Tests` (including `ResultExtensionsTests`) passes with no modification
+- [x] Adding a 7th arity in the future requires touching only the template, not six hand-written blocks
+- [x] No public API changes - `PublicAPI.Unshipped.txt` for `Interlocutor.AspNetCore` is untouched
+
+## Comments
+
+**2026-09-04** - Verified on `2026-09-04-ResearchTicketNormalization` after merging `origin/2026-09-04-CodebaseAuditFollowUps` and `origin/ultrareview`: `ResultExtensionsGenerator`/`ResultExtensionsEmitter` now emit `ResultExtensions`'s per-arity overloads; `ResultExtensions.cs` itself no longer hand-writes any `ToActionResult`/`ToMinimalApiResult` blocks. Landed via `origin/ultrareview` commit `b2eb20b`, merged into this branch. Full solution `dotnet build` and `dotnet test` (1189/1189) pass post-merge.

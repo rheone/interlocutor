@@ -4,11 +4,15 @@
 
 **Blocked by:** None - can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A test exists asserting the bypass path: an `IExternalStoreRequest` never causes `sessionFactory` to be invoked
-- [ ] A test exists asserting eager-begin: an `ITransactionalRequest` causes `BeginTransactionAsync` to be called before `next()` runs
-- [ ] A test exists asserting the commit path: when `HasPendingWorkAsync` reports pending work after `next()` completes, `CommitAsync` is called and not `RollbackAsync`
-- [ ] A test exists asserting the rollback path: when there is no pending work (or `next()` throws), `RollbackAsync` is called and not `CommitAsync`
-- [ ] A test exists asserting logging occurs on both the commit and rollback paths, per the existing describer/logger contract
-- [ ] `Interlocutor.Persistence.Abstractions.Tests`, and the full solution test suite, pass
+- [x] A test exists asserting the bypass path: an `IExternalStoreRequest` never causes `sessionFactory` to be invoked
+- [x] A test exists asserting eager-begin: an `ITransactionalRequest` causes `BeginTransactionAsync` to be called before `next()` runs
+- [x] A test exists asserting the commit path: when `HasPendingWorkAsync` reports pending work after `next()` completes, `CommitAsync` is called and not `RollbackAsync`
+- [x] A test exists asserting the rollback path: when there is no pending work (or `next()` throws), `RollbackAsync` is called and not `CommitAsync`
+- [x] A test exists asserting logging occurs on both the commit and rollback paths, per the existing describer/logger contract
+- [x] `Interlocutor.Persistence.Abstractions.Tests`, and the full solution test suite, pass
+
+## Comments
+
+**2026-09-04** - Verified on `2026-09-04-ResearchTicketNormalization` after merging `origin/2026-09-04-CodebaseAuditFollowUps` and `origin/ultrareview`: `CommitGateDriverTests.cs` (306 lines) added directly to `Interlocutor.Persistence.Abstractions.Tests`, covering the driver at its own seam. Full solution `dotnet build` and `dotnet test` (1189/1189) pass post-merge.

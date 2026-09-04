@@ -4,10 +4,14 @@
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A single internal module owns the chain-build + `PipelineEjectException<TResponse>` guard logic currently duplicated across all three wrapper `Handle` methods
-- [ ] `CommandHandlerWrapper`, `VoidCommandHandlerWrapper`, and `QueryHandlerWrapper` each shrink to resolving their own handler type and delegating to the shared executor
-- [ ] Activity tagging behavior is preserved exactly as today for all three request kinds
-- [ ] Every existing test in `tests/Interlocutor.Abstractions.Tests` (including `MediatorTests`) passes with no modification
-- [ ] No public API changes - `PublicAPI.Unshipped.txt` for `Interlocutor.Abstractions` is untouched
+- [x] A single internal module owns the chain-build + `PipelineEjectException<TResponse>` guard logic currently duplicated across all three wrapper `Handle` methods
+- [x] `CommandHandlerWrapper`, `VoidCommandHandlerWrapper`, and `QueryHandlerWrapper` each shrink to resolving their own handler type and delegating to the shared executor
+- [x] Activity tagging behavior is preserved exactly as today for all three request kinds
+- [x] Every existing test in `tests/Interlocutor.Abstractions.Tests` (including `MediatorTests`) passes with no modification
+- [x] No public API changes - `PublicAPI.Unshipped.txt` for `Interlocutor.Abstractions` is untouched
+
+## Comments
+
+**2026-09-04** - Verified on `2026-09-04-ResearchTicketNormalization` after merging `origin/2026-09-04-CodebaseAuditFollowUps` and `origin/ultrareview`: `PipelineChainExecutor.Execute` is now called from `CommandHandlerWrapper`, `VoidCommandHandlerWrapper`, and `QueryHandlerWrapper` alike; landed via `origin/ultrareview` commit `92b95d7`, merged into this branch. Full solution `dotnet build` and `dotnet test` (1189/1189) pass post-merge.

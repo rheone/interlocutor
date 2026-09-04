@@ -4,9 +4,13 @@
 
 **Blocked by:** None - can start immediately (ticket 05 already merged `RequireUserId()`)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `ListTodoTasksPagedEndpoint.cs` calls `RequireUserId()` instead of inlining the guard
-- [ ] All three inlined guard occurrences in `TodoTasksController.cs` call `RequireUserId()` instead
-- [ ] No remaining inlined `contextAccessor.Context?.UserId ?? throw ...` guard exists anywhere in TutorialProject
-- [ ] `tests/TodoTasks.Api.Tests` pass, including the unauthenticated-caller cases for the newly-migrated endpoints/actions
+- [x] `ListTodoTasksPagedEndpoint.cs` calls `RequireUserId()` instead of inlining the guard
+- [x] All three inlined guard occurrences in `TodoTasksController.cs` call `RequireUserId()` instead
+- [x] No remaining inlined `contextAccessor.Context?.UserId ?? throw ...` guard exists anywhere in TutorialProject
+- [x] `tests/TodoTasks.Api.Tests` pass, including the unauthenticated-caller cases for the newly-migrated endpoints/actions
+
+## Comments
+
+**2026-09-04** - Verified on `2026-09-04-ResearchTicketNormalization` after merging `origin/2026-09-04-CodebaseAuditFollowUps` and `origin/ultrareview`: Zero remaining inlined `contextAccessor.Context?.UserId ?? throw ...` guards anywhere in `TutorialProject` - `ListTodoTasksPagedEndpoint` and all three `TodoTasksController` call sites now use `RequireUserId()`. Full solution `dotnet build` and `dotnet test` (1189/1189) pass post-merge.

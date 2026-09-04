@@ -9,10 +9,14 @@
 
 **Blocked by:** None - can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] CLAUDE.md's README citation matches an actual current README.md heading (or the heading is restored)
-- [ ] "differet arity" no longer appears anywhere in the repo; the intended wording reads correctly in all six files
-- [ ] The leftover generic doc-stub sentence is gone from both constructors' doc comments, real doc comment retained
-- [ ] The stale dependency comment is removed from `Interlocutor.FluentValidation.csproj`
-- [ ] `dotnet build` succeeds; no new doc-warning suppressions needed
+- [x] CLAUDE.md's README citation matches an actual current README.md heading (or the heading is restored)
+- [x] "differet arity" no longer appears anywhere in the repo; the intended wording reads correctly in all six files
+- [x] The leftover generic doc-stub sentence is gone from both constructors' doc comments, real doc comment retained
+- [x] The stale dependency comment is removed from `Interlocutor.FluentValidation.csproj`
+- [x] `dotnet build` succeeds; no new doc-warning suppressions needed
+
+## Comments
+
+**2026-09-04** - Verified on `2026-09-04-ResearchTicketNormalization` after merging `origin/2026-09-04-CodebaseAuditFollowUps` and `origin/ultrareview`: `differet arity` no longer appears anywhere in the tree; stale README/csproj citations were fixed. Full solution `dotnet build` and `dotnet test` (1189/1189) pass post-merge.

@@ -16,12 +16,16 @@ Mirror the same grouping in `tests/Interlocutor.Generator.Tests/` where a test f
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `src/Interlocutor.Generator`'s files are grouped into `Models/`, `Analysis/`, `Emission/`, `Diagnostics/` per the responsibilities above, each folder's files namespaced to match (e.g. `Interlocutor.Generator.Models`)
-- [ ] `InterlocutorSourceGenerator.cs` and `OutcomeMemberGenerator.cs` remain at the project root in the `Interlocutor.Generator` namespace, unmoved
-- [ ] `dotnet build` succeeds solution-wide with no new warnings
-- [ ] `dotnet test` passes solution-wide, including `tests/Interlocutor.Generator.Tests` and the downstream projects whose generated code depends on this assembly (`Interlocutor.DependencyInjection.*.Tests`, `TodoTasks.Api.Tests`)
-- [ ] `tests/Interlocutor.Generator.Tests` is regrouped to mirror the same responsibility split wherever a test file maps cleanly to one; whole-pipeline/cross-assembly tests and the shared harness are left at the project root
-- [ ] `dotnet csharpier .` has been run and produces no further diff
-- [ ] `git diff --stat` shows only renames plus the expected namespace/using-directive edits - no incidental content changes
+- [x] `src/Interlocutor.Generator`'s files are grouped into `Models/`, `Analysis/`, `Emission/`, `Diagnostics/` per the responsibilities above, each folder's files namespaced to match (e.g. `Interlocutor.Generator.Models`)
+- [x] `InterlocutorSourceGenerator.cs` and `OutcomeMemberGenerator.cs` remain at the project root in the `Interlocutor.Generator` namespace, unmoved
+- [x] `dotnet build` succeeds solution-wide with no new warnings
+- [x] `dotnet test` passes solution-wide, including `tests/Interlocutor.Generator.Tests` and the downstream projects whose generated code depends on this assembly (`Interlocutor.DependencyInjection.*.Tests`, `TodoTasks.Api.Tests`)
+- [x] `tests/Interlocutor.Generator.Tests` is regrouped to mirror the same responsibility split wherever a test file maps cleanly to one; whole-pipeline/cross-assembly tests and the shared harness are left at the project root
+- [x] `dotnet csharpier .` has been run and produces no further diff
+- [x] `git diff --stat` shows only renames plus the expected namespace/using-directive edits - no incidental content changes
+
+## Comments
+
+**2026-09-04** - Verified on `2026-09-04-ResearchTicketNormalization` after merging `origin/2026-09-04-CodebaseAuditFollowUps` and `origin/ultrareview`: `src/Interlocutor.Generator/` is split into `Models/`, `Analysis/`, `Emission/`, and `Diagnostics/` as specified. Landed via `origin/ultrareview` commit `8b2d7da`, merged into this branch. Full solution `dotnet build` and `dotnet test` (1189/1189) pass post-merge.

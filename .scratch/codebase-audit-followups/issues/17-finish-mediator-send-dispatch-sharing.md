@@ -4,9 +4,13 @@
 
 **Blocked by:** None - can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The cache lookup (`GetOrAdd`) and `Activator.CreateInstance` wrapper construction are performed by one shared helper, not re-typed in each of the three `Send<T>` overloads
-- [ ] Each overload supplies only its own cache, key, and wrapper type/interface to that helper
-- [ ] Dispatch semantics are unchanged for all three overloads (query, command-with-result, void-command)
-- [ ] `Interlocutor.Abstractions.Tests` (`MediatorTests.cs`), and the full solution test suite, pass without change to their assertions
+- [x] The cache lookup (`GetOrAdd`) and `Activator.CreateInstance` wrapper construction are performed by one shared helper, not re-typed in each of the three `Send<T>` overloads
+- [x] Each overload supplies only its own cache, key, and wrapper type/interface to that helper
+- [x] Dispatch semantics are unchanged for all three overloads (query, command-with-result, void-command)
+- [x] `Interlocutor.Abstractions.Tests` (`MediatorTests.cs`), and the full solution test suite, pass without change to their assertions
+
+## Comments
+
+**2026-09-04** - Verified on `2026-09-04-ResearchTicketNormalization` after merging `origin/2026-09-04-CodebaseAuditFollowUps` and `origin/ultrareview`: `DispatchWithTrace<TKey, TWrapper, TResponse>` now centralizes the `ConcurrentDictionary.GetOrAdd` cache lookup and `Activator.CreateInstance` wrapper resolution for all three `Send` overloads, completing ticket 13's partial extraction. Full solution `dotnet build` and `dotnet test` (1189/1189) pass post-merge.

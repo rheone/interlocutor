@@ -17,11 +17,15 @@ Commits 5-7 are additive (new opt-in surface, new accessor overloads alongside t
 
 **Blocked by:** None to start the rebase/merge mechanically (git reports no divergence - `main` has no content `ultrareview` lacks, so this is a clean linear replay), but review and file-level conflict resolution against `2026-09-04-CodebaseAuditFollowUps`'s tickets (particularly 04, 09-11, 13, which touch overlapping areas: `Mediator`/wrapper classes, `CommonKernel` result types, persistence behaviors) should happen with both branches' final states in hand - don't start this until that branch's tickets are merged or its fate is otherwise decided.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] All 8 commits' functionality is present on `main` after landing (opt-in `: IOutcome` classification, named `TryGet{TypeName}` accessors, INTERLOC012 diagnostic, generated `ResultExtensions`, shared `PipelineChainExecutor`, `Generator` folder structure)
-- [ ] `CommandHandlerWrapper`, `VoidCommandHandlerWrapper`, and `QueryHandlerWrapper` no longer each carry their own copy of the chain-build/eject-guard logic - all three call the shared `PipelineChainExecutor`
-- [ ] `Interlocutor.AspNetCore/ResultExtensions.cs` no longer hand-writes per-arity `ToActionResult`/`ToMinimalApiResult` blocks - they come from `ResultExtensionsGenerator`
-- [ ] No dead code left behind from either superseded implementation
-- [ ] Full solution `dotnet build` and `dotnet test` pass after landing
-- [ ] `documentation/extensibility.md` reflects the new named-accessor and INTERLOC012 diagnostic surface, per the original tickets' acceptance criteria
+- [x] All 8 commits' functionality is present on `main` after landing (opt-in `: IOutcome` classification, named `TryGet{TypeName}` accessors, INTERLOC012 diagnostic, generated `ResultExtensions`, shared `PipelineChainExecutor`, `Generator` folder structure)
+- [x] `CommandHandlerWrapper`, `VoidCommandHandlerWrapper`, and `QueryHandlerWrapper` no longer each carry their own copy of the chain-build/eject-guard logic - all three call the shared `PipelineChainExecutor`
+- [x] `Interlocutor.AspNetCore/ResultExtensions.cs` no longer hand-writes per-arity `ToActionResult`/`ToMinimalApiResult` blocks - they come from `ResultExtensionsGenerator`
+- [x] No dead code left behind from either superseded implementation
+- [x] Full solution `dotnet build` and `dotnet test` pass after landing
+- [x] `documentation/extensibility.md` reflects the new named-accessor and INTERLOC012 diagnostic surface, per the original tickets' acceptance criteria
+
+## Comments
+
+**2026-09-04** - Verified on `2026-09-04-ResearchTicketNormalization` after merging `origin/2026-09-04-CodebaseAuditFollowUps` and `origin/ultrareview`: All 8 commits landed via `git merge --no-ff` (clean, no file-level conflicts with `2026-09-04-CodebaseAuditFollowUps`, merged just before it - the two branches never touched the same file). No superseded old implementation was left behind: the wrapper trio now calls `PipelineChainExecutor` exclusively, and `ResultExtensions.cs` contains no hand-written per-arity blocks. Full solution `dotnet build` and `dotnet test` (1189/1189) pass post-merge.

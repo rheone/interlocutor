@@ -4,9 +4,13 @@
 
 **Blocked by:** None - can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `CorrelationId` falls back to `HttpContext.TraceIdentifier` when the `X-Correlation-ID` header is absent or empty
-- [ ] The tenant ID accessor falls back to its documented claim-based value when the `X-Tenant-ID` header is absent or empty
-- [ ] A regression test exercises the "header absent" case for both properties and asserts the fallback value is used, not `""`
-- [ ] Existing `Interlocutor.AspNetCore.Tests` pass
+- [x] `CorrelationId` falls back to `HttpContext.TraceIdentifier` when the `X-Correlation-ID` header is absent or empty
+- [x] The tenant ID accessor falls back to its documented claim-based value when the `X-Tenant-ID` header is absent or empty
+- [x] A regression test exercises the "header absent" case for both properties and asserts the fallback value is used, not `""`
+- [x] Existing `Interlocutor.AspNetCore.Tests` pass
+
+## Comments
+
+**2026-09-04** - Verified on `2026-09-04-ResearchTicketNormalization` after merging `origin/2026-09-04-CodebaseAuditFollowUps` and `origin/ultrareview`: `AspNetCoreRequestContextAccessor` now checks `StringValues.IsNullOrEmpty` before falling back to `HttpContext.TraceIdentifier`, not a no-op `?? fallback` over a non-null empty string. Full solution `dotnet build` and `dotnet test` (1189/1189) pass post-merge.

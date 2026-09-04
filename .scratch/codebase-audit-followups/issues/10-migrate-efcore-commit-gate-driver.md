@@ -4,9 +4,13 @@
 
 **Blocked by:** 09 - Introduce a shared commit-gate driver in Persistence.Abstractions; migrate NHibernate onto it
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `Interlocutor.Persistence.EntityFrameworkCore`'s `UnitOfWorkBehavior` implements only the store-specific primitives; the control flow lives in the shared driver from ticket 09
-- [ ] `Interlocutor.Persistence.EntityFrameworkCore` still depends only on `Persistence.Abstractions`, and does not depend on `Interlocutor.Persistence.NHibernate` (verified by `tests/Interlocutor.Architecture.Tests`)
-- [ ] Observable behavior is unchanged - `Interlocutor.Persistence.EntityFrameworkCore.Tests` (including `UnitOfWorkBehaviorTests`) pass without change to their assertions
-- [ ] The two stores' `UnitOfWorkBehaviorTests.cs` files can share a common parameterized/abstract test base exercising the driver once, if this falls out naturally - not required if it doesn't
+- [x] `Interlocutor.Persistence.EntityFrameworkCore`'s `UnitOfWorkBehavior` implements only the store-specific primitives; the control flow lives in the shared driver from ticket 09
+- [x] `Interlocutor.Persistence.EntityFrameworkCore` still depends only on `Persistence.Abstractions`, and does not depend on `Interlocutor.Persistence.NHibernate` (verified by `tests/Interlocutor.Architecture.Tests`)
+- [x] Observable behavior is unchanged - `Interlocutor.Persistence.EntityFrameworkCore.Tests` (including `UnitOfWorkBehaviorTests`) pass without change to their assertions
+- [x] The two stores' `UnitOfWorkBehaviorTests.cs` files can share a common parameterized/abstract test base exercising the driver once, if this falls out naturally - not required if it doesn't
+
+## Comments
+
+**2026-09-04** - Verified on `2026-09-04-ResearchTicketNormalization` after merging `origin/2026-09-04-CodebaseAuditFollowUps` and `origin/ultrareview`: EF Core's `UnitOfWorkBehavior` also delegates to `CommitGateDriver.Handle` via `EntityFrameworkCommitGateSession`, landed in the same merge as ticket 09. Full solution `dotnet build` and `dotnet test` (1189/1189) pass post-merge.
