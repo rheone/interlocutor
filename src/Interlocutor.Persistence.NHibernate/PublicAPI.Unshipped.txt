@@ -1,13 +1,6 @@
 #nullable enable
 Interlocutor.Persistence.NHibernate.NHibernateRepository<TEntity, TKey>
-Interlocutor.Persistence.NHibernate.NHibernateRepository<TEntity, TKey>.DeleteAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
-Interlocutor.Persistence.NHibernate.NHibernateRepository<TEntity, TKey>.GetManyAsync(System.Linq.Expressions.Expression<System.Func<TEntity!, bool>!>? filter = null, System.Collections.Generic.IReadOnlyList<Interlocutor.Persistence.Abstractions.SortCriterion<TEntity!>!>? sort = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TEntity!>!>!
-Interlocutor.Persistence.NHibernate.NHibernateRepository<TEntity, TKey>.GetPagedAsync(int pageNumber, int pageSize, System.Linq.Expressions.Expression<System.Func<TEntity!, bool>!>? filter = null, System.Collections.Generic.IReadOnlyList<Interlocutor.Persistence.Abstractions.SortCriterion<TEntity!>!>? sort = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Interlocutor.Persistence.Abstractions.Page<TEntity!>!>!
-Interlocutor.Persistence.NHibernate.NHibernateRepository<TEntity, TKey>.IdSelector.get -> System.Linq.Expressions.Expression<System.Func<TEntity!, TKey>!>!
-Interlocutor.Persistence.NHibernate.NHibernateRepository<TEntity, TKey>.InsertAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Interlocutor.Persistence.NHibernate.NHibernateRepository<TEntity, TKey>.NHibernateRepository(System.Lazy<NHibernate.ISession!>! session, System.Linq.Expressions.Expression<System.Func<TEntity!, TKey>!>! idSelector) -> void
-Interlocutor.Persistence.NHibernate.NHibernateRepository<TEntity, TKey>.Query.get -> System.Linq.IQueryable<TEntity!>!
-Interlocutor.Persistence.NHibernate.NHibernateRepository<TEntity, TKey>.UpdateAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Interlocutor.Persistence.NHibernate.NHibernateUnitOfWork
 Interlocutor.Persistence.NHibernate.NHibernateUnitOfWork.Cancel(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Interlocutor.Persistence.NHibernate.NHibernateUnitOfWork.NHibernateUnitOfWork(System.Lazy<NHibernate.ISession!>! session) -> void
@@ -15,3 +8,8 @@ Interlocutor.Persistence.NHibernate.NHibernateUnitOfWork.SaveChangesAsync(System
 Interlocutor.Persistence.NHibernate.UnitOfWorkBehavior<TRequest, TResponse>
 Interlocutor.Persistence.NHibernate.UnitOfWorkBehavior<TRequest, TResponse>.Handle(TRequest request, System.Func<System.Threading.Tasks.Task<TResponse>!>! next, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
 Interlocutor.Persistence.NHibernate.UnitOfWorkBehavior<TRequest, TResponse>.UnitOfWorkBehavior(System.Lazy<NHibernate.ISession!>! session, Interlocutor.Abstractions.Pipeline.Classifiers.IOutcomeClassifier? classifier = null, Interlocutor.Abstractions.Pipeline.IResponseOutcomeDescriber? describer = null, Microsoft.Extensions.Logging.ILogger<Interlocutor.Persistence.NHibernate.UnitOfWorkBehavior<TRequest, TResponse>!>? logger = null) -> void
+override Interlocutor.Persistence.NHibernate.NHibernateRepository<TEntity, TKey>.DeleteAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+override Interlocutor.Persistence.NHibernate.NHibernateRepository<TEntity, TKey>.IdSelector.get -> System.Linq.Expressions.Expression<System.Func<TEntity!, TKey>!>!
+override Interlocutor.Persistence.NHibernate.NHibernateRepository<TEntity, TKey>.InsertAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+override Interlocutor.Persistence.NHibernate.NHibernateRepository<TEntity, TKey>.Query.get -> System.Linq.IQueryable<TEntity!>!
+override Interlocutor.Persistence.NHibernate.NHibernateRepository<TEntity, TKey>.UpdateAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!

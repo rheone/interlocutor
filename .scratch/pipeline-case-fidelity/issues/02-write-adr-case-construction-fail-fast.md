@@ -1,0 +1,16 @@
+# 02 - Write ADR-0022: pipeline behavior case construction must fail fast
+
+**What to build:** A new ADR recording the design conclusion that a generic pipeline behavior which cannot construct the response case it needs from a handler's `TResponse` (via `IOutcomeCaseRegistry`/`ConstructOrThrow`) must fail fast with a named `InvalidOperationException` - never silently degrade to a null/unset `Outcome`, and never reshape or force a case into a `TResponse` that doesn't declare it. Record, alongside that: (a) a handler's response arity/case selection is a pure domain decision, never dictated by which pipeline behaviors happen to be registered against it; (b) the compile-time analyzer (issue 03) is the earliest-feedback mechanism on top of that runtime guarantee, deliberately implemented without touching `TResponse`'s type, `IOutcomeCaseRegistry`, or DI resolution; (c) the analyzer's scope is the four marker-interface-gated behaviors (`IRequiresPolicy`/`ICancellable`/`IRateLimited`/`IHasTimeout`) only - `ValidationBehavior`/`FluentValidationErrorsBehavior` are gated by DI-registered-validator presence, a runtime fact no compile-time analyzer over `TRequest`'s declared shape can see, so they stay covered by the runtime throw and issue 06's startup-validation extension instead; (d) an explicit open question on whether a consumer's own custom marker interface + custom behavior should get equivalent compile-time coverage (an extensibility mechanism, e.g. an attribute naming the required case type) or whether the analyzer stays hardcoded to the four shipped markers - not resolved here, but recorded as a deliberate scope decision rather than a silent gap.
+
+Record two alternatives considered and rejected, mirroring how ADR-0020 already documents a structurally similar rejection ("Decompose `TResponse` into a fixed failure-case generic parameter on the behavior... Rejected for the same reason... Microsoft.Extensions.DependencyInjection requires..."):
+- A static-abstract-interface constraint (`IConstructibleFrom<TResponse, TCase>`) forcing every response arity to prove at compile time it can hold every case any attached behavior might need - rejected because it couples a handler's domain-chosen response arity to whichever behaviors happen to be wired into its pipeline.
+- Letting an unconstructible case resolve to a null/unset `Outcome` instead of throwing - rejected because it breaks the exhaustiveness guarantee `Match`/`Switch`/a compiler-checked `switch` are built on.
+
+**Blocked by:** None - can start immediately
+
+**Status:** open
+
+- [ ] New ADR file added under `maintainer_docs/adr/` as `0022-<slug>.md`, following the existing ADR format (Status/Context/Decision/Consequences/Alternatives considered, per `0020-validation-failure-case-fidelity.md`)
+- [ ] Cross-references `ConstructOrThrow` (`OutcomeCaseRegistryExtensions.cs`), the six behaviors it backs, ADR-0004, ADR-0009, ADR-0013, and ADR-0020
+- [ ] Records both rejected alternatives with reasoning, and the open extensibility question about consumer-authored markers, without resolving it
+- [ ] Added to the ADR index (wherever the existing ADRs are indexed) under the appropriate theme

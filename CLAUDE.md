@@ -39,7 +39,7 @@ Each `src/*` project has a matching `tests/*.Tests` project (xunit.v3, NSubstitu
 
 **Pipeline behaviors execute onion-style**: first `services.AddScoped(typeof(IPipelineBehavior<,>), ...)` registered runs first inbound / last outbound. The canonical order (Logging → Auditing → Authorization → Validation → Transaction) and the reasoning behind it is documented in README.md - preserve that ordering rationale when adding a new behavior rather than re-deriving it.
 
-**Result-type convention**: don't route every handler failure through a single generic `Failure`. Pick the specific `Outcome<TSuccess, ...>` arity/case types that operation can actually produce, so the compiler forces callers to handle exactly those cases (see README.md § "Result Types Are Building Blocks").
+**Result-type convention**: don't route every handler failure through a single generic `Failure`. Pick the specific `Outcome<TSuccess, ...>` arity/case types that operation can actually produce, so the compiler forces callers to handle exactly those cases (see `documentation/messages-and-result-types.md` § "Choosing Arities").
 
 ## Conventions
 

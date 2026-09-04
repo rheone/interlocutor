@@ -75,7 +75,7 @@ public readonly record struct Conflicts
     /// An unmodifiable collection of the distinct messages found in <see cref="Items"/>, or an empty collection
     /// if this instance is the default value.
     /// </value>
-    public IReadOnlyList<string> Messages => this.Items.Count == 0 ? [] : [.. this.Items.Select(c => c.Message).Distinct()];
+    public IReadOnlyList<string> Messages => this._conflicts.DistinctProjection(c => c.Message);
 
     /// <summary>
     /// Returns a human-readable representation of this conflict set.
@@ -85,6 +85,5 @@ public readonly record struct Conflicts
     /// <c>"Conflicts: {messages joined by ", "}"</c>. Joins <see cref="Messages"/> rather than each item's own
     /// <see cref="Conflict.ToString"/>, to avoid a doubled "Conflicts: Conflict: ..." prefix.
     /// </returns>
-    public override string ToString() =>
-        this.Messages.Count == 0 ? "Conflicts" : $"Conflicts: {string.Join(", ", this.Messages)}";
+    public override string ToString() => DistinctItemSetExtensions.ToDisplayString("Conflicts", this.Messages);
 }

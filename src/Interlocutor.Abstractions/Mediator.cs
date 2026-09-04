@@ -53,47 +53,28 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     public Task<TResponse> Send<TResponse>(IQuery<TResponse> query, CancellationToken ct = default)
         where TResponse : IOutcome
     {
-        // Look up or create the handler wrapper for this query type. The wrapper composes the pipeline
-        // behavior chain at invocation time. Caching by query type avoids expensive reflection for every dispatch.
-        var wrapper =
-            (IHandlerWrapper<TResponse>)
-                QueryWrappers.GetOrAdd(
-                    query.GetType(),
-                    requestType =>
-                        Activator.CreateInstance(
-                            typeof(QueryHandlerWrapper<,>).MakeGenericType(requestType, typeof(TResponse))
-                        )!
-                );
-
-        // StartActivity returns null when nothing listens to MediatorActivitySource.Name - the fast path below
-        // takes over immediately with no further tracing work, so the dispatch stays allocation- and
-        // formatting-free when unobserved.
-        var activity = MediatorActivitySource.Source.StartActivity();
-        return activity is null
-            ? wrapper.Handle(query, services, ct)
-            : TraceAsync(activity, query, act => wrapper.Handle(query, services, ct, act));
+        return DispatchWithTrace<Type, IHandlerWrapper<TResponse>, TResponse>(
+            QueryWrappers,
+            query.GetType(),
+            requestType =>
+                Activator.CreateInstance(typeof(QueryHandlerWrapper<,>).MakeGenericType(requestType, typeof(TResponse)))!,
+            query,
+            (wrapper, act) => wrapper.Handle(query, services, ct, act)
+        );
     }
 
     /// <inheritdoc/>
     public Task<TResponse> Send<TResponse>(ICommand<TResponse> command, CancellationToken ct = default)
         where TResponse : IOutcome
     {
-        // Look up or create the handler wrapper for this command type. The wrapper composes the pipeline
-        // behavior chain at invocation time. Caching by command type avoids expensive reflection for every dispatch.
-        var wrapper =
-            (IHandlerWrapper<TResponse>)
-                CommandWrappers.GetOrAdd(
-                    command.GetType(),
-                    requestType =>
-                        Activator.CreateInstance(
-                            typeof(CommandHandlerWrapper<,>).MakeGenericType(requestType, typeof(TResponse))
-                        )!
-                );
-
-        var activity = MediatorActivitySource.Source.StartActivity();
-        return activity is null
-            ? wrapper.Handle(command, services, ct)
-            : TraceAsync(activity, command, act => wrapper.Handle(command, services, ct, act));
+        return DispatchWithTrace<Type, IHandlerWrapper<TResponse>, TResponse>(
+            CommandWrappers,
+            command.GetType(),
+            requestType =>
+                Activator.CreateInstance(typeof(CommandHandlerWrapper<,>).MakeGenericType(requestType, typeof(TResponse)))!,
+            command,
+            (wrapper, act) => wrapper.Handle(command, services, ct, act)
+        );
     }
 
     /// <inheritdoc/>
@@ -103,20 +84,16 @@ public sealed class Mediator(IServiceProvider services) : IMediator
         // For void commands, cache by both command type and result type because the same command can be
         // handled with different outcome shapes depending on what the caller needs (e.g., caller may want
         // just Success/Failure, or may need additional cases like NotFound).
-        var wrapper =
-            (IVoidHandlerWrapper<TResult>)
-                VoidCommandWrappers.GetOrAdd(
-                    (command.GetType(), typeof(TResult)),
-                    key =>
-                        Activator.CreateInstance(
-                            typeof(VoidCommandHandlerWrapper<,>).MakeGenericType(key.CommandType, key.ResultType)
-                        )!
-                );
-
-        var activity = MediatorActivitySource.Source.StartActivity();
-        return activity is null
-            ? wrapper.Handle(command, services, ct)
-            : TraceAsync(activity, command, act => wrapper.Handle(command, services, ct, act));
+        return DispatchWithTrace<(Type CommandType, Type ResultType), IVoidHandlerWrapper<TResult>, TResult>(
+            VoidCommandWrappers,
+            (command.GetType(), typeof(TResult)),
+            key =>
+                Activator.CreateInstance(
+                    typeof(VoidCommandHandlerWrapper<,>).MakeGenericType(key.CommandType, key.ResultType)
+                )!,
+            command,
+            (wrapper, act) => wrapper.Handle(command, services, ct, act)
+        );
     }
 
     /// <inheritdoc/>
@@ -138,6 +115,69 @@ public sealed class Mediator(IServiceProvider services) : IMediator
         return activity is null
             ? this.DispatchAsync(request, ct)
             : TraceAsync(activity, request, _ => this.DispatchAsync(request, ct));
+    }
+
+    /// <summary>
+    /// Shared fast-path/traced-path scaffolding behind the three type-safe <c>Send&lt;T&gt;</c> overloads
+    /// (<see cref="IQuery{TResponse}"/>, <see cref="ICommand{TResponse}"/>, and <see cref="ICommand"/>): starts the
+    /// dispatch <see cref="Activity"/> and either invokes <paramref name="dispatch"/> directly when nothing is
+    /// listening, or routes it through <see cref="TraceAsync{TResult}"/> so the resulting outcome case (or a thrown
+    /// exception) gets tagged on the activity.
+    /// </summary>
+    /// <typeparam name="TResponse">The outcome type returned by <paramref name="dispatch"/>.</typeparam>
+    /// <param name="request">The original query/command, tagged on the activity for the traced path.</param>
+    /// <param name="dispatch">
+    /// Invokes the resolved handler wrapper's <c>Handle</c> method, passing through whatever <see cref="Activity"/>
+    /// it is given - <see langword="null"/> on the fast path, the started activity on the traced path - which
+    /// matches <c>Handle</c>'s own optional, defaulted-to-<see langword="null"/> activity parameter.
+    /// </param>
+    /// <returns>The task returned by <paramref name="dispatch"/>, awaited and tagged when traced.</returns>
+    /// <remarks>
+    /// Only the fast/traced branch is generic over the response type - wrapper resolution (cache lookup and
+    /// construction) is handled by the <see cref="DispatchWithTrace{TKey, TWrapper, TResponse}"/> overload, which
+    /// closes over this one.
+    /// </remarks>
+    private static Task<TResponse> DispatchWithTrace<TResponse>(object request, Func<Activity?, Task<TResponse>> dispatch)
+    {
+        // StartActivity returns null when nothing listens to MediatorActivitySource.Name - the fast path below
+        // takes over immediately with no further tracing work, so the dispatch stays allocation- and
+        // formatting-free when unobserved.
+        var activity = MediatorActivitySource.Source.StartActivity();
+        return activity is null ? dispatch(null) : TraceAsync(activity, request, act => dispatch(act));
+    }
+
+    /// <summary>
+    /// Resolves (or lazily creates) the cached handler wrapper for <paramref name="key"/>, then dispatches through
+    /// the fast-path/traced-path scaffolding in <see cref="DispatchWithTrace{TResponse}"/>. Shared by all three
+    /// type-safe <c>Send&lt;T&gt;</c> overloads, each supplying only its own cache, key shape, and wrapper type -
+    /// the cache lookup, <see cref="Activator.CreateInstance(Type)"/> construction, and activity-tracing branching
+    /// live here once instead of being repeated per overload.
+    /// </summary>
+    /// <typeparam name="TKey">The cache's key type - a bare <see cref="Type"/> for query/command dispatch, or a
+    /// <c>(Type CommandType, Type ResultType)</c> tuple for void-command dispatch, since the same void command can
+    /// be handled with different outcome shapes depending on what the caller needs.</typeparam>
+    /// <typeparam name="TWrapper">The resolved handler wrapper's interface - <see cref="IHandlerWrapper{TResponse}"/>
+    /// or <see cref="IVoidHandlerWrapper{TResult}"/>.</typeparam>
+    /// <typeparam name="TResponse">The outcome type <paramref name="invoke"/> ultimately returns.</typeparam>
+    /// <param name="cache">The overload's own static wrapper cache.</param>
+    /// <param name="key">The cache key identifying which wrapper to resolve or construct.</param>
+    /// <param name="wrapperFactory">
+    /// Constructs a new wrapper instance via reflection from <paramref name="key"/> when it is not yet cached.
+    /// </param>
+    /// <param name="request">The original query/command, tagged on the activity for the traced path.</param>
+    /// <param name="invoke">Invokes the resolved wrapper's <c>Handle</c> method with the given activity.</param>
+    /// <returns>The task returned by <paramref name="invoke"/>, awaited and tagged when traced.</returns>
+    private static Task<TResponse> DispatchWithTrace<TKey, TWrapper, TResponse>(
+        ConcurrentDictionary<TKey, object> cache,
+        TKey key,
+        Func<TKey, object> wrapperFactory,
+        object request,
+        Func<TWrapper, Activity?, Task<TResponse>> invoke
+    )
+        where TKey : notnull
+    {
+        var wrapper = (TWrapper)cache.GetOrAdd(key, wrapperFactory);
+        return DispatchWithTrace(request, act => invoke(wrapper, act));
     }
 
     /// <summary>
@@ -274,13 +314,13 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     private Task PublishAsync<TNotification>(TNotification notification, PublishStrategy strategy, CancellationToken ct)
         where TNotification : INotification
     {
-        // Select the appropriate wrapper cache based on the publish strategy. Each strategy (sequential vs parallel)
-        // has its own cache to avoid mixing handler execution modes. Falls back to sequential for unrecognized strategies.
-        var cache = strategy switch
+        // Select the wrapper cache and its matching wrapper type together, in one switch, based on the publish
+        // strategy. Each strategy (sequential vs parallel) has its own cache to avoid mixing handler execution
+        // modes. Falls back to sequential for unrecognized strategies.
+        var (cache, wrapperType) = strategy switch
         {
-            PublishStrategy.Sequential => SequentialNotificationWrappers,
-            PublishStrategy.Parallel => ParallelNotificationWrappers,
-            _ => SequentialNotificationWrappers,
+            PublishStrategy.Parallel => (ParallelNotificationWrappers, typeof(ParallelNotificationHandlerWrapper<>)),
+            _ => (SequentialNotificationWrappers, typeof(SequentialNotificationHandlerWrapper<>)),
         };
 
         // Get or create a notification wrapper (sequential or parallel) for this notification type.
@@ -288,16 +328,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
         var wrapper = cache.GetOrAdd(
             notification.GetType(),
             notificationType =>
-            {
-                var wrapperType = strategy switch
-                {
-                    PublishStrategy.Sequential => typeof(SequentialNotificationHandlerWrapper<>),
-                    PublishStrategy.Parallel => typeof(ParallelNotificationHandlerWrapper<>),
-                    _ => typeof(SequentialNotificationHandlerWrapper<>),
-                };
-
-                return (NotificationHandlerWrapper)Activator.CreateInstance(wrapperType.MakeGenericType(notificationType))!;
-            }
+                (NotificationHandlerWrapper)Activator.CreateInstance(wrapperType.MakeGenericType(notificationType))!
         );
 
         var activity = MediatorActivitySource.Source.StartActivity();

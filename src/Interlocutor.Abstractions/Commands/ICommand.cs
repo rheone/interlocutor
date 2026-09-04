@@ -2,7 +2,7 @@ namespace Interlocutor.Abstractions.Commands;
 
 using Interlocutor.CommonKernel.ResultTypes;
 
-#pragma warning disable SA1402 // Allowing multiple types of same name with differet arity
+#pragma warning disable SA1402 // Allowing multiple types of same name with different arity
 
 /// <summary>
 /// Marks a command that produces a typed response of type <typeparamref name="TResponse"/>.

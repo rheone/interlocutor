@@ -3,6 +3,7 @@ namespace TodoTasks.Api.Features.Tasks.ClearCompletedTodoTasks;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.AspNetCore;
 using Interlocutor.CommonKernel;
+using TodoTasks.Api.Infrastructure;
 
 /// <summary>
 /// Maps <c>POST /todo-tasks/clear-completed</c>. Unlike every other endpoint in this project, this
@@ -22,9 +23,7 @@ public static class ClearCompletedTodoTasksEndpoint
                 "/todo-tasks/clear-completed",
                 async (ISender sender, IRequestContextAccessor contextAccessor, CancellationToken ct) =>
                 {
-                    var ownerId =
-                        contextAccessor.Context?.UserId
-                        ?? throw new InvalidOperationException("This endpoint requires an authenticated caller.");
+                    var ownerId = contextAccessor.RequireUserId();
 
                     var result = await sender
                         .Send<Outcome>(new ClearCompletedTodoTasksCommand(ownerId), ct)

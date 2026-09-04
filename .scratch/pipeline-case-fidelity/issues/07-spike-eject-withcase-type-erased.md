@@ -1,0 +1,16 @@
+# 07 - Spike: Eject.WithCase&lt;TCase&gt;, a type-erased Eject variant
+
+**What to build:** Prototype a second `Eject` entry point, `Eject.WithCase<TCase>(TCase caseValue)`, generic only in the case type - not `TResponse` - carrying just the boxed case value (mirroring `IUnion.Value`'s own `object?` shape) rather than a fully constructed response. Today, every generic behavior that short-circuits (`AuthorizationBehavior`, `CancellationBehavior`, `RateLimitedBehavior`, `TimeoutBehavior`, `ValidationBehavior`, `FluentValidationErrorsBehavior`) injects `IOutcomeCaseRegistry` itself and calls `ConstructOrThrow<TResponse, TCase>` before it can produce a `TResponse` value to return. `Eject.WithCase<TCase>` would let those behaviors instead just `throw Eject.WithCase(new Forbidden(...))` with no `IOutcomeCaseRegistry` dependency and no knowledge of `TResponse` at all - deferring construction to the one place that already knows `TResponse` concretely: the wrapper's own catch block (`QueryHandlerWrapper<TQuery, TResponse>`, `CommandHandlerWrapper<TCommand, TResponse>`, `VoidCommandHandlerWrapper<TCommand>`, and the generator's emitted dispatch wrappers, each a closed generic class per request type), which would do the single `caseRegistry.Construct<TResponse, TCase>(caseValue)` call per case type instead of each behavior doing its own.
+
+This is a spike to size the actual blast radius before committing, not a design already accepted - see `.scratch/pipeline-case-fidelity/PRD.md` and issue 02 (ADR-0022) for why this stays "might do": it's a real ergonomics/efficiency win (shrinks the generic-exception-type surface from "one `PipelineEjectException<TResponse>` per app-defined `TResponse`" to "one per library-defined case type," and removes `IOutcomeCaseRegistry` as a per-behavior dependency), but issues 01-06 already close the actual correctness gap the wider conversation was worried about, so this is cost/ergonomics work, not a fix.
+
+**Blocked by:** None - can start immediately, but should follow issues 01-06 in priority per the PRD's ranking
+
+**Status:** open
+
+- [ ] A prototype `Eject.WithCase<TCase>`/`PipelineEjectCaseException<TCase>` (or equivalent) exists on a branch, with at least `AuthorizationBehavior` migrated to it as a worked example
+- [ ] The prototype's wrapper-side catch logic (in at least `QueryHandlerWrapper`) constructs the response via `IOutcomeCaseRegistry` exactly once per eject, and `AuthorizationBehavior` no longer takes an `IOutcomeCaseRegistry` dependency
+- [ ] Existing `AuthorizationBehavior` tests pass unchanged in observed behavior (same exception messages, same success/short-circuit results) against the migrated prototype
+- [ ] A short write-up of the actual blast radius found - how many of the six behaviors would need to change, what changes in each wrapper's catch logic, whether the generator's emitted dispatch code needs to change, and any surprises - to feed the "commit or drop" decision in issue 08
+
+## Comments

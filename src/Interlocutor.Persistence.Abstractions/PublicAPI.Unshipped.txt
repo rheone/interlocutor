@@ -1,5 +1,16 @@
 #nullable enable
+Interlocutor.Persistence.Abstractions.CommitGateDriver
+Interlocutor.Persistence.Abstractions.DomainRepositoryBase<TEntity, TKey>
+Interlocutor.Persistence.Abstractions.DomainRepositoryBase<TEntity, TKey>.DomainRepositoryBase() -> void
+Interlocutor.Persistence.Abstractions.DomainRepositoryBase<TEntity, TKey>.GetManyAsync(System.Linq.Expressions.Expression<System.Func<TEntity!, bool>!>? filter = null, System.Collections.Generic.IReadOnlyList<Interlocutor.Persistence.Abstractions.SortCriterion<TEntity!>!>? sort = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TEntity!>!>!
+Interlocutor.Persistence.Abstractions.DomainRepositoryBase<TEntity, TKey>.GetPagedAsync(int pageNumber, int pageSize, System.Linq.Expressions.Expression<System.Func<TEntity!, bool>!>? filter = null, System.Collections.Generic.IReadOnlyList<Interlocutor.Persistence.Abstractions.SortCriterion<TEntity!>!>? sort = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Interlocutor.Persistence.Abstractions.Page<TEntity!>!>!
 Interlocutor.Persistence.Abstractions.DomainRepositoryQueryableExtensions
+Interlocutor.Persistence.Abstractions.ICommitGateSession
+Interlocutor.Persistence.Abstractions.ICommitGateSession.BeginTransactionAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Interlocutor.Persistence.Abstractions.ICommitGateSession.CommitAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Interlocutor.Persistence.Abstractions.ICommitGateSession.HasActiveTransaction.get -> bool
+Interlocutor.Persistence.Abstractions.ICommitGateSession.HasPendingWorkAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<bool>!
+Interlocutor.Persistence.Abstractions.ICommitGateSession.RollbackAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 Interlocutor.Persistence.Abstractions.IDomainRepository<TEntity, TKey>
 Interlocutor.Persistence.Abstractions.IDomainRepository<TEntity, TKey>.DeleteAsync(TEntity entity, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Interlocutor.Persistence.Abstractions.IDomainRepository<TEntity, TKey>.GetById(TKey id) -> TEntity?
@@ -44,6 +55,14 @@ override Interlocutor.Persistence.Abstractions.Page<T>.ToString() -> string!
 override Interlocutor.Persistence.Abstractions.SortCriterion<TEntity>.Equals(object? obj) -> bool
 override Interlocutor.Persistence.Abstractions.SortCriterion<TEntity>.GetHashCode() -> int
 override Interlocutor.Persistence.Abstractions.SortCriterion<TEntity>.ToString() -> string!
+abstract Interlocutor.Persistence.Abstractions.DomainRepositoryBase<TEntity, TKey>.CountAsync(System.Linq.IQueryable<TEntity!>! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<int>!
+abstract Interlocutor.Persistence.Abstractions.DomainRepositoryBase<TEntity, TKey>.DeleteAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+abstract Interlocutor.Persistence.Abstractions.DomainRepositoryBase<TEntity, TKey>.IdSelector.get -> System.Linq.Expressions.Expression<System.Func<TEntity!, TKey>!>!
+abstract Interlocutor.Persistence.Abstractions.DomainRepositoryBase<TEntity, TKey>.InsertAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+abstract Interlocutor.Persistence.Abstractions.DomainRepositoryBase<TEntity, TKey>.Query.get -> System.Linq.IQueryable<TEntity!>!
+abstract Interlocutor.Persistence.Abstractions.DomainRepositoryBase<TEntity, TKey>.ToListAsync(System.Linq.IQueryable<TEntity!>! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<TEntity!>!>!
+abstract Interlocutor.Persistence.Abstractions.DomainRepositoryBase<TEntity, TKey>.UpdateAsync(TEntity! entity, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+static Interlocutor.Persistence.Abstractions.CommitGateDriver.Handle<TRequest, TResponse>(TRequest request, System.Func<System.Threading.Tasks.Task<TResponse>!>! next, System.Func<Interlocutor.Persistence.Abstractions.ICommitGateSession!>! sessionFactory, Interlocutor.Abstractions.Pipeline.Classifiers.IOutcomeClassifier! classifier, Interlocutor.Abstractions.Pipeline.IResponseOutcomeDescriber! describer, Microsoft.Extensions.Logging.ILogger! logger, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<TResponse>!
 static Interlocutor.Persistence.Abstractions.DomainRepositoryQueryableExtensions.ApplyFilter<TEntity>(this System.Linq.IQueryable<TEntity>! query, System.Linq.Expressions.Expression<System.Func<TEntity, bool>!>? filter) -> System.Linq.IQueryable<TEntity>!
 static Interlocutor.Persistence.Abstractions.DomainRepositoryQueryableExtensions.ApplyPaging<TEntity>(this System.Linq.IQueryable<TEntity>! query, int pageNumber, int pageSize) -> System.Linq.IQueryable<TEntity>!
 static Interlocutor.Persistence.Abstractions.DomainRepositoryQueryableExtensions.ApplySort<TEntity>(this System.Linq.IQueryable<TEntity>! query, System.Collections.Generic.IReadOnlyList<Interlocutor.Persistence.Abstractions.SortCriterion<TEntity>!>? sort) -> System.Linq.IQueryable<TEntity>!

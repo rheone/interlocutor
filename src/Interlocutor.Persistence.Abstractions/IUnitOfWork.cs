@@ -6,9 +6,10 @@ namespace Interlocutor.Persistence.Abstractions;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Per <see href="../../maintainer_docs/adr/0018-unit-of-work-as-transaction-owner.md">ADR-0018</see>, <see cref="IUnitOfWork"/>
-/// is the transaction owner - not a pure façade over a transaction some other component manages. The store-specific
-/// commit-gate behavior (<c>Interlocutor.Persistence.EntityFrameworkCore</c>'s or
+/// <see cref="IUnitOfWork"/> is the transaction owner - not a pure façade over a transaction some other
+/// component manages. Owning the transaction directly gives storage work one vocabulary instead of two, and
+/// lets the transaction boundary bind to the first actual write instead of to a declared marker plus pipeline
+/// position. The store-specific commit-gate behavior (<c>Interlocutor.Persistence.EntityFrameworkCore</c>'s or
 /// <c>Interlocutor.Persistence.NHibernate</c>'s <c>UnitOfWorkBehavior</c>) opens a transaction lazily the first
 /// time anything - an <see cref="IDomainRepository{TEntity, TKey}"/>, this interface, or a directly-injected
 /// <c>Lazy&lt;TContext&gt;</c>/<c>Lazy&lt;ISession&gt;</c> - performs a write, and commits or rolls it back

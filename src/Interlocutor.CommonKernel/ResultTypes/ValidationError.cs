@@ -1,6 +1,6 @@
 namespace Interlocutor.CommonKernel.ResultTypes;
 
-#pragma warning disable SA1402 // Allowing multiple types of same name with differet arity
+#pragma warning disable SA1402 // Allowing multiple types of same name with different arity
 
 /// <summary>
 /// Represents a single validation error consisting of a message only, with no associated error code.
