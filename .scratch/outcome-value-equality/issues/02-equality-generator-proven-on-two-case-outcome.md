@@ -15,16 +15,20 @@ works.
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done (already implemented)
 
-- [ ] `OutcomeMemberEmitter` emits `Equals(object?)`, `Equals(TSelf other)`, `GetHashCode()`, `IEquatable<TSelf>`,
+- [x] `OutcomeMemberEmitter` emits `Equals(object?)`, `Equals(TSelf other)`, `GetHashCode()`, `IEquatable<TSelf>`,
       `operator ==`, and `operator !=` for an attributed union, delegating to the boxed `Value`.
-- [ ] Applied to the non-generic `Outcome` and to `Outcome<TSuccessResult, TFailureResult>` only in this ticket.
-- [ ] `OutcomeMemberGeneratorTests` covers the new emitted members (generator-output tests).
-- [ ] `Interlocutor.CommonKernel.Tests` covers real behavior: two instances holding equal case values are equal
+- [x] Applied to the non-generic `Outcome` and to `Outcome<TSuccessResult, TFailureResult>` only in this ticket.
+- [x] `OutcomeMemberGeneratorTests` covers the new emitted members (generator-output tests).
+- [x] `Interlocutor.CommonKernel.Tests` covers real behavior: two instances holding equal case values are equal
       with equal hash codes; two instances holding different case values are unequal; a default
       (zero-initialized) instance behaves consistently with its documented inert default; boxing a value into
       one arity is never equal to the "same" value in a different-arity union.
-- [ ] `src/Interlocutor.CommonKernel/PublicAPI.Unshipped.txt` (or wherever the analyzer expects it) is updated
+- [x] `src/Interlocutor.CommonKernel/PublicAPI.Unshipped.txt` (or wherever the analyzer expects it) is updated
       for the new public members on both arities.
-- [ ] `dotnet build` and `dotnet test` pass for the whole solution.
+- [x] `dotnet build` and `dotnet test` pass for the whole solution.
+
+## Comments
+
+**2026-09-04** - Re-triaged while working the frontier: already implemented, and folded straight into the full-family form (Ticket 03's scope) rather than landing on just the two arities first. `OutcomeMemberEmitter` (`src/Interlocutor.Generator/Emission/`) emits `Equals`/`GetHashCode`/`IEquatable<TSelf>`/`==`/`!=` delegating to the boxed `Value`; `OutcomeMemberGeneratorTests` covers the generator output and `OutcomeEqualityTests.cs` covers real behavior including cross-case-type and cross-arity non-equality. `PublicAPI.Unshipped.txt` carries the new members for `Outcome` and `Outcome<TSuccessResult, TFailureResult>`. No source changes were needed - Status flipped without a code commit.
