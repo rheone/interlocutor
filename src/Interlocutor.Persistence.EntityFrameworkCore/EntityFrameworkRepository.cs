@@ -29,24 +29,24 @@ public sealed class EntityFrameworkRepository<
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TEntity,
     TKey,
     TContext
->(Lazy<TContext> context, Expression<Func<TEntity, TKey>> idSelector) : IDomainRepository<TEntity, TKey>
+>(Lazy<TContext> context, Expression<Func<TEntity, TKey>> idSelector) : DomainRepositoryBase<TEntity, TKey>
     where TEntity : class
     where TContext : DbContext
 {
     /// <inheritdoc/>
-    public IQueryable<TEntity> Query => context.Value.Set<TEntity>();
+    public override IQueryable<TEntity> Query => context.Value.Set<TEntity>();
 
     /// <inheritdoc/>
-    public Expression<Func<TEntity, TKey>> IdSelector { get; } = idSelector;
+    public override Expression<Func<TEntity, TKey>> IdSelector { get; } = idSelector;
 
     /// <inheritdoc/>
     /// <remarks>Stages the entity via <see cref="DbSet{TEntity}.AddAsync(TEntity, CancellationToken)"/>; no query is issued until <see cref="IUnitOfWork.SaveChangesAsync"/> runs.</remarks>
-    public async Task InsertAsync(TEntity entity, CancellationToken cancellationToken = default) =>
+    public override async Task InsertAsync(TEntity entity, CancellationToken cancellationToken = default) =>
         await context.Value.Set<TEntity>().AddAsync(entity, cancellationToken).ConfigureAwait(false);
 
     /// <inheritdoc/>
     /// <remarks>Stages the entity via <see cref="DbSet{TEntity}.Update(TEntity)"/>; no query is issued until <see cref="IUnitOfWork.SaveChangesAsync"/> runs.</remarks>
-    public Task UpdateAsync(TEntity entity, CancellationToken cancellationToken = default)
+    public override Task UpdateAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         context.Value.Set<TEntity>().Update(entity);
         return Task.CompletedTask;
@@ -54,7 +54,7 @@ public sealed class EntityFrameworkRepository<
 
     /// <inheritdoc/>
     /// <remarks>Stages the entity via <see cref="DbSet{TEntity}.Remove(TEntity)"/>; no query is issued until <see cref="IUnitOfWork.SaveChangesAsync"/> runs.</remarks>
-    public Task DeleteAsync(TEntity entity, CancellationToken cancellationToken = default)
+    public override Task DeleteAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
         context.Value.Set<TEntity>().Remove(entity);
         return Task.CompletedTask;
@@ -62,39 +62,17 @@ public sealed class EntityFrameworkRepository<
 
     /// <inheritdoc/>
     /// <remarks>
-    /// <paramref name="filter"/> and <paramref name="sort"/> are composed onto <see cref="Query"/> via
-    /// <see cref="DomainRepositoryQueryableExtensions"/> before <see cref="EntityFrameworkQueryableExtensions.ToListAsync{TSource}(IQueryable{TSource}, CancellationToken)"/>
-    /// executes the query, so filtering and ordering happen in the database, not in memory.
+    /// Delegates to EF Core's own <see cref="EntityFrameworkQueryableExtensions.ToListAsync{TSource}(IQueryable{TSource}, CancellationToken)"/>.
     /// </remarks>
-    public async Task<IReadOnlyList<TEntity>> GetManyAsync(
-        Expression<Func<TEntity, bool>>? filter = null,
-        IReadOnlyList<SortCriterion<TEntity>>? sort = null,
-        CancellationToken cancellationToken = default
-    ) => await this.Query.ApplyFilter(filter).ApplySort(sort).ToListAsync(cancellationToken).ConfigureAwait(false);
+    protected override async Task<IReadOnlyList<TEntity>> ToListAsync(
+        IQueryable<TEntity> query,
+        CancellationToken cancellationToken
+    ) => await query.ToListAsync(cancellationToken).ConfigureAwait(false);
 
     /// <inheritdoc/>
     /// <remarks>
-    /// <paramref name="filter"/> is applied once and reused for both the <see cref="Page{T}.TotalCount"/>
-    /// count query and the page's item query, so both agree on the same predicate. Sorting and paging are
-    /// composed onto the query via <see cref="DomainRepositoryQueryableExtensions"/> before materialization,
-    /// so the database performs the <c>ORDER BY</c>/<c>OFFSET</c>/<c>FETCH</c>, not this method.
+    /// Delegates to EF Core's own <see cref="EntityFrameworkQueryableExtensions.CountAsync{TSource}(IQueryable{TSource}, CancellationToken)"/>.
     /// </remarks>
-    public async Task<Page<TEntity>> GetPagedAsync(
-        int pageNumber,
-        int pageSize,
-        Expression<Func<TEntity, bool>>? filter = null,
-        IReadOnlyList<SortCriterion<TEntity>>? sort = null,
-        CancellationToken cancellationToken = default
-    )
-    {
-        var filtered = this.Query.ApplyFilter(filter);
-        var totalCount = await filtered.CountAsync(cancellationToken).ConfigureAwait(false);
-        var items = await filtered
-            .ApplySort(sort)
-            .ApplyPaging(pageNumber, pageSize)
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        return new Page<TEntity>(items, pageNumber, pageSize, totalCount);
-    }
+    protected override Task<int> CountAsync(IQueryable<TEntity> query, CancellationToken cancellationToken) =>
+        query.CountAsync(cancellationToken);
 }
