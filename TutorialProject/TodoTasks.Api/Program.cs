@@ -3,6 +3,7 @@ using Interlocutor.Abstractions.Core;
 using Interlocutor.AspNetCore;
 using Interlocutor.DependencyInjection.Microsoft;
 using Interlocutor.Persistence.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using TodoTasks.Api.Domain;
@@ -16,6 +17,17 @@ var builder = WebApplication.CreateBuilder(args);
 // AspNetCoreRequestContextAccessor (registered below) needs this to read the caller's identity off
 // the current HttpContext.
 builder.Services.AddHttpContextAccessor();
+
+// DevHeaderAuthenticationHandler - a development/testing stand-in for real authentication, never
+// something a real application would ship. See that type's own remarks for the full rationale and
+// for why it populates Identity.Name specifically rather than some other claim.
+builder
+    .Services.AddAuthentication(DevHeaderAuthenticationHandler.SchemeName)
+    .AddScheme<AuthenticationSchemeOptions, DevHeaderAuthenticationHandler>(
+        DevHeaderAuthenticationHandler.SchemeName,
+        _ => { }
+    );
+builder.Services.AddAuthorization();
 
 // See that type's own remarks - its own try-added default (AmbientRequestContextAccessor) is guarded
 // with TryAdd semantics, so registering this one first makes it win. Once a later ticket's
@@ -94,6 +106,11 @@ builder.Services.AddInterlocutor(interlocutor =>
 
 var app = builder.Build();
 
+// Must run before any endpoint that calls RequireAuthorization() - this is what actually invokes
+// DevHeaderAuthenticationHandler and populates HttpContext.User for the rest of the pipeline.
+app.UseAuthentication();
+app.UseAuthorization();
+
 // There are no migrations for this proof-of-concept - the schema is (re)created from the current
 // DbContext model every time the app starts, against the one kept-open connection above so it's
 // visible to every DbContext resolved afterward against that same in-memory database.
@@ -106,6 +123,15 @@ await using (var scope = app.Services.CreateAsyncScope())
 // that the whole host (DI container, EF Core schema creation, pipeline registration) came up cleanly
 // before any feature endpoint exists to exercise instead.
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+
+// A small, permanently-useful diagnostic twin to /health: proves the X-User-Id header actually
+// authenticates end to end (dev-auth handler -> AspNetCoreRequestContextAccessor -> here), without
+// needing a real feature endpoint to exercise the same path.
+app.MapGet(
+        "/health/whoami",
+        (IRequestContextAccessor contextAccessor) => Results.Ok(new { userId = contextAccessor.Context?.UserId })
+    )
+    .RequireAuthorization();
 
 // One line per feature endpoint, added as each feature lands - see each Features/**/Map*Endpoint.cs.
 app.MapCreateUserEndpoint();
