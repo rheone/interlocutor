@@ -10,11 +10,15 @@ types get today prints an `ImmutableArray<string>` field (`RunAfter`, `TypeParam
 
 **Blocked by:** Ticket 01.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `HandlerModel`, `RequestModel`, and `OutcomeUnionModel` each carry a `[DebuggerDisplay]` built from their
+- [x] `HandlerModel`, `RequestModel`, and `OutcomeUnionModel` each carry a `[DebuggerDisplay]` built from their
       own existing identifying field(s) rather than a full property dump.
-- [ ] Every `[DebuggerDisplay]` added in this ticket is verified via Ticket 01's helper.
-- [ ] No change to generator output or emitted source - this ticket is debug-view-only. Existing generator tests
+- [x] Every `[DebuggerDisplay]` added in this ticket is verified via Ticket 01's helper.
+- [x] No change to generator output or emitted source - this ticket is debug-view-only. Existing generator tests
       (including `OutcomeMemberGeneratorTests`) pass unchanged.
-- [ ] `dotnet build` and `dotnet test` pass for the whole solution.
+- [x] `dotnet build` and `dotnet test` pass for the whole solution.
+
+## Comments
+
+**2026-09-04** - Re-triaged while working the frontier: already implemented in commit `9b27d74`. `HandlerModel`, `RequestModel`, and `OutcomeUnionModel` each carry a concise `[DebuggerDisplay]` built from their own identifying fields, verified in `tests/Interlocutor.Generator.Tests/Models/DiscoveryModelsDebuggerDisplayTests.cs`. No generator output/emitted-source change - debug-view-only. No source changes were needed this session.

@@ -9,12 +9,16 @@ snapshot types, several of which carry `ImmutableArray<...>` fields whose defaul
 
 **Blocked by:** Ticket 01.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Each of the seven types listed above carries a `[DebuggerDisplay]` built from its own key identifying
+- [x] Each of the seven types listed above carries a `[DebuggerDisplay]` built from its own key identifying
       field(s) - the type argument or parameter name, the constraint outcome, or the display name it already
       computes for diagnostics - rather than a full property dump.
-- [ ] Every `[DebuggerDisplay]` added in this ticket is verified via Ticket 01's helper.
-- [ ] No change to generator output, emitted source, or the hand-rolled `Equals`/`GetHashCode` overrides these
+- [x] Every `[DebuggerDisplay]` added in this ticket is verified via Ticket 01's helper.
+- [x] No change to generator output, emitted source, or the hand-rolled `Equals`/`GetHashCode` overrides these
       types already carry - this ticket is debug-view-only, additive alongside the existing equality members.
-- [ ] `dotnet build` and `dotnet test` pass for the whole solution.
+- [x] `dotnet build` and `dotnet test` pass for the whole solution.
+
+## Comments
+
+**2026-09-04** - Re-triaged while working the frontier: already implemented in commit `9b27d74`. All seven types (`OpenGenericHandlerModel`, `ClosedGenericRequestUsageModel`, `GenericConstraintSnapshot`, `GenericParameterConstraintModel`, `ConstraintConversionFact`, `ResolvedArgumentTypeFact`, `TypeAnalysisResult`) carry a `[DebuggerDisplay]` built from their own key fields, verified in `tests/Interlocutor.Generator.Tests/Models/GenericConstraintModelsDebuggerDisplayTests.cs`. Existing hand-rolled equality members untouched. No source changes were needed this session.

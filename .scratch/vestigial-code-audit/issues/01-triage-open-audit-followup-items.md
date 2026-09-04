@@ -4,8 +4,12 @@
 
 **Blocked by:** None - can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] All four issues reviewed against current `HEAD`, not against their last-written description
-- [ ] Each one's `Status:` line reflects the current state, with a one-line rationale appended under its own `## Comments`
-- [ ] `.scratch/codebase-audit-followups`'s own tracking (if it has a PRD-level checklist) updated to match
+- [x] All four issues reviewed against current `HEAD`, not against their last-written description
+- [x] Each one's `Status:` line reflects the current state, with a one-line rationale appended under its own `## Comments`
+- [x] `.scratch/codebase-audit-followups`'s own tracking (if it has a PRD-level checklist) updated to match (no PRD-level file exists for this collection - only `issues/`, so nothing further to update)
+
+## Comments
+
+**2026-09-04** - Already satisfied by earlier work this same session (before this ticket was picked up): 08 and 12 were implemented in commit `5507265`, 14 was implemented in the same commit, and 18 was reviewed and closed `wontfix (reviewed, no action needed)` in commit `2da952b`. All four carry their own `## Comments` rationale. No further action needed - marking done retroactively.
