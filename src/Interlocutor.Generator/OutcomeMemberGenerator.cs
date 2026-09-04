@@ -1,6 +1,10 @@
 namespace Interlocutor.Generator;
 
 using System.Linq;
+using Interlocutor.Generator.Analysis;
+using Interlocutor.Generator.Diagnostics;
+using Interlocutor.Generator.Emission;
+using Interlocutor.Generator.Models;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -35,9 +39,10 @@ public sealed class OutcomeMemberGenerator : IIncrementalGenerator
 
     /// <summary>
     /// Reports <see cref="InterlocutorDiagnostics.TooFewOutcomeCaseTypes"/> for an under-arity attributed
-    /// union, or otherwise emits its generated partial declaration via <see cref="OutcomeMemberEmitter"/>.
+    /// union, <see cref="InterlocutorDiagnostics.AccessorNameCollision"/> for a colliding named accessor, or
+    /// otherwise emits its generated partial declaration via <see cref="OutcomeMemberEmitter"/>.
     /// </summary>
-    /// <param name="context">The source production context to add the generated source (or diagnostic) to.</param>
+    /// <param name="context">The source production context to add the generated source (or diagnostics) to.</param>
     /// <param name="model">The attributed union to process.</param>
     private static void Execute(SourceProductionContext context, OutcomeUnionModel model)
     {
@@ -51,6 +56,14 @@ public sealed class OutcomeMemberGenerator : IIncrementalGenerator
                     model.CaseTypeDisplayStrings.Length
                 )
             );
+            return;
+        }
+
+        // A colliding named accessor would emit an ambiguous or (for a reserved-name collision) outright
+        // duplicate member - skip emission entirely rather than let the compiler's own error stand in for the
+        // clearer, more actionable diagnostic already reported here.
+        if (OutcomeAccessorCollisionAnalyzer.ReportAccessorNameCollisions(model, context))
+        {
             return;
         }
 

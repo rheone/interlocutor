@@ -1,5 +1,7 @@
 namespace Interlocutor.Generator.Tests;
 
+using Interlocutor.Generator.Analysis;
+using Interlocutor.Generator.Diagnostics;
 using Microsoft.CodeAnalysis;
 
 /// <summary>

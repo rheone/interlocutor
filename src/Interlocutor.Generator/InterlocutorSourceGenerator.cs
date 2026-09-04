@@ -3,6 +3,10 @@ namespace Interlocutor.Generator;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
+using Interlocutor.Generator.Analysis;
+using Interlocutor.Generator.Diagnostics;
+using Interlocutor.Generator.Emission;
+using Interlocutor.Generator.Models;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -100,6 +104,7 @@ public sealed class InterlocutorSourceGenerator : IIncrementalGenerator
                         IdentifierSanitizer.ToNamespaceSegment(compilation.AssemblyName ?? "GeneratedAssembly"),
                         ReferencedModuleDiscovery.Discover(compilation, ct),
                         compilation.GetTypeByMetadataName(WellKnownTypeNames.Query) is not null
+                            && compilation.GetTypeByMetadataName(WellKnownTypeNames.GeneratedModuleAttribute) is not null
                     )
             )
             .WithTrackingName(CompilationInfoTrackingName);
@@ -173,12 +178,14 @@ public sealed class InterlocutorSourceGenerator : IIncrementalGenerator
         SourceProductionContext context
     )
     {
-        if (!compilationInfo.HasAbstractionsReference)
+        if (!compilationInfo.CanEmitGeneratedOutput)
         {
-            // This compilation never references Interlocutor.Abstractions at all (Interlocutor.CommonKernel's
-            // own build, wiring this assembly in purely for OutcomeMemberGenerator - ticket 05) - every emitter
-            // below unconditionally names Abstractions/DependencyInjection.Abstractions types, so there is
-            // nothing safe to emit here.
+            // This compilation doesn't reference both Interlocutor.Abstractions and
+            // Interlocutor.DependencyInjection.Abstractions (Interlocutor.CommonKernel's own build, wiring this
+            // assembly in purely for OutcomeMemberGenerator - ticket 05; or Interlocutor.AspNetCore's, wiring
+            // it in purely for ResultExtensionsGenerator - references Abstractions but not
+            // DependencyInjection.Abstractions) - every emitter below unconditionally names
+            // Abstractions/DependencyInjection.Abstractions types, so there is nothing safe to emit here.
             return;
         }
 

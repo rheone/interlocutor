@@ -157,6 +157,15 @@ if (outcome.TryGetValue(out CardDeclined declined))
     Log(declined.ReasonCode);
 }
 
+// TryGet{TypeName} - a named counterpart to TryGetValue, additive rather than a replacement, for every
+// concrete case type (skipped for a case type that is one of the union's own type parameters, since a type
+// parameter's name carries no case-specific meaning - the shipped Outcome<TSuccessResult, ...> family has no
+// named accessors for exactly that reason). Same behavior as TryGetValue above, just self-documenting by name.
+if (outcome.TryGetCardDeclined(out CardDeclined sameByName))
+{
+    Log(sameByName.ReasonCode);
+}
+
 // Equality - delegates to the active case value's own equality, same as any shipped arity
 PaymentOutcome sameDecline = new CardDeclined("do_not_honor");
 Assert.Equal(outcome, sameDecline);
@@ -164,6 +173,16 @@ Assert.True(outcome == sameDecline);
 ```
 
 The duplicate case type analyzer above covers a custom-arity union identically to a shipped one. See `Interlocutor.CommonKernel.Tests.CustomArityOutcomeTests` (and its `PaymentOutcome` fixture) for this example compiled and exercised end to end.
+
+`: IOutcome` on the union declaration is opt-in, not required for `GenerateOutcomeMembersAttribute` to run: it gates only the classification surface (`IOutcomeCase`, `IsSuccess`, `ActiveCaseType`), never the sum-type surface above. A `[GenerateOutcomeMembers] partial union` declared *without* `: IOutcome` still gets `Match`/`Switch`/`TryGetValue`/`ToString`/equality in full - it's a plain tagged union with no success/failure opinion, useful when a type's cases genuinely aren't "one succeeded, the rest are alternatives" (a state machine's phases, say, where every case is equally valid and none is privileged as "the" success). Include `: IOutcome` - as `PaymentOutcome` above does - whenever the union *is* meant to be usable as a handler response: `AuthorizationBehavior`, `CancellationBehavior`, `TimeoutBehavior`, `RateLimitedBehavior`, and the FluentValidation `ValidationBehavior` all classify a response via `IOutcomeCaseRegistry`/the outcome classifier, and both fall back to `IOutcomeCase.IsSuccess` positionally for a response type they have no other registration for. A union that never implements `IOutcomeCase` in the first place never enters that fallback - it's excluded from ambiguous positional classification entirely rather than silently misclassified as if position implied meaning it never claimed.
+
+### Colliding accessor names (`INTERLOC012`)
+
+A named `TryGet{TypeName}` accessor is derived from each concrete case type's simple name, so two peer case types can end up wanting the same accessor. A build-time analyzer flags three shapes: two case types with the same simple name from different namespaces (`MyApp.Http.NotFound` and `MyApp.Domain.NotFound` as peer cases would both want `TryGetNotFound`); two closed instantiations of the same open generic case type as peer cases (`ValidationError<string>` and `ValidationError<int>` would both want `TryGetValidationError`); and a case type whose own name matches an already-reserved generated member name (`Value`, `Match`, `Switch`, `ToString`, `Equals`, `GetHashCode`, `TryGetValue`, `IsSuccess`, `ActiveCaseType`) - guarded uniformly even though only `Value` (whose accessor, `TryGetValue`, would literally duplicate the anonymous overload) can produce an outright compile error today; the other eight are reserved defensively, so a case type never claims a name the union's own vocabulary already owns. A case type that is one of the union's own type parameters never triggers this - it gets no named accessor in the first place. Unlike `INTERLOC009`, this defaults to an error - not a warning - since silently emitting the peer-name collision would mean an ambiguous overload set, unresolvable by `outcome.TryGetNotFound(out var x)` and only by spelling out the type explicitly, still configurable the same way:
+
+```
+dotnet_diagnostic.INTERLOC012.severity = warning
+```
 
 ## Mapping failure cases to any output shape: `IOutcomeMapper<TResult>`
 

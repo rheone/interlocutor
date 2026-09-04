@@ -70,6 +70,7 @@ public sealed class CrossAssemblyContainerResolutionTests
         services.AddInterlocutor(builder => builder.AddGeneratedRegistrations(app.Registrations));
 
         var provider = services.BuildServiceProvider();
+
         // Dispatch must happen from a real scope, never the root provider directly - see ADR-0011.
         using var scope = provider.CreateScope();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
@@ -93,6 +94,7 @@ public sealed class CrossAssemblyContainerResolutionTests
         containerBuilder.AddInterlocutor(builder => builder.AddGeneratedRegistrations(app.Registrations));
 
         var container = containerBuilder.Build();
+
         // Dispatch must happen from a real lifetime scope, never the root container directly - see ADR-0011.
         await using var scope = container.BeginLifetimeScope();
         var mediator = scope.Resolve<IMediator>();

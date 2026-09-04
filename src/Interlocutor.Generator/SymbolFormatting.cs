@@ -1,6 +1,8 @@
 namespace Interlocutor.Generator;
 
 using System.Collections.Generic;
+using Interlocutor.Generator.Analysis;
+using Interlocutor.Generator.Models;
 using Microsoft.CodeAnalysis;
 
 /// <summary>
