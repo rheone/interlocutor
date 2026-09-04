@@ -8,6 +8,8 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using TodoTasks.Api.Domain;
 using TodoTasks.Api.Features.Tasks.CreateTodoTask;
+using TodoTasks.Api.Features.Tasks.GetTodoTaskById;
+using TodoTasks.Api.Features.Tasks.ListTodoTasks;
 using TodoTasks.Api.Features.Users.CreateUser;
 using TodoTasks.Api.Features.Users.GetUserById;
 using TodoTasks.Api.Infrastructure;
@@ -145,6 +147,8 @@ app.MapGet(
 app.MapCreateUserEndpoint();
 app.MapGetUserByIdEndpoint();
 app.MapCreateTodoTaskEndpoint();
+app.MapGetTodoTaskByIdEndpoint();
+app.MapListTodoTasksEndpoint();
 
 await app.RunAsync().ConfigureAwait(false);
 

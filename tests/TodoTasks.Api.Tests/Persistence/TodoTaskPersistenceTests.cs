@@ -1,8 +1,12 @@
 namespace TodoTasks.Api.Tests.Persistence;
 
+using Interlocutor.CommonKernel.ResultTypes;
+using Interlocutor.Persistence.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using TodoTasks.Api.Domain;
+using TodoTasks.Api.Features.Tasks.GetTodoTaskById;
+using TodoTasks.Api.Features.Tasks.ListTodoTasks;
 using TodoTasks.Api.Persistence;
 using TodoTasks.Api.Tests.Http;
 
@@ -85,5 +89,88 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
 
         // Assert
         Assert.Equal(2, savedCount);
+    }
+
+    [Fact]
+    public async Task GetTodoTaskByIdHandler_TaskExistsButIsOwnedBySomeoneElse_ReturnsNotFound_AgainstARealDatabase_Test()
+    {
+        // Arrange - proves the cross-owner NotFound behavior holds against the real EF Core-backed
+        // repository and a real SQLite database, not just against a mock that echoes back whatever it's
+        // told to (see the mocked equivalent in Unit/Features/Tasks/GetTodoTaskById). Owner ids are
+        // unique per test (not a fixed "owner-1"/"owner-2") because TodoTasksApiFactory's database is
+        // shared across every test in this class via IClassFixture.
+        using var scope = this.factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<TodoTasksDbContext>();
+        var owner = $"owner-{Guid.NewGuid():N}";
+        var task = new TodoTask("Buy milk", owner, null);
+        await context.Tasks.AddAsync(task, TestContext.Current.CancellationToken);
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var tasks = scope.ServiceProvider.GetRequiredService<IDomainRepository<TodoTask, int>>();
+        var handler = new GetTodoTaskByIdHandler(tasks);
+
+        // Act
+        var result = await handler.Handle(
+            new GetTodoTaskByIdQuery(task.Id, $"someone-else-{Guid.NewGuid():N}"),
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        Assert.IsType<NotFound>(result.Value);
+    }
+
+    [Fact]
+    public async Task GetTodoTaskByIdHandler_TaskExistsAndIsOwnedByTheCaller_ReturnsItsDto_AgainstARealDatabase_Test()
+    {
+        // Arrange
+        using var scope = this.factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<TodoTasksDbContext>();
+        var owner = $"owner-{Guid.NewGuid():N}";
+        var task = new TodoTask("Buy milk", owner, null);
+        await context.Tasks.AddAsync(task, TestContext.Current.CancellationToken);
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var tasks = scope.ServiceProvider.GetRequiredService<IDomainRepository<TodoTask, int>>();
+        var handler = new GetTodoTaskByIdHandler(tasks);
+
+        // Act
+        var result = await handler.Handle(new GetTodoTaskByIdQuery(task.Id, owner), TestContext.Current.CancellationToken);
+
+        // Assert
+        var dto = Assert.IsType<TodoTaskDto>(result.Value);
+        Assert.Equal(task.Id, dto.Id);
+    }
+
+    [Fact]
+    public async Task ListTodoTasksHandler_TwoOwnersHaveTasks_OnlyReturnsTheRequestedOwnersTasks_AgainstARealDatabase_Test()
+    {
+        // Arrange - ListTodoTasksHandlerTests proves the handler passes OwnerId through to the
+        // repository's filter against a mock; this proves that filter expression actually translates to
+        // SQL that scopes the result set correctly against a real database. Owner ids are unique per
+        // test - see the remarks on the GetTodoTaskByIdHandler test above for why.
+        using var scope = this.factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<TodoTasksDbContext>();
+        var requestedOwner = $"owner-{Guid.NewGuid():N}";
+        var otherOwner = $"owner-{Guid.NewGuid():N}";
+        await context.Tasks.AddRangeAsync(
+            [
+                new TodoTask("Requested owner, task A", requestedOwner, null),
+                new TodoTask("Requested owner, task B", requestedOwner, null),
+                new TodoTask("Other owner, task A", otherOwner, null),
+            ],
+            TestContext.Current.CancellationToken
+        );
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var tasks = scope.ServiceProvider.GetRequiredService<IDomainRepository<TodoTask, int>>();
+        var handler = new ListTodoTasksHandler(tasks);
+
+        // Act
+        var result = await handler.Handle(
+            new ListTodoTasksQuery(OnlyIncomplete: false, OwnerId: requestedOwner),
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        var dtos = Assert.IsAssignableFrom<IReadOnlyList<TodoTaskDto>>(result.Value);
+        Assert.Equal(2, dtos.Count);
+        Assert.All(dtos, dto => Assert.StartsWith("Requested owner,", dto.Title, StringComparison.Ordinal));
     }
 }

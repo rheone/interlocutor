@@ -147,6 +147,155 @@ public sealed class TodoTasksEndpointTests : IClassFixture<TodoTasksApiFactory>
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
+    [Fact]
+    public async Task Get_NoAuthenticatedCaller_ReturnsUnauthorized_Test()
+    {
+        // Arrange
+        using var client = this.factory.CreateClient();
+
+        // Act
+        using var response = await client.GetAsync(
+            new Uri("/todo-tasks/1", UriKind.Relative),
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Get_TaskOwnedByTheAuthenticatedCaller_ReturnsIt_Test()
+    {
+        // Arrange
+        using var client = this.factory.CreateClient();
+        await CreateAuthenticatedUserAsync(client);
+        using var createResponse = await client.PostAsJsonAsync(
+            new Uri("/todo-tasks", UriKind.Relative),
+            new CreateTodoTaskRequest("Buy milk", "2%, please"),
+            TestContext.Current.CancellationToken
+        );
+        var created = await createResponse.Content.ReadFromJsonAsync<TodoTaskDto>(
+            WebJsonOptions,
+            TestContext.Current.CancellationToken
+        );
+
+        // Act
+        using var response = await client.GetAsync(
+            new Uri($"/todo-tasks/{created!.Id}", UriKind.Relative),
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var fetched = await response.Content.ReadFromJsonAsync<TodoTaskDto>(
+            WebJsonOptions,
+            TestContext.Current.CancellationToken
+        );
+        Assert.Equal(created, fetched);
+    }
+
+    [Fact]
+    public async Task Get_UnknownTaskId_ReturnsNotFound_Test()
+    {
+        // Arrange
+        using var client = this.factory.CreateClient();
+        await CreateAuthenticatedUserAsync(client);
+
+        // Act
+        using var response = await client.GetAsync(
+            new Uri("/todo-tasks/999999", UriKind.Relative),
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Get_TaskExistsButIsOwnedBySomeoneElse_ReturnsNotFound_Test()
+    {
+        // Arrange - proves a non-owner gets exactly the same response as an unknown id (Get_UnknownTaskId_
+        // ReturnsNotFound_Test above): existence is never leaked to a caller who isn't the owner.
+        using var ownerClient = this.factory.CreateClient();
+        await CreateAuthenticatedUserAsync(ownerClient);
+        using var createResponse = await ownerClient.PostAsJsonAsync(
+            new Uri("/todo-tasks", UriKind.Relative),
+            new CreateTodoTaskRequest("Buy milk", null),
+            TestContext.Current.CancellationToken
+        );
+        var created = await createResponse.Content.ReadFromJsonAsync<TodoTaskDto>(
+            WebJsonOptions,
+            TestContext.Current.CancellationToken
+        );
+        using var otherClient = this.factory.CreateClient();
+        await CreateAuthenticatedUserAsync(otherClient);
+
+        // Act
+        using var response = await otherClient.GetAsync(
+            new Uri($"/todo-tasks/{created!.Id}", UriKind.Relative),
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task List_NoAuthenticatedCaller_ReturnsUnauthorized_Test()
+    {
+        // Arrange
+        using var client = this.factory.CreateClient();
+
+        // Act
+        using var response = await client.GetAsync(
+            new Uri("/todo-tasks", UriKind.Relative),
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task List_TwoAuthenticatedCallersEachHaveTasks_OnlyReturnsTheCallersOwnTasks_Test()
+    {
+        // Arrange
+        using var firstClient = this.factory.CreateClient();
+        await CreateAuthenticatedUserAsync(firstClient);
+        using var secondClient = this.factory.CreateClient();
+        await CreateAuthenticatedUserAsync(secondClient);
+        var firstTitle = $"First owner's task-{Guid.NewGuid():N}";
+        var secondTitle = $"Second owner's task-{Guid.NewGuid():N}";
+        using var firstCreate = await firstClient.PostAsJsonAsync(
+            new Uri("/todo-tasks", UriKind.Relative),
+            new CreateTodoTaskRequest(firstTitle, null),
+            TestContext.Current.CancellationToken
+        );
+        Assert.Equal(HttpStatusCode.OK, firstCreate.StatusCode); // Sanity-check the fixture before the real assertion.
+        using var secondCreate = await secondClient.PostAsJsonAsync(
+            new Uri("/todo-tasks", UriKind.Relative),
+            new CreateTodoTaskRequest(secondTitle, null),
+            TestContext.Current.CancellationToken
+        );
+        Assert.Equal(HttpStatusCode.OK, secondCreate.StatusCode);
+
+        // Act
+        using var response = await firstClient.GetAsync(
+            new Uri("/todo-tasks", UriKind.Relative),
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var tasks = await response.Content.ReadFromJsonAsync<List<TodoTaskDto>>(
+            WebJsonOptions,
+            TestContext.Current.CancellationToken
+        );
+        Assert.NotNull(tasks);
+        Assert.Contains(tasks, t => t.Title == firstTitle);
+        Assert.DoesNotContain(tasks, t => t.Title == secondTitle);
+    }
+
     /// <summary>
     /// Registers a new <see cref="User"/> through the real <c>POST /users</c> endpoint, then attaches
     /// the dev/test authentication header to <paramref name="client"/> so subsequent requests on it are
