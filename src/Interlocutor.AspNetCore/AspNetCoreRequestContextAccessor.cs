@@ -3,6 +3,7 @@ namespace Interlocutor.AspNetCore;
 using System.Threading;
 using Interlocutor.Abstractions.Core;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Primitives;
 
 /// <summary>
 /// ASP.NET Core <see cref="IRequestContextAccessor"/> implementation that populates request context from the authenticated caller.
@@ -55,11 +56,19 @@ public sealed class AspNetCoreRequestContextAccessor(IHttpContextAccessor httpCo
 
     private static RequestContext BuildContext(HttpContext httpContext)
     {
-        var correlationId = httpContext.Request.Headers["X-Correlation-ID"].ToString() ?? httpContext.TraceIdentifier;
+        // StringValues.ToString() returns "" for a missing (or explicitly empty) header, never null, so a
+        // plain `?? fallback` can never trigger - IsNullOrEmpty is the correct absence check here.
+        var correlationIdHeader = httpContext.Request.Headers["X-Correlation-ID"];
+        var correlationId = StringValues.IsNullOrEmpty(correlationIdHeader)
+            ? httpContext.TraceIdentifier
+            : correlationIdHeader.ToString();
 
         var userId = httpContext.User?.Identity?.Name;
 
-        var tenantId = httpContext.Request.Headers["X-Tenant-ID"].ToString() ?? httpContext.User?.FindFirst("tenant_id")?.Value;
+        var tenantIdHeader = httpContext.Request.Headers["X-Tenant-ID"];
+        var tenantId = StringValues.IsNullOrEmpty(tenantIdHeader)
+            ? httpContext.User?.FindFirst("tenant_id")?.Value
+            : tenantIdHeader.ToString();
 
         return new RequestContext
         {
