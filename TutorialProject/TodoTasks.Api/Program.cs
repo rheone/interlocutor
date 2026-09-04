@@ -19,6 +19,7 @@ using TodoTasks.Api.Features.Tasks.ReopenTodoTask;
 using TodoTasks.Api.Features.Tasks.SearchTodoTasks;
 using TodoTasks.Api.Features.Tasks.UpdateTodoTask;
 using TodoTasks.Api.Features.Users.CreateUser;
+using TodoTasks.Api.Features.Users.DeleteUser;
 using TodoTasks.Api.Features.Users.GetUserById;
 using TodoTasks.Api.Infrastructure;
 using TodoTasks.Api.Persistence;
@@ -165,6 +166,7 @@ app.MapGet(
 // One line per feature endpoint, added as each feature lands - see each Features/**/Map*Endpoint.cs.
 app.MapCreateUserEndpoint();
 app.MapGetUserByIdEndpoint();
+app.MapDeleteUserEndpoint();
 app.MapCreateTodoTaskEndpoint();
 app.MapGetTodoTaskByIdEndpoint();
 app.MapListTodoTasksEndpoint();
