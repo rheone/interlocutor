@@ -1,6 +1,6 @@
 # Vestigial Code Audit
 
-Status: **not started**. Tracked as issues under `.scratch/vestigial-code-audit/issues/`.
+Status: **complete** - all three tickets done. Tracked as issues under `.scratch/vestigial-code-audit/issues/`.
 
 ## Original request (paraphrased from a design conversation)
 
@@ -14,5 +14,6 @@ Status: **not started**. Tracked as issues under `.scratch/vestigial-code-audit/
 
 ## Ticket checklist
 
-- [ ] 01 - Triage open audit-followup items 08/12/14/18
-- [ ] 02 - Full-solution vestigial-code sweep
+- [x] 01 - Triage open audit-followup items 08/12/14/18
+- [x] 02 - Full-solution vestigial-code sweep
+- [x] 03 - Remove two unreferenced `WellKnownTypeNames` constants in `Interlocutor.Generator`
