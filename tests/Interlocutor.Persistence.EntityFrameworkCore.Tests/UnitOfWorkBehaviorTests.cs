@@ -15,20 +15,17 @@ using NSubstitute;
 /// open Sqlite in-memory connection (not a mocked <see cref="DbContext"/>) so transaction begin/commit/rollback
 /// have real, observable effects.
 /// </summary>
-public sealed class UnitOfWorkBehaviorTests : IDisposable
+public sealed class UnitOfWorkBehaviorTests : IClassFixture<EntityFrameworkTestFixture>, IDisposable
 {
+    private readonly EntityFrameworkTestFixture fixture;
     private readonly SqliteConnection connection;
     private readonly TestDbContext context;
     private readonly Lazy<TestDbContext> lazyContext;
 
-    public UnitOfWorkBehaviorTests()
+    public UnitOfWorkBehaviorTests(EntityFrameworkTestFixture fixture)
     {
-        this.connection = new SqliteConnection("DataSource=:memory:");
-        this.connection.Open();
-
-        var options = new DbContextOptionsBuilder<TestDbContext>().UseSqlite(this.connection).Options;
-        this.context = new TestDbContext(options);
-        this.context.Database.EnsureCreated();
+        this.fixture = fixture;
+        (this.connection, this.context) = fixture.CreateDatabase();
         this.lazyContext = new Lazy<TestDbContext>(() => this.context);
     }
 
@@ -285,11 +282,7 @@ public sealed class UnitOfWorkBehaviorTests : IDisposable
     private UnitOfWorkBehavior<PlainRequest, Outcome<Success, Failure>, TestDbContext> CreateBehavior() =>
         new(this.lazyContext);
 
-    private TestDbContext CreateVerificationContext()
-    {
-        var options = new DbContextOptionsBuilder<TestDbContext>().UseSqlite(this.connection).Options;
-        return new TestDbContext(options);
-    }
+    private TestDbContext CreateVerificationContext() => this.fixture.CreateContext(this.connection);
 
     private sealed record PlainRequest : ICommand<Outcome<Success, Failure>>;
 
@@ -318,22 +311,4 @@ public sealed class UnitOfWorkBehaviorTests : IDisposable
     private sealed record TransactionalRequest : ICommand<Outcome<Success, Failure>>, ITransactionalRequest;
 
     private sealed record ExternalStoreRequest : ICommand<Outcome<Success, Failure>>, IExternalStoreRequest;
-
-    private sealed class TestDbContext(DbContextOptions<TestDbContext> options) : DbContext(options)
-    {
-        public DbSet<Widget> Widgets => this.Set<Widget>();
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder) => modelBuilder.Entity<Widget>();
-    }
-
-    private sealed class Widget
-    {
-        // Never read directly by this test's assertions, but EF Core's key-by-convention requires an
-        // Id property to treat this type as having a primary key at all - it's structural, not dead.
-#pragma warning disable S1144
-        public int Id { get; set; }
-#pragma warning restore S1144
-
-        public string Name { get; set; } = string.Empty;
-    }
 }

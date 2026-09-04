@@ -10,21 +10,18 @@ using Microsoft.EntityFrameworkCore;
 /// against a real Sqlite in-memory database, so filter/sort/paging pushdown to SQL can be asserted, not just
 /// the materialized result.
 /// </summary>
-public sealed class EntityFrameworkRepositoryTests : IDisposable
+public sealed class EntityFrameworkRepositoryTests : IClassFixture<EntityFrameworkTestFixture>, IDisposable
 {
+    private readonly EntityFrameworkTestFixture fixture;
     private readonly SqliteConnection connection;
     private readonly TestDbContext context;
     private readonly EntityFrameworkRepository<Widget, int, TestDbContext> repository;
     private static readonly string[] Expected = ["alpha", "beta"];
 
-    public EntityFrameworkRepositoryTests()
+    public EntityFrameworkRepositoryTests(EntityFrameworkTestFixture fixture)
     {
-        this.connection = new SqliteConnection("DataSource=:memory:");
-        this.connection.Open();
-
-        var options = new DbContextOptionsBuilder<TestDbContext>().UseSqlite(this.connection).Options;
-        this.context = new TestDbContext(options);
-        this.context.Database.EnsureCreated();
+        this.fixture = fixture;
+        (this.connection, this.context) = fixture.CreateDatabase();
 
         this.repository = new EntityFrameworkRepository<Widget, int, TestDbContext>(
             new Lazy<TestDbContext>(() => this.context),
@@ -252,25 +249,5 @@ public sealed class EntityFrameworkRepositoryTests : IDisposable
         this.connection.Dispose();
     }
 
-    private TestDbContext CreateVerificationContext()
-    {
-        var options = new DbContextOptionsBuilder<TestDbContext>().UseSqlite(this.connection).Options;
-        return new TestDbContext(options);
-    }
-
-    public sealed class Widget
-    {
-        public int Id { get; set; }
-
-        public string Name { get; set; } = string.Empty;
-
-        public int Value { get; set; }
-    }
-
-    public sealed class TestDbContext(DbContextOptions<TestDbContext> options) : DbContext(options)
-    {
-        public DbSet<Widget> Widgets => this.Set<Widget>();
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder) => modelBuilder.Entity<Widget>();
-    }
+    private TestDbContext CreateVerificationContext() => this.fixture.CreateContext(this.connection);
 }
