@@ -8,7 +8,11 @@ Full technical detail: [findings/12-globaljson-rollforward-risk.md](../findings/
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `rollForward` is tightened to `latestFeature` or `latestPatch` — OR, if `latestMajor` is kept deliberately, `global.json` carries a comment explaining why given the preview-feature dependency
-- [ ] CI still builds successfully with the resulting policy
+- [x] `rollForward` is tightened to `latestFeature` or `latestPatch` — OR, if `latestMajor` is kept deliberately, `global.json` carries a comment explaining why given the preview-feature dependency
+- [x] CI still builds successfully with the resulting policy
+
+## Comments
+
+**2026-09-04** - Re-triaged while working the frontier: already implemented in commit `6a3f9ce`. global.json's rollForward is tightened to latestFeature. CI builds successfully under the resulting policy. No source changes were needed this session.

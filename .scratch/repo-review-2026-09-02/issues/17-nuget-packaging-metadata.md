@@ -8,8 +8,12 @@ Full technical detail: [findings/17-nuget-packaging-metadata-placeholder.md](../
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `Directory.Build.props`'s `Company` is set to a real value, or removed
-- [ ] `PackageReadmeFile` is set (README.md is a suitable candidate) across packable projects via `Directory.Build.props`
-- [ ] `PackageIcon` is configured, or a decision is recorded that one isn't needed yet
+- [x] `Directory.Build.props`'s `Company` is set to a real value, or removed
+- [x] `PackageReadmeFile` is set (README.md is a suitable candidate) across packable projects via `Directory.Build.props`
+- [x] `PackageIcon` is configured, or a decision is recorded that one isn't needed yet
+
+## Comments
+
+**2026-09-04** - Re-triaged while working the frontier: already implemented in commit `6a3f9ce`. Directory.Build.props drops the placeholder Company value (with a comment explaining why - individual-authored, Authors already carries attribution) and sets PackageReadmeFile to README.md across packable projects; PackageIcon is deliberately left unset with a recorded comment rather than a fabricated placeholder. No source changes were needed this session.

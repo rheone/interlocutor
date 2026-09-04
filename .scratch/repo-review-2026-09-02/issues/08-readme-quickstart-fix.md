@@ -6,8 +6,12 @@ Full technical detail: [findings/06-readme-quickstart-broken-example.md](../find
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `Outcome.SuccessCase<UserDto>` is replaced with `UserDto` in the switch pattern
-- [ ] The switch continues to be over `result` directly (not `result.Value`) and stays discard-free, matching `Outcome<TSuccessResult, TFailureResult>`'s documented exhaustive-switch behavior
-- [ ] The example, run as written, actually compiles
+- [x] `Outcome.SuccessCase<UserDto>` is replaced with `UserDto` in the switch pattern
+- [x] The switch continues to be over `result` directly (not `result.Value`) and stays discard-free, matching `Outcome<TSuccessResult, TFailureResult>`'s documented exhaustive-switch behavior
+- [x] The example, run as written, actually compiles
+
+## Comments
+
+**2026-09-04** - Re-triaged while working the frontier: already implemented in commit `6a3f9ce`. README.md's Quick Start now switches directly over `result` with `UserDto success`/`NotFound notfound` arms (the never-existent `Outcome.SuccessCase<UserDto>` is gone), discard-free. No source changes were needed this session.

@@ -6,8 +6,12 @@ Full technical detail: [findings/10-pipeline-docs-fictitious-hooks.md](../findin
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The inbound/outbound bullets describe each behavior calling `next()` on the way in and acting on the awaited result on the way out
-- [ ] No reference to `OnIngress`/`OnEgress` remains in this file
-- [ ] The corrected prose is consistent with the file's own "Composition Diagram" and "Registering Custom Behaviors" sections
+- [x] The inbound/outbound bullets describe each behavior calling `next()` on the way in and acting on the awaited result on the way out
+- [x] No reference to `OnIngress`/`OnEgress` remains in this file
+- [x] The corrected prose is consistent with the file's own "Composition Diagram" and "Registering Custom Behaviors" sections
+
+## Comments
+
+**2026-09-04** - Re-triaged while working the frontier: already implemented in commit `6a3f9ce`. documentation/pipeline-and-behaviors.md's Flat Ordered List section now describes execution in terms of the real Handle(request, next, ct) contract (pre-next()/post-next() code) with no remaining OnIngress/OnEgress reference. No source changes were needed this session.

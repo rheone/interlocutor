@@ -6,8 +6,12 @@ Full technical detail: [findings/11-sample-app-walkthrough-stale.md](../findings
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The feature table lists all eleven Tasks use cases
-- [ ] The `Features/Tasks/` project-structure tree includes all three missing slices
-- [ ] A short section (mirroring the existing "Multi-repository unit-of-work example" treatment) covers `ListTodoTasksPaged` for `Page<T>` usage and `SyncAwareCompleteTodoTask` for `IUnitOfWork.Cancel`
+- [x] The feature table lists all eleven Tasks use cases
+- [x] The `Features/Tasks/` project-structure tree includes all three missing slices
+- [x] A short section (mirroring the existing "Multi-repository unit-of-work example" treatment) covers `ListTodoTasksPaged` for `Page<T>` usage and `SyncAwareCompleteTodoTask` for `IUnitOfWork.Cancel`
+
+## Comments
+
+**2026-09-04** - Re-triaged while working the frontier: already implemented in commit `6a3f9ce`. documentation/sample-app-walkthrough.md's feature table and Features/Tasks/ tree now include ListTodoTasksPaged, SearchTodoTasks, and SyncAwareCompleteTodoTask, each with its own section. No source changes were needed this session.

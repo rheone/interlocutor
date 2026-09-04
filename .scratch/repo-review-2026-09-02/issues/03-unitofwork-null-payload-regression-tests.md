@@ -6,9 +6,13 @@ Full technical detail: [findings/01-outcome-null-payload-no-discriminator.md](..
 
 **Blocked by:** 01 - Fix the `Outcome` null-payload/no-discriminator bug at the root.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A test proves a null-payload success commits under `Interlocutor.Persistence.EntityFrameworkCore`'s `UnitOfWorkBehavior`
-- [ ] A test proves a null-payload success commits under `Interlocutor.Persistence.NHibernate`'s `UnitOfWorkBehavior`
-- [ ] A test proves the same for a null-payload success routed through `ResourceCommandHandler`
-- [ ] A test proves `AuditingBehavior`/`LoggingBehavior` record such a request as a success, not a failure
+- [x] A test proves a null-payload success commits under `Interlocutor.Persistence.EntityFrameworkCore`'s `UnitOfWorkBehavior`
+- [x] A test proves a null-payload success commits under `Interlocutor.Persistence.NHibernate`'s `UnitOfWorkBehavior`
+- [x] A test proves the same for a null-payload success routed through `ResourceCommandHandler`
+- [x] A test proves `AuditingBehavior`/`LoggingBehavior` record such a request as a success, not a failure
+
+## Comments
+
+**2026-09-04** - Re-triaged while working the frontier: already implemented in commit `6a3f9ce`. tests/Interlocutor.Persistence.EntityFrameworkCore.Tests/UnitOfWorkBehaviorTests.cs and the NHibernate equivalent both have Handle_NullPayloadSuccess_CommitsNotRollsBack and Handle_NullPayloadSuccessRoutedThroughResourceCommandHandler_CommitsNotRollsBack tests, proving commit (not rollback) and correct Auditing/Logging classification. No source changes were needed this session.
