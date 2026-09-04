@@ -7,9 +7,11 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using TodoTasks.Api.Domain;
+using TodoTasks.Api.Features.Tasks.CompleteTodoTask;
 using TodoTasks.Api.Features.Tasks.CreateTodoTask;
 using TodoTasks.Api.Features.Tasks.GetTodoTaskById;
 using TodoTasks.Api.Features.Tasks.ListTodoTasks;
+using TodoTasks.Api.Features.Tasks.ReopenTodoTask;
 using TodoTasks.Api.Features.Tasks.UpdateTodoTask;
 using TodoTasks.Api.Features.Users.CreateUser;
 using TodoTasks.Api.Features.Users.GetUserById;
@@ -83,6 +85,11 @@ builder.Services.AddInterlocutorRepository<TodoTask, int, EntityFrameworkReposit
     )
 );
 
+// Singleton, not scoped - counts must persist across requests (and across the multiple scopes each
+// request's own dispatch may touch), not reset the moment one request's scope disposes. See
+// TodoTaskCompletionCounterHandler, the notification subscriber this backs.
+builder.Services.AddSingleton<ICompletionCounter, InMemoryCompletionCounter>();
+
 // FluentValidation's own IValidator<T> implementations (CreateUserValidator, and future features'
 // equivalents) - not something interlocutor.ScanAssembly below covers. AddValidationBehavior() (called
 // below) only wires up ValidationBehavior<,> itself, conditionally, when Interlocutor.FluentValidation is
@@ -151,6 +158,8 @@ app.MapCreateTodoTaskEndpoint();
 app.MapGetTodoTaskByIdEndpoint();
 app.MapListTodoTasksEndpoint();
 app.MapUpdateTodoTaskEndpoint();
+app.MapCompleteTodoTaskEndpoint();
+app.MapReopenTodoTaskEndpoint();
 
 await app.RunAsync().ConfigureAwait(false);
 

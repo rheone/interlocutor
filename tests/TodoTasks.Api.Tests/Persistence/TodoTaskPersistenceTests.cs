@@ -1,12 +1,16 @@
 namespace TodoTasks.Api.Tests.Persistence;
 
+using Interlocutor.Abstractions.Core;
 using Interlocutor.CommonKernel.ResultTypes;
 using Interlocutor.Persistence.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using NSubstitute;
 using TodoTasks.Api.Domain;
+using TodoTasks.Api.Features.Tasks.CompleteTodoTask;
 using TodoTasks.Api.Features.Tasks.GetTodoTaskById;
 using TodoTasks.Api.Features.Tasks.ListTodoTasks;
+using TodoTasks.Api.Features.Tasks.ReopenTodoTask;
 using TodoTasks.Api.Features.Tasks.UpdateTodoTask;
 using TodoTasks.Api.Persistence;
 using TodoTasks.Api.Tests.Http;
@@ -257,5 +261,121 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
 
         // Assert
         Assert.IsType<NotFound>(result.Value);
+    }
+
+    [Fact]
+    public async Task CompleteTodoTaskHandler_TaskExistsAndIsOwnedByTheCaller_PersistsTheCompletion_AgainstARealDatabase_Test()
+    {
+        // Arrange - proves the completion actually reaches the database, not just the in-memory entity
+        // the mocked handler test (Unit/Features/Tasks/CompleteTodoTask) mutates.
+        using var writeScope = this.factory.Services.CreateScope();
+        var writeContext = writeScope.ServiceProvider.GetRequiredService<TodoTasksDbContext>();
+        var owner = $"owner-{Guid.NewGuid():N}";
+        var task = new TodoTask("Buy milk", owner, null);
+        await writeContext.Tasks.AddAsync(task, TestContext.Current.CancellationToken);
+        await writeContext.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var tasks = writeScope.ServiceProvider.GetRequiredService<IDomainRepository<TodoTask, int>>();
+        var unitOfWork = writeScope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+        var handler = new CompleteTodoTaskHandler(tasks, unitOfWork, Substitute.For<IPublisher>());
+
+        // Act
+        var result = await handler.Handle(new CompleteTodoTaskCommand(task.Id, owner), TestContext.Current.CancellationToken);
+
+        // Assert
+        var dto = Assert.IsType<TodoTaskDto>(result.Value);
+        Assert.True(dto.IsCompleted);
+        using var readScope = this.factory.Services.CreateScope();
+        var readContext = readScope.ServiceProvider.GetRequiredService<TodoTasksDbContext>();
+        var reloaded = await readContext.Tasks.FirstOrDefaultAsync(t => t.Id == task.Id, TestContext.Current.CancellationToken);
+        Assert.NotNull(reloaded);
+        Assert.True(reloaded.IsCompleted);
+    }
+
+    [Fact]
+    public async Task CompleteTodoTaskHandler_TaskExistsButIsOwnedBySomeoneElse_ReturnsForbidden_AndDoesNotPersistTheCompletion_AgainstARealDatabase_Test()
+    {
+        // Arrange - proves the owner-scoping in CompleteTodoTaskHandler holds against a real
+        // repository/database, and that a denied completion never reaches SaveChangesAsync at all.
+        using var writeScope = this.factory.Services.CreateScope();
+        var writeContext = writeScope.ServiceProvider.GetRequiredService<TodoTasksDbContext>();
+        var owner = $"owner-{Guid.NewGuid():N}";
+        var task = new TodoTask("Buy milk", owner, null);
+        await writeContext.Tasks.AddAsync(task, TestContext.Current.CancellationToken);
+        await writeContext.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var tasks = writeScope.ServiceProvider.GetRequiredService<IDomainRepository<TodoTask, int>>();
+        var unitOfWork = writeScope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+        var handler = new CompleteTodoTaskHandler(tasks, unitOfWork, Substitute.For<IPublisher>());
+
+        // Act
+        var result = await handler.Handle(
+            new CompleteTodoTaskCommand(task.Id, $"someone-else-{Guid.NewGuid():N}"),
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        Assert.IsType<Forbidden>(result.Value);
+        using var readScope = this.factory.Services.CreateScope();
+        var readContext = readScope.ServiceProvider.GetRequiredService<TodoTasksDbContext>();
+        var reloaded = await readContext.Tasks.FirstOrDefaultAsync(t => t.Id == task.Id, TestContext.Current.CancellationToken);
+        Assert.NotNull(reloaded);
+        Assert.False(reloaded.IsCompleted);
+    }
+
+    [Fact]
+    public async Task ReopenTodoTaskHandler_TaskExistsAndIsOwnedByTheCaller_PersistsTheReopen_AgainstARealDatabase_Test()
+    {
+        // Arrange - proves the reopen actually reaches the database, not just the in-memory entity the
+        // mocked handler test (Unit/Features/Tasks/ReopenTodoTask) mutates.
+        using var writeScope = this.factory.Services.CreateScope();
+        var writeContext = writeScope.ServiceProvider.GetRequiredService<TodoTasksDbContext>();
+        var owner = $"owner-{Guid.NewGuid():N}";
+        var task = new TodoTask("Buy milk", owner, null) { IsCompleted = true };
+        await writeContext.Tasks.AddAsync(task, TestContext.Current.CancellationToken);
+        await writeContext.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var tasks = writeScope.ServiceProvider.GetRequiredService<IDomainRepository<TodoTask, int>>();
+        var unitOfWork = writeScope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+        var handler = new ReopenTodoTaskHandler(tasks, unitOfWork);
+
+        // Act
+        var result = await handler.Handle(new ReopenTodoTaskCommand(task.Id, owner), TestContext.Current.CancellationToken);
+
+        // Assert
+        var dto = Assert.IsType<TodoTaskDto>(result.Value);
+        Assert.False(dto.IsCompleted);
+        using var readScope = this.factory.Services.CreateScope();
+        var readContext = readScope.ServiceProvider.GetRequiredService<TodoTasksDbContext>();
+        var reloaded = await readContext.Tasks.FirstOrDefaultAsync(t => t.Id == task.Id, TestContext.Current.CancellationToken);
+        Assert.NotNull(reloaded);
+        Assert.False(reloaded.IsCompleted);
+    }
+
+    [Fact]
+    public async Task ReopenTodoTaskHandler_TaskExistsButIsOwnedBySomeoneElse_ReturnsForbidden_AndDoesNotPersistTheReopen_AgainstARealDatabase_Test()
+    {
+        // Arrange - proves the owner-scoping in ReopenTodoTaskHandler holds against a real
+        // repository/database, and that a denied reopen never reaches SaveChangesAsync at all.
+        using var writeScope = this.factory.Services.CreateScope();
+        var writeContext = writeScope.ServiceProvider.GetRequiredService<TodoTasksDbContext>();
+        var owner = $"owner-{Guid.NewGuid():N}";
+        var task = new TodoTask("Buy milk", owner, null) { IsCompleted = true };
+        await writeContext.Tasks.AddAsync(task, TestContext.Current.CancellationToken);
+        await writeContext.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var tasks = writeScope.ServiceProvider.GetRequiredService<IDomainRepository<TodoTask, int>>();
+        var unitOfWork = writeScope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+        var handler = new ReopenTodoTaskHandler(tasks, unitOfWork);
+
+        // Act
+        var result = await handler.Handle(
+            new ReopenTodoTaskCommand(task.Id, $"someone-else-{Guid.NewGuid():N}"),
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        Assert.IsType<Forbidden>(result.Value);
+        using var readScope = this.factory.Services.CreateScope();
+        var readContext = readScope.ServiceProvider.GetRequiredService<TodoTasksDbContext>();
+        var reloaded = await readContext.Tasks.FirstOrDefaultAsync(t => t.Id == task.Id, TestContext.Current.CancellationToken);
+        Assert.NotNull(reloaded);
+        Assert.True(reloaded.IsCompleted);
     }
 }
