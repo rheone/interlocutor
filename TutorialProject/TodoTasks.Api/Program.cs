@@ -131,7 +131,10 @@ builder.Services.AddInterlocutor(interlocutor =>
         .AddAuditingBehavior()
         .AddAuthorizationBehavior()
         .AddValidationBehavior()
-        .AddBehavior(typeof(TodoTasksUnitOfWorkBehavior<,>));
+        .AddBehavior(typeof(TodoTasksUnitOfWorkBehavior<,>))
+        // A second custom behavior beyond the recommended chain - see its own remarks for why
+        // "innermost, registered last" is what makes it measure only the handler's own work.
+        .AddBehavior(typeof(SlowHandlerWarningBehavior<,>));
 });
 
 var app = builder.Build();
