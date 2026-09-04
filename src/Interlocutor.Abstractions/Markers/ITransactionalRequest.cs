@@ -6,8 +6,7 @@ namespace Interlocutor.Abstractions.Markers;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Per <see href="../../../maintainer_docs/adr/0018-unit-of-work-as-transaction-owner.md">ADR-0018</see>, this marker no
-/// longer means "this request wants a transaction at all" - every request that writes, through
+/// This marker no longer means "this request wants a transaction at all" - every request that writes, through
 /// <c>IDomainRepository</c>, <c>IUnitOfWork</c>, or a directly-injected <c>Lazy&lt;TContext&gt;</c>/
 /// <c>Lazy&lt;ISession&gt;</c>, gets one automatically the first time it writes, with no marker required. This
 /// marker instead forces that transaction to begin eagerly, at pipeline start, instead of waiting for the

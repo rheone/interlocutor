@@ -10,8 +10,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 /// <summary>
 /// The NHibernate commit-gate pipeline behavior: commits or rolls back whatever transaction a dispatch
-/// opened, per <see href="../../../maintainer_docs/adr/0018-unit-of-work-as-transaction-owner.md">ADR-0018</see>'s
-/// unit-of-work-owned transaction model.
+/// opened, implementing the unit-of-work-owned transaction model, where <c>IUnitOfWork</c> - not a separate
+/// transaction-marker-driven behavior - owns transaction begin/commit/rollback.
 /// </summary>
 /// <typeparam name="TRequest">
 /// The request type this behavior processes. Unconstrained - unlike the retired <c>TransactionBehavior</c>,
