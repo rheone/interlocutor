@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using TodoTasks.Api.Domain;
+using TodoTasks.Api.Features.Tasks.ClearCompletedTodoTasks;
 using TodoTasks.Api.Features.Tasks.CompleteTodoTask;
 using TodoTasks.Api.Features.Tasks.DeleteTodoTask;
 using TodoTasks.Api.Features.Tasks.GetTodoTaskById;
@@ -424,5 +425,82 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
 
         // Assert
         Assert.IsType<NotFound>(result.Value);
+    }
+
+    [Fact]
+    public async Task ClearCompletedTodoTasksHandler_RemovesOnlyTheCallersCompletedTasks_AgainstARealDatabase_Test()
+    {
+        // Arrange - proves the bulk delete actually reaches the database: the caller's completed tasks
+        // are gone, their incomplete task is untouched, and another owner's tasks - completed or not -
+        // are untouched, regardless of ownership. Owner ids are unique per test - see the remarks on the
+        // GetTodoTaskByIdHandler test above for why.
+        using var writeScope = this.factory.Services.CreateScope();
+        var writeContext = writeScope.ServiceProvider.GetRequiredService<TodoTasksDbContext>();
+        var owner = $"owner-{Guid.NewGuid():N}";
+        var otherOwner = $"owner-{Guid.NewGuid():N}";
+        var callersCompletedA = new TodoTask("Buy milk", owner, null) { IsCompleted = true };
+        var callersCompletedB = new TodoTask("Wash car", owner, null) { IsCompleted = true };
+        var callersIncomplete = new TodoTask("Pay bills", owner, null);
+        var otherOwnersCompleted = new TodoTask("Other owner, completed", otherOwner, null) { IsCompleted = true };
+        var otherOwnersIncomplete = new TodoTask("Other owner, incomplete", otherOwner, null);
+        await writeContext.Tasks.AddRangeAsync(
+            [callersCompletedA, callersCompletedB, callersIncomplete, otherOwnersCompleted, otherOwnersIncomplete],
+            TestContext.Current.CancellationToken
+        );
+        await writeContext.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var tasks = writeScope.ServiceProvider.GetRequiredService<IDomainRepository<TodoTask, int>>();
+        var unitOfWork = writeScope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+        var handler = new ClearCompletedTodoTasksHandler(tasks, unitOfWork);
+
+        // Act
+        var result = await handler.Handle(new ClearCompletedTodoTasksCommand(owner), TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.IsType<Success>(result.Value);
+        using var readScope = this.factory.Services.CreateScope();
+        var readContext = readScope.ServiceProvider.GetRequiredService<TodoTasksDbContext>();
+        var remainingIds = await readContext
+            .Tasks.Where(t =>
+                t.Id == callersCompletedA.Id
+                || t.Id == callersCompletedB.Id
+                || t.Id == callersIncomplete.Id
+                || t.Id == otherOwnersCompleted.Id
+                || t.Id == otherOwnersIncomplete.Id
+            )
+            .Select(t => t.Id)
+            .ToListAsync(TestContext.Current.CancellationToken);
+        Assert.DoesNotContain(callersCompletedA.Id, remainingIds);
+        Assert.DoesNotContain(callersCompletedB.Id, remainingIds);
+        Assert.Contains(callersIncomplete.Id, remainingIds);
+        Assert.Contains(otherOwnersCompleted.Id, remainingIds);
+        Assert.Contains(otherOwnersIncomplete.Id, remainingIds);
+    }
+
+    [Fact]
+    public async Task ClearCompletedTodoTasksHandler_TheOwnerHasNoCompletedTasks_ReturnsSuccess_AndDeletesNothing_AgainstARealDatabase_Test()
+    {
+        // Arrange
+        using var writeScope = this.factory.Services.CreateScope();
+        var writeContext = writeScope.ServiceProvider.GetRequiredService<TodoTasksDbContext>();
+        var owner = $"owner-{Guid.NewGuid():N}";
+        var incomplete = new TodoTask("Pay bills", owner, null);
+        await writeContext.Tasks.AddAsync(incomplete, TestContext.Current.CancellationToken);
+        await writeContext.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var tasks = writeScope.ServiceProvider.GetRequiredService<IDomainRepository<TodoTask, int>>();
+        var unitOfWork = writeScope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+        var handler = new ClearCompletedTodoTasksHandler(tasks, unitOfWork);
+
+        // Act
+        var result = await handler.Handle(new ClearCompletedTodoTasksCommand(owner), TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.IsType<Success>(result.Value);
+        using var readScope = this.factory.Services.CreateScope();
+        var readContext = readScope.ServiceProvider.GetRequiredService<TodoTasksDbContext>();
+        var reloaded = await readContext.Tasks.FirstOrDefaultAsync(
+            t => t.Id == incomplete.Id,
+            TestContext.Current.CancellationToken
+        );
+        Assert.NotNull(reloaded);
     }
 }
