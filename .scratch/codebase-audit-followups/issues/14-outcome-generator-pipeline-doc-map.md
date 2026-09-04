@@ -6,11 +6,13 @@
 
 **Blocked by:** None - can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `OutcomeMemberGenerator.cs`'s doc comment names all seven files/types in the pipeline and what each owns, with `<see cref>` links
-- [ ] No production code changes - this ticket is documentation-only
-- [ ] `dotnet build` succeeds with no new doc warnings
+- [x] `OutcomeMemberGenerator.cs`'s doc comment names all seven files/types in the pipeline and what each owns, with `<see cref>` links
+- [x] No production code changes - this ticket is documentation-only
+- [x] `dotnet build` succeeds with no new doc warnings
+
+**2026-09-04** - Implemented: expanded `OutcomeMemberGenerator.cs`'s class-level `<remarks>` with a numbered pipeline map covering all seven collaborators (`GenerateOutcomeMembersAttribute`, `OutcomeUnionModelBuilder`, `OutcomeUnionModel`, `InterlocutorDiagnostics`, `OutcomeAccessorCollisionAnalyzer`, `OutcomeMemberEmitter`, itself). Six carry real, resolving `<see cref>` links; `GenerateOutcomeMembersAttribute` (in `Interlocutor.CommonKernel`, which this project has no reference to) uses `<c>` code font instead, matching this project's existing convention for that same cross-project boundary elsewhere. Purely additive (48 insertions, 0 deletions), no production behavior change. Full solution build: 0 errors, no new warnings.
 
 ## Comments
 

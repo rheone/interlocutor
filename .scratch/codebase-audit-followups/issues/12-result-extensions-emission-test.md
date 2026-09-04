@@ -6,11 +6,13 @@
 
 **Blocked by:** None - can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A `ResultExtensionsEmitter` emission test exists, table-driven over arities 2-6 plus void, asserting on generated source shape/compiled behavior via the existing generator test harness
-- [ ] `ResultExtensionsTests.cs`, `MinimalApiResultExtensionsTests.cs`, and `GenericCatchAllResultExtensionsTests.cs` are reduced to representative-arity and edge-case tests, with no loss of the distinct behaviors they were each verifying
-- [ ] `Interlocutor.Generator.Tests` and `Interlocutor.AspNetCore.Tests` pass
+- [x] A `ResultExtensionsEmitter` emission test exists, table-driven over arities 2-6 plus void, asserting on generated source shape/compiled behavior via the existing generator test harness
+- [x] `ResultExtensionsTests.cs`, `MinimalApiResultExtensionsTests.cs`, and `GenericCatchAllResultExtensionsTests.cs` are reduced to representative-arity and edge-case tests, with no loss of the distinct behaviors they were each verifying
+- [x] `Interlocutor.Generator.Tests` and `Interlocutor.AspNetCore.Tests` pass
+
+**2026-09-04** - Implemented: new `tests/Interlocutor.Generator.Tests/Emission/ResultExtensionsEmitterTests.cs` (table-driven, arities 2-6 plus void) asserts both generated source shape and compiled/runtime dispatch via reflection + `GeneratorTestHarness`, mirroring `OutcomeMemberGeneratorTests.cs`'s pattern. The three downstream `Interlocutor.AspNetCore.Tests` files shrunk to representative-arity (2, 6) plus void/custom-mapper/catch-all coverage, dropping only the redundant arity-3/4/5 hand-duplication - no distinct behavior lost. Full solution build and test (1183/1183) green.
 
 ## Comments
 

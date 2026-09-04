@@ -2,6 +2,7 @@ namespace Interlocutor.Generator.Emission;
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Text;
 using Interlocutor.Generator.Models;
 
@@ -16,6 +17,32 @@ using Interlocutor.Generator.Models;
 /// </summary>
 internal static class OutcomeMemberEmitter
 {
+    /// <summary>Gets every generated member name this emitter can ever introduce onto a union's declaration.</summary>
+    /// <value>
+    /// Computed once so <see cref="Analysis.OutcomeAccessorCollisionAnalyzer"/> can read a single source of
+    /// truth instead of hand-declaring its own copy that would otherwise have to be kept in sync by hand.
+    /// Includes <c>IsSuccess</c> and <c>ActiveCaseType</c> unconditionally, even though this emitter only
+    /// actually writes them when <see cref="OutcomeUnionModel.ImplementsIOutcome"/> is
+    /// <see langword="true"/> - reserving both names regardless keeps the check simple and costs nothing,
+    /// since neither name is a plausible case type identifier to give up. Also includes <c>Value</c>, the
+    /// compiler-synthesized boxed field every <c>union</c> type carries (see
+    /// <see cref="EmitGetActiveCaseIndex"/>'s remarks) - this emitter relies on it via <c>this.Value</c> but
+    /// never declares it itself, so it would otherwise be invisible to a set built purely from what
+    /// <see cref="Emit"/> writes.
+    /// </value>
+    public static ImmutableArray<string> ReservedMemberNames { get; } =
+        ImmutableArray.Create(
+            "Value",
+            "IsSuccess",
+            "ActiveCaseType",
+            "TryGetValue",
+            "Match",
+            "Switch",
+            "ToString",
+            "Equals",
+            "GetHashCode"
+        );
+
     /// <summary>Emits the generated partial declaration's full source text for <paramref name="model"/>.</summary>
     /// <param name="model">The attributed union to emit members for. Must have at least two case types.</param>
     /// <returns>The generated C# source.</returns>

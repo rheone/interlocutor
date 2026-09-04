@@ -1,9 +1,9 @@
 namespace Interlocutor.Generator.Analysis;
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using Interlocutor.Generator.Diagnostics;
+using Interlocutor.Generator.Emission;
 using Interlocutor.Generator.Models;
 using Microsoft.CodeAnalysis;
 
@@ -20,25 +20,6 @@ using Microsoft.CodeAnalysis;
 /// </remarks>
 internal static class OutcomeAccessorCollisionAnalyzer
 {
-    /// <summary>
-    /// Every generated member name a case type's own simple name must not collide with - see
-    /// <see cref="InterlocutorDiagnostics.AccessorNameCollision"/>'s remarks for why all nine, not just
-    /// <c>TryGetValue</c> (the only one the <c>TryGet</c>-prefixed accessor scheme could ever literally produce
-    /// on its own), are reserved.
-    /// </summary>
-    private static readonly HashSet<string> ReservedMemberNames = new(StringComparer.Ordinal)
-    {
-        "Value",
-        "Match",
-        "Switch",
-        "ToString",
-        "Equals",
-        "GetHashCode",
-        "TryGetValue",
-        "IsSuccess",
-        "ActiveCaseType",
-    };
-
     /// <summary>Reports one diagnostic per colliding case in <paramref name="model"/>.</summary>
     /// <param name="model">The attributed union to check.</param>
     /// <param name="context">The source production context to report diagnostics to.</param>
@@ -73,7 +54,10 @@ internal static class OutcomeAccessorCollisionAnalyzer
         for (var position = 0; position < model.CaseAccessorNames.Length; position++)
         {
             var accessorName = model.CaseAccessorNames[position];
-            if (accessorName is not null && ReservedMemberNames.Contains(accessorName))
+            if (
+                accessorName is not null
+                && OutcomeMemberEmitter.ReservedMemberNames.Contains(accessorName, StringComparer.Ordinal)
+            )
             {
                 Report(
                     model,

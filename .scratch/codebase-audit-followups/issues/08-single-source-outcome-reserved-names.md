@@ -6,12 +6,14 @@
 
 **Blocked by:** None - can start immediately
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `OutcomeMemberEmitter` exposes the complete set of names it always emits, computed in one place
-- [ ] `OutcomeAccessorCollisionAnalyzer` consumes that set instead of its own hand-typed `HashSet<string>`
-- [ ] A generator test asserts that every name the emitter can generate is covered by INTERLOC012's reserved set (so the two can no longer drift)
-- [ ] `Interlocutor.Generator.Tests` pass, including existing INTERLOC012 diagnostic tests
+- [x] `OutcomeMemberEmitter` exposes the complete set of names it always emits, computed in one place
+- [x] `OutcomeAccessorCollisionAnalyzer` consumes that set instead of its own hand-typed `HashSet<string>`
+- [x] A generator test asserts that every name the emitter can generate is covered by INTERLOC012's reserved set (so the two can no longer drift)
+- [x] `Interlocutor.Generator.Tests` pass, including existing INTERLOC012 diagnostic tests
+
+**2026-09-04** - Implemented: `OutcomeMemberEmitter` now exposes `public static ImmutableArray<string> ReservedMemberNames` (nine names: `Value`, `IsSuccess`, `ActiveCaseType`, `TryGetValue`, `Match`, `Switch`, `ToString`, `Equals`, `GetHashCode`), computed once with an XML doc explaining why each is reserved unconditionally. `OutcomeAccessorCollisionAnalyzer` dropped its own hand-typed `HashSet<string>` and reads that set instead. New `tests/Interlocutor.Generator.Tests/Emission/OutcomeMemberEmitterReservedNamesTests.cs` runs the generator, extracts every fixed name it actually emits from the generated syntax tree, and asserts each is covered by `ReservedMemberNames`. Full solution build and test (1190/1190) green.
 
 ## Comments
 
