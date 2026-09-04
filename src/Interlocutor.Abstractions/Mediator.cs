@@ -65,13 +65,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
                         )!
                 );
 
-        // StartActivity returns null when nothing listens to MediatorActivitySource.Name - the fast path below
-        // takes over immediately with no further tracing work, so the dispatch stays allocation- and
-        // formatting-free when unobserved.
-        var activity = MediatorActivitySource.Source.StartActivity();
-        return activity is null
-            ? wrapper.Handle(query, services, ct)
-            : TraceAsync(activity, query, act => wrapper.Handle(query, services, ct, act));
+        return DispatchWithTrace(query, act => wrapper.Handle(query, services, ct, act));
     }
 
     /// <inheritdoc/>
@@ -90,10 +84,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
                         )!
                 );
 
-        var activity = MediatorActivitySource.Source.StartActivity();
-        return activity is null
-            ? wrapper.Handle(command, services, ct)
-            : TraceAsync(activity, command, act => wrapper.Handle(command, services, ct, act));
+        return DispatchWithTrace(command, act => wrapper.Handle(command, services, ct, act));
     }
 
     /// <inheritdoc/>
@@ -113,10 +104,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
                         )!
                 );
 
-        var activity = MediatorActivitySource.Source.StartActivity();
-        return activity is null
-            ? wrapper.Handle(command, services, ct)
-            : TraceAsync(activity, command, act => wrapper.Handle(command, services, ct, act));
+        return DispatchWithTrace(command, act => wrapper.Handle(command, services, ct, act));
     }
 
     /// <inheritdoc/>
@@ -138,6 +126,35 @@ public sealed class Mediator(IServiceProvider services) : IMediator
         return activity is null
             ? this.DispatchAsync(request, ct)
             : TraceAsync(activity, request, _ => this.DispatchAsync(request, ct));
+    }
+
+    /// <summary>
+    /// Shared fast-path/traced-path scaffolding behind the three type-safe <c>Send&lt;T&gt;</c> overloads
+    /// (<see cref="IQuery{TResponse}"/>, <see cref="ICommand{TResponse}"/>, and <see cref="ICommand"/>): starts the
+    /// dispatch <see cref="Activity"/> and either invokes <paramref name="dispatch"/> directly when nothing is
+    /// listening, or routes it through <see cref="TraceAsync{TResult}"/> so the resulting outcome case (or a thrown
+    /// exception) gets tagged on the activity.
+    /// </summary>
+    /// <typeparam name="TResponse">The outcome type returned by <paramref name="dispatch"/>.</typeparam>
+    /// <param name="request">The original query/command, tagged on the activity for the traced path.</param>
+    /// <param name="dispatch">
+    /// Invokes the resolved handler wrapper's <c>Handle</c> method, passing through whatever <see cref="Activity"/>
+    /// it is given - <see langword="null"/> on the fast path, the started activity on the traced path - which
+    /// matches <c>Handle</c>'s own optional, defaulted-to-<see langword="null"/> activity parameter.
+    /// </param>
+    /// <returns>The task returned by <paramref name="dispatch"/>, awaited and tagged when traced.</returns>
+    /// <remarks>
+    /// Only the fast/traced branch and cache-independent bookkeeping are shared here - each overload still resolves
+    /// its own wrapper from its own cache (query/command/void-command caches differ in key shape and wrapper
+    /// interface) and closes over the resolved wrapper in <paramref name="dispatch"/>.
+    /// </remarks>
+    private static Task<TResponse> DispatchWithTrace<TResponse>(object request, Func<Activity?, Task<TResponse>> dispatch)
+    {
+        // StartActivity returns null when nothing listens to MediatorActivitySource.Name - the fast path below
+        // takes over immediately with no further tracing work, so the dispatch stays allocation- and
+        // formatting-free when unobserved.
+        var activity = MediatorActivitySource.Source.StartActivity();
+        return activity is null ? dispatch(null) : TraceAsync(activity, request, act => dispatch(act));
     }
 
     /// <summary>
