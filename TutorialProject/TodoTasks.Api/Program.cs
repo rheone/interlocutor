@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using TodoTasks.Api.Domain;
+using TodoTasks.Api.Features.Tasks.CreateTodoTask;
 using TodoTasks.Api.Features.Users.CreateUser;
 using TodoTasks.Api.Features.Users.GetUserById;
 using TodoTasks.Api.Infrastructure;
@@ -69,6 +70,13 @@ builder.Services.AddInterlocutorRepository<User, int, EntityFrameworkRepository<
     services => new EntityFrameworkRepository<User, int, TodoTasksDbContext>(
         services.GetRequiredService<Lazy<TodoTasksDbContext>>(),
         u => u.Id
+    )
+);
+
+builder.Services.AddInterlocutorRepository<TodoTask, int, EntityFrameworkRepository<TodoTask, int, TodoTasksDbContext>>(
+    services => new EntityFrameworkRepository<TodoTask, int, TodoTasksDbContext>(
+        services.GetRequiredService<Lazy<TodoTasksDbContext>>(),
+        t => t.Id
     )
 );
 
@@ -136,6 +144,7 @@ app.MapGet(
 // One line per feature endpoint, added as each feature lands - see each Features/**/Map*Endpoint.cs.
 app.MapCreateUserEndpoint();
 app.MapGetUserByIdEndpoint();
+app.MapCreateTodoTaskEndpoint();
 
 await app.RunAsync().ConfigureAwait(false);
 

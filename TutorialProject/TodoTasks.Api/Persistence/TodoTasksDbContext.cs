@@ -21,6 +21,10 @@ public sealed class TodoTasksDbContext(DbContextOptions<TodoTasksDbContext> opti
     /// <value>The <see cref="DbSet{TEntity}"/> backing <see cref="User"/> queries and writes.</value>
     public DbSet<User> Users => this.Set<User>();
 
+    /// <summary>Gets the set of registered <see cref="TodoTask"/> entities.</summary>
+    /// <value>The <see cref="DbSet{TEntity}"/> backing <see cref="TodoTask"/> queries and writes.</value>
+    public DbSet<TodoTask> Tasks => this.Set<TodoTask>();
+
     /// <inheritdoc/>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -37,6 +41,24 @@ public sealed class TodoTasksDbContext(DbContextOptions<TodoTasksDbContext> opti
             user.Property(u => u.DisplayName).IsRequired().HasMaxLength(200);
             user.Property(u => u.Email).IsRequired().HasMaxLength(320); // 320 = the longest an RFC 5321 email can be.
             user.HasIndex(u => u.Email).IsUnique();
+        });
+
+        // OwnerId is deliberately mapped as a plain required string column, never HasOne/WithMany or
+        // HasForeignKey against User - documentation/beginners-guide-todo-api.md models it as an opaque
+        // caller id read off IRequestContextAccessor, not a database relationship, and TodoTask.cs's own
+        // remarks state the same. The unique index on (OwnerId, Title) is the same defense-in-depth
+        // schema backstop as User's Email index above: CreateTodoTaskHandler still does its own
+        // pre-check query (inside CreateTodoTaskCommand's eager ITransactionalRequest transaction) to
+        // translate a duplicate into the Conflict outcome case itself, scoped per-owner rather than
+        // globally, matching the shelved NHibernate build's own semantics for this check.
+        modelBuilder.Entity<TodoTask>(task =>
+        {
+            task.Property(t => t.Title).IsRequired().HasMaxLength(200);
+            task.Property(t => t.Notes).HasMaxLength(2000);
+            task.Property(t => t.OwnerId).IsRequired();
+            task.Property(t => t.IsCompleted).IsRequired();
+            task.Property(t => t.CreatedAtUtc).IsRequired();
+            task.HasIndex(t => new { t.OwnerId, t.Title }).IsUnique();
         });
     }
 }
