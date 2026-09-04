@@ -4,6 +4,7 @@ using Interlocutor.Abstractions.Markers;
 using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Pipeline.Classifiers;
 using Interlocutor.CommonKernel.ResultTypes;
+using Interlocutor.Persistence.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -29,28 +30,46 @@ using Microsoft.Extensions.Logging.Abstractions;
 /// </param>
 /// <remarks>
 /// <para>
+/// This behavior implements only the EF Core-specific primitives the begin/run/check/commit-or-rollback
+/// algorithm needs - detecting an active transaction, detecting pending work, and beginning/committing/rolling
+/// one back (including the explicit <see cref="DbContext.SaveChangesAsync(CancellationToken)"/> call EF Core
+/// requires before a commit persists anything) - behind the <see cref="EntityFrameworkCommitGateSession"/>
+/// adapter. The control flow itself lives in <see cref="CommitGateDriver"/>, shared with every other store's
+/// commit-gate behavior, so this type and its NHibernate counterpart can never drift on when they begin,
+/// commit, or roll back.
+/// </para>
+/// <para>
 /// <b>Begin-on-first-write.</b> This behavior does not open a transaction unconditionally at pipeline start.
 /// It opens one eagerly only when <typeparamref name="TRequest"/> implements <see cref="ITransactionalRequest"/>
 /// (the narrowed "needs an eager transaction for read-then-write atomicity" meaning - see that marker's
 /// remarks); otherwise the transaction begins lazily, the first time anything writes, via
 /// <c>UnitOfWorkSaveChangesInterceptor</c> (registered separately on the application's <see cref="DbContext"/>)
-/// or <see cref="EntityFrameworkUnitOfWork{TContext}.SaveChangesAsync"/>. At pipeline completion, this
-/// behavior checks <c>Database.CurrentTransaction</c> and <c>ChangeTracker.HasChanges()</c> - if neither
-/// indicates pending work, the dispatch never wrote anything (or an explicit
-/// <see cref="Interlocutor.Persistence.Abstractions.IUnitOfWork.Cancel"/> already cleaned up) and this
-/// behavior does nothing further, so a pure-read dispatch never pays for an open transaction.
+/// or <see cref="EntityFrameworkUnitOfWork{TContext}.SaveChangesAsync"/>. At pipeline completion,
+/// <see cref="CommitGateDriver"/> checks <c>Database.CurrentTransaction</c> and <c>ChangeTracker.HasChanges()</c>
+/// via <see cref="EntityFrameworkCommitGateSession"/> - if neither indicates pending work, the dispatch never
+/// wrote anything (or an explicit <see cref="IUnitOfWork.Cancel"/> already cleaned up) and nothing further
+/// happens, so a pure-read dispatch never pays for an open transaction.
 /// </para>
 /// <para>
-/// <b>Whole-session protection.</b> The commit/rollback decision below is driven by the context's own
+/// <b>External-store suppression.</b> <see cref="IExternalStoreRequest"/> opts a dispatch out of local
+/// transaction management entirely, even if the handler touches the scoped context - see that marker's
+/// remarks. This behavior suppresses <c>UnitOfWorkSaveChangesInterceptor</c> for the duration of the handler
+/// call so a raw <c>SaveChangesAsync</c> call inside it cannot open a local transaction this request explicitly
+/// said belongs to an external store instead. <see cref="CommitGateDriver"/> never resolves
+/// <typeparamref name="TContext"/> for this path either, so a bypassed request never pays for a context/session
+/// it never needs.
+/// </para>
+/// <para>
+/// <b>Whole-session protection.</b> The commit/rollback decision is driven by the context's own
 /// <c>CurrentTransaction</c>/<c>ChangeTracker</c> state, not by which API staged the change - so a write
 /// through an <c>IDomainRepository</c>, through <see cref="EntityFrameworkUnitOfWork{TContext}"/>, or through
 /// a directly-injected <c>Lazy&lt;TContext&gt;</c> is protected uniformly, matching the retired <c>TransactionBehavior</c>'s
 /// previous whole-session guarantee.
 /// </para>
 /// <para>
-/// <b>Diagnostics:</b> this behavior emits one <see cref="LogLevel.Debug"/> line per invocation that actually
-/// commits or rolls back, naming which and the <paramref name="describer"/>-rendered outcome that drove that
-/// decision. Nothing is logged for a dispatch that never opened a transaction.
+/// <b>Diagnostics:</b> <see cref="CommitGateDriver"/> emits one <see cref="LogLevel.Debug"/> line per
+/// invocation that actually commits or rolls back, naming which and the <paramref name="describer"/>-rendered
+/// outcome that drove that decision. Nothing is logged for a dispatch that never opened a transaction.
 /// </para>
 /// </remarks>
 public class UnitOfWorkBehavior<TRequest, TResponse, TContext>(
@@ -70,84 +89,42 @@ public class UnitOfWorkBehavior<TRequest, TResponse, TContext>(
         logger ?? NullLogger<UnitOfWorkBehavior<TRequest, TResponse, TContext>>.Instance;
 
     /// <inheritdoc/>
-    public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
+        CommitGateDriver.Handle(
+            request,
+            () => RunWithExternalStoreSuppression(request, next),
+            () => new EntityFrameworkCommitGateSession(db.Value),
+            this.classifier,
+            this.describer,
+            this.logger,
+            ct
+        );
+
+    /// <summary>
+    /// Suppresses <c>UnitOfWorkSaveChangesInterceptor</c> for the duration of <paramref name="next"/> when
+    /// <paramref name="request"/> is an <see cref="IExternalStoreRequest"/>, so a raw <c>SaveChangesAsync</c>
+    /// call inside the handler cannot open a local transaction around a write that request said belongs to an
+    /// external store instead.
+    /// </summary>
+    /// <param name="request">The request being dispatched, inspected for the <see cref="IExternalStoreRequest"/> marker.</param>
+    /// <param name="next">The next delegate in the pipeline chain.</param>
+    /// <returns>The response returned by <paramref name="next"/>, unchanged.</returns>
+    private static async Task<TResponse> RunWithExternalStoreSuppression(TRequest request, Func<Task<TResponse>> next)
     {
-        // IExternalStoreRequest opts out of local transaction management entirely, even if the handler
-        // touches the scoped context - see that marker's remarks. Suppressing UnitOfWorkSaveChangesInterceptor
-        // for the duration of the handler call keeps a raw SaveChangesAsync call inside it from opening a
-        // local transaction this request explicitly said belongs to an external store instead.
-        if (request is IExternalStoreRequest)
+        if (request is not IExternalStoreRequest)
         {
-            var wasSuppressed = UnitOfWorkSaveChangesInterceptor.IsSuppressed.Value;
-            UnitOfWorkSaveChangesInterceptor.IsSuppressed.Value = true;
-            try
-            {
-                return await next().ConfigureAwait(false);
-            }
-            finally
-            {
-                UnitOfWorkSaveChangesInterceptor.IsSuppressed.Value = wasSuppressed;
-            }
+            return await next().ConfigureAwait(false);
         }
 
-        var context = db.Value;
-
-        // Eager begin: ITransactionalRequest's narrowed meaning is "protect my read(s) and write(s) with one
-        // transaction from pipeline start," not the default lazy begin-on-first-write.
-        if (request is ITransactionalRequest && context.Database.CurrentTransaction is null)
+        var wasSuppressed = UnitOfWorkSaveChangesInterceptor.IsSuppressed.Value;
+        UnitOfWorkSaveChangesInterceptor.IsSuppressed.Value = true;
+        try
         {
-            // Not captured/disposed here - retrieved again via Database.CurrentTransaction and disposed once,
-            // below, after it's committed or rolled back.
-#pragma warning disable IDISP004
-            await context.Database.BeginTransactionAsync(ct).ConfigureAwait(false);
-#pragma warning restore IDISP004
+            return await next().ConfigureAwait(false);
         }
-
-        var result = await next().ConfigureAwait(false);
-
-        // Nothing to finalize if nothing wrote: no transaction was ever opened (pure read, or a request that
-        // short-circuited before reaching a write), and nothing is staged either (or IUnitOfWork.Cancel
-        // already rolled back and cleared the tracker) - same "nothing to roll back" outcome as today.
-        if (context.Database.CurrentTransaction is null && !context.ChangeTracker.HasChanges())
+        finally
         {
-            return result;
+            UnitOfWorkSaveChangesInterceptor.IsSuppressed.Value = wasSuppressed;
         }
-
-        var transaction =
-            context.Database.CurrentTransaction ?? await context.Database.BeginTransactionAsync(ct).ConfigureAwait(false);
-        await using var scopedTransaction = transaction;
-
-        if (!this.classifier.IsFailure(result))
-        {
-            try
-            {
-                // Persists whatever is still staged - a handler that already called SaveChangesAsync mid-handler
-                // leaves nothing pending here, so this is a no-op in that case.
-                await context.SaveChangesAsync(ct).ConfigureAwait(false);
-            }
-            catch
-            {
-                await transaction.RollbackAsync(ct).ConfigureAwait(false);
-                throw;
-            }
-
-            await transaction.CommitAsync(ct).ConfigureAwait(false);
-            this.logger.LogDebug(
-                "Committed transaction for {RequestType} with outcome {Outcome}",
-                typeof(TRequest).Name,
-                this.describer.Describe(result)
-            );
-        }
-        else
-        {
-            await transaction.RollbackAsync(ct).ConfigureAwait(false);
-            this.logger.LogDebug(
-                "Rolled back transaction for {RequestType} with outcome {Outcome}",
-                typeof(TRequest).Name,
-                this.describer.Describe(result)
-            );
-        }
-
-        return result;
     }
 }
