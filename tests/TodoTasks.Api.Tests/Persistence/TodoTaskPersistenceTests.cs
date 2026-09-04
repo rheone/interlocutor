@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using TodoTasks.Api.Domain;
 using TodoTasks.Api.Features.Tasks.GetTodoTaskById;
 using TodoTasks.Api.Features.Tasks.ListTodoTasks;
+using TodoTasks.Api.Features.Tasks.UpdateTodoTask;
 using TodoTasks.Api.Persistence;
 using TodoTasks.Api.Tests.Http;
 
@@ -172,5 +173,89 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
         var dtos = Assert.IsAssignableFrom<IReadOnlyList<TodoTaskDto>>(result.Value);
         Assert.Equal(2, dtos.Count);
         Assert.All(dtos, dto => Assert.StartsWith("Requested owner,", dto.Title, StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task UpdateTodoTaskHandler_TaskExistsAndIsOwnedByTheCaller_PersistsTheChange_AgainstARealDatabase_Test()
+    {
+        // Arrange - proves the update actually reaches the database, not just the in-memory entity the
+        // mocked handler test (Unit/Features/Tasks/UpdateTodoTask) mutates: a second, independent scope's
+        // DbContext re-reads the row afterward, against the same kept-alive in-memory SQLite connection
+        // every scope in this fixture shares (see TodoTasksApiFactory's own remarks).
+        using var writeScope = this.factory.Services.CreateScope();
+        var writeContext = writeScope.ServiceProvider.GetRequiredService<TodoTasksDbContext>();
+        var owner = $"owner-{Guid.NewGuid():N}";
+        var task = new TodoTask("Buy milk", owner, "2%, please");
+        await writeContext.Tasks.AddAsync(task, TestContext.Current.CancellationToken);
+        await writeContext.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var tasks = writeScope.ServiceProvider.GetRequiredService<IDomainRepository<TodoTask, int>>();
+        var unitOfWork = writeScope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+        var handler = new UpdateTodoTaskHandler(tasks, unitOfWork);
+
+        // Act
+        var result = await handler.Handle(
+            new UpdateTodoTaskCommand(task.Id, "Buy oat milk", "Oat milk this time", owner),
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        var dto = Assert.IsType<TodoTaskDto>(result.Value);
+        Assert.Equal("Buy oat milk", dto.Title);
+        using var readScope = this.factory.Services.CreateScope();
+        var readContext = readScope.ServiceProvider.GetRequiredService<TodoTasksDbContext>();
+        var reloaded = await readContext.Tasks.FirstOrDefaultAsync(t => t.Id == task.Id, TestContext.Current.CancellationToken);
+        Assert.NotNull(reloaded);
+        Assert.Equal("Buy oat milk", reloaded.Title);
+        Assert.Equal("Oat milk this time", reloaded.Notes);
+    }
+
+    [Fact]
+    public async Task UpdateTodoTaskHandler_TaskExistsButIsOwnedBySomeoneElse_ReturnsForbidden_AndDoesNotPersistTheChange_AgainstARealDatabase_Test()
+    {
+        // Arrange - proves the owner-scoping in UpdateTodoTaskHandler.Authorize holds against a real
+        // repository/database, and that a denied update never reaches SaveChangesAsync at all (the row
+        // reloaded below still has its original title).
+        using var writeScope = this.factory.Services.CreateScope();
+        var writeContext = writeScope.ServiceProvider.GetRequiredService<TodoTasksDbContext>();
+        var owner = $"owner-{Guid.NewGuid():N}";
+        var task = new TodoTask("Buy milk", owner, null);
+        await writeContext.Tasks.AddAsync(task, TestContext.Current.CancellationToken);
+        await writeContext.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var tasks = writeScope.ServiceProvider.GetRequiredService<IDomainRepository<TodoTask, int>>();
+        var unitOfWork = writeScope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+        var handler = new UpdateTodoTaskHandler(tasks, unitOfWork);
+
+        // Act
+        var result = await handler.Handle(
+            new UpdateTodoTaskCommand(task.Id, "Hijacked title", null, $"someone-else-{Guid.NewGuid():N}"),
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        Assert.IsType<Forbidden>(result.Value);
+        using var readScope = this.factory.Services.CreateScope();
+        var readContext = readScope.ServiceProvider.GetRequiredService<TodoTasksDbContext>();
+        var reloaded = await readContext.Tasks.FirstOrDefaultAsync(t => t.Id == task.Id, TestContext.Current.CancellationToken);
+        Assert.NotNull(reloaded);
+        Assert.Equal("Buy milk", reloaded.Title);
+    }
+
+    [Fact]
+    public async Task UpdateTodoTaskHandler_NoTaskWithThatId_ReturnsNotFound_AgainstARealDatabase_Test()
+    {
+        // Arrange
+        using var scope = this.factory.Services.CreateScope();
+        var tasks = scope.ServiceProvider.GetRequiredService<IDomainRepository<TodoTask, int>>();
+        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+        var handler = new UpdateTodoTaskHandler(tasks, unitOfWork);
+
+        // Act
+        var result = await handler.Handle(
+            new UpdateTodoTaskCommand(999_999, "Doesn't matter", null, $"owner-{Guid.NewGuid():N}"),
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        Assert.IsType<NotFound>(result.Value);
     }
 }
