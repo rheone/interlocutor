@@ -3,7 +3,7 @@ namespace Interlocutor.CommonKernel.ResultTypes;
 using System.Diagnostics;
 using Interlocutor.CommonKernel.ResultTypes.Internal;
 
-#pragma warning disable SA1402 // Allowing multiple types of same name with differet arity
+#pragma warning disable SA1402 // Allowing multiple types of same name with different arity
 
 /// <summary>
 /// Represents an immutable collection of one or more generic failure reasons, with no associated error codes.

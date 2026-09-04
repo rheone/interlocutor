@@ -29,8 +29,7 @@ public sealed class OutcomeClassifierBuilder
     private readonly List<(Func<object?, bool> Predicate, string Label, bool IsFailure)> _predicates = [];
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="OutcomeClassifierBuilder"/> class.
-    /// Initializes a new builder, pre-seeded with all Interlocutor.CommonKernel case types.
+    /// Initializes a new instance of the <see cref="OutcomeClassifierBuilder"/> class, pre-seeded with all Interlocutor.CommonKernel case types.
     /// </summary>
     public OutcomeClassifierBuilder()
     {

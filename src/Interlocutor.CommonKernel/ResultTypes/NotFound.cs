@@ -1,6 +1,6 @@
 namespace Interlocutor.CommonKernel.ResultTypes;
 
-#pragma warning disable SA1402 // Allowing multiple types of same name with differet arity
+#pragma warning disable SA1402 // Allowing multiple types of same name with different arity
 
 /// <summary>
 /// Indicates that a requested resource was not found.
