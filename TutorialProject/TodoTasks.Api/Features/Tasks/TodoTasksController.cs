@@ -15,6 +15,7 @@ using TodoTasks.Api.Features.Tasks.GetTodoTaskById;
 using TodoTasks.Api.Features.Tasks.ListTodoTasks;
 using TodoTasks.Api.Features.Tasks.ReopenTodoTask;
 using TodoTasks.Api.Features.Tasks.UpdateTodoTask;
+using TodoTasks.Api.Infrastructure;
 
 /// <summary>
 /// The MVC-controller twin of this domain's minimal-API surface (<c>Features/Tasks/*/Map*Endpoint.cs</c>,
@@ -53,9 +54,7 @@ public sealed class TodoTasksController(ISender sender, IRequestContextAccessor 
         // A missing authenticated caller here is a bug, not an outcome the caller can trigger - [Authorize]
         // above means this action is never reachable without one; see CreateTodoTaskEndpoint's identical
         // comment for why this throws rather than returning a Forbidden/Failure case.
-        var ownerId =
-            contextAccessor.Context?.UserId
-            ?? throw new InvalidOperationException("This endpoint requires an authenticated caller.");
+        var ownerId = contextAccessor.RequireUserId();
 
         var result = await sender
             .Send(new CreateTodoTaskCommand(request.Title, request.Notes, ownerId), ct)
@@ -119,9 +118,7 @@ public sealed class TodoTasksController(ISender sender, IRequestContextAccessor 
     [Authorize]
     public async Task<IActionResult> Update(int id, UpdateTodoTaskRequest request, CancellationToken ct)
     {
-        var requestedBy =
-            contextAccessor.Context?.UserId
-            ?? throw new InvalidOperationException("This endpoint requires an authenticated caller.");
+        var requestedBy = contextAccessor.RequireUserId();
 
         var result = await sender
             .Send(new UpdateTodoTaskCommand(id, request.Title, request.Notes, requestedBy), ct)
@@ -187,9 +184,7 @@ public sealed class TodoTasksController(ISender sender, IRequestContextAccessor 
     [Authorize]
     public async Task<IActionResult> ClearCompleted(CancellationToken ct)
     {
-        var ownerId =
-            contextAccessor.Context?.UserId
-            ?? throw new InvalidOperationException("This endpoint requires an authenticated caller.");
+        var ownerId = contextAccessor.RequireUserId();
 
         var result = await sender.Send<Outcome>(new ClearCompletedTodoTasksCommand(ownerId), ct).ConfigureAwait(false);
         return result.ToActionResult();

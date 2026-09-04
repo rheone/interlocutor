@@ -2,6 +2,7 @@ namespace TodoTasks.Api.Features.Tasks.ListTodoTasksPaged;
 
 using Interlocutor.Abstractions.Core;
 using Interlocutor.AspNetCore;
+using TodoTasks.Api.Infrastructure;
 
 /// <summary>Maps <c>GET /todo-tasks/paged</c> - authenticated, scoped to the caller's own tasks.</summary>
 public static class ListTodoTasksPagedEndpoint
@@ -15,9 +16,7 @@ public static class ListTodoTasksPagedEndpoint
                 "/todo-tasks/paged",
                 async (int page, int pageSize, ISender sender, IRequestContextAccessor contextAccessor, CancellationToken ct) =>
                 {
-                    var ownerId =
-                        contextAccessor.Context?.UserId
-                        ?? throw new InvalidOperationException("This endpoint requires an authenticated caller.");
+                    var ownerId = contextAccessor.RequireUserId();
 
                     var result = await sender
                         .Send(new ListTodoTasksPagedQuery(ownerId, page, pageSize), ct)
