@@ -22,6 +22,7 @@ public static class GetTodoTaskByIdEndpoint
                     var ownerId = contextAccessor.RequireUserId();
 
                     var result = await sender.Send(new GetTodoTaskByIdQuery(id, ownerId), ct).ConfigureAwait(false);
+
                     return result.ToMinimalApiResult();
                 }
             )
