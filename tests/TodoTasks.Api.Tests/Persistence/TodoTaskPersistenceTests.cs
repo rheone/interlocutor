@@ -13,6 +13,7 @@ using TodoTasks.Api.Features.Tasks.DeleteTodoTask;
 using TodoTasks.Api.Features.Tasks.GetTodoTaskById;
 using TodoTasks.Api.Features.Tasks.ListTodoTasks;
 using TodoTasks.Api.Features.Tasks.ReopenTodoTask;
+using TodoTasks.Api.Features.Tasks.SearchTodoTasks;
 using TodoTasks.Api.Features.Tasks.UpdateTodoTask;
 using TodoTasks.Api.Persistence;
 using TodoTasks.Api.Tests.Http;
@@ -502,5 +503,75 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
             TestContext.Current.CancellationToken
         );
         Assert.NotNull(reloaded);
+    }
+
+    [Fact]
+    public async Task SearchTodoTasksHandler_TitleMatchIsCaseInsensitive_AgainstARealDatabase_Test()
+    {
+        // Arrange - proves the EF.Functions.Like translation SearchTodoTasksHandler relies on actually
+        // performs a case-insensitive match against a real SQLite database (SQLite's own LIKE operator
+        // is case-insensitive for ASCII by default), not just that a plain LINQ Contains would compile.
+        using var scope = this.factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<Lazy<TodoTasksDbContext>>();
+        var owner = $"owner-{Guid.NewGuid():N}";
+        var task = new TodoTask("Buy Milk", owner, null);
+        await context.Value.Tasks.AddAsync(task, TestContext.Current.CancellationToken);
+        await context.Value.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var handler = new SearchTodoTasksHandler(context);
+
+        // Act - lowercase substring against a title with different casing.
+        var result = await handler.Handle(new SearchTodoTasksQuery(owner, "milk"), TestContext.Current.CancellationToken);
+
+        // Assert
+        var dtos = Assert.IsAssignableFrom<IReadOnlyList<TodoTaskDto>>(result.Value);
+        Assert.Single(dtos);
+        Assert.Equal("Buy Milk", dtos[0].Title);
+    }
+
+    [Fact]
+    public async Task SearchTodoTasksHandler_TitleDoesNotContainTheSearchTerm_IsExcluded_AgainstARealDatabase_Test()
+    {
+        // Arrange
+        using var scope = this.factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<Lazy<TodoTasksDbContext>>();
+        var owner = $"owner-{Guid.NewGuid():N}";
+        await context.Value.Tasks.AddAsync(new TodoTask("Buy milk", owner, null), TestContext.Current.CancellationToken);
+        await context.Value.Tasks.AddAsync(new TodoTask("Wash car", owner, null), TestContext.Current.CancellationToken);
+        await context.Value.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var handler = new SearchTodoTasksHandler(context);
+
+        // Act
+        var result = await handler.Handle(new SearchTodoTasksQuery(owner, "milk"), TestContext.Current.CancellationToken);
+
+        // Assert
+        var dtos = Assert.IsAssignableFrom<IReadOnlyList<TodoTaskDto>>(result.Value);
+        Assert.Single(dtos);
+        Assert.Equal("Buy milk", dtos[0].Title);
+    }
+
+    [Fact]
+    public async Task SearchTodoTasksHandler_AnotherOwnersMatchingTitle_IsExcluded_AgainstARealDatabase_Test()
+    {
+        // Arrange - proves the search is scoped to OwnerId, not a global title search: another owner's
+        // task whose title also matches the search term must never appear in the caller's results.
+        using var scope = this.factory.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<Lazy<TodoTasksDbContext>>();
+        var owner = $"owner-{Guid.NewGuid():N}";
+        var otherOwner = $"owner-{Guid.NewGuid():N}";
+        await context.Value.Tasks.AddAsync(new TodoTask("Buy milk", owner, null), TestContext.Current.CancellationToken);
+        await context.Value.Tasks.AddAsync(
+            new TodoTask("Buy MILK too", otherOwner, null),
+            TestContext.Current.CancellationToken
+        );
+        await context.Value.SaveChangesAsync(TestContext.Current.CancellationToken);
+        var handler = new SearchTodoTasksHandler(context);
+
+        // Act
+        var result = await handler.Handle(new SearchTodoTasksQuery(owner, "milk"), TestContext.Current.CancellationToken);
+
+        // Assert
+        var dtos = Assert.IsAssignableFrom<IReadOnlyList<TodoTaskDto>>(result.Value);
+        Assert.Single(dtos);
+        Assert.Equal("Buy milk", dtos[0].Title);
     }
 }

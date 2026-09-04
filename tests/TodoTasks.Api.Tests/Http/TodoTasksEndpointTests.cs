@@ -298,6 +298,73 @@ public sealed class TodoTasksEndpointTests : IClassFixture<TodoTasksApiFactory>
     }
 
     [Fact]
+    public async Task Search_NoAuthenticatedCaller_ReturnsUnauthorized_Test()
+    {
+        // Arrange
+        using var client = this.factory.CreateClient();
+
+        // Act
+        using var response = await client.GetAsync(
+            new Uri("/todo-tasks/search?titleContains=milk", UriKind.Relative),
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Search_AuthenticatedCaller_ReturnsCaseInsensitiveOwnerScopedMatches_Test()
+    {
+        // Arrange - a matching task and a non-matching task for the caller, plus another owner's
+        // matching-title task, to prove the search is both case-insensitive and owner-scoped end to end
+        // through the real HTTP pipeline (not just the handler in isolation - see the persistence tests
+        // in Persistence/TodoTaskPersistenceTests for that half of the coverage).
+        using var client = this.factory.CreateClient();
+        await CreateAuthenticatedUserAsync(client);
+        var suffix = Guid.NewGuid().ToString("N");
+        var matchingTitle = $"Buy Milk {suffix}";
+        var nonMatchingTitle = $"Wash car {suffix}";
+        using var matchingCreate = await client.PostAsJsonAsync(
+            new Uri("/todo-tasks", UriKind.Relative),
+            new CreateTodoTaskRequest(matchingTitle, null),
+            TestContext.Current.CancellationToken
+        );
+        Assert.Equal(HttpStatusCode.OK, matchingCreate.StatusCode); // Sanity-check the fixture before the real assertion.
+        using var nonMatchingCreate = await client.PostAsJsonAsync(
+            new Uri("/todo-tasks", UriKind.Relative),
+            new CreateTodoTaskRequest(nonMatchingTitle, null),
+            TestContext.Current.CancellationToken
+        );
+        Assert.Equal(HttpStatusCode.OK, nonMatchingCreate.StatusCode);
+        using var otherClient = this.factory.CreateClient();
+        await CreateAuthenticatedUserAsync(otherClient);
+        using var otherOwnersCreate = await otherClient.PostAsJsonAsync(
+            new Uri("/todo-tasks", UriKind.Relative),
+            new CreateTodoTaskRequest($"Buy milk too {suffix}", null),
+            TestContext.Current.CancellationToken
+        );
+        Assert.Equal(HttpStatusCode.OK, otherOwnersCreate.StatusCode);
+
+        // Act - lowercase search term against a title with different casing.
+        using var response = await client.GetAsync(
+            new Uri($"/todo-tasks/search?titleContains={Uri.EscapeDataString($"milk {suffix}")}", UriKind.Relative),
+            TestContext.Current.CancellationToken
+        );
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var tasks = await response.Content.ReadFromJsonAsync<List<TodoTaskDto>>(
+            WebJsonOptions,
+            TestContext.Current.CancellationToken
+        );
+        Assert.NotNull(tasks);
+        Assert.Contains(tasks, t => t.Title == matchingTitle);
+        Assert.DoesNotContain(tasks, t => t.Title == nonMatchingTitle);
+        Assert.DoesNotContain(tasks, t => t.Title.StartsWith("Buy milk too", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task Put_NoAuthenticatedCaller_ReturnsUnauthorized_Test()
     {
         // Arrange
