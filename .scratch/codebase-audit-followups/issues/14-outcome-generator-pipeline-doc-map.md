@@ -1,4 +1,7 @@
-# 14 - Add a doc-comment map to the Outcome generator's pipeline
+# 14 - DROPPED: Add a doc-comment map to the Outcome generator's pipeline
+
+> **Dropped - false premise.** This ticket assumed `Interlocutor.Generator` is split into `Models/`, `Analysis/`, `Emission/`, and `Diagnostics/` subfolders spanning seven files. On this branch, `src/Interlocutor.Generator/` is flat (no such subfolders), and the Outcome-member pipeline is ~5 files in one directory - the file-bouncing friction this ticket described doesn't exist here. The folder reorg exists only on the local `ultrareview` branch's unpushed-until-now commit `8b2d7da`, never merged. `ultrareview` has since been pushed to `origin/ultrareview` for safekeeping, independent of this ticket.
+
 
 **What to build:** Understanding what `[GenerateOutcomeMembers]` actually produces requires bouncing across seven files (`Models/OutcomeUnionModel.cs`, `Analysis/OutcomeUnionModelBuilder.cs`, `Emission/OutcomeMemberEmitter.cs`, `Analysis/OutcomeAccessorCollisionAnalyzer.cs`, `Diagnostics/InterlocutorDiagnostics.cs`, `OutcomeMemberGenerator.cs`, `CommonKernel/GenerateOutcomeMembersAttribute.cs`). This is documentation-only - the multi-file split itself is correct (Roslyn's incremental-generator caching requires these narrowly-scoped, structurally-equatable snapshot types) and should not be merged. Add an exhaustive doc-comment map to `OutcomeMemberGenerator.cs` (the actual `[Generator]` entry point) naming which file owns which pipeline step, with `<see cref>` links to each, the same way `OutcomeAccessorCollisionAnalyzer`'s remarks already cross-reference `HandlerDiagnosticAnalyzer`.
 
