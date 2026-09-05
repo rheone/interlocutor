@@ -73,8 +73,8 @@ public sealed class AppDbUnitOfWorkBehavior<TRequest, TResponse>(Lazy<AppDbConte
 ## Example 1 - `Outcome` (Success, Failure): "Deactivate User"
 
 Use the fixed `Outcome` when a command or query has **no meaningful success payload and exactly
-one failure shape** - the caller only needs to know whether it worked. `IsSuccess` is the only
-member: there's no data to project out of either arm.
+one failure shape** - the caller only needs to know whether it worked, via `TryGetValue`/`Match`/`Switch`
+pattern matching; there's no data to project out of either arm.
 
 ```csharp
 public sealed class User

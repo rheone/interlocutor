@@ -36,7 +36,7 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<RealSessionFixture>
         );
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out Success _));
         Assert.Null(session.GetCurrentTransaction());
     }
 
@@ -87,11 +87,10 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<RealSessionFixture>
         );
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out Success _));
         Assert.False(session.GetCurrentTransaction() is { IsActive: true });
 
-        // Committing flushes the pending insert and makes it durable - a real side effect a rollback
-        // never produces, since no INSERT is ever sent in that path (see the failure test below).
+        // Committing flushes the pending insert and makes it durable.
         this.AssertPersisted(widget.Id);
     }
 
@@ -116,14 +115,16 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<RealSessionFixture>
         );
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out string? _));
         this.AssertPersisted(widget.Id);
     }
 
     [Fact]
-    public async Task HandleAsync_ClassifiedFailure_RollsBack_NotCommit()
+    public async Task HandleAsync_FailureShapedOutcome_StillCommits_NoCaseTypeDecidesRollback()
     {
-        // Arrange
+        // Arrange - no case type - Success, Failure, or otherwise - determines the commit decision; a
+        // Failure-shaped outcome commits the same as a Success-shaped one unless the handler explicitly
+        // signals otherwise via IUnitOfWork.CancelAsync (see the Cancel test below).
         using var session = this.fixture.OpenSession();
         var behavior = CreateBehavior(session);
         var widget = new Widget();
@@ -140,12 +141,11 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<RealSessionFixture>
         );
 
         // Assert
-        Assert.False(result.IsSuccess);
+        Assert.True(result.TryGetValue(out Failure _));
         Assert.False(session.GetCurrentTransaction() is { IsActive: true });
 
-        // Rolling back never flushes the pending insert - FlushMode.Commit means nothing auto-flushes
-        // beforehand, and RollbackAsync doesn't flush either - so the row never becomes durable.
-        this.AssertNotPersisted(widget.Id);
+        // Committing flushes the pending insert and makes it durable, despite the Failure-shaped outcome.
+        this.AssertPersisted(widget.Id);
     }
 
     [Fact]
@@ -223,7 +223,7 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<RealSessionFixture>
         );
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out Success _));
         Assert.False(session.GetCurrentTransaction() is { IsActive: true });
         Assert.False(await session.IsDirtyAsync(CancellationToken.None));
         Assert.False(session.Contains(widget)); // Session.Clear() evicted the widget entirely.
@@ -234,12 +234,13 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<RealSessionFixture>
     }
 
     [Fact]
-    public async Task HandleAsync_UsesInjectedClassifier_NotOutcomeShape_ToDecideCommitVersusRollback()
+    public async Task HandleAsync_InjectedClassifier_NoLongerAffectsCommitDecision()
     {
-        // Arrange
+        // Arrange - IOutcomeClassifier is a pure label registry (see OutcomeClassifierBuilder); it has no
+        // failure judgment left to consult, so an injected classifier can no longer force a rollback - only
+        // an explicit IUnitOfWork.CancelAsync (covered above) does that now.
         using var session = this.fixture.OpenSession();
         var classifier = Substitute.For<IOutcomeClassifier>();
-        classifier.IsFailure(Arg.Any<object?>()).Returns(true);
         var behavior = new UnitOfWorkBehavior<PlainRequest, Outcome<Success, Failure>>(
             new Lazy<ISession>(() => session),
             classifier
@@ -258,13 +259,9 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<RealSessionFixture>
         );
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out Success _));
         Assert.False(session.GetCurrentTransaction() is { IsActive: true });
-
-        // The classifier says "failure" despite the Success payload, so the behavior rolls back - proving
-        // the classifier drives the decision, not the outcome's own shape. Same never-flushed proof as
-        // HandleAsync_ClassifiedFailure_RollsBack_NotCommit.
-        this.AssertNotPersisted(widget.Id);
+        this.AssertPersisted(widget.Id);
     }
 
     /// <summary>Opens a fresh session and asserts a <see cref="Widget"/> with the given id was actually committed.</summary>

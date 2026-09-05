@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 /// <summary>
-/// Emits <c>Match</c>, <c>Switch</c>, per-case <c>TryGetValue</c>, <c>ToString</c>, and <c>IsSuccess</c> for
+/// Emits <c>Match</c>, <c>Switch</c>, per-case <c>TryGetValue</c>, and <c>ToString</c> for
 /// every <c>partial union</c> declaration attributed with <c>GenerateOutcomeMembersAttribute</c> (ticket 05/06).
 /// </summary>
 /// <remarks>
@@ -57,7 +57,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 /// <see cref="OutcomeMemberEmitter"/> - once both checks pass, <see cref="Execute"/> hands the model to
 /// <see cref="OutcomeMemberEmitter.Emit"/>, which renders the generated partial declaration's full source text:
 /// <c>Match</c>, <c>Switch</c>, per-case <c>TryGetValue</c>, <c>ToString</c>, and equality unconditionally, plus
-/// <c>IsSuccess</c>/<c>ActiveCaseType</c> when the union implements <c>IOutcome</c>.
+/// <c>ActiveCaseType</c> when the union implements <c>IOutcome</c>.
 /// </description></item>
 /// <item><description>
 /// <see cref="OutcomeMemberGenerator"/> (this class) - the <c>[Generator]</c> entry point wiring the six

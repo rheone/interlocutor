@@ -81,7 +81,7 @@ public class LoggingBehaviorTests
         var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out string? _));
         logger
             .Received(1)
             .Log(

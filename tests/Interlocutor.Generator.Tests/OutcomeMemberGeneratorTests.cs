@@ -47,7 +47,7 @@ public sealed class OutcomeMemberGeneratorTests
                 .SyntaxTrees.Where(static t => t.FilePath.Contains("OutcomeMembers", StringComparison.Ordinal))
                 .Select(static t => t.ToString())
         );
-        Assert.Contains("public bool IsSuccess", generatedText, StringComparison.Ordinal);
+        Assert.Contains("public global::System.Type? ActiveCaseType", generatedText, StringComparison.Ordinal);
         Assert.Contains("public bool TryGetValue(out", generatedText, StringComparison.Ordinal);
         Assert.Contains("public TResult Match<TResult>(", generatedText, StringComparison.Ordinal);
         Assert.Contains("public void Switch(", generatedText, StringComparison.Ordinal);
@@ -113,7 +113,8 @@ public sealed class OutcomeMemberGeneratorTests
 
                 public static TestOutcome<string, int> FailureCase(int value) => value;
 
-                public static bool IsSuccess(TestOutcome<string, int> outcome) => outcome.IsSuccess;
+                public static System.Type? GetActiveCaseType(TestOutcome<string, int> outcome) =>
+                    ((Interlocutor.CommonKernel.ResultTypes.IOutcomeCase)outcome).ActiveCaseType;
 
                 public static string ToText(TestOutcome<string, int> outcome) => outcome.ToString();
 
@@ -160,9 +161,9 @@ public sealed class OutcomeMemberGeneratorTests
         var success = factory.GetMethod("SuccessCase")!.Invoke(null, ["hello"]);
         var failure = factory.GetMethod("FailureCase")!.Invoke(null, [42]);
 
-        // Act & Assert - IsSuccess
-        Assert.True((bool)factory.GetMethod("IsSuccess")!.Invoke(null, [success])!);
-        Assert.False((bool)factory.GetMethod("IsSuccess")!.Invoke(null, [failure])!);
+        // Act & Assert - ActiveCaseType
+        Assert.Equal(typeof(string), (Type?)factory.GetMethod("GetActiveCaseType")!.Invoke(null, [success]));
+        Assert.Equal(typeof(int), (Type?)factory.GetMethod("GetActiveCaseType")!.Invoke(null, [failure]));
 
         // Act & Assert - ToString
         Assert.Equal("hello", factory.GetMethod("ToText")!.Invoke(null, [success]));
@@ -256,9 +257,8 @@ public sealed class OutcomeMemberGeneratorTests
         Assert.Contains("public override string ToString()", generatedText, StringComparison.Ordinal);
         Assert.Contains("public bool Equals(PlainUnion<TFirst, TSecond> other)", generatedText, StringComparison.Ordinal);
 
-        // The classification surface is opt-in via `: IOutcome` and must not appear here.
+        // The identity surface is opt-in via `: IOutcome` and must not appear here.
         Assert.DoesNotContain("IOutcomeCase", generatedText, StringComparison.Ordinal);
-        Assert.DoesNotContain("IsSuccess", generatedText, StringComparison.Ordinal);
         Assert.DoesNotContain("ActiveCaseType", generatedText, StringComparison.Ordinal);
     }
 
@@ -286,8 +286,8 @@ public sealed class OutcomeMemberGeneratorTests
             LanguageVersion.Preview
         );
 
-        // Assert - never enters OutcomeClassifierBuilder's positional-IsSuccess fallback, since that fallback
-        // is reached only through an IOutcomeCase cast (see OutcomeCaseExtensions.AsOutcomeCaseIsSuccess).
+        // Assert - never enters the outcome case registry's IOutcomeCase-based active-case lookup, since
+        // that path is reached only through an IOutcomeCase cast (see OutcomeCaseExtensions.AsOutcomeCaseActiveType).
         var plainUnionType = assembly.GetType("Test.PlainUnion`2", throwOnError: true)!;
         Assert.DoesNotContain(
             plainUnionType.GetInterfaces(),

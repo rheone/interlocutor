@@ -43,7 +43,7 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<EntityFrameworkTestF
         );
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out Success _));
         Assert.Null(this.context.Database.CurrentTransaction);
     }
 
@@ -69,7 +69,7 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<EntityFrameworkTestF
         );
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out Success _));
         await using var verify = this.CreateVerificationContext();
         Assert.Equal(["direct-write"], verify.Widgets.Select(w => w.Name));
     }
@@ -95,7 +95,7 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<EntityFrameworkTestF
         );
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out string? _));
         await using var verify = this.CreateVerificationContext();
         Assert.Equal(["null-payload-success"], verify.Widgets.Select(w => w.Name));
     }
@@ -122,15 +122,17 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<EntityFrameworkTestF
         );
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out string? _));
         await using var verify = this.CreateVerificationContext();
         Assert.Equal(["resource-handler-write"], verify.Widgets.Select(w => w.Name));
     }
 
     [Fact]
-    public async Task HandleAsync_ClassifiedFailure_RollsBack_NoRowPersisted()
+    public async Task HandleAsync_FailureShapedOutcome_StillCommits_NoCaseTypeDecidesRollback()
     {
-        // Arrange
+        // Arrange - no case type - Success, Failure, or otherwise - determines the commit decision; a
+        // Failure-shaped outcome commits the same as a Success-shaped one unless the handler explicitly
+        // signals otherwise via IUnitOfWork.CancelAsync (see the Cancel test below).
         var behavior = this.CreateBehavior();
 
         // Act
@@ -139,7 +141,7 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<EntityFrameworkTestF
             async () =>
             {
                 await this
-                    .context.Widgets.AddAsync(new Widget { Name = "never-persisted" }, CancellationToken.None)
+                    .context.Widgets.AddAsync(new Widget { Name = "failure-shaped-still-commits" }, CancellationToken.None)
                     .ConfigureAwait(false);
                 return new Failure("rejected");
             },
@@ -147,9 +149,9 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<EntityFrameworkTestF
         );
 
         // Assert
-        Assert.False(result.IsSuccess);
+        Assert.True(result.TryGetValue(out Failure _));
         await using var verify = this.CreateVerificationContext();
-        Assert.Empty(verify.Widgets);
+        Assert.Equal(["failure-shaped-still-commits"], verify.Widgets.Select(w => w.Name));
     }
 
     [Fact]
@@ -200,7 +202,7 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<EntityFrameworkTestF
         );
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out Success _));
         Assert.Null(this.context.Database.CurrentTransaction);
     }
 
@@ -231,7 +233,7 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<EntityFrameworkTestF
 
         // Assert
         // The outcome is unchanged - Cancel does not override what the handler returns.
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out Success _));
 
         // But nothing was actually persisted: Cancel rolled back and cleared the change tracker, so the
         // behavior's end-of-pipeline check found nothing pending and never re-committed.
@@ -241,11 +243,12 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<EntityFrameworkTestF
     }
 
     [Fact]
-    public async Task HandleAsync_UsesInjectedClassifier_NotOutcomeShape_ToDecideCommitVersusRollback()
+    public async Task HandleAsync_InjectedClassifier_NoLongerAffectsCommitDecision()
     {
-        // Arrange
+        // Arrange - IOutcomeClassifier is a pure label registry (see OutcomeClassifierBuilder); it has no
+        // failure judgment left to consult, so an injected classifier can no longer force a rollback - only
+        // an explicit IUnitOfWork.CancelAsync (covered above) does that now.
         var classifier = Substitute.For<IOutcomeClassifier>();
-        classifier.IsFailure(Arg.Any<object?>()).Returns(true);
         var behavior = new UnitOfWorkBehavior<PlainRequest, Outcome<Success, Failure>, TestDbContext>(
             this.lazyContext,
             classifier
@@ -257,7 +260,7 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<EntityFrameworkTestF
             async () =>
             {
                 await this
-                    .context.Widgets.AddAsync(new Widget { Name = "should-not-persist" }, CancellationToken.None)
+                    .context.Widgets.AddAsync(new Widget { Name = "commits-regardless-of-classifier" }, CancellationToken.None)
                     .ConfigureAwait(false);
                 return default(Success);
             },
@@ -265,12 +268,9 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<EntityFrameworkTestF
         );
 
         // Assert
-        // The outcome itself is still Success-shaped ...
-        Assert.True(result.IsSuccess);
-
-        // ... but the injected classifier said "failure", so the behavior rolled back instead of committing.
+        Assert.True(result.TryGetValue(out Success _));
         await using var verify = this.CreateVerificationContext();
-        Assert.Empty(verify.Widgets);
+        Assert.Equal(["commits-regardless-of-classifier"], verify.Widgets.Select(w => w.Name));
     }
 
     public void Dispose()

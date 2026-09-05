@@ -9,23 +9,23 @@ using Interlocutor.CommonKernel.ResultTypes;
 public class OutcomeTests
 {
     [Fact]
-    public void Construct_FromSuccess_IsSuccessTrue()
+    public void Construct_FromSuccess_TryGetValueSucceeds()
     {
         // Arrange & Act
         var result = new Outcome(default(Success));
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out Success _));
     }
 
     [Fact]
-    public void Construct_FromFailure_IsSuccessFalse()
+    public void Construct_FromFailure_TryGetValueFails()
     {
         // Arrange & Act
         var result = new Outcome(new Failure("boom"));
 
         // Assert
-        Assert.False(result.IsSuccess);
+        Assert.False(result.TryGetValue(out Success _));
     }
 
     [Fact]
@@ -35,7 +35,7 @@ public class OutcomeTests
         Outcome result = default(Success);
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out Success _));
     }
 
     [Fact]
@@ -45,7 +45,7 @@ public class OutcomeTests
         Outcome result = new Failure("boom");
 
         // Assert
-        Assert.False(result.IsSuccess);
+        Assert.False(result.TryGetValue(out Success _));
     }
 
     [Fact]

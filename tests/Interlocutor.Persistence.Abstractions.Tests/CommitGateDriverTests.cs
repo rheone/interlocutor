@@ -3,18 +3,19 @@ namespace Interlocutor.Persistence.Abstractions.Tests;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Markers;
 using Interlocutor.Abstractions.Pipeline;
-using Interlocutor.Abstractions.Pipeline.Classifiers;
 using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 
 /// <summary>
-/// Covers <see cref="CommitGateDriver"/>'s shared begin/run-next/check-pending-work/commit-or-rollback
-/// algorithm directly, against a mocked <see cref="ICommitGateSession"/> and a mocked <c>next()</c> delegate,
-/// per <c>documentation/testing.md</c>'s "mock the <c>next()</c> delegate" guidance - so the algorithm itself
-/// is verified once at the seam that owns it, rather than only indirectly through each store's own
-/// <c>UnitOfWorkBehaviorTests</c>.
+/// Covers <see cref="CommitGateDriver"/>'s shared begin/run-next/check-pending-work/commit algorithm
+/// directly, against a mocked <see cref="ICommitGateSession"/> and a mocked <c>next()</c> delegate, per
+/// <c>documentation/testing.md</c>'s "mock the <c>next()</c> delegate" guidance - so the algorithm itself is
+/// verified once at the seam that owns it, rather than only indirectly through each store's own
+/// <c>UnitOfWorkBehaviorTests</c>. Rollback is not decided by this algorithm at all - see
+/// <c>UnitOfWorkBehaviorTests</c>' own coverage of <c>IUnitOfWork.CancelAsync</c>, which rolls back before
+/// this driver's pending-work check ever runs.
 /// </summary>
 public sealed class CommitGateDriverTests
 {
@@ -23,7 +24,6 @@ public sealed class CommitGateDriverTests
     {
         // Arrange
         var sessionFactoryInvoked = false;
-        var classifier = Substitute.For<IOutcomeClassifier>();
         var describer = Substitute.For<IResponseOutcomeDescriber>();
         var logger = Substitute.For<ILogger>();
 
@@ -36,14 +36,13 @@ public sealed class CommitGateDriverTests
                 sessionFactoryInvoked = true;
                 return Substitute.For<ICommitGateSession>();
             },
-            classifier,
             describer,
             logger,
             CancellationToken.None
         );
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out Success _));
 
         // The bypass guarantee: a request that opts out of local transaction management never pays for
         // resolving the underlying store session at all - see CommitGateDriver's own remarks.
@@ -55,7 +54,6 @@ public sealed class CommitGateDriverTests
     {
         // Arrange
         var session = CreateSession();
-        var classifier = ClassifierReturning(isFailure: false);
         var describer = Substitute.For<IResponseOutcomeDescriber>();
         var logger = Substitute.For<ILogger>();
         var transactionActiveBeforeNext = false;
@@ -69,7 +67,6 @@ public sealed class CommitGateDriverTests
                 return Task.FromResult<Outcome<Success, Failure>>(default(Success));
             },
             () => session,
-            classifier,
             describer,
             logger,
             CancellationToken.None
@@ -87,7 +84,6 @@ public sealed class CommitGateDriverTests
         // write staged directly on the session with no transaction opened yet.
         var session = CreateSession();
         session.HasPendingWorkAsync(Arg.Any<CancellationToken>()).Returns(true);
-        var classifier = ClassifierReturning(isFailure: false);
         var describer = Substitute.For<IResponseOutcomeDescriber>();
         var logger = Substitute.For<ILogger>();
 
@@ -96,26 +92,25 @@ public sealed class CommitGateDriverTests
             new PlainRequest(),
             () => Task.FromResult<Outcome<Success, Failure>>(default(Success)),
             () => session,
-            classifier,
             describer,
             logger,
             CancellationToken.None
         );
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out Success _));
         await session.Received(1).CommitAsync(Arg.Any<CancellationToken>());
         await session.DidNotReceive().RollbackAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task HandleAsync_EagerTransactionWithNoPendingWork_ClassifiedAsFailure_RollsBackAndDoesNotCommit()
+    public async Task HandleAsync_EagerTransactionWithNoPendingWork_StillCommits()
     {
         // Arrange - the eager-begin transaction opened for a check-then-act read still has to be closed even
-        // though nothing ended up pending, and a classified failure means that closure is a rollback, not a
-        // commit; distinct from "nothing to finalize", which only applies when no transaction was ever opened.
+        // though nothing ended up pending; commit is the only decision this driver ever makes for an active
+        // transaction it reaches this point with - distinct from "nothing to finalize", which only applies
+        // when no transaction was ever opened.
         var session = CreateSession();
-        var classifier = ClassifierReturning(isFailure: true);
         var describer = Substitute.For<IResponseOutcomeDescriber>();
         var logger = Substitute.For<ILogger>();
 
@@ -124,16 +119,15 @@ public sealed class CommitGateDriverTests
             new TransactionalRequest(),
             () => Task.FromResult<Outcome<Success, Failure>>(new Failure("rejected")),
             () => session,
-            classifier,
             describer,
             logger,
             CancellationToken.None
         );
 
         // Assert
-        Assert.False(result.IsSuccess);
-        await session.Received(1).RollbackAsync(Arg.Any<CancellationToken>());
-        await session.DidNotReceive().CommitAsync(Arg.Any<CancellationToken>());
+        Assert.True(result.TryGetValue(out Failure _));
+        await session.Received(1).CommitAsync(Arg.Any<CancellationToken>());
+        await session.DidNotReceive().RollbackAsync(Arg.Any<CancellationToken>());
 
         // Only the one eager begin - the post-next() check must not begin a second transaction on top of it.
         await session.Received(1).BeginTransactionAsync(Arg.Any<CancellationToken>());
@@ -145,7 +139,6 @@ public sealed class CommitGateDriverTests
         // Arrange - a pure read (or a dispatch that short-circuited before writing): nothing was ever staged,
         // so there is nothing to finalize at all.
         var session = CreateSession();
-        var classifier = Substitute.For<IOutcomeClassifier>();
         var describer = Substitute.For<IResponseOutcomeDescriber>();
         var logger = Substitute.For<ILogger>();
 
@@ -154,18 +147,16 @@ public sealed class CommitGateDriverTests
             new PlainRequest(),
             () => Task.FromResult<Outcome<Success, Failure>>(default(Success)),
             () => session,
-            classifier,
             describer,
             logger,
             CancellationToken.None
         );
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out Success _));
         await session.DidNotReceive().BeginTransactionAsync(Arg.Any<CancellationToken>());
         await session.DidNotReceive().CommitAsync(Arg.Any<CancellationToken>());
         await session.DidNotReceive().RollbackAsync(Arg.Any<CancellationToken>());
-        classifier.DidNotReceive().IsFailure(Arg.Any<object?>());
     }
 
     [Fact]
@@ -174,7 +165,6 @@ public sealed class CommitGateDriverTests
         // Arrange - the driver has no try/catch of its own around next(): an exception is a bug/infra fault,
         // not an outcome to classify, so it propagates unchanged and neither finalization path runs here.
         var session = CreateSession();
-        var classifier = Substitute.For<IOutcomeClassifier>();
         var describer = Substitute.For<IResponseOutcomeDescriber>();
         var logger = Substitute.For<ILogger>();
         var handlerException = new InvalidOperationException("handler blew up");
@@ -185,7 +175,6 @@ public sealed class CommitGateDriverTests
                 new PlainRequest(),
                 Task<Outcome<Success, Failure>> () => throw handlerException,
                 () => session,
-                classifier,
                 describer,
                 logger,
                 CancellationToken.None
@@ -204,7 +193,6 @@ public sealed class CommitGateDriverTests
         // Arrange
         var session = CreateSession();
         session.HasPendingWorkAsync(Arg.Any<CancellationToken>()).Returns(true);
-        var classifier = ClassifierReturning(isFailure: false);
         var describer = Substitute.For<IResponseOutcomeDescriber>();
         describer.Describe(Arg.Any<object?>()).Returns("Success");
         var logger = Substitute.For<ILogger>();
@@ -214,47 +202,12 @@ public sealed class CommitGateDriverTests
             new PlainRequest(),
             () => Task.FromResult<Outcome<Success, Failure>>(default(Success)),
             () => session,
-            classifier,
             describer,
             logger,
             CancellationToken.None
         );
 
         // Assert - one debug-level line naming the commit decision, per CommitGateDriver's diagnostics contract.
-        logger
-            .Received(1)
-            .Log(
-                Arg.Is(LogLevel.Debug),
-                Arg.Any<EventId>(),
-                Arg.Any<object>(),
-                Arg.Any<Exception>(),
-                Arg.Any<Func<object, Exception?, string>>()
-            );
-        describer.Received(1).Describe(Arg.Any<object?>());
-    }
-
-    [Fact]
-    public async Task HandleAsync_RollbackPath_LogsDebugLine_WithRequestTypeAndDescribedOutcome()
-    {
-        // Arrange
-        var session = CreateSession();
-        var classifier = ClassifierReturning(isFailure: true);
-        var describer = Substitute.For<IResponseOutcomeDescriber>();
-        describer.Describe(Arg.Any<object?>()).Returns("Failure");
-        var logger = Substitute.For<ILogger>();
-
-        // Act
-        await CommitGateDriver.HandleAsync(
-            new TransactionalRequest(),
-            () => Task.FromResult<Outcome<Success, Failure>>(new Failure("rejected")),
-            () => session,
-            classifier,
-            describer,
-            logger,
-            CancellationToken.None
-        );
-
-        // Assert - one debug-level line naming the rollback decision, per CommitGateDriver's diagnostics contract.
         logger
             .Received(1)
             .Log(
@@ -289,13 +242,6 @@ public sealed class CommitGateDriverTests
         session.CommitAsync(Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
         session.RollbackAsync(Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
         return session;
-    }
-
-    private static IOutcomeClassifier ClassifierReturning(bool isFailure)
-    {
-        var classifier = Substitute.For<IOutcomeClassifier>();
-        classifier.IsFailure(Arg.Any<object?>()).Returns(isFailure);
-        return classifier;
     }
 
     private sealed record PlainRequest : ICommand<Outcome<Success, Failure>>;

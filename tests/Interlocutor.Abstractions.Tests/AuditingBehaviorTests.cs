@@ -294,7 +294,7 @@ public class AuditingBehaviorTests
         var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out string? _));
         await sink.Received(1).RecordAsync(Arg.Is<AuditEntry>(e => e.Outcome == nameof(String)), CancellationToken.None);
     }
 

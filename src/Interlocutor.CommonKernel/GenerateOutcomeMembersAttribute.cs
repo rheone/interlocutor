@@ -4,7 +4,7 @@ using System;
 
 /// <summary>
 /// Marks a <c>partial union</c> declaration for source-generated <c>Match</c>, <c>Switch</c>, per-case
-/// <c>TryGetValue</c>, <c>ToString</c>, and <c>IsSuccess</c> members.
+/// <c>TryGetValue</c>, and <c>ToString</c> members.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -19,8 +19,6 @@ using System;
 /// boxing on the value-type path.</description></item>
 /// <item><description><c>override string ToString()</c> forwarding to <c>this.Value?.ToString()</c>, so a case
 /// type's own <c>ToString()</c> override surfaces automatically.</description></item>
-/// <item><description><c>IsSuccess</c> - <see langword="true"/> when the active case is the first (success)
-/// case type.</description></item>
 /// </list>
 /// <para>
 /// Lives in this zero-dependency package (already home to <c>IOutcome</c>/<c>Outcome</c>) rather than in

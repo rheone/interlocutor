@@ -54,7 +54,7 @@ public sealed class PipelineOrderingIntegrationTests
         var sendResult = await mediator.SendAsync(new OrderedRequest(), TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.True(sendResult.IsSuccess);
+        Assert.True(sendResult.TryGetValue(out Success _));
         // The real transaction never stays open past a successful dispatch - it was either committed or
         // rolled back; the ordered log below (ending in "transaction-commit") proves which.
         Assert.False(session.GetCurrentTransaction() is { IsActive: true });

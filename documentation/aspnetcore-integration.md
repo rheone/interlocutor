@@ -76,10 +76,10 @@ Each outcome case maps to an HTTP status code via `IOutcomeStatusMapper.Map<TFai
 
 ```mermaid
 flowchart TD
-    Outcome["Outcome&lt;...&gt; from mediator.Send()"] --> IsSuccess{"Active case?"}
-    IsSuccess -->|"success, has payload"| Ok200["200 OK<br/>body: success payload (JSON)"]
-    IsSuccess -->|"success, unit Success"| NoContent204["204 No Content"]
-    IsSuccess -->|"failure - IOutcomeStatusMapper.Map(failure)"| CaseType{"Failure case type"}
+    Outcome["Outcome&lt;...&gt; from mediator.Send()"] --> ActiveCase{"Active case?"}
+    ActiveCase -->|"success, has payload"| Ok200["200 OK<br/>body: success payload (JSON)"]
+    ActiveCase -->|"success, unit Success"| NoContent204["204 No Content"]
+    ActiveCase -->|"failure - IOutcomeStatusMapper.Map(failure)"| CaseType{"Failure case type"}
     CaseType -->|"ValidationErrors"| Bad400Validation["400 Bad Request<br/>ProblemDetails"]
     CaseType -->|"IValidationFailureCase, no field data"| Bad400Validation
     CaseType -->|"IFieldValidationFailureCase<br/>(e.g. FluentValidationErrors)"| Bad400FieldValidation["400 Bad Request<br/>ValidationProblemDetails (field-keyed)"]

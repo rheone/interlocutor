@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
 /// <summary>
-/// The EF Core commit-gate pipeline behavior: commits or rolls back whatever transaction a dispatch opened,
+/// The EF Core commit-gate pipeline behavior: commits whatever transaction a dispatch opened,
 /// implementing the unit-of-work-owned transaction model, where <c>IUnitOfWork</c> - not a separate
 /// transaction-marker-driven behavior - owns transaction begin/commit/rollback.
 /// </summary>
@@ -22,7 +22,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 /// <typeparam name="TResponse">The response type returned after pipeline execution.</typeparam>
 /// <typeparam name="TContext">The EF Core <see cref="DbContext"/> type providing the database connection for the transaction scope.</typeparam>
 /// <param name="db">Lazy factory for the <typeparamref name="TContext"/> instance backing the transaction.</param>
-/// <param name="classifier">The outcome classifier used to determine success vs. failure for rollback decisions.</param>
+/// <param name="classifier">The outcome classifier used to label the outcome for the commit debug log line, when <paramref name="describer"/> is not supplied.</param>
 /// <param name="describer">Optional custom describer for converting response outcomes to human-readable strings for logging. Defaults to a default classifier-based describer.</param>
 /// <param name="logger">
 /// Optional logger for a debug-level line recording the commit/rollback decision. Defaults to
@@ -30,13 +30,12 @@ using Microsoft.Extensions.Logging.Abstractions;
 /// </param>
 /// <remarks>
 /// <para>
-/// This behavior implements only the EF Core-specific primitives the begin/run/check/commit-or-rollback
-/// algorithm needs - detecting an active transaction, detecting pending work, and beginning/committing/rolling
-/// one back (including the explicit <see cref="DbContext.SaveChangesAsync(CancellationToken)"/> call EF Core
-/// requires before a commit persists anything) - behind the <see cref="EntityFrameworkCommitGateSession"/>
-/// adapter. The control flow itself lives in <see cref="CommitGateDriver"/>, shared with every other store's
-/// commit-gate behavior, so this type and its NHibernate counterpart can never drift on when they begin,
-/// commit, or roll back.
+/// This behavior implements only the EF Core-specific primitives the begin/run/check/commit algorithm needs -
+/// detecting an active transaction, detecting pending work, and beginning/committing/rolling one back
+/// (including the explicit <see cref="DbContext.SaveChangesAsync(CancellationToken)"/> call EF Core requires
+/// before a commit persists anything) - behind the <see cref="EntityFrameworkCommitGateSession"/> adapter. The
+/// control flow itself lives in <see cref="CommitGateDriver"/>, shared with every other store's commit-gate
+/// behavior, so this type and its NHibernate counterpart can never drift on when they begin or commit.
 /// </para>
 /// <para>
 /// <b>Begin-on-first-write.</b> This behavior does not open a transaction unconditionally at pipeline start.
@@ -68,8 +67,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 /// </para>
 /// <para>
 /// <b>Diagnostics:</b> <see cref="CommitGateDriver"/> emits one <see cref="LogLevel.Debug"/> line per
-/// invocation that actually commits or rolls back, naming which and the <paramref name="describer"/>-rendered
-/// outcome that drove that decision. Nothing is logged for a dispatch that never opened a transaction.
+/// invocation that actually commits, naming the <paramref name="describer"/>-rendered outcome alongside it.
+/// Nothing is logged for a dispatch that never opened a transaction.
 /// </para>
 /// </remarks>
 public class UnitOfWorkBehavior<TRequest, TResponse, TContext>(
@@ -80,8 +79,6 @@ public class UnitOfWorkBehavior<TRequest, TResponse, TContext>(
 ) : IPipelineBehavior<TRequest, TResponse>
     where TContext : DbContext
 {
-    private readonly IOutcomeClassifier classifier = classifier ?? OutcomeClassifierBuilder.DefaultClassifier;
-
     private readonly IResponseOutcomeDescriber describer =
         describer ?? new DefaultResponseOutcomeDescriber(classifier ?? OutcomeClassifierBuilder.DefaultClassifier);
 
@@ -94,7 +91,6 @@ public class UnitOfWorkBehavior<TRequest, TResponse, TContext>(
             request,
             () => RunWithExternalStoreSuppressionAsync(request, next),
             () => new EntityFrameworkCommitGateSession(db.Value),
-            this.classifier,
             this.describer,
             this.logger,
             ct

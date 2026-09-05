@@ -6,7 +6,7 @@ Every public type in `Interlocutor.CommonKernel`, grouped by namespace - the [re
 
 ### `GenerateOutcomeMembersAttribute` sealed class
 
-Marks a partial union declaration for source-generated Match, Switch, per-case TryGetValue, ToString, and IsSuccess members.
+Marks a partial union declaration for source-generated Match, Switch, per-case TryGetValue, and ToString members.
 
 | Member | Summary |
 | --- | --- |
@@ -21,7 +21,6 @@ Represents the outcome of a void operation as one of two possible cases: success
 | `public Outcome(Success value)` |  |
 | `public Outcome(Failure value)` |  |
 | `public Type? ActiveCaseType` | Gets the active case's declared type, or `null` if no case was ever set. |
-| `public bool IsSuccess` | Gets a value indicating whether this result holds the success case (the first declared case type). |
 | `public object? Value` |  |
 | `public bool Equals(Outcome other)` | Determines whether this result and `other` hold equal case values. |
 | `public override bool Equals(object? obj)` | Determines whether this result and `obj` hold equal case values. |
@@ -43,7 +42,6 @@ Represents the outcome of an operation as one of two possible cases: a successfu
 | `public Outcome(TSuccessResult value)` |  |
 | `public Outcome(TFailureResult value)` |  |
 | `public Type? ActiveCaseType` | Gets the active case's declared type, or `null` if no case was ever set. |
-| `public bool IsSuccess` | Gets a value indicating whether this result holds the success case (the first declared case type). |
 | `public object? Value` |  |
 | `public bool Equals(Outcome<TSuccessResult, TFailureResult> other)` | Determines whether this result and `other` hold equal case values. |
 | `public override bool Equals(object? obj)` | Determines whether this result and `obj` hold equal case values. |
@@ -66,7 +64,6 @@ Represents the outcome of an operation as one of three possible cases: a success
 | `public Outcome(TCase2 value)` |  |
 | `public Outcome(TCase3 value)` |  |
 | `public Type? ActiveCaseType` | Gets the active case's declared type, or `null` if no case was ever set. |
-| `public bool IsSuccess` | Gets a value indicating whether this result holds the success case (the first declared case type). |
 | `public object? Value` |  |
 | `public bool Equals(Outcome<TSuccessResult, TCase2, TCase3> other)` | Determines whether this result and `other` hold equal case values. |
 | `public override bool Equals(object? obj)` | Determines whether this result and `obj` hold equal case values. |
@@ -91,7 +88,6 @@ Represents the outcome of an operation as one of four possible cases: a successf
 | `public Outcome(TCase3 value)` |  |
 | `public Outcome(TCase4 value)` |  |
 | `public Type? ActiveCaseType` | Gets the active case's declared type, or `null` if no case was ever set. |
-| `public bool IsSuccess` | Gets a value indicating whether this result holds the success case (the first declared case type). |
 | `public object? Value` |  |
 | `public bool Equals(Outcome<TSuccessResult, TCase2, TCase3, TCase4> other)` | Determines whether this result and `other` hold equal case values. |
 | `public override bool Equals(object? obj)` | Determines whether this result and `obj` hold equal case values. |
@@ -118,7 +114,6 @@ Represents the outcome of an operation as one of five possible cases: a successf
 | `public Outcome(TCase4 value)` |  |
 | `public Outcome(TCase5 value)` |  |
 | `public Type? ActiveCaseType` | Gets the active case's declared type, or `null` if no case was ever set. |
-| `public bool IsSuccess` | Gets a value indicating whether this result holds the success case (the first declared case type). |
 | `public object? Value` |  |
 | `public bool Equals(Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5> other)` | Determines whether this result and `other` hold equal case values. |
 | `public override bool Equals(object? obj)` | Determines whether this result and `obj` hold equal case values. |
@@ -147,7 +142,6 @@ Represents the outcome of an operation as one of six possible cases: a successfu
 | `public Outcome(TCase5 value)` |  |
 | `public Outcome(TCase6 value)` |  |
 | `public Type? ActiveCaseType` | Gets the active case's declared type, or `null` if no case was ever set. |
-| `public bool IsSuccess` | Gets a value indicating whether this result holds the success case (the first declared case type). |
 | `public object? Value` |  |
 | `public bool Equals(Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6> other)` | Determines whether this result and `other` hold equal case values. |
 | `public override bool Equals(object? obj)` | Determines whether this result and `obj` hold equal case values. |
@@ -348,7 +342,6 @@ Implemented by every compiler-generated union`GenerateOutcomeMembersAttribute` e
 | Member | Summary |
 | --- | --- |
 | `Type? ActiveCaseType` | Gets the active case's declared type, or `null` if no case was ever set. |
-| `bool IsSuccess` | Gets a value indicating whether the active case is the success case (the first declared case type). |
 
 ### `IRateLimitedFailureCase` interface
 
@@ -415,7 +408,6 @@ Convenience projections over an arbitrary response, checking whether it implemen
 | Member | Summary |
 | --- | --- |
 | `public static Type? AsOutcomeCaseActiveType(object? response)` | Gets `ActiveCaseType` if `response` implements `IOutcomeCase` and has a non-`null` active case type, or `null` otherwise. |
-| `public static bool? AsOutcomeCaseIsSuccess(object? response)` | Gets `IsSuccess` if `response` implements `IOutcomeCase`, or `null` if it doesn't. |
 
 ### `RateLimited` struct
 

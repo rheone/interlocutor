@@ -11,13 +11,14 @@ using Interlocutor.CommonKernel.ResultTypes;
 public class OutcomeNullPayloadTests
 {
     [Fact]
-    public void ImplicitConversion_FromNullSuccessValue_IsSuccessTrue()
+    public void ImplicitConversion_FromNullSuccessValue_TryGetValueSucceedsWithNullValue()
     {
         // Arrange & Act
         Outcome<string?, NotFound> result = (string?)null;
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out string? value));
+        Assert.Null(value);
     }
 
     [Fact]
@@ -97,7 +98,7 @@ public class OutcomeNullPayloadTests
         Outcome<NotFound, int?> result = (int?)null;
 
         // Assert
-        Assert.False(result.IsSuccess);
+        Assert.False(result.TryGetValue(out NotFound _));
         Assert.True(result.TryGetValue(out int? failureValue));
         Assert.Null(failureValue);
         Assert.Equal(typeof(int?), ((IOutcomeCase)result).ActiveCaseType);
@@ -111,7 +112,6 @@ public class OutcomeNullPayloadTests
         var result = default(Outcome<Success, Failure>);
 
         // Assert
-        Assert.False(result.IsSuccess);
         Assert.False(result.TryGetValue(out Success _));
         Assert.False(result.TryGetValue(out Failure _));
         Assert.Null(((IOutcomeCase)result).ActiveCaseType);

@@ -1,6 +1,6 @@
 # Transactions & Store Integration
 
-Managing transactions with `Interlocutor.Persistence.EntityFrameworkCore` and `Interlocutor.Persistence.NHibernate`. Because the mediator is scoped, each dispatch gets exactly one store session - a lookup and a write inside the same command execute against the same session. `IUnitOfWork` owns that session's transaction: it opens lazily, the first time anything actually writes, and commits or rolls back automatically once the dispatch completes.
+Managing transactions with `Interlocutor.Persistence.EntityFrameworkCore` and `Interlocutor.Persistence.NHibernate`. Because the mediator is scoped, each dispatch gets exactly one store session - a lookup and a write inside the same command execute against the same session. `IUnitOfWork` owns that session's transaction: it opens lazily, the first time anything actually writes, and commits automatically once the dispatch completes - unless the handler explicitly cancels it via `IUnitOfWork.Cancel`, or an unhandled exception leaves it uncommitted for the scope to dispose.
 
 ## UnitOfWorkBehavior
 
@@ -15,8 +15,10 @@ public record CreateOrder(int CustomerId, List<OrderItem> Items)
 // 1. Lets reads run against the scoped session with no transaction open
 // 2. Opens a transaction the first time anything writes (IDomainRepository, IUnitOfWork,
 //    or a directly-injected Lazy<TContext>/Lazy<ISession>)
-// 3. Commits on Success
-// 4. Rolls back on any Failure case
+// 3. Commits once the handler returns, regardless of the outcome's shape - no case type
+//    (Success, NotFound, Conflict, ValidationError, ...) decides this
+// 4. Rolls back only via an explicit IUnitOfWork.Cancel call, or an unhandled exception
+//    that leaves the transaction uncommitted for the scope to dispose
 ```
 
 A dispatch that only ever reads never pays for an open transaction - it never opens one at all.
@@ -181,14 +183,14 @@ public class CreateOrderHandler : ICommandHandler<CreateOrder, Outcome<int, Vali
         await session.SaveAsync(order, ct);
         await session.FlushAsync(ct);  // Opens a transaction first if one isn't already open, then flushes
 
-        return order.Id;  // Committed by UnitOfWorkBehavior (if no Failure)
+        return order.Id;  // Committed by UnitOfWorkBehavior
     }
 }
 ```
 
-## Cancel: forcing a rollback without a failure outcome
+## Cancel: the only way to force a rollback
 
-`IUnitOfWork.Cancel` is a rare-case escape hatch: it rolls back the current transaction immediately and returns control to the caller, without being obligated to also return a classified failure-shaped `Outcome`. It is not a short-circuit primitive - the handler still decides what to return afterward, and the pipeline's commit gate simply finds nothing pending at completion:
+No response case type - `Success`, `NotFound`, `Conflict`, `ValidationError`, or any other - decides whether a dispatch's transaction commits or rolls back. `UnitOfWorkBehavior` commits whatever is left pending once the handler returns, unconditionally. `IUnitOfWork.Cancel` is the one way to override that: it rolls back the current transaction immediately and returns control to the caller, independently of what the handler returns afterward. It is not a short-circuit primitive - the handler still decides what to return, and the pipeline's commit gate simply finds nothing pending at completion:
 
 ```csharp
 public record ArchiveOrder(int OrderId) : ICommand<Outcome>;
@@ -207,7 +209,7 @@ public class ArchiveOrderHandler : ICommandHandler<ArchiveOrder, Outcome>
         {
             // Force a rollback of whatever this handler staged, then decide the outcome independently -
             // UnitOfWorkBehavior finds nothing open or pending and does nothing further.
-            await this.unitOfWork.Cancel(ct);
+            await this.unitOfWork.CancelAsync(ct);
             return new Success();  // Still reports success: the archive already happened elsewhere.
         }
 
@@ -222,20 +224,21 @@ public class ArchiveOrderHandler : ICommandHandler<ArchiveOrder, Outcome>
 - **Never opens for a pure read**: a dispatch that never writes never opens a transaction at all - no marker to remember, no cost to pay.
 - **Begins on first write**: the transaction opens the moment anything writes - through `IDomainRepository`, `IUnitOfWork`, or a directly-injected `Lazy<TContext>`/`Lazy<ISession>` - not at dispatch start.
 - **Begins eagerly for `ITransactionalRequest`**: at pipeline start instead, so an earlier protective read shares the same transaction as the write that follows it.
-- **Commit on Success**: transaction commits when the handler returns `Success` or a success-type case.
-- **Rollback on Failure**: transaction rolls back when the handler returns any `Failure` case (`NotFound`, `Forbidden`, `Conflict`, `ValidationError`, etc.), or when the handler calls `IUnitOfWork.Cancel`.
+- **Commits by default**: once a dispatch has an active transaction with pending work, it commits - regardless of what case type the handler returns. No case type - `Success`, `NotFound`, `Conflict`, `ValidationError`, or any other - is inspected to make this decision.
+- **Rolls back only on an explicit signal**: a call to `IUnitOfWork.Cancel` rolls back immediately, independently of what the handler returns afterward; an unhandled exception leaves the transaction uncommitted for the scope to dispose, which rolls it back too. Nothing else rolls a transaction back.
 - **No rollback on pipeline short-circuit**: if `AuthorizationBehavior` or `ValidationBehavior` short-circuits a request before any write happens, no transaction was ever opened. No transaction to roll back.
 
-The last two rules are the ones that are easy to misread as "any denied or failed request rolls back" - it doesn't, when nothing was ever written in the first place:
+The rule that's easy to misread is "returning a failure case rolls back" - it doesn't. A handler that wants a rollback alongside a returned failure case must call `IUnitOfWork.Cancel` itself:
 
 ```mermaid
 flowchart TD
     Start["Request dispatched"] --> ShortCircuit{"Short-circuited before<br/>any write happens?<br/>(e.g. AuthorizationBehavior denies)"}
     ShortCircuit -->|"yes"| NoTx["No transaction was ever opened -<br/>nothing to roll back"]
     ShortCircuit -->|"no"| Open["Transaction opens on first write<br/>(or eagerly, for ITransactionalRequest)"]
-    Open --> Outcome{"Handler's outcome?"}
-    Outcome -->|"Success"| Commit["Commit"]
-    Outcome -->|"Failure case<br/>(NotFound, Forbidden, Conflict, ValidationError, ...)<br/>or IUnitOfWork.Cancel"| Rollback["Rollback"]
+    Open --> Signal{"Did the handler call<br/>IUnitOfWork.Cancel,<br/>or throw?"}
+    Signal -->|"no"| Commit["Commit - regardless of the<br/>returned case type"]
+    Signal -->|"Cancel"| Rollback["Rollback immediately"]
+    Signal -->|"threw"| Uncommitted["Left uncommitted - rolled back<br/>when the scope disposes"]
 
     classDef callout fill:#fff3cd,color:#664d03,stroke:#997404,stroke-width:2px;
     class NoTx callout
@@ -257,11 +260,14 @@ public class UpdateProductHandler
         var context = this.lazyContext.Value;
         var product = await context.Products.FirstOrDefaultAsync(p => p.Id == command.Id, ct);
 
+        // Neither early return stages a write, so the (eagerly-opened, empty) transaction commits
+        // with nothing in it either way - returning NotFound/Conflict does not, on its own, roll
+        // anything back.
         if (product == null)
-            return new NotFound($"Product {command.Id}");  // Rolls back transaction
+            return new NotFound($"Product {command.Id}");
 
         if (product.Version != command.Version)
-            return new Conflict("Concurrency conflict");  // Rolls back transaction
+            return new Conflict("Concurrency conflict");
 
         product.Name = command.Name;
         await context.SaveChangesAsync(ct);
@@ -294,6 +300,7 @@ If you dispatch from within a command handler (rare, but possible), each dispatc
 public class ComplexOrderHandler : ICommandHandler<CreateComplexOrder, Outcome<int, InsufficientStock>>
 {
     private readonly Lazy<AppDbContext> lazyContext;
+    private readonly IUnitOfWork unitOfWork;
     private readonly ISender mediator;
 
     public async Task<Outcome<int, InsufficientStock>> Handle(
@@ -311,8 +318,13 @@ public class ComplexOrderHandler : ICommandHandler<CreateComplexOrder, Outcome<i
             ct
         );
 
-        if (!inventoryResult.IsSuccess)
-            return (InsufficientStock)inventoryResult.Value!;  // Same transaction rolls back
+        if (!inventoryResult.TryGetValue(out Success _))
+        {
+            // Returning InsufficientStock does not, on its own, roll anything back - the order
+            // insert staged above would otherwise still commit. Cancel forces the rollback.
+            await this.unitOfWork.CancelAsync(ct);
+            return (InsufficientStock)inventoryResult.Value!;
+        }
 
         await context.SaveChangesAsync(ct);
         return order.Id;  // Same transaction commits

@@ -2,23 +2,24 @@ namespace Interlocutor.Persistence.Abstractions;
 
 using Interlocutor.Abstractions.Markers;
 using Interlocutor.Abstractions.Pipeline;
-using Interlocutor.Abstractions.Pipeline.Classifiers;
 using Microsoft.Extensions.Logging;
 
 /// <summary>
 /// Runs the store-agnostic control flow behind every store's commit-gate <c>UnitOfWorkBehavior</c>: bypass for
 /// <see cref="IExternalStoreRequest"/>, eager transaction begin for <see cref="ITransactionalRequest"/>, running
-/// the next pipeline delegate, detecting whether anything is left pending, and committing or rolling back with
-/// a debug-level log line naming the decision.
+/// the next pipeline delegate, detecting whether anything is left pending, and committing whatever is left
+/// pending with a debug-level log line naming the decision.
 /// </summary>
 /// <remarks>
 /// <para>
-/// This is the one place the begin/run/check/commit-or-rollback algorithm is written down. Each store
-/// package's <c>UnitOfWorkBehavior</c> - EF Core's and NHibernate's - implements only the store-specific
-/// primitives behind <see cref="ICommitGateSession"/> (how to detect an active transaction, how to detect
-/// pending work, how to begin/commit/roll one back) and defers the algorithm itself to
+/// This is the one place the begin/run/check/commit algorithm is written down. Each store package's
+/// <c>UnitOfWorkBehavior</c> - EF Core's and NHibernate's - implements only the store-specific primitives
+/// behind <see cref="ICommitGateSession"/> (how to detect an active transaction, how to detect pending work,
+/// how to begin/commit/roll one back) and defers the algorithm itself to
 /// <see cref="HandleAsync{TRequest, TResponse}"/>. Keeping the algorithm here, rather than duplicated once per
-/// store, keeps the two stores' commit/rollback semantics identical by construction instead of by discipline.
+/// store, keeps the two stores' commit semantics identical by construction instead of by discipline. Rollback
+/// is not decided here at all - it happens only via an explicit <see cref="IUnitOfWork.CancelAsync"/>, which
+/// rolls back and clears the session before this method's own pending-work check ever runs.
 /// </para>
 /// <para>
 /// <c>sessionFactory</c> stays a factory, not an already-resolved <see cref="ICommitGateSession"/>, so a
@@ -44,7 +45,6 @@ public static class CommitGateDriver
     /// Invoked at most once, and only when <paramref name="request"/> is not an
     /// <see cref="IExternalStoreRequest"/>.
     /// </param>
-    /// <param name="classifier">The outcome classifier used to determine success vs. failure for the rollback decision.</param>
     /// <param name="describer">Describer used to render the outcome for the commit/rollback debug log line.</param>
     /// <param name="logger">Logger that receives one debug-level line per invocation that actually commits or rolls back.</param>
     /// <param name="cancellationToken">A token to observe while awaiting the next delegate and the store operations below it.</param>
@@ -53,7 +53,6 @@ public static class CommitGateDriver
         TRequest request,
         Func<Task<TResponse>> next,
         Func<ICommitGateSession> sessionFactory,
-        IOutcomeClassifier classifier,
         IResponseOutcomeDescriber describer,
         ILogger logger,
         CancellationToken cancellationToken
@@ -91,24 +90,18 @@ public static class CommitGateDriver
             await session.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        if (!classifier.IsFailure(result))
-        {
-            await session.CommitAsync(cancellationToken).ConfigureAwait(false);
-            logger.LogDebug(
-                "Committed transaction for {RequestType} with outcome {Outcome}",
-                typeof(TRequest).Name,
-                describer.Describe(result)
-            );
-        }
-        else
-        {
-            await session.RollbackAsync(cancellationToken).ConfigureAwait(false);
-            logger.LogDebug(
-                "Rolled back transaction for {RequestType} with outcome {Outcome}",
-                typeof(TRequest).Name,
-                describer.Describe(result)
-            );
-        }
+        // Commit by default: no response case type - Success, Conflict, ValidationErrors, none of them -
+        // determines this decision. A handler that wants a rollback despite staged work signals it
+        // explicitly via IUnitOfWork.Cancel(), which already rolls back and clears the session before this
+        // point is ever reached - the "nothing to finalize" early-exit above is what a cancelled dispatch
+        // hits instead of this line. A call-site override alongside a specific returned/ejected value is
+        // tracked separately (.scratch/outcome-classifier-retirement/issues/02-commit-gate-explicit-disposition.md).
+        await session.CommitAsync(cancellationToken).ConfigureAwait(false);
+        logger.LogDebug(
+            "Committed transaction for {RequestType} with outcome {Outcome}",
+            typeof(TRequest).Name,
+            describer.Describe(result)
+        );
 
         return result;
     }

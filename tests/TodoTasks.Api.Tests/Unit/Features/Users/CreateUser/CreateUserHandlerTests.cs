@@ -33,7 +33,6 @@ public sealed class CreateUserHandlerTests
         var result = await this.handler.HandleAsync(command, CancellationToken.None);
 
         // Assert
-        Assert.True(result.IsSuccess);
         var dto = Assert.IsType<UserDto>(result.Value);
         Assert.Equal("Ada Lovelace", dto.DisplayName);
         Assert.Equal("ada@example.com", dto.Email);

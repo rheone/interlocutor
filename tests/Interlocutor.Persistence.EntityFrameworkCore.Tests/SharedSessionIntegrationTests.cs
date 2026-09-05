@@ -52,7 +52,7 @@ public sealed class SharedSessionIntegrationTests : IClassFixture<EntityFramewor
         );
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out Success _));
 
         await using var verify = this.CreateVerificationContext();
         Assert.Equal(["shared-session"], verify.Widgets.Select(w => w.Name));

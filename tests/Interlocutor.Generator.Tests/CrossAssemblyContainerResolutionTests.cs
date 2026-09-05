@@ -154,14 +154,15 @@ public sealed class CrossAssemblyContainerResolutionTests
     /// <summary>
     /// <see cref="ISender.SendAsync(object, System.Threading.CancellationToken)"/>'s runtime-typed overload
     /// returns the marker <see cref="IOutcome"/> (compile-time common ground with the caller); the
-    /// concrete case is read back by reflection over the boxed union value's own <c>IsSuccess</c>/<c>Value</c>
-    /// members, since the caller has no compile-time reference to the library's own success/failure types.
+    /// concrete case is read back by reflection over the boxed union value's own
+    /// <c>ActiveCaseType</c>/<c>Value</c> members, since the caller has no compile-time reference to the
+    /// library's own success/failure types.
     /// </summary>
     private static void AssertSuccessfulGreeting(IOutcome outcome)
     {
         var outcomeType = outcome.GetType();
-        var isSuccess = (bool)outcomeType.GetProperty("IsSuccess")!.GetValue(outcome)!;
-        Assert.True(isSuccess, $"Expected a successful outcome but got {outcome}.");
+        var activeCaseType = (Type?)outcomeType.GetProperty("ActiveCaseType")!.GetValue(outcome);
+        Assert.Equal(typeof(string), activeCaseType);
 
         var value = outcomeType.GetProperty("Value")!.GetValue(outcome);
         Assert.Equal("hello from the cross-assembly library", value);

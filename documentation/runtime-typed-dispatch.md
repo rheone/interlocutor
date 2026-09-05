@@ -39,7 +39,7 @@ All outcome unions implement `IOutcome` - but it's a bare marker with no members
 public interface IOutcome;
 ```
 
-That means runtime-typed `Send(object request)`'s `IOutcome` result carries no `IsSuccess`/case member to read directly. Inspecting it without knowing the concrete union type is exactly what [`IOutcomeCaseRegistry`](messages-and-result-types.md#ioutcome-as-an-extension-point) is for - inject it and call `TryGetActiveCase(response, out caseType, out caseValue)`. The Outbox Pattern example below shows the full pattern.
+That means runtime-typed `Send(object request)`'s `IOutcome` result carries no case-reading member to call directly. Inspecting it without knowing the concrete union type is exactly what [`IOutcomeCaseRegistry`](messages-and-result-types.md#ioutcome-as-an-extension-point) is for - inject it and call `TryGetActiveCase(response, out caseType, out caseValue)`. The Outbox Pattern example below shows the full pattern.
 
 > [!NOTE]
 > `IOutcomeCaseRegistry` is try-added by several `Pipeline.Add*Behavior()` calls (`AddAuthorizationBehavior`, `AddCancellationBehavior`, `AddTimeoutBehavior`, `AddRateLimitedBehavior`) and by `UseRecommendedChain()`, which includes `AddAuthorizationBehavior`. If your pipeline uses none of those, register `DefaultOutcomeCaseRegistry` yourself, or supply a custom `IOutcomeCaseRegistry` per [messages-and-result-types.md](messages-and-result-types.md#ioutcome-as-an-extension-point).

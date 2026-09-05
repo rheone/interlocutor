@@ -79,7 +79,7 @@ public sealed class UnitOfWorkBehaviorArityTests
         var result = await mediator.SendAsync(new CreateWidget("subclassed"), TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out Success _));
         await using var verifyContext = new TestDbContext(
             new DbContextOptionsBuilder<TestDbContext>().UseSqlite(connection).Options
         );

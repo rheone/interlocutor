@@ -1,33 +1,21 @@
 namespace Interlocutor.Abstractions.Pipeline.Classifiers;
 
 /// <summary>
-/// Classifies operation outcomes as success or failure, determining transaction disposition
-/// and logging/auditing behavior.
+/// Labels operation outcomes for logging/auditing, by registered type, predicate, or fallback.
 /// </summary>
 /// <remarks>
 /// <para>
-/// The outcome classifier encapsulates the logic that determines whether a response represents
-/// a domain failure (rollback) or success (commit). It is built using <see cref="OutcomeClassifierBuilder"/>
-/// and registered as a singleton in DI so behaviors can classify outcomes consistently.
+/// The outcome classifier is a pure label registry: it maps a response to a human-readable label, with
+/// no success/failure judgment attached. It is built using <see cref="OutcomeClassifierBuilder"/> and
+/// registered as a singleton in DI so behaviors can label outcomes consistently.
 /// </para>
 /// <para>
-/// The classifier unwraps compiler-generated unions before classification, so it works uniformly
+/// The classifier unwraps compiler-generated unions before labeling, so it works uniformly
 /// with both union and non-union response types.
 /// </para>
 /// </remarks>
 public interface IOutcomeClassifier
 {
-    /// <summary>
-    /// Determines whether the given response represents a failure outcome.
-    /// </summary>
-    /// <remarks>
-    /// Returns true if the response is registered as a failure type, matches a failure predicate,
-    /// or follows the unregistered-type policy (default: fail-closed, unknown = failure).
-    /// </remarks>
-    /// <param name="response">The response to classify. May be null.</param>
-    /// <returns><see langword="true"/> if the response represents a failure; otherwise, <see langword="false"/>.</returns>
-    bool IsFailure(object? response);
-
     /// <summary>
     /// Gets a human-readable label for the outcome.
     /// </summary>

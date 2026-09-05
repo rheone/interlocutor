@@ -64,9 +64,9 @@ public interface ISender
     /// <param name="ct">The cancellation token.</param>
     /// <returns>
     /// A <see cref="Task{TResult}"/> whose result is the handler's response as an
-    /// <see cref="CommonKernel.ResultTypes.IOutcome"/>. Callers can check
-    /// <c>IsSuccess</c>-shaped members or pattern-match the union's case value (via
-    /// <see cref="System.Runtime.CompilerServices.IUnion"/>) without knowing the concrete outcome type
+    /// <see cref="CommonKernel.ResultTypes.IOutcome"/>. Callers can pattern-match the union's case value
+    /// (via <see cref="System.Runtime.CompilerServices.IUnion"/>) or use its generated
+    /// <c>TryGetValue</c>/<c>TryGet{TypeName}</c> accessors without knowing the concrete outcome type
     /// statically.
     /// </returns>
     /// <remarks>

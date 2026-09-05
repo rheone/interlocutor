@@ -4,7 +4,6 @@ using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Interlocutor.Abstractions.Pipeline.Cases;
-using Interlocutor.Abstractions.Pipeline.Classifiers;
 using Interlocutor.Abstractions.Pipeline.Mapping;
 using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
@@ -59,15 +58,13 @@ public static partial class ResultExtensions
         /// <para>
         /// The dedicated overloads distinguish success from failure at compile time, via a <c>switch</c> against
         /// the statically known <c>TSuccess</c>/<c>TCaseN</c> type parameters. This overload has no such static
-        /// information, so it classifies the extracted case via
-        /// <see cref="Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder.DefaultClassifier"/>
-        /// instead - the same classifier <c>AuditingBehavior</c>/<c>UnitOfWorkBehavior</c> use to decide
-        /// commit-vs-rollback. It is fail-closed: a case type it has no registration for is treated as a failure.
-        /// The built-in kernel failure types (<c>NotFound</c>, <c>Forbidden</c>, <c>Conflict</c>, ...) and the
-        /// bare <see cref="Success"/> marker are pre-registered, so a response built from those classifies
-        /// correctly with no extra setup; a hand-rolled response type whose success case carries a different,
-        /// unregistered payload type needs that type registered with a custom <c>IOutcomeClassifier</c> (built via
-        /// <c>OutcomeClassifierBuilder</c>) for this overload to classify it as success rather than failure.
+        /// information, so it treats the extracted case as success only when its value is the bare
+        /// <see cref="Success"/> marker, and as a failure otherwise - fail-closed, the same policy the retired
+        /// outcome classifier used to apply. A hand-rolled response type whose success case carries some other
+        /// payload type is treated as a failure by this overload and dispatched to <paramref name="mapper"/>
+        /// accordingly; see <c>.scratch/outcome-classifier-retirement/issues/03-aspnetcore-throw-on-unmappable.md</c>
+        /// for the tracked follow-up that replaces this fail-closed guess with an explicit throw when a case
+        /// genuinely can't be resolved, rather than silently misclassifying it.
         /// </para>
         /// <para>
         /// C# overload resolution always prefers a dedicated overload over this one for the six built-in union
@@ -190,7 +187,7 @@ public static partial class ResultExtensions
 
     /// <summary>
     /// Extracts <paramref name="response"/>'s active case via <paramref name="caseRegistry"/> (or the default
-    /// registry) and classifies it as success or failure via <see cref="OutcomeClassifierBuilder.DefaultClassifier"/>.
+    /// registry) and determines whether it should be mapped as a failure.
     /// </summary>
     /// <typeparam name="TResponse">The <see cref="IOutcome"/> type to extract from.</typeparam>
     /// <param name="response">The response to extract the active case from.</param>
@@ -203,18 +200,21 @@ public static partial class ResultExtensions
         where TResponse : IOutcome
     {
         var registry = caseRegistry ?? DefaultOutcomeCaseRegistry.Instance;
-        registry.TryGetActiveCase(response, out var caseType, out var caseValue);
+        var found = registry.TryGetActiveCase(response, out var caseType, out var caseValue);
 
-        // A null caseValue is ambiguous on its own (see finding 07) - a legitimate null case payload and "no
-        // case extracted" both look identical once extracted. When response is a compiler-generated union,
-        // ask it directly rather than routing a null value back through the classifier's type-based lookup,
-        // which can't recover the case identity a null value already lost. A non-null caseValue, or a null
-        // one from a hand-rolled IOutcome the registry decomposed via a custom extractor, keeps classifying
-        // through the registered types/predicates exactly as before.
-        var isFailure =
-            caseValue is null && response.AsOutcomeCaseIsSuccess() is { } isSuccess
-                ? !isSuccess
-                : OutcomeClassifierBuilder.DefaultClassifier.IsFailure(caseValue);
+        // Fail-closed by default, same policy the retired outcome classifier applied: a response the
+        // registry couldn't resolve any case for at all (a null response, or a genuinely unset union - see
+        // TryGetActiveCase's own remarks) is dispatched to the mapper as a failure, same as any non-null,
+        // non-Success case value (every kernel failure case, and any hand-rolled response's own case
+        // types). The one narrower spot than before: a *resolved* active case whose value is legitimately
+        // null is ambiguous on its own - a null success payload and a null failure payload look identical
+        // once extracted - and, unlike before, there is no longer a case-position signal left to resolve it
+        // with, so a resolved null case defaults to success (the far more common shape in practice, and the
+        // one existing tests exercise). This is a narrower policy than the retired classifier's (which a
+        // consumer could widen via a custom classifier registering additional success types) - see
+        // .scratch/outcome-classifier-retirement/issues/03-aspnetcore-throw-on-unmappable.md for the tracked
+        // redesign that replaces this guess with an explicit throw instead.
+        var isFailure = caseValue is not Success && (!found || caseValue is not null);
 
         return (isFailure, caseType, caseValue);
     }

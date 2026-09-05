@@ -9,23 +9,23 @@ using Interlocutor.CommonKernel.ResultTypes;
 public class OutcomeOfTwoCasesTests
 {
     [Fact]
-    public void Construct_FromSuccess_IsSuccessTrue()
+    public void Construct_FromSuccess_TryGetValueSucceeds()
     {
         // Arrange & Act
         var result = new Outcome<string, NotFound>("hello");
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out string _));
     }
 
     [Fact]
-    public void Construct_FromFailure_IsSuccessFalse()
+    public void Construct_FromFailure_TryGetValueFails()
     {
         // Arrange & Act
         var result = new Outcome<string, NotFound>(new NotFound("missing"));
 
         // Assert
-        Assert.False(result.IsSuccess);
+        Assert.False(result.TryGetValue(out string _));
     }
 
     [Fact]
@@ -35,7 +35,7 @@ public class OutcomeOfTwoCasesTests
         Outcome<string, NotFound> result = "hello";
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out string _));
     }
 
     [Fact]
@@ -45,7 +45,7 @@ public class OutcomeOfTwoCasesTests
         Outcome<string, NotFound> result = new NotFound("missing");
 
         // Assert
-        Assert.False(result.IsSuccess);
+        Assert.False(result.TryGetValue(out string _));
     }
 
     [Fact]

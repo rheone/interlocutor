@@ -6,27 +6,27 @@ using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
-/// Builds an immutable <see cref="IOutcomeClassifier"/> that classifies operation outcomes
-/// as success or failure. Seeded with all kernel types via open-generic matching; consumers
+/// Builds an immutable <see cref="IOutcomeClassifier"/> that labels operation outcomes for
+/// logging/auditing. Seeded with all kernel types via open-generic matching; consumers
 /// may register additional custom types.
 /// </summary>
 /// <remarks>
 /// <para>
 /// The builder collects type registrations and predicates, then produces an immutable classifier.
 /// It is pre-seeded with all Interlocutor.CommonKernel result types so new arities cannot silently
-/// regress classification behavior.
+/// regress labeling behavior.
 /// </para>
 /// <para>
-/// Unregistered types follow the fail-closed policy: unknown outcomes are classified as failures,
-/// so consumers who forget to register a custom type see immediate loud rollbacks rather than
-/// silently committed writes.
+/// The builder is a pure label registry - a type or predicate maps to a display label, nothing
+/// more. It carries no success/failure judgment: <see cref="IOutcomeClassifier.GetLabel"/> falls
+/// back leniently to the runtime type name for anything unregistered, and never throws.
 /// </para>
 /// </remarks>
 public sealed class OutcomeClassifierBuilder
 {
     private static readonly Lock _lockObject = new();
     private readonly Dictionary<Type, OutcomeClassification> _classifications = [];
-    private readonly List<(Func<object?, bool> Predicate, string Label, bool IsFailure)> _predicates = [];
+    private readonly List<(Func<object?, bool> Predicate, string Label)> _predicates = [];
 
     /// <summary>
     /// Initializes a new instance of the <see cref="OutcomeClassifierBuilder"/> class, pre-seeded with all Interlocutor.CommonKernel case types.
@@ -35,25 +35,24 @@ public sealed class OutcomeClassifierBuilder
     {
         // Seed with kernel types using open-generic matching where applicable.
         // This ensures new union arities cannot silently regress.
-        this.RegisterSuccessType<Success>("Success");
-        this.RegisterFailureType<NotFound>("NotFound");
-        this.RegisterFailureType<Forbidden>("Forbidden");
-        this.RegisterFailureType<Conflict>("Conflict");
-        this.RegisterFailureType<ValidationErrors>("ValidationError");
-        this.RegisterFailureType<Failures>("Failure");
-        this.RegisterFailureType<Conflicts>("Conflict");
-        this.RegisterFailureType<Failure>("Failure");
-        this.RegisterFailureType<Cancelled>("Cancelled");
-        this.RegisterFailureType<Timeout>("Timeout");
-        this.RegisterFailureType<RateLimited>("RateLimited");
+        this.RegisterType<Success>("Success");
+        this.RegisterType<NotFound>("NotFound");
+        this.RegisterType<Forbidden>("Forbidden");
+        this.RegisterType<Conflict>("Conflict");
+        this.RegisterType<ValidationErrors>("ValidationError");
+        this.RegisterType<Failures>("Failure");
+        this.RegisterType<Conflicts>("Conflict");
+        this.RegisterType<Failure>("Failure");
+        this.RegisterType<Cancelled>("Cancelled");
+        this.RegisterType<Timeout>("Timeout");
+        this.RegisterType<RateLimited>("RateLimited");
 
         // Register generic variants via predicate to handle open-ended shapes.
         // This covers ValidationError<TErrorCode>, ValidationErrors<TErrorCode>, and
         // any future generic result types.
         this.RegisterPredicate(
             response => response?.GetType().IsGenericType == true && response.GetType().Name.StartsWith("ValidationError"),
-            "ValidationError",
-            isFailure: true
+            "ValidationError"
         );
     }
 
@@ -80,68 +79,54 @@ public sealed class OutcomeClassifierBuilder
     }
 
     /// <summary>
-    /// Registers a type as a success outcome.
+    /// Registers a type's display label.
     /// </summary>
-    /// <typeparam name="TSuccess">The success type to register.</typeparam>
-    /// <param name="label">The human-readable label for this outcome.</param>
+    /// <typeparam name="T">The type to register.</typeparam>
+    /// <param name="label">The human-readable label for this type.</param>
     /// <returns>This builder for method chaining.</returns>
-    public OutcomeClassifierBuilder RegisterSuccessType<TSuccess>(string label)
-        where TSuccess : notnull
+    public OutcomeClassifierBuilder RegisterType<T>(string label)
+        where T : notnull
     {
-        this._classifications[typeof(TSuccess)] = new OutcomeClassification(label, false);
+        this._classifications[typeof(T)] = new OutcomeClassification(label);
         return this;
     }
 
     /// <summary>
-    /// Registers a type as a failure outcome.
+    /// Registers a type's display label, by runtime <see cref="Type"/>.
     /// </summary>
-    /// <typeparam name="TFailure">The failure type to register.</typeparam>
-    /// <param name="label">The human-readable label for this outcome.</param>
+    /// <param name="type">The type to register.</param>
+    /// <param name="label">The human-readable label for this type.</param>
     /// <returns>This builder for method chaining.</returns>
-    public OutcomeClassifierBuilder RegisterFailureType<TFailure>(string label)
-        where TFailure : notnull
-    {
-        this._classifications[typeof(TFailure)] = new OutcomeClassification(label, true);
-        return this;
-    }
-
-    /// <summary>
-    /// Registers a type (by runtime Type) as a failure outcome.
-    /// </summary>
-    /// <param name="type">The failure type to register.</param>
-    /// <param name="label">The human-readable label for this outcome.</param>
-    /// <returns>This builder for method chaining.</returns>
-    public OutcomeClassifierBuilder RegisterFailureType(Type type, string label)
+    public OutcomeClassifierBuilder RegisterType(Type type, string label)
     {
         ArgumentNullException.ThrowIfNull(type);
-        this._classifications[type] = new OutcomeClassification(label, true);
+        this._classifications[type] = new OutcomeClassification(label);
         return this;
     }
 
     /// <summary>
-    /// Registers a predicate-based classifier for outcome types that cannot be expressed by type alone.
+    /// Registers a predicate-based label for outcome types that cannot be expressed by type alone.
     /// </summary>
     /// <remarks>
     /// Predicates are evaluated in registration order when a response's type is not found in the
-    /// type registration table. The first predicate to return true wins; if none match, the
-    /// fail-closed policy applies (unknown = failure).
+    /// type registration table. The first predicate to return true wins; if none match, <see cref="IOutcomeClassifier.GetLabel"/>
+    /// falls back to the runtime type name.
     /// </remarks>
-    /// <param name="predicate">A function that returns true if the response matches this classification.</param>
+    /// <param name="predicate">A function that returns true if the response matches this label.</param>
     /// <param name="label">The human-readable label for matching outcomes.</param>
-    /// <param name="isFailure">Whether matching outcomes are failures.</param>
     /// <returns>This builder for method chaining.</returns>
-    public OutcomeClassifierBuilder RegisterPredicate(Func<object?, bool> predicate, string label, bool isFailure)
+    public OutcomeClassifierBuilder RegisterPredicate(Func<object?, bool> predicate, string label)
     {
         ArgumentNullException.ThrowIfNull(predicate);
         ArgumentNullException.ThrowIfNull(label);
-        this._predicates.Add((predicate, label, isFailure));
+        this._predicates.Add((predicate, label));
         return this;
     }
 
     /// <summary>
     /// Builds an immutable classifier from the registrations.
     /// </summary>
-    /// <returns>An immutable classifier that applies all registered classifications.</returns>
+    /// <returns>An immutable classifier that applies all registered labels.</returns>
     public IOutcomeClassifier Build() =>
         new DefaultOutcomeClassifier(this._classifications.ToImmutableDictionary(), this._predicates.ToImmutableList());
 
@@ -151,50 +136,15 @@ public sealed class OutcomeClassifierBuilder
     private sealed class DefaultOutcomeClassifier : IOutcomeClassifier
     {
         private readonly ImmutableDictionary<Type, OutcomeClassification> _classifications;
-        private readonly ImmutableList<(Func<object?, bool> Predicate, string Label, bool IsFailure)> _predicates;
+        private readonly ImmutableList<(Func<object?, bool> Predicate, string Label)> _predicates;
 
         internal DefaultOutcomeClassifier(
             ImmutableDictionary<Type, OutcomeClassification> classifications,
-            ImmutableList<(Func<object?, bool> Predicate, string Label, bool IsFailure)> predicates
+            ImmutableList<(Func<object?, bool> Predicate, string Label)> predicates
         )
         {
             this._classifications = classifications;
             this._predicates = predicates;
-        }
-
-        public bool IsFailure(object? response)
-        {
-            var unwrapped = Unwrap(response);
-            var type = unwrapped?.GetType();
-
-            // Check type registrations first.
-            if (type is not null && this._classifications.TryGetValue(type, out var classification))
-            {
-                return classification.IsFailure;
-            }
-
-            // Check predicates in order.
-            foreach (var (predicate, _, isFailure) in this._predicates)
-            {
-                if (predicate(unwrapped))
-                {
-                    return isFailure;
-                }
-            }
-
-            // A compiler-generated union already knows its own active case - case 1 is always the success
-            // case, by this library's convention - so consult it before falling back to fail-closed. This is
-            // what lets a legitimately null case payload (unwrapped above to a null Value the type table can't
-            // look anything up by) still classify correctly, and also covers a custom case type nobody
-            // registered, as long as the response is a union at all.
-            if (response.AsOutcomeCaseIsSuccess() is { } isSuccess)
-            {
-                return !isSuccess;
-            }
-
-            // Fail-closed policy: unregistered types are failures, so consumers
-            // see immediate loud rollbacks.
-            return true;
         }
 
         public string GetLabel(object? response)
@@ -209,7 +159,7 @@ public sealed class OutcomeClassifierBuilder
             }
 
             // Check predicates in order.
-            foreach (var (predicate, label, _) in this._predicates)
+            foreach (var (predicate, label) in this._predicates)
             {
                 if (predicate(unwrapped))
                 {
@@ -242,8 +192,8 @@ public sealed class OutcomeClassifierBuilder
 #pragma warning disable SA1402 // Allowing this small support type to stay co-located with the builder that owns it
 
 /// <summary>
-/// Describes how an outcome type is classified (success vs. failure, with human-readable label).
+/// Describes an outcome type's registered display label.
 /// </summary>
-internal sealed record class OutcomeClassification(string Label, bool IsFailure);
+internal sealed record class OutcomeClassification(string Label);
 
 #pragma warning restore SA1402

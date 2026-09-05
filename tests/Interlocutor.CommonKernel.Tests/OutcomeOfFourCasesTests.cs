@@ -10,43 +10,43 @@ using Interlocutor.CommonKernel.ResultTypes;
 public class OutcomeOfFourCasesTests
 {
     [Fact]
-    public void Construct_FromSuccess_IsSuccessTrue()
+    public void Construct_FromSuccess_TryGetValueSucceeds()
     {
         // Arrange & Act
         var result = new Outcome<string, NotFound, Forbidden, Conflict>("hello");
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out string _));
     }
 
     [Fact]
-    public void Construct_FromCase2_IsSuccessFalse()
+    public void Construct_FromCase2_TryGetValueFails()
     {
         // Arrange & Act
         var result = new Outcome<string, NotFound, Forbidden, Conflict>(new NotFound("missing"));
 
         // Assert
-        Assert.False(result.IsSuccess);
+        Assert.False(result.TryGetValue(out string _));
     }
 
     [Fact]
-    public void Construct_FromCase3_IsSuccessFalse()
+    public void Construct_FromCase3_TryGetValueFails()
     {
         // Arrange & Act
         var result = new Outcome<string, NotFound, Forbidden, Conflict>(new Forbidden("denied"));
 
         // Assert
-        Assert.False(result.IsSuccess);
+        Assert.False(result.TryGetValue(out string _));
     }
 
     [Fact]
-    public void Construct_FromCase4_IsSuccessFalse()
+    public void Construct_FromCase4_TryGetValueFails()
     {
         // Arrange & Act
         var result = new Outcome<string, NotFound, Forbidden, Conflict>(new Conflict("stale", "CONFLICT"));
 
         // Assert
-        Assert.False(result.IsSuccess);
+        Assert.False(result.TryGetValue(out string _));
     }
 
     [Fact]
@@ -56,7 +56,7 @@ public class OutcomeOfFourCasesTests
         Outcome<string, NotFound, Forbidden, Conflict> result = "hello";
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out string _));
     }
 
     [Fact]
@@ -66,7 +66,7 @@ public class OutcomeOfFourCasesTests
         Outcome<string, NotFound, Forbidden, Conflict> result = new NotFound("missing");
 
         // Assert
-        Assert.False(result.IsSuccess);
+        Assert.False(result.TryGetValue(out string _));
     }
 
     [Fact]
@@ -76,7 +76,7 @@ public class OutcomeOfFourCasesTests
         Outcome<string, NotFound, Forbidden, Conflict> result = new Forbidden("denied");
 
         // Assert
-        Assert.False(result.IsSuccess);
+        Assert.False(result.TryGetValue(out string _));
     }
 
     [Fact]
@@ -86,7 +86,7 @@ public class OutcomeOfFourCasesTests
         Outcome<string, NotFound, Forbidden, Conflict> result = new Conflict("stale", "CONFLICT");
 
         // Assert
-        Assert.False(result.IsSuccess);
+        Assert.False(result.TryGetValue(out string _));
     }
 
     [Fact]

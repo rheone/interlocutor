@@ -41,15 +41,15 @@ public class CustomArityOutcomeTests
     }
 
     [Fact]
-    public void IsSuccess_OverSuccessAndFailureCases_ReportsCorrectly()
+    public void TryGetValue_OverSuccessAndFailureCases_ReportsCorrectly()
     {
         // Arrange
         PaymentOutcome success = new Receipt("txn_123");
         PaymentOutcome failure = default(CardExpired);
 
         // Act & Assert
-        Assert.True(success.IsSuccess);
-        Assert.False(failure.IsSuccess);
+        Assert.True(success.TryGetValue(out Receipt _));
+        Assert.False(failure.TryGetValue(out Receipt _));
     }
 
     [Fact]

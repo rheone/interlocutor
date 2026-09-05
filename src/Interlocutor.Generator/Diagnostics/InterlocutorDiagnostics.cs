@@ -330,7 +330,7 @@ internal static class InterlocutorDiagnostics
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true,
         description: "GenerateOutcomeMembersAttribute marks a partial union declaration for source-generated "
-            + "Match/Switch/TryGetValue/ToString/IsSuccess members. A union with fewer than two case types has "
+            + "Match/Switch/TryGetValue/ToString members. A union with fewer than two case types has "
             + "no alternative for a switch to be exhaustive over, so it isn't a meaningful outcome - add at "
             + "least one more case type, or remove the attribute."
     );
@@ -348,7 +348,7 @@ internal static class InterlocutorDiagnostics
     /// generic case type as peer cases (e.g. <c>ValidationError&lt;string&gt;</c> and
     /// <c>ValidationError&lt;int&gt;</c> would both want <c>TryGetValidationError</c>); and a case type whose
     /// own simple name exactly matches a reserved generated member name (<c>Value</c>, <c>Match</c>,
-    /// <c>Switch</c>, <c>ToString</c>, <c>Equals</c>, <c>GetHashCode</c>, <c>TryGetValue</c>, <c>IsSuccess</c>,
+    /// <c>Switch</c>, <c>ToString</c>, <c>Equals</c>, <c>GetHashCode</c>, <c>TryGetValue</c>,
     /// <c>ActiveCaseType</c>).
     /// </para>
     /// <para>

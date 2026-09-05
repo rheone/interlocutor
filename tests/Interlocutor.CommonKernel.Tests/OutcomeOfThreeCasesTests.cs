@@ -10,33 +10,33 @@ using Interlocutor.CommonKernel.ResultTypes;
 public class OutcomeOfThreeCasesTests
 {
     [Fact]
-    public void Construct_FromSuccess_IsSuccessTrue()
+    public void Construct_FromSuccess_TryGetValueSucceeds()
     {
         // Arrange & Act
         var result = new Outcome<string, NotFound, Forbidden>("hello");
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out string _));
     }
 
     [Fact]
-    public void Construct_FromCase2_IsSuccessFalse()
+    public void Construct_FromCase2_TryGetValueFails()
     {
         // Arrange & Act
         var result = new Outcome<string, NotFound, Forbidden>(new NotFound("missing"));
 
         // Assert
-        Assert.False(result.IsSuccess);
+        Assert.False(result.TryGetValue(out string _));
     }
 
     [Fact]
-    public void Construct_FromCase3_IsSuccessFalse()
+    public void Construct_FromCase3_TryGetValueFails()
     {
         // Arrange & Act
         var result = new Outcome<string, NotFound, Forbidden>(new Forbidden("denied"));
 
         // Assert
-        Assert.False(result.IsSuccess);
+        Assert.False(result.TryGetValue(out string _));
     }
 
     [Fact]
@@ -46,7 +46,7 @@ public class OutcomeOfThreeCasesTests
         Outcome<string, NotFound, Forbidden> result = "hello";
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out string _));
     }
 
     [Fact]
@@ -56,7 +56,7 @@ public class OutcomeOfThreeCasesTests
         Outcome<string, NotFound, Forbidden> result = new NotFound("missing");
 
         // Assert
-        Assert.False(result.IsSuccess);
+        Assert.False(result.TryGetValue(out string _));
     }
 
     [Fact]
@@ -66,7 +66,7 @@ public class OutcomeOfThreeCasesTests
         Outcome<string, NotFound, Forbidden> result = new Forbidden("denied");
 
         // Assert
-        Assert.False(result.IsSuccess);
+        Assert.False(result.TryGetValue(out string _));
     }
 
     [Fact]

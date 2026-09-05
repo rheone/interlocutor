@@ -138,14 +138,12 @@ Interlocutor.Abstractions.Pipeline.Cases.OutcomeCaseRegistryBuilder.RegisterFact
 Interlocutor.Abstractions.Pipeline.Cases.OutcomeCaseRegistryExtensions
 Interlocutor.Abstractions.Pipeline.Classifiers.IOutcomeClassifier
 Interlocutor.Abstractions.Pipeline.Classifiers.IOutcomeClassifier.GetLabel(object? response) -> string!
-Interlocutor.Abstractions.Pipeline.Classifiers.IOutcomeClassifier.IsFailure(object? response) -> bool
 Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder
 Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder.Build() -> Interlocutor.Abstractions.Pipeline.Classifiers.IOutcomeClassifier!
 Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder.OutcomeClassifierBuilder() -> void
-Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder.RegisterFailureType(System.Type! type, string! label) -> Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder!
-Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder.RegisterFailureType<TFailure>(string! label) -> Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder!
-Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder.RegisterPredicate(System.Func<object?, bool>! predicate, string! label, bool isFailure) -> Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder!
-Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder.RegisterSuccessType<TSuccess>(string! label) -> Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder!
+Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder.RegisterPredicate(System.Func<object?, bool>! predicate, string! label) -> Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder!
+Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder.RegisterType(System.Type! type, string! label) -> Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder!
+Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder.RegisterType<T>(string! label) -> Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder!
 Interlocutor.Abstractions.Pipeline.DefaultPolicyEvaluator
 Interlocutor.Abstractions.Pipeline.DefaultPolicyEvaluator.DefaultPolicyEvaluator() -> void
 Interlocutor.Abstractions.Pipeline.DefaultPolicyEvaluator.EvaluateAsync(string! policyName, object! request, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<bool>!
@@ -155,7 +153,6 @@ Interlocutor.Abstractions.Pipeline.DefaultRateLimiter.DefaultRateLimiter() -> vo
 Interlocutor.Abstractions.Pipeline.DefaultResponseOutcomeDescriber
 Interlocutor.Abstractions.Pipeline.DefaultResponseOutcomeDescriber.DefaultResponseOutcomeDescriber(Interlocutor.Abstractions.Pipeline.Classifiers.IOutcomeClassifier! classifier) -> void
 Interlocutor.Abstractions.Pipeline.DefaultResponseOutcomeDescriber.Describe(object? response) -> string!
-Interlocutor.Abstractions.Pipeline.DefaultResponseOutcomeDescriber.IsFailure(object? response) -> bool
 Interlocutor.Abstractions.Pipeline.DefaultTimeoutPolicy
 Interlocutor.Abstractions.Pipeline.DefaultTimeoutPolicy.DefaultTimeoutPolicy() -> void
 Interlocutor.Abstractions.Pipeline.DefaultTimeoutPolicy.ResolveBudget(Interlocutor.Abstractions.Markers.IHasTimeout! request) -> System.TimeSpan
@@ -183,7 +180,6 @@ Interlocutor.Abstractions.Pipeline.IRateLimiter
 Interlocutor.Abstractions.Pipeline.IRateLimiter.CheckAsync(string! limitKey, object! request, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Interlocutor.Abstractions.Pipeline.RateLimitResult>!
 Interlocutor.Abstractions.Pipeline.IResponseOutcomeDescriber
 Interlocutor.Abstractions.Pipeline.IResponseOutcomeDescriber.Describe(object? response) -> string!
-Interlocutor.Abstractions.Pipeline.IResponseOutcomeDescriber.IsFailure(object? response) -> bool
 Interlocutor.Abstractions.Pipeline.ITimeoutPolicy
 Interlocutor.Abstractions.Pipeline.ITimeoutPolicy.ResolveBudget(Interlocutor.Abstractions.Markers.IHasTimeout! request) -> System.TimeSpan
 Interlocutor.Abstractions.Pipeline.LoggingAuditSink

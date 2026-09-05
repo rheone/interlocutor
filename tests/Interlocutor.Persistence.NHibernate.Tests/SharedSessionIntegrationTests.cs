@@ -49,7 +49,7 @@ public sealed class SharedSessionIntegrationTests : IClassFixture<RealSessionFix
 
         // Assert - the outcome is success, the transaction committed for real, and a brand new session
         // sees the row that the shared session/repository/unit-of-work trio actually persisted.
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out Success _));
         Assert.False(session.GetCurrentTransaction() is { IsActive: true });
 
         using var verifySession = this.fixture.OpenSession();

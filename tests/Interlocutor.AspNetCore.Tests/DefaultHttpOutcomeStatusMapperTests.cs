@@ -398,13 +398,13 @@ public class DefaultHttpOutcomeStatusMapperTests
     [Fact]
     public void Map_AcrossFiveArityOutcome_WithSuccessCase_IsNotMappedAsFailure()
     {
-        // Arrange - the success case is never handed to the mapper in production - ResultExtensions branches
-        // on IsSuccess before calling Map - but proving it round-trips through .Value confirms the
+        // Arrange - the success case is never handed to the mapper in production - ResultExtensions
+        // distinguishes it before calling Map - but proving it round-trips through .Value confirms the
         // multi-arity outcome itself distinguishes the success case from all four failure cases correctly.
         Outcome<string, NotFound, Forbidden, Conflict, ValidationErrors> outcome = new("ok");
 
         // Act & Assert
-        Assert.True(outcome.IsSuccess);
+        Assert.True(outcome.TryGetValue(out string _));
         Assert.Equal("ok", outcome.Value);
     }
 

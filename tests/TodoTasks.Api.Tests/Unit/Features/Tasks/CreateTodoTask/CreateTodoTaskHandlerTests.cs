@@ -33,7 +33,6 @@ public sealed class CreateTodoTaskHandlerTests
         var result = await this.handler.HandleAsync(command, CancellationToken.None);
 
         // Assert
-        Assert.True(result.IsSuccess);
         var dto = Assert.IsType<TodoTaskDto>(result.Value);
         Assert.Equal("Buy milk", dto.Title);
         Assert.Equal("2%, please", dto.Notes);
@@ -80,7 +79,7 @@ public sealed class CreateTodoTaskHandlerTests
         var result = await this.handler.HandleAsync(command, CancellationToken.None);
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out TodoTaskDto _));
         await this.tasks.Received(1).InsertAsync(Arg.Is<TodoTask>(t => t.OwnerId == "owner-2"), Arg.Any<CancellationToken>());
     }
 }

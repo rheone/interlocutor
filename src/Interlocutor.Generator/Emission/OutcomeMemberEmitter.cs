@@ -11,8 +11,8 @@ using Interlocutor.Generator.Models;
 /// <see cref="OutcomeUnionModel"/>: unconditionally, <c>Match</c>, <c>Switch</c>, per-case anonymous
 /// <c>TryGetValue</c> (plus a named <c>TryGet{TypeName}</c> counterpart for every concrete case type - see
 /// <see cref="OutcomeUnionModel.CaseAccessorNames"/>), <c>ToString</c>, and value-based equality (<c>Equals</c>,
-/// <c>GetHashCode</c>, <c>IEquatable&lt;TSelf&gt;</c>, <c>==</c>/<c>!=</c>); additionally, <c>IOutcomeCase</c>,
-/// <c>IsSuccess</c>, and <c>ActiveCaseType</c> when <see cref="OutcomeUnionModel.ImplementsIOutcome"/> is
+/// <c>GetHashCode</c>, <c>IEquatable&lt;TSelf&gt;</c>, <c>==</c>/<c>!=</c>); additionally, <c>IOutcomeCase</c>
+/// and <c>ActiveCaseType</c> when <see cref="OutcomeUnionModel.ImplementsIOutcome"/> is
 /// <see langword="true"/>.
 /// </summary>
 internal static class OutcomeMemberEmitter
@@ -21,27 +21,16 @@ internal static class OutcomeMemberEmitter
     /// <value>
     /// Computed once so <see cref="Analysis.OutcomeAccessorCollisionAnalyzer"/> can read a single source of
     /// truth instead of hand-declaring its own copy that would otherwise have to be kept in sync by hand.
-    /// Includes <c>IsSuccess</c> and <c>ActiveCaseType</c> unconditionally, even though this emitter only
-    /// actually writes them when <see cref="OutcomeUnionModel.ImplementsIOutcome"/> is
-    /// <see langword="true"/> - reserving both names regardless keeps the check simple and costs nothing,
-    /// since neither name is a plausible case type identifier to give up. Also includes <c>Value</c>, the
-    /// compiler-synthesized boxed field every <c>union</c> type carries (see
-    /// <see cref="EmitGetActiveCaseIndex"/>'s remarks) - this emitter relies on it via <c>this.Value</c> but
-    /// never declares it itself, so it would otherwise be invisible to a set built purely from what
-    /// <see cref="Emit"/> writes.
+    /// Includes <c>ActiveCaseType</c> unconditionally, even though this emitter only actually writes it
+    /// when <see cref="OutcomeUnionModel.ImplementsIOutcome"/> is <see langword="true"/> - reserving the
+    /// name regardless keeps the check simple and costs nothing, since it isn't a plausible case type
+    /// identifier to give up. Also includes <c>Value</c>, the compiler-synthesized boxed field every
+    /// <c>union</c> type carries (see <see cref="EmitGetActiveCaseIndex"/>'s remarks) - this emitter relies
+    /// on it via <c>this.Value</c> but never declares it itself, so it would otherwise be invisible to a
+    /// set built purely from what <see cref="Emit"/> writes.
     /// </value>
     public static ImmutableArray<string> ReservedMemberNames { get; } =
-        ImmutableArray.Create(
-            "Value",
-            "IsSuccess",
-            "ActiveCaseType",
-            "TryGetValue",
-            "Match",
-            "Switch",
-            "ToString",
-            "Equals",
-            "GetHashCode"
-        );
+        ImmutableArray.Create("Value", "ActiveCaseType", "TryGetValue", "Match", "Switch", "ToString", "Equals", "GetHashCode");
 
     /// <summary>Emits the generated partial declaration's full source text for <paramref name="model"/>.</summary>
     /// <param name="model">The attributed union to emit members for. Must have at least two case types.</param>
@@ -82,8 +71,6 @@ internal static class OutcomeMemberEmitter
         builder.AppendLine();
         if (model.ImplementsIOutcome)
         {
-            EmitIsSuccess(builder);
-            builder.AppendLine();
             EmitActiveCaseType(builder, model);
             builder.AppendLine();
         }
@@ -149,14 +136,6 @@ internal static class OutcomeMemberEmitter
         builder.AppendLine();
         builder.AppendLine("        return 0;");
         builder.AppendLine("    }");
-    }
-
-    private static void EmitIsSuccess(StringBuilder builder)
-    {
-        builder.AppendLine(
-            "    /// <summary>Gets a value indicating whether this result holds the success case (the first declared case type).</summary>"
-        );
-        builder.AppendLine("    public bool IsSuccess => this.GetActiveCaseIndex() == 1;");
     }
 
     private static void EmitActiveCaseType(StringBuilder builder, OutcomeUnionModel model)
