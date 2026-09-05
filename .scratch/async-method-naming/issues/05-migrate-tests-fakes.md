@@ -4,7 +4,7 @@
 
 **Blocked by:** 01 - Expand: add Async-suffixed dispatch members with forwarding defaults.
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `0b2e069`.
 
 - [ ] Every test double implementing `ICommandHandler<,>`, `IQueryHandler<,>`, `INotificationHandler<>`, `IPipelineBehavior<,>`, `ISender`, `IPublisher`, `IUnitOfWork`, or either dispatch-wrapper interface implements the `*Async` member instead of the old one.
 - [ ] Actual `[Fact]`/`[Theory]` test method names are left untouched - renaming those is explicitly out of scope for this ticket.
