@@ -22,6 +22,7 @@ Interlocutor.Persistence.Abstractions.IDomainRepository<TEntity, TKey>.Query.get
 Interlocutor.Persistence.Abstractions.IDomainRepository<TEntity, TKey>.UpdateAsync(TEntity entity, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Interlocutor.Persistence.Abstractions.IUnitOfWork
 Interlocutor.Persistence.Abstractions.IUnitOfWork.Cancel(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Interlocutor.Persistence.Abstractions.IUnitOfWork.CancelAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Interlocutor.Persistence.Abstractions.IUnitOfWork.SaveChangesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Interlocutor.Persistence.Abstractions.Page<T>
 Interlocutor.Persistence.Abstractions.Page<T>.<Clone>$() -> Interlocutor.Persistence.Abstractions.Page<T>!

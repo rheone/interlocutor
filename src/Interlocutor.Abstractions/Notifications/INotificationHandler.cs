@@ -20,9 +20,28 @@ namespace Interlocutor.Abstractions.Notifications;
 public interface INotificationHandler<in TNotification>
     where TNotification : INotification
 {
-    /// <summary>Processes the notification.</summary>
+    /// <summary>
+    /// Processes the notification. Superseded by <see cref="HandleAsync"/> - implement that member in new
+    /// handlers instead.
+    /// </summary>
     /// <param name="notification">The notification to handle.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    /// <remarks>
+    /// Carries no <c>Async</c> suffix despite returning a <see cref="Task"/>, unlike the rest of this
+    /// codebase's awaitable-returning members - <see cref="HandleAsync"/> carries the suffix instead. Existing
+    /// implementations of this member keep working - the default <see cref="HandleAsync"/> forwards to it - but
+    /// new handlers should implement <see cref="HandleAsync"/> instead.
+    /// </remarks>
     Task Handle(TNotification notification, CancellationToken ct);
+
+    /// <summary>The preferred, <c>Async</c>-suffixed member going forward: processes the notification.</summary>
+    /// <param name="notification">The notification to handle.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    /// <remarks>
+    /// The default implementation forwards to <see cref="Handle"/> so every existing implementer keeps
+    /// compiling and behaving identically until it migrates to overriding this member instead.
+    /// </remarks>
+    Task HandleAsync(TNotification notification, CancellationToken ct) => this.Handle(notification, ct);
 }

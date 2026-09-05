@@ -20,34 +20,68 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </remarks>
 public interface ISender
 {
-    /// <summary>Dispatches a query to its registered handler, returning the result through all pipeline behaviors.</summary>
+    /// <summary>
+    /// Dispatches a query to its registered handler, returning the result through all pipeline behaviors.
+    /// Superseded by <see cref="SendAsync{TResponse}(IQuery{TResponse}, CancellationToken)"/> - prefer that
+    /// overload in new call sites instead.
+    /// </summary>
     /// <typeparam name="TResponse">The query response type.</typeparam>
     /// <param name="query">The query to dispatch.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>A <see cref="Task{TResult}"/> representing the asynchronous operation.</returns>
+    /// <remarks>
+    /// Carries no <c>Async</c> suffix despite returning a <see cref="Task{TResult}"/>, unlike the rest of this
+    /// codebase's awaitable-returning members -
+    /// <see cref="SendAsync{TResponse}(IQuery{TResponse}, CancellationToken)"/> carries the suffix instead. The
+    /// default <see cref="SendAsync{TResponse}(IQuery{TResponse}, CancellationToken)"/> forwards to this
+    /// member, so existing callers are unaffected.
+    /// </remarks>
     Task<TResponse> Send<TResponse>(IQuery<TResponse> query, CancellationToken ct = default)
         where TResponse : IOutcome;
 
-    /// <summary>Dispatches a value-returning command to its registered handler, returning the result through all pipeline behaviors.</summary>
+    /// <summary>
+    /// Dispatches a value-returning command to its registered handler, returning the result through all
+    /// pipeline behaviors. Superseded by
+    /// <see cref="SendAsync{TResponse}(ICommand{TResponse}, CancellationToken)"/> - prefer that overload in new
+    /// call sites instead.
+    /// </summary>
     /// <typeparam name="TResponse">The command response type.</typeparam>
     /// <param name="command">The command to dispatch.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>A <see cref="Task{TResult}"/> representing the asynchronous operation.</returns>
+    /// <remarks>
+    /// Carries no <c>Async</c> suffix despite returning a <see cref="Task{TResult}"/>, unlike the rest of this
+    /// codebase's awaitable-returning members -
+    /// <see cref="SendAsync{TResponse}(ICommand{TResponse}, CancellationToken)"/> carries the suffix instead.
+    /// The default <see cref="SendAsync{TResponse}(ICommand{TResponse}, CancellationToken)"/> forwards to this
+    /// member, so existing callers are unaffected.
+    /// </remarks>
     Task<TResponse> Send<TResponse>(ICommand<TResponse> command, CancellationToken ct = default)
         where TResponse : IOutcome;
 
-    /// <summary>Dispatches a void command to its registered handler, returning the outcome through all pipeline behaviors.</summary>
+    /// <summary>
+    /// Dispatches a void command to its registered handler, returning the outcome through all pipeline
+    /// behaviors. Superseded by <see cref="SendAsync{TResult}(ICommand, CancellationToken)"/> - prefer that
+    /// overload in new call sites instead.
+    /// </summary>
     /// <typeparam name="TResult">The <see cref="CommonKernel.ResultTypes.IOutcome"/>-shaped outcome type to resolve a handler for.</typeparam>
     /// <param name="command">The command to dispatch.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>A <see cref="Task{TResult}"/> representing the asynchronous operation.</returns>
+    /// <remarks>
+    /// Carries no <c>Async</c> suffix despite returning a <see cref="Task{TResult}"/>, unlike the rest of this
+    /// codebase's awaitable-returning members - <see cref="SendAsync{TResult}(ICommand, CancellationToken)"/>
+    /// carries the suffix instead. The default <see cref="SendAsync{TResult}(ICommand, CancellationToken)"/>
+    /// forwards to this member, so existing callers are unaffected.
+    /// </remarks>
     Task<TResult> Send<TResult>(ICommand command, CancellationToken ct = default)
         where TResult : IOutcome;
 
     /// <summary>
     /// Dispatches a request whose static type is not known at the call site - a query, a value-returning
     /// command, or a unit command deserialized off a message - to its registered handler, returning the
-    /// result through all pipeline behaviors as the library's base outcome interface.
+    /// result through all pipeline behaviors as the library's base outcome interface. Superseded by
+    /// <see cref="SendAsync(object, CancellationToken)"/> - prefer that overload in new call sites instead.
     /// </summary>
     /// <param name="request">
     /// The request to dispatch. Its runtime type must implement <c>IQuery&lt;TResponse&gt;</c>,
@@ -78,6 +112,12 @@ public interface ISender
     /// explicitly opted-in runtime-scanning fallback. Either way this method's contract - exceptions included
     /// - is identical to the caller.
     /// </para>
+    /// <para>
+    /// Carries no <c>Async</c> suffix despite returning a <see cref="Task{TResult}"/>, unlike the rest of this
+    /// codebase's awaitable-returning members - <see cref="SendAsync(object, CancellationToken)"/> carries the
+    /// suffix instead. The default <see cref="SendAsync(object, CancellationToken)"/> forwards to this member,
+    /// so existing callers are unaffected.
+    /// </para>
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="request"/> is <see langword="null"/>.</exception>
     /// <exception cref="Interlocutor.Abstractions.Core.UnsupportedRequestTypeException">
@@ -97,4 +137,84 @@ public interface ISender
             + "documentation/trim-and-aot-support.md."
     )]
     Task<IOutcome> Send(object request, CancellationToken ct = default);
+
+    /// <summary>
+    /// The preferred overload going forward: dispatches a query to its registered handler, returning the
+    /// result through all pipeline behaviors.
+    /// </summary>
+    /// <typeparam name="TResponse">The query response type.</typeparam>
+    /// <param name="query">The query to dispatch.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>A <see cref="Task{TResult}"/> representing the asynchronous operation.</returns>
+    /// <remarks>
+    /// The default implementation forwards to <see cref="Send{TResponse}(IQuery{TResponse}, CancellationToken)"/>.
+    /// </remarks>
+    Task<TResponse> SendAsync<TResponse>(IQuery<TResponse> query, CancellationToken ct = default)
+        where TResponse : IOutcome => this.Send(query, ct);
+
+    /// <summary>
+    /// The preferred overload going forward: dispatches a value-returning command to its registered handler,
+    /// returning the result through all pipeline behaviors.
+    /// </summary>
+    /// <typeparam name="TResponse">The command response type.</typeparam>
+    /// <param name="command">The command to dispatch.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>A <see cref="Task{TResult}"/> representing the asynchronous operation.</returns>
+    /// <remarks>
+    /// The default implementation forwards to <see cref="Send{TResponse}(ICommand{TResponse}, CancellationToken)"/>.
+    /// </remarks>
+    Task<TResponse> SendAsync<TResponse>(ICommand<TResponse> command, CancellationToken ct = default)
+        where TResponse : IOutcome => this.Send(command, ct);
+
+    /// <summary>
+    /// The preferred overload going forward: dispatches a void command to its registered handler, returning
+    /// the outcome through all pipeline behaviors.
+    /// </summary>
+    /// <typeparam name="TResult">The <see cref="CommonKernel.ResultTypes.IOutcome"/>-shaped outcome type to resolve a handler for.</typeparam>
+    /// <param name="command">The command to dispatch.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>A <see cref="Task{TResult}"/> representing the asynchronous operation.</returns>
+    /// <remarks>
+    /// The default implementation forwards to <see cref="Send{TResult}(ICommand, CancellationToken)"/>.
+    /// </remarks>
+    Task<TResult> SendAsync<TResult>(ICommand command, CancellationToken ct = default)
+        where TResult : IOutcome => this.Send<TResult>(command, ct);
+
+    /// <summary>
+    /// The preferred overload going forward: dispatches a request whose static type is not known at the call
+    /// site - a query, a value-returning command, or a unit command deserialized off a message - to its
+    /// registered handler, returning the result through all pipeline behaviors as the library's base outcome
+    /// interface.
+    /// </summary>
+    /// <param name="request">
+    /// The request to dispatch. Its runtime type must implement <c>IQuery&lt;TResponse&gt;</c>,
+    /// <c>ICommand&lt;TResponse&gt;</c>, or <c>ICommand</c>.
+    /// </param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>
+    /// A <see cref="Task{TResult}"/> whose result is the handler's response as an
+    /// <see cref="CommonKernel.ResultTypes.IOutcome"/>.
+    /// </returns>
+    /// <remarks>
+    /// The default implementation forwards to <see cref="Send(object, CancellationToken)"/> - see that
+    /// member's remarks for the runtime-typed dispatch behavior this overload shares.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="request"/> is <see langword="null"/>.</exception>
+    /// <exception cref="Interlocutor.Abstractions.Core.UnsupportedRequestTypeException">
+    /// <paramref name="request"/>'s runtime type does not implement <c>IQuery&lt;TResponse&gt;</c>,
+    /// <c>ICommand&lt;TResponse&gt;</c>, or <c>ICommand</c> - it is not a request at all.
+    /// </exception>
+    /// <exception cref="Interlocutor.Abstractions.Core.HandlerNotRegisteredException">
+    /// <paramref name="request"/>'s runtime type is a recognized request shape, but no handler for it is
+    /// registered in the service provider.
+    /// </exception>
+    [RequiresUnreferencedCode(
+        "May run the runtime-typed dispatch fallback when no generated dispatcher is registered - see "
+            + "documentation/trim-and-aot-support.md."
+    )]
+    [RequiresDynamicCode(
+        "May run the runtime-typed dispatch fallback when no generated dispatcher is registered - see "
+            + "documentation/trim-and-aot-support.md."
+    )]
+    Task<IOutcome> SendAsync(object request, CancellationToken ct = default) => this.Send(request, ct);
 }

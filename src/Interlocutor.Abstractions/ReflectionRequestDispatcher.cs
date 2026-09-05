@@ -130,6 +130,14 @@ internal static class ReflectionRequestDispatcher
             .GetMethods()
             .Single(method =>
             {
+                // Matches "Send" specifically, not "SendAsync" - both overload sets share the same
+                // first-parameter shapes now that ISender carries the *Async forwarding members added
+                // alongside them (see .scratch/async-method-naming), so name alone disambiguates them.
+                if (method.Name != nameof(ISender.Send))
+                {
+                    return false;
+                }
+
                 var parameters = method.GetParameters();
                 if (parameters.Length == 0)
                 {

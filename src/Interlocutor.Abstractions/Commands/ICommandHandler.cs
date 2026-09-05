@@ -24,10 +24,30 @@ public interface ICommandHandler<in TCommand, TResponse>
     where TResponse : IOutcome
 {
     /// <summary>
-    /// Handles the specified command and returns a result containing the response or a failure.
+    /// Handles the specified command and returns a result containing the response or a failure. Superseded by
+    /// <see cref="HandleAsync"/> - implement that member in new handlers instead.
     /// </summary>
     /// <param name="command">The command to handle.</param>
     /// <param name="ct">Cancellation token to cancel the operation.</param>
     /// <returns>The response data, which may itself be a union type distinguishing success from failure.</returns>
+    /// <remarks>
+    /// Carries no <c>Async</c> suffix despite returning a <see cref="Task{TResult}"/>, unlike the rest of this
+    /// codebase's awaitable-returning members - <see cref="HandleAsync"/> carries the suffix instead. Existing
+    /// implementations of this member keep working - the default <see cref="HandleAsync"/> forwards to it - but
+    /// new handlers should implement <see cref="HandleAsync"/> instead.
+    /// </remarks>
     Task<TResponse> Handle(TCommand command, CancellationToken ct);
+
+    /// <summary>
+    /// The preferred, <c>Async</c>-suffixed member going forward: handles the specified command and returns a
+    /// result containing the response or a failure.
+    /// </summary>
+    /// <param name="command">The command to handle.</param>
+    /// <param name="ct">Cancellation token to cancel the operation.</param>
+    /// <returns>The response data, which may itself be a union type distinguishing success from failure.</returns>
+    /// <remarks>
+    /// The default implementation forwards to <see cref="Handle"/> so every existing implementer keeps
+    /// compiling and behaving identically until it migrates to overriding this member instead.
+    /// </remarks>
+    Task<TResponse> HandleAsync(TCommand command, CancellationToken ct) => this.Handle(command, ct);
 }

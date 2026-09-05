@@ -16,6 +16,12 @@
     <Using Include="Microsoft.Extensions.DependencyInjection" />
   </ItemGroup>
 
+  <!-- Lets the test project exercise the internal dispatch-wrapper interfaces (IHandlerWrapper,
+       IVoidHandlerWrapper) directly, rather than only indirectly through Mediator. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="Interlocutor.Abstractions.Tests" />
+  </ItemGroup>
+
   <!-- Public API surface tracking: fails the build if a public member changes without
        being recorded in PublicAPI.Shipped.txt/PublicAPI.Unshipped.txt. -->
   <ItemGroup>

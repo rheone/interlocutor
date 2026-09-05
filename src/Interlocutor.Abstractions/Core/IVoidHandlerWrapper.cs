@@ -20,7 +20,8 @@ internal interface IVoidHandlerWrapper<TResult>
     where TResult : IOutcome
 {
     /// <summary>
-    /// Executes the handler with the given request, resolving behaviors and the handler from the service provider.
+    /// Executes the handler with the given request, resolving behaviors and the handler from the service
+    /// provider. Superseded by <see cref="HandleAsync"/> - implement that member in new implementations instead.
     /// </summary>
     /// <param name="request">The request to handle.</param>
     /// <param name="services">The service provider for resolving handlers and behaviors.</param>
@@ -31,5 +32,31 @@ internal interface IVoidHandlerWrapper<TResult>
     /// must stay a no-op so the unlistened dispatch path performs no extra work.
     /// </param>
     /// <returns>The outcome from the handler.</returns>
+    /// <remarks>
+    /// Carries no <c>Async</c> suffix despite returning a <see cref="Task{TResult}"/>, unlike the rest of this
+    /// codebase's awaitable-returning members - <see cref="HandleAsync"/> carries the suffix instead. Existing
+    /// implementations of this member keep working - the default <see cref="HandleAsync"/> forwards to it - but
+    /// new implementations should implement <see cref="HandleAsync"/> instead.
+    /// </remarks>
     Task<TResult> Handle(object request, IServiceProvider services, CancellationToken ct, Activity? activity = null);
+
+    /// <summary>
+    /// The preferred, <c>Async</c>-suffixed member going forward: executes the handler with the given request,
+    /// resolving behaviors and the handler from the service provider.
+    /// </summary>
+    /// <param name="request">The request to handle.</param>
+    /// <param name="services">The service provider for resolving handlers and behaviors.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <param name="activity">
+    /// The <see cref="Activity"/> the mediator started for this dispatch, or <see langword="null"/> when nothing is
+    /// listening. Concrete wrappers tag it with the resolved handler type once resolution completes; the null case
+    /// must stay a no-op so the unlistened dispatch path performs no extra work.
+    /// </param>
+    /// <returns>The outcome from the handler.</returns>
+    /// <remarks>
+    /// The default implementation forwards to <see cref="Handle"/> so every existing implementer keeps
+    /// compiling and behaving identically until it migrates to overriding this member instead.
+    /// </remarks>
+    Task<TResult> HandleAsync(object request, IServiceProvider services, CancellationToken ct, Activity? activity = null) =>
+        this.Handle(request, services, ct, activity);
 }
