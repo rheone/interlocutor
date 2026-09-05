@@ -62,7 +62,7 @@ Local markdown - issues live as files under `.scratch/<feature>/`. No PR triage.
 
 ### Triage labels
 
-Default labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `maintainer_docs/agents/triage-labels.md`.
+Default labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `maintainer_docs/agents/triage-labels.md` - this also lists the terminal states (`done`, `wontfix`, `superseded`, etc.) and ADR lifecycle words (`Accepted`, `Superseded by`) that round out the accepted set. A `Status:` value outside that set on any ADR, PRD, or ticket is never written silently - see that file's "Rejecting an unrecognized status" section.
 
 ### Domain docs
 
