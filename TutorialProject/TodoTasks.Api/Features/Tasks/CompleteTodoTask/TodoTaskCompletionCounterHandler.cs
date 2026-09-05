@@ -11,7 +11,10 @@ public sealed class TodoTaskCompletionCounterHandler(ICompletionCounter counter)
     : INotificationHandler<TodoTaskCompletedNotification>
 {
     /// <inheritdoc/>
-    public Task Handle(TodoTaskCompletedNotification notification, CancellationToken ct)
+    public Task Handle(TodoTaskCompletedNotification notification, CancellationToken ct) => this.HandleAsync(notification, ct);
+
+    /// <inheritdoc/>
+    public Task HandleAsync(TodoTaskCompletedNotification notification, CancellationToken ct)
     {
         counter.Increment(notification.OwnerId);
         return Task.CompletedTask;

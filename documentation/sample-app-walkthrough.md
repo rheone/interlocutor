@@ -57,7 +57,7 @@ public sealed record GetTodoTaskByIdQuery(int Id, string OwnerId) : IQuery<Outco
 public sealed class GetTodoTaskByIdHandler(IDomainRepository<TodoTask, int> tasks)
     : IQueryHandler<GetTodoTaskByIdQuery, Outcome<TodoTaskDto, NotFound>>
 {
-    public Task<Outcome<TodoTaskDto, NotFound>> Handle(GetTodoTaskByIdQuery query, CancellationToken ct) =>
+    public Task<Outcome<TodoTaskDto, NotFound>> HandleAsync(GetTodoTaskByIdQuery query, CancellationToken ct) =>
         Task.FromResult<Outcome<TodoTaskDto, NotFound>>(
             tasks.GetById(query.Id) is { } task && task.OwnerId == query.OwnerId
                 ? TodoTaskDto.FromEntity(task)
@@ -161,7 +161,7 @@ public sealed class DeleteUserHandler(
     IUnitOfWork unitOfWork
 ) : ICommandHandler<DeleteUserCommand, Outcome<Success, NotFound>>
 {
-    public async Task<Outcome<Success, NotFound>> Handle(DeleteUserCommand command, CancellationToken ct)
+    public async Task<Outcome<Success, NotFound>> HandleAsync(DeleteUserCommand command, CancellationToken ct)
     {
         if (users.GetById(command.Id) is not { } user)
         {
@@ -203,7 +203,7 @@ Both `ListTodoTasksPagedHandler` and the unpaged `ListTodoTasksHandler` sort new
 public sealed class SearchTodoTasksHandler(Lazy<TodoTasksDbContext> context)
     : IQueryHandler<SearchTodoTasksQuery, Outcome<IReadOnlyList<TodoTaskDto>, Failure>>
 {
-    public async Task<Outcome<IReadOnlyList<TodoTaskDto>, Failure>> Handle(SearchTodoTasksQuery query, CancellationToken ct)
+    public async Task<Outcome<IReadOnlyList<TodoTaskDto>, Failure>> HandleAsync(SearchTodoTasksQuery query, CancellationToken ct)
     {
         var pattern = $"%{query.TitleContains}%";
 

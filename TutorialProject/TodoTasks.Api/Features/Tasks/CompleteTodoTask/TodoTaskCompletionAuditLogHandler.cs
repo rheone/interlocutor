@@ -10,7 +10,10 @@ public sealed class TodoTaskCompletionAuditLogHandler(ILogger<TodoTaskCompletion
     : INotificationHandler<TodoTaskCompletedNotification>
 {
     /// <inheritdoc/>
-    public Task Handle(TodoTaskCompletedNotification notification, CancellationToken ct)
+    public Task Handle(TodoTaskCompletedNotification notification, CancellationToken ct) => this.HandleAsync(notification, ct);
+
+    /// <inheritdoc/>
+    public Task HandleAsync(TodoTaskCompletedNotification notification, CancellationToken ct)
     {
         logger.LogInformation(
             "Task {TodoTaskId} ('{Title}') completed by {OwnerId}",
