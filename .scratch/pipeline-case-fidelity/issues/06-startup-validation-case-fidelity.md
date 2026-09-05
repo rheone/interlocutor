@@ -4,7 +4,7 @@
 
 **Blocked by:** 02 (cites ADR-0022's documented scope split between compile-time and runtime coverage)
 
-**Status:** open
+**Status:** ready-for-agent
 
 - [ ] New opt-in validation method added alongside `ValidateHandlerRegistrations`, following its existing signature/chaining style (`this IServiceProvider`, returns the same provider)
 - [ ] Covers the four marker-interface behaviors (mirroring issue 03's analyzer logic)

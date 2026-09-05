@@ -9,7 +9,7 @@ Nothing to decide in this ticket beyond which of the two outcomes applies - the 
 
 **Blocked by:** 07
 
-**Status:** open
+**Status:** ready-for-agent
 
 - [ ] Issue 07's write-up is read and its recommendation (commit or drop) is followed, not re-litigated in this ticket
 - [ ] If committing: new ADR added under `maintainer_docs/adr/`, cross-referencing ADR-0022 and ADR-0020, added to the ADR index

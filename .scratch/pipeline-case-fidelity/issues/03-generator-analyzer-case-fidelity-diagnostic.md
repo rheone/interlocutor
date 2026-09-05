@@ -4,7 +4,7 @@
 
 **Blocked by:** 02 (cites ADR-0022's design reasoning and documented scope)
 
-**Status:** open
+**Status:** ready-for-agent
 
 - [ ] `INTERLOC012` is added to `InterlocutorDiagnostics.cs` following the existing diagnostic definitions' shape and doc-comment style
 - [ ] The generator emits `INTERLOC012` for a `TRequest` implementing any of the four marker interfaces whose paired `TResponse` union has no assignable case for what that behavior constructs

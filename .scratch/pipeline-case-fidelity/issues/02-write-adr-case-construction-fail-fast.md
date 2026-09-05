@@ -8,7 +8,7 @@ Record two alternatives considered and rejected, mirroring how ADR-0020 already 
 
 **Blocked by:** None - can start immediately
 
-**Status:** open
+**Status:** ready-for-agent
 
 - [ ] New ADR file added under `maintainer_docs/adr/` as `0022-<slug>.md`, following the existing ADR format (Status/Context/Decision/Consequences/Alternatives considered, per `0020-validation-failure-case-fidelity.md`)
 - [ ] Cross-references `ConstructOrThrow` (`OutcomeCaseRegistryExtensions.cs`), the six behaviors it backs, ADR-0004, ADR-0009, ADR-0013, and ADR-0020
