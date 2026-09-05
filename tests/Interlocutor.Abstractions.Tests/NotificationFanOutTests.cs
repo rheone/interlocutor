@@ -185,7 +185,9 @@ public sealed class NotificationFanOutTests
 public class RecordingHandler<TNotification>(Action action) : INotificationHandler<TNotification>
     where TNotification : INotification
 {
-    public Task Handle(TNotification notification, CancellationToken ct)
+    public Task Handle(TNotification notification, CancellationToken ct) => this.HandleAsync(notification, ct);
+
+    public Task HandleAsync(TNotification notification, CancellationToken ct)
     {
         action();
         return Task.CompletedTask;

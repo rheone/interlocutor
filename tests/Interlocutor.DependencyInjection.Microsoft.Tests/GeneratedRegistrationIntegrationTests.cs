@@ -98,7 +98,13 @@ public sealed class GeneratedRegistrationIntegrationTests
 
         public OrderTrackingBehavior1(List<string> executionOrder) => _executionOrder = executionOrder;
 
-        public async Task<Outcome<string, Failure>> Handle(
+        public Task<Outcome<string, Failure>> Handle(
+            GeneratedQuery request,
+            Func<Task<Outcome<string, Failure>>> next,
+            CancellationToken ct
+        ) => this.HandleAsync(request, next, ct);
+
+        public async Task<Outcome<string, Failure>> HandleAsync(
             GeneratedQuery request,
             Func<Task<Outcome<string, Failure>>> next,
             CancellationToken ct
@@ -117,7 +123,13 @@ public sealed class GeneratedRegistrationIntegrationTests
 
         public OrderTrackingBehavior2(List<string> executionOrder) => _executionOrder = executionOrder;
 
-        public async Task<Outcome<string, Failure>> Handle(
+        public Task<Outcome<string, Failure>> Handle(
+            GeneratedQuery request,
+            Func<Task<Outcome<string, Failure>>> next,
+            CancellationToken ct
+        ) => this.HandleAsync(request, next, ct);
+
+        public async Task<Outcome<string, Failure>> HandleAsync(
             GeneratedQuery request,
             Func<Task<Outcome<string, Failure>>> next,
             CancellationToken ct
@@ -136,7 +148,13 @@ public sealed class GeneratedRegistrationIntegrationTests
 
         public OrderTrackingBehavior3(List<string> executionOrder) => _executionOrder = executionOrder;
 
-        public async Task<Outcome<string, Failure>> Handle(
+        public Task<Outcome<string, Failure>> Handle(
+            GeneratedQuery request,
+            Func<Task<Outcome<string, Failure>>> next,
+            CancellationToken ct
+        ) => this.HandleAsync(request, next, ct);
+
+        public async Task<Outcome<string, Failure>> HandleAsync(
             GeneratedQuery request,
             Func<Task<Outcome<string, Failure>>> next,
             CancellationToken ct
@@ -154,7 +172,9 @@ public sealed class GeneratedRegistrationIntegrationTests
     public sealed class GeneratedQueryHandler(IGreeter greeter, List<string>? executionOrder = null)
         : IQueryHandler<GeneratedQuery, Outcome<string, Failure>>
     {
-        public Task<Outcome<string, Failure>> Handle(GeneratedQuery query, CancellationToken ct)
+        public Task<Outcome<string, Failure>> Handle(GeneratedQuery query, CancellationToken ct) => this.HandleAsync(query, ct);
+
+        public Task<Outcome<string, Failure>> HandleAsync(GeneratedQuery query, CancellationToken ct)
         {
             executionOrder?.Add("handle");
             return Task.FromResult<Outcome<string, Failure>>(greeter.Greet());

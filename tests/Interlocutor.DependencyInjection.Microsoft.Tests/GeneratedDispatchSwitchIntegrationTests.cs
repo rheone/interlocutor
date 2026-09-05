@@ -133,6 +133,9 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
     public sealed class GeneratedSwitchQueryHandler : IQueryHandler<GeneratedSwitchQuery, Outcome<int, Failure>>
     {
         public Task<Outcome<int, Failure>> Handle(GeneratedSwitchQuery query, CancellationToken ct) =>
+            this.HandleAsync(query, ct);
+
+        public Task<Outcome<int, Failure>> HandleAsync(GeneratedSwitchQuery query, CancellationToken ct) =>
             Task.FromResult<Outcome<int, Failure>>(query.Value * 2);
     }
 
@@ -141,11 +144,16 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
     public sealed class GeneratedSwitchCommandHandler : ICommandHandler<GeneratedSwitchCommand, Outcome<string, Failure>>
     {
         public Task<Outcome<string, Failure>> Handle(GeneratedSwitchCommand command, CancellationToken ct) =>
+            this.HandleAsync(command, ct);
+
+        public Task<Outcome<string, Failure>> HandleAsync(GeneratedSwitchCommand command, CancellationToken ct) =>
             Task.FromResult<Outcome<string, Failure>>($"Hello {command.Name}");
     }
 
     public sealed record GeneratedSwitchVoidCommand : ICommand;
 
+    // IVoidCommandHandler<,> has no HandleAsync member (known gap - ticket 01 never added one), so this fake
+    // stays on Handle as-is.
     public sealed class GeneratedSwitchVoidCommandHandler : IVoidCommandHandler<GeneratedSwitchVoidCommand, Outcome>
     {
         public Task<Outcome> Handle(GeneratedSwitchVoidCommand command, CancellationToken ct) =>

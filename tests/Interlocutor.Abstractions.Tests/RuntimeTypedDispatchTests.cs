@@ -24,7 +24,9 @@ public record FailingQuery : IQuery<Outcome<int, Failure>>;
 /// <summary>Handler for <see cref="FailingQuery"/> - always fails.</summary>
 public class FailingQueryHandler : IQueryHandler<FailingQuery, Outcome<int, Failure>>
 {
-    public Task<Outcome<int, Failure>> Handle(FailingQuery query, CancellationToken ct) =>
+    public Task<Outcome<int, Failure>> Handle(FailingQuery query, CancellationToken ct) => this.HandleAsync(query, ct);
+
+    public Task<Outcome<int, Failure>> HandleAsync(FailingQuery query, CancellationToken ct) =>
         Task.FromResult(new Outcome<int, Failure>(new Failure("boom")));
 }
 

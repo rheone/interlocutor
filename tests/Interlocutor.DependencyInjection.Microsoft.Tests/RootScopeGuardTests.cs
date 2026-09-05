@@ -93,7 +93,9 @@ public class RootScopeGuardTests
     private sealed class SharedScopeQueryHandler(ScopedThing scopedThing, ScopedDependencyRecorder recorder)
         : IQueryHandler<SharedScopeQuery, Outcome<Guid, Failure>>
     {
-        public Task<Outcome<Guid, Failure>> Handle(SharedScopeQuery query, CancellationToken ct)
+        public Task<Outcome<Guid, Failure>> Handle(SharedScopeQuery query, CancellationToken ct) => this.HandleAsync(query, ct);
+
+        public Task<Outcome<Guid, Failure>> HandleAsync(SharedScopeQuery query, CancellationToken ct)
         {
             recorder.RecordedIds.Add(scopedThing.Id);
             return Task.FromResult<Outcome<Guid, Failure>>(scopedThing.Id);
@@ -106,7 +108,10 @@ public class RootScopeGuardTests
         ScopedDependencyRecorder recorder
     ) : IPipelineBehavior<TRequest, TResponse>
     {
-        public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+        public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
+            this.HandleAsync(request, next, ct);
+
+        public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
         {
             recorder.RecordedIds.Add(scopedThing.Id);
             return next();

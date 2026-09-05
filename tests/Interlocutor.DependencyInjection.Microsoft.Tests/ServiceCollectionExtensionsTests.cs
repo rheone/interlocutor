@@ -143,7 +143,10 @@ public class ServiceCollectionExtensionsTests
 
         public OpenGenericBehavior(List<string> executionOrder) => this._executionOrder = executionOrder;
 
-        public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+        public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
+            this.HandleAsync(request, next, ct);
+
+        public async Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
         {
             this._executionOrder.Add("open-enter");
             var result = await next().ConfigureAwait(false);
@@ -158,7 +161,13 @@ public class ServiceCollectionExtensionsTests
 
         public ClosedGenericBehavior(List<string> executionOrder) => this._executionOrder = executionOrder;
 
-        public async Task<Outcome<string, Failure>> Handle(
+        public Task<Outcome<string, Failure>> Handle(
+            RegressionQuery request,
+            Func<Task<Outcome<string, Failure>>> next,
+            CancellationToken ct
+        ) => this.HandleAsync(request, next, ct);
+
+        public async Task<Outcome<string, Failure>> HandleAsync(
             RegressionQuery request,
             Func<Task<Outcome<string, Failure>>> next,
             CancellationToken ct
@@ -176,7 +185,10 @@ public class ServiceCollectionExtensionsTests
     public sealed class RegressionQueryHandler(List<string> executionOrder)
         : IQueryHandler<RegressionQuery, Outcome<string, Failure>>
     {
-        public Task<Outcome<string, Failure>> Handle(RegressionQuery query, CancellationToken ct)
+        public Task<Outcome<string, Failure>> Handle(RegressionQuery query, CancellationToken ct) =>
+            this.HandleAsync(query, ct);
+
+        public Task<Outcome<string, Failure>> HandleAsync(RegressionQuery query, CancellationToken ct)
         {
             executionOrder.Add("handle");
             return Task.FromResult<Outcome<string, Failure>>("regression-handled");

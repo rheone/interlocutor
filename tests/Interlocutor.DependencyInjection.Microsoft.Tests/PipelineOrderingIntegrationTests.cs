@@ -171,7 +171,10 @@ public sealed class PipelineOrderingIntegrationTests
     private sealed class OrderedRequestHandler(Lazy<ISession> session, List<string> log)
         : ICommandHandler<OrderedRequest, Outcome<Success, Forbidden>>
     {
-        public Task<Outcome<Success, Forbidden>> Handle(OrderedRequest command, CancellationToken ct)
+        public Task<Outcome<Success, Forbidden>> Handle(OrderedRequest command, CancellationToken ct) =>
+            this.HandleAsync(command, ct);
+
+        public Task<Outcome<Success, Forbidden>> HandleAsync(OrderedRequest command, CancellationToken ct)
         {
             // UnitOfWorkBehavior<,> begins a transaction eagerly for ITransactionalRequest, before next()
             // runs - checking the real session here proves that already happened, rather than assuming it

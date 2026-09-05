@@ -174,9 +174,13 @@ public class HandlerDiscoveryTests
 
     private sealed class SampleQueryHandler : IQueryHandler<SampleQuery, Outcome>
     {
-        public Task<Outcome> Handle(SampleQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
+        public Task<Outcome> Handle(SampleQuery query, CancellationToken ct) => this.HandleAsync(query, ct);
+
+        public Task<Outcome> HandleAsync(SampleQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 
+    // IVoidCommandHandler<,> has no HandleAsync member (known gap - ticket 01 never added one), so this fake
+    // stays on Handle as-is.
     private sealed class SampleVoidCommandHandler : IVoidCommandHandler<SampleCommand, Outcome>
     {
         public Task<Outcome> Handle(SampleCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
@@ -184,36 +188,50 @@ public class HandlerDiscoveryTests
 
     private sealed class SampleCommandHandler : ICommandHandler<SampleCommandWithResponse, Outcome>
     {
-        public Task<Outcome> Handle(SampleCommandWithResponse command, CancellationToken ct) =>
+        public Task<Outcome> Handle(SampleCommandWithResponse command, CancellationToken ct) => this.HandleAsync(command, ct);
+
+        public Task<Outcome> HandleAsync(SampleCommandWithResponse command, CancellationToken ct) =>
             Task.FromResult(default(Outcome));
     }
 
     private sealed class SampleNotificationHandler : INotificationHandler<SampleNotification>
     {
-        public Task Handle(SampleNotification notification, CancellationToken ct) => Task.CompletedTask;
+        public Task Handle(SampleNotification notification, CancellationToken ct) => this.HandleAsync(notification, ct);
+
+        public Task HandleAsync(SampleNotification notification, CancellationToken ct) => Task.CompletedTask;
     }
 
     private sealed class MultiContractHandler
         : IQueryHandler<MultiContractQuery, Outcome>,
             INotificationHandler<MultiContractNotification>
     {
-        public Task<Outcome> Handle(MultiContractQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
+        public Task<Outcome> Handle(MultiContractQuery query, CancellationToken ct) => this.HandleAsync(query, ct);
 
-        public Task Handle(MultiContractNotification notification, CancellationToken ct) => Task.CompletedTask;
+        public Task<Outcome> HandleAsync(MultiContractQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
+
+        public Task Handle(MultiContractNotification notification, CancellationToken ct) => this.HandleAsync(notification, ct);
+
+        public Task HandleAsync(MultiContractNotification notification, CancellationToken ct) => Task.CompletedTask;
     }
 
     private sealed class FirstSharedNotificationHandler : INotificationHandler<SharedNotification>
     {
-        public Task Handle(SharedNotification notification, CancellationToken ct) => Task.CompletedTask;
+        public Task Handle(SharedNotification notification, CancellationToken ct) => this.HandleAsync(notification, ct);
+
+        public Task HandleAsync(SharedNotification notification, CancellationToken ct) => Task.CompletedTask;
     }
 
     private sealed class SecondSharedNotificationHandler : INotificationHandler<SharedNotification>
     {
-        public Task Handle(SharedNotification notification, CancellationToken ct) => Task.CompletedTask;
+        public Task Handle(SharedNotification notification, CancellationToken ct) => this.HandleAsync(notification, ct);
+
+        public Task HandleAsync(SharedNotification notification, CancellationToken ct) => Task.CompletedTask;
     }
 
     private sealed class OpenGenericQueryHandler<T> : IQueryHandler<GenericQuery<T>, Outcome>
     {
-        public Task<Outcome> Handle(GenericQuery<T> query, CancellationToken ct) => Task.FromResult(default(Outcome));
+        public Task<Outcome> Handle(GenericQuery<T> query, CancellationToken ct) => this.HandleAsync(query, ct);
+
+        public Task<Outcome> HandleAsync(GenericQuery<T> query, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 }

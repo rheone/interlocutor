@@ -123,7 +123,10 @@ public class PipelineChainResolverTests
 
     private sealed class AlphaBehavior(List<string> log) : IPipelineBehavior<MarkedRequest, string>
     {
-        public Task<string> Handle(MarkedRequest request, Func<Task<string>> next, CancellationToken ct)
+        public Task<string> Handle(MarkedRequest request, Func<Task<string>> next, CancellationToken ct) =>
+            this.HandleAsync(request, next, ct);
+
+        public Task<string> HandleAsync(MarkedRequest request, Func<Task<string>> next, CancellationToken ct)
         {
             log.Add("alpha");
             return next();
@@ -132,7 +135,10 @@ public class PipelineChainResolverTests
 
     private sealed class BetaBehavior(List<string> log) : IPipelineBehavior<MarkedRequest, string>
     {
-        public Task<string> Handle(MarkedRequest request, Func<Task<string>> next, CancellationToken ct)
+        public Task<string> Handle(MarkedRequest request, Func<Task<string>> next, CancellationToken ct) =>
+            this.HandleAsync(request, next, ct);
+
+        public Task<string> HandleAsync(MarkedRequest request, Func<Task<string>> next, CancellationToken ct)
         {
             log.Add("beta");
             return next();
@@ -141,7 +147,10 @@ public class PipelineChainResolverTests
 
     private sealed class NamedStringBehavior(string name, List<string> log) : IPipelineBehavior<string, string>
     {
-        public Task<string> Handle(string request, Func<Task<string>> next, CancellationToken ct)
+        public Task<string> Handle(string request, Func<Task<string>> next, CancellationToken ct) =>
+            this.HandleAsync(request, next, ct);
+
+        public Task<string> HandleAsync(string request, Func<Task<string>> next, CancellationToken ct)
         {
             log.Add(name);
             return next();

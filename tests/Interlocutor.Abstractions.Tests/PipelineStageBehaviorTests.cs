@@ -414,7 +414,13 @@ public class PipelineStageBehaviorTests
 
         public bool ObservedShortCircuit { get; private set; }
 
-        public async Task<Outcome<TestResponse, Failure>> Handle(
+        public Task<Outcome<TestResponse, Failure>> Handle(
+            TestRequest request,
+            Func<Task<Outcome<TestResponse, Failure>>> next,
+            CancellationToken ct
+        ) => this.HandleAsync(request, next, ct);
+
+        public async Task<Outcome<TestResponse, Failure>> HandleAsync(
             TestRequest request,
             Func<Task<Outcome<TestResponse, Failure>>> next,
             CancellationToken ct

@@ -126,7 +126,10 @@ public class PipelineOverrideParityTests
     private sealed class KeptOverrideBehavior<TRequest, TResponse>(ExecutionLog log) : IPipelineBehavior<TRequest, TResponse>
         where TRequest : IOverrideTarget
     {
-        public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+        public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
+            this.HandleAsync(request, next, ct);
+
+        public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
         {
             log.Entries.Add("kept");
             return next();
@@ -135,7 +138,10 @@ public class PipelineOverrideParityTests
 
     private sealed class DroppedOverrideBehavior<TRequest, TResponse>(ExecutionLog log) : IPipelineBehavior<TRequest, TResponse>
     {
-        public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+        public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
+            this.HandleAsync(request, next, ct);
+
+        public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
         {
             log.Entries.Add("dropped");
             return next();
@@ -162,6 +168,9 @@ public class PipelineOverrideParityTests
     private sealed class OverriddenCommandHandler : ICommandHandler<OverriddenCommand, Outcome<string, Forbidden>>
     {
         public Task<Outcome<string, Forbidden>> Handle(OverriddenCommand command, CancellationToken ct) =>
+            this.HandleAsync(command, ct);
+
+        public Task<Outcome<string, Forbidden>> HandleAsync(OverriddenCommand command, CancellationToken ct) =>
             Task.FromResult(new Outcome<string, Forbidden>(command.Name));
     }
 
@@ -170,6 +179,9 @@ public class PipelineOverrideParityTests
     private sealed class UnrelatedCommandHandler : ICommandHandler<UnrelatedCommand, Outcome<string, Forbidden>>
     {
         public Task<Outcome<string, Forbidden>> Handle(UnrelatedCommand command, CancellationToken ct) =>
+            this.HandleAsync(command, ct);
+
+        public Task<Outcome<string, Forbidden>> HandleAsync(UnrelatedCommand command, CancellationToken ct) =>
             Task.FromResult(new Outcome<string, Forbidden>(command.Name));
     }
 

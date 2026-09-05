@@ -155,7 +155,10 @@ public class RegistrationApplierTests
 
     private sealed class MarkerBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     {
-        public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) => next();
+        public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
+            this.HandleAsync(request, next, ct);
+
+        public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) => next();
     }
 
     // Deliberately empty: type-identity markers for this test's generic-constraint shape, not data holders.
@@ -180,20 +183,26 @@ public class RegistrationApplierTests
 
     private sealed class MarkerHandler : IQueryHandler<MarkerQuery, Outcome>
     {
-        public Task<Outcome> Handle(MarkerQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
+        public Task<Outcome> Handle(MarkerQuery query, CancellationToken ct) => this.HandleAsync(query, ct);
+
+        public Task<Outcome> HandleAsync(MarkerQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 
     private sealed record MarkerGeneratedQuery : IQuery<Outcome>;
 
     private sealed class MarkerGeneratedHandler : IQueryHandler<MarkerGeneratedQuery, Outcome>
     {
-        public Task<Outcome> Handle(MarkerGeneratedQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
+        public Task<Outcome> Handle(MarkerGeneratedQuery query, CancellationToken ct) => this.HandleAsync(query, ct);
+
+        public Task<Outcome> HandleAsync(MarkerGeneratedQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 
     private sealed record MarkerMatchedQuery : IQuery<Outcome>;
 
     private sealed class MarkerMatchedHandler : IQueryHandler<MarkerMatchedQuery, Outcome>
     {
-        public Task<Outcome> Handle(MarkerMatchedQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
+        public Task<Outcome> Handle(MarkerMatchedQuery query, CancellationToken ct) => this.HandleAsync(query, ct);
+
+        public Task<Outcome> HandleAsync(MarkerMatchedQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 }

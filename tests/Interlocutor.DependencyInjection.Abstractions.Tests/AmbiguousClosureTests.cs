@@ -347,12 +347,16 @@ public class AmbiguousClosureTests
 
     private sealed class ConflictedCommandHandlerA : ICommandHandler<ConflictedCommand, Outcome>
     {
-        public Task<Outcome> Handle(ConflictedCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
+        public Task<Outcome> Handle(ConflictedCommand command, CancellationToken ct) => this.HandleAsync(command, ct);
+
+        public Task<Outcome> HandleAsync(ConflictedCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 
     private sealed class ConflictedCommandHandlerB : ICommandHandler<ConflictedCommand, Outcome>
     {
-        public Task<Outcome> Handle(ConflictedCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
+        public Task<Outcome> Handle(ConflictedCommand command, CancellationToken ct) => this.HandleAsync(command, ct);
+
+        public Task<Outcome> HandleAsync(ConflictedCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 
     private sealed record ClosureTestNotification : INotification;
@@ -363,12 +367,16 @@ public class AmbiguousClosureTests
 #pragma warning disable S1144 // Resolved only via AddInterlocutor()'s assembly scanning, invisible to static analysis.
     private sealed class FirstClosureTestNotificationHandler : INotificationHandler<ClosureTestNotification>
     {
-        public Task Handle(ClosureTestNotification notification, CancellationToken ct) => Task.CompletedTask;
+        public Task Handle(ClosureTestNotification notification, CancellationToken ct) => this.HandleAsync(notification, ct);
+
+        public Task HandleAsync(ClosureTestNotification notification, CancellationToken ct) => Task.CompletedTask;
     }
 
     private sealed class SecondClosureTestNotificationHandler : INotificationHandler<ClosureTestNotification>
     {
-        public Task Handle(ClosureTestNotification notification, CancellationToken ct) => Task.CompletedTask;
+        public Task Handle(ClosureTestNotification notification, CancellationToken ct) => this.HandleAsync(notification, ct);
+
+        public Task HandleAsync(ClosureTestNotification notification, CancellationToken ct) => Task.CompletedTask;
     }
 #pragma warning restore S1144
 

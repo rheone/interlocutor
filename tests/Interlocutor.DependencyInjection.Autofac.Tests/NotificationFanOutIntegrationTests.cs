@@ -48,7 +48,9 @@ public class NotificationFanOutIntegrationTests
 #pragma warning disable S1144
     private sealed class DomainEventLogger(InvocationRecorder recorder) : INotificationHandler<DomainEvent>
     {
-        public Task Handle(DomainEvent notification, CancellationToken ct)
+        public Task Handle(DomainEvent notification, CancellationToken ct) => this.HandleAsync(notification, ct);
+
+        public Task HandleAsync(DomainEvent notification, CancellationToken ct)
         {
             recorder.Invoked = true;
             return Task.CompletedTask;

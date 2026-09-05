@@ -110,7 +110,10 @@ public class ContainerBuilderExtensionsTests
     /// </summary>
     private sealed class ClosedMatchedBehavior : IPipelineBehavior<MatchedRequest, Outcome>
     {
-        public Task<Outcome> Handle(MatchedRequest request, Func<Task<Outcome>> next, CancellationToken ct) => next();
+        public Task<Outcome> Handle(MatchedRequest request, Func<Task<Outcome>> next, CancellationToken ct) =>
+            this.HandleAsync(request, next, ct);
+
+        public Task<Outcome> HandleAsync(MatchedRequest request, Func<Task<Outcome>> next, CancellationToken ct) => next();
     }
 
     // Deliberately empty: a type-identity marker for this test's generic-constraint shape, not a data holder.

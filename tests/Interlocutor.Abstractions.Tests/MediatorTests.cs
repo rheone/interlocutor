@@ -15,7 +15,9 @@ public record TestQuery(int Value) : IQuery<Outcome<int, Failure>>;
 
 public class TestQueryHandler : IQueryHandler<TestQuery, Outcome<int, Failure>>
 {
-    public Task<Outcome<int, Failure>> Handle(TestQuery query, CancellationToken ct) =>
+    public Task<Outcome<int, Failure>> Handle(TestQuery query, CancellationToken ct) => this.HandleAsync(query, ct);
+
+    public Task<Outcome<int, Failure>> HandleAsync(TestQuery query, CancellationToken ct) =>
         Task.FromResult(new Outcome<int, Failure>(query.Value * 2));
 }
 
@@ -23,12 +25,16 @@ public record GreetCommand(string PersonName) : ICommand<Outcome<string, Failure
 
 public class GreetCommandHandler : ICommandHandler<GreetCommand, Outcome<string, Failure>>
 {
-    public Task<Outcome<string, Failure>> Handle(GreetCommand command, CancellationToken ct) =>
+    public Task<Outcome<string, Failure>> Handle(GreetCommand command, CancellationToken ct) => this.HandleAsync(command, ct);
+
+    public Task<Outcome<string, Failure>> HandleAsync(GreetCommand command, CancellationToken ct) =>
         Task.FromResult(new Outcome<string, Failure>($"Hello {command.PersonName}"));
 }
 
 public record TestVoidCommand(string Value) : ICommand;
 
+// IVoidCommandHandler<,> has no HandleAsync member (known gap - ticket 01 never added one), so this fake
+// stays on Handle as-is.
 public class TestVoidHandler : IVoidCommandHandler<TestVoidCommand, Outcome>
 {
     public Task<Outcome> Handle(TestVoidCommand command, CancellationToken ct) =>
@@ -47,7 +53,9 @@ public record AuditableTestQuery(int Value) : IQuery<Outcome<int, Failure>>, IAu
 
 public class AuditableTestQueryHandler : IQueryHandler<AuditableTestQuery, Outcome<int, Failure>>
 {
-    public Task<Outcome<int, Failure>> Handle(AuditableTestQuery query, CancellationToken ct) =>
+    public Task<Outcome<int, Failure>> Handle(AuditableTestQuery query, CancellationToken ct) => this.HandleAsync(query, ct);
+
+    public Task<Outcome<int, Failure>> HandleAsync(AuditableTestQuery query, CancellationToken ct) =>
         Task.FromResult(new Outcome<int, Failure>(query.Value));
 }
 
@@ -60,7 +68,10 @@ public class AuditableTestQueryHandler : IQueryHandler<AuditableTestQuery, Outco
 public class MarkerConstrainedTrackingBehavior<TRequest, TResponse>(Action track) : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IAuditableRequest
 {
-    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
+        this.HandleAsync(request, next, ct);
+
+    public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         track();
         return next();
@@ -69,7 +80,10 @@ public class MarkerConstrainedTrackingBehavior<TRequest, TResponse>(Action track
 
 public class TrackingBehavior<TRequest, TResponse>(Action track) : IPipelineBehavior<TRequest, TResponse>
 {
-    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
+        this.HandleAsync(request, next, ct);
+
+    public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         track();
         return next();
@@ -80,7 +94,9 @@ public class TrackingBehavior<TRequest, TResponse>(Action track) : IPipelineBeha
 /// <see cref="Eject"/> works without manually threading the chosen outcome back up through every frame.</summary>
 public class EjectingQueryHandler : IQueryHandler<TestQuery, Outcome<int, Failure>>
 {
-    public Task<Outcome<int, Failure>> Handle(TestQuery query, CancellationToken ct) => Inner(query);
+    public Task<Outcome<int, Failure>> Handle(TestQuery query, CancellationToken ct) => this.HandleAsync(query, ct);
+
+    public Task<Outcome<int, Failure>> HandleAsync(TestQuery query, CancellationToken ct) => Inner(query);
 
     private static Task<Outcome<int, Failure>> Inner(TestQuery query) => Deepest(query);
 
@@ -97,6 +113,9 @@ public class EjectingBeforeNextBehavior<TRequest, TResponse>(TResponse response)
     where TResponse : IOutcome
 {
     public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
+        this.HandleAsync(request, next, ct);
+
+    public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
         Task.FromResult(Eject.With(response));
 }
 
@@ -109,6 +128,9 @@ public class EjectingBeforeNextBehavior<TRequest, TResponse>(TResponse response)
 public class ThrowingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
 {
     public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
+        this.HandleAsync(request, next, ct);
+
+    public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
         throw new InvalidOperationException("not an eject");
 }
 
@@ -121,7 +143,10 @@ public class ThrowingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest,
 public class EjectingAfterNextBehavior<TRequest, TResponse>(TResponse response) : IPipelineBehavior<TRequest, TResponse>
     where TResponse : IOutcome
 {
-    public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
+        this.HandleAsync(request, next, ct);
+
+    public async Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         _ = await next().ConfigureAwait(false);
         return Eject.With(response);
@@ -136,7 +161,10 @@ public class EjectingAfterNextBehavior<TRequest, TResponse>(TResponse response) 
 /// <typeparam name="TResponse">The response type flowing through this behavior unchanged.</typeparam>
 public class KeptTrackingBehavior<TRequest, TResponse>(Action<string> track) : IPipelineBehavior<TRequest, TResponse>
 {
-    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
+        this.HandleAsync(request, next, ct);
+
+    public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         track("kept");
         return next();
@@ -151,7 +179,10 @@ public class KeptTrackingBehavior<TRequest, TResponse>(Action<string> track) : I
 /// <typeparam name="TResponse">The response type flowing through this behavior unchanged.</typeparam>
 public class DroppedTrackingBehavior<TRequest, TResponse>(Action<string> track) : IPipelineBehavior<TRequest, TResponse>
 {
-    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
+        this.HandleAsync(request, next, ct);
+
+    public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         track("dropped");
         return next();
@@ -574,7 +605,9 @@ public class MediatorTests
 
 public class TestNotificationHandler(Action action) : INotificationHandler<TestNotification>
 {
-    public Task Handle(TestNotification notification, CancellationToken ct)
+    public Task Handle(TestNotification notification, CancellationToken ct) => this.HandleAsync(notification, ct);
+
+    public Task HandleAsync(TestNotification notification, CancellationToken ct)
     {
         action();
         return Task.CompletedTask;

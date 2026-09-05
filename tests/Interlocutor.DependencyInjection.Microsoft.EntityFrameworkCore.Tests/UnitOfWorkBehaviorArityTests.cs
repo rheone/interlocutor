@@ -90,7 +90,10 @@ public sealed class UnitOfWorkBehaviorArityTests
 
     private sealed class WidgetCommandHandler(TestDbContext context) : ICommandHandler<CreateWidget, Outcome<Success, Failure>>
     {
-        public async Task<Outcome<Success, Failure>> Handle(CreateWidget command, CancellationToken ct)
+        public Task<Outcome<Success, Failure>> Handle(CreateWidget command, CancellationToken ct) =>
+            this.HandleAsync(command, ct);
+
+        public async Task<Outcome<Success, Failure>> HandleAsync(CreateWidget command, CancellationToken ct)
         {
             await context.Widgets.AddAsync(new Widget { Name = command.Name }, ct).ConfigureAwait(false);
             return default(Success);

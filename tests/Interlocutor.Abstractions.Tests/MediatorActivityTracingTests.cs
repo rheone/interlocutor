@@ -253,7 +253,9 @@ public record TracingSuccessQuery(int Value) : IQuery<Outcome<int, Failure>>;
 
 public class TracingSuccessQueryHandler : IQueryHandler<TracingSuccessQuery, Outcome<int, Failure>>
 {
-    public Task<Outcome<int, Failure>> Handle(TracingSuccessQuery query, CancellationToken ct) =>
+    public Task<Outcome<int, Failure>> Handle(TracingSuccessQuery query, CancellationToken ct) => this.HandleAsync(query, ct);
+
+    public Task<Outcome<int, Failure>> HandleAsync(TracingSuccessQuery query, CancellationToken ct) =>
         Task.FromResult(new Outcome<int, Failure>(query.Value * 2));
 }
 
@@ -261,7 +263,9 @@ public record TracingFailingQuery : IQuery<Outcome<int, Failure>>;
 
 public class TracingFailingQueryHandler : IQueryHandler<TracingFailingQuery, Outcome<int, Failure>>
 {
-    public Task<Outcome<int, Failure>> Handle(TracingFailingQuery query, CancellationToken ct) =>
+    public Task<Outcome<int, Failure>> Handle(TracingFailingQuery query, CancellationToken ct) => this.HandleAsync(query, ct);
+
+    public Task<Outcome<int, Failure>> HandleAsync(TracingFailingQuery query, CancellationToken ct) =>
         Task.FromResult(new Outcome<int, Failure>(new Failure("boom")));
 }
 
@@ -269,7 +273,9 @@ public record TracingThrowingQuery : IQuery<Outcome<int, Failure>>;
 
 public class TracingThrowingQueryHandler : IQueryHandler<TracingThrowingQuery, Outcome<int, Failure>>
 {
-    public Task<Outcome<int, Failure>> Handle(TracingThrowingQuery query, CancellationToken ct) =>
+    public Task<Outcome<int, Failure>> Handle(TracingThrowingQuery query, CancellationToken ct) => this.HandleAsync(query, ct);
+
+    public Task<Outcome<int, Failure>> HandleAsync(TracingThrowingQuery query, CancellationToken ct) =>
         throw new InvalidOperationException("handler bug");
 }
 
@@ -277,7 +283,9 @@ public record TracingOuterQuery : IQuery<Outcome<int, Failure>>;
 
 public class TracingOuterQueryHandler(IMediator mediator) : IQueryHandler<TracingOuterQuery, Outcome<int, Failure>>
 {
-    public async Task<Outcome<int, Failure>> Handle(TracingOuterQuery query, CancellationToken ct) =>
+    public Task<Outcome<int, Failure>> Handle(TracingOuterQuery query, CancellationToken ct) => this.HandleAsync(query, ct);
+
+    public async Task<Outcome<int, Failure>> HandleAsync(TracingOuterQuery query, CancellationToken ct) =>
         await mediator.Send(new TracingInnerQuery(), ct).ConfigureAwait(false);
 }
 
@@ -285,12 +293,16 @@ public record TracingInnerQuery : IQuery<Outcome<int, Failure>>;
 
 public class TracingInnerQueryHandler : IQueryHandler<TracingInnerQuery, Outcome<int, Failure>>
 {
-    public Task<Outcome<int, Failure>> Handle(TracingInnerQuery query, CancellationToken ct) =>
+    public Task<Outcome<int, Failure>> Handle(TracingInnerQuery query, CancellationToken ct) => this.HandleAsync(query, ct);
+
+    public Task<Outcome<int, Failure>> HandleAsync(TracingInnerQuery query, CancellationToken ct) =>
         Task.FromResult(new Outcome<int, Failure>(1));
 }
 
 public record TracingSuccessCommand : ICommand;
 
+// IVoidCommandHandler<,> has no HandleAsync member (known gap - ticket 01 never added one), so this fake
+// stays on Handle as-is.
 public class TracingSuccessCommandHandler : IVoidCommandHandler<TracingSuccessCommand, Outcome>
 {
     public Task<Outcome> Handle(TracingSuccessCommand command, CancellationToken ct) =>
@@ -301,7 +313,9 @@ public record TracingNotification(string Message) : INotification;
 
 public class TracingNotificationHandler(Action action) : INotificationHandler<TracingNotification>
 {
-    public Task Handle(TracingNotification notification, CancellationToken ct)
+    public Task Handle(TracingNotification notification, CancellationToken ct) => this.HandleAsync(notification, ct);
+
+    public Task HandleAsync(TracingNotification notification, CancellationToken ct)
     {
         action();
         return Task.CompletedTask;

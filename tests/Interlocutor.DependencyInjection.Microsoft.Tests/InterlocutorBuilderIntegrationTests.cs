@@ -555,6 +555,9 @@ public class InterlocutorBuilderIntegrationTests
     private sealed class CancellableQueryHandler : IQueryHandler<CancellableQuery, Outcome<string, Cancelled>>
     {
         public Task<Outcome<string, Cancelled>> Handle(CancellableQuery query, CancellationToken ct) =>
+            this.HandleAsync(query, ct);
+
+        public Task<Outcome<string, Cancelled>> HandleAsync(CancellableQuery query, CancellationToken ct) =>
             Task.FromResult<Outcome<string, Cancelled>>("ok");
     }
 
@@ -565,7 +568,9 @@ public class InterlocutorBuilderIntegrationTests
 
     private sealed class TimeBoundQueryHandler : IQueryHandler<TimeBoundQuery, Outcome<string, Timeout>>
     {
-        public Task<Outcome<string, Timeout>> Handle(TimeBoundQuery query, CancellationToken ct) =>
+        public Task<Outcome<string, Timeout>> Handle(TimeBoundQuery query, CancellationToken ct) => this.HandleAsync(query, ct);
+
+        public Task<Outcome<string, Timeout>> HandleAsync(TimeBoundQuery query, CancellationToken ct) =>
             Task.FromResult<Outcome<string, Timeout>>("ok");
     }
 
@@ -577,6 +582,9 @@ public class InterlocutorBuilderIntegrationTests
     private sealed class ThrottledQueryHandler : IQueryHandler<ThrottledQuery, Outcome<string, RateLimited>>
     {
         public Task<Outcome<string, RateLimited>> Handle(ThrottledQuery query, CancellationToken ct) =>
+            this.HandleAsync(query, ct);
+
+        public Task<Outcome<string, RateLimited>> HandleAsync(ThrottledQuery query, CancellationToken ct) =>
             Task.FromResult<Outcome<string, RateLimited>>("ok");
     }
 
@@ -590,6 +598,9 @@ public class InterlocutorBuilderIntegrationTests
     private sealed class AuthorizableQueryHandler : IQueryHandler<AuthorizableQuery, Outcome<string, Forbidden>>
     {
         public Task<Outcome<string, Forbidden>> Handle(AuthorizableQuery query, CancellationToken ct) =>
+            this.HandleAsync(query, ct);
+
+        public Task<Outcome<string, Forbidden>> HandleAsync(AuthorizableQuery query, CancellationToken ct) =>
             Task.FromResult<Outcome<string, Forbidden>>("ok");
     }
 #pragma warning restore S1144
@@ -598,7 +609,9 @@ public class InterlocutorBuilderIntegrationTests
 
     private sealed class SampleQueryHandler : IQueryHandler<SampleQuery, Outcome>
     {
-        public Task<Outcome> Handle(SampleQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
+        public Task<Outcome> Handle(SampleQuery query, CancellationToken ct) => this.HandleAsync(query, ct);
+
+        public Task<Outcome> HandleAsync(SampleQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 
     /// <summary>Deliberately has no handler, so ValidateOnBuild() tests have a deterministic problem to find.</summary>
@@ -632,7 +645,9 @@ public class InterlocutorBuilderIntegrationTests
 #pragma warning disable S1144
     private sealed class ShortCircuitQueryHandler(HandlerRanFlag flag) : IQueryHandler<ShortCircuitQuery, Outcome>
     {
-        public Task<Outcome> Handle(ShortCircuitQuery query, CancellationToken ct)
+        public Task<Outcome> Handle(ShortCircuitQuery query, CancellationToken ct) => this.HandleAsync(query, ct);
+
+        public Task<Outcome> HandleAsync(ShortCircuitQuery query, CancellationToken ct)
         {
             flag.MarkHandled();
             return Task.FromResult(default(Outcome));
@@ -655,7 +670,9 @@ public class InterlocutorBuilderIntegrationTests
 #pragma warning disable S1144
     private sealed class AuditOnlyQueryHandler : IQueryHandler<AuditOnlyQuery, Outcome>
     {
-        public Task<Outcome> Handle(AuditOnlyQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
+        public Task<Outcome> Handle(AuditOnlyQuery query, CancellationToken ct) => this.HandleAsync(query, ct);
+
+        public Task<Outcome> HandleAsync(AuditOnlyQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 #pragma warning restore S1144
 
@@ -676,7 +693,10 @@ public class InterlocutorBuilderIntegrationTests
     {
         public sealed class First(List<string> log) : IPipelineBehavior<TRequest, TResponse>
         {
-            public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+            public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
+                this.HandleAsync(request, next, ct);
+
+            public async Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
             {
                 log.Add("first-before");
                 var result = await next().ConfigureAwait(false);
@@ -687,7 +707,10 @@ public class InterlocutorBuilderIntegrationTests
 
         public sealed class Second(List<string> log) : IPipelineBehavior<TRequest, TResponse>
         {
-            public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+            public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
+                this.HandleAsync(request, next, ct);
+
+            public async Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
             {
                 log.Add("second-before");
                 var result = await next().ConfigureAwait(false);

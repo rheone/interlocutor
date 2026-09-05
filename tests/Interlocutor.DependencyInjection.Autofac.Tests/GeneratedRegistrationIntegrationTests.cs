@@ -56,7 +56,9 @@ public sealed class GeneratedRegistrationIntegrationTests
 
     public sealed class GeneratedQueryHandler(IGreeter greeter) : IQueryHandler<GeneratedQuery, Outcome<string, Failure>>
     {
-        public Task<Outcome<string, Failure>> Handle(GeneratedQuery query, CancellationToken ct) =>
+        public Task<Outcome<string, Failure>> Handle(GeneratedQuery query, CancellationToken ct) => this.HandleAsync(query, ct);
+
+        public Task<Outcome<string, Failure>> HandleAsync(GeneratedQuery query, CancellationToken ct) =>
             Task.FromResult<Outcome<string, Failure>>(greeter.Greet());
     }
 

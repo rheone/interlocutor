@@ -96,6 +96,9 @@ public sealed class GeneratedDispatchSwitchOverrideTests
         : IQueryHandler<GeneratedSwitchOverriddenQuery, Outcome<int, Failure>>
     {
         public Task<Outcome<int, Failure>> Handle(GeneratedSwitchOverriddenQuery query, CancellationToken ct) =>
+            this.HandleAsync(query, ct);
+
+        public Task<Outcome<int, Failure>> HandleAsync(GeneratedSwitchOverriddenQuery query, CancellationToken ct) =>
             Task.FromResult<Outcome<int, Failure>>(query.Value * 2);
     }
 
@@ -103,6 +106,9 @@ public sealed class GeneratedDispatchSwitchOverrideTests
         : IQueryHandler<GeneratedSwitchUnrelatedQuery, Outcome<int, Failure>>
     {
         public Task<Outcome<int, Failure>> Handle(GeneratedSwitchUnrelatedQuery query, CancellationToken ct) =>
+            this.HandleAsync(query, ct);
+
+        public Task<Outcome<int, Failure>> HandleAsync(GeneratedSwitchUnrelatedQuery query, CancellationToken ct) =>
             Task.FromResult<Outcome<int, Failure>>(query.Value * 2);
     }
 
@@ -110,7 +116,10 @@ public sealed class GeneratedDispatchSwitchOverrideTests
         : IPipelineBehavior<TRequest, TResponse>
         where TRequest : IOverrideTarget
     {
-        public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+        public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
+            this.HandleAsync(request, next, ct);
+
+        public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
         {
             log.Add("kept");
             return next();
@@ -120,7 +129,10 @@ public sealed class GeneratedDispatchSwitchOverrideTests
     public sealed class DroppedGeneratedSwitchBehavior<TRequest, TResponse>(List<string> log)
         : IPipelineBehavior<TRequest, TResponse>
     {
-        public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+        public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
+            this.HandleAsync(request, next, ct);
+
+        public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
         {
             log.Add("dropped");
             return next();
