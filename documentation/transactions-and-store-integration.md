@@ -1,6 +1,6 @@
 # Transactions & Store Integration
 
-Managing transactions with `Interlocutor.Persistence.EntityFrameworkCore` and `Interlocutor.Persistence.NHibernate`. Because the mediator is scoped, each dispatch gets exactly one store session - a lookup and a write inside the same command execute against the same session. `IUnitOfWork` owns that session's transaction: it opens lazily, the first time anything actually writes, and commits automatically once the dispatch completes - unless the handler explicitly cancels it via `IUnitOfWork.Cancel`, or an unhandled exception leaves it uncommitted for the scope to dispose.
+Managing transactions with `Interlocutor.Persistence.EntityFrameworkCore` and `Interlocutor.Persistence.NHibernate`. Because the mediator is scoped, each dispatch gets exactly one store session - a lookup and a write inside the same command execute against the same session. `IUnitOfWork` owns that session's transaction: it opens lazily, the first time anything actually writes, and commits automatically once the dispatch completes - unless the handler explicitly cancels it via `IUnitOfWork.Cancel` (an ambient signal, independent of anything the handler goes on to return), pairs its own returned or ejected value with `NoCommit.With`/`NoCommit.AndEject` (a call-site signal, for code that would rather not thread an injected `IUnitOfWork` through several calls just to force a rollback), or an unhandled exception leaves it uncommitted for the scope to dispose.
 
 ## UnitOfWorkBehavior
 
@@ -17,7 +17,8 @@ public record CreateOrder(int CustomerId, List<OrderItem> Items)
 //    or a directly-injected Lazy<TContext>/Lazy<ISession>)
 // 3. Commits once the handler returns, regardless of the outcome's shape - no case type
 //    (Success, NotFound, Conflict, ValidationError, ...) decides this
-// 4. Rolls back only via an explicit IUnitOfWork.Cancel call, or an unhandled exception
+// 4. Rolls back only via an explicit IUnitOfWork.Cancel call, a NoCommit.With/NoCommit.AndEject
+//    call paired with the handler's own returned or ejected value, or an unhandled exception
 //    that leaves the transaction uncommitted for the scope to dispose
 ```
 
@@ -93,7 +94,7 @@ services.AddDbContext<AppDbContext>(
 > // Closes TContext over AppDbContext, bringing the arity back down to 2
 > internal sealed class AppUnitOfWorkBehavior<TRequest, TResponse>(
 >     Lazy<AppDbContext> context,
->     IOutcomeClassifier classifier,
+>     IOutcomeClassifier? classifier = null,
 >     IResponseOutcomeDescriber? describer = null
 > ) : UnitOfWorkBehavior<TRequest, TResponse, AppDbContext>(context, classifier, describer);
 >
@@ -188,9 +189,9 @@ public class CreateOrderHandler : ICommandHandler<CreateOrder, Outcome<int, Vali
 }
 ```
 
-## Cancel: the only way to force a rollback
+## Forcing a rollback
 
-No response case type - `Success`, `NotFound`, `Conflict`, `ValidationError`, or any other - decides whether a dispatch's transaction commits or rolls back. `UnitOfWorkBehavior` commits whatever is left pending once the handler returns, unconditionally. `IUnitOfWork.Cancel` is the one way to override that: it rolls back the current transaction immediately and returns control to the caller, independently of what the handler returns afterward. It is not a short-circuit primitive - the handler still decides what to return, and the pipeline's commit gate simply finds nothing pending at completion:
+No response case type - `Success`, `NotFound`, `Conflict`, `ValidationError`, or any other - decides whether a dispatch's transaction commits or rolls back. `UnitOfWorkBehavior` commits whatever is left pending once the handler returns, unconditionally, unless the handler signals otherwise through one of two independent mechanisms. `IUnitOfWork.Cancel` is the ambient one: it rolls back the current transaction immediately and returns control to the caller, independently of what the handler returns afterward - it is not a short-circuit primitive, the handler still decides what to return, and the pipeline's commit gate simply finds nothing pending at completion:
 
 ```csharp
 public record ArchiveOrder(int OrderId) : ICommand<Outcome>;
@@ -219,25 +220,41 @@ public class ArchiveOrderHandler : ICommandHandler<ArchiveOrder, Outcome>
 }
 ```
 
+`NoCommit.With`/`NoCommit.AndEject` (`Interlocutor.Abstractions.Pipeline`) is the call-site alternative: pair the specific value a handler is already returning or ejecting with a no-commit signal, without needing an injected `IUnitOfWork` in scope - useful when that decision is made several calls deep, away from any handler-level reference to the unit of work:
+
+```csharp
+public async Task<Outcome<Success, Conflict>> Handle(ArchiveOrder command, CancellationToken ct)
+{
+    if (await ExternalArchiveWasAlreadyRunning(command.OrderId, ct))
+    {
+        // Reports success and still rolls back whatever this handler staged - no IUnitOfWork reference needed.
+        return NoCommit.With<Outcome<Success, Conflict>>(new Success());
+    }
+
+    await this.unitOfWork.SaveChangesAsync(ct);
+    return new Success();
+}
+```
+
 ## Commit/Rollback Semantics
 
 - **Never opens for a pure read**: a dispatch that never writes never opens a transaction at all - no marker to remember, no cost to pay.
 - **Begins on first write**: the transaction opens the moment anything writes - through `IDomainRepository`, `IUnitOfWork`, or a directly-injected `Lazy<TContext>`/`Lazy<ISession>` - not at dispatch start.
 - **Begins eagerly for `ITransactionalRequest`**: at pipeline start instead, so an earlier protective read shares the same transaction as the write that follows it.
 - **Commits by default**: once a dispatch has an active transaction with pending work, it commits - regardless of what case type the handler returns. No case type - `Success`, `NotFound`, `Conflict`, `ValidationError`, or any other - is inspected to make this decision.
-- **Rolls back only on an explicit signal**: a call to `IUnitOfWork.Cancel` rolls back immediately, independently of what the handler returns afterward; an unhandled exception leaves the transaction uncommitted for the scope to dispose, which rolls it back too. Nothing else rolls a transaction back.
+- **Rolls back only on an explicit signal**: a call to `IUnitOfWork.Cancel`, or pairing the handler's own returned/ejected value with `NoCommit.With`/`NoCommit.AndEject`, rolls back immediately - independently of what the handler returns afterward; an unhandled exception leaves the transaction uncommitted for the scope to dispose, which rolls it back too. Nothing else rolls a transaction back.
 - **No rollback on pipeline short-circuit**: if `AuthorizationBehavior` or `ValidationBehavior` short-circuits a request before any write happens, no transaction was ever opened. No transaction to roll back.
 
-The rule that's easy to misread is "returning a failure case rolls back" - it doesn't. A handler that wants a rollback alongside a returned failure case must call `IUnitOfWork.Cancel` itself:
+The rule that's easy to misread is "returning a failure case rolls back" - it doesn't. A handler that wants a rollback alongside a returned failure case must call `IUnitOfWork.Cancel`, or return `NoCommit.With(failureCase)` instead of `failureCase` directly:
 
 ```mermaid
 flowchart TD
     Start["Request dispatched"] --> ShortCircuit{"Short-circuited before<br/>any write happens?<br/>(e.g. AuthorizationBehavior denies)"}
     ShortCircuit -->|"yes"| NoTx["No transaction was ever opened -<br/>nothing to roll back"]
     ShortCircuit -->|"no"| Open["Transaction opens on first write<br/>(or eagerly, for ITransactionalRequest)"]
-    Open --> Signal{"Did the handler call<br/>IUnitOfWork.Cancel,<br/>or throw?"}
+    Open --> Signal{"Did the handler call<br/>IUnitOfWork.Cancel, pair its return<br/>with NoCommit, or throw?"}
     Signal -->|"no"| Commit["Commit - regardless of the<br/>returned case type"]
-    Signal -->|"Cancel"| Rollback["Rollback immediately"]
+    Signal -->|"Cancel or NoCommit"| Rollback["Rollback immediately"]
     Signal -->|"threw"| Uncommitted["Left uncommitted - rolled back<br/>when the scope disposes"]
 
     classDef callout fill:#fff3cd,color:#664d03,stroke:#997404,stroke-width:2px;

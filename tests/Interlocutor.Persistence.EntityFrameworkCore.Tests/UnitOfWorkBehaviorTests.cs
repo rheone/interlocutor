@@ -2,6 +2,7 @@ namespace Interlocutor.Persistence.EntityFrameworkCore.Tests;
 
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Markers;
+using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Pipeline.Classifiers;
 using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
@@ -240,6 +241,74 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<EntityFrameworkTestF
         await using var verify = this.CreateVerificationContext();
         Assert.Empty(verify.Widgets);
         Assert.Null(this.context.Database.CurrentTransaction);
+    }
+
+    [Fact]
+    public async Task HandleAsync_HandlerThrowsAfterWrite_LeavesTransactionUncommitted_RolledBackByContextDisposal()
+    {
+        // Arrange - the write goes through IUnitOfWork.SaveChangesAsync (not a raw AddAsync left unsaved),
+        // so it genuinely reaches the database inside an open transaction before the handler throws. This is
+        // the strongest proof that what follows is a real store-level rollback on disposal, not merely "the
+        // write was never staged" - CommitGateDriver has no try/catch of its own around next() (see the
+        // CommitGateDriverTests.HandleAsync_NextThrows_... coverage), so neither commit nor rollback runs here.
+        var unitOfWork = new EntityFrameworkUnitOfWork<TestDbContext>(this.lazyContext);
+        var behavior = this.CreateBehavior();
+        var thrown = new InvalidOperationException("handler blew up");
+
+        // Act
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            behavior.HandleAsync(
+                new PlainRequest(),
+                async () =>
+                {
+                    await this
+                        .context.Widgets.AddAsync(new Widget { Name = "rolled-back-on-dispose" }, CancellationToken.None)
+                        .ConfigureAwait(false);
+                    await unitOfWork.SaveChangesAsync(CancellationToken.None).ConfigureAwait(false);
+                    throw thrown;
+                },
+                CancellationToken.None
+            )
+        );
+
+        // Assert - left open, neither committed nor rolled back by CommitGateDriver itself.
+        Assert.NotNull(this.context.Database.CurrentTransaction);
+
+        // Disposing the context - what a scoped DI container does once a failed dispatch unwinds - rolls
+        // back the still-open transaction, per ADO.NET's own commit-or-dispose contract. This is the entire
+        // guarantee the "implicit no-commit via exception" path now rests on.
+        await this.context.DisposeAsync();
+
+        await using var verify = this.CreateVerificationContext();
+        Assert.Empty(verify.Widgets);
+    }
+
+    [Fact]
+    public async Task HandleAsync_NoCommitWith_RollsBackWrite_NoCaseTypeInvolved()
+    {
+        // Arrange - the call-site "don't commit" signal from Interlocutor.Abstractions.Pipeline.NoCommit,
+        // exercised end-to-end against a real transaction: the handler still returns its own Success outcome,
+        // proving the signal is fully decoupled from the value it accompanies.
+        var behavior = this.CreateBehavior();
+
+        // Act
+        var result = await behavior.HandleAsync(
+            new PlainRequest(),
+            async () =>
+            {
+                await this
+                    .context.Widgets.AddAsync(new Widget { Name = "no-commit-signal" }, CancellationToken.None)
+                    .ConfigureAwait(false);
+                return NoCommit.With<Outcome<Success, Failure>>(default(Success));
+            },
+            CancellationToken.None
+        );
+
+        // Assert
+        Assert.True(result.TryGetValue(out Success _));
+        Assert.Null(this.context.Database.CurrentTransaction);
+        await using var verify = this.CreateVerificationContext();
+        Assert.Empty(verify.Widgets);
     }
 
     [Fact]

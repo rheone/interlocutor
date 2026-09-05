@@ -187,6 +187,7 @@ Interlocutor.Abstractions.Pipeline.LoggingAuditSink.LoggingAuditSink(Microsoft.E
 Interlocutor.Abstractions.Pipeline.LoggingAuditSink.RecordAsync(Interlocutor.Abstractions.Pipeline.AuditEntry! entry, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
 Interlocutor.Abstractions.Pipeline.LoggingBehavior<TRequest, TResponse>
 Interlocutor.Abstractions.Pipeline.LoggingBehavior<TRequest, TResponse>.LoggingBehavior(Microsoft.Extensions.Logging.ILogger<Interlocutor.Abstractions.Pipeline.LoggingBehavior<TRequest, TResponse>!>! logger, Interlocutor.Abstractions.Pipeline.IResponseOutcomeDescriber? describer = null) -> void
+Interlocutor.Abstractions.Pipeline.NoCommit
 Interlocutor.Abstractions.Pipeline.PipelineChainResolver
 Interlocutor.Abstractions.Pipeline.PipelineEjectException<TResponse>
 Interlocutor.Abstractions.Pipeline.PipelineEjectException<TResponse>.Response.get -> TResponse
@@ -233,6 +234,9 @@ static Interlocutor.Abstractions.Pipeline.Cases.DefaultOutcomeCaseRegistry.Insta
 static Interlocutor.Abstractions.Pipeline.Cases.OutcomeCaseRegistryExtensions.ConstructOrThrow<TResponse, TCase>(this Interlocutor.Abstractions.Pipeline.Cases.IOutcomeCaseRegistry! caseRegistry, TCase caseValue, string! behaviorName, string! eventPhrase, string! requirementClause) -> TResponse
 static Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder.DefaultClassifier.get -> Interlocutor.Abstractions.Pipeline.Classifiers.IOutcomeClassifier!
 static Interlocutor.Abstractions.Pipeline.Eject.With<TResponse>(TResponse response) -> TResponse
+static Interlocutor.Abstractions.Pipeline.NoCommit.AndEject<TResponse>(TResponse response) -> TResponse
+static Interlocutor.Abstractions.Pipeline.NoCommit.BeginDispatch() -> System.Runtime.CompilerServices.StrongBox<bool>!
+static Interlocutor.Abstractions.Pipeline.NoCommit.With<TResponse>(TResponse response) -> TResponse
 static Interlocutor.Abstractions.Pipeline.PipelineChainResolver.ResolveChain<TRequest, TResponse>(System.IServiceProvider! services) -> System.Collections.Generic.IReadOnlyList<Interlocutor.Abstractions.Pipeline.IPipelineBehavior<TRequest, TResponse>!>!
 static Interlocutor.Abstractions.Pipeline.RateLimitResult.operator !=(Interlocutor.Abstractions.Pipeline.RateLimitResult left, Interlocutor.Abstractions.Pipeline.RateLimitResult right) -> bool
 static Interlocutor.Abstractions.Pipeline.RateLimitResult.operator ==(Interlocutor.Abstractions.Pipeline.RateLimitResult left, Interlocutor.Abstractions.Pipeline.RateLimitResult right) -> bool

@@ -9,13 +9,14 @@ using Microsoft.Extensions.Logging;
 using NSubstitute;
 
 /// <summary>
-/// Covers <see cref="CommitGateDriver"/>'s shared begin/run-next/check-pending-work/commit algorithm
-/// directly, against a mocked <see cref="ICommitGateSession"/> and a mocked <c>next()</c> delegate, per
-/// <c>documentation/testing.md</c>'s "mock the <c>next()</c> delegate" guidance - so the algorithm itself is
-/// verified once at the seam that owns it, rather than only indirectly through each store's own
-/// <c>UnitOfWorkBehaviorTests</c>. Rollback is not decided by this algorithm at all - see
-/// <c>UnitOfWorkBehaviorTests</c>' own coverage of <c>IUnitOfWork.CancelAsync</c>, which rolls back before
-/// this driver's pending-work check ever runs.
+/// Covers <see cref="CommitGateDriver"/>'s shared begin/run-next/check-pending-work/commit-or-rollback
+/// algorithm directly, against a mocked <see cref="ICommitGateSession"/> and a mocked <c>next()</c> delegate,
+/// per <c>documentation/testing.md</c>'s "mock the <c>next()</c> delegate" guidance - so the algorithm itself
+/// is verified once at the seam that owns it, rather than only indirectly through each store's own
+/// <c>UnitOfWorkBehaviorTests</c>. Rollback via the ambient <c>IUnitOfWork.CancelAsync</c> signal is not
+/// decided by this algorithm at all - see <c>UnitOfWorkBehaviorTests</c>' own coverage of that call, which
+/// rolls back before this driver's pending-work check ever runs. Rollback via the call-site
+/// <see cref="NoCommit"/> signal, by contrast, is decided here - see the <c>NoCommit</c>-prefixed tests below.
 /// </summary>
 public sealed class CommitGateDriverTests
 {
@@ -131,6 +132,136 @@ public sealed class CommitGateDriverTests
 
         // Only the one eager begin - the post-next() check must not begin a second transaction on top of it.
         await session.Received(1).BeginTransactionAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_NoCommitWith_RollsBackInsteadOfCommitting()
+    {
+        // Arrange - the ordinary-return half of the call-site "don't commit" signal: NoCommit.With returns
+        // the handler's chosen value unchanged, but marks the dispatch to roll back instead of commit.
+        var session = CreateSession();
+        session.HasPendingWorkAsync(Arg.Any<CancellationToken>()).Returns(true);
+        var describer = Substitute.For<IResponseOutcomeDescriber>();
+        var logger = Substitute.For<ILogger>();
+
+        // Act
+        var result = await CommitGateDriver.HandleAsync(
+            new PlainRequest(),
+            () => Task.FromResult(NoCommit.With<Outcome<Success, Failure>>(default(Success))),
+            () => session,
+            describer,
+            logger,
+            CancellationToken.None
+        );
+
+        // Assert - the returned value is untouched by the signal; only the commit decision changes.
+        Assert.True(result.TryGetValue(out Success _));
+        await session.Received(1).RollbackAsync(Arg.Any<CancellationToken>());
+        await session.DidNotReceive().CommitAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_NoCommitAndEject_RollsBackInsteadOfCommitting()
+    {
+        // Arrange - the short-circuit half of the signal: NoCommit.AndEject throws PipelineEjectException,
+        // exactly like Eject.With, so next() here mimics what PipelineChainExecutor's own eject guard does in
+        // a real dispatch - converting it back into an ordinary response before CommitGateDriver ever sees it.
+        var session = CreateSession();
+        session.HasPendingWorkAsync(Arg.Any<CancellationToken>()).Returns(true);
+        var describer = Substitute.For<IResponseOutcomeDescriber>();
+        var logger = Substitute.For<ILogger>();
+
+        // Act
+        var result = await CommitGateDriver.HandleAsync(
+            new PlainRequest(),
+            () =>
+            {
+                try
+                {
+                    return Task.FromResult(NoCommit.AndEject<Outcome<Success, Failure>>(new Failure("rejected")));
+                }
+                catch (PipelineEjectException<Outcome<Success, Failure>> eject)
+                {
+                    return Task.FromResult(eject.Response);
+                }
+            },
+            () => session,
+            describer,
+            logger,
+            CancellationToken.None
+        );
+
+        // Assert
+        Assert.True(result.TryGetValue(out Failure _));
+        await session.Received(1).RollbackAsync(Arg.Any<CancellationToken>());
+        await session.DidNotReceive().CommitAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_NoCommitRequestedButNothingPending_NeitherCommitsNorRollsBack()
+    {
+        // Arrange - symmetric with IUnitOfWork.Cancel's own no-op-when-nothing-pending behavior: signaling
+        // no-commit alongside a dispatch that never actually wrote anything has nothing to finalize either way.
+        var session = CreateSession();
+        var describer = Substitute.For<IResponseOutcomeDescriber>();
+        var logger = Substitute.For<ILogger>();
+
+        // Act
+        var result = await CommitGateDriver.HandleAsync(
+            new PlainRequest(),
+            () => Task.FromResult(NoCommit.With<Outcome<Success, Failure>>(default(Success))),
+            () => session,
+            describer,
+            logger,
+            CancellationToken.None
+        );
+
+        // Assert
+        Assert.True(result.TryGetValue(out Success _));
+        await session.DidNotReceive().BeginTransactionAsync(Arg.Any<CancellationToken>());
+        await session.DidNotReceive().CommitAsync(Arg.Any<CancellationToken>());
+        await session.DidNotReceive().RollbackAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_NoCommitSignal_DoesNotLeakToTheNextDispatch()
+    {
+        // Arrange - NoCommit's ambient flag must be consumed (read-and-cleared) every dispatch, or a stray
+        // no-commit request would silently roll back an unrelated, later dispatch on the same async flow.
+        var describer = Substitute.For<IResponseOutcomeDescriber>();
+        var logger = Substitute.For<ILogger>();
+
+        var firstSession = CreateSession();
+        firstSession.HasPendingWorkAsync(Arg.Any<CancellationToken>()).Returns(true);
+
+        // Act - first dispatch signals no-commit ...
+        await CommitGateDriver.HandleAsync(
+            new PlainRequest(),
+            () => Task.FromResult(NoCommit.With<Outcome<Success, Failure>>(default(Success))),
+            () => firstSession,
+            describer,
+            logger,
+            CancellationToken.None
+        );
+
+        // ... a second, unrelated dispatch on the same async flow signals nothing at all.
+        var secondSession = CreateSession();
+        secondSession.HasPendingWorkAsync(Arg.Any<CancellationToken>()).Returns(true);
+
+        await CommitGateDriver.HandleAsync(
+            new PlainRequest(),
+            () => Task.FromResult<Outcome<Success, Failure>>(default(Success)),
+            () => secondSession,
+            describer,
+            logger,
+            CancellationToken.None
+        );
+
+        // Assert - the first dispatch's signal rolled back its own session only; the second committed as
+        // normal, proving the flag was cleared in between rather than leaking forward.
+        await firstSession.Received(1).RollbackAsync(Arg.Any<CancellationToken>());
+        await secondSession.Received(1).CommitAsync(Arg.Any<CancellationToken>());
+        await secondSession.DidNotReceive().RollbackAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]

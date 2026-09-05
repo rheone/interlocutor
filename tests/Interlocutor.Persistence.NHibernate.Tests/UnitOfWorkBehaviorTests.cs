@@ -3,6 +3,7 @@ namespace Interlocutor.Persistence.NHibernate.Tests;
 using global::NHibernate;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Markers;
+using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Pipeline.Classifiers;
 using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
@@ -230,6 +231,78 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<RealSessionFixture>
 
         // SaveChangesAsync's own flush already sent the insert to the database before Cancel rolled it
         // back - the strongest proof Cancel undid it for real, not just in this session's own tracking.
+        this.AssertNotPersisted(widget.Id);
+    }
+
+    [Fact]
+    public async Task HandleAsync_HandlerThrowsAfterWrite_LeavesTransactionUncommitted_RolledBackBySessionDisposal()
+    {
+        // Arrange - the write goes through IUnitOfWork.SaveChangesAsync (not a raw Save() left unflushed), so
+        // it genuinely reaches the database inside an open transaction before the handler throws - the
+        // strongest proof that what follows is a real store-level rollback on disposal, not merely "the
+        // write was never staged". CommitGateDriver has no try/catch of its own around next(), so neither
+        // commit nor rollback runs here.
+        //
+        // Not a `using` declaration: disposal must happen mid-test, before the post-dispose assertion below,
+        // not at method exit - this is the one place in this suite that deliberately proves disposal itself
+        // rolls back an open transaction, so the explicit Dispose() call is the point of the test.
+#pragma warning disable IDISP017
+        var session = this.fixture.OpenSession();
+        var unitOfWork = new NHibernateUnitOfWork(new Lazy<ISession>(() => session));
+        var behavior = CreateBehavior(session);
+        var widget = new Widget();
+        var thrown = new InvalidOperationException("handler blew up");
+
+        // Act
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            behavior.HandleAsync(
+                new PlainRequest(),
+                async () =>
+                {
+                    await session.SaveAsync(widget, CancellationToken.None).ConfigureAwait(false);
+                    await unitOfWork.SaveChangesAsync(CancellationToken.None).ConfigureAwait(false);
+                    throw thrown;
+                },
+                CancellationToken.None
+            )
+        );
+
+        // Assert - left open, neither committed nor rolled back by CommitGateDriver itself.
+        Assert.True(session.GetCurrentTransaction() is { IsActive: true });
+
+        // Disposing the session - what a scoped DI container does once a failed dispatch unwinds - rolls
+        // back the still-open transaction (NHibernate's ITransaction rolls back on disposal if never
+        // committed). This is the entire guarantee the "implicit no-commit via exception" path now rests on.
+        session.Dispose();
+#pragma warning restore IDISP017
+
+        this.AssertNotPersisted(widget.Id);
+    }
+
+    [Fact]
+    public async Task HandleAsync_NoCommitWith_RollsBackWrite_NoCaseTypeInvolved()
+    {
+        // Arrange - the call-site "don't commit" signal from Interlocutor.Abstractions.Pipeline.NoCommit,
+        // exercised end-to-end against a real transaction: the handler still returns its own Success outcome,
+        // proving the signal is fully decoupled from the value it accompanies.
+        using var session = this.fixture.OpenSession();
+        var behavior = CreateBehavior(session);
+        var widget = new Widget();
+
+        // Act
+        var result = await behavior.HandleAsync(
+            new PlainRequest(),
+            async () =>
+            {
+                await session.SaveAsync(widget, CancellationToken.None).ConfigureAwait(false);
+                return NoCommit.With<Outcome<Success, Failure>>(default(Success));
+            },
+            CancellationToken.None
+        );
+
+        // Assert
+        Assert.True(result.TryGetValue(out Success _));
+        Assert.False(session.GetCurrentTransaction() is { IsActive: true });
         this.AssertNotPersisted(widget.Id);
     }
 

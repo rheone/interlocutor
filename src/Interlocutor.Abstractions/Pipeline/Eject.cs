@@ -16,10 +16,12 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// full unwind contract and why this is distinct from cooperative cancellation.
 /// </para>
 /// <para>
-/// No transaction-gating logic is needed alongside this: a unit-of-work commit/rollback gate (for example
+/// Ejecting carries no transactional meaning by itself: a unit-of-work commit gate (for example
 /// <c>Interlocutor.Persistence.EntityFrameworkCore.UnitOfWorkBehavior</c> or its NHibernate counterpart)
-/// decides commit versus rollback from the classified outcome it receives, not from the shape of the call
-/// that produced it - an ejected non-success outcome is rolled back exactly like one returned normally.
+/// commits by default regardless of whether the response it receives was ejected or returned normally, and
+/// regardless of what case that response carries - an ejected <c>Conflict</c> commits exactly like a returned
+/// one unless the ejecting code separately calls <see cref="NoCommit.AndEject{TResponse}(TResponse)"/> instead
+/// of this method, which signals the opposite disposition alongside the same ejected value.
 /// </para>
 /// <para>
 /// When <c>TResponse</c> is an unconstrained generic type parameter (typical when authoring a reusable
