@@ -6,6 +6,10 @@ Interlocutor.AspNetCore.AspNetCoreRequestContextAccessor.Context.set -> void
 Interlocutor.AspNetCore.DefaultHttpOutcomeStatusMapper
 Interlocutor.AspNetCore.DefaultHttpOutcomeStatusMapper.DefaultHttpOutcomeStatusMapper() -> void
 Interlocutor.AspNetCore.IOutcomeStatusMapper
+Interlocutor.AspNetCore.OutcomeCaseNotMappableException
+Interlocutor.AspNetCore.OutcomeCaseNotMappableException.CaseType.get -> System.Type!
+Interlocutor.AspNetCore.OutcomeCaseNotMappableException.OutcomeCaseNotMappableException(System.Type! responseType, System.Type! caseType, string! message) -> void
+Interlocutor.AspNetCore.OutcomeCaseNotMappableException.ResponseType.get -> System.Type!
 Interlocutor.AspNetCore.OutcomeHttpMapping
 Interlocutor.AspNetCore.OutcomeHttpMapping.<Clone>$() -> Interlocutor.AspNetCore.OutcomeHttpMapping!
 Interlocutor.AspNetCore.OutcomeHttpMapping.Body.get -> object?

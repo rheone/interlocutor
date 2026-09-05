@@ -116,6 +116,12 @@ flowchart TD
 | Any other `IRateLimitedFailureCase` implementer | 429 Too Many Requests | `ProblemDetails` | Recognized via the interface - a consumer's own `IRateLimiter`-specific failure case maps the same way without a mapper override. `Detail` is the message verbatim (no `LimitKey` fallback - the interface guarantees only the message). |
 | Anything else (a custom failure type) | 500 Internal Server Error | The failure value itself | The default mapper doesn't know this type - supply your own `IOutcomeStatusMapper`, or override `MapUnrecognized`, to map it precisely. |
 
+### Runtime-Typed Dispatch and Unmappable Cases
+
+The base-`IOutcome` overload (the one reached only when a caller has no concrete `Outcome<...>` type to dispatch on at compile time - a hand-rolled `IOutcome` implementation, or generic code constrained only to `IOutcome`) has no static `TSuccess`/`TFailure` to switch over, so it classifies the active case at runtime instead: the bare `Success` marker is success, a resolved case whose payload is legitimately `null` is success, and any of the failure case types/interfaces listed in the table above is a failure dispatched to the status mapper as usual.
+
+A case matching none of those - most commonly a hand-rolled or generically-dispatched response whose success case carries some payload type other than `Success` - throws `OutcomeCaseNotMappableException` rather than guessing. This is deliberate: an HTTP response must carry *some* status code, and a wrong guess here (misreporting a custom success payload as a failure, or vice versa) is worse than an immediate, loud failure. Fix it by calling the dedicated `Outcome<TSuccess, ...>` overload against the concrete type instead of the reflective one - it resolves success-versus-failure at compile time and cannot hit this ambiguity - or, for a hand-rolled `IOutcome`, use `Success` as the success payload the way the built-in unions do.
+
 ## Custom HTTP Mapping
 
 `IOutcomeStatusMapper` maps one failure case value to an `OutcomeHttpMapping` (a status code and optional body) - it's never invoked for the success case, which `ToActionResult`/`ToMinimalApiResult` handle directly. `IOutcomeStatusMapper` is itself the HTTP specialization of a transport-agnostic `IOutcomeMapper<TResult>` contract - see [Extensibility § Mapping failure cases to any output shape](extensibility.md#mapping-failure-cases-to-any-output-shape-ioutcomemappertresult) if you need the same pattern for a non-HTTP consumer. Two ways to customize the HTTP mapping:

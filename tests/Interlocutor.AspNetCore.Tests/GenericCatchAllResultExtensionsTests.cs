@@ -202,4 +202,36 @@ public class GenericCatchAllResultExtensionsTests
         var objectResult = Assert.IsType<ObjectResult>(actionResult);
         Assert.Equal(StatusCodes.Status400BadRequest, objectResult.StatusCode);
     }
+
+    // --- Genuinely unmappable case: neither Success nor a recognized failure shape ---
+
+    [Fact]
+    public void ToActionResult_CatchAll_HandRolledOutcome_WithUnrecognizedSuccessPayload_ThrowsOutcomeCaseNotMappableException()
+    {
+        // Arrange - CustomOutcome's own success case carries an arbitrary payload type (a plain string)
+        // rather than the bare Success marker. This overload has no compile-time TSuccess to fall back on
+        // (unlike the dedicated arity overloads), and a plain string is not one of the built-in failure case
+        // types/interfaces DefaultHttpOutcomeStatusMapper recognizes either, so it cannot be classified as
+        // either success or failure without guessing.
+        var response = CustomOutcome.FromFailure("just a string, not a recognized case type");
+
+        // Act & Assert
+        var exception = Assert.Throws<OutcomeCaseNotMappableException>(() => response.ToActionResult(caseRegistry: Registry));
+        Assert.Equal(typeof(CustomOutcome), exception.ResponseType);
+        Assert.Equal(typeof(string), exception.CaseType);
+    }
+
+    [Fact]
+    public void ToMinimalApiResult_CatchAll_HandRolledOutcome_WithUnrecognizedSuccessPayload_ThrowsOutcomeCaseNotMappableException()
+    {
+        // Arrange - same ambiguity as the ToActionResult case above, exercised through the minimal-API path.
+        var response = CustomOutcome.FromFailure(42);
+
+        // Act & Assert
+        var exception = Assert.Throws<OutcomeCaseNotMappableException>(() =>
+            response.ToMinimalApiResult(caseRegistry: Registry)
+        );
+        Assert.Equal(typeof(CustomOutcome), exception.ResponseType);
+        Assert.Equal(typeof(int), exception.CaseType);
+    }
 }
