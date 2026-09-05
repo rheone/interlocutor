@@ -24,7 +24,7 @@ public sealed class EjectEmissionTests
 
         public sealed class GetFooQueryHandler(ISomeDependency dependency) : IQueryHandler<GetFooQuery, Outcome>
         {
-            public Task<Outcome> Handle(GetFooQuery query, CancellationToken ct) => throw new System.NotImplementedException();
+            public Task<Outcome> HandleAsync(GetFooQuery query, CancellationToken ct) => throw new System.NotImplementedException();
         }
         """;
 
@@ -41,7 +41,7 @@ public sealed class EjectEmissionTests
 
         Assert.Contains("pipeline = async () =>", dispatchSource, StringComparison.Ordinal);
         Assert.Contains(
-            "return await handler.Handle(request, ct).ConfigureAwait(false);",
+            "return await handler.HandleAsync(request, ct).ConfigureAwait(false);",
             dispatchSource,
             StringComparison.Ordinal
         );

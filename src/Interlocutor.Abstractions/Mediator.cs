@@ -28,9 +28,10 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// fire-and-forget notifications. <see cref="IMediator"/> combines both interfaces.
 /// </para>
 /// <para>
-/// Every dispatch (<c>Send</c> and <c>Publish</c>, including the runtime-typed <see cref="Send(object, CancellationToken)"/>
-/// overload) starts an <see cref="Activity"/> via <see cref="MediatorActivitySource.Source"/>, tagged with the
-/// request type, the resolved handler type(s), and - for <c>Send</c> - the resulting outcome case. This is built
+/// Every dispatch (<c>SendAsync</c> and <c>PublishAsync</c>, including the runtime-typed
+/// <see cref="SendAsync(object, CancellationToken)"/> overload) starts an <see cref="Activity"/> via
+/// <see cref="MediatorActivitySource.Source"/>, tagged with the
+/// request type, the resolved handler type(s), and - for <c>SendAsync</c> - the resulting outcome case. This is built
 /// into the mediator itself (see <see cref="MediatorActivitySource"/>), independent of and non-conflicting with the
 /// opt-in <see cref="Pipeline.LoggingBehavior{TRequest,TResponse}"/>. When nothing listens to
 /// <see cref="MediatorActivitySource.Name"/>, <see cref="ActivitySource.StartActivity(string, ActivityKind)"/>
@@ -50,7 +51,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     private static readonly ConcurrentDictionary<Type, NotificationHandlerWrapper> ParallelNotificationWrappers = new();
 
     /// <inheritdoc/>
-    public Task<TResponse> Send<TResponse>(IQuery<TResponse> query, CancellationToken ct = default)
+    public Task<TResponse> SendAsync<TResponse>(IQuery<TResponse> query, CancellationToken ct = default)
         where TResponse : IOutcome
     {
         return DispatchWithTraceAsync<Type, IHandlerWrapper<TResponse>, TResponse>(
@@ -59,12 +60,12 @@ public sealed class Mediator(IServiceProvider services) : IMediator
             requestType =>
                 Activator.CreateInstance(typeof(QueryHandlerWrapper<,>).MakeGenericType(requestType, typeof(TResponse)))!,
             query,
-            (wrapper, act) => wrapper.Handle(query, services, ct, act)
+            (wrapper, act) => wrapper.HandleAsync(query, services, ct, act)
         );
     }
 
     /// <inheritdoc/>
-    public Task<TResponse> Send<TResponse>(ICommand<TResponse> command, CancellationToken ct = default)
+    public Task<TResponse> SendAsync<TResponse>(ICommand<TResponse> command, CancellationToken ct = default)
         where TResponse : IOutcome
     {
         return DispatchWithTraceAsync<Type, IHandlerWrapper<TResponse>, TResponse>(
@@ -73,12 +74,12 @@ public sealed class Mediator(IServiceProvider services) : IMediator
             requestType =>
                 Activator.CreateInstance(typeof(CommandHandlerWrapper<,>).MakeGenericType(requestType, typeof(TResponse)))!,
             command,
-            (wrapper, act) => wrapper.Handle(command, services, ct, act)
+            (wrapper, act) => wrapper.HandleAsync(command, services, ct, act)
         );
     }
 
     /// <inheritdoc/>
-    public Task<TResult> Send<TResult>(ICommand command, CancellationToken ct = default)
+    public Task<TResult> SendAsync<TResult>(ICommand command, CancellationToken ct = default)
         where TResult : IOutcome
     {
         // For void commands, cache by both command type and result type because the same command can be
@@ -92,18 +93,18 @@ public sealed class Mediator(IServiceProvider services) : IMediator
                     typeof(VoidCommandHandlerWrapper<,>).MakeGenericType(key.CommandType, key.ResultType)
                 )!,
             command,
-            (wrapper, act) => wrapper.Handle(command, services, ct, act)
+            (wrapper, act) => wrapper.HandleAsync(command, services, ct, act)
         );
     }
 
     /// <inheritdoc/>
     [RequiresUnreferencedCode(
-        "Send(object, CancellationToken) may run the runtime-typed dispatch fallback (see Mediator.Send(object,...)'s remarks) - see documentation/trim-and-aot-support.md."
+        "SendAsync(object, CancellationToken) may run the runtime-typed dispatch fallback (see Mediator.SendAsync(object,...)'s remarks) - see documentation/trim-and-aot-support.md."
     )]
     [RequiresDynamicCode(
-        "Send(object, CancellationToken) may run the runtime-typed dispatch fallback - see documentation/trim-and-aot-support.md."
+        "SendAsync(object, CancellationToken) may run the runtime-typed dispatch fallback - see documentation/trim-and-aot-support.md."
     )]
-    public Task<IOutcome> Send(object request, CancellationToken ct = default)
+    public Task<IOutcome> SendAsync(object request, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -118,7 +119,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     }
 
     /// <summary>
-    /// Shared fast-path/traced-path scaffolding behind the three type-safe <c>Send&lt;T&gt;</c> overloads
+    /// Shared fast-path/traced-path scaffolding behind the three type-safe <c>SendAsync&lt;T&gt;</c> overloads
     /// (<see cref="IQuery{TResponse}"/>, <see cref="ICommand{TResponse}"/>, and <see cref="ICommand"/>): starts the
     /// dispatch <see cref="Activity"/> and either invokes <paramref name="dispatch"/> directly when nothing is
     /// listening, or routes it through <see cref="TraceAsync{TResult}"/> so the resulting outcome case (or a thrown
@@ -127,9 +128,9 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     /// <typeparam name="TResponse">The outcome type returned by <paramref name="dispatch"/>.</typeparam>
     /// <param name="request">The original query/command, tagged on the activity for the traced path.</param>
     /// <param name="dispatch">
-    /// Invokes the resolved handler wrapper's <c>Handle</c> method, passing through whatever <see cref="Activity"/>
+    /// Invokes the resolved handler wrapper's <c>HandleAsync</c> method, passing through whatever <see cref="Activity"/>
     /// it is given - <see langword="null"/> on the fast path, the started activity on the traced path - which
-    /// matches <c>Handle</c>'s own optional, defaulted-to-<see langword="null"/> activity parameter.
+    /// matches <c>HandleAsync</c>'s own optional, defaulted-to-<see langword="null"/> activity parameter.
     /// </param>
     /// <returns>The task returned by <paramref name="dispatch"/>, awaited and tagged when traced.</returns>
     /// <remarks>
@@ -149,7 +150,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     /// <summary>
     /// Resolves (or lazily creates) the cached handler wrapper for <paramref name="key"/>, then dispatches through
     /// the fast-path/traced-path scaffolding in <see cref="DispatchWithTraceAsync{TResponse}"/>. Shared by all three
-    /// type-safe <c>Send&lt;T&gt;</c> overloads, each supplying only its own cache, key shape, and wrapper type -
+    /// type-safe <c>SendAsync&lt;T&gt;</c> overloads, each supplying only its own cache, key shape, and wrapper type -
     /// the cache lookup, <see cref="Activator.CreateInstance(Type)"/> construction, and activity-tracing branching
     /// live here once instead of being repeated per overload.
     /// </summary>
@@ -165,7 +166,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     /// Constructs a new wrapper instance via reflection from <paramref name="key"/> when it is not yet cached.
     /// </param>
     /// <param name="request">The original query/command, tagged on the activity for the traced path.</param>
-    /// <param name="invoke">Invokes the resolved wrapper's <c>Handle</c> method with the given activity.</param>
+    /// <param name="invoke">Invokes the resolved wrapper's <c>HandleAsync</c> method with the given activity.</param>
     /// <returns>The task returned by <paramref name="invoke"/>, awaited and tagged when traced.</returns>
     private static Task<TResponse> DispatchWithTraceAsync<TKey, TWrapper, TResponse>(
         ConcurrentDictionary<TKey, object> cache,
@@ -195,8 +196,8 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     /// path.
     /// </para>
     /// <para>
-    /// Serves all three dispatch shapes the mediator traces - <c>Send&lt;TResponse&gt;</c>'s and the runtime-typed
-    /// <see cref="Send(object, CancellationToken)"/>'s <see cref="IOutcome"/> result, and <c>Publish</c>'s
+    /// Serves all three dispatch shapes the mediator traces - <c>SendAsync&lt;TResponse&gt;</c>'s and the runtime-typed
+    /// <see cref="SendAsync(object, CancellationToken)"/>'s <see cref="IOutcome"/> result, and <c>PublishAsync</c>'s
     /// no-result <see cref="Task"/> - by checking <paramref name="dispatch"/>'s result for
     /// <see cref="IOutcome"/> at run time rather than constraining <typeparamref name="TResult"/> to it: a
     /// notification publish has no single outcome to tag (it may fan out to several handlers), so that call site
@@ -249,7 +250,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     /// Routes <paramref name="request"/> to the compile-time generated type switch when one is registered
     /// (<see cref="IGeneratedRequestDispatcher"/> - ticket 13), or to the reflection-based fallback
     /// (<see cref="DispatchAsync"/> - ticket 09) otherwise. Factored out of the public
-    /// <see cref="Send(object, CancellationToken)"/> overload so that method can take a synchronous,
+    /// <see cref="SendAsync(object, CancellationToken)"/> overload so that method can take a synchronous,
     /// allocation-free fast path when activity tracing is unobserved, without this routing logic (and the
     /// async state machine it requires) running on that path.
     /// </summary>
@@ -282,17 +283,21 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     /// <param name="ct">A token that may be used to cancel the notification dispatch.</param>
     /// <returns>A task that completes when all registered handlers have finished processing the notification.</returns>
     /// <remarks><para>This overload uses the <see cref="PublishStrategy.Sequential"/> strategy by default.</para></remarks>
-    public Task Publish<TNotification>(TNotification notification, CancellationToken ct = default)
+    public Task PublishAsync<TNotification>(TNotification notification, CancellationToken ct = default)
         where TNotification : INotification
     {
-        return this.PublishAsync(notification, PublishStrategy.Sequential, ct);
+        return this.PublishHandlersAsync(notification, PublishStrategy.Sequential, ct);
     }
 
     /// <inheritdoc/>
-    public Task Publish<TNotification>(TNotification notification, PublishStrategy strategy, CancellationToken ct = default)
+    public Task PublishAsync<TNotification>(
+        TNotification notification,
+        PublishStrategy strategy,
+        CancellationToken ct = default
+    )
         where TNotification : INotification
     {
-        return this.PublishAsync(notification, strategy, ct);
+        return this.PublishHandlersAsync(notification, strategy, ct);
     }
 
     [UnconditionalSuppressMessage(
@@ -311,7 +316,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
             + "or, for a polymorphic call, a concrete subtype that is likewise never trimmed away while it "
             + "remains constructible by the caller. See documentation/trim-and-aot-support.md."
     )]
-    private Task PublishAsync<TNotification>(TNotification notification, PublishStrategy strategy, CancellationToken ct)
+    private Task PublishHandlersAsync<TNotification>(TNotification notification, PublishStrategy strategy, CancellationToken ct)
         where TNotification : INotification
     {
         // Select the wrapper cache and its matching wrapper type together, in one switch, based on the publish

@@ -30,7 +30,7 @@ internal sealed class VoidCommandHandlerWrapper<TCommand, TResult> : IVoidHandle
     /// <param name="ct">The cancellation token.</param>
     /// <param name="activity">The activity to tag with the resolved handler type, or <see langword="null"/>.</param>
     /// <returns>The outcome from the handler.</returns>
-    public Task<TResult> Handle(object request, IServiceProvider services, CancellationToken ct, Activity? activity = null)
+    public Task<TResult> HandleAsync(object request, IServiceProvider services, CancellationToken ct, Activity? activity = null)
     {
         var typedRequest = (TCommand)request;
         var handler = services.GetRequiredService<IVoidCommandHandler<TCommand, TResult>>();

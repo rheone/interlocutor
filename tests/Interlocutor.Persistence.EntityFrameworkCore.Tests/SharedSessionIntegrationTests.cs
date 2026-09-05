@@ -36,7 +36,7 @@ public sealed class SharedSessionIntegrationTests : IClassFixture<EntityFramewor
         var behavior = new UnitOfWorkBehavior<TransactionalRequest, Outcome<Success, Failure>, TestDbContext>(this.lazyContext);
 
         // Act
-        var result = await behavior.Handle(
+        var result = await behavior.HandleAsync(
             new TransactionalRequest(),
             async () =>
             {

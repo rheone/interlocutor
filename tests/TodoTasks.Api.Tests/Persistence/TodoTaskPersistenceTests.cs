@@ -118,7 +118,7 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
         var handler = new GetTodoTaskByIdHandler(tasks);
 
         // Act
-        var result = await handler.Handle(
+        var result = await handler.HandleAsync(
             new GetTodoTaskByIdQuery(task.Id, $"someone-else-{Guid.NewGuid():N}"),
             TestContext.Current.CancellationToken
         );
@@ -141,7 +141,7 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
         var handler = new GetTodoTaskByIdHandler(tasks);
 
         // Act
-        var result = await handler.Handle(new GetTodoTaskByIdQuery(task.Id, owner), TestContext.Current.CancellationToken);
+        var result = await handler.HandleAsync(new GetTodoTaskByIdQuery(task.Id, owner), TestContext.Current.CancellationToken);
 
         // Assert
         var dto = Assert.IsType<TodoTaskDto>(result.Value);
@@ -172,7 +172,7 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
         var handler = new ListTodoTasksHandler(tasks);
 
         // Act
-        var result = await handler.Handle(
+        var result = await handler.HandleAsync(
             new ListTodoTasksQuery(OnlyIncomplete: false, OwnerId: requestedOwner),
             TestContext.Current.CancellationToken
         );
@@ -204,7 +204,7 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
         var handler = new ListTodoTasksPagedHandler(tasks);
 
         // Act
-        var result = await handler.Handle(
+        var result = await handler.HandleAsync(
             new ListTodoTasksPagedQuery(owner, Page: 1, PageSize: 5),
             TestContext.Current.CancellationToken
         );
@@ -234,7 +234,7 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
         var handler = new ListTodoTasksPagedHandler(tasks);
 
         // Act
-        var result = await handler.Handle(
+        var result = await handler.HandleAsync(
             new ListTodoTasksPagedQuery(owner, Page: 5, PageSize: 10),
             TestContext.Current.CancellationToken
         );
@@ -268,11 +268,11 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
         var handler = new ListTodoTasksPagedHandler(tasks);
 
         // Act
-        var firstPage = await handler.Handle(
+        var firstPage = await handler.HandleAsync(
             new ListTodoTasksPagedQuery(owner, Page: 1, PageSize: 2),
             TestContext.Current.CancellationToken
         );
-        var lastPage = await handler.Handle(
+        var lastPage = await handler.HandleAsync(
             new ListTodoTasksPagedQuery(owner, Page: 2, PageSize: 2),
             TestContext.Current.CancellationToken
         );
@@ -308,7 +308,7 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
         var handler = new UpdateTodoTaskHandler(tasks, unitOfWork);
 
         // Act
-        var result = await handler.Handle(
+        var result = await handler.HandleAsync(
             new UpdateTodoTaskCommand(task.Id, "Buy oat milk", "Oat milk this time", owner),
             TestContext.Current.CancellationToken
         );
@@ -341,7 +341,7 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
         var handler = new UpdateTodoTaskHandler(tasks, unitOfWork);
 
         // Act
-        var result = await handler.Handle(
+        var result = await handler.HandleAsync(
             new UpdateTodoTaskCommand(task.Id, "Hijacked title", null, $"someone-else-{Guid.NewGuid():N}"),
             TestContext.Current.CancellationToken
         );
@@ -365,7 +365,7 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
         var handler = new UpdateTodoTaskHandler(tasks, unitOfWork);
 
         // Act
-        var result = await handler.Handle(
+        var result = await handler.HandleAsync(
             new UpdateTodoTaskCommand(999_999, "Doesn't matter", null, $"owner-{Guid.NewGuid():N}"),
             TestContext.Current.CancellationToken
         );
@@ -390,7 +390,10 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
         var handler = new CompleteTodoTaskHandler(tasks, unitOfWork, Substitute.For<IPublisher>());
 
         // Act
-        var result = await handler.Handle(new CompleteTodoTaskCommand(task.Id, owner), TestContext.Current.CancellationToken);
+        var result = await handler.HandleAsync(
+            new CompleteTodoTaskCommand(task.Id, owner),
+            TestContext.Current.CancellationToken
+        );
 
         // Assert
         var dto = Assert.IsType<TodoTaskDto>(result.Value);
@@ -418,7 +421,7 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
         var handler = new CompleteTodoTaskHandler(tasks, unitOfWork, Substitute.For<IPublisher>());
 
         // Act
-        var result = await handler.Handle(
+        var result = await handler.HandleAsync(
             new CompleteTodoTaskCommand(task.Id, $"someone-else-{Guid.NewGuid():N}"),
             TestContext.Current.CancellationToken
         );
@@ -448,7 +451,10 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
         var handler = new ReopenTodoTaskHandler(tasks, unitOfWork);
 
         // Act
-        var result = await handler.Handle(new ReopenTodoTaskCommand(task.Id, owner), TestContext.Current.CancellationToken);
+        var result = await handler.HandleAsync(
+            new ReopenTodoTaskCommand(task.Id, owner),
+            TestContext.Current.CancellationToken
+        );
 
         // Assert
         var dto = Assert.IsType<TodoTaskDto>(result.Value);
@@ -476,7 +482,7 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
         var handler = new ReopenTodoTaskHandler(tasks, unitOfWork);
 
         // Act
-        var result = await handler.Handle(
+        var result = await handler.HandleAsync(
             new ReopenTodoTaskCommand(task.Id, $"someone-else-{Guid.NewGuid():N}"),
             TestContext.Current.CancellationToken
         );
@@ -510,7 +516,7 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
         var handler = new DeleteTodoTaskHandler(tasks, unitOfWork);
 
         // Act
-        var result = await handler.Handle(new DeleteTodoTaskCommand(task.Id), TestContext.Current.CancellationToken);
+        var result = await handler.HandleAsync(new DeleteTodoTaskCommand(task.Id), TestContext.Current.CancellationToken);
 
         // Assert
         Assert.IsType<Success>(result.Value);
@@ -530,7 +536,7 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
         var handler = new DeleteTodoTaskHandler(tasks, unitOfWork);
 
         // Act
-        var result = await handler.Handle(new DeleteTodoTaskCommand(999_999), TestContext.Current.CancellationToken);
+        var result = await handler.HandleAsync(new DeleteTodoTaskCommand(999_999), TestContext.Current.CancellationToken);
 
         // Assert
         Assert.IsType<NotFound>(result.Value);
@@ -628,7 +634,7 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
         var handler = new SearchTodoTasksHandler(context);
 
         // Act - lowercase substring against a title with different casing.
-        var result = await handler.Handle(new SearchTodoTasksQuery(owner, "milk"), TestContext.Current.CancellationToken);
+        var result = await handler.HandleAsync(new SearchTodoTasksQuery(owner, "milk"), TestContext.Current.CancellationToken);
 
         // Assert
         var dtos = Assert.IsAssignableFrom<IReadOnlyList<TodoTaskDto>>(result.Value);
@@ -649,7 +655,7 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
         var handler = new SearchTodoTasksHandler(context);
 
         // Act
-        var result = await handler.Handle(new SearchTodoTasksQuery(owner, "milk"), TestContext.Current.CancellationToken);
+        var result = await handler.HandleAsync(new SearchTodoTasksQuery(owner, "milk"), TestContext.Current.CancellationToken);
 
         // Assert
         var dtos = Assert.IsAssignableFrom<IReadOnlyList<TodoTaskDto>>(result.Value);
@@ -675,7 +681,7 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
         var handler = new SearchTodoTasksHandler(context);
 
         // Act
-        var result = await handler.Handle(new SearchTodoTasksQuery(owner, "milk"), TestContext.Current.CancellationToken);
+        var result = await handler.HandleAsync(new SearchTodoTasksQuery(owner, "milk"), TestContext.Current.CancellationToken);
 
         // Assert
         var dtos = Assert.IsAssignableFrom<IReadOnlyList<TodoTaskDto>>(result.Value);

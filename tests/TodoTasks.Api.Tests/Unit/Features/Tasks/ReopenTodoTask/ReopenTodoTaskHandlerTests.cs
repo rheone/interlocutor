@@ -29,7 +29,7 @@ public sealed class ReopenTodoTaskHandlerTests
         var command = new ReopenTodoTaskCommand(1, "owner-1");
 
         // Act
-        var result = await this.handler.Handle(command, CancellationToken.None);
+        var result = await this.handler.HandleAsync(command, CancellationToken.None);
 
         // Assert
         var dto = Assert.IsType<TodoTaskDto>(result.Value);
@@ -47,7 +47,7 @@ public sealed class ReopenTodoTaskHandlerTests
         var command = new ReopenTodoTaskCommand(1, "owner-1");
 
         // Act
-        var result = await this.handler.Handle(command, CancellationToken.None);
+        var result = await this.handler.HandleAsync(command, CancellationToken.None);
 
         // Assert
         var conflict = Assert.IsType<Conflict>(result.Value);
@@ -64,7 +64,7 @@ public sealed class ReopenTodoTaskHandlerTests
         var command = new ReopenTodoTaskCommand(1, "owner-2");
 
         // Act
-        var result = await this.handler.Handle(command, CancellationToken.None);
+        var result = await this.handler.HandleAsync(command, CancellationToken.None);
 
         // Assert
         Assert.IsType<Forbidden>(result.Value);
@@ -80,7 +80,7 @@ public sealed class ReopenTodoTaskHandlerTests
         var command = new ReopenTodoTaskCommand(1, "owner-1");
 
         // Act
-        var result = await this.handler.Handle(command, CancellationToken.None);
+        var result = await this.handler.HandleAsync(command, CancellationToken.None);
 
         // Assert
         Assert.IsType<NotFound>(result.Value);

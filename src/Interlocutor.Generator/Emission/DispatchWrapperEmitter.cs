@@ -8,7 +8,7 @@ using Interlocutor.Generator.Models;
 /// Emits one closed dispatch wrapper per query, command, or void-command handler discovered in the
 /// compilation - the compile-time replacement for the runtime
 /// <c>Activator.CreateInstance(typeof(QueryHandlerWrapper&lt;,&gt;).MakeGenericType(requestType, responseType))</c>
-/// construction <c>Mediator.Send</c> performs today for a request type seen for the first time.
+/// construction <c>Mediator.SendAsync</c> performs today for a request type seen for the first time.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -122,7 +122,7 @@ internal static class DispatchWrapperEmitter
         // Each closure below is wrapped in a try/catch for PipelineEjectException<TResponse>, mirroring the
         // hand-written wrappers (QueryHandlerWrapper/CommandHandlerWrapper/VoidCommandHandlerWrapper): a
         // handler or behavior that calls Eject.With deep in its own call graph returns an ordinary response
-        // at the nearest enclosing Handle/HandleAsync call, so nothing further out in the chain ever observes
+        // at the nearest enclosing HandleAsync/Handle call, so nothing further out in the chain ever observes
         // a thrown exception.
         builder.AppendLine(
             $"            global::System.Func<global::System.Threading.Tasks.Task<{responseType}>> pipeline = async () =>"
@@ -130,14 +130,11 @@ internal static class DispatchWrapperEmitter
         builder.AppendLine("            {");
         builder.AppendLine("                try");
         builder.AppendLine("                {");
-        // Deliberately still the pre-migration member name, not handler.HandleAsync: this single code path
-        // emits the handler call for all three handler kinds (query/command/void-command) uniformly, and
-        // IVoidCommandHandler<,> has no HandleAsync member yet - ticket 01 added HandleAsync to
-        // ICommandHandler<,>/IQueryHandler<,>/IPipelineBehavior<,> but not to IVoidCommandHandler<,>, a known
-        // open gap (see .scratch/async-method-naming). Calling HandleAsync here would compile for the first
-        // two kinds and fail for the third. The behavior call below has no such gap - IPipelineBehavior<,>
-        // already has HandleAsync - so only that call site migrates.
-        builder.AppendLine("                    return await handler.Handle(request, ct).ConfigureAwait(false);");
+        // IVoidCommandHandler<,> still has no HandleAsync member (a known, deliberate open gap - see
+        // .scratch/async-method-naming) - ICommandHandler<,> and IQueryHandler<,> no longer have Handle at
+        // all, so the emitted call must branch by handler kind rather than use one member name uniformly.
+        var handlerCallMember = handler.Kind == HandlerKind.VoidCommand ? "Handle" : "HandleAsync";
+        builder.AppendLine($"                    return await handler.{handlerCallMember}(request, ct).ConfigureAwait(false);");
         builder.AppendLine("                }");
         builder.AppendLine(
             $"                catch (global::Interlocutor.Abstractions.Pipeline.PipelineEjectException<{responseType}> eject)"

@@ -129,7 +129,7 @@ public class ServiceCollectionExtensionsTests
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         // Act
-        var result = await mediator.Send(new RegressionQuery(), TestContext.Current.CancellationToken);
+        var result = await mediator.SendAsync(new RegressionQuery(), TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(Expected, executionOrder);
@@ -142,9 +142,6 @@ public class ServiceCollectionExtensionsTests
         private readonly List<string> _executionOrder;
 
         public OpenGenericBehavior(List<string> executionOrder) => this._executionOrder = executionOrder;
-
-        public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
-            this.HandleAsync(request, next, ct);
 
         public async Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
         {
@@ -160,12 +157,6 @@ public class ServiceCollectionExtensionsTests
         private readonly List<string> _executionOrder;
 
         public ClosedGenericBehavior(List<string> executionOrder) => this._executionOrder = executionOrder;
-
-        public Task<Outcome<string, Failure>> Handle(
-            RegressionQuery request,
-            Func<Task<Outcome<string, Failure>>> next,
-            CancellationToken ct
-        ) => this.HandleAsync(request, next, ct);
 
         public async Task<Outcome<string, Failure>> HandleAsync(
             RegressionQuery request,
@@ -185,9 +176,6 @@ public class ServiceCollectionExtensionsTests
     public sealed class RegressionQueryHandler(List<string> executionOrder)
         : IQueryHandler<RegressionQuery, Outcome<string, Failure>>
     {
-        public Task<Outcome<string, Failure>> Handle(RegressionQuery query, CancellationToken ct) =>
-            this.HandleAsync(query, ct);
-
         public Task<Outcome<string, Failure>> HandleAsync(RegressionQuery query, CancellationToken ct)
         {
             executionOrder.Add("handle");

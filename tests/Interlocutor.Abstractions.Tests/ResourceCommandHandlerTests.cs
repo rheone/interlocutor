@@ -55,7 +55,7 @@ public class ResourceCommandHandlerTests
         var handler = new TestResourceCommandHandler(entity, null, expectedResult);
 
         // Act
-        var result = await handler.Handle(new TestCommand(1), CancellationToken.None);
+        var result = await handler.HandleAsync(new TestCommand(1), CancellationToken.None);
 
         // Assert
         Assert.True(result.IsSuccess);
@@ -69,7 +69,7 @@ public class ResourceCommandHandlerTests
         var handler = new TestResourceCommandHandler(null, null, new Outcome<string, NotFound, Forbidden>("unused"));
 
         // Act
-        var result = await handler.Handle(new TestCommand(999), CancellationToken.None);
+        var result = await handler.HandleAsync(new TestCommand(999), CancellationToken.None);
 
         // Assert
         Assert.False(result.IsSuccess);
@@ -87,7 +87,7 @@ public class ResourceCommandHandlerTests
         var handler = new TestResourceCommandHandler(entity, denial, new Outcome<string, NotFound, Forbidden>("unused"));
 
         // Act
-        var result = await handler.Handle(new TestCommand(1), CancellationToken.None);
+        var result = await handler.HandleAsync(new TestCommand(1), CancellationToken.None);
 
         // Assert
         Assert.False(result.IsSuccess);
@@ -104,7 +104,7 @@ public class ResourceCommandHandlerTests
         var handler = new DescribeKeyOverridingHandler();
 
         // Act
-        var result = await handler.Handle(new TestCommand(42), CancellationToken.None);
+        var result = await handler.HandleAsync(new TestCommand(42), CancellationToken.None);
 
         // Assert
         var notFound = Assert.IsType<NotFound>(result.Value);

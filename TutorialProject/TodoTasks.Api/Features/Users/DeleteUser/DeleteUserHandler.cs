@@ -22,10 +22,6 @@ public sealed class DeleteUserHandler(
 ) : ICommandHandler<DeleteUserCommand, Outcome<Success, NotFound>>
 {
     /// <inheritdoc/>
-    public Task<Outcome<Success, NotFound>> Handle(DeleteUserCommand command, CancellationToken ct) =>
-        this.HandleAsync(command, ct);
-
-    /// <inheritdoc/>
     public async Task<Outcome<Success, NotFound>> HandleAsync(DeleteUserCommand command, CancellationToken ct)
     {
         if (users.GetById(command.Id) is not { } user)

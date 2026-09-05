@@ -26,7 +26,7 @@ public class TimeoutBehaviorTests
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert
         var timeout = Assert.IsType<Timeout>(result.Value);
@@ -68,7 +68,7 @@ public class TimeoutBehaviorTests
         cts.CancelAfter(TimeSpan.FromMilliseconds(20));
 
         // Act & Assert
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => behavior.Handle(request, Next, cts.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => behavior.HandleAsync(request, Next, cts.Token));
     }
 
     [Fact]
@@ -87,7 +87,7 @@ public class TimeoutBehaviorTests
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert
         Assert.Equal("fast enough", result.Value);
@@ -112,7 +112,7 @@ public class TimeoutBehaviorTests
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert
         var timeout = Assert.IsType<Timeout>(result.Value);

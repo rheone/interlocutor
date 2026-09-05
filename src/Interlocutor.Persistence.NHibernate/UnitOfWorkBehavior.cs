@@ -55,7 +55,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 /// pipeline completion, the driver checks <see cref="SessionExtensions.GetCurrentTransaction(ISession)"/> and
 /// <see cref="ISession.IsDirty()"/> -
 /// if neither indicates pending work, the dispatch never wrote anything (or an explicit
-/// <see cref="Interlocutor.Persistence.Abstractions.IUnitOfWork.Cancel"/> already cleaned up) and nothing
+/// <see cref="Interlocutor.Persistence.Abstractions.IUnitOfWork.CancelAsync"/> already cleaned up) and nothing
 /// further happens, so a pure-read dispatch never pays for an open transaction.
 /// </para>
 /// <para>
@@ -86,10 +86,6 @@ public sealed class UnitOfWorkBehavior<TRequest, TResponse>(
 
     private readonly ILogger<UnitOfWorkBehavior<TRequest, TResponse>> logger =
         logger ?? NullLogger<UnitOfWorkBehavior<TRequest, TResponse>>.Instance;
-
-    /// <inheritdoc/>
-    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
-        this.HandleAsync(request, next, ct);
 
     /// <inheritdoc/>
     public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>

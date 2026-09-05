@@ -4,7 +4,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
 /// Implemented by <c>Interlocutor.Generator</c>'s emitted type switch - the reflection-free replacement for
-/// <see cref="ISender.Send(object, CancellationToken)"/>'s hot path when the generator had visibility into
+/// <see cref="ISender.SendAsync(object, CancellationToken)"/>'s hot path when the generator had visibility into
 /// the full set of request types in the compilation.
 /// </summary>
 /// <remarks>

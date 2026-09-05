@@ -47,7 +47,7 @@ public sealed class GeneratedRegistrationIntegrationTests
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         // Act
-        var result = await mediator.Send(new GeneratedQuery(), TestContext.Current.CancellationToken);
+        var result = await mediator.SendAsync(new GeneratedQuery(), TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("hi from Microsoft DI", result.Value);
@@ -81,7 +81,7 @@ public sealed class GeneratedRegistrationIntegrationTests
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         // Act
-        var result = await mediator.Send(new GeneratedQuery(), TestContext.Current.CancellationToken);
+        var result = await mediator.SendAsync(new GeneratedQuery(), TestContext.Current.CancellationToken);
 
         // Assert
         // First registered wraps the outermost layer (documented in documentation/pipeline-and-behaviors.md):
@@ -97,12 +97,6 @@ public sealed class GeneratedRegistrationIntegrationTests
         private readonly List<string> _executionOrder;
 
         public OrderTrackingBehavior1(List<string> executionOrder) => _executionOrder = executionOrder;
-
-        public Task<Outcome<string, Failure>> Handle(
-            GeneratedQuery request,
-            Func<Task<Outcome<string, Failure>>> next,
-            CancellationToken ct
-        ) => this.HandleAsync(request, next, ct);
 
         public async Task<Outcome<string, Failure>> HandleAsync(
             GeneratedQuery request,
@@ -123,12 +117,6 @@ public sealed class GeneratedRegistrationIntegrationTests
 
         public OrderTrackingBehavior2(List<string> executionOrder) => _executionOrder = executionOrder;
 
-        public Task<Outcome<string, Failure>> Handle(
-            GeneratedQuery request,
-            Func<Task<Outcome<string, Failure>>> next,
-            CancellationToken ct
-        ) => this.HandleAsync(request, next, ct);
-
         public async Task<Outcome<string, Failure>> HandleAsync(
             GeneratedQuery request,
             Func<Task<Outcome<string, Failure>>> next,
@@ -148,12 +136,6 @@ public sealed class GeneratedRegistrationIntegrationTests
 
         public OrderTrackingBehavior3(List<string> executionOrder) => _executionOrder = executionOrder;
 
-        public Task<Outcome<string, Failure>> Handle(
-            GeneratedQuery request,
-            Func<Task<Outcome<string, Failure>>> next,
-            CancellationToken ct
-        ) => this.HandleAsync(request, next, ct);
-
         public async Task<Outcome<string, Failure>> HandleAsync(
             GeneratedQuery request,
             Func<Task<Outcome<string, Failure>>> next,
@@ -172,8 +154,6 @@ public sealed class GeneratedRegistrationIntegrationTests
     public sealed class GeneratedQueryHandler(IGreeter greeter, List<string>? executionOrder = null)
         : IQueryHandler<GeneratedQuery, Outcome<string, Failure>>
     {
-        public Task<Outcome<string, Failure>> Handle(GeneratedQuery query, CancellationToken ct) => this.HandleAsync(query, ct);
-
         public Task<Outcome<string, Failure>> HandleAsync(GeneratedQuery query, CancellationToken ct)
         {
             executionOrder?.Add("handle");

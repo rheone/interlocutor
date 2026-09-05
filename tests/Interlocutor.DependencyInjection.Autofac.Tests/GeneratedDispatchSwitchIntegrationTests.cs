@@ -8,7 +8,7 @@ using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
-/// Proves <see cref="ISender.Send(object, CancellationToken)"/> (ticket 09) dispatches through the compile-time
+/// Proves <see cref="ISender.SendAsync(object, CancellationToken)"/> (ticket 09) dispatches through the compile-time
 /// generated type switch (ticket 13, <see cref="IGeneratedRequestDispatcher"/>) - not reflection - when only
 /// <c>AddGeneratedRegistrations</c> is used against Autofac, with ticket 09's caller-visible contract unchanged.
 /// </summary>
@@ -23,7 +23,7 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
         object request = new GeneratedSwitchQuery(21);
 
         // Act
-        var outcome = await sender.Send(request, TestContext.Current.CancellationToken);
+        var outcome = await sender.SendAsync(request, TestContext.Current.CancellationToken);
 
         // Assert
         var union = Assert.IsType<System.Runtime.CompilerServices.IUnion>(outcome, exactMatch: false);
@@ -39,7 +39,7 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
         object request = new GeneratedSwitchVoidCommand();
 
         // Act
-        var outcome = await sender.Send(request, TestContext.Current.CancellationToken);
+        var outcome = await sender.SendAsync(request, TestContext.Current.CancellationToken);
 
         // Assert
         var union = Assert.IsType<System.Runtime.CompilerServices.IUnion>(outcome, exactMatch: false);
@@ -56,7 +56,7 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
 
         // Act
         var ex = await Assert.ThrowsAsync<HandlerNotRegisteredException>(() =>
-            sender.Send(request, TestContext.Current.CancellationToken)
+            sender.SendAsync(request, TestContext.Current.CancellationToken)
         );
 
         // Assert
@@ -73,7 +73,7 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
 
         // Act
         var ex = await Assert.ThrowsAsync<UnsupportedRequestTypeException>(() =>
-            sender.Send("just a string, not a request", TestContext.Current.CancellationToken)
+            sender.SendAsync("just a string, not a request", TestContext.Current.CancellationToken)
         );
 
         // Assert
@@ -83,7 +83,7 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
     /// <summary>
     /// Builds a lifetime scope from a builder that only calls <c>AddGeneratedRegistrations</c> - no
     /// <c>ScanAssembly</c> - so <see cref="IGeneratedRequestDispatcher"/> is the only possible source of
-    /// <see cref="ISender.Send(object, CancellationToken)"/> dispatch.
+    /// <see cref="ISender.SendAsync(object, CancellationToken)"/> dispatch.
     /// </summary>
     private static ILifetimeScope BuildScopeWithGeneratedRegistrationsOnly()
     {
@@ -106,9 +106,6 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
 
     public sealed class GeneratedSwitchQueryHandler : IQueryHandler<GeneratedSwitchQuery, Outcome<int, Failure>>
     {
-        public Task<Outcome<int, Failure>> Handle(GeneratedSwitchQuery query, CancellationToken ct) =>
-            this.HandleAsync(query, ct);
-
         public Task<Outcome<int, Failure>> HandleAsync(GeneratedSwitchQuery query, CancellationToken ct) =>
             Task.FromResult<Outcome<int, Failure>>(query.Value * 2);
     }

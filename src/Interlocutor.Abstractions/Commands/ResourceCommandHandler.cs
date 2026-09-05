@@ -13,7 +13,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// <list type="number">
 ///   <item><description><see cref="LoadAsync"/> - retrieves the target entity.</description></item>
 ///   <item><description><see cref="Authorize"/> - checks access permissions against the loaded entity.</description></item>
-///   <item><description><see cref="HandleAsync"/> - performs the business operation.</description></item>
+///   <item><description><see cref="HandleAsync(TCommand, TEntity, CancellationToken)"/> - performs the business operation.</description></item>
 /// </list>
 /// If loading returns <c>null</c> the pipeline short-circuits with <see cref="NotFound"/>.
 /// If authorization returns a <see cref="Forbidden"/> the pipeline short-circuits with that denial - the same
@@ -63,7 +63,7 @@ public abstract class ResourceCommandHandler<TCommand, TEntity, TSuccess>
     /// <param name="command">The command to handle.</param>
     /// <param name="ct">Cancellation token to cancel the operation.</param>
     /// <returns>The response, or a failure reason.</returns>
-    public async Task<Outcome<TSuccess, NotFound, Forbidden>> Handle(TCommand command, CancellationToken ct)
+    public async Task<Outcome<TSuccess, NotFound, Forbidden>> HandleAsync(TCommand command, CancellationToken ct)
     {
         var entity = await this.LoadAsync(command, ct).ConfigureAwait(false);
 

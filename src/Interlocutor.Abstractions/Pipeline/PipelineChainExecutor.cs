@@ -26,7 +26,7 @@ internal static class PipelineChainExecutor
     /// <typeparam name="TRequest">The request type being dispatched.</typeparam>
     /// <typeparam name="TResponse">The <see cref="IOutcome"/>-shaped response type the handler and every behavior produce.</typeparam>
     /// <param name="request">The request to pass to the handler and every behavior.</param>
-    /// <param name="handle">The resolved handler's own <c>Handle</c> method, already bound to its instance.</param>
+    /// <param name="handle">The resolved handler's own <c>HandleAsync</c> method, already bound to its instance.</param>
     /// <param name="services">The service provider to resolve the behavior chain from.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>The response from running the composed chain.</returns>
@@ -65,7 +65,7 @@ internal static class PipelineChainExecutor
             {
                 try
                 {
-                    return await behavior.Handle(request, next, ct).ConfigureAwait(false);
+                    return await behavior.HandleAsync(request, next, ct).ConfigureAwait(false);
                 }
                 catch (PipelineEjectException<TResponse> eject)
                 {

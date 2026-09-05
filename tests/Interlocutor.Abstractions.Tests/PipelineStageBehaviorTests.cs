@@ -34,7 +34,7 @@ public class PipelineStageBehaviorTests
         var expectedResult = new Outcome<TestResponse, Failure>(new TestResponse());
 
         // Act
-        var result = await behavior.Handle(
+        var result = await behavior.HandleAsync(
             request,
             async () =>
             {
@@ -67,7 +67,7 @@ public class PipelineStageBehaviorTests
 
         // Act & Assert
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            behavior.Handle(
+            behavior.HandleAsync(
                 request,
                 async () => throw new InvalidOperationException("Handler should not run"),
                 CancellationToken.None
@@ -100,7 +100,7 @@ public class PipelineStageBehaviorTests
 
         // Act & Assert
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            behavior.Handle(request, async () => throw handlerException, CancellationToken.None)
+            behavior.HandleAsync(request, async () => throw handlerException, CancellationToken.None)
         );
 
         Assert.Same(handlerException, ex);
@@ -127,7 +127,7 @@ public class PipelineStageBehaviorTests
 
         // Act & Assert
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            behavior.Handle(
+            behavior.HandleAsync(
                 request,
                 async () => throw new InvalidOperationException("Handler should not run"),
                 CancellationToken.None
@@ -166,7 +166,7 @@ public class PipelineStageBehaviorTests
         var expectedResult = new Outcome<TestResponse, Failure>(new TestResponse());
 
         // Act
-        var result = await behavior.Handle(request, async () => expectedResult, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, async () => expectedResult, CancellationToken.None);
 
         // Assert: every stage's After still ran, despite S2's After throwing.
         Assert.Equal(expectedResult, result);
@@ -204,7 +204,7 @@ public class PipelineStageBehaviorTests
 
         // Act & Assert
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            behavior.Handle(request, async () => expectedResult, CancellationToken.None)
+            behavior.HandleAsync(request, async () => expectedResult, CancellationToken.None)
         );
 
         Assert.Equal("Stage S2 failed during After", ex.Message);
@@ -222,7 +222,7 @@ public class PipelineStageBehaviorTests
         var expectedResult = new Outcome<TestResponse, Failure>(new TestResponse());
 
         // Act
-        var result = await behavior.Handle(request, async () => expectedResult, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, async () => expectedResult, CancellationToken.None);
 
         // Assert
         Assert.Equal(expectedResult, result);
@@ -247,7 +247,7 @@ public class PipelineStageBehaviorTests
         var request = new TestRequest();
 
         // Act
-        var result = await behavior.Handle(
+        var result = await behavior.HandleAsync(
             request,
             async () =>
             {
@@ -283,10 +283,10 @@ public class PipelineStageBehaviorTests
         var request = new TestRequest();
 
         // Act
-        var result = await outerBehavior.Handle(
+        var result = await outerBehavior.HandleAsync(
             request,
             () =>
-                stageBehavior.Handle(
+                stageBehavior.HandleAsync(
                     request,
                     async () =>
                     {
@@ -316,7 +316,7 @@ public class PipelineStageBehaviorTests
         var behavior = new PipelineStageBehavior<TestRequest, Outcome<TestResponse, Failure>>([stage], NewLogger());
 
         // Act
-        var result = await behavior.Handle(
+        var result = await behavior.HandleAsync(
             new TestRequest(),
             async () =>
             {
@@ -340,7 +340,7 @@ public class PipelineStageBehaviorTests
         var expectedResult = new Outcome<TestResponse, Failure>(new TestResponse());
 
         // Act
-        var result = await behavior.Handle(new TestRequest(), async () => expectedResult, CancellationToken.None);
+        var result = await behavior.HandleAsync(new TestRequest(), async () => expectedResult, CancellationToken.None);
 
         // Assert
         Assert.Equal(expectedResult, result);
@@ -413,12 +413,6 @@ public class PipelineStageBehaviorTests
         public bool ObservedResponse { get; private set; }
 
         public bool ObservedShortCircuit { get; private set; }
-
-        public Task<Outcome<TestResponse, Failure>> Handle(
-            TestRequest request,
-            Func<Task<Outcome<TestResponse, Failure>>> next,
-            CancellationToken ct
-        ) => this.HandleAsync(request, next, ct);
 
         public async Task<Outcome<TestResponse, Failure>> HandleAsync(
             TestRequest request,

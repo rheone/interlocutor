@@ -66,23 +66,6 @@ public sealed class EntityFrameworkUnitOfWorkTests : IClassFixture<EntityFramewo
         Assert.Empty(verify.Widgets);
     }
 
-    [Fact]
-    public async Task Cancel_ForwardsToCancelAsync()
-    {
-        // Arrange
-        var unitOfWork = new EntityFrameworkUnitOfWork<TestDbContext>(new Lazy<TestDbContext>(() => this.context));
-        await this.context.Widgets.AddAsync(new Widget { Name = "cancelled" }, TestContext.Current.CancellationToken);
-        await unitOfWork.SaveChangesAsync(TestContext.Current.CancellationToken);
-
-        // Act - calling the superseded member must still roll back, just like CancelAsync.
-        await unitOfWork.Cancel(TestContext.Current.CancellationToken);
-
-        // Assert
-        Assert.Null(this.context.Database.CurrentTransaction);
-        await using var verify = this.CreateVerificationContext();
-        Assert.Empty(verify.Widgets);
-    }
-
     public void Dispose()
     {
         this.context.Dispose();

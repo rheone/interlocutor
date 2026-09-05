@@ -44,7 +44,7 @@ public class RateLimitedBehavior<TRequest, TResponse>(IRateLimiter rateLimiter, 
     /// The request was throttled, but <typeparamref name="TResponse"/> has no <see cref="RateLimited"/> case
     /// to construct - pair <see cref="IRateLimited"/> only with response shapes that include one.
     /// </exception>
-    public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+    public async Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         // Check the rate limit. If it's exceeded, short-circuit immediately with RateLimited without
         // invoking the handler or any downstream behaviors.

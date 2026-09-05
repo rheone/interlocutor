@@ -11,9 +11,6 @@ public record StartupValidationQuery(int Value) : IQuery<Outcome<int, Failure>>;
 
 public class StartupValidationQueryHandler : IQueryHandler<StartupValidationQuery, Outcome<int, Failure>>
 {
-    public Task<Outcome<int, Failure>> Handle(StartupValidationQuery query, CancellationToken ct) =>
-        this.HandleAsync(query, ct);
-
     public Task<Outcome<int, Failure>> HandleAsync(StartupValidationQuery query, CancellationToken ct) =>
         Task.FromResult(new Outcome<int, Failure>(query.Value));
 }

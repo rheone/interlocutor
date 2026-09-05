@@ -19,7 +19,7 @@ public static class ReopenTodoTaskEndpoint
                     // See CreateTodoTaskEndpoint's own remarks on RequireUserId().
                     var requestedBy = contextAccessor.RequireUserId();
 
-                    var result = await sender.Send(new ReopenTodoTaskCommand(id, requestedBy), ct).ConfigureAwait(false);
+                    var result = await sender.SendAsync(new ReopenTodoTaskCommand(id, requestedBy), ct).ConfigureAwait(false);
                     return result.ToMinimalApiResult();
                 }
             )

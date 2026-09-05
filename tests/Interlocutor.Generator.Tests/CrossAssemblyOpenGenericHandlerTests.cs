@@ -30,7 +30,7 @@ public sealed class CrossAssemblyOpenGenericHandlerTests
         public sealed class GenericQueryHandler<T> : IQueryHandler<GenericQuery<T>, Outcome<T, string>>
             where T : IEntity
         {
-            public Task<Outcome<T, string>> Handle(GenericQuery<T> query, CancellationToken ct) =>
+            public Task<Outcome<T, string>> HandleAsync(GenericQuery<T> query, CancellationToken ct) =>
                 throw new System.NotImplementedException();
         }
         """;

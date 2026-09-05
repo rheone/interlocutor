@@ -37,7 +37,7 @@ public sealed class ListTodoTasksHandlerTests
         var query = new ListTodoTasksQuery(OnlyIncomplete: false, OwnerId: "owner-1");
 
         // Act
-        var result = await this.handler.Handle(query, CancellationToken.None);
+        var result = await this.handler.HandleAsync(query, CancellationToken.None);
 
         // Assert
         var dtos = Assert.IsAssignableFrom<IReadOnlyList<TodoTaskDto>>(result.Value);
@@ -65,7 +65,7 @@ public sealed class ListTodoTasksHandlerTests
         var query = new ListTodoTasksQuery(OnlyIncomplete: false, OwnerId: "owner-1");
 
         // Act
-        var result = await this.handler.Handle(query, CancellationToken.None);
+        var result = await this.handler.HandleAsync(query, CancellationToken.None);
 
         // Assert
         Assert.Empty(Assert.IsAssignableFrom<IReadOnlyList<TodoTaskDto>>(result.Value));
@@ -85,7 +85,7 @@ public sealed class ListTodoTasksHandlerTests
         var query = new ListTodoTasksQuery(OnlyIncomplete: true, OwnerId: "owner-1");
 
         // Act
-        await this.handler.Handle(query, CancellationToken.None);
+        await this.handler.HandleAsync(query, CancellationToken.None);
 
         // Assert - the filter compiled from OnlyIncomplete: true excludes a completed task for the same
         // owner, whereas OnlyIncomplete: false would include it.

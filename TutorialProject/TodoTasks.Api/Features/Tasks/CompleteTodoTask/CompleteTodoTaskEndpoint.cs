@@ -21,7 +21,7 @@ public static class CompleteTodoTaskEndpoint
                     // below means this endpoint is never reachable without one.
                     var requestedBy = contextAccessor.RequireUserId();
 
-                    var result = await sender.Send(new CompleteTodoTaskCommand(id, requestedBy), ct).ConfigureAwait(false);
+                    var result = await sender.SendAsync(new CompleteTodoTaskCommand(id, requestedBy), ct).ConfigureAwait(false);
                     return result.ToMinimalApiResult();
                 }
             )

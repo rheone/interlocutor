@@ -290,7 +290,7 @@ public class ValidationBehaviorTests
         }
 
         // Act - calling the superseded member must produce the same validation-failure behavior as HandleAsync.
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert
         Assert.IsType<ValidationErrors>(result.Value);

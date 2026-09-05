@@ -25,8 +25,7 @@ public interface IQueryHandler<in TQuery, TResponse>
     where TResponse : IOutcome
 {
     /// <summary>
-    /// Handles the specified query and returns a result that represents success or failure. Superseded by
-    /// <see cref="HandleAsync"/> - implement that member in new handlers instead.
+    /// Handles the specified query and returns a result that represents success or failure.
     /// </summary>
     /// <param name="query">The query to handle.</param>
     /// <param name="ct">A cancellation token that can be used to cancel the operation.</param>
@@ -34,27 +33,5 @@ public interface IQueryHandler<in TQuery, TResponse>
     /// A task that represents the asynchronous operation. The task result contains the
     /// query's response - which may itself be a union type distinguishing success from failure.
     /// </returns>
-    /// <remarks>
-    /// Carries no <c>Async</c> suffix despite returning a <see cref="Task{TResult}"/>, unlike the rest of this
-    /// codebase's awaitable-returning members - <see cref="HandleAsync"/> carries the suffix instead. Existing
-    /// implementations of this member keep working - the default <see cref="HandleAsync"/> forwards to it - but
-    /// new handlers should implement <see cref="HandleAsync"/> instead.
-    /// </remarks>
-    Task<TResponse> Handle(TQuery query, CancellationToken ct);
-
-    /// <summary>
-    /// The preferred, <c>Async</c>-suffixed member going forward: handles the specified query and returns a
-    /// result that represents success or failure.
-    /// </summary>
-    /// <param name="query">The query to handle.</param>
-    /// <param name="ct">A cancellation token that can be used to cancel the operation.</param>
-    /// <returns>
-    /// A task that represents the asynchronous operation. The task result contains the
-    /// query's response - which may itself be a union type distinguishing success from failure.
-    /// </returns>
-    /// <remarks>
-    /// The default implementation forwards to <see cref="Handle"/> so every existing implementer keeps
-    /// compiling and behaving identically until it migrates to overriding this member instead.
-    /// </remarks>
-    Task<TResponse> HandleAsync(TQuery query, CancellationToken ct) => this.Handle(query, ct);
+    Task<TResponse> HandleAsync(TQuery query, CancellationToken ct);
 }

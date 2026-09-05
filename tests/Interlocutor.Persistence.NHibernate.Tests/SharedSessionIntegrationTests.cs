@@ -34,7 +34,7 @@ public sealed class SharedSessionIntegrationTests : IClassFixture<RealSessionFix
         var widget = new Widget();
 
         // Act
-        var result = await behavior.Handle(
+        var result = await behavior.HandleAsync(
             new TransactionalRequest(),
             async () =>
             {

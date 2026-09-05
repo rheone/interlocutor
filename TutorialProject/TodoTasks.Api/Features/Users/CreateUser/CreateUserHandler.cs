@@ -11,10 +11,6 @@ public sealed class CreateUserHandler(IDomainRepository<User, int> users, IUnitO
     : ICommandHandler<CreateUserCommand, Outcome<UserDto, ValidationErrors, Conflict>>
 {
     /// <inheritdoc/>
-    public Task<Outcome<UserDto, ValidationErrors, Conflict>> Handle(CreateUserCommand command, CancellationToken ct) =>
-        this.HandleAsync(command, ct);
-
-    /// <inheritdoc/>
     public async Task<Outcome<UserDto, ValidationErrors, Conflict>> HandleAsync(CreateUserCommand command, CancellationToken ct)
     {
         // Shares CreateUserCommand's ITransactionalRequest-eager transaction with the insert below - see

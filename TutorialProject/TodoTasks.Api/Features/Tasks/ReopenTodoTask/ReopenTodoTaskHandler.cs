@@ -16,12 +16,6 @@ public sealed class ReopenTodoTaskHandler(IDomainRepository<TodoTask, int> tasks
     : ICommandHandler<ReopenTodoTaskCommand, Outcome<TodoTaskDto, NotFound, Forbidden, Conflict>>
 {
     /// <inheritdoc/>
-    public Task<Outcome<TodoTaskDto, NotFound, Forbidden, Conflict>> Handle(
-        ReopenTodoTaskCommand command,
-        CancellationToken ct
-    ) => this.HandleAsync(command, ct);
-
-    /// <inheritdoc/>
     public async Task<Outcome<TodoTaskDto, NotFound, Forbidden, Conflict>> HandleAsync(
         ReopenTodoTaskCommand command,
         CancellationToken ct

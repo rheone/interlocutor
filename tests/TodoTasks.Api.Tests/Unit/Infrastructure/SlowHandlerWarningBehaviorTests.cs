@@ -24,7 +24,7 @@ public sealed class SlowHandlerWarningBehaviorTests
         static Task<string> FastHandler() => Task.FromResult("done");
 
         // Act
-        var result = await behavior.Handle(new SlowRequest(), FastHandler, TestContext.Current.CancellationToken);
+        var result = await behavior.HandleAsync(new SlowRequest(), FastHandler, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("done", result);
@@ -50,7 +50,7 @@ public sealed class SlowHandlerWarningBehaviorTests
         }
 
         // Act
-        var result = await behavior.Handle(new SlowRequest(), SlowHandler, TestContext.Current.CancellationToken);
+        var result = await behavior.HandleAsync(new SlowRequest(), SlowHandler, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("done", result);
@@ -82,7 +82,7 @@ public sealed class SlowHandlerWarningBehaviorTests
         }
 
         // Act
-        await behavior.Handle(new SlowRequest(), FastHandler, TestContext.Current.CancellationToken);
+        await behavior.HandleAsync(new SlowRequest(), FastHandler, TestContext.Current.CancellationToken);
 
         // Assert - no warning, even though the total elapsed time since the test started is well past the
         // threshold, because none of that 300ms was inside this behavior's own next() call.

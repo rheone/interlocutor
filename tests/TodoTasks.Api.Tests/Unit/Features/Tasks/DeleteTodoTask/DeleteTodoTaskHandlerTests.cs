@@ -33,7 +33,7 @@ public sealed class DeleteTodoTaskHandlerTests
         var command = new DeleteTodoTaskCommand(42);
 
         // Act
-        var result = await this.handler.Handle(command, CancellationToken.None);
+        var result = await this.handler.HandleAsync(command, CancellationToken.None);
 
         // Assert
         Assert.IsType<Success>(result.Value);
@@ -49,7 +49,7 @@ public sealed class DeleteTodoTaskHandlerTests
         var command = new DeleteTodoTaskCommand(42);
 
         // Act
-        var result = await this.handler.Handle(command, CancellationToken.None);
+        var result = await this.handler.HandleAsync(command, CancellationToken.None);
 
         // Assert
         Assert.IsType<NotFound>(result.Value);

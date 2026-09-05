@@ -14,7 +14,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// <see cref="IGeneratedRequestDispatcher"/> is registered - the explicitly opted-in runtime-scanning path used
 /// when the generator never ran over the compilation, or its output was never passed to
 /// <c>InterlocutorBuilder.AddGeneratedRegistrations</c>. Resolves and invokes the correct strongly-typed
-/// <c>Send</c> overload for a request's runtime type, via reflection, rather than duplicating the
+/// <c>SendAsync</c> overload for a request's runtime type, via reflection, rather than duplicating the
 /// pipeline-composition logic each overload already carries.
 /// </summary>
 /// <remarks>
@@ -24,7 +24,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </remarks>
 internal static class ReflectionRequestDispatcher
 {
-    // Reuses the strongly-typed Send<TResponse> overloads on ISender via reflection, rather than duplicating
+    // Reuses the strongly-typed SendAsync<TResponse> overloads on ISender via reflection, rather than duplicating
     // pipeline-composition logic. These MethodInfo handles are resolved once (each generic method definition is
     // found by matching its first parameter's open generic shape) and reused for every call, since
     // MakeGenericMethod on an already-resolved MethodInfo is cheap relative to re-scanning the type's methods.
@@ -40,10 +40,10 @@ internal static class ReflectionRequestDispatcher
     private static readonly ConcurrentDictionary<Type, Type?> VoidCommandResultTypes = new();
 
     /// <summary>
-    /// Resolves and invokes the correct strongly-typed <c>Send</c> overload for <paramref name="request"/>'s
+    /// Resolves and invokes the correct strongly-typed <c>SendAsync</c> overload for <paramref name="request"/>'s
     /// runtime type, via reflection.
     /// </summary>
-    /// <param name="mediator">The mediator instance to invoke the resolved <c>Send</c> overload on.</param>
+    /// <param name="mediator">The mediator instance to invoke the resolved <c>SendAsync</c> overload on.</param>
     /// <param name="services">The service provider used to check handler registration before dispatching.</param>
     /// <param name="request">The request to dispatch, by its runtime type.</param>
     /// <param name="ct">A token that may be used to cancel the operation.</param>
@@ -109,8 +109,8 @@ internal static class ReflectionRequestDispatcher
     }
 
     /// <summary>
-    /// Resolves the <see cref="MethodInfo"/> for one of <see cref="ISender"/>'s generic <c>Send</c> overloads by
-    /// matching its first parameter's shape, so runtime-typed dispatch can invoke it reflectively without
+    /// Resolves the <see cref="MethodInfo"/> for one of <see cref="ISender"/>'s generic <c>SendAsync</c> overloads
+    /// by matching its first parameter's shape, so runtime-typed dispatch can invoke it reflectively without
     /// duplicating the pipeline-composition logic each overload already carries.
     /// </summary>
     /// <param name="requestParameterType">
@@ -121,19 +121,19 @@ internal static class ReflectionRequestDispatcher
         "Trimming",
         "IL2026:RequiresUnreferencedCode",
         Justification = "Enumerating ISender's own methods to find one by signature shape is not itself a call "
-            + "to the RequiresUnreferencedCode-annotated Mediator.Send(object,...) overload; the resolved MethodInfo "
-            + "is only ever the strongly-typed Send<TResponse> overloads DispatchAsync invokes, which carries its "
-            + "own matching annotation. See documentation/trim-and-aot-support.md."
+            + "to the RequiresUnreferencedCode-annotated Mediator.SendAsync(object,...) overload; the resolved "
+            + "MethodInfo is only ever the strongly-typed SendAsync<TResponse> overloads DispatchAsync invokes, "
+            + "which carries its own matching annotation. See documentation/trim-and-aot-support.md."
     )]
     private static MethodInfo ResolveSendMethod(Type requestParameterType) =>
         typeof(ISender)
             .GetMethods()
             .Single(method =>
             {
-                // Matches "Send" specifically, not "SendAsync" - both overload sets share the same
-                // first-parameter shapes now that ISender carries the *Async forwarding members added
-                // alongside them (see .scratch/async-method-naming), so name alone disambiguates them.
-                if (method.Name != nameof(ISender.Send))
+                // The non-generic SendAsync(object, CancellationToken) overload never matches any of the three
+                // shapes this method is called with (IQuery<>, ICommand<>, ICommand), so name alone is enough
+                // to select among the three generic overloads without an explicit parameter-count check first.
+                if (method.Name != nameof(ISender.SendAsync))
                 {
                     return false;
                 }
@@ -151,8 +151,8 @@ internal static class ReflectionRequestDispatcher
             });
 
     /// <summary>
-    /// Invokes a resolved generic <c>Send&lt;TResponse&gt;</c> overload reflectively, awaits it, and returns its
-    /// result as the base outcome interface - the reflection stand-in for the compile-time generic type
+    /// Invokes a resolved generic <c>SendAsync&lt;TResponse&gt;</c> overload reflectively, awaits it, and returns
+    /// its result as the base outcome interface - the reflection stand-in for the compile-time generic type
     /// argument a static caller would normally supply.
     /// </summary>
     [RequiresUnreferencedCode(
@@ -223,7 +223,7 @@ internal static class ReflectionRequestDispatcher
     /// <remarks>
     /// This is the expensive part of the reflection-based fallback (see the <see cref="VoidCommandResultTypes"/>
     /// field doc) - a future generator-backed implementation replaces it with a compiled lookup, without
-    /// changing <see cref="Mediator.Send(object, CancellationToken)"/>'s contract.
+    /// changing <see cref="Mediator.SendAsync(object, CancellationToken)"/>'s contract.
     /// </remarks>
     [RequiresUnreferencedCode(
         "The runtime-typed dispatch fallback reflects over runtime types and is only reached when no IGeneratedRequestDispatcher "

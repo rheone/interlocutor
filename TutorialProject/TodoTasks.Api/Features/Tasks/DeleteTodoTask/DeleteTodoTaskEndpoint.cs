@@ -23,7 +23,7 @@ public static class DeleteTodoTaskEndpoint
                 "/todo-tasks/{id:int}",
                 async (int id, ISender sender, CancellationToken ct) =>
                 {
-                    var result = await sender.Send(new DeleteTodoTaskCommand(id), ct).ConfigureAwait(false);
+                    var result = await sender.SendAsync(new DeleteTodoTaskCommand(id), ct).ConfigureAwait(false);
                     return result.ToMinimalApiResult();
                 }
             )

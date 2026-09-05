@@ -60,7 +60,7 @@ internal static class InterlocutorDiagnostics
     /// </summary>
     /// <remarks>
     /// Unlike a notification (see <see cref="RequestKind"/>'s remarks), a query or command must resolve to
-    /// exactly one handler - <c>Mediator.Send</c> and the generated dispatch wrapper both resolve the handler's
+    /// exactly one handler - <c>Mediator.SendAsync</c> and the generated dispatch wrapper both resolve the handler's
     /// service interface as a single service, so a second registration silently shadows the first rather than
     /// being an error at resolution time. This diagnostic catches that ambiguity at build time instead. Default
     /// severity is <see cref="DiagnosticSeverity.Warning"/>, escalated the same way as
@@ -218,7 +218,7 @@ internal static class InterlocutorDiagnostics
     /// closed instantiation in application B (which references A), is invisible to both sides' own generator
     /// runs - A's run finished before B exists, and B's run never sees A's syntax, only its metadata. Left
     /// unresolved, that produced a request no registered handler ever backs, previously discovered only when
-    /// <c>Mediator.Send</c> throws <c>Interlocutor.Abstractions.Core.HandlerNotRegisteredException</c>
+    /// <c>Mediator.SendAsync</c> throws <c>Interlocutor.Abstractions.Core.HandlerNotRegisteredException</c>
     /// at first dispatch. This diagnostic surfaces the same gap at build time instead.
     /// </para>
     /// <para>

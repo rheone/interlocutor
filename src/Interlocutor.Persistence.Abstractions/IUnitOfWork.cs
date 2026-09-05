@@ -42,15 +42,14 @@ public interface IUnitOfWork
 
     /// <summary>
     /// Immediately rolls back the current transaction, if one is open, discarding every change staged during
-    /// this dispatch, and returns control to the caller. Superseded by <see cref="CancelAsync"/> - prefer that
-    /// member in new code instead.
+    /// this dispatch, and returns control to the caller.
     /// </summary>
     /// <param name="cancellationToken">A token to observe while waiting for the rollback to complete.</param>
     /// <returns>A task that completes once the rollback (if any was needed) has finished.</returns>
     /// <remarks>
     /// <para>
     /// This is a rare-case escape hatch for a handler that wants to force a rollback without being obligated
-    /// to also return a classified failure-shaped <c>Outcome</c>. <see cref="Cancel"/> is not a
+    /// to also return a classified failure-shaped <c>Outcome</c>. <see cref="CancelAsync"/> is not a
     /// short-circuit primitive and does not throw or otherwise interrupt control flow - it rolls back and
     /// returns, and the handler decides what outcome to return afterward. The pipeline's automatic commit
     /// gate simply finds nothing pending to commit at completion, the same as if the dispatch had never
@@ -58,27 +57,8 @@ public interface IUnitOfWork
     /// </para>
     /// <para>
     /// A no-op if no transaction is currently open (for example, a pure-read dispatch, or a dispatch where
-    /// <see cref="Cancel"/> has already run once).
-    /// </para>
-    /// <para>
-    /// Carries no <c>Async</c> suffix despite returning a <see cref="Task"/>, unlike the rest of this
-    /// codebase's awaitable-returning members - <see cref="CancelAsync"/> carries the suffix instead. Existing
-    /// implementations of this member keep working - the default <see cref="CancelAsync"/> forwards to it - but
-    /// new callers should prefer <see cref="CancelAsync"/> instead.
+    /// <see cref="CancelAsync"/> has already run once).
     /// </para>
     /// </remarks>
-    Task Cancel(CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// The preferred, <c>Async</c>-suffixed member going forward: immediately rolls back the current
-    /// transaction, if one is open, discarding every change staged during this dispatch, and returns control to
-    /// the caller.
-    /// </summary>
-    /// <param name="cancellationToken">A token to observe while waiting for the rollback to complete.</param>
-    /// <returns>A task that completes once the rollback (if any was needed) has finished.</returns>
-    /// <remarks>
-    /// The default implementation forwards to <see cref="Cancel"/> - see that member's remarks for the
-    /// rollback semantics this member shares.
-    /// </remarks>
-    Task CancelAsync(CancellationToken cancellationToken = default) => this.Cancel(cancellationToken);
+    Task CancelAsync(CancellationToken cancellationToken = default);
 }

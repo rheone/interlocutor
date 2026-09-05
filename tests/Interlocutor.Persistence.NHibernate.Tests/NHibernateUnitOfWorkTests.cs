@@ -74,22 +74,4 @@ public sealed class NHibernateUnitOfWorkTests : IClassFixture<RealSessionFixture
         Assert.False(session.GetCurrentTransaction() is { IsActive: true });
         Assert.False(session.Contains(widget));
     }
-
-    [Fact]
-    public async Task Cancel_ForwardsToCancelAsync()
-    {
-        // Arrange
-        using var session = this.fixture.OpenSession();
-        var unitOfWork = new NHibernateUnitOfWork(new Lazy<ISession>(() => session));
-        var widget = new Widget();
-        await session.SaveAsync(widget, TestContext.Current.CancellationToken);
-        await unitOfWork.SaveChangesAsync(TestContext.Current.CancellationToken);
-
-        // Act - calling the superseded member must still roll back, just like CancelAsync.
-        await unitOfWork.Cancel(TestContext.Current.CancellationToken);
-
-        // Assert
-        Assert.False(session.GetCurrentTransaction() is { IsActive: true });
-        Assert.False(session.Contains(widget));
-    }
 }

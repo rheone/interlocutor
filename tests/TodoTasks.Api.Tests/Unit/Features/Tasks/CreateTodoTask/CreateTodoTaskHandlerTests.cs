@@ -30,7 +30,7 @@ public sealed class CreateTodoTaskHandlerTests
         var command = new CreateTodoTaskCommand("Buy milk", "2%, please", "owner-1");
 
         // Act
-        var result = await this.handler.Handle(command, CancellationToken.None);
+        var result = await this.handler.HandleAsync(command, CancellationToken.None);
 
         // Assert
         Assert.True(result.IsSuccess);
@@ -57,7 +57,7 @@ public sealed class CreateTodoTaskHandlerTests
         var command = new CreateTodoTaskCommand("Buy milk", "Oat milk this time", "owner-1");
 
         // Act
-        var result = await this.handler.Handle(command, CancellationToken.None);
+        var result = await this.handler.HandleAsync(command, CancellationToken.None);
 
         // Assert
         var conflict = Assert.IsType<Conflict>(result.Value);
@@ -77,7 +77,7 @@ public sealed class CreateTodoTaskHandlerTests
         var command = new CreateTodoTaskCommand("Buy milk", null, "owner-2");
 
         // Act
-        var result = await this.handler.Handle(command, CancellationToken.None);
+        var result = await this.handler.HandleAsync(command, CancellationToken.None);
 
         // Assert
         Assert.True(result.IsSuccess);

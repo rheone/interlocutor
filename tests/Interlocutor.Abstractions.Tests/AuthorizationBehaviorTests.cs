@@ -46,7 +46,7 @@ public class AuthorizationBehaviorTests
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert
         Assert.Equal("success", result.Value);
@@ -73,7 +73,7 @@ public class AuthorizationBehaviorTests
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert - Should return Forbidden instead of calling next
         Assert.IsType<Forbidden>(result.Value);
@@ -100,7 +100,7 @@ public class AuthorizationBehaviorTests
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert
         var forbidden = Assert.IsType<Forbidden>(result.Value);
@@ -130,7 +130,7 @@ public class AuthorizationBehaviorTests
         }
 
         // Act
-        await behavior.Handle(request, Next, CancellationToken.None);
+        await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert - next should not be called
         Assert.False(nextCalled);
@@ -156,7 +156,7 @@ public class AuthorizationBehaviorTests
         }
 
         // Act
-        await behavior.Handle(request, Next, CancellationToken.None);
+        await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert - the exact request instance should be passed to the evaluator, not merely an equal copy.
         await policyEvaluator
@@ -190,7 +190,7 @@ public class AuthorizationBehaviorTests
 
         // Act
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            behavior.Handle(request, Next, CancellationToken.None)
+            behavior.HandleAsync(request, Next, CancellationToken.None)
         );
 
         // Assert
@@ -221,7 +221,7 @@ public class AuthorizationBehaviorTests
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert
         Assert.Equal(typeof(Forbidden), result.CaseType);

@@ -30,7 +30,7 @@ public class RateLimitedBehaviorTests
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert
         Assert.Equal("success", result.Value);
@@ -57,7 +57,7 @@ public class RateLimitedBehaviorTests
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert - Should return RateLimited instead of calling next
         var rateLimited = Assert.IsType<RateLimited>(result.Value);
@@ -86,7 +86,7 @@ public class RateLimitedBehaviorTests
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert
         var rateLimited = Assert.IsType<RateLimited>(result.Value);
@@ -116,7 +116,7 @@ public class RateLimitedBehaviorTests
         }
 
         // Act
-        await behavior.Handle(request, Next, CancellationToken.None);
+        await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert - next should not be called
         Assert.False(nextCalled);
@@ -147,7 +147,7 @@ public class RateLimitedBehaviorTests
 
         // Act
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            behavior.Handle(request, Next, CancellationToken.None)
+            behavior.HandleAsync(request, Next, CancellationToken.None)
         );
 
         // Assert
@@ -169,7 +169,7 @@ public class RateLimitedBehaviorTests
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert
         Assert.Equal("success", result.Value);
@@ -199,7 +199,7 @@ public class RateLimitedBehaviorTests
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert
         Assert.True(delegateCalled);

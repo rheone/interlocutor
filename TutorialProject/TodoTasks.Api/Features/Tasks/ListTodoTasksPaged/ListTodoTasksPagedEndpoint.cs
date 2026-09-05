@@ -20,7 +20,7 @@ public static class ListTodoTasksPagedEndpoint
                     var ownerId = contextAccessor.RequireUserId();
 
                     var result = await sender
-                        .Send(new ListTodoTasksPagedQuery(ownerId, page, pageSize), ct)
+                        .SendAsync(new ListTodoTasksPagedQuery(ownerId, page, pageSize), ct)
                         .ConfigureAwait(false);
                     return result.ToMinimalApiResult();
                 }

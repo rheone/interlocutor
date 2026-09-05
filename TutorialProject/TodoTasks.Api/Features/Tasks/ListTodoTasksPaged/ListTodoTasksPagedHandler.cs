@@ -23,10 +23,6 @@ public sealed class ListTodoTasksPagedHandler(IDomainRepository<TodoTask, int> t
     : IQueryHandler<ListTodoTasksPagedQuery, Outcome<PagedTodoTasksDto, Failure>>
 {
     /// <inheritdoc/>
-    public Task<Outcome<PagedTodoTasksDto, Failure>> Handle(ListTodoTasksPagedQuery query, CancellationToken ct) =>
-        this.HandleAsync(query, ct);
-
-    /// <inheritdoc/>
     public async Task<Outcome<PagedTodoTasksDto, Failure>> HandleAsync(ListTodoTasksPagedQuery query, CancellationToken ct)
     {
         var page = await tasks

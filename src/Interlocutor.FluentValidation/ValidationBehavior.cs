@@ -54,10 +54,6 @@ public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<
         this.caseRegistry = caseRegistry;
     }
 
-    /// <inheritdoc/>
-    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
-        this.HandleAsync(request, next, ct);
-
     /// <summary>
     /// Validates the request using all registered validators. If validation succeeds,
     /// the request is forwarded to the next pipeline stage.

@@ -76,7 +76,7 @@ public sealed class UnitOfWorkBehaviorArityTests
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         // Act
-        var result = await mediator.Send(new CreateWidget("subclassed"), TestContext.Current.CancellationToken);
+        var result = await mediator.SendAsync(new CreateWidget("subclassed"), TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(result.IsSuccess);
@@ -90,9 +90,6 @@ public sealed class UnitOfWorkBehaviorArityTests
 
     private sealed class WidgetCommandHandler(TestDbContext context) : ICommandHandler<CreateWidget, Outcome<Success, Failure>>
     {
-        public Task<Outcome<Success, Failure>> Handle(CreateWidget command, CancellationToken ct) =>
-            this.HandleAsync(command, ct);
-
         public async Task<Outcome<Success, Failure>> HandleAsync(CreateWidget command, CancellationToken ct)
         {
             await context.Widgets.AddAsync(new Widget { Name = command.Name }, ct).ConfigureAwait(false);

@@ -15,8 +15,6 @@ public record TestQuery(int Value) : IQuery<Outcome<int, Failure>>;
 
 public class TestQueryHandler : IQueryHandler<TestQuery, Outcome<int, Failure>>
 {
-    public Task<Outcome<int, Failure>> Handle(TestQuery query, CancellationToken ct) => this.HandleAsync(query, ct);
-
     public Task<Outcome<int, Failure>> HandleAsync(TestQuery query, CancellationToken ct) =>
         Task.FromResult(new Outcome<int, Failure>(query.Value * 2));
 }
@@ -25,8 +23,6 @@ public record GreetCommand(string PersonName) : ICommand<Outcome<string, Failure
 
 public class GreetCommandHandler : ICommandHandler<GreetCommand, Outcome<string, Failure>>
 {
-    public Task<Outcome<string, Failure>> Handle(GreetCommand command, CancellationToken ct) => this.HandleAsync(command, ct);
-
     public Task<Outcome<string, Failure>> HandleAsync(GreetCommand command, CancellationToken ct) =>
         Task.FromResult(new Outcome<string, Failure>($"Hello {command.PersonName}"));
 }
@@ -53,8 +49,6 @@ public record AuditableTestQuery(int Value) : IQuery<Outcome<int, Failure>>, IAu
 
 public class AuditableTestQueryHandler : IQueryHandler<AuditableTestQuery, Outcome<int, Failure>>
 {
-    public Task<Outcome<int, Failure>> Handle(AuditableTestQuery query, CancellationToken ct) => this.HandleAsync(query, ct);
-
     public Task<Outcome<int, Failure>> HandleAsync(AuditableTestQuery query, CancellationToken ct) =>
         Task.FromResult(new Outcome<int, Failure>(query.Value));
 }
@@ -68,9 +62,6 @@ public class AuditableTestQueryHandler : IQueryHandler<AuditableTestQuery, Outco
 public class MarkerConstrainedTrackingBehavior<TRequest, TResponse>(Action track) : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IAuditableRequest
 {
-    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
-        this.HandleAsync(request, next, ct);
-
     public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         track();
@@ -80,9 +71,6 @@ public class MarkerConstrainedTrackingBehavior<TRequest, TResponse>(Action track
 
 public class TrackingBehavior<TRequest, TResponse>(Action track) : IPipelineBehavior<TRequest, TResponse>
 {
-    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
-        this.HandleAsync(request, next, ct);
-
     public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         track();
@@ -94,8 +82,6 @@ public class TrackingBehavior<TRequest, TResponse>(Action track) : IPipelineBeha
 /// <see cref="Eject"/> works without manually threading the chosen outcome back up through every frame.</summary>
 public class EjectingQueryHandler : IQueryHandler<TestQuery, Outcome<int, Failure>>
 {
-    public Task<Outcome<int, Failure>> Handle(TestQuery query, CancellationToken ct) => this.HandleAsync(query, ct);
-
     public Task<Outcome<int, Failure>> HandleAsync(TestQuery query, CancellationToken ct) => Inner(query);
 
     private static Task<Outcome<int, Failure>> Inner(TestQuery query) => Deepest(query);
@@ -112,9 +98,6 @@ public class EjectingQueryHandler : IQueryHandler<TestQuery, Outcome<int, Failur
 public class EjectingBeforeNextBehavior<TRequest, TResponse>(TResponse response) : IPipelineBehavior<TRequest, TResponse>
     where TResponse : IOutcome
 {
-    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
-        this.HandleAsync(request, next, ct);
-
     public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
         Task.FromResult(Eject.With(response));
 }
@@ -127,9 +110,6 @@ public class EjectingBeforeNextBehavior<TRequest, TResponse>(TResponse response)
 /// <typeparam name="TResponse">The response type, unconstrained since this behavior never produces one.</typeparam>
 public class ThrowingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
 {
-    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
-        this.HandleAsync(request, next, ct);
-
     public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
         throw new InvalidOperationException("not an eject");
 }
@@ -143,9 +123,6 @@ public class ThrowingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest,
 public class EjectingAfterNextBehavior<TRequest, TResponse>(TResponse response) : IPipelineBehavior<TRequest, TResponse>
     where TResponse : IOutcome
 {
-    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
-        this.HandleAsync(request, next, ct);
-
     public async Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         _ = await next().ConfigureAwait(false);
@@ -161,9 +138,6 @@ public class EjectingAfterNextBehavior<TRequest, TResponse>(TResponse response) 
 /// <typeparam name="TResponse">The response type flowing through this behavior unchanged.</typeparam>
 public class KeptTrackingBehavior<TRequest, TResponse>(Action<string> track) : IPipelineBehavior<TRequest, TResponse>
 {
-    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
-        this.HandleAsync(request, next, ct);
-
     public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         track("kept");
@@ -179,9 +153,6 @@ public class KeptTrackingBehavior<TRequest, TResponse>(Action<string> track) : I
 /// <typeparam name="TResponse">The response type flowing through this behavior unchanged.</typeparam>
 public class DroppedTrackingBehavior<TRequest, TResponse>(Action<string> track) : IPipelineBehavior<TRequest, TResponse>
 {
-    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
-        this.HandleAsync(request, next, ct);
-
     public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         track("dropped");
@@ -212,7 +183,7 @@ public class MediatorTests
         var mediator = CreateMediator<TestQueryHandler>(_ => { });
 
         // Act
-        var result = await mediator.Send(new TestQuery(21), CancellationToken.None);
+        var result = await mediator.SendAsync(new TestQuery(21), CancellationToken.None);
 
         // Assert
         Assert.Equal(42, result.Value);
@@ -231,7 +202,7 @@ public class MediatorTests
         });
 
         // Act
-        await mediator.Send(new TestQuery(1), CancellationToken.None);
+        await mediator.SendAsync(new TestQuery(1), CancellationToken.None);
 
         // Assert
         Assert.True(invoked);
@@ -259,7 +230,7 @@ public class MediatorTests
         });
 
         // Act
-        await mediator.Send(new TestQuery(1), CancellationToken.None);
+        await mediator.SendAsync(new TestQuery(1), CancellationToken.None);
 
         // Assert
         Assert.Equal(["kept"], executed);
@@ -293,7 +264,7 @@ public class MediatorTests
         var mediator = provider.GetRequiredService<IMediator>();
 
         // Act
-        await mediator.Send(new AuditableTestQuery(1), CancellationToken.None);
+        await mediator.SendAsync(new AuditableTestQuery(1), CancellationToken.None);
 
         // Assert
         Assert.Equal(["kept"], executed);
@@ -306,7 +277,7 @@ public class MediatorTests
         var mediator = CreateMediator<EjectingQueryHandler>(_ => { });
 
         // Act
-        var result = await mediator.Send(new TestQuery(7), CancellationToken.None);
+        var result = await mediator.SendAsync(new TestQuery(7), CancellationToken.None);
 
         // Assert - the dispatch completes normally with the chosen outcome; Eject.With never surfaces as a
         // thrown exception to this caller.
@@ -331,7 +302,7 @@ public class MediatorTests
         });
 
         // Act
-        var result = await mediator.Send(new TestQuery(1), CancellationToken.None);
+        var result = await mediator.SendAsync(new TestQuery(1), CancellationToken.None);
 
         // Assert
         Assert.Equal(new Failure("dead end"), result.Value);
@@ -359,7 +330,7 @@ public class MediatorTests
         });
 
         // Act
-        var result = await mediator.Send(new TestQuery(1), CancellationToken.None);
+        var result = await mediator.SendAsync(new TestQuery(1), CancellationToken.None);
 
         // Assert
         Assert.Equal(new Failure("dead end after next"), result.Value);
@@ -379,7 +350,7 @@ public class MediatorTests
         });
 
         // Act
-        await mediator.Send(new GreetCommand("test"), CancellationToken.None);
+        await mediator.SendAsync(new GreetCommand("test"), CancellationToken.None);
 
         // Assert
         Assert.True(invoked);
@@ -399,7 +370,7 @@ public class MediatorTests
         });
 
         // Act
-        var result = await mediator.Send(new GreetCommand("test"), CancellationToken.None);
+        var result = await mediator.SendAsync(new GreetCommand("test"), CancellationToken.None);
 
         // Assert
         Assert.Equal(new Failure("dead end"), result.Value);
@@ -418,7 +389,7 @@ public class MediatorTests
         });
 
         // Act
-        await mediator.Send<Outcome>(new TestVoidCommand("test"), CancellationToken.None);
+        await mediator.SendAsync<Outcome>(new TestVoidCommand("test"), CancellationToken.None);
 
         // Assert
         Assert.True(invoked);
@@ -436,7 +407,7 @@ public class MediatorTests
         });
 
         // Act
-        var result = await mediator.Send<Outcome>(new TestVoidCommand("test"), CancellationToken.None);
+        var result = await mediator.SendAsync<Outcome>(new TestVoidCommand("test"), CancellationToken.None);
 
         // Assert
         Assert.Equal(new Failure("dead end"), result.Value);
@@ -455,7 +426,9 @@ public class MediatorTests
         });
 
         // Act & Assert
-        return Assert.ThrowsAsync<InvalidOperationException>(() => mediator.Send(new TestQuery(1), CancellationToken.None));
+        return Assert.ThrowsAsync<InvalidOperationException>(() =>
+            mediator.SendAsync(new TestQuery(1), CancellationToken.None)
+        );
     }
 
     [Fact]
@@ -465,7 +438,7 @@ public class MediatorTests
         var mediator = CreateMediator<TestVoidHandler>(_ => { });
 
         // Act
-        var result = await mediator.Send<Outcome>(new TestVoidCommand("test"), CancellationToken.None);
+        var result = await mediator.SendAsync<Outcome>(new TestVoidCommand("test"), CancellationToken.None);
 
         // Assert
         var isSuccess = result.Value switch
@@ -489,7 +462,7 @@ public class MediatorTests
         var mediator = provider.GetRequiredService<IMediator>();
 
         // Act
-        await mediator.Publish(new TestNotification("hello"), CancellationToken.None);
+        await mediator.PublishAsync(new TestNotification("hello"), CancellationToken.None);
 
         // Assert
         Assert.True(invoked);
@@ -506,7 +479,7 @@ public class MediatorTests
 
         // Act - no handlers registered for TestNotification; publishing must not throw.
         var exception = await Record.ExceptionAsync(() =>
-            mediator.Publish(new TestNotification("hello"), CancellationToken.None)
+            mediator.PublishAsync(new TestNotification("hello"), CancellationToken.None)
         );
 
         // Assert
@@ -529,7 +502,7 @@ public class MediatorTests
 
         // Act
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            mediator.Publish(new TestNotification("hello"), CancellationToken.None)
+            mediator.PublishAsync(new TestNotification("hello"), CancellationToken.None)
         );
 
         // Assert
@@ -545,9 +518,9 @@ public class MediatorTests
         var mediator = CreateMediator<TestQueryHandler>(_ => { });
 
         // Act
-        var first = await mediator.Send(new TestQuery(1), CancellationToken.None);
-        var second = await mediator.Send(new TestQuery(2), CancellationToken.None);
-        var third = await mediator.Send(new TestQuery(3), CancellationToken.None);
+        var first = await mediator.SendAsync(new TestQuery(1), CancellationToken.None);
+        var second = await mediator.SendAsync(new TestQuery(2), CancellationToken.None);
+        var third = await mediator.SendAsync(new TestQuery(3), CancellationToken.None);
 
         // Assert
         Assert.Equal(2, first.Value);
@@ -605,8 +578,6 @@ public class MediatorTests
 
 public class TestNotificationHandler(Action action) : INotificationHandler<TestNotification>
 {
-    public Task Handle(TestNotification notification, CancellationToken ct) => this.HandleAsync(notification, ct);
-
     public Task HandleAsync(TestNotification notification, CancellationToken ct)
     {
         action();

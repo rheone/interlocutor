@@ -155,9 +155,6 @@ public class RegistrationApplierTests
 
     private sealed class MarkerBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     {
-        public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
-            this.HandleAsync(request, next, ct);
-
         public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) => next();
     }
 
@@ -183,8 +180,6 @@ public class RegistrationApplierTests
 
     private sealed class MarkerHandler : IQueryHandler<MarkerQuery, Outcome>
     {
-        public Task<Outcome> Handle(MarkerQuery query, CancellationToken ct) => this.HandleAsync(query, ct);
-
         public Task<Outcome> HandleAsync(MarkerQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 
@@ -192,8 +187,6 @@ public class RegistrationApplierTests
 
     private sealed class MarkerGeneratedHandler : IQueryHandler<MarkerGeneratedQuery, Outcome>
     {
-        public Task<Outcome> Handle(MarkerGeneratedQuery query, CancellationToken ct) => this.HandleAsync(query, ct);
-
         public Task<Outcome> HandleAsync(MarkerGeneratedQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 
@@ -201,8 +194,6 @@ public class RegistrationApplierTests
 
     private sealed class MarkerMatchedHandler : IQueryHandler<MarkerMatchedQuery, Outcome>
     {
-        public Task<Outcome> Handle(MarkerMatchedQuery query, CancellationToken ct) => this.HandleAsync(query, ct);
-
         public Task<Outcome> HandleAsync(MarkerMatchedQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 }

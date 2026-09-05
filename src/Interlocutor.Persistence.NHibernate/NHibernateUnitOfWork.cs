@@ -45,9 +45,6 @@ public sealed class NHibernateUnitOfWork(Lazy<ISession> session) : IUnitOfWork
     }
 
     /// <inheritdoc/>
-    public Task Cancel(CancellationToken cancellationToken = default) => this.CancelAsync(cancellationToken);
-
-    /// <inheritdoc/>
     /// <remarks>
     /// Rolls back and disposes the current transaction if one is active - mirroring
     /// <c>EntityFrameworkUnitOfWork{TContext}.CancelAsync</c>'s explicit, deterministic disposal rather than

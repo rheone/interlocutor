@@ -29,7 +29,7 @@ public sealed class UpdateTodoTaskHandlerTests
         var command = new UpdateTodoTaskCommand(42, "Buy oat milk", "Oat milk this time", "owner-1");
 
         // Act
-        var result = await this.handler.Handle(command, CancellationToken.None);
+        var result = await this.handler.HandleAsync(command, CancellationToken.None);
 
         // Assert
         var dto = Assert.IsType<TodoTaskDto>(result.Value);
@@ -48,7 +48,7 @@ public sealed class UpdateTodoTaskHandlerTests
         var command = new UpdateTodoTaskCommand(42, "Buy oat milk", null, "owner-1");
 
         // Act
-        var result = await this.handler.Handle(command, CancellationToken.None);
+        var result = await this.handler.HandleAsync(command, CancellationToken.None);
 
         // Assert
         Assert.IsType<NotFound>(result.Value);
@@ -67,7 +67,7 @@ public sealed class UpdateTodoTaskHandlerTests
         var command = new UpdateTodoTaskCommand(42, "Hijacked title", "Hijacked notes", "owner-2");
 
         // Act
-        var result = await this.handler.Handle(command, CancellationToken.None);
+        var result = await this.handler.HandleAsync(command, CancellationToken.None);
 
         // Assert
         Assert.IsType<Forbidden>(result.Value);

@@ -76,9 +76,9 @@ public sealed class DeleteUserCascadeTests : IClassFixture<TodoTasksApiFactory>
             var commitGate = new UnitOfWorkBehavior<DeleteUserCommand, Outcome<Success, NotFound>, TodoTasksDbContext>(context);
             var command = new DeleteUserCommand(deletedUserId);
 
-            var result = await commitGate.Handle(
+            var result = await commitGate.HandleAsync(
                 command,
-                () => handler.Handle(command, TestContext.Current.CancellationToken),
+                () => handler.HandleAsync(command, TestContext.Current.CancellationToken),
                 TestContext.Current.CancellationToken
             );
             Assert.True(result.IsSuccess);
@@ -128,9 +128,9 @@ public sealed class DeleteUserCascadeTests : IClassFixture<TodoTasksApiFactory>
             var commitGate = new UnitOfWorkBehavior<DeleteUserCommand, Outcome<Success, NotFound>, TodoTasksDbContext>(context);
             var command = new DeleteUserCommand(userId);
 
-            var result = await commitGate.Handle(
+            var result = await commitGate.HandleAsync(
                 command,
-                () => handler.Handle(command, TestContext.Current.CancellationToken),
+                () => handler.HandleAsync(command, TestContext.Current.CancellationToken),
                 TestContext.Current.CancellationToken
             );
             Assert.True(result.IsSuccess);
@@ -153,7 +153,7 @@ public sealed class DeleteUserCascadeTests : IClassFixture<TodoTasksApiFactory>
         var handler = new DeleteUserHandler(users, tasks, unitOfWork);
 
         // Act
-        var result = await handler.Handle(new DeleteUserCommand(999_999), TestContext.Current.CancellationToken);
+        var result = await handler.HandleAsync(new DeleteUserCommand(999_999), TestContext.Current.CancellationToken);
 
         // Assert
         Assert.IsType<NotFound>(result.Value);
@@ -236,7 +236,7 @@ public sealed class DeleteUserCascadeTests : IClassFixture<TodoTasksApiFactory>
             >(context);
             var command = new DeleteUserThenFailCommand(userId);
 
-            var result = await commitGate.Handle(
+            var result = await commitGate.HandleAsync(
                 command,
                 () => handler.Handle(command, TestContext.Current.CancellationToken),
                 TestContext.Current.CancellationToken

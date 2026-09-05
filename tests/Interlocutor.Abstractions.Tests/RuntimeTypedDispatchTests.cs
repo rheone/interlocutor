@@ -24,13 +24,11 @@ public record FailingQuery : IQuery<Outcome<int, Failure>>;
 /// <summary>Handler for <see cref="FailingQuery"/> - always fails.</summary>
 public class FailingQueryHandler : IQueryHandler<FailingQuery, Outcome<int, Failure>>
 {
-    public Task<Outcome<int, Failure>> Handle(FailingQuery query, CancellationToken ct) => this.HandleAsync(query, ct);
-
     public Task<Outcome<int, Failure>> HandleAsync(FailingQuery query, CancellationToken ct) =>
         Task.FromResult(new Outcome<int, Failure>(new Failure("boom")));
 }
 
-/// <summary>Tests for <see cref="ISender.Send(object, CancellationToken)"/> - the runtime-typed dispatch
+/// <summary>Tests for <see cref="ISender.SendAsync(object, CancellationToken)"/> - the runtime-typed dispatch
 /// overload used by infrastructure callers (outbox/inbox/queue consumers) that only have a deserialized
 /// <see cref="object"/>, not a statically-typed request.</summary>
 public class RuntimeTypedDispatchTests
@@ -45,7 +43,7 @@ public class RuntimeTypedDispatchTests
         object request = new TestQuery(21);
 
         // Act
-        var outcome = await sender.Send(request, CancellationToken.None);
+        var outcome = await sender.SendAsync(request, CancellationToken.None);
 
         // Assert
         Assert.IsType<IOutcome>(outcome, exactMatch: false);
@@ -79,7 +77,7 @@ public class RuntimeTypedDispatchTests
         object request = new TestQuery(21);
 
         // Act
-        await sender.Send(request, CancellationToken.None);
+        await sender.SendAsync(request, CancellationToken.None);
 
         // Assert
         Assert.Equal(["kept"], executed);
@@ -107,7 +105,7 @@ public class RuntimeTypedDispatchTests
         object request = new TestQuery(21);
 
         // Act
-        await sender.Send(request, CancellationToken.None);
+        await sender.SendAsync(request, CancellationToken.None);
 
         // Assert
         Assert.Equal(["kept"], executed);
@@ -123,7 +121,7 @@ public class RuntimeTypedDispatchTests
         object request = new GreetCommand("Ada");
 
         // Act
-        var outcome = await sender.Send(request, CancellationToken.None);
+        var outcome = await sender.SendAsync(request, CancellationToken.None);
 
         // Assert
         var union = Assert.IsType<IUnion>(outcome, exactMatch: false);
@@ -140,7 +138,7 @@ public class RuntimeTypedDispatchTests
         object request = new TestVoidCommand("test");
 
         // Act
-        var outcome = await sender.Send(request, CancellationToken.None);
+        var outcome = await sender.SendAsync(request, CancellationToken.None);
 
         // Assert
         var union = Assert.IsType<IUnion>(outcome, exactMatch: false);
@@ -157,7 +155,7 @@ public class RuntimeTypedDispatchTests
         object request = new FailingQuery();
 
         // Act
-        var outcome = await sender.Send(request, CancellationToken.None);
+        var outcome = await sender.SendAsync(request, CancellationToken.None);
 
         // Assert - The caller here only has IOutcome - no generic arguments, no knowledge of the
         // concrete Outcome<TSuccess, TFailure> shape. IUnion.Value is the union's case value, and
@@ -183,7 +181,9 @@ public class RuntimeTypedDispatchTests
         object request = new UnregisteredQuery(1);
 
         // Act
-        var ex = await Assert.ThrowsAsync<HandlerNotRegisteredException>(() => sender.Send(request, CancellationToken.None));
+        var ex = await Assert.ThrowsAsync<HandlerNotRegisteredException>(() =>
+            sender.SendAsync(request, CancellationToken.None)
+        );
 
         // Assert
         Assert.Equal(typeof(UnregisteredQuery), ex.RequestType);
@@ -198,7 +198,9 @@ public class RuntimeTypedDispatchTests
         object request = new UnregisteredVoidCommand();
 
         // Act
-        var ex = await Assert.ThrowsAsync<HandlerNotRegisteredException>(() => sender.Send(request, CancellationToken.None));
+        var ex = await Assert.ThrowsAsync<HandlerNotRegisteredException>(() =>
+            sender.SendAsync(request, CancellationToken.None)
+        );
 
         // Assert
         Assert.Equal(typeof(UnregisteredVoidCommand), ex.RequestType);
@@ -213,7 +215,7 @@ public class RuntimeTypedDispatchTests
 
         // Act
         var ex = await Assert.ThrowsAsync<UnsupportedRequestTypeException>(() =>
-            sender.Send("just a string, not a request", CancellationToken.None)
+            sender.SendAsync("just a string, not a request", CancellationToken.None)
         );
 
         // Assert
@@ -227,7 +229,7 @@ public class RuntimeTypedDispatchTests
         var sender = CreateSender(_ => { });
 
         // Act & Assert
-        return Assert.ThrowsAsync<ArgumentNullException>(() => sender.Send(null!, CancellationToken.None));
+        return Assert.ThrowsAsync<ArgumentNullException>(() => sender.SendAsync(null!, CancellationToken.None));
     }
 
     private static ISender CreateSender(Action<ServiceCollection> configure)

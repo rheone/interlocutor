@@ -9,7 +9,7 @@ using Interlocutor.Generator.Models;
 /// <summary>
 /// Emits <c>GeneratedRequestDispatcher</c> - a single <c>IGeneratedRequestDispatcher</c> implementation whose
 /// <c>Dispatch</c> method is a type switch on the runtime type of an untyped request, replacing the
-/// reflection <c>Mediator.Send(object, CancellationToken)</c> otherwise falls back to (ticket 09).
+/// reflection <c>Mediator.SendAsync(object, CancellationToken)</c> otherwise falls back to (ticket 09).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -26,7 +26,7 @@ using Interlocutor.Generator.Models;
 /// <para>
 /// Notification handlers are not part of this switch, for the same reason <see cref="DispatchWrapperEmitter"/>
 /// gives them no wrapper - a notification fans out to every registered handler outside the pipeline chain,
-/// and <c>ISender.Send(object, CancellationToken)</c> only ever dispatches queries and commands.
+/// and <c>ISender.SendAsync(object, CancellationToken)</c> only ever dispatches queries and commands.
 /// </para>
 /// </remarks>
 internal static class RequestDispatchSwitchEmitter

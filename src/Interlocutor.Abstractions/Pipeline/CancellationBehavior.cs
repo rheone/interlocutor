@@ -33,7 +33,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </para>
 /// <para>
 /// Only an <see cref="OperationCanceledException"/> tied to the ambient <see cref="CancellationToken"/>
-/// passed to <see cref="Handle"/> is converted - the catch clause is filtered to
+/// passed to <see cref="HandleAsync"/> is converted - the catch clause is filtered to
 /// <c>when (ct.IsCancellationRequested)</c>. Any other exception, and any
 /// <see cref="OperationCanceledException"/> whose cancellation is not tied to that token (for example, one
 /// raised by an unrelated <see cref="CancellationTokenSource"/> the handler created internally), propagates
@@ -65,7 +65,7 @@ public class CancellationBehavior<TRequest, TResponse>(IOutcomeCaseRegistry case
     /// Cancellation was observed, but <typeparamref name="TResponse"/> has no <see cref="Cancelled"/> case to
     /// construct - pair <see cref="ICancellable"/> only with response shapes that include one.
     /// </exception>
-    public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+    public async Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         try
         {

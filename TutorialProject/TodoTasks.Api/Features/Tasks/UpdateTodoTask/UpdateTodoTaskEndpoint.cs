@@ -28,7 +28,7 @@ public static class UpdateTodoTaskEndpoint
                     var requestedBy = contextAccessor.RequireUserId();
 
                     var result = await sender
-                        .Send(new UpdateTodoTaskCommand(id, request.Title, request.Notes, requestedBy), ct)
+                        .SendAsync(new UpdateTodoTaskCommand(id, request.Title, request.Notes, requestedBy), ct)
                         .ConfigureAwait(false);
                     return result.ToMinimalApiResult();
                 }

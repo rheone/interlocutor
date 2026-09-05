@@ -97,7 +97,7 @@ public sealed class MissingHandlerDiagnosticTests
 
             public sealed class GetFooQueryHandler : IQueryHandler<GetFooQuery, Outcome>
             {
-                public Task<Outcome> Handle(GetFooQuery query, CancellationToken ct) => throw new System.NotImplementedException();
+                public Task<Outcome> HandleAsync(GetFooQuery query, CancellationToken ct) => throw new System.NotImplementedException();
             }
             """;
 
@@ -172,7 +172,7 @@ public sealed class MissingHandlerDiagnosticTests
 
             public sealed class FooHappenedHandler : INotificationHandler<FooHappened>
             {
-                public Task Handle(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
+                public Task HandleAsync(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
             }
             """;
 
@@ -200,12 +200,12 @@ public sealed class MissingHandlerDiagnosticTests
 
             public sealed class FooHappenedHandlerOne : INotificationHandler<FooHappened>
             {
-                public Task Handle(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
+                public Task HandleAsync(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
             }
 
             public sealed class FooHappenedHandlerTwo : INotificationHandler<FooHappened>
             {
-                public Task Handle(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
+                public Task HandleAsync(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
             }
             """;
 
@@ -232,12 +232,12 @@ public sealed class MissingHandlerDiagnosticTests
 
             public sealed class GetFooQueryHandlerOne : IQueryHandler<GetFooQuery, Outcome>
             {
-                public Task<Outcome> Handle(GetFooQuery query, CancellationToken ct) => throw new System.NotImplementedException();
+                public Task<Outcome> HandleAsync(GetFooQuery query, CancellationToken ct) => throw new System.NotImplementedException();
             }
 
             public sealed class GetFooQueryHandlerTwo : IQueryHandler<GetFooQuery, Outcome>
             {
-                public Task<Outcome> Handle(GetFooQuery query, CancellationToken ct) => throw new System.NotImplementedException();
+                public Task<Outcome> HandleAsync(GetFooQuery query, CancellationToken ct) => throw new System.NotImplementedException();
             }
             """;
 
@@ -268,12 +268,12 @@ public sealed class MissingHandlerDiagnosticTests
 
             public sealed class CreateFooCommandHandlerOne : ICommandHandler<CreateFooCommand, Outcome>
             {
-                public Task<Outcome> Handle(CreateFooCommand command, CancellationToken ct) => throw new System.NotImplementedException();
+                public Task<Outcome> HandleAsync(CreateFooCommand command, CancellationToken ct) => throw new System.NotImplementedException();
             }
 
             public sealed class CreateFooCommandHandlerTwo : ICommandHandler<CreateFooCommand, Outcome>
             {
-                public Task<Outcome> Handle(CreateFooCommand command, CancellationToken ct) => throw new System.NotImplementedException();
+                public Task<Outcome> HandleAsync(CreateFooCommand command, CancellationToken ct) => throw new System.NotImplementedException();
             }
             """;
 

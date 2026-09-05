@@ -267,30 +267,6 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<RealSessionFixture>
         this.AssertNotPersisted(widget.Id);
     }
 
-    [Fact]
-    public async Task Handle_ForwardsToHandleAsync()
-    {
-        // Arrange
-        using var session = this.fixture.OpenSession();
-        var behavior = CreateBehavior(session);
-        var widget = new Widget();
-
-        // Act - calling the superseded member must still commit a real write, just like HandleAsync.
-        var result = await behavior.Handle(
-            new PlainRequest(),
-            async () =>
-            {
-                await session.SaveAsync(widget, CancellationToken.None).ConfigureAwait(false);
-                return default(Success);
-            },
-            CancellationToken.None
-        );
-
-        // Assert
-        Assert.True(result.IsSuccess);
-        this.AssertPersisted(widget.Id);
-    }
-
     /// <summary>Opens a fresh session and asserts a <see cref="Widget"/> with the given id was actually committed.</summary>
     private void AssertPersisted(Guid widgetId)
     {

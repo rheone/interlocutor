@@ -30,7 +30,7 @@ public class AuditingBehaviorTests
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert
         Assert.Equal("success", result);
@@ -56,7 +56,7 @@ public class AuditingBehaviorTests
         }
 
         // Act
-        await behavior.Handle(request, Next, CancellationToken.None);
+        await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert
         await sink.Received(1).RecordAsync(Arg.Is<AuditEntry>(e => e.ActionName == "Query.Read"), CancellationToken.None);
@@ -75,7 +75,7 @@ public class AuditingBehaviorTests
         }
 
         // Act
-        await behavior.Handle(request, Next, CancellationToken.None);
+        await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert
         await sink.Received(1).RecordAsync(Arg.Is<AuditEntry>(e => e.RequestType == "AuditableQuery"), CancellationToken.None);
@@ -95,7 +95,7 @@ public class AuditingBehaviorTests
         }
 
         // Act
-        await behavior.Handle(request, Next, CancellationToken.None);
+        await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert
         await sink.Received(1).RecordAsync(Arg.Is<AuditEntry>(e => e.Outcome == "Failure"), CancellationToken.None);
@@ -122,7 +122,7 @@ public class AuditingBehaviorTests
             .AndDoes(_ => callOrder.Add("audit"));
 
         // Act
-        await behavior.Handle(request, Next, CancellationToken.None);
+        await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert - Handler should be called before audit is recorded
         Assert.Equal(Expected, callOrder);
@@ -143,7 +143,7 @@ public class AuditingBehaviorTests
         var beforeCall = DateTime.UtcNow;
 
         // Act
-        await behavior.Handle(request, Next, CancellationToken.None);
+        await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         var afterCall = DateTime.UtcNow;
 
@@ -169,7 +169,7 @@ public class AuditingBehaviorTests
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert
         Assert.Equal(expectedResponse, result);
@@ -189,7 +189,7 @@ public class AuditingBehaviorTests
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert
         Assert.Equal(expectedValue, result);
@@ -208,7 +208,7 @@ public class AuditingBehaviorTests
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert
         Assert.Null(result);
@@ -230,7 +230,7 @@ public class AuditingBehaviorTests
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert - the response is unaffected, and UserId flows through end-to-end from the accessor.
         Assert.Equal("response", result);
@@ -252,7 +252,7 @@ public class AuditingBehaviorTests
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert - no exception, auditing still succeeds, UserId stays null.
         Assert.Equal("response", result);
@@ -273,7 +273,7 @@ public class AuditingBehaviorTests
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert - no exception, auditing still succeeds, UserId stays null.
         Assert.Equal("response", result);
@@ -291,7 +291,7 @@ public class AuditingBehaviorTests
         static Task<Outcome<string?, Failure>> Next() => Task.FromResult<Outcome<string?, Failure>>((string?)null);
 
         // Act
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert
         Assert.True(result.IsSuccess);

@@ -110,9 +110,6 @@ public class ContainerBuilderExtensionsTests
     /// </summary>
     private sealed class ClosedMatchedBehavior : IPipelineBehavior<MatchedRequest, Outcome>
     {
-        public Task<Outcome> Handle(MatchedRequest request, Func<Task<Outcome>> next, CancellationToken ct) =>
-            this.HandleAsync(request, next, ct);
-
         public Task<Outcome> HandleAsync(MatchedRequest request, Func<Task<Outcome>> next, CancellationToken ct) => next();
     }
 

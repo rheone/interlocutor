@@ -47,7 +47,7 @@ public class PipelineOverrideParityTests
         var mediator = scope.Resolve<IMediator>();
 
         // Act
-        await mediator.Send(new OverriddenCommand("test"), CancellationToken.None);
+        await mediator.SendAsync(new OverriddenCommand("test"), CancellationToken.None);
 
         // Assert
         Assert.Equal(["kept"], log.Entries);
@@ -71,7 +71,7 @@ public class PipelineOverrideParityTests
 
         // Act - UnrelatedCommand is not matched by the override rule, so it must draw from the unaffected
         // general-purpose baseline: DroppedOverrideBehavior, registered unconstrained.
-        await mediator.Send(new UnrelatedCommand("test"), CancellationToken.None);
+        await mediator.SendAsync(new UnrelatedCommand("test"), CancellationToken.None);
 
         // Assert
         Assert.Equal(["dropped"], log.Entries);
@@ -98,7 +98,7 @@ public class PipelineOverrideParityTests
         var mediator = scope.Resolve<IMediator>();
 
         // Act
-        await mediator.Send(new AuditableOverriddenCommand("test"), CancellationToken.None);
+        await mediator.SendAsync(new AuditableOverriddenCommand("test"), CancellationToken.None);
 
         // Assert
         Assert.Equal(["kept"], log.Entries);
@@ -126,9 +126,6 @@ public class PipelineOverrideParityTests
     private sealed class KeptOverrideBehavior<TRequest, TResponse>(ExecutionLog log) : IPipelineBehavior<TRequest, TResponse>
         where TRequest : IOverrideTarget
     {
-        public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
-            this.HandleAsync(request, next, ct);
-
         public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
         {
             log.Entries.Add("kept");
@@ -138,9 +135,6 @@ public class PipelineOverrideParityTests
 
     private sealed class DroppedOverrideBehavior<TRequest, TResponse>(ExecutionLog log) : IPipelineBehavior<TRequest, TResponse>
     {
-        public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
-            this.HandleAsync(request, next, ct);
-
         public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
         {
             log.Entries.Add("dropped");
@@ -167,9 +161,6 @@ public class PipelineOverrideParityTests
 #pragma warning disable S1144
     private sealed class OverriddenCommandHandler : ICommandHandler<OverriddenCommand, Outcome<string, Forbidden>>
     {
-        public Task<Outcome<string, Forbidden>> Handle(OverriddenCommand command, CancellationToken ct) =>
-            this.HandleAsync(command, ct);
-
         public Task<Outcome<string, Forbidden>> HandleAsync(OverriddenCommand command, CancellationToken ct) =>
             Task.FromResult(new Outcome<string, Forbidden>(command.Name));
     }
@@ -178,9 +169,6 @@ public class PipelineOverrideParityTests
 
     private sealed class UnrelatedCommandHandler : ICommandHandler<UnrelatedCommand, Outcome<string, Forbidden>>
     {
-        public Task<Outcome<string, Forbidden>> Handle(UnrelatedCommand command, CancellationToken ct) =>
-            this.HandleAsync(command, ct);
-
         public Task<Outcome<string, Forbidden>> HandleAsync(UnrelatedCommand command, CancellationToken ct) =>
             Task.FromResult(new Outcome<string, Forbidden>(command.Name));
     }
@@ -196,7 +184,7 @@ public class PipelineOverrideParityTests
     private sealed class AuditableOverriddenCommandHandler
         : ICommandHandler<AuditableOverriddenCommand, Outcome<string, Forbidden>>
     {
-        public Task<Outcome<string, Forbidden>> Handle(AuditableOverriddenCommand command, CancellationToken ct) =>
+        public Task<Outcome<string, Forbidden>> HandleAsync(AuditableOverriddenCommand command, CancellationToken ct) =>
             Task.FromResult(new Outcome<string, Forbidden>(command.Name));
     }
 #pragma warning restore S1144

@@ -19,8 +19,7 @@ namespace Interlocutor.Abstractions.Pipeline;
 public interface IPipelineBehavior<TRequest, TResponse>
 {
     /// <summary>
-    /// Processes the request and invokes the next handler in the pipeline. Superseded by
-    /// <see cref="HandleAsync"/> - implement that member in new behaviors instead.
+    /// Processes the request and invokes the next handler in the pipeline.
     /// </summary>
     /// <param name="request">The incoming request to process.</param>
     /// <param name="next">The next delegate in the pipeline chain to invoke.</param>
@@ -29,29 +28,5 @@ public interface IPipelineBehavior<TRequest, TResponse>
     /// A task that represents the asynchronous operation. The task result contains
     /// the handler result or an error if the behavior short-circuits the pipeline.
     /// </returns>
-    /// <remarks>
-    /// Carries no <c>Async</c> suffix despite returning a <see cref="Task{TResult}"/>, unlike the rest of this
-    /// codebase's awaitable-returning members - <see cref="HandleAsync"/> carries the suffix instead. Existing
-    /// implementations of this member keep working - the default <see cref="HandleAsync"/> forwards to it - but
-    /// new behaviors should implement <see cref="HandleAsync"/> instead.
-    /// </remarks>
-    Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct);
-
-    /// <summary>
-    /// The preferred, <c>Async</c>-suffixed member going forward: processes the request and invokes the next
-    /// handler in the pipeline.
-    /// </summary>
-    /// <param name="request">The incoming request to process.</param>
-    /// <param name="next">The next delegate in the pipeline chain to invoke.</param>
-    /// <param name="ct">Cancellation token that propagates cancellation notifications.</param>
-    /// <returns>
-    /// A task that represents the asynchronous operation. The task result contains
-    /// the handler result or an error if the behavior short-circuits the pipeline.
-    /// </returns>
-    /// <remarks>
-    /// The default implementation forwards to <see cref="Handle"/> so every existing implementer keeps
-    /// compiling and behaving identically until it migrates to overriding this member instead.
-    /// </remarks>
-    Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
-        this.Handle(request, next, ct);
+    Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct);
 }

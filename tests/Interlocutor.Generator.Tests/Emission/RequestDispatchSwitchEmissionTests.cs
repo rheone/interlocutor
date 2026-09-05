@@ -22,7 +22,7 @@ public sealed class RequestDispatchSwitchEmissionTests
 
         public sealed class GetFooQueryHandler : IQueryHandler<GetFooQuery, Outcome>
         {
-            public Task<Outcome> Handle(GetFooQuery query, CancellationToken ct) => throw new System.NotImplementedException();
+            public Task<Outcome> HandleAsync(GetFooQuery query, CancellationToken ct) => throw new System.NotImplementedException();
         }
         """;
 

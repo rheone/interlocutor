@@ -46,9 +46,6 @@ public sealed class EntityFrameworkUnitOfWork<TContext>(Lazy<TContext> context) 
     }
 
     /// <inheritdoc/>
-    public Task Cancel(CancellationToken cancellationToken = default) => this.CancelAsync(cancellationToken);
-
-    /// <inheritdoc/>
     /// <remarks>
     /// Rolls back and disposes <c>Database.CurrentTransaction</c> if one is open, then clears the change
     /// tracker (<c>ChangeTracker.Clear()</c>) so nothing staged during this dispatch remains pending - the

@@ -43,7 +43,7 @@ public sealed class CrossAssemblyContainerResolutionTests
 
         public sealed class GetGreetingQueryHandler(IGreeter greeter) : IQueryHandler<GetGreetingQuery, Outcome<string, Failure>>
         {
-            public Task<Outcome<string, Failure>> Handle(GetGreetingQuery query, CancellationToken ct) =>
+            public Task<Outcome<string, Failure>> HandleAsync(GetGreetingQuery query, CancellationToken ct) =>
                 Task.FromResult(new Outcome<string, Failure>(greeter.Greet()));
         }
         """;
@@ -77,7 +77,7 @@ public sealed class CrossAssemblyContainerResolutionTests
         var request = app.CreateRequest();
 
         // Act
-        var outcome = await mediator.Send(request, TestContext.Current.CancellationToken);
+        var outcome = await mediator.SendAsync(request, TestContext.Current.CancellationToken);
 
         // Assert
         AssertSuccessfulGreeting(outcome);
@@ -101,7 +101,7 @@ public sealed class CrossAssemblyContainerResolutionTests
         var request = app.CreateRequest();
 
         // Act
-        var outcome = await mediator.Send(request, TestContext.Current.CancellationToken);
+        var outcome = await mediator.SendAsync(request, TestContext.Current.CancellationToken);
 
         // Assert
         AssertSuccessfulGreeting(outcome);
@@ -152,7 +152,7 @@ public sealed class CrossAssemblyContainerResolutionTests
     }
 
     /// <summary>
-    /// <see cref="ISender.Send(object, System.Threading.CancellationToken)"/>'s runtime-typed overload
+    /// <see cref="ISender.SendAsync(object, System.Threading.CancellationToken)"/>'s runtime-typed overload
     /// returns the marker <see cref="IOutcome"/> (compile-time common ground with the caller); the
     /// concrete case is read back by reflection over the boxed union value's own <c>IsSuccess</c>/<c>Value</c>
     /// members, since the caller has no compile-time reference to the library's own success/failure types.

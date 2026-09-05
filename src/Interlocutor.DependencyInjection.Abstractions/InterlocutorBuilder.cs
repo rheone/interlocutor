@@ -68,7 +68,7 @@ using Interlocutor.Abstractions.Queries;
 /// </para>
 /// <list type="bullet">
 /// <item><description>
-/// <b>Default publish strategy.</b> <c>Mediator.Publish</c>'s parameterless overload hard-codes
+/// <b>Default publish strategy.</b> <c>Mediator.PublishAsync</c>'s parameterless overload hard-codes
 /// <c>PublishStrategy.Sequential</c>; making that configurable is a change to dispatch behavior in
 /// <c>Interlocutor.Abstractions</c>, not a registration concern this container-neutral builder owns. The
 /// existing <c>Publish(notification, strategy, ct)</c> overload already gives every call site an explicit

@@ -35,7 +35,7 @@ public sealed class CompleteTodoTaskHandlerTests
         var command = new CompleteTodoTaskCommand(1, "owner-1");
 
         // Act
-        var result = await this.handler.Handle(command, CancellationToken.None);
+        var result = await this.handler.HandleAsync(command, CancellationToken.None);
 
         // Assert
         var dto = Assert.IsType<TodoTaskDto>(result.Value);
@@ -45,7 +45,7 @@ public sealed class CompleteTodoTaskHandlerTests
         // Persist first, publish second - the guide's own stated ordering.
         await this
             .publisher.Received(1)
-            .Publish(
+            .PublishAsync(
                 Arg.Is<TodoTaskCompletedNotification>(n =>
                     n.TodoTaskId == 1 && n.OwnerId == "owner-1" && n.Title == "Buy milk"
                 ),
@@ -62,13 +62,15 @@ public sealed class CompleteTodoTaskHandlerTests
         var command = new CompleteTodoTaskCommand(1, "owner-1");
 
         // Act
-        var result = await this.handler.Handle(command, CancellationToken.None);
+        var result = await this.handler.HandleAsync(command, CancellationToken.None);
 
         // Assert
         var conflict = Assert.IsType<Conflict>(result.Value);
         Assert.Equal("already_completed", conflict.Code);
         await this.unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
-        await this.publisher.DidNotReceive().Publish(Arg.Any<TodoTaskCompletedNotification>(), Arg.Any<CancellationToken>());
+        await this
+            .publisher.DidNotReceive()
+            .PublishAsync(Arg.Any<TodoTaskCompletedNotification>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -80,13 +82,15 @@ public sealed class CompleteTodoTaskHandlerTests
         var command = new CompleteTodoTaskCommand(1, "owner-2");
 
         // Act
-        var result = await this.handler.Handle(command, CancellationToken.None);
+        var result = await this.handler.HandleAsync(command, CancellationToken.None);
 
         // Assert
         Assert.IsType<Forbidden>(result.Value);
         Assert.False(task.IsCompleted);
         await this.unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
-        await this.publisher.DidNotReceive().Publish(Arg.Any<TodoTaskCompletedNotification>(), Arg.Any<CancellationToken>());
+        await this
+            .publisher.DidNotReceive()
+            .PublishAsync(Arg.Any<TodoTaskCompletedNotification>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -97,7 +101,7 @@ public sealed class CompleteTodoTaskHandlerTests
         var command = new CompleteTodoTaskCommand(1, "owner-1");
 
         // Act
-        var result = await this.handler.Handle(command, CancellationToken.None);
+        var result = await this.handler.HandleAsync(command, CancellationToken.None);
 
         // Assert
         Assert.IsType<NotFound>(result.Value);

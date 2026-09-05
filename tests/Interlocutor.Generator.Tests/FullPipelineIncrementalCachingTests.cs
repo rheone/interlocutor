@@ -38,7 +38,7 @@ public sealed class FullPipelineIncrementalCachingTests
 
         public sealed class GetFooQueryHandler : IQueryHandler<GetFooQuery, Outcome>
         {
-            public Task<Outcome> Handle(GetFooQuery query, CancellationToken ct) => throw new System.NotImplementedException();
+            public Task<Outcome> HandleAsync(GetFooQuery query, CancellationToken ct) => throw new System.NotImplementedException();
         }
 
         public sealed class GenericQuery<T> : IQuery<Outcome<T, string>>;
@@ -46,7 +46,7 @@ public sealed class FullPipelineIncrementalCachingTests
         public sealed class GenericQueryHandler<T> : IQueryHandler<GenericQuery<T>, Outcome<T, string>>
             where T : IEntity, new()
         {
-            public Task<Outcome<T, string>> Handle(GenericQuery<T> query, CancellationToken ct) =>
+            public Task<Outcome<T, string>> HandleAsync(GenericQuery<T> query, CancellationToken ct) =>
                 throw new System.NotImplementedException();
         }
 
@@ -75,7 +75,7 @@ public sealed class FullPipelineIncrementalCachingTests
 
         public sealed class GetBarQueryHandler : IQueryHandler<GetBarQuery, Outcome>
         {
-            public Task<Outcome> Handle(GetBarQuery query, CancellationToken ct) => throw new System.NotImplementedException();
+            public Task<Outcome> HandleAsync(GetBarQuery query, CancellationToken ct) => throw new System.NotImplementedException();
         }
         """;
 
@@ -94,7 +94,7 @@ public sealed class FullPipelineIncrementalCachingTests
 
         public sealed class GetBarQueryHandler : IQueryHandler<GetBarQuery, Outcome>
         {
-            public Task<Outcome> Handle(GetBarQuery query, CancellationToken ct)
+            public Task<Outcome> HandleAsync(GetBarQuery query, CancellationToken ct)
             {
                 throw new System.NotImplementedException();
             }

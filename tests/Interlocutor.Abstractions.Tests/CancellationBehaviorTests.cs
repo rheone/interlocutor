@@ -32,7 +32,7 @@ public class CancellationBehaviorTests
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, ct);
+        var result = await behavior.HandleAsync(request, Next, ct);
 
         // Assert
         Assert.IsType<Cancelled>(result.Value);
@@ -52,7 +52,7 @@ public class CancellationBehaviorTests
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert
         Assert.Equal("success", result.Value);
@@ -77,7 +77,7 @@ public class CancellationBehaviorTests
 
         // Act / Assert - a non-cancellation exception is not converted, even though the ambient token is
         // cancelled.
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => behavior.Handle(request, Next, ct));
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => behavior.HandleAsync(request, Next, ct));
         Assert.Equal("boom", ex.Message);
     }
 
@@ -103,7 +103,7 @@ public class CancellationBehaviorTests
 
         // Act / Assert
         var ambientCt = CancellationToken.None;
-        var ex = await Assert.ThrowsAsync<OperationCanceledException>(() => behavior.Handle(request, Next, ambientCt));
+        var ex = await Assert.ThrowsAsync<OperationCanceledException>(() => behavior.HandleAsync(request, Next, ambientCt));
         Assert.Equal(unrelatedToken, ex.CancellationToken);
     }
 
@@ -130,7 +130,7 @@ public class CancellationBehaviorTests
         }
 
         // Act
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => behavior.Handle(request, Next, ct));
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => behavior.HandleAsync(request, Next, ct));
 
         // Assert
         Assert.Contains("Cancelled", ex.Message);
@@ -158,7 +158,7 @@ public class CancellationBehaviorTests
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, ct);
+        var result = await behavior.HandleAsync(request, Next, ct);
 
         // Assert
         Assert.Equal(typeof(Cancelled), result.CaseType);

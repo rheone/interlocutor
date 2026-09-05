@@ -47,7 +47,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 /// or <see cref="EntityFrameworkUnitOfWork{TContext}.SaveChangesAsync"/>. At pipeline completion,
 /// <see cref="CommitGateDriver"/> checks <c>Database.CurrentTransaction</c> and <c>ChangeTracker.HasChanges()</c>
 /// via <see cref="EntityFrameworkCommitGateSession"/> - if neither indicates pending work, the dispatch never
-/// wrote anything (or an explicit <see cref="IUnitOfWork.Cancel"/> already cleaned up) and nothing further
+/// wrote anything (or an explicit <see cref="IUnitOfWork.CancelAsync"/> already cleaned up) and nothing further
 /// happens, so a pure-read dispatch never pays for an open transaction.
 /// </para>
 /// <para>
@@ -87,10 +87,6 @@ public class UnitOfWorkBehavior<TRequest, TResponse, TContext>(
 
     private readonly ILogger<UnitOfWorkBehavior<TRequest, TResponse, TContext>> logger =
         logger ?? NullLogger<UnitOfWorkBehavior<TRequest, TResponse, TContext>>.Instance;
-
-    /// <inheritdoc/>
-    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
-        this.HandleAsync(request, next, ct);
 
     /// <inheritdoc/>
     public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>

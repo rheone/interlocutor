@@ -50,9 +50,9 @@ public sealed class ReorderedPipelineCompositionTests
         }
 
         // Act - Authorization registered first -> outermost, so its ingress runs before Validation's ever does.
-        var result = await authorization.Handle(
+        var result = await authorization.HandleAsync(
             request,
-            () => validation.Handle(request, Handler, TestContext.Current.CancellationToken),
+            () => validation.HandleAsync(request, Handler, TestContext.Current.CancellationToken),
             TestContext.Current.CancellationToken
         );
 
@@ -86,9 +86,9 @@ public sealed class ReorderedPipelineCompositionTests
         }
 
         // Act - Validation registered first this time -> outermost, so its ingress runs before Authorization's.
-        var result = await validation.Handle(
+        var result = await validation.HandleAsync(
             request,
-            () => authorization.Handle(request, Handler, TestContext.Current.CancellationToken),
+            () => authorization.HandleAsync(request, Handler, TestContext.Current.CancellationToken),
             TestContext.Current.CancellationToken
         );
 

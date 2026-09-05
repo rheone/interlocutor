@@ -117,7 +117,7 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<EntityFrameworkTestF
         // Act
         var result = await behavior.HandleAsync(
             command,
-            () => resourceHandler.Handle(command, CancellationToken.None),
+            () => resourceHandler.HandleAsync(command, CancellationToken.None),
             CancellationToken.None
         );
 
@@ -271,31 +271,6 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<EntityFrameworkTestF
         // ... but the injected classifier said "failure", so the behavior rolled back instead of committing.
         await using var verify = this.CreateVerificationContext();
         Assert.Empty(verify.Widgets);
-    }
-
-    [Fact]
-    public async Task Handle_ForwardsToHandleAsync()
-    {
-        // Arrange
-        var behavior = this.CreateBehavior();
-
-        // Act - calling the superseded member must still commit a real write, just like HandleAsync.
-        var result = await behavior.Handle(
-            new PlainRequest(),
-            async () =>
-            {
-                await this
-                    .context.Widgets.AddAsync(new Widget { Name = "via-handle" }, CancellationToken.None)
-                    .ConfigureAwait(false);
-                return default(Success);
-            },
-            CancellationToken.None
-        );
-
-        // Assert
-        Assert.True(result.IsSuccess);
-        await using var verify = this.CreateVerificationContext();
-        Assert.Equal(["via-handle"], verify.Widgets.Select(w => w.Name));
     }
 
     public void Dispose()

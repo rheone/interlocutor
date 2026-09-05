@@ -210,7 +210,7 @@ public class FluentValidationErrorsBehaviorTests
             Task.FromResult<Outcome<string, FluentValidationErrors>>(new Outcome<string, FluentValidationErrors>("success"));
 
         // Act - calling the superseded member must produce the same validation-failure behavior as HandleAsync.
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert
         Assert.IsType<FluentValidationErrors>(result.Value);

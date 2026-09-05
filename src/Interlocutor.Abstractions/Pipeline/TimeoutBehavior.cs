@@ -20,7 +20,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </typeparam>
 /// <remarks>
 /// <para>
-/// <b>This behavior can only report a timeout, not enforce one.</b> <see cref="IPipelineBehavior{TRequest, TResponse}.Handle"/>'s
+/// <b>This behavior can only report a timeout, not enforce one.</b> <see cref="IPipelineBehavior{TRequest, TResponse}.HandleAsync"/>'s
 /// <c>next</c> parameter is a parameterless <c>Func&lt;Task&lt;TResponse&gt;&gt;</c> - there is no way to hand
 /// it a linked, shorter-lived token, so there is no way to ask the handler (or any inner behavior) to actually
 /// stop. When the budget elapses first, this behavior returns a <see cref="Timeout"/> response to the caller,
@@ -68,7 +68,7 @@ public class TimeoutBehavior<TRequest, TResponse>(ITimeoutPolicy timeoutPolicy, 
     /// The budget elapsed, but <typeparamref name="TResponse"/> has no <see cref="Timeout"/> case to
     /// construct - pair <see cref="IHasTimeout"/> only with response shapes that include one.
     /// </exception>
-    public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+    public async Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         var budget = timeoutPolicy.ResolveBudget(request);
         var stopwatch = Stopwatch.StartNew();

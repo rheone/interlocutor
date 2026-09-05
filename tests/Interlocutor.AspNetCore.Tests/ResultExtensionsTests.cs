@@ -116,7 +116,7 @@ public class ResultExtensionsTests
         );
 
         // Act
-        var result = await behavior.Handle(
+        var result = await behavior.HandleAsync(
             request,
             () => throw new InvalidOperationException("The handler must not run - validation should short-circuit first."),
             CancellationToken.None

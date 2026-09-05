@@ -33,7 +33,7 @@ internal sealed class ParallelNotificationHandlerWrapper<
         // independent. If any handler throws, all tasks are awaited and exceptions are aggregated into
         // an AggregateException (all-or-nothing failure semantics). Use this for performance-critical
         // notifications where order doesn't matter.
-        var tasks = handlers.Select(h => h.Handle(typedNotification, ct));
+        var tasks = handlers.Select(h => h.HandleAsync(typedNotification, ct));
         return Task.WhenAll(tasks);
     }
 }

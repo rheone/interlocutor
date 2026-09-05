@@ -51,7 +51,7 @@ public sealed class GeneratedDispatchSwitchOverrideTests
         object request = new GeneratedSwitchOverriddenQuery(21);
 
         // Act
-        await sender.Send(request, TestContext.Current.CancellationToken);
+        await sender.SendAsync(request, TestContext.Current.CancellationToken);
 
         // Assert - "dropped" must never appear: this request is matched by the override rule, so only the
         // declared KeptGeneratedSwitchBehavior may run, in place of the general-purpose baseline entirely.
@@ -85,7 +85,7 @@ public sealed class GeneratedDispatchSwitchOverrideTests
         object request = new GeneratedSwitchUnrelatedQuery(7);
 
         // Act
-        await sender.Send(request, TestContext.Current.CancellationToken);
+        await sender.SendAsync(request, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(["dropped"], log);
@@ -98,9 +98,6 @@ public sealed class GeneratedDispatchSwitchOverrideTests
     public sealed class GeneratedSwitchUnrelatedQueryHandler
         : IQueryHandler<GeneratedSwitchUnrelatedQuery, Outcome<int, Failure>>
     {
-        public Task<Outcome<int, Failure>> Handle(GeneratedSwitchUnrelatedQuery query, CancellationToken ct) =>
-            this.HandleAsync(query, ct);
-
         public Task<Outcome<int, Failure>> HandleAsync(GeneratedSwitchUnrelatedQuery query, CancellationToken ct) =>
             Task.FromResult<Outcome<int, Failure>>(query.Value * 2);
     }
@@ -108,9 +105,6 @@ public sealed class GeneratedDispatchSwitchOverrideTests
     public sealed class GeneratedSwitchOverriddenQueryHandler
         : IQueryHandler<GeneratedSwitchOverriddenQuery, Outcome<int, Failure>>
     {
-        public Task<Outcome<int, Failure>> Handle(GeneratedSwitchOverriddenQuery query, CancellationToken ct) =>
-            this.HandleAsync(query, ct);
-
         public Task<Outcome<int, Failure>> HandleAsync(GeneratedSwitchOverriddenQuery query, CancellationToken ct) =>
             Task.FromResult<Outcome<int, Failure>>(query.Value * 2);
     }
@@ -119,9 +113,6 @@ public sealed class GeneratedDispatchSwitchOverrideTests
         : IPipelineBehavior<TRequest, TResponse>
         where TRequest : IOverrideTarget
     {
-        public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
-            this.HandleAsync(request, next, ct);
-
         public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
         {
             log.Add("kept");
@@ -132,9 +123,6 @@ public sealed class GeneratedDispatchSwitchOverrideTests
     public sealed class DroppedGeneratedSwitchBehavior<TRequest, TResponse>(List<string> log)
         : IPipelineBehavior<TRequest, TResponse>
     {
-        public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
-            this.HandleAsync(request, next, ct);
-
         public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
         {
             log.Add("dropped");

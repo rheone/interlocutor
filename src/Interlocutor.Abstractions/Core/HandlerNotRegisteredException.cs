@@ -1,7 +1,7 @@
 namespace Interlocutor.Abstractions.Core;
 
 /// <summary>
-/// Thrown by runtime-typed dispatch (<see cref="ISender.Send(object, CancellationToken)"/>) when the
+/// Thrown by runtime-typed dispatch (<see cref="ISender.SendAsync(object, CancellationToken)"/>) when the
 /// request's own type is a recognized request shape (it closes <c>IQuery&lt;TResponse&gt;</c>,
 /// <c>ICommand&lt;TResponse&gt;</c>, or implements <c>ICommand</c>) but no handler for it is registered in
 /// the service provider.
@@ -13,7 +13,7 @@ namespace Interlocutor.Abstractions.Core;
 /// (register the handler); an unsupported type is a caller bug (don't dispatch it as a request).
 /// </para>
 /// <para>
-/// Typed dispatch (<see cref="ISender.Send{TResponse}(Queries.IQuery{TResponse}, CancellationToken)"/> and
+/// Typed dispatch (<see cref="ISender.SendAsync{TResponse}(Queries.IQuery{TResponse}, CancellationToken)"/> and
 /// its command overloads) surfaces a missing handler as the DI container's own generic
 /// <see cref="InvalidOperationException"/> from <c>GetRequiredService</c>. Runtime-typed dispatch checks
 /// registration explicitly beforehand so infrastructure callers (outbox/inbox/queue consumers) get a

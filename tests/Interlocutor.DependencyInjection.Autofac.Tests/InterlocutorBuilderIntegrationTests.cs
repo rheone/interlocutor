@@ -179,7 +179,7 @@ public class InterlocutorBuilderIntegrationTests
         var mediator = scope.Resolve<IMediator>();
 
         // Act
-        await mediator.Send(new SampleQuery(), TestContext.Current.CancellationToken);
+        await mediator.SendAsync(new SampleQuery(), TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(["first-before", "second-before", "second-after", "first-after"], executionLog);
@@ -206,7 +206,7 @@ public class InterlocutorBuilderIntegrationTests
         var mediator = scope.Resolve<IMediator>();
 
         // Act
-        await mediator.Send(new SampleQuery(), TestContext.Current.CancellationToken);
+        await mediator.SendAsync(new SampleQuery(), TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(["first-before", "first-before", "first-after", "first-after"], executionLog);
@@ -273,7 +273,7 @@ public class InterlocutorBuilderIntegrationTests
 
         // Act: the response flows out of the mediator exactly as a handled response would -- nothing
         // observing it from outside the stage host can tell it was short-circuited.
-        var result = await mediator.Send(new ShortCircuitQuery(), TestContext.Current.CancellationToken);
+        var result = await mediator.SendAsync(new ShortCircuitQuery(), TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(declined, result);
@@ -350,8 +350,6 @@ public class InterlocutorBuilderIntegrationTests
 #pragma warning disable S1144
     private sealed class SampleQueryHandler : IQueryHandler<SampleQuery, Outcome>
     {
-        public Task<Outcome> Handle(SampleQuery query, CancellationToken ct) => this.HandleAsync(query, ct);
-
         public Task<Outcome> HandleAsync(SampleQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 
@@ -362,9 +360,6 @@ public class InterlocutorBuilderIntegrationTests
 
     private sealed class CancellableQueryHandler : IQueryHandler<CancellableQuery, Outcome<string, Cancelled>>
     {
-        public Task<Outcome<string, Cancelled>> Handle(CancellableQuery query, CancellationToken ct) =>
-            this.HandleAsync(query, ct);
-
         public Task<Outcome<string, Cancelled>> HandleAsync(CancellableQuery query, CancellationToken ct) =>
             Task.FromResult<Outcome<string, Cancelled>>("ok");
     }
@@ -376,8 +371,6 @@ public class InterlocutorBuilderIntegrationTests
 
     private sealed class TimeBoundQueryHandler : IQueryHandler<TimeBoundQuery, Outcome<string, Timeout>>
     {
-        public Task<Outcome<string, Timeout>> Handle(TimeBoundQuery query, CancellationToken ct) => this.HandleAsync(query, ct);
-
         public Task<Outcome<string, Timeout>> HandleAsync(TimeBoundQuery query, CancellationToken ct) =>
             Task.FromResult<Outcome<string, Timeout>>("ok");
     }
@@ -389,9 +382,6 @@ public class InterlocutorBuilderIntegrationTests
 
     private sealed class ThrottledQueryHandler : IQueryHandler<ThrottledQuery, Outcome<string, RateLimited>>
     {
-        public Task<Outcome<string, RateLimited>> Handle(ThrottledQuery query, CancellationToken ct) =>
-            this.HandleAsync(query, ct);
-
         public Task<Outcome<string, RateLimited>> HandleAsync(ThrottledQuery query, CancellationToken ct) =>
             Task.FromResult<Outcome<string, RateLimited>>("ok");
     }
@@ -405,9 +395,6 @@ public class InterlocutorBuilderIntegrationTests
 
     private sealed class AuthorizableQueryHandler : IQueryHandler<AuthorizableQuery, Outcome<string, Forbidden>>
     {
-        public Task<Outcome<string, Forbidden>> Handle(AuthorizableQuery query, CancellationToken ct) =>
-            this.HandleAsync(query, ct);
-
         public Task<Outcome<string, Forbidden>> HandleAsync(AuthorizableQuery query, CancellationToken ct) =>
             Task.FromResult<Outcome<string, Forbidden>>("ok");
     }
@@ -421,8 +408,6 @@ public class InterlocutorBuilderIntegrationTests
 
     private sealed class ShortCircuitQueryHandler(HandlerRanFlag flag) : IQueryHandler<ShortCircuitQuery, Outcome>
     {
-        public Task<Outcome> Handle(ShortCircuitQuery query, CancellationToken ct) => this.HandleAsync(query, ct);
-
         public Task<Outcome> HandleAsync(ShortCircuitQuery query, CancellationToken ct)
         {
             flag.MarkHandled();
@@ -441,9 +426,6 @@ public class InterlocutorBuilderIntegrationTests
     {
         public sealed class First(List<string> log) : IPipelineBehavior<TRequest, TResponse>
         {
-            public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
-                this.HandleAsync(request, next, ct);
-
             public async Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
             {
                 log.Add("first-before");
@@ -455,9 +437,6 @@ public class InterlocutorBuilderIntegrationTests
 
         public sealed class Second(List<string> log) : IPipelineBehavior<TRequest, TResponse>
         {
-            public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
-                this.HandleAsync(request, next, ct);
-
             public async Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
             {
                 log.Add("second-before");

@@ -29,10 +29,6 @@ public sealed class SearchTodoTasksHandler(Lazy<TodoTasksDbContext> context)
     : IQueryHandler<SearchTodoTasksQuery, Outcome<IReadOnlyList<TodoTaskDto>, Failure>>
 {
     /// <inheritdoc/>
-    public Task<Outcome<IReadOnlyList<TodoTaskDto>, Failure>> Handle(SearchTodoTasksQuery query, CancellationToken ct) =>
-        this.HandleAsync(query, ct);
-
-    /// <inheritdoc/>
     public async Task<Outcome<IReadOnlyList<TodoTaskDto>, Failure>> HandleAsync(
         SearchTodoTasksQuery query,
         CancellationToken ct

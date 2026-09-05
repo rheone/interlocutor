@@ -66,7 +66,7 @@ public class AuthorizationBehavior<TRequest, TResponse>(IPolicyEvaluator policyE
     /// Authorization was denied, but <typeparamref name="TResponse"/> has no <see cref="Forbidden"/> case to
     /// construct - pair <see cref="IRequiresPolicy"/> only with response shapes that include one.
     /// </exception>
-    public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+    public async Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         // Evaluate the authorization policy. If it fails, short-circuit immediately with Forbidden
         // without invoking the handler or any downstream behaviors.

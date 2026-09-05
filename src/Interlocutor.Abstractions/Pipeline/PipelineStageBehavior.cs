@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 /// <param name="logger">Used to log an after-hook exception that would otherwise be silently discarded during unwind.</param>
 /// <param name="rethrowAfterHookExceptions">
 /// When <see langword="true"/>, an after-hook exception is logged and then re-thrown, aborting the
-/// remainder of the unwind and propagating out of <see cref="Handle"/>. When <see langword="false"/>
+/// remainder of the unwind and propagating out of <see cref="HandleAsync"/>. When <see langword="false"/>
 /// (the default), it is logged and swallowed, and unwind continues with the next stage - so a failing
 /// teardown hook can never mask the pipeline's real result.
 /// </param>
@@ -35,7 +35,7 @@ public class PipelineStageBehavior<TRequest, TResponse>(
     /// short-circuit response. Both cases return through this same <see cref="Task{TResult}"/>, so
     /// behaviors outside this host cannot tell them apart.
     /// </returns>
-    public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+    public async Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         var stagesList = stages.ToList();
         var completedStages = new List<int>();

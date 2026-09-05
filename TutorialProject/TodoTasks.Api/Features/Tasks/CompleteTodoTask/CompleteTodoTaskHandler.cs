@@ -25,12 +25,6 @@ public sealed class CompleteTodoTaskHandler(
 ) : ICommandHandler<CompleteTodoTaskCommand, Outcome<TodoTaskDto, NotFound, Forbidden, Conflict>>
 {
     /// <inheritdoc/>
-    public Task<Outcome<TodoTaskDto, NotFound, Forbidden, Conflict>> Handle(
-        CompleteTodoTaskCommand command,
-        CancellationToken ct
-    ) => this.HandleAsync(command, ct);
-
-    /// <inheritdoc/>
     /// <remarks>
     /// Persist first, publish second - but publishing from inside this method still runs
     /// <see cref="TodoTaskCompletedNotification"/>'s subscribers *before* the completion actually
@@ -67,7 +61,9 @@ public sealed class CompleteTodoTaskHandler(
         task.IsCompleted = true;
         await unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
 
-        await publisher.Publish(new TodoTaskCompletedNotification(task.Id, task.OwnerId, task.Title), ct).ConfigureAwait(false);
+        await publisher
+            .PublishAsync(new TodoTaskCompletedNotification(task.Id, task.OwnerId, task.Title), ct)
+            .ConfigureAwait(false);
 
         return TodoTaskDto.FromEntity(task);
     }

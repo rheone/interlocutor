@@ -21,10 +21,6 @@ public sealed class GetTodoTaskByIdHandler(IDomainRepository<TodoTask, int> task
     : IQueryHandler<GetTodoTaskByIdQuery, Outcome<TodoTaskDto, NotFound>>
 {
     /// <inheritdoc/>
-    public Task<Outcome<TodoTaskDto, NotFound>> Handle(GetTodoTaskByIdQuery query, CancellationToken ct) =>
-        this.HandleAsync(query, ct);
-
-    /// <inheritdoc/>
     public Task<Outcome<TodoTaskDto, NotFound>> HandleAsync(GetTodoTaskByIdQuery query, CancellationToken ct) =>
         Task.FromResult<Outcome<TodoTaskDto, NotFound>>(
             tasks.GetById(query.Id) is { } task && task.OwnerId == query.OwnerId
