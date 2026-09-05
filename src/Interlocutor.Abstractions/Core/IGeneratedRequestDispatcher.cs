@@ -12,7 +12,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// A single generated implementation, <c>Interlocutor.Generated.Dispatch.GeneratedRequestDispatcher</c>, is
 /// registered as a singleton alongside the rest of a compilation's generated registrations (see
 /// <c>InterlocutorBuilder.AddGeneratedRegistrations</c>) - never constructed directly.
-/// <see cref="Interlocutor.Abstractions.Mediator"/> resolves it once per <see cref="Dispatch"/> call via
+/// <see cref="Interlocutor.Abstractions.Mediator"/> resolves it once per <see cref="DispatchAsync"/> call via
 /// <see cref="IServiceProvider.GetService(Type)"/> and, when present, dispatches through it exclusively - no
 /// <see cref="System.Reflection.Assembly.GetTypes"/>/<see cref="Type.MakeGenericType"/>/
 /// <see cref="Activator.CreateInstance(Type)"/> call runs on that path. When absent (the generator never ran
@@ -49,5 +49,5 @@ public interface IGeneratedRequestDispatcher
     /// <paramref name="request"/>'s runtime type does not match any case in the generated switch - either it
     /// is not a request at all, or it is a request type the generator never saw.
     /// </exception>
-    Task<IOutcome> Dispatch(object request, IServiceProvider services, CancellationToken ct);
+    Task<IOutcome> DispatchAsync(object request, IServiceProvider services, CancellationToken ct);
 }

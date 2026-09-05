@@ -8,7 +8,7 @@ using Interlocutor.Generator.Models;
 
 /// <summary>
 /// Emits <c>GeneratedRequestDispatcher</c> - a single <c>IGeneratedRequestDispatcher</c> implementation whose
-/// <c>Dispatch</c> method is a type switch on the runtime type of an untyped request, replacing the
+/// <c>DispatchAsync</c> method is a type switch on the runtime type of an untyped request, replacing the
 /// reflection <c>Mediator.SendAsync(object, CancellationToken)</c> otherwise falls back to (ticket 09).
 /// </summary>
 /// <remarks>
@@ -64,7 +64,7 @@ internal static class RequestDispatchSwitchEmitter
         builder.AppendLine("    {");
         builder.AppendLine("        /// <inheritdoc/>");
         builder.AppendLine(
-            "        public async global::System.Threading.Tasks.Task<global::Interlocutor.CommonKernel.ResultTypes.IOutcome> Dispatch(object request, global::System.IServiceProvider services, global::System.Threading.CancellationToken ct)"
+            "        public async global::System.Threading.Tasks.Task<global::Interlocutor.CommonKernel.ResultTypes.IOutcome> DispatchAsync(object request, global::System.IServiceProvider services, global::System.Threading.CancellationToken ct)"
         );
         builder.AppendLine("        {");
         builder.AppendLine("            switch (request)");

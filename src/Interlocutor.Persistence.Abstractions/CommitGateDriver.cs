@@ -17,7 +17,7 @@ using Microsoft.Extensions.Logging;
 /// package's <c>UnitOfWorkBehavior</c> - EF Core's and NHibernate's - implements only the store-specific
 /// primitives behind <see cref="ICommitGateSession"/> (how to detect an active transaction, how to detect
 /// pending work, how to begin/commit/roll one back) and defers the algorithm itself to
-/// <see cref="Handle{TRequest, TResponse}"/>. Keeping the algorithm here, rather than duplicated once per
+/// <see cref="HandleAsync{TRequest, TResponse}"/>. Keeping the algorithm here, rather than duplicated once per
 /// store, keeps the two stores' commit/rollback semantics identical by construction instead of by discipline.
 /// </para>
 /// <para>
@@ -49,7 +49,7 @@ public static class CommitGateDriver
     /// <param name="logger">Logger that receives one debug-level line per invocation that actually commits or rolls back.</param>
     /// <param name="cancellationToken">A token to observe while awaiting the next delegate and the store operations below it.</param>
     /// <returns>The response returned by <paramref name="next"/>, unchanged.</returns>
-    public static async Task<TResponse> Handle<TRequest, TResponse>(
+    public static async Task<TResponse> HandleAsync<TRequest, TResponse>(
         TRequest request,
         Func<Task<TResponse>> next,
         Func<ICommitGateSession> sessionFactory,

@@ -90,7 +90,7 @@ public class UnitOfWorkBehavior<TRequest, TResponse, TContext>(
 
     /// <inheritdoc/>
     public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
-        CommitGateDriver.Handle(
+        CommitGateDriver.HandleAsync(
             request,
             () => RunWithExternalStoreSuppressionAsync(request, next),
             () => new EntityFrameworkCommitGateSession(db.Value),

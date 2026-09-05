@@ -89,7 +89,7 @@ public sealed class UnitOfWorkBehavior<TRequest, TResponse>(
 
     /// <inheritdoc/>
     public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
-        CommitGateDriver.Handle(
+        CommitGateDriver.HandleAsync(
             request,
             next,
             () => new NHibernateCommitGateSession(session.Value),

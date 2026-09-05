@@ -25,7 +25,12 @@ internal sealed class ParallelNotificationHandlerWrapper<
     /// <param name="ct">The cancellation token.</param>
     /// <param name="activity">The activity to tag with the resolved handler types, or <see langword="null"/>.</param>
     /// <returns>A task that completes when all handlers complete or any handler throws.</returns>
-    public override Task Handle(object notification, IServiceProvider services, CancellationToken ct, Activity? activity = null)
+    public override Task HandleAsync(
+        object notification,
+        IServiceProvider services,
+        CancellationToken ct,
+        Activity? activity = null
+    )
     {
         var (typedNotification, handlers) = ResolveHandlers<TNotification>(notification, services, activity);
 

@@ -273,7 +273,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     {
         var generatedDispatcher = (IGeneratedRequestDispatcher?)services.GetService(typeof(IGeneratedRequestDispatcher));
         return generatedDispatcher is not null
-            ? generatedDispatcher.Dispatch(request, services, ct)
+            ? generatedDispatcher.DispatchAsync(request, services, ct)
             : ReflectionRequestDispatcher.DispatchAsync(this, services, request, ct);
     }
 
@@ -342,13 +342,13 @@ public sealed class Mediator(IServiceProvider services) : IMediator
         // to several handlers - so TraceAsync's generic TResult is a placeholder, always-null nullable object.
         // TraceAsync's own outcome-tagging check is simply a no-op for it. See TraceAsync's remarks.
         return activity is null
-            ? wrapper.Handle(notification, services, ct)
+            ? wrapper.HandleAsync(notification, services, ct)
             : TraceAsync(
                 activity,
                 notification,
                 async act =>
                 {
-                    await wrapper.Handle(notification, services, ct, act).ConfigureAwait(false);
+                    await wrapper.HandleAsync(notification, services, ct, act).ConfigureAwait(false);
                     return (object?)null;
                 }
             );

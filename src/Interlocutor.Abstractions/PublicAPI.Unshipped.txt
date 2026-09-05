@@ -28,7 +28,7 @@ Interlocutor.Abstractions.Core.HandlerOverrideAttribute.HandlerType.get -> Syste
 Interlocutor.Abstractions.Core.IGeneratedNotificationHandlerOrder
 Interlocutor.Abstractions.Core.IGeneratedNotificationHandlerOrder.Rank(System.Type! handlerType) -> int
 Interlocutor.Abstractions.Core.IGeneratedRequestDispatcher
-Interlocutor.Abstractions.Core.IGeneratedRequestDispatcher.Dispatch(object! request, System.IServiceProvider! services, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Interlocutor.CommonKernel.ResultTypes.IOutcome!>!
+Interlocutor.Abstractions.Core.IGeneratedRequestDispatcher.DispatchAsync(object! request, System.IServiceProvider! services, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Interlocutor.CommonKernel.ResultTypes.IOutcome!>!
 Interlocutor.Abstractions.Core.IMediator
 Interlocutor.Abstractions.Core.IPublisher
 Interlocutor.Abstractions.Core.IPublisher.PublishAsync<TNotification>(TNotification notification, Interlocutor.Abstractions.Core.PublishStrategy strategy, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!

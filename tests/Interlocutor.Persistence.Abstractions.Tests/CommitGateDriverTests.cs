@@ -19,7 +19,7 @@ using NSubstitute;
 public sealed class CommitGateDriverTests
 {
     [Fact]
-    public async Task Handle_ExternalStoreRequest_NeverInvokesSessionFactory()
+    public async Task HandleAsync_ExternalStoreRequest_NeverInvokesSessionFactory()
     {
         // Arrange
         var sessionFactoryInvoked = false;
@@ -28,7 +28,7 @@ public sealed class CommitGateDriverTests
         var logger = Substitute.For<ILogger>();
 
         // Act
-        var result = await CommitGateDriver.Handle(
+        var result = await CommitGateDriver.HandleAsync(
             new ExternalStoreRequest(),
             () => Task.FromResult<Outcome<Success, Failure>>(default(Success)),
             () =>
@@ -51,7 +51,7 @@ public sealed class CommitGateDriverTests
     }
 
     [Fact]
-    public async Task Handle_TransactionalRequest_BeginsTransactionEagerly_BeforeNextRuns()
+    public async Task HandleAsync_TransactionalRequest_BeginsTransactionEagerly_BeforeNextRuns()
     {
         // Arrange
         var session = CreateSession();
@@ -61,7 +61,7 @@ public sealed class CommitGateDriverTests
         var transactionActiveBeforeNext = false;
 
         // Act
-        await CommitGateDriver.Handle(
+        await CommitGateDriver.HandleAsync(
             new TransactionalRequest(),
             () =>
             {
@@ -81,7 +81,7 @@ public sealed class CommitGateDriverTests
     }
 
     [Fact]
-    public async Task Handle_PendingWorkAfterNext_CommitsAndDoesNotRollBack()
+    public async Task HandleAsync_PendingWorkAfterNext_CommitsAndDoesNotRollBack()
     {
         // Arrange - no eager begin, but the session reports staged work once next() completes, matching a
         // write staged directly on the session with no transaction opened yet.
@@ -92,7 +92,7 @@ public sealed class CommitGateDriverTests
         var logger = Substitute.For<ILogger>();
 
         // Act
-        var result = await CommitGateDriver.Handle(
+        var result = await CommitGateDriver.HandleAsync(
             new PlainRequest(),
             () => Task.FromResult<Outcome<Success, Failure>>(default(Success)),
             () => session,
@@ -109,7 +109,7 @@ public sealed class CommitGateDriverTests
     }
 
     [Fact]
-    public async Task Handle_EagerTransactionWithNoPendingWork_ClassifiedAsFailure_RollsBackAndDoesNotCommit()
+    public async Task HandleAsync_EagerTransactionWithNoPendingWork_ClassifiedAsFailure_RollsBackAndDoesNotCommit()
     {
         // Arrange - the eager-begin transaction opened for a check-then-act read still has to be closed even
         // though nothing ended up pending, and a classified failure means that closure is a rollback, not a
@@ -120,7 +120,7 @@ public sealed class CommitGateDriverTests
         var logger = Substitute.For<ILogger>();
 
         // Act
-        var result = await CommitGateDriver.Handle(
+        var result = await CommitGateDriver.HandleAsync(
             new TransactionalRequest(),
             () => Task.FromResult<Outcome<Success, Failure>>(new Failure("rejected")),
             () => session,
@@ -140,7 +140,7 @@ public sealed class CommitGateDriverTests
     }
 
     [Fact]
-    public async Task Handle_NoActiveTransactionAndNoPendingWork_NeitherCommitsNorRollsBack()
+    public async Task HandleAsync_NoActiveTransactionAndNoPendingWork_NeitherCommitsNorRollsBack()
     {
         // Arrange - a pure read (or a dispatch that short-circuited before writing): nothing was ever staged,
         // so there is nothing to finalize at all.
@@ -150,7 +150,7 @@ public sealed class CommitGateDriverTests
         var logger = Substitute.For<ILogger>();
 
         // Act
-        var result = await CommitGateDriver.Handle(
+        var result = await CommitGateDriver.HandleAsync(
             new PlainRequest(),
             () => Task.FromResult<Outcome<Success, Failure>>(default(Success)),
             () => session,
@@ -169,7 +169,7 @@ public sealed class CommitGateDriverTests
     }
 
     [Fact]
-    public async Task Handle_NextThrows_PropagatesException_WithoutCommittingOrRollingBack()
+    public async Task HandleAsync_NextThrows_PropagatesException_WithoutCommittingOrRollingBack()
     {
         // Arrange - the driver has no try/catch of its own around next(): an exception is a bug/infra fault,
         // not an outcome to classify, so it propagates unchanged and neither finalization path runs here.
@@ -181,7 +181,7 @@ public sealed class CommitGateDriverTests
 
         // Act
         var thrown = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            CommitGateDriver.Handle(
+            CommitGateDriver.HandleAsync(
                 new PlainRequest(),
                 Task<Outcome<Success, Failure>> () => throw handlerException,
                 () => session,
@@ -199,7 +199,7 @@ public sealed class CommitGateDriverTests
     }
 
     [Fact]
-    public async Task Handle_CommitPath_LogsDebugLine_WithRequestTypeAndDescribedOutcome()
+    public async Task HandleAsync_CommitPath_LogsDebugLine_WithRequestTypeAndDescribedOutcome()
     {
         // Arrange
         var session = CreateSession();
@@ -210,7 +210,7 @@ public sealed class CommitGateDriverTests
         var logger = Substitute.For<ILogger>();
 
         // Act
-        await CommitGateDriver.Handle(
+        await CommitGateDriver.HandleAsync(
             new PlainRequest(),
             () => Task.FromResult<Outcome<Success, Failure>>(default(Success)),
             () => session,
@@ -234,7 +234,7 @@ public sealed class CommitGateDriverTests
     }
 
     [Fact]
-    public async Task Handle_RollbackPath_LogsDebugLine_WithRequestTypeAndDescribedOutcome()
+    public async Task HandleAsync_RollbackPath_LogsDebugLine_WithRequestTypeAndDescribedOutcome()
     {
         // Arrange
         var session = CreateSession();
@@ -244,7 +244,7 @@ public sealed class CommitGateDriverTests
         var logger = Substitute.For<ILogger>();
 
         // Act
-        await CommitGateDriver.Handle(
+        await CommitGateDriver.HandleAsync(
             new TransactionalRequest(),
             () => Task.FromResult<Outcome<Success, Failure>>(new Failure("rejected")),
             () => session,

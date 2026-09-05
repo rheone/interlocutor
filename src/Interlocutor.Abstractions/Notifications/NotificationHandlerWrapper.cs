@@ -26,7 +26,7 @@ internal abstract class NotificationHandlerWrapper
     /// must stay a no-op so the unlistened dispatch path performs no extra work.
     /// </param>
     /// <returns>A task representing the dispatch operation.</returns>
-    public abstract Task Handle(
+    public abstract Task HandleAsync(
         object notification,
         IServiceProvider services,
         CancellationToken ct,
@@ -37,7 +37,7 @@ internal abstract class NotificationHandlerWrapper
     /// Casts <paramref name="notification"/> to <typeparamref name="TNotification"/>, resolves every applicable
     /// handler via <see cref="NotificationHandlerResolver.ResolveHandlers{TNotification}"/>, and tags
     /// <paramref name="activity"/> with the resolved handler types - the three-line preamble every concrete
-    /// <see cref="Handle"/> override needs before it starts dispatching, regardless of whether it then dispatches
+    /// <see cref="HandleAsync"/> override needs before it starts dispatching, regardless of whether it then dispatches
     /// sequentially or concurrently.
     /// </summary>
     /// <typeparam name="TNotification">The notification's concrete, runtime type.</typeparam>

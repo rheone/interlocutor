@@ -28,7 +28,7 @@ internal sealed class SequentialNotificationHandlerWrapper<
     /// <param name="ct">The cancellation token.</param>
     /// <param name="activity">The activity to tag with the resolved handler types, or <see langword="null"/>.</param>
     /// <returns>A task that completes when all handlers complete or the first handler throws.</returns>
-    public override async Task Handle(
+    public override async Task HandleAsync(
         object notification,
         IServiceProvider services,
         CancellationToken ct,
