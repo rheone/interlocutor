@@ -92,7 +92,7 @@ public class UnitOfWorkBehavior<TRequest, TResponse, TContext>(
     public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
         CommitGateDriver.Handle(
             request,
-            () => RunWithExternalStoreSuppression(request, next),
+            () => RunWithExternalStoreSuppressionAsync(request, next),
             () => new EntityFrameworkCommitGateSession(db.Value),
             this.classifier,
             this.describer,
@@ -109,7 +109,7 @@ public class UnitOfWorkBehavior<TRequest, TResponse, TContext>(
     /// <param name="request">The request being dispatched, inspected for the <see cref="IExternalStoreRequest"/> marker.</param>
     /// <param name="next">The next delegate in the pipeline chain.</param>
     /// <returns>The response returned by <paramref name="next"/>, unchanged.</returns>
-    private static async Task<TResponse> RunWithExternalStoreSuppression(TRequest request, Func<Task<TResponse>> next)
+    private static async Task<TResponse> RunWithExternalStoreSuppressionAsync(TRequest request, Func<Task<TResponse>> next)
     {
         if (request is not IExternalStoreRequest)
         {

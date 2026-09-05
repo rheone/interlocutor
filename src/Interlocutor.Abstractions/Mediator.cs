@@ -53,7 +53,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     public Task<TResponse> Send<TResponse>(IQuery<TResponse> query, CancellationToken ct = default)
         where TResponse : IOutcome
     {
-        return DispatchWithTrace<Type, IHandlerWrapper<TResponse>, TResponse>(
+        return DispatchWithTraceAsync<Type, IHandlerWrapper<TResponse>, TResponse>(
             QueryWrappers,
             query.GetType(),
             requestType =>
@@ -67,7 +67,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     public Task<TResponse> Send<TResponse>(ICommand<TResponse> command, CancellationToken ct = default)
         where TResponse : IOutcome
     {
-        return DispatchWithTrace<Type, IHandlerWrapper<TResponse>, TResponse>(
+        return DispatchWithTraceAsync<Type, IHandlerWrapper<TResponse>, TResponse>(
             CommandWrappers,
             command.GetType(),
             requestType =>
@@ -84,7 +84,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
         // For void commands, cache by both command type and result type because the same command can be
         // handled with different outcome shapes depending on what the caller needs (e.g., caller may want
         // just Success/Failure, or may need additional cases like NotFound).
-        return DispatchWithTrace<(Type CommandType, Type ResultType), IVoidHandlerWrapper<TResult>, TResult>(
+        return DispatchWithTraceAsync<(Type CommandType, Type ResultType), IVoidHandlerWrapper<TResult>, TResult>(
             VoidCommandWrappers,
             (command.GetType(), typeof(TResult)),
             key =>
@@ -134,10 +134,10 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     /// <returns>The task returned by <paramref name="dispatch"/>, awaited and tagged when traced.</returns>
     /// <remarks>
     /// Only the fast/traced branch is generic over the response type - wrapper resolution (cache lookup and
-    /// construction) is handled by the <see cref="DispatchWithTrace{TKey, TWrapper, TResponse}"/> overload, which
+    /// construction) is handled by the <see cref="DispatchWithTraceAsync{TKey, TWrapper, TResponse}"/> overload, which
     /// closes over this one.
     /// </remarks>
-    private static Task<TResponse> DispatchWithTrace<TResponse>(object request, Func<Activity?, Task<TResponse>> dispatch)
+    private static Task<TResponse> DispatchWithTraceAsync<TResponse>(object request, Func<Activity?, Task<TResponse>> dispatch)
     {
         // StartActivity returns null when nothing listens to MediatorActivitySource.Name - the fast path below
         // takes over immediately with no further tracing work, so the dispatch stays allocation- and
@@ -148,7 +148,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
 
     /// <summary>
     /// Resolves (or lazily creates) the cached handler wrapper for <paramref name="key"/>, then dispatches through
-    /// the fast-path/traced-path scaffolding in <see cref="DispatchWithTrace{TResponse}"/>. Shared by all three
+    /// the fast-path/traced-path scaffolding in <see cref="DispatchWithTraceAsync{TResponse}"/>. Shared by all three
     /// type-safe <c>Send&lt;T&gt;</c> overloads, each supplying only its own cache, key shape, and wrapper type -
     /// the cache lookup, <see cref="Activator.CreateInstance(Type)"/> construction, and activity-tracing branching
     /// live here once instead of being repeated per overload.
@@ -167,7 +167,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     /// <param name="request">The original query/command, tagged on the activity for the traced path.</param>
     /// <param name="invoke">Invokes the resolved wrapper's <c>Handle</c> method with the given activity.</param>
     /// <returns>The task returned by <paramref name="invoke"/>, awaited and tagged when traced.</returns>
-    private static Task<TResponse> DispatchWithTrace<TKey, TWrapper, TResponse>(
+    private static Task<TResponse> DispatchWithTraceAsync<TKey, TWrapper, TResponse>(
         ConcurrentDictionary<TKey, object> cache,
         TKey key,
         Func<TKey, object> wrapperFactory,
@@ -177,7 +177,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
         where TKey : notnull
     {
         var wrapper = (TWrapper)cache.GetOrAdd(key, wrapperFactory);
-        return DispatchWithTrace(request, act => invoke(wrapper, act));
+        return DispatchWithTraceAsync(request, act => invoke(wrapper, act));
     }
 
     /// <summary>

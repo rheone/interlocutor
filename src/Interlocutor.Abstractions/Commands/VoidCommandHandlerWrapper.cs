@@ -36,6 +36,6 @@ internal sealed class VoidCommandHandlerWrapper<TCommand, TResult> : IVoidHandle
         var handler = services.GetRequiredService<IVoidCommandHandler<TCommand, TResult>>();
         activity?.SetTag(MediatorActivitySource.HandlerTypeTag, handler.GetType().FullName);
 
-        return PipelineChainExecutor.Execute(typedRequest, handler.Handle, services, ct);
+        return PipelineChainExecutor.ExecuteAsync(typedRequest, handler.Handle, services, ct);
     }
 }

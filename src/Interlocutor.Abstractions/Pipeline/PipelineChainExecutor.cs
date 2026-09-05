@@ -30,7 +30,7 @@ internal static class PipelineChainExecutor
     /// <param name="services">The service provider to resolve the behavior chain from.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>The response from running the composed chain.</returns>
-    public static Task<TResponse> Execute<TRequest, TResponse>(
+    public static Task<TResponse> ExecuteAsync<TRequest, TResponse>(
         TRequest request,
         Func<TRequest, CancellationToken, Task<TResponse>> handle,
         IServiceProvider services,
