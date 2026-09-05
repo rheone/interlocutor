@@ -117,7 +117,7 @@ public sealed class DeleteUserCascadeTests : IClassFixture<TodoTasksApiFactory>
         }
 
         // Act - wrapped in the real commit-gate behavior; see the previous test's remarks for why a bare
-        // handler.Handle call alone would never actually commit the delete.
+        // handler.HandleAsync call alone would never actually commit the delete.
         using (var actScope = this.factory.Services.CreateScope())
         {
             var context = actScope.ServiceProvider.GetRequiredService<Lazy<TodoTasksDbContext>>();
@@ -238,7 +238,7 @@ public sealed class DeleteUserCascadeTests : IClassFixture<TodoTasksApiFactory>
 
             var result = await commitGate.HandleAsync(
                 command,
-                () => handler.Handle(command, TestContext.Current.CancellationToken),
+                () => handler.HandleAsync(command, TestContext.Current.CancellationToken),
                 TestContext.Current.CancellationToken
             );
 

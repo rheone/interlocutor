@@ -17,13 +17,13 @@ public class LoggingBehaviorTests
         var behavior = new LoggingBehavior<LoggedQuery, int>(logger);
         var request = new LoggedQuery(42);
         const int response = 84;
-        static Task<int> Next()
+        static Task<int> NextAsync()
         {
             return Task.FromResult(response);
         }
 
         // Act
-        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
 
         // Assert
         Assert.Equal(84, result);
@@ -47,13 +47,13 @@ public class LoggingBehaviorTests
         var behavior = new LoggingBehavior<LoggedQuery, Success>(logger);
         var request = new LoggedQuery(1);
         var response = default(Success);
-        Task<Success> Next()
+        Task<Success> NextAsync()
         {
             return Task.FromResult(response);
         }
 
         // Act
-        await behavior.HandleAsync(request, Next, CancellationToken.None);
+        await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
 
         // Assert
         logger
@@ -75,10 +75,10 @@ public class LoggingBehaviorTests
         var logger = Substitute.For<ILogger<LoggingBehavior<LoggedQuery, Outcome<string?, Failure>>>>();
         var behavior = new LoggingBehavior<LoggedQuery, Outcome<string?, Failure>>(logger);
         var request = new LoggedQuery(1);
-        static Task<Outcome<string?, Failure>> Next() => Task.FromResult<Outcome<string?, Failure>>((string?)null);
+        static Task<Outcome<string?, Failure>> NextAsync() => Task.FromResult<Outcome<string?, Failure>>((string?)null);
 
         // Act
-        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
 
         // Assert
         Assert.True(result.IsSuccess);
@@ -110,13 +110,13 @@ public class LoggingBehaviorTests
         var behavior = new LoggingBehavior<LoggedQuery, Failure>(logger);
         var request = new LoggedQuery(1);
         var response = new Failure("Operation failed");
-        Task<Failure> Next()
+        Task<Failure> NextAsync()
         {
             return Task.FromResult(response);
         }
 
         // Act
-        await behavior.HandleAsync(request, Next, CancellationToken.None);
+        await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
 
         // Assert
         logger
@@ -138,13 +138,15 @@ public class LoggingBehaviorTests
         var behavior = new LoggingBehavior<LoggedQuery, int>(logger);
         var request = new LoggedQuery(1);
         var nextException = new InvalidOperationException("Handler failed");
-        Task<int> Next()
+        Task<int> NextAsync()
         {
             throw nextException;
         }
 
         // Act
-        await Assert.ThrowsAsync<InvalidOperationException>(() => behavior.HandleAsync(request, Next, CancellationToken.None));
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            behavior.HandleAsync(request, NextAsync, CancellationToken.None)
+        );
 
         // Assert - Should log error
         logger
@@ -165,13 +167,13 @@ public class LoggingBehaviorTests
         var logger = Substitute.For<ILogger<LoggingBehavior<LoggedQuery, int>>>();
         var behavior = new LoggingBehavior<LoggedQuery, int>(logger);
         var request = new LoggedQuery(21);
-        static Task<int> Next()
+        static Task<int> NextAsync()
         {
             return Task.FromResult(42);
         }
 
         // Act
-        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
 
         // Assert
         Assert.Equal(42, result);
@@ -186,13 +188,13 @@ public class LoggingBehaviorTests
         var request = new LoggedQuery(99);
         const int expectedValue = 198;
 
-        static Task<int> Next()
+        static Task<int> NextAsync()
         {
             return Task.FromResult(expectedValue);
         }
 
         // Act
-        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
 
         // Assert
         Assert.Equal(expectedValue, result);

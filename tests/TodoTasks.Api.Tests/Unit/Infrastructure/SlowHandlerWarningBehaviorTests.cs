@@ -21,10 +21,10 @@ public sealed class SlowHandlerWarningBehaviorTests
     {
         // Arrange
         var behavior = new SlowHandlerWarningBehavior<SlowRequest, string>(this.logger);
-        static Task<string> FastHandler() => Task.FromResult("done");
+        static Task<string> FastHandlerAsync() => Task.FromResult("done");
 
         // Act
-        var result = await behavior.HandleAsync(new SlowRequest(), FastHandler, TestContext.Current.CancellationToken);
+        var result = await behavior.HandleAsync(new SlowRequest(), FastHandlerAsync, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("done", result);
@@ -43,14 +43,14 @@ public sealed class SlowHandlerWarningBehaviorTests
     {
         // Arrange - far slower than the 250ms threshold, so the delay wins decisively (no flake).
         var behavior = new SlowHandlerWarningBehavior<SlowRequest, string>(this.logger);
-        static async Task<string> SlowHandler()
+        static async Task<string> SlowHandlerAsync()
         {
             await Task.Delay(TimeSpan.FromMilliseconds(400), TestContext.Current.CancellationToken).ConfigureAwait(false);
             return "done";
         }
 
         // Act
-        var result = await behavior.HandleAsync(new SlowRequest(), SlowHandler, TestContext.Current.CancellationToken);
+        var result = await behavior.HandleAsync(new SlowRequest(), SlowHandlerAsync, TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("done", result);
@@ -75,14 +75,14 @@ public sealed class SlowHandlerWarningBehaviorTests
         // own ingress, not at the dispatch's start.
         var behavior = new SlowHandlerWarningBehavior<SlowRequest, string>(this.logger);
         await Task.Delay(TimeSpan.FromMilliseconds(300), TestContext.Current.CancellationToken); // Ahead of this behavior - never measured by it.
-        static async Task<string> FastHandler()
+        static async Task<string> FastHandlerAsync()
         {
             await Task.Delay(TimeSpan.FromMilliseconds(10), TestContext.Current.CancellationToken).ConfigureAwait(false);
             return "done";
         }
 
         // Act
-        await behavior.HandleAsync(new SlowRequest(), FastHandler, TestContext.Current.CancellationToken);
+        await behavior.HandleAsync(new SlowRequest(), FastHandlerAsync, TestContext.Current.CancellationToken);
 
         // Assert - no warning, even though the total elapsed time since the test started is well past the
         // threshold, because none of that 300ms was inside this behavior's own next() call.

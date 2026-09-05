@@ -21,7 +21,7 @@ public class FluentValidationErrorsBehaviorTests
         );
 
         var handlerInvoked = false;
-        Task<Outcome<string, FluentValidationErrors>> Next()
+        Task<Outcome<string, FluentValidationErrors>> NextAsync()
         {
             handlerInvoked = true;
             return Task.FromResult<Outcome<string, FluentValidationErrors>>(
@@ -30,7 +30,7 @@ public class FluentValidationErrorsBehaviorTests
         }
 
         // Act
-        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
 
         // Assert
         Assert.True(handlerInvoked, "Handler should be invoked when no validators present");
@@ -49,7 +49,7 @@ public class FluentValidationErrorsBehaviorTests
         );
 
         var handlerInvoked = false;
-        Task<Outcome<string, FluentValidationErrors>> Next()
+        Task<Outcome<string, FluentValidationErrors>> NextAsync()
         {
             handlerInvoked = true;
             return Task.FromResult<Outcome<string, FluentValidationErrors>>(
@@ -58,7 +58,7 @@ public class FluentValidationErrorsBehaviorTests
         }
 
         // Act
-        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
 
         // Assert
         Assert.True(handlerInvoked, "Handler should be invoked when validation passes");
@@ -77,7 +77,7 @@ public class FluentValidationErrorsBehaviorTests
         );
 
         var handlerInvoked = false;
-        Task<Outcome<string, FluentValidationErrors>> Next()
+        Task<Outcome<string, FluentValidationErrors>> NextAsync()
         {
             handlerInvoked = true;
             return Task.FromResult<Outcome<string, FluentValidationErrors>>(
@@ -86,7 +86,7 @@ public class FluentValidationErrorsBehaviorTests
         }
 
         // Act
-        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
 
         // Assert
         Assert.False(handlerInvoked, "Handler should NOT be invoked when validation fails");
@@ -105,11 +105,11 @@ public class FluentValidationErrorsBehaviorTests
             DefaultOutcomeCaseRegistry.Instance
         );
 
-        static Task<Outcome<string, FluentValidationErrors>> Next() =>
+        static Task<Outcome<string, FluentValidationErrors>> NextAsync() =>
             Task.FromResult<Outcome<string, FluentValidationErrors>>(new Outcome<string, FluentValidationErrors>("success"));
 
         // Act
-        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
 
         // Assert
         var errors = Assert.IsType<FluentValidationErrors>(result.Value);
@@ -136,11 +136,11 @@ public class FluentValidationErrorsBehaviorTests
             DefaultOutcomeCaseRegistry.Instance
         );
 
-        static Task<Outcome<string, FluentValidationErrors>> Next() =>
+        static Task<Outcome<string, FluentValidationErrors>> NextAsync() =>
             Task.FromResult<Outcome<string, FluentValidationErrors>>(new Outcome<string, FluentValidationErrors>("success"));
 
         // Act
-        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
 
         // Assert
         var errors = Assert.IsType<FluentValidationErrors>(result.Value);
@@ -163,11 +163,11 @@ public class FluentValidationErrorsBehaviorTests
             Outcome<string, FluentValidationErrors>
         >([validator], DefaultOutcomeCaseRegistry.Instance);
 
-        static Task<Outcome<string, FluentValidationErrors>> Next() =>
+        static Task<Outcome<string, FluentValidationErrors>> NextAsync() =>
             Task.FromResult<Outcome<string, FluentValidationErrors>>(new Outcome<string, FluentValidationErrors>("success"));
 
         // Act
-        await behavior.HandleAsync(request, Next, token);
+        await behavior.HandleAsync(request, NextAsync, token);
 
         // Assert
         await validator.Received(1).ValidateAsync(request, token);
@@ -184,11 +184,11 @@ public class FluentValidationErrorsBehaviorTests
             DefaultOutcomeCaseRegistry.Instance
         );
 
-        static Task<Outcome<string, Failure>> Next() => Task.FromResult<Outcome<string, Failure>>("unreachable");
+        static Task<Outcome<string, Failure>> NextAsync() => Task.FromResult<Outcome<string, Failure>>("unreachable");
 
         // Act
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            behavior.HandleAsync(request, Next, CancellationToken.None)
+            behavior.HandleAsync(request, NextAsync, CancellationToken.None)
         );
 
         // Assert
@@ -206,11 +206,11 @@ public class FluentValidationErrorsBehaviorTests
             DefaultOutcomeCaseRegistry.Instance
         );
 
-        static Task<Outcome<string, FluentValidationErrors>> Next() =>
+        static Task<Outcome<string, FluentValidationErrors>> NextAsync() =>
             Task.FromResult<Outcome<string, FluentValidationErrors>>(new Outcome<string, FluentValidationErrors>("success"));
 
         // Act - calling the superseded member must produce the same validation-failure behavior as HandleAsync.
-        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
 
         // Assert
         Assert.IsType<FluentValidationErrors>(result.Value);

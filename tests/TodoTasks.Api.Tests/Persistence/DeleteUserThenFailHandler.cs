@@ -30,7 +30,7 @@ internal sealed class DeleteUserThenFailHandler(
     /// <see cref="NotFound"/> if the user doesn't exist (the cascade never starts); otherwise always a
     /// forced <see cref="Conflict"/>, returned only after every delete has been flushed.
     /// </returns>
-    public async Task<Outcome<Success, NotFound, Conflict>> Handle(DeleteUserThenFailCommand command, CancellationToken ct)
+    public async Task<Outcome<Success, NotFound, Conflict>> HandleAsync(DeleteUserThenFailCommand command, CancellationToken ct)
     {
         if (users.GetById(command.Id) is not { } user)
         {

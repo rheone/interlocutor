@@ -26,13 +26,13 @@ public class CancellationBehaviorTests
         await cts.CancelAsync();
         var ct = cts.Token;
 
-        Task<Outcome<string, Cancelled>> Next()
+        Task<Outcome<string, Cancelled>> NextAsync()
         {
             throw new OperationCanceledException(ct);
         }
 
         // Act
-        var result = await behavior.HandleAsync(request, Next, ct);
+        var result = await behavior.HandleAsync(request, NextAsync, ct);
 
         // Assert
         Assert.IsType<Cancelled>(result.Value);
@@ -46,13 +46,13 @@ public class CancellationBehaviorTests
             DefaultOutcomeCaseRegistry.Instance
         );
         var request = new CancellableQuery("test");
-        static Task<Outcome<string, Cancelled>> Next()
+        static Task<Outcome<string, Cancelled>> NextAsync()
         {
             return Task.FromResult<Outcome<string, Cancelled>>(new Outcome<string, Cancelled>("success"));
         }
 
         // Act
-        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
 
         // Assert
         Assert.Equal("success", result.Value);
@@ -70,14 +70,14 @@ public class CancellationBehaviorTests
         await cts.CancelAsync();
         var ct = cts.Token;
 
-        static Task<Outcome<string, Cancelled>> Next()
+        static Task<Outcome<string, Cancelled>> NextAsync()
         {
             throw new InvalidOperationException("boom");
         }
 
         // Act / Assert - a non-cancellation exception is not converted, even though the ambient token is
         // cancelled.
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => behavior.HandleAsync(request, Next, ct));
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => behavior.HandleAsync(request, NextAsync, ct));
         Assert.Equal("boom", ex.Message);
     }
 
@@ -96,14 +96,16 @@ public class CancellationBehaviorTests
         await unrelatedCts.CancelAsync();
         var unrelatedToken = unrelatedCts.Token;
 
-        Task<Outcome<string, Cancelled>> Next()
+        Task<Outcome<string, Cancelled>> NextAsync()
         {
             throw new OperationCanceledException(unrelatedToken);
         }
 
         // Act / Assert
         var ambientCt = CancellationToken.None;
-        var ex = await Assert.ThrowsAsync<OperationCanceledException>(() => behavior.HandleAsync(request, Next, ambientCt));
+        var ex = await Assert.ThrowsAsync<OperationCanceledException>(() =>
+            behavior.HandleAsync(request, NextAsync, ambientCt)
+        );
         Assert.Equal(unrelatedToken, ex.CancellationToken);
     }
 
@@ -124,13 +126,13 @@ public class CancellationBehaviorTests
         await cts.CancelAsync();
         var ct = cts.Token;
 
-        Task<Outcome<string, NotFound>> Next()
+        Task<Outcome<string, NotFound>> NextAsync()
         {
             throw new OperationCanceledException(ct);
         }
 
         // Act
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => behavior.HandleAsync(request, Next, ct));
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => behavior.HandleAsync(request, NextAsync, ct));
 
         // Assert
         Assert.Contains("Cancelled", ex.Message);
@@ -152,13 +154,13 @@ public class CancellationBehaviorTests
         await cts.CancelAsync();
         var ct = cts.Token;
 
-        Task<HandRolledOutcome> Next()
+        Task<HandRolledOutcome> NextAsync()
         {
             throw new OperationCanceledException(ct);
         }
 
         // Act
-        var result = await behavior.HandleAsync(request, Next, ct);
+        var result = await behavior.HandleAsync(request, NextAsync, ct);
 
         // Assert
         Assert.Equal(typeof(Cancelled), result.CaseType);

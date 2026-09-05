@@ -82,11 +82,11 @@ public class TrackingBehavior<TRequest, TResponse>(Action track) : IPipelineBeha
 /// <see cref="Eject"/> works without manually threading the chosen outcome back up through every frame.</summary>
 public class EjectingQueryHandler : IQueryHandler<TestQuery, Outcome<int, Failure>>
 {
-    public Task<Outcome<int, Failure>> HandleAsync(TestQuery query, CancellationToken ct) => Inner(query);
+    public Task<Outcome<int, Failure>> HandleAsync(TestQuery query, CancellationToken ct) => InnerAsync(query);
 
-    private static Task<Outcome<int, Failure>> Inner(TestQuery query) => Deepest(query);
+    private static Task<Outcome<int, Failure>> InnerAsync(TestQuery query) => DeepestAsync(query);
 
-    private static Task<Outcome<int, Failure>> Deepest(TestQuery query) =>
+    private static Task<Outcome<int, Failure>> DeepestAsync(TestQuery query) =>
         Task.FromResult(Eject.With<Outcome<int, Failure>>(new Failure($"ejected for {query.Value}")));
 }
 

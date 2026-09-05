@@ -43,7 +43,7 @@ public sealed class ReorderedPipelineCompositionTests
         );
         var request = new GuardedRequest();
         var handlerInvoked = false;
-        Task<GuardedResponse> Handler()
+        Task<GuardedResponse> HandlerAsync()
         {
             handlerInvoked = true;
             return Task.FromResult<GuardedResponse>("unreachable");
@@ -52,7 +52,7 @@ public sealed class ReorderedPipelineCompositionTests
         // Act - Authorization registered first -> outermost, so its ingress runs before Validation's ever does.
         var result = await authorization.HandleAsync(
             request,
-            () => validation.HandleAsync(request, Handler, TestContext.Current.CancellationToken),
+            () => validation.HandleAsync(request, HandlerAsync, TestContext.Current.CancellationToken),
             TestContext.Current.CancellationToken
         );
 
@@ -79,7 +79,7 @@ public sealed class ReorderedPipelineCompositionTests
         );
         var request = new GuardedRequest();
         var handlerInvoked = false;
-        Task<GuardedResponse> Handler()
+        Task<GuardedResponse> HandlerAsync()
         {
             handlerInvoked = true;
             return Task.FromResult<GuardedResponse>("unreachable");
@@ -88,7 +88,7 @@ public sealed class ReorderedPipelineCompositionTests
         // Act - Validation registered first this time -> outermost, so its ingress runs before Authorization's.
         var result = await validation.HandleAsync(
             request,
-            () => authorization.HandleAsync(request, Handler, TestContext.Current.CancellationToken),
+            () => authorization.HandleAsync(request, HandlerAsync, TestContext.Current.CancellationToken),
             TestContext.Current.CancellationToken
         );
 

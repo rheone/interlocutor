@@ -21,7 +21,7 @@ public class ValidationBehaviorTests
         );
 
         var handlerInvoked = false;
-        async Task<Outcome<string, ValidationErrors>> Next()
+        async Task<Outcome<string, ValidationErrors>> NextAsync()
         {
             handlerInvoked = true;
             return await Task.FromResult<Outcome<string, ValidationErrors>>(new Outcome<string, ValidationErrors>("success"))
@@ -29,7 +29,7 @@ public class ValidationBehaviorTests
         }
 
         // Act
-        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
 
         // Assert
         Assert.True(handlerInvoked, "Handler should be invoked when no validators present");
@@ -48,7 +48,7 @@ public class ValidationBehaviorTests
         );
 
         var handlerInvoked = false;
-        async Task<Outcome<string, ValidationErrors>> Next()
+        async Task<Outcome<string, ValidationErrors>> NextAsync()
         {
             handlerInvoked = true;
             return await Task.FromResult<Outcome<string, ValidationErrors>>(new Outcome<string, ValidationErrors>("success"))
@@ -56,7 +56,7 @@ public class ValidationBehaviorTests
         }
 
         // Act
-        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
 
         // Assert
         Assert.True(handlerInvoked, "Handler should be invoked when validation passes");
@@ -75,7 +75,7 @@ public class ValidationBehaviorTests
         );
 
         var handlerInvoked = false;
-        async Task<Outcome<string, ValidationErrors>> Next()
+        async Task<Outcome<string, ValidationErrors>> NextAsync()
         {
             handlerInvoked = true;
             return await Task.FromResult<Outcome<string, ValidationErrors>>(new Outcome<string, ValidationErrors>("success"))
@@ -83,7 +83,7 @@ public class ValidationBehaviorTests
         }
 
         // Act
-        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
 
         // Assert
         Assert.False(handlerInvoked, "Handler should NOT be invoked when validation fails");
@@ -101,14 +101,14 @@ public class ValidationBehaviorTests
             DefaultOutcomeCaseRegistry.Instance
         );
 
-        static async Task<Outcome<string, ValidationErrors>> Next()
+        static async Task<Outcome<string, ValidationErrors>> NextAsync()
         {
             return await Task.FromResult<Outcome<string, ValidationErrors>>(new Outcome<string, ValidationErrors>("success"))
                 .ConfigureAwait(false);
         }
 
         // Act
-        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
 
         // Assert
         var validationErrors = Assert.IsType<ValidationErrors>(result.Value);
@@ -133,14 +133,14 @@ public class ValidationBehaviorTests
             DefaultOutcomeCaseRegistry.Instance
         );
 
-        static async Task<Outcome<string, ValidationErrors>> Next()
+        static async Task<Outcome<string, ValidationErrors>> NextAsync()
         {
             return await Task.FromResult<Outcome<string, ValidationErrors>>(new Outcome<string, ValidationErrors>("success"))
                 .ConfigureAwait(false);
         }
 
         // Act
-        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
 
         // Assert
         var validationErrors = Assert.IsType<ValidationErrors>(result.Value);
@@ -162,13 +162,13 @@ public class ValidationBehaviorTests
             DefaultOutcomeCaseRegistry.Instance
         );
 
-        static Task<Outcome<string, ValidationErrors>> Next()
+        static Task<Outcome<string, ValidationErrors>> NextAsync()
         {
             return Task.FromResult<Outcome<string, ValidationErrors>>(new Outcome<string, ValidationErrors>("success"));
         }
 
         // Act
-        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
 
         // Assert - name validator runs first, so its errors ("Name is required") must precede the age
         // validator's ("Age must be non-negative") in the aggregated message list.
@@ -198,13 +198,13 @@ public class ValidationBehaviorTests
             DefaultOutcomeCaseRegistry.Instance
         );
 
-        static Task<Outcome<string, ValidationErrors>> Next()
+        static Task<Outcome<string, ValidationErrors>> NextAsync()
         {
             return Task.FromResult<Outcome<string, ValidationErrors>>(new Outcome<string, ValidationErrors>("success"));
         }
 
         // Act
-        await behavior.HandleAsync(request, Next, token);
+        await behavior.HandleAsync(request, NextAsync, token);
 
         // Assert
         await validator.Received(1).ValidateAsync(request, token);
@@ -226,14 +226,14 @@ public class ValidationBehaviorTests
             DefaultOutcomeCaseRegistry.Instance
         );
 
-        static Task<Outcome<string, Failure>> Next()
+        static Task<Outcome<string, Failure>> NextAsync()
         {
             return Task.FromResult<Outcome<string, Failure>>("unreachable");
         }
 
         // Act
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            behavior.HandleAsync(request, Next, CancellationToken.None)
+            behavior.HandleAsync(request, NextAsync, CancellationToken.None)
         );
 
         // Assert
@@ -258,14 +258,14 @@ public class ValidationBehaviorTests
         var behavior = new ValidationBehavior<TestRequest, HandRolledOutcome>(validators, registry);
 
         var handlerInvoked = false;
-        Task<HandRolledOutcome> Next()
+        Task<HandRolledOutcome> NextAsync()
         {
             handlerInvoked = true;
             return Task.FromResult(HandRolledOutcome.FromSuccess("unreachable"));
         }
 
         // Act
-        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
 
         // Assert
         Assert.False(handlerInvoked, "Handler should NOT be invoked when validation fails");
@@ -284,13 +284,13 @@ public class ValidationBehaviorTests
             DefaultOutcomeCaseRegistry.Instance
         );
 
-        static Task<Outcome<string, ValidationErrors>> Next()
+        static Task<Outcome<string, ValidationErrors>> NextAsync()
         {
             return Task.FromResult<Outcome<string, ValidationErrors>>(new Outcome<string, ValidationErrors>("success"));
         }
 
         // Act - calling the superseded member must produce the same validation-failure behavior as HandleAsync.
-        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
 
         // Assert
         Assert.IsType<ValidationErrors>(result.Value);

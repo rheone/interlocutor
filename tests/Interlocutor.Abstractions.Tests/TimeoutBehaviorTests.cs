@@ -19,14 +19,14 @@ public class TimeoutBehaviorTests
             DefaultOutcomeCaseRegistry.Instance
         );
         var request = new TimeBoundQuery(budget);
-        static async Task<Outcome<string, Timeout>> Next()
+        static async Task<Outcome<string, Timeout>> NextAsync()
         {
             await Task.Delay(TimeSpan.FromMilliseconds(500), CancellationToken.None).ConfigureAwait(false);
             return new Outcome<string, Timeout>("too slow");
         }
 
         // Act
-        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
 
         // Assert
         var timeout = Assert.IsType<Timeout>(result.Value);
@@ -53,7 +53,7 @@ public class TimeoutBehaviorTests
 
         using var cts = new CancellationTokenSource();
         var tcs = new TaskCompletionSource<Outcome<string, Timeout>>();
-        Task<Outcome<string, Timeout>> Next()
+        Task<Outcome<string, Timeout>> NextAsync()
         {
             // VSTHRD003/IDISP013 both read this as a "foreign" task escaping the using scope below - it's
             // deliberately never-completing (a stand-in for a slow handler losing the race to cts's own
@@ -68,7 +68,7 @@ public class TimeoutBehaviorTests
         cts.CancelAfter(TimeSpan.FromMilliseconds(20));
 
         // Act & Assert
-        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => behavior.HandleAsync(request, Next, cts.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => behavior.HandleAsync(request, NextAsync, cts.Token));
     }
 
     [Fact]
@@ -81,13 +81,13 @@ public class TimeoutBehaviorTests
             DefaultOutcomeCaseRegistry.Instance
         );
         var request = new TimeBoundQuery(budget);
-        static Task<Outcome<string, Timeout>> Next()
+        static Task<Outcome<string, Timeout>> NextAsync()
         {
             return Task.FromResult<Outcome<string, Timeout>>(new Outcome<string, Timeout>("fast enough"));
         }
 
         // Act
-        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
 
         // Assert
         Assert.Equal("fast enough", result.Value);
@@ -105,14 +105,14 @@ public class TimeoutBehaviorTests
             DefaultOutcomeCaseRegistry.Instance
         );
         var request = new TimeBoundQuery(TimeSpan.FromSeconds(30)); // request declares a much larger budget
-        static async Task<Outcome<string, Timeout>> Next()
+        static async Task<Outcome<string, Timeout>> NextAsync()
         {
             await Task.Delay(TimeSpan.FromMilliseconds(500), CancellationToken.None).ConfigureAwait(false);
             return new Outcome<string, Timeout>("too slow");
         }
 
         // Act
-        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
 
         // Assert
         var timeout = Assert.IsType<Timeout>(result.Value);

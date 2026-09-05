@@ -29,7 +29,7 @@ public sealed class DuplicateOutcomeCaseTypeAnalyzerTests
                 """;
 
         // Act
-        var diagnostics = await GeneratorTestHarness.RunAnalyzer(new DuplicateOutcomeCaseTypeAnalyzer(), source);
+        var diagnostics = await GeneratorTestHarness.RunAnalyzerAsync(new DuplicateOutcomeCaseTypeAnalyzer(), source);
 
         // Assert
         var diagnostic = Assert.Single(diagnostics);
@@ -52,7 +52,7 @@ public sealed class DuplicateOutcomeCaseTypeAnalyzerTests
                 """;
 
         // Act
-        var diagnostics = await GeneratorTestHarness.RunAnalyzer(new DuplicateOutcomeCaseTypeAnalyzer(), source);
+        var diagnostics = await GeneratorTestHarness.RunAnalyzerAsync(new DuplicateOutcomeCaseTypeAnalyzer(), source);
 
         // Assert
         var diagnostic = Assert.Single(diagnostics);
@@ -75,7 +75,7 @@ public sealed class DuplicateOutcomeCaseTypeAnalyzerTests
                 """;
 
         // Act
-        var diagnostics = await GeneratorTestHarness.RunAnalyzer(new DuplicateOutcomeCaseTypeAnalyzer(), source);
+        var diagnostics = await GeneratorTestHarness.RunAnalyzerAsync(new DuplicateOutcomeCaseTypeAnalyzer(), source);
 
         // Assert
         var diagnostic = Assert.Single(diagnostics);
@@ -96,7 +96,7 @@ public sealed class DuplicateOutcomeCaseTypeAnalyzerTests
         var source = CommonUsings + "public sealed class Sample { " + member + " }";
 
         // Act
-        var diagnostics = await GeneratorTestHarness.RunAnalyzer(new DuplicateOutcomeCaseTypeAnalyzer(), source);
+        var diagnostics = await GeneratorTestHarness.RunAnalyzerAsync(new DuplicateOutcomeCaseTypeAnalyzer(), source);
 
         // Assert
         Assert.Empty(diagnostics);
@@ -120,7 +120,7 @@ public sealed class DuplicateOutcomeCaseTypeAnalyzerTests
                 """;
 
         // Act
-        var diagnostics = await GeneratorTestHarness.RunAnalyzer(new DuplicateOutcomeCaseTypeAnalyzer(), source);
+        var diagnostics = await GeneratorTestHarness.RunAnalyzerAsync(new DuplicateOutcomeCaseTypeAnalyzer(), source);
 
         // Assert
         var diagnostic = Assert.Single(diagnostics);

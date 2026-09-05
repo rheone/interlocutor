@@ -103,7 +103,7 @@ internal static class GeneratorTestHarness
     /// <param name="source">The C# source to compile and analyze.</param>
     /// <param name="extraReferences">Additional references - see <see cref="CreateCompilation"/>.</param>
     /// <returns>Every diagnostic the analyzer reported (compiler diagnostics are not included).</returns>
-    public static Task<ImmutableArray<Diagnostic>> RunAnalyzer(
+    public static Task<ImmutableArray<Diagnostic>> RunAnalyzerAsync(
         DiagnosticAnalyzer analyzer,
         string source,
         IEnumerable<MetadataReference>? extraReferences = null

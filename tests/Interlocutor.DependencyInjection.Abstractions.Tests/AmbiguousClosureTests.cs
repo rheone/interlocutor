@@ -16,7 +16,7 @@ public class AmbiguousClosureTests
 {
     private interface IClosureTestExportStrategy<T>
     {
-        Task Export(T item, CancellationToken ct);
+        Task ExportAsync(T item, CancellationToken ct);
     }
 
     [Fact]
@@ -379,7 +379,7 @@ public class AmbiguousClosureTests
 
     private sealed class SoleExportStrategy : IClosureTestExportStrategy<SoleExportItem>
     {
-        public Task Export(SoleExportItem item, CancellationToken ct) => Task.CompletedTask;
+        public Task ExportAsync(SoleExportItem item, CancellationToken ct) => Task.CompletedTask;
     }
 
 #pragma warning disable S2094
@@ -388,11 +388,11 @@ public class AmbiguousClosureTests
 
     private sealed class FirstConflictingExportStrategy : IClosureTestExportStrategy<ConflictingExportItem>
     {
-        public Task Export(ConflictingExportItem item, CancellationToken ct) => Task.CompletedTask;
+        public Task ExportAsync(ConflictingExportItem item, CancellationToken ct) => Task.CompletedTask;
     }
 
     private sealed class SecondConflictingExportStrategy : IClosureTestExportStrategy<ConflictingExportItem>
     {
-        public Task Export(ConflictingExportItem item, CancellationToken ct) => Task.CompletedTask;
+        public Task ExportAsync(ConflictingExportItem item, CancellationToken ct) => Task.CompletedTask;
     }
 }
