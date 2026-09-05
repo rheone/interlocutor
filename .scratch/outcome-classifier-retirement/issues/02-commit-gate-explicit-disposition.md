@@ -1,6 +1,6 @@
 # 02 - `CommitGateDriver`: commit by default, explicit no-commit signal instead of classification
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `8581b00`.
 
 **What to build:** Replace `CommitGateDriver.Handle`'s `if (!classifier.IsFailure(result))` branch ([CommitGateDriver.cs:94](../../../src/Interlocutor.Persistence.Abstractions/CommitGateDriver.cs#L94)) with a model that never inspects the response's type at all:
 

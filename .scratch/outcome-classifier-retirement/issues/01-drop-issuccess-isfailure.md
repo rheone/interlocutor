@@ -1,6 +1,6 @@
 # 01 - Drop `IOutcomeCase.IsSuccess` and `IOutcomeClassifier.IsFailure`
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `d065429`.
 
 **What to build:** Remove `IsSuccess` from `IOutcomeCase` ([IOutcomeCase.cs](../../../src/Interlocutor.CommonKernel/ResultTypes/IOutcomeCase.cs)), keeping `ActiveCaseType` - it is still needed by `IOutcomeCaseRegistry`/AspNetCore's HTTP mapping to identify the active case, independent of any success/failure judgment. Remove `IsFailure` from `IOutcomeClassifier` ([IOutcomeClassifier.cs](../../../src/Interlocutor.Abstractions/Pipeline/Classifiers/IOutcomeClassifier.cs)) and `DefaultResponseOutcomeDescriber`/`IResponseOutcomeDescriber` ([DefaultResponseOutcomeDescriber.cs](../../../src/Interlocutor.Abstractions/Pipeline/DefaultResponseOutcomeDescriber.cs)). In `OutcomeClassifierBuilder` ([OutcomeClassifierBuilder.cs](../../../src/Interlocutor.Abstractions/Pipeline/Classifiers/OutcomeClassifierBuilder.cs)), drop `RegisterSuccessType`/`RegisterFailureType`/`RegisterPredicate`'s `isFailure` parameter and the `OutcomeClassification.IsFailure` field - the builder becomes a pure label registry (type → display label), nothing else. `AsOutcomeCaseIsSuccess()` in `OutcomeCaseExtensions` ([OutcomeCaseExtensions.cs](../../../src/Interlocutor.CommonKernel/ResultTypes/OutcomeCaseExtensions.cs)) is removed along with `IsSuccess`; `AsOutcomeCaseActiveType()` stays.
 

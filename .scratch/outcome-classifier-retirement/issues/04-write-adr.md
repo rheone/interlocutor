@@ -1,6 +1,6 @@
 # 04 - Write the ADR recording this decision
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `da9f316` (ADR-0022).
 
 **What to build:** A new ADR recording: (a) no case type carries a universal success/failure meaning - `IOutcomeCase.IsSuccess`/`IOutcomeClassifier.IsFailure` are removed, not deprecated; (b) `IOutcomeCaseRegistry`/`ConstructOrThrow` and case *construction* are unaffected - this ADR is about classification, a separate axis; (c) the transaction commit/rollback decision moves entirely to an explicit signal (call-site override + the already-shipped `IUnitOfWork.Cancel()`) plus exception propagation, never response-type inspection, with "commit by default" as the resulting rule; (d) the two alternatives raised and rejected during design - folding `IsSuccess` into `IOutcome` as a required member (rejected: still asserts a universal judgment), and eliminating `ITransactionalRequest` outright (deferred, not rejected - see issue 07's open research question about validator-time DB reads sharing the handler's later transaction).
 
