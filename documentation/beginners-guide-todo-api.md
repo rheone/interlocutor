@@ -6,27 +6,27 @@ This guide is deliberately hands-on rather than a reference - it builds one proj
 
 ## What you'll build
 
-- A Minimal API-first ASP.NET Core API (an MVC controller equivalent is shown too) over one `TodoTask` resource: full CRUD, a bare-`ICommand` unit command, a raw-`ISession` query, and a paged query.
-- A pipeline built up behavior by behavior: logging, auditing, policy-based authorization, FluentValidation, and NHibernate-backed transactions - plus how to see exactly what order they run in, and how to add one of your own.
+- A Minimal API-first ASP.NET Core API (an MVC controller equivalent is shown too) over one `TodoTask` resource: full CRUD, a bare-`ICommand` unit command, a raw-`DbContext` query, and a paged query.
+- A pipeline built up behavior by behavior: logging, auditing, policy-based authorization, FluentValidation, and EF Core-backed transactions - plus how to see exactly what order they run in, and how to add one of your own.
 - Two authorization styles: a coarse policy check (`IRequiresPolicy`) and a fine-grained, entity-based ownership check (`ResourceCommandHandler`).
 - A notification with two independent subscribers, and the subtlety in exactly when "after" a command actually means once it's published from inside the handler.
-- Registration wired through Autofac, with callouts showing the Microsoft.Extensions.DependencyInjection equivalent at each step.
+- Registration wired through Microsoft.Extensions.DependencyInjection, with callouts showing the Autofac equivalent at each step.
 
 ## Before you start
 
-This guide assumes you're comfortable with C#, ASP.NET Core minimal APIs, and dependency injection in general - it only lightly touches non-Interlocutor code (project setup, NHibernate mapping, Autofac wiring) rather than teaching those from scratch. It does *not* assume any prior Interlocutor knowledge, but skimming the [Glossary](glossary.md) first will make the vocabulary below (outcome, behavior, marker interface) familiar rather than new.
+This guide assumes you're comfortable with C#, ASP.NET Core minimal APIs, and dependency injection in general - it only lightly touches non-Interlocutor code (project setup, EF Core mapping, Microsoft.Extensions.DependencyInjection wiring) rather than teaching those from scratch. It does *not* assume any prior Interlocutor knowledge, but skimming the [Glossary](glossary.md) first will make the vocabulary below (outcome, behavior, marker interface) familiar rather than new.
 
 One rule shapes every handler in this guide, so it's worth stating before writing any of them: **outcomes are for failures the caller can reasonably trigger** (a missing task, a duplicate title, a denied policy) **- exceptions are for bugs and infrastructure faults**, and the pipeline never converts one into the other. A handler that throws lets the exception propagate to whatever's hosting it (ASP.NET Core's own exception middleware, by default, outside anything Interlocutor controls) rather than becoming a `Failure` case - see [Pipeline & Behavior Composition](pipeline-and-behaviors.md#registering-custom-behaviors) for where this is stated as a hard rule. This guide's endpoints use that distinction deliberately: a missing `TodoTask` is a `NotFound` outcome (the caller can trigger this legitimately), while a missing authenticated caller - which shouldn't be reachable once real authentication middleware is in place - throws, on purpose, rather than being modeled as an outcome case.
 
 > [!NOTE]
-> This guide has a runnable counterpart: [`TutorialProject/TodoTasks.Api`](../TutorialProject/TodoTasks.Api/) implements this exact guide end to end, on the same stack (NHibernate, FluentValidation, Autofac) - every "blank" left here as an exercise is filled in there, along with a Users feature this guide doesn't cover. See [Sample App Walkthrough](sample-app-walkthrough.md) if you want something you can actually run today, or read alongside the code as you work through the steps below.
+> This guide has a runnable counterpart: [`TutorialProject/TodoTasks.Api`](../TutorialProject/TodoTasks.Api/) implements this exact guide end to end, on the same stack (Microsoft.Extensions.DependencyInjection, Entity Framework Core, FluentValidation) - every "blank" left here as an exercise is filled in there, along with a Users feature this guide doesn't cover. See [Sample App Walkthrough](sample-app-walkthrough.md) if you want something you can actually run today, or read alongside the code as you work through the steps below. An earlier version of that project, on Autofac and NHibernate, is preserved as a git tag rather than carried forward in-tree - see the walkthrough's own note on this if you're specifically after that combination running end to end.
 
 The stack this guide uses, with the alternative noted inline at each relevant step:
 
 | Concern | This guide | Alternative (see the callout at that step) |
 |---|---|---|
-| DI container | Autofac | Microsoft.Extensions.DependencyInjection |
-| Store | NHibernate (Fluent NHibernate mapping) | Entity Framework Core |
+| DI container | Microsoft.Extensions.DependencyInjection | Autofac |
+| Store | Entity Framework Core | NHibernate (Fluent NHibernate mapping) |
 | Validation | FluentValidation | Anything - it's opt-in, not required (see Step 5) |
 | Transport | ASP.NET Core Minimal APIs | MVC controllers (`ToActionResult()` instead of `ToMinimalApiResult()`) |
 
@@ -38,19 +38,19 @@ flowchart TD
     Endpoint --> Sender["ISender.Send(command or query)"]
     Sender --> Logging
 
-    subgraph Pipeline ["Pipeline - UseRecommendedChain(), resolved per request scope"]
+    subgraph Pipeline ["Pipeline - resolved per request scope"]
         direction TB
         Logging["LoggingBehavior"] --> Auditing["AuditingBehavior"]
         Auditing --> Authorization["AuthorizationBehavior"]
         Authorization --> Validation["ValidationBehavior<br/>(FluentValidation)"]
-        Validation --> UnitOfWork["UnitOfWorkBehavior<br/>(NHibernate)"]
+        Validation --> UnitOfWork["UnitOfWorkBehavior<br/>(EF Core)"]
     end
 
     UnitOfWork --> Handler["Handler<br/>ICommandHandler / IQueryHandler / ResourceCommandHandler"]
 
     subgraph Persistence ["Persistence"]
         direction TB
-        Repository["IDomainRepository"] --> Session[("NHibernate ISession")]
+        Repository["IDomainRepository"] --> Session[("EF Core DbContext")]
         UoW["IUnitOfWork"] --> Session
     end
 
@@ -63,7 +63,7 @@ flowchart TD
     Result --> Response(["HTTP response"])
 ```
 
-The pipeline row is empty until you ask for each behavior - Step 2 registers all five at once, and the rest of the guide meets each one where its marker interface first shows up.
+The pipeline row is empty until you ask for each behavior - Step 2 registers the first four, Step 4 adds the fifth once the store exists, and the rest of the guide meets each one where its marker interface first shows up.
 
 ## Step 1: Create the project and install packages
 
@@ -92,52 +92,85 @@ Now install the packages:
 
 ```bash
 dotnet add package Interlocutor.Abstractions
-dotnet add package Interlocutor.DependencyInjection.Autofac
-dotnet add package Interlocutor.Persistence.NHibernate
+dotnet add package Interlocutor.DependencyInjection.Microsoft
+dotnet add package Interlocutor.Persistence.EntityFrameworkCore
 dotnet add package Interlocutor.AspNetCore
 dotnet add package Interlocutor.FluentValidation
-dotnet add package Autofac.Extensions.DependencyInjection
-dotnet add package NHibernate
-dotnet add package FluentNHibernate
-```
-
-`Interlocutor.CommonKernel` and `Interlocutor.Persistence.Abstractions` aren't listed - they come in transitively (through `Interlocutor.Abstractions` and `Interlocutor.DependencyInjection.Autofac` respectively), so there's nothing to install for them directly.
-
-<details>
-
-<summary>Using Entity Framework Core instead?</summary>
-
-Swap the NHibernate packages for their EF Core equivalents:
-
-```bash
-dotnet add package Interlocutor.Persistence.EntityFrameworkCore
 dotnet add package Microsoft.EntityFrameworkCore
 dotnet add package Microsoft.EntityFrameworkCore.SqlServer   # or whichever provider you use
 ```
 
-Skip `NHibernate`/`FluentNHibernate` entirely. Everything from Step 4 onward has an EF Core version of the same callout - see [Persistence Implementations](persistence-implementations.md) for the full `EntityFrameworkUnitOfWork<TContext>` / `EntityFrameworkRepository<TEntity, TKey, TContext>` surface these register.
+`Interlocutor.CommonKernel` and `Interlocutor.Persistence.Abstractions` aren't listed - they come in transitively (through `Interlocutor.Abstractions` and `Interlocutor.DependencyInjection.Microsoft` respectively), so there's nothing to install for them directly.
+
+<details>
+
+<summary>Using NHibernate instead?</summary>
+
+Swap the EF Core packages for their NHibernate equivalents:
+
+```bash
+dotnet add package Interlocutor.Persistence.NHibernate
+dotnet add package NHibernate
+dotnet add package FluentNHibernate
+```
+
+Skip `Microsoft.EntityFrameworkCore`/`Microsoft.EntityFrameworkCore.SqlServer` entirely. Everything from Step 3 onward has an NHibernate version of the same callout - see [Persistence Implementations](persistence-implementations.md) for the full `NHibernateUnitOfWork` / `NHibernateRepository<TEntity, TKey>` surface these register.
 
 </details>
 
 <details>
 
-<summary>Using Microsoft.Extensions.DependencyInjection instead?</summary>
+<summary>Using a different DI container instead?</summary>
 
-Swap `Interlocutor.DependencyInjection.Autofac` for `Interlocutor.DependencyInjection.Microsoft`, and skip `Autofac.Extensions.DependencyInjection` - you won't need it, since the built-in host already uses Microsoft.Extensions.DependencyInjection.
+Swap `Interlocutor.DependencyInjection.Microsoft` for `Interlocutor.DependencyInjection.Autofac`, and add `Autofac.Extensions.DependencyInjection` - the built-in host uses Microsoft.Extensions.DependencyInjection by default, so pointing it at Autofac needs this extra package:
 
 ```bash
-dotnet add package Interlocutor.DependencyInjection.Microsoft
+dotnet add package Interlocutor.DependencyInjection.Autofac
+dotnet add package Autofac.Extensions.DependencyInjection
 ```
 
-See [Dependency Injection: Microsoft.Extensions.DependencyInjection](dependency-injection-microsoft.md) for the full registration surface.
+See [Dependency Injection: Autofac](dependency-injection-autofac.md) for the full registration surface.
 
 </details>
 
-## Step 2: Host Interlocutor on Autofac
+## Step 2: Host Interlocutor on Microsoft.Extensions.DependencyInjection
 
-By default, ASP.NET Core's `WebApplicationBuilder` uses Microsoft.Extensions.DependencyInjection as its container. Point it at Autofac instead, then configure Interlocutor inside that container:
+ASP.NET Core's `WebApplicationBuilder` already uses Microsoft.Extensions.DependencyInjection as its container by default, so registration goes straight onto `builder.Services` - no container-swap step needed:
 
 **`Program.cs`**
+
+```csharp
+using Interlocutor.AspNetCore;
+using Interlocutor.Abstractions.Core;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// AspNetCoreRequestContextAccessor (registered below) needs this to read the caller's identity.
+builder.Services.AddHttpContextAccessor();
+
+// Register this before AddInterlocutor - its own try-add default must never win over it.
+builder.Services.AddScoped<IRequestContextAccessor, AspNetCoreRequestContextAccessor>();
+
+// The call that actually registers handlers and the pipeline - interlocutor.ScanAssembly(...) and
+// the five recommended-chain behaviors - is finished in Step 4, once TodoTasksDbContext exists. See
+// the [!WARNING] there for why that call can't be split into an early skeleton here the way it can
+// under a different DI container (shown in the callout below).
+
+var app = builder.Build();
+
+// Endpoints go here - Step 6 onward.
+
+app.Run();
+```
+
+> [!IMPORTANT]
+> Under Microsoft.Extensions.DependencyInjection, `interlocutor.Pipeline.UseRecommendedChain()` throws at registration time the moment `Interlocutor.Persistence.EntityFrameworkCore` is referenced - its `UnitOfWorkBehavior<TRequest, TResponse, TContext>` has one more open type parameter than Microsoft DI allows an open-generic registration to carry, and that's true regardless of whether a `DbContext` is registered yet. That's why this project's own `AddInterlocutor(...)` call is deferred to Step 4 rather than started here: it needs `TodoTasksDbContext` to exist first, to close that extra type parameter over it. See [Transactions & Store Integration § EntityFramework Core Integration](transactions-and-store-integration.md#entityframework-core-integration) for the full mechanism, and the `[!WARNING]` in Step 4 for the workaround this guide actually uses.
+
+<details>
+
+<summary>Using Autofac instead?</summary>
+
+Point the host at Autofac, then configure Interlocutor inside that container. Autofac's generic registration has no such arity restriction, so the whole pipeline - including the transaction behavior - can be registered in one `UseRecommendedChain()` call right here, before the store even exists:
 
 ```csharp
 using Autofac;
@@ -172,7 +205,7 @@ builder.Host.ConfigureContainer<ContainerBuilder>(containerBuilder =>
         interlocutor.Pipeline.UseRecommendedChain();
     });
 
-    // NHibernate session factory and the store-specific behaviors it needs - Step 4.
+    // NHibernate or EF Core session/context and the store-specific behaviors they need - Step 4.
     // IAuditSink and IPolicyEvaluator implementations - Steps 5 and 9.
 });
 
@@ -184,38 +217,13 @@ app.Run();
 ```
 
 > [!IMPORTANT]
-> `UnitOfWorkBehavior` needs an `ISession` resolvable from the container, but nothing registers one yet - that's fine. Autofac only resolves the dependency graph when the container is actually built (`builder.Build()` at the bottom of this file), not as each `containerBuilder.Register...` call runs, so the order these registration blocks appear in doesn't matter as long as everything is registered before `Build()`.
-
-<details>
-
-<summary>Using Microsoft.Extensions.DependencyInjection instead?</summary>
-
-No `UseServiceProviderFactory`/`ConfigureContainer` step at all - register directly on `builder.Services`:
-
-```csharp
-using Interlocutor.AspNetCore;
-using Interlocutor.Abstractions.Core;
-using Interlocutor.DependencyInjection.Microsoft;
-
-var builder = WebApplication.CreateBuilder(args);
-
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<IRequestContextAccessor, AspNetCoreRequestContextAccessor>();
-
-builder.Services.AddInterlocutor(interlocutor =>
-{
-    interlocutor.ScanAssembly(typeof(Program).Assembly);
-    interlocutor.Pipeline.UseRecommendedChain();
-});
-
-var app = builder.Build();
-```
+> `UnitOfWorkBehavior` needs a session/context resolvable from the container, but nothing registers one yet - that's fine. Autofac only resolves the dependency graph when the container is actually built (`builder.Build()` at the bottom of this file), not as each `containerBuilder.Register...` call runs, so the order these registration blocks appear in doesn't matter as long as everything is registered before `Build()`. This also means, unlike the Microsoft DI path above, nothing here forces you to defer the whole `AddInterlocutor` call to a later step.
 
 </details>
 
 ### Advanced: manual registration, targeted scanning, and startup validation
 
-Not part of the running example above - `ScanAssembly(typeof(Program).Assembly)` plus `UseRecommendedChain()` is everything this guide's own registration actually needs. This is for when a single blanket scan isn't precise enough, or when you want registration gaps caught at startup instead of at first dispatch.
+Not part of the running example above - `ScanAssembly(typeof(Program).Assembly)` plus the recommended chain is everything this guide's own registration actually needs. This is for when a single blanket scan isn't precise enough, or when you want registration gaps caught at startup instead of at first dispatch.
 
 <details>
 
@@ -257,10 +265,10 @@ interlocutor.ScanAssembly(typeof(SomeSingletonHandler).Assembly, RegistrationLif
 
 #### Startup validation - catching a missing handler before the first request
 
-Nothing about `ScanAssembly`/`AddHandler`/`AddTypeMatch` checks that every request type this project declares actually has a matching handler - a typo'd or forgotten handler otherwise surfaces as a failure the first time something dispatches that request, not at startup. `ValidateOnBuild()` closes that gap synchronously, inside `AddInterlocutor` itself, before `ContainerBuilder` is mutated at all:
+Nothing about `ScanAssembly`/`AddHandler`/`AddTypeMatch` checks that every request type this project declares actually has a matching handler - a typo'd or forgotten handler otherwise surfaces as a failure the first time something dispatches that request, not at startup. `ValidateOnBuild()` closes that gap synchronously, inside `AddInterlocutor` itself, before `IServiceCollection` is mutated at all:
 
 ```csharp
-containerBuilder.AddInterlocutor(interlocutor =>
+builder.Services.AddInterlocutor(interlocutor =>
 {
     interlocutor.ScanAssembly(typeof(Program).Assembly);
     interlocutor.ValidateOnBuild();
@@ -269,22 +277,36 @@ containerBuilder.AddInterlocutor(interlocutor =>
 // before this call returns - not on the first request that needs the missing one.
 ```
 
-Autofac has no native `IServiceProvider` to validate against directly, so the equivalent check *after* the container is built goes through the bridged one instead - useful if you'd rather defer this to a dedicated startup-check step than fail inside `AddInterlocutor` itself:
+Microsoft.Extensions.DependencyInjection's own `IServiceProvider` can also be validated directly, once built - useful if you'd rather defer this to a dedicated startup-check step than fail inside `AddInterlocutor` itself:
+
+```csharp
+var app = builder.Build();
+
+// Opt in explicitly - AddInterlocutor above did not do this for you.
+app.Services.ValidateHandlerRegistrations(typeof(Program).Assembly);
+// Throws InvalidOperationException naming every missing handler, in one message.
+```
+
+<details>
+
+<summary>Using Autofac instead?</summary>
+
+Autofac has no native `IServiceProvider` to validate against directly, so the equivalent check *after* the container is built goes through the bridged one instead:
 
 ```csharp
 var container = containerBuilder.Build();
 
-// Opt in explicitly - AddInterlocutor above did not do this for you.
 container.Resolve<IServiceProvider>().ValidateHandlerRegistrations(typeof(Program).Assembly);
-// Throws InvalidOperationException naming every missing handler, in one message.
 ```
+
+</details>
 
 #### Inspecting what actually got registered
 
 `DescribeRegistrations()` returns a `RegistrationReport` covering every handler, behavior, and infrastructure default `AddInterlocutor` accumulated - useful for confirming a scan or type-match picked up what you expected, without stepping through a debugger:
 
 ```csharp
-containerBuilder.AddInterlocutor(interlocutor =>
+builder.Services.AddInterlocutor(interlocutor =>
 {
     interlocutor.ScanAssembly(typeof(Program).Assembly);
     var report = interlocutor.DescribeRegistrations();
@@ -292,13 +314,13 @@ containerBuilder.AddInterlocutor(interlocutor =>
 });
 ```
 
-See [Dependency Injection: Autofac](dependency-injection-autofac.md) and [Builder & Registration](builder-and-registration.md) for the full registration and validation surface - this is the subset most likely to come up once the blanket `ScanAssembly` call this guide uses stops being precise enough.
+See [Dependency Injection: Microsoft.Extensions.DependencyInjection](dependency-injection-microsoft.md) and [Builder & Registration](builder-and-registration.md) for the full registration and validation surface - this is the subset most likely to come up once the blanket `ScanAssembly` call this guide uses stops being precise enough.
 
 </details>
 
 ## Step 3: Model the domain
 
-One entity, one DTO. The entity is what NHibernate maps and tracks; the DTO is what a handler actually returns - keeping them separate means the API's shape never accidentally depends on the persistence model's shape.
+One entity, one DTO. The entity is what EF Core maps and tracks; the DTO is what a handler actually returns - keeping them separate means the API's shape never accidentally depends on the persistence model's shape.
 
 **`Domain/TodoTask.cs`**
 
@@ -308,8 +330,65 @@ namespace TodoTasks.Api.Domain;
 /// <summary>A single to-do item, owned by the caller who created it.</summary>
 public class TodoTask
 {
-    // NHibernate needs a parameterless constructor to build lazy-loading proxies from query
-    // results - it never calls this directly for entities you construct yourself.
+    // EF Core needs a parameterless constructor to materialize entities from query results - it
+    // never calls this directly for entities you construct yourself.
+    private TodoTask()
+    {
+        this.Title = string.Empty;
+        this.OwnerId = string.Empty;
+    }
+
+    public TodoTask(string title, string ownerId, string? notes)
+        : this()
+    {
+        this.Title = title;
+        this.OwnerId = ownerId;
+        this.Notes = notes;
+        this.CreatedAtUtc = DateTimeOffset.UtcNow;
+    }
+
+    public int Id { get; set; }
+
+    public string Title { get; set; }
+
+    public string? Notes { get; set; }
+
+    // Never trust this from a request body - only ever set from the authenticated caller.
+    public string OwnerId { get; set; }
+
+    public bool IsCompleted { get; set; }
+
+    public DateTimeOffset CreatedAtUtc { get; set; }
+}
+```
+
+> [!TIP]
+> Plain, non-virtual auto-properties are enough here - EF Core's default snapshot-based change tracking, unlike NHibernate, needs no lazy-loading proxy generation to notice a change.
+
+**`Domain/TodoTaskDto.cs`**
+
+```csharp
+namespace TodoTasks.Api.Domain;
+
+/// <summary>The shape returned to callers - deliberately narrower than the entity above.</summary>
+public sealed record TodoTaskDto(int Id, string Title, string? Notes, bool IsCompleted, DateTimeOffset CreatedAtUtc)
+{
+    public static TodoTaskDto FromEntity(TodoTask task) =>
+        new(task.Id, task.Title, task.Notes, task.IsCompleted, task.CreatedAtUtc);
+}
+```
+
+<details>
+
+<summary>Using NHibernate instead?</summary>
+
+NHibernate needs a *protected* parameterless constructor (not `private` - its lazy-loading proxies subclass the entity) and `virtual` members (its proxies override them to intercept reads for lazy loading and change tracking - a non-`virtual` property would silently never get tracked):
+
+```csharp
+namespace TodoTasks.Api.Domain;
+
+public class TodoTask
+{
     protected TodoTask()
     {
         this.Title = string.Empty;
@@ -325,15 +404,12 @@ public class TodoTask
         this.CreatedAtUtc = DateTimeOffset.UtcNow;
     }
 
-    // Members are virtual because NHibernate proxies override them for lazy loading and
-    // change tracking - a non-virtual property silently never gets tracked.
     public virtual int Id { get; protected set; }
 
     public virtual string Title { get; set; }
 
     public virtual string? Notes { get; set; }
 
-    // Never trust this from a request body - only ever set from the authenticated caller.
     public virtual string OwnerId { get; protected set; }
 
     public virtual bool IsCompleted { get; set; }
@@ -342,22 +418,114 @@ public class TodoTask
 }
 ```
 
-**`Domain/TodoTaskDto.cs`**
+The mapping that goes with this shape is in Step 4's own NHibernate callout.
+
+</details>
+
+## Step 4: Persist it with Entity Framework Core
+
+Map the entity with EF Core's fluent API, then register a `DbContext` and the two Interlocutor persistence pieces (`IUnitOfWork`, `IDomainRepository<TodoTask, int>`) that handlers will inject instead of the raw `DbContext`.
+
+**`Persistence/TodoTasksDbContext.cs`**
 
 ```csharp
-namespace TodoTasks.Api.Domain;
+namespace TodoTasks.Api.Persistence;
 
-/// <summary>The shape returned to callers - deliberately narrower than the entity above.</summary>
-public sealed record TodoTaskDto(int Id, string Title, string? Notes, bool IsCompleted, DateTimeOffset CreatedAtUtc)
+using Microsoft.EntityFrameworkCore;
+using TodoTasks.Api.Domain;
+
+public sealed class TodoTasksDbContext(DbContextOptions<TodoTasksDbContext> options) : DbContext(options)
 {
-    public static TodoTaskDto FromEntity(TodoTask task) =>
-        new(task.Id, task.Title, task.Notes, task.IsCompleted, task.CreatedAtUtc);
+    public DbSet<TodoTask> Tasks => this.Set<TodoTask>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<TodoTask>(task =>
+        {
+            task.Property(t => t.Title).IsRequired().HasMaxLength(200);
+            task.Property(t => t.Notes).HasMaxLength(2000);
+            task.Property(t => t.OwnerId).IsRequired();
+        });
+    }
 }
 ```
 
-## Step 4: Persist it with NHibernate
+`GetConnectionString("TodoTasks")` below reads from the standard ASP.NET Core configuration - add it to `appsettings.json` (or `appsettings.Development.json`, environment variables, or a secrets store, per the usual ASP.NET Core configuration precedence, which this guide won't re-teach):
 
-Map the entity with Fluent NHibernate, then register a session factory and the two Interlocutor persistence pieces (`IUnitOfWork`, `IDomainRepository<TodoTask, int>`) that handlers will inject instead of the raw `ISession`.
+```json
+{
+  "ConnectionStrings": {
+    "TodoTasks": "Server=.;Database=TodoTasks;Trusted_Connection=True;TrustServerCertificate=True;"
+  }
+}
+```
+
+Register the `DbContext` and the persistence pieces directly on `builder.Services`, above where `Program.cs` finishes registering Interlocutor itself, further down in this step:
+
+```csharp
+using Interlocutor.Persistence.EntityFrameworkCore;
+using TodoTasks.Api.Persistence;
+
+builder.Services.AddDbContext<TodoTasksDbContext>(
+    options => options.UseSqlServer(builder.Configuration.GetConnectionString("TodoTasks")),
+    contextLifetime: ServiceLifetime.Scoped);
+
+// Scoped so the whole dispatch - repository reads, IUnitOfWork writes - shares one DbContext instance.
+builder.Services.AddScoped(services => new Lazy<TodoTasksDbContext>(services.GetRequiredService<TodoTasksDbContext>));
+
+builder.Services.AddInterlocutorUnitOfWork(services =>
+    new EntityFrameworkUnitOfWork<TodoTasksDbContext>(services.GetRequiredService<Lazy<TodoTasksDbContext>>()));
+
+builder.Services.AddInterlocutorRepository<TodoTask, int, EntityFrameworkRepository<TodoTask, int, TodoTasksDbContext>>(
+    services => new EntityFrameworkRepository<TodoTask, int, TodoTasksDbContext>(
+        services.GetRequiredService<Lazy<TodoTasksDbContext>>(), t => t.Id));
+```
+
+> [!TIP]
+> Unlike Autofac, Microsoft.Extensions.DependencyInjection doesn't resolve `Lazy<T>` for an arbitrary registered `T` automatically - the explicit `Lazy<TodoTasksDbContext>` registration above is required, not optional.
+
+`AddInterlocutorUnitOfWork`/`AddInterlocutorRepository` are opt-in and separate from `AddInterlocutor()` itself - see [Persistence Abstraction](persistence-abstraction.md) for the full `IUnitOfWork`/`IDomainRepository<TEntity, TKey>` surface they register.
+
+Now the piece Step 2 deferred: registering Interlocutor's handlers and pipeline. `AddUnitOfWorkBehavior()` (part of `UseRecommendedChain()`) can't be used as-is here - it registers `UnitOfWorkBehavior<TRequest, TResponse, TContext>` as an open generic against `IPipelineBehavior<TRequest, TResponse>`, and Microsoft.Extensions.DependencyInjection requires an open-generic implementation to declare exactly as many open type parameters as the service interface it's registered against. `UnitOfWorkBehavior<,,>`'s extra `TContext` parameter breaks that. Close it over `TodoTasksDbContext` with a small subclass first, bringing the arity back down to two, then register that subclass instead:
+
+```csharp
+using Interlocutor.Abstractions.Pipeline;
+using Interlocutor.Persistence.EntityFrameworkCore;
+
+// Closes UnitOfWorkBehavior<TRequest,TResponse,TContext>'s extra TContext parameter over
+// TodoTasksDbContext - bringing it back down to the two open type parameters Microsoft DI's
+// open-generic registration requires.
+internal sealed class TodoTasksUnitOfWorkBehavior<TRequest, TResponse>(Lazy<TodoTasksDbContext> context)
+    : UnitOfWorkBehavior<TRequest, TResponse, TodoTasksDbContext>(context);
+
+builder.Services.AddInterlocutor(interlocutor =>
+{
+    interlocutor.ScanAssembly(typeof(Program).Assembly);
+
+    // Logging -> Auditing -> Authorization -> Validation -> Transaction, in that order - see
+    // documentation/pipeline-and-behaviors.md for the reasoning behind this specific order. Spelled
+    // out as the individual Add*Behavior calls UseRecommendedChain() is sugar for, rather than
+    // calling UseRecommendedChain() itself, because its last step (AddUnitOfWorkBehavior()) is
+    // exactly the call the arity problem above rules out under this container.
+    interlocutor.Pipeline
+        .AddLoggingBehavior()
+        .AddAuditingBehavior()
+        .AddAuthorizationBehavior()
+        .AddValidationBehavior()
+        .AddBehavior(typeof(TodoTasksUnitOfWorkBehavior<,>));  // not AddUnitOfWorkBehavior()
+});
+```
+
+> [!WARNING]
+> This workaround is specific to **Microsoft.Extensions.DependencyInjection combined with EF Core**. Autofac's generic registration has no such arity restriction, so `AddUnitOfWorkBehavior()` (part of `UseRecommendedChain()`) works there unmodified even with EF Core - see the Autofac callout in Step 2. NHibernate's `UnitOfWorkBehavior` doesn't have this problem on either container, since `ISession` isn't generic - see the NHibernate callout below. See [Transactions & Store Integration § EntityFramework Core Integration](transactions-and-store-integration.md#entityframework-core-integration) for the full mechanism.
+
+Everything the rest of this guide registers - `IAuditSink` (Step 5), `IPolicyEvaluator` (Step 9), `ICompletionCounter` (Step 8) - is a plain `builder.Services.Add...` call, independent of the `AddInterlocutor` call above; it can go anywhere in `Program.cs` before `builder.Build()`, regardless of whether it appears before or after this block.
+
+<details>
+
+<summary>Using NHibernate instead?</summary>
 
 **`Persistence/TodoTaskMap.cs`**
 
@@ -381,21 +549,12 @@ public sealed class TodoTaskMap : ClassMap<TodoTask>
 }
 ```
 
-`GetConnectionString("TodoTasks")` below reads from the standard ASP.NET Core configuration - add it to `appsettings.json` (or `appsettings.Development.json`, environment variables, or a secrets store, per the usual ASP.NET Core configuration precedence, which this guide won't re-teach):
-
-```json
-{
-  "ConnectionStrings": {
-    "TodoTasks": "Server=.;Database=TodoTasks;Trusted_Connection=True;TrustServerCertificate=True;"
-  }
-}
-```
-
-Build a session factory and add it to `Program.cs`, above the `ConfigureContainer` block from Step 2:
+Build a session factory in `Program.cs`, above where Interlocutor itself gets registered:
 
 ```csharp
 using FluentNHibernate.Cfg;
 using FluentNHibernate.Cfg.Db;
+using Interlocutor.Persistence.NHibernate;
 using NHibernate;
 using TodoTasks.Api.Persistence;
 
@@ -406,52 +565,29 @@ var sessionFactory = Fluently.Configure()
         builder.Configuration.GetConnectionString("TodoTasks")))
     .Mappings(m => m.FluentMappings.AddFromAssemblyOf<TodoTaskMap>())
     .BuildSessionFactory();
+
+builder.Services.AddSingleton(sessionFactory);
+
+// Scoped so the whole dispatch - repository reads, IUnitOfWork writes - shares one session. Unlike
+// Autofac, Microsoft.Extensions.DependencyInjection doesn't resolve Lazy<T> automatically, so both
+// ISession and Lazy<ISession> need their own explicit registration.
+builder.Services.AddScoped(services => services.GetRequiredService<ISessionFactory>().OpenSession());
+builder.Services.AddScoped(services => new Lazy<ISession>(services.GetRequiredService<ISession>));
+
+builder.Services.AddInterlocutorUnitOfWork(services =>
+    new NHibernateUnitOfWork(services.GetRequiredService<Lazy<ISession>>()));
+
+builder.Services.AddInterlocutorRepository<TodoTask, int, NHibernateRepository<TodoTask, int>>(
+    services => new NHibernateRepository<TodoTask, int>(services.GetRequiredService<Lazy<ISession>>(), t => t.Id));
+
+builder.Services.AddInterlocutor(interlocutor =>
+{
+    interlocutor.ScanAssembly(typeof(Program).Assembly);
+    interlocutor.Pipeline.UseRecommendedChain(); // No arity problem here - ISession isn't generic.
+});
 ```
 
-Then, inside the `ConfigureContainer` block:
-
-```csharp
-using Interlocutor.Persistence.NHibernate;
-
-containerBuilder.RegisterInstance(sessionFactory).As<ISessionFactory>().SingleInstance();
-
-// Scoped so the whole dispatch - repository reads, IUnitOfWork writes - shares one session.
-containerBuilder.Register(c => c.Resolve<ISessionFactory>().OpenSession())
-    .As<ISession>()
-    .InstancePerLifetimeScope();
-
-containerBuilder.AddInterlocutorUnitOfWork(c => new NHibernateUnitOfWork(c.Resolve<Lazy<ISession>>()));
-
-containerBuilder.AddInterlocutorRepository<TodoTask, int, NHibernateRepository<TodoTask, int>>(
-    c => new NHibernateRepository<TodoTask, int>(c.Resolve<Lazy<ISession>>(), t => t.Id));
-```
-
-> [!TIP]
-> Autofac resolves `Lazy<T>` for any registered `T` automatically - there's no separate `Lazy<ISession>` registration to write.
-
-`AddInterlocutorUnitOfWork`/`AddInterlocutorRepository` are opt-in and separate from `AddInterlocutor()` itself - see [Persistence Abstraction](persistence-abstraction.md) for the full `IUnitOfWork`/`IDomainRepository<TEntity, TKey>` surface they register.
-
-<details>
-
-<summary>Using Entity Framework Core instead?</summary>
-
-```csharp
-using Interlocutor.Persistence.EntityFrameworkCore;
-
-builder.Services.AddDbContext<TodoTasksDbContext>(
-    options => options.UseSqlServer(builder.Configuration.GetConnectionString("TodoTasks")),
-    ServiceLifetime.Scoped);
-
-containerBuilder.AddInterlocutorUnitOfWork(c =>
-    new EntityFrameworkUnitOfWork<TodoTasksDbContext>(c.Resolve<Lazy<TodoTasksDbContext>>()));
-
-containerBuilder.AddInterlocutorRepository<TodoTask, int, EntityFrameworkRepository<TodoTask, int, TodoTasksDbContext>>(
-    c => new EntityFrameworkRepository<TodoTask, int, TodoTasksDbContext>(
-        c.Resolve<Lazy<TodoTasksDbContext>>(), t => t.Id));
-```
-
-> [!WARNING]
-> `interlocutor.Pipeline.AddUnitOfWorkBehavior()` (part of `UseRecommendedChain()`) works as shown here on Autofac. **Under Microsoft.Extensions.DependencyInjection specifically**, the EF Core `UnitOfWorkBehavior<TRequest, TResponse, TContext>` fails to register - its extra `TContext` type parameter breaks Microsoft DI's open-generic arity matching. If you're combining EF Core with Microsoft.Extensions.DependencyInjection, see [Transactions & Store Integration § EntityFramework Core Integration](transactions-and-store-integration.md#entityframework-core-integration) for the small subclass workaround. NHibernate's `UnitOfWorkBehavior` doesn't have this problem on either container, since `ISession` isn't generic.
+Because there's no arity problem to work around, this whole block - handlers, pipeline, and persistence together - can be registered in one place, unlike the EF Core primary path above.
 
 </details>
 
@@ -505,6 +641,15 @@ public sealed class CreateTodoTaskValidator : AbstractValidator<CreateTodoTaskCo
 
 > [!NOTE]
 > FluentValidation is one option Interlocutor ships an integration for - it isn't a requirement. `ValidationBehavior` only does anything if `Interlocutor.FluentValidation` is referenced and a validator like this one is registered for the command; nothing about the rest of the pipeline depends on it. You could validate inside the handler itself, or plug a different rules engine in behind your own `IPipelineBehavior<TRequest, TResponse>` (see [Registering Custom Behaviors](pipeline-and-behaviors.md#registering-custom-behaviors)) - `UseRecommendedChain()` just happens to reach for this one.
+
+> [!IMPORTANT]
+> `ScanAssembly` (Step 4) only discovers handlers - it doesn't discover `IValidator<T>` implementations like this one. Register those the ordinary FluentValidation way, once, in `Program.cs`:
+>
+> ```csharp
+> builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
+> ```
+>
+> Skip this and `ValidationBehavior` finds zero validators for every request and silently does nothing - no error, just nothing enforced.
 
 **`Application/TodoTasks/CreateTodoTaskHandler.cs`**
 
@@ -626,12 +771,12 @@ public sealed class TodoTasksController(ISender sender) : ControllerBase
 
 </details>
 
-Two behaviors we haven't wired anything for yet are already doing work here without any extra code: `LoggingBehavior` timed and logged this whole dispatch, and `AuditingBehavior` recorded `"create_todo_task"` and its outcome via whatever `IAuditSink` is registered. Register one now, in the `ConfigureContainer` block:
+Two behaviors we haven't wired anything for yet are already doing work here without any extra code: `LoggingBehavior` timed and logged this whole dispatch, and `AuditingBehavior` recorded `"create_todo_task"` and its outcome via whatever `IAuditSink` is registered. Register one now:
 
 ```csharp
 using Interlocutor.Abstractions.Pipeline;
 
-containerBuilder.RegisterType<LoggingAuditSink>().As<IAuditSink>().InstancePerLifetimeScope();
+builder.Services.AddScoped<IAuditSink, LoggingAuditSink>();
 ```
 
 **`Infrastructure/LoggingAuditSink.cs`**
@@ -695,15 +840,19 @@ public sealed record ListTodoTasksQuery(bool OnlyIncomplete)
 public sealed class ListTodoTasksHandler(IDomainRepository<TodoTask, int> repository)
     : IQueryHandler<ListTodoTasksQuery, Outcome<IReadOnlyList<TodoTaskDto>, Failure>>
 {
-    public async Task<Outcome<IReadOnlyList<TodoTaskDto>, Failure>> Handle(
-        ListTodoTasksQuery query, CancellationToken ct)
+    public async Task<Outcome<IReadOnlyList<TodoTaskDto>, Failure>> Handle(ListTodoTasksQuery query, CancellationToken ct)
     {
         var tasks = await repository.GetManyAsync(
             filter: query.OnlyIncomplete ? t => !t.IsCompleted : null,
-            sort: [new SortCriterion<TodoTask>(t => t.CreatedAtUtc, SortDirection.Descending)],
             cancellationToken: ct);
 
-        return tasks.Select(TodoTaskDto.FromEntity).ToList();
+        // Sorted client-side after materializing, not via GetManyAsync's own sort parameter - some
+        // relational providers (SQLite among them) can't translate an ORDER BY over a DateTimeOffset
+        // column into SQL, so pushing CreatedAtUtc ordering down to the database can throw at query
+        // time against a real store even though it works against any mocked repository. See
+        // Sample App Walkthrough for where this bites TutorialProject's own SQLite database, and why
+        // paging (this step's own "Bonus" below) has to solve it differently.
+        return tasks.OrderByDescending(t => t.CreatedAtUtc).Select(TodoTaskDto.FromEntity).ToList();
     }
 }
 ```
@@ -727,19 +876,67 @@ app.MapGet("/todo-tasks", async (bool onlyIncomplete, ISender sender, Cancellati
 });
 ```
 
-### Bonus: querying directly against the session
+### Bonus: querying directly against the DbContext
 
 Not part of the running example above - `GetTodoTaskByIdHandler`/`ListTodoTasksHandler` cover what the finished project actually needs.
 
 <details>
 
-<summary>Show the QueryOver example</summary>
+<summary>Show the direct-DbContext example</summary>
 
-`IDomainRepository<TEntity, TKey>` covers the common cases - a filter expression, a sort, paging. When a query needs more than that fixed method set expresses, drop to the same `ISession` the repository itself wraps, injected directly with `Lazy<ISession>` exactly like `IUnitOfWork`'s own implementation does. It's still the same scoped session as everything else in the dispatch, so it still participates in whatever transaction `UnitOfWorkBehavior` is managing.
+`IDomainRepository<TEntity, TKey>` covers the common cases - a filter expression, a sort, paging. When a query needs more than that fixed method set expresses, drop to the same `DbContext` the repository itself wraps, injected directly with `Lazy<TodoTasksDbContext>` exactly like `IUnitOfWork`'s own implementation does. It's still the same scoped context as everything else in the dispatch, so it still participates in whatever transaction `UnitOfWorkBehavior` is managing.
 
-NHibernate gives you three ways to query that session: LINQ (`session.Query<TEntity>()` - what `IDomainRepository.Query` already wraps), HQL (`session.CreateQuery("from TodoTask t where ...")`), and QueryOver, its fluent Criteria API. Here's a title search via QueryOver - closer to full-text matching than a LINQ `Contains` expression can express cleanly:
+Here's a case-insensitive title search via EF Core's `DbFunctions.Like` - a plain LINQ `Contains` translates to a case-sensitive comparison on some providers, so it can't express this cleanly on its own:
 
 **`Application/TodoTasks/SearchTodoTasksQuery.cs`** and its handler:
+
+```csharp
+using Interlocutor.Abstractions.Queries;
+using Interlocutor.CommonKernel;
+using Interlocutor.CommonKernel.ResultTypes;
+using Microsoft.EntityFrameworkCore;
+
+namespace TodoTasks.Api.Application.TodoTasks;
+
+public sealed record SearchTodoTasksQuery(string OwnerId, string TitleContains)
+    : IQuery<Outcome<IReadOnlyList<TodoTaskDto>, Failure>>;
+
+public sealed class SearchTodoTasksHandler(Lazy<TodoTasksDbContext> context)
+    : IQueryHandler<SearchTodoTasksQuery, Outcome<IReadOnlyList<TodoTaskDto>, Failure>>
+{
+    public async Task<Outcome<IReadOnlyList<TodoTaskDto>, Failure>> Handle(
+        SearchTodoTasksQuery query, CancellationToken ct)
+    {
+        var pattern = $"%{query.TitleContains}%";
+
+        var tasks = await context.Value.Tasks
+            .Where(t => t.OwnerId == query.OwnerId && EF.Functions.Like(t.Title, pattern))
+            .ToListAsync(ct);
+
+        return tasks.OrderByDescending(t => t.CreatedAtUtc).Select(TodoTaskDto.FromEntity).ToList();
+    }
+}
+```
+
+> [!WARNING]
+> Never share a `DbContext` this way across concurrent threads - EF Core's own concurrency contract for `DbContext`. Injecting `Lazy<TodoTasksDbContext>` scoped, one context per dispatch (exactly as registered in Step 4), satisfies that contract by construction; it's only a risk if you go out of your way to cache or hand off a resolved `DbContext` yourself.
+
+```csharp
+app.MapGet("/todo-tasks/search", async (
+    string titleContains, ISender sender, IRequestContextAccessor contextAccessor, CancellationToken ct) =>
+{
+    var ownerId = contextAccessor.Context?.UserId
+        ?? throw new InvalidOperationException("This endpoint requires an authenticated caller.");
+    var result = await sender.Send(new SearchTodoTasksQuery(ownerId, titleContains), ct);
+    return result.ToMinimalApiResult();
+});
+```
+
+<details>
+
+<summary>Using NHibernate instead?</summary>
+
+NHibernate gives you three ways to query a session: LINQ (`session.Query<TEntity>()` - what `IDomainRepository.Query` already wraps), HQL, and QueryOver, its fluent Criteria API. QueryOver is the closer match to full-text matching here:
 
 ```csharp
 using Interlocutor.Abstractions.Queries;
@@ -749,9 +946,6 @@ using NHibernate;
 using NHibernate.Criterion;
 
 namespace TodoTasks.Api.Application.TodoTasks;
-
-public sealed record SearchTodoTasksQuery(string OwnerId, string TitleContains)
-    : IQuery<Outcome<IReadOnlyList<TodoTaskDto>, Failure>>;
 
 public sealed class SearchTodoTasksHandler(Lazy<ISession> session)
     : IQueryHandler<SearchTodoTasksQuery, Outcome<IReadOnlyList<TodoTaskDto>, Failure>>
@@ -770,19 +964,7 @@ public sealed class SearchTodoTasksHandler(Lazy<ISession> session)
 }
 ```
 
-> [!WARNING]
-> Never share the `ISession` this way across concurrent threads, or use it with more than one open transaction per connection - NHibernate's own concurrency contract for `ISession`. Injecting `Lazy<ISession>` scoped, one session per dispatch (exactly as registered in Step 4), satisfies that contract by construction; it's only a risk if you go out of your way to cache or hand off a resolved `ISession` yourself.
-
-```csharp
-app.MapGet("/todo-tasks/search", async (
-    string titleContains, ISender sender, IRequestContextAccessor contextAccessor, CancellationToken ct) =>
-{
-    var ownerId = contextAccessor.Context?.UserId
-        ?? throw new InvalidOperationException("This endpoint requires an authenticated caller.");
-    var result = await sender.Send(new SearchTodoTasksQuery(ownerId, titleContains), ct);
-    return result.ToMinimalApiResult();
-});
-```
+</details>
 
 </details>
 
@@ -826,11 +1008,18 @@ public sealed class ListTodoTasksPagedHandler(IDomainRepository<TodoTask, int> r
     public async Task<Outcome<PagedTodoTasksDto, Failure>> Handle(
         ListTodoTasksPagedQuery query, CancellationToken ct)
     {
+        // Ordered by Id, not CreatedAtUtc: unlike ListTodoTasksHandler's own client-side sort above
+        // (which sidesteps the translation gap by sorting an already-materialized list),
+        // GetPagedAsync pushes its sort parameter into the database query alongside Skip/Take -
+        // paging only makes sense applied after ordering, and both have to happen in the database
+        // for the requested page to be correct. Id increases in creation order, so ordering by it
+        // gives the same newest-first result without hitting the DateTimeOffset translation gap some
+        // providers have.
         var page = await repository.GetPagedAsync(
             query.Page,
             query.PageSize,
             filter: t => t.OwnerId == query.OwnerId,
-            sort: [new SortCriterion<TodoTask>(t => t.CreatedAtUtc, SortDirection.Descending)],
+            sort: [new SortCriterion<TodoTask>(t => t.Id, SortDirection.Descending)],
             cancellationToken: ct);
 
         return new PagedTodoTasksDto(
@@ -888,7 +1077,8 @@ using Interlocutor.Persistence.Abstractions;
 namespace TodoTasks.Api.Application.TodoTasks;
 
 public sealed class UpdateTodoTaskHandler(IDomainRepository<TodoTask, int> repository, IUnitOfWork unitOfWork)
-    : ResourceCommandHandler<UpdateTodoTaskCommand, TodoTask, TodoTaskDto>
+    : ResourceCommandHandler<UpdateTodoTaskCommand, TodoTask, TodoTaskDto>,
+      ICommandHandler<UpdateTodoTaskCommand, Outcome<TodoTaskDto, NotFound, Forbidden>>
 {
     // 1. Load - a null result short-circuits with NotFound before Authorize ever runs.
     protected override Task<TodoTask?> LoadAsync(UpdateTodoTaskCommand command, CancellationToken ct) =>
@@ -910,6 +1100,9 @@ public sealed class UpdateTodoTaskHandler(IDomainRepository<TodoTask, int> repos
     }
 }
 ```
+
+> [!IMPORTANT]
+> `ResourceCommandHandler<TCommand, TEntity, TSuccess>` does not itself implement `ICommandHandler<TCommand, TResponse>` - a plain subclass is invisible to handler discovery. The explicit interface declaration above is required, not decorative; the base class's own `Handle` method already satisfies it, so no override body is needed.
 
 > [!IMPORTANT]
 > Don't stack FluentValidation on top of a `ResourceCommandHandler` command without checking the arity first. `ValidationBehavior` needs to construct a `ValidationError`/`ValidationErrors` case on a validation failure - but `ResourceCommandHandler`'s response shape is fixed to `Outcome<TSuccess, NotFound, Forbidden>`, which has no such case. This is no longer a runtime surprise: registering a validator for `UpdateTodoTaskCommand` in this shape is now a build-time `INTERLOC010` diagnostic naming the request, the validator, and the missing case, rather than a first-validation-failure exception. Fold input checks like this into `Authorize` (returning a `Forbidden`) or `HandleAsync` instead.
@@ -935,7 +1128,7 @@ app.MapPut("/todo-tasks/{id:int}", async (
 public sealed record UpdateTodoTaskRequest(string Title, string? Notes);
 ```
 
-Contrast this with Step 9's `DeleteTodoTaskCommand`, which uses the other authorization style - a coarse, non-resource policy check via `IRequiresPolicy`. See [Handler Selection & Dispatch § Contrast: Resource vs. Non-Resource Authorization](handler-selection-and-dispatch.md#contrast-resource-vs-non-resource-authorization) for when to reach for which.
+Contrast this with Step 9's `DeleteTodoTaskCommand`, which uses the other authorization style - a policy check via `IRequiresPolicy`. See [Handler Selection & Dispatch § Contrast: Resource vs. Non-Resource Authorization](handler-selection-and-dispatch.md#contrast-resource-vs-non-resource-authorization) for when to reach for which.
 
 ## Step 8: State transitions and a notification
 
@@ -1070,10 +1263,10 @@ public sealed class InMemoryCompletionCounter : ICompletionCounter
 }
 ```
 
-Register it in the `ConfigureContainer` block:
+Register it:
 
 ```csharp
-containerBuilder.RegisterType<InMemoryCompletionCounter>().As<ICompletionCounter>().SingleInstance();
+builder.Services.AddSingleton<ICompletionCounter, InMemoryCompletionCounter>();
 ```
 
 Both handlers run **sequentially by default** - if one throws, the other doesn't run. Neither can change the outcome value the caller receives, since `TodoTaskDto.FromEntity(task)` above is already the value `Handle` returns regardless of what a subscriber does - but a subscriber that throws *does* still affect the command: `UnitOfWorkBehavior` hasn't committed yet at the point `Publish` is called here (it commits only once `Handle` itself returns), so an exception propagating out of a subscriber unwinds past that commit and the completion rolls back with it. See [Transactions & Store Integration § Transactions with Notifications](transactions-and-store-integration.md#transactions-with-notifications) for the full mechanism, and for the pattern that publishes only once the transaction has genuinely committed (publishing from the caller of `Send`, after it returns, rather than from inside the handler). See [Notifications & Fan-out](notifications-and-fan-out.md) for `Parallel` publishing and everything else about multi-subscriber dispatch - this guide only needed the default.
@@ -1127,9 +1320,9 @@ See [Transactions & Store Integration § Cancel](transactions-and-store-integrat
 
 ### Bonus: multiple repositories, one unit of work
 
-Every handler so far injects exactly one `IDomainRepository<TodoTask, int>`. A handler can inject more than one - one per entity type - and they all still share the *same* `IUnitOfWork`, because `IUnitOfWork` and every `IDomainRepository<TEntity, TKey>` are built over the same scoped `Lazy<ISession>` (Step 4). One `SaveChangesAsync()` call commits (or one rollback undoes) everything staged through all of them together - that's the actual point of "unit of work": not one repository, but one atomic boundary spanning however many the handler needs.
+Every handler so far injects exactly one `IDomainRepository<TodoTask, int>`. A handler can inject more than one - one per entity type - and they all still share the *same* `IUnitOfWork`, because `IUnitOfWork` and every `IDomainRepository<TEntity, TKey>` are built over the same scoped `Lazy<TodoTasksDbContext>` (Step 4). One `SaveChangesAsync()` call commits (or one rollback undoes) everything staged through all of them together - that's the actual point of "unit of work": not one repository, but one atomic boundary spanning however many the handler needs.
 
-Not part of the running example above - `CompleteTodoTaskHandler` (Step 8) stays single-repository throughout the rest of this guide.
+Not part of the running example above - `CompleteTodoTaskHandler` (Step 8) stays single-repository throughout the rest of this guide. See [Sample App Walkthrough](sample-app-walkthrough.md) for this made real: `TutorialProject/TodoTasks.Api`'s own Users feature deletes a user and every task they own atomically, through exactly this pattern.
 
 <details>
 
@@ -1145,7 +1338,7 @@ namespace TodoTasks.Api.Domain;
 /// <summary>A permanent record of something that happened to a <see cref="TodoTask"/>.</summary>
 public class TodoTaskActivityLogEntry
 {
-    protected TodoTaskActivityLogEntry() => this.Action = string.Empty;
+    private TodoTaskActivityLogEntry() => this.Action = string.Empty;
 
     public TodoTaskActivityLogEntry(int todoTaskId, string action)
         : this()
@@ -1155,41 +1348,32 @@ public class TodoTaskActivityLogEntry
         this.OccurredAtUtc = DateTimeOffset.UtcNow;
     }
 
-    public virtual int Id { get; protected set; }
+    public int Id { get; set; }
 
-    public virtual int TodoTaskId { get; protected set; }
+    public int TodoTaskId { get; set; }
 
-    public virtual string Action { get; protected set; }
+    public string Action { get; set; }
 
-    public virtual DateTimeOffset OccurredAtUtc { get; protected set; }
+    public DateTimeOffset OccurredAtUtc { get; set; }
 }
 ```
 
-**`Persistence/TodoTaskActivityLogEntryMap.cs`** - mapped and registered exactly like `TodoTask` was in Step 4:
+**`Persistence/TodoTasksDbContext.cs`** - mapped and exposed exactly like `TodoTask` was in Step 4:
 
 ```csharp
-using FluentNHibernate.Mapping;
-using TodoTasks.Api.Domain;
-
-namespace TodoTasks.Api.Persistence;
-
-public sealed class TodoTaskActivityLogEntryMap : ClassMap<TodoTaskActivityLogEntry>
+modelBuilder.Entity<TodoTaskActivityLogEntry>(entry =>
 {
-    public TodoTaskActivityLogEntryMap()
-    {
-        this.Id(e => e.Id);
-        this.Map(e => e.TodoTaskId).Not.Nullable();
-        this.Map(e => e.Action).Not.Nullable().Length(100);
-        this.Map(e => e.OccurredAtUtc).Not.Nullable();
-    }
-}
+    entry.Property(e => e.Action).IsRequired().HasMaxLength(100);
+});
 ```
 
 ```csharp
 // Alongside the TodoTask repository registration from Step 4 - a second AddInterlocutorRepository
-// call, one per entity type, both built over the same Lazy<ISession>.
-containerBuilder.AddInterlocutorRepository<TodoTaskActivityLogEntry, int, NHibernateRepository<TodoTaskActivityLogEntry, int>>(
-    c => new NHibernateRepository<TodoTaskActivityLogEntry, int>(c.Resolve<Lazy<ISession>>(), e => e.Id));
+// call, one per entity type, both built over the same Lazy<TodoTasksDbContext>.
+builder.Services.AddInterlocutorRepository<
+    TodoTaskActivityLogEntry, int, EntityFrameworkRepository<TodoTaskActivityLogEntry, int, TodoTasksDbContext>>(
+    services => new EntityFrameworkRepository<TodoTaskActivityLogEntry, int, TodoTasksDbContext>(
+        services.GetRequiredService<Lazy<TodoTasksDbContext>>(), e => e.Id));
 ```
 
 **`Application/TodoTasks/CompleteTodoTaskWithActivityLogHandler.cs`** - two repositories, one `IUnitOfWork`:
@@ -1239,7 +1423,7 @@ public sealed class CompleteTodoTaskWithActivityLogHandler(
 ```
 
 > [!IMPORTANT]
-> This is the distinction that matters: the activity-log row above is written through a repository *inside* this handler, so it shares this dispatch's transaction *by construction* - it exists if and only if the task's completion itself was committed, because both are staged against the same session before the one `SaveChangesAsync` call. `TodoTaskCompletedNotification`'s subscribers (Step 8), called from inside the handler the same way, are not actually decoupled the same way: `UnitOfWorkBehavior` doesn't commit until `Handle` itself returns, so a subscriber failure here still unwinds past that commit and rolls the completion back too - see [Transactions & Store Integration § Transactions with Notifications](transactions-and-store-integration.md#transactions-with-notifications) for why, and for how to publish in a way that's genuinely independent of the command's own transaction. Reach for a second repository when a write must be atomic with the rest of the command; reach for a notification, published from outside the handler, when the downstream work should be allowed to fail independently.
+> This is the distinction that matters: the activity-log row above is written through a repository *inside* this handler, so it shares this dispatch's transaction *by construction* - it exists if and only if the task's completion itself was committed, because both are staged against the same context before the one `SaveChangesAsync` call. `TodoTaskCompletedNotification`'s subscribers (Step 8), called from inside the handler the same way, are not actually decoupled the same way: `UnitOfWorkBehavior` doesn't commit until `Handle` itself returns, so a subscriber failure here still unwinds past that commit and rolls the completion back too - see [Transactions & Store Integration § Transactions with Notifications](transactions-and-store-integration.md#transactions-with-notifications) for why, and for how to publish in a way that's genuinely independent of the command's own transaction. Reach for a second repository when a write must be atomic with the rest of the command; reach for a notification, published from outside the handler, when the downstream work should be allowed to fail independently.
 
 </details>
 
@@ -1304,7 +1488,7 @@ app.MapPost("/todo-tasks/{id:int}/reopen", async (int id, ISender sender, Cancel
 
 ## Step 9: Coarse-grained authorization - deleting a task
 
-Delete uses the last of the five recommended-chain behaviors: `AuthorizationBehavior`, gated by `IRequiresPolicy`. Unlike Step 7's ownership check, this runs *before* the entity is loaded at all - it's a "can this caller attempt this kind of command" check, not an "is this specific task theirs" check.
+Delete uses the last of the five recommended-chain behaviors: `AuthorizationBehavior`, gated by `IRequiresPolicy`. This runs *before* the entity is loaded for the handler's own use - `AuthorizationBehavior` itself is invoked ahead of the handler regardless of what the policy checks, in contrast with Step 7's `ResourceCommandHandler`, whose ownership check can only run *inside* the handler's own load/authorize/handle template, after `LoadAsync` has already fetched the entity for the handler to use.
 
 **`Application/TodoTasks/DeleteTodoTaskCommand.cs`** and its handler:
 
@@ -1320,7 +1504,7 @@ namespace TodoTasks.Api.Application.TodoTasks;
 public sealed record DeleteTodoTaskCommand(int Id)
     : ICommand<Outcome<Success, NotFound, Forbidden>>, IRequiresPolicy, IAuditableRequest
 {
-    public string PolicyName => "DeleteTodoTask";
+    public string PolicyName => TodoTaskPolicyEvaluator.OwnsTaskPolicyName;
 
     public string ActionName => "delete_todo_task";
 }
@@ -1328,6 +1512,10 @@ public sealed record DeleteTodoTaskCommand(int Id)
 public sealed class DeleteTodoTaskHandler(IDomainRepository<TodoTask, int> repository, IUnitOfWork unitOfWork)
     : ICommandHandler<DeleteTodoTaskCommand, Outcome<Success, NotFound, Forbidden>>
 {
+    // By the time this runs, AuthorizationBehavior has already evaluated TodoTaskPolicyEvaluator and
+    // confirmed the caller owns the task (or the task didn't exist, in which case the policy lets the
+    // request through so this handler - not the policy check - produces NotFound). This handler
+    // therefore only needs to worry about whether the task still exists by the time it runs.
     public async Task<Outcome<Success, NotFound, Forbidden>> Handle(
         DeleteTodoTaskCommand command, CancellationToken ct)
     {
@@ -1344,34 +1532,49 @@ public sealed class DeleteTodoTaskHandler(IDomainRepository<TodoTask, int> repos
 }
 ```
 
-`AuthorizationBehavior` needs an `IPolicyEvaluator` to ask - there's no default:
+`AuthorizationBehavior` needs an `IPolicyEvaluator` to ask - there's no default. Nothing about `IRequiresPolicy` forbids the evaluator from loading an entity to decide - it's still a policy check running ahead of dispatch, just one that happens to be resource-aware, in contrast with Step 7's ownership check, which is resource-aware because it runs *inside* the handler's own template instead:
 
 **`Infrastructure/TodoTaskPolicyEvaluator.cs`**
 
 ```csharp
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Pipeline;
+using Interlocutor.Persistence.Abstractions;
 
 namespace TodoTasks.Api.Infrastructure;
 
-// A stand-in for a real policy system - AuthorizationBehavior only asks "is this policy name
-// satisfied for this request", so any engine can sit behind this one method. In a production app
+// A stand-in for a real policy system - AuthorizationBehavior only ever asks "is this policy name
+// satisfied for this request," so any engine can sit behind this one method. In a production app
 // this would typically delegate to ASP.NET Core's IAuthorizationService instead.
-public sealed class TodoTaskPolicyEvaluator(IRequestContextAccessor contextAccessor) : IPolicyEvaluator
+public sealed class TodoTaskPolicyEvaluator(IDomainRepository<TodoTask, int> repository, IRequestContextAccessor contextAccessor)
+    : IPolicyEvaluator
 {
-    public Task<bool> EvaluateAsync(string policyName, object request, CancellationToken ct) =>
-        Task.FromResult(policyName switch
+    public const string OwnsTaskPolicyName = "owns-task";
+
+    public Task<bool> EvaluateAsync(string policyName, object request, CancellationToken ct)
+    {
+        if (policyName != OwnsTaskPolicyName || request is not DeleteTodoTaskCommand command)
         {
-            "DeleteTodoTask" => contextAccessor.Context?.UserId is not null,
-            _ => false,
-        });
+            return Task.FromResult(false);
+        }
+
+        if (contextAccessor.Context?.UserId is not { } callerId)
+        {
+            return Task.FromResult(false);
+        }
+
+        // No such task: not this evaluator's call to make - let the request through so
+        // DeleteTodoTaskHandler produces NotFound instead of this policy masking it as Forbidden.
+        var task = repository.GetById(command.Id);
+        return Task.FromResult(task is null || task.OwnerId == callerId);
+    }
 }
 ```
 
-Register it in the `ConfigureContainer` block:
+Register it:
 
 ```csharp
-containerBuilder.RegisterType<TodoTaskPolicyEvaluator>().As<IPolicyEvaluator>().InstancePerLifetimeScope();
+builder.Services.AddScoped<IPolicyEvaluator, TodoTaskPolicyEvaluator>();
 ```
 
 Endpoint:
@@ -1461,19 +1664,14 @@ app.MapPost("/todo-tasks/clear-completed", async (
 Here's the complete `Program.cs` - everything from Steps 2, 4, 5, 6, 8, and 9 in one file, in the order it actually needs to run:
 
 ```csharp
-using Autofac;
-using Autofac.Extensions.DependencyInjection;
-using FluentNHibernate.Cfg;
-using FluentNHibernate.Cfg.Db;
 using Interlocutor.Abstractions;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.AspNetCore;
 using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
-using Interlocutor.DependencyInjection.Autofac;
-using Interlocutor.Persistence.NHibernate;
-using NHibernate;
+using Interlocutor.Persistence.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using TodoTasks.Api.Application.TodoTasks;
 using TodoTasks.Api.Domain;
 using TodoTasks.Api.Infrastructure;
@@ -1481,39 +1679,34 @@ using TodoTasks.Api.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Host.UseServiceProviderFactory(new AutofacServiceProviderFactory());
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IRequestContextAccessor, AspNetCoreRequestContextAccessor>();
 
-var sessionFactory = Fluently.Configure()
-    .Database(MsSqlConfiguration.MsSql2012.ConnectionString(
-        builder.Configuration.GetConnectionString("TodoTasks")))
-    .Mappings(m => m.FluentMappings.AddFromAssemblyOf<TodoTaskMap>())
-    .BuildSessionFactory();
+builder.Services.AddDbContext<TodoTasksDbContext>(
+    options => options.UseSqlServer(builder.Configuration.GetConnectionString("TodoTasks")),
+    contextLifetime: ServiceLifetime.Scoped);
+builder.Services.AddScoped(services => new Lazy<TodoTasksDbContext>(services.GetRequiredService<TodoTasksDbContext>));
 
-builder.Host.ConfigureContainer<ContainerBuilder>(containerBuilder =>
+builder.Services.AddInterlocutorUnitOfWork(services =>
+    new EntityFrameworkUnitOfWork<TodoTasksDbContext>(services.GetRequiredService<Lazy<TodoTasksDbContext>>()));
+builder.Services.AddInterlocutorRepository<TodoTask, int, EntityFrameworkRepository<TodoTask, int, TodoTasksDbContext>>(
+    services => new EntityFrameworkRepository<TodoTask, int, TodoTasksDbContext>(
+        services.GetRequiredService<Lazy<TodoTasksDbContext>>(), t => t.Id));
+
+builder.Services.AddScoped<IAuditSink, LoggingAuditSink>();
+builder.Services.AddScoped<IPolicyEvaluator, TodoTaskPolicyEvaluator>();
+builder.Services.AddSingleton<ICompletionCounter, InMemoryCompletionCounter>();
+builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
+
+builder.Services.AddInterlocutor(interlocutor =>
 {
-    containerBuilder.RegisterType<AspNetCoreRequestContextAccessor>()
-        .As<IRequestContextAccessor>()
-        .InstancePerLifetimeScope();
-
-    containerBuilder.RegisterInstance(sessionFactory).As<ISessionFactory>().SingleInstance();
-    containerBuilder.Register(c => c.Resolve<ISessionFactory>().OpenSession())
-        .As<ISession>()
-        .InstancePerLifetimeScope();
-
-    containerBuilder.AddInterlocutorUnitOfWork(c => new NHibernateUnitOfWork(c.Resolve<Lazy<ISession>>()));
-    containerBuilder.AddInterlocutorRepository<TodoTask, int, NHibernateRepository<TodoTask, int>>(
-        c => new NHibernateRepository<TodoTask, int>(c.Resolve<Lazy<ISession>>(), t => t.Id));
-
-    containerBuilder.RegisterType<LoggingAuditSink>().As<IAuditSink>().InstancePerLifetimeScope();
-    containerBuilder.RegisterType<TodoTaskPolicyEvaluator>().As<IPolicyEvaluator>().InstancePerLifetimeScope();
-    containerBuilder.RegisterType<InMemoryCompletionCounter>().As<ICompletionCounter>().SingleInstance();
-
-    containerBuilder.AddInterlocutor(interlocutor =>
-    {
-        interlocutor.ScanAssembly(typeof(Program).Assembly);
-        interlocutor.Pipeline.UseRecommendedChain();
-    });
+    interlocutor.ScanAssembly(typeof(Program).Assembly);
+    interlocutor.Pipeline
+        .AddLoggingBehavior()
+        .AddAuditingBehavior()
+        .AddAuthorizationBehavior()
+        .AddValidationBehavior()
+        .AddBehavior(typeof(TodoTasksUnitOfWorkBehavior<,>));
 });
 
 var app = builder.Build();
@@ -1580,6 +1773,11 @@ app.Run();
 public sealed record CreateTodoTaskRequest(string Title, string? Notes);
 
 public sealed record UpdateTodoTaskRequest(string Title, string? Notes);
+
+// Closes UnitOfWorkBehavior<TRequest,TResponse,TContext>'s extra TContext parameter over
+// TodoTasksDbContext - see Step 4 for why Microsoft.Extensions.DependencyInjection needs this.
+internal sealed class TodoTasksUnitOfWorkBehavior<TRequest, TResponse>(Lazy<TodoTasksDbContext> context)
+    : UnitOfWorkBehavior<TRequest, TResponse, TodoTasksDbContext>(context);
 ```
 
 The whole request/response surface, for reference:
@@ -1595,11 +1793,11 @@ The whole request/response surface, for reference:
 | `DeleteTodoTaskCommand` | Command | `Outcome<Success, NotFound, Forbidden>` | `IRequiresPolicy`, `IAuditableRequest` |
 | `ClearCompletedTodoTasksCommand` | Command (bare `ICommand`, via `IVoidCommandHandler<,>`) | `Outcome` (chosen by the caller) | `IAuditableRequest` |
 
-Each row's arity is exactly what that operation can produce - no request routes an outcome it can't actually reach through a generic catch-all `Failure`, per [Choosing Arities](messages-and-result-types.md#choosing-arities). The "Bonus" sections throughout (manual response mapping, a raw-session/QueryOver search, a paged query, a custom pipeline behavior) are deliberately left out of this table and out of `Program.cs` above - they're optional deep-dives, not part of the finished project.
+Each row's arity is exactly what that operation can produce - no request routes an outcome it can't actually reach through a generic catch-all `Failure`, per [Choosing Arities](messages-and-result-types.md#choosing-arities). The "Bonus" sections throughout (manual response mapping, a raw-context/search example, a paged query, a custom pipeline behavior) are deliberately left out of this table and out of `Program.cs` above - they're optional deep-dives, not part of the finished project.
 
 ## Step 11: Understanding pipeline nesting - a custom chain, explicitly
 
-`interlocutor.Pipeline.UseRecommendedChain()` (Step 2) is sugar. It's worth seeing what it expands to and exactly why the order it produces is unavoidable, before adding anything of your own to it - none of what follows changes the finished project from Step 10; it's here for when you need to go beyond the recommended chain.
+`interlocutor.Pipeline.UseRecommendedChain()` (available under Autofac; spelled out as its five individual steps here under Microsoft DI + EF Core, per Step 4's own `[!WARNING]`) is sugar for a fixed order. It's worth seeing what it expands to and exactly why that order is unavoidable, before adding anything of your own to it - none of what follows changes the finished project from Step 10; it's here for when you need to go beyond the recommended chain.
 
 <details>
 
@@ -1708,7 +1906,7 @@ public sealed class SlowHandlerWarningBehavior<TRequest, TResponse>(
 }
 ```
 
-To measure only the handler, it has to be the *last*-registered entry - innermost, wrapping nothing but the handler itself:
+To measure only the handler, it has to be the *last*-registered entry - innermost, wrapping nothing but the handler itself. Under this guide's own Microsoft DI + EF Core stack, that means registering it after the `TodoTasksUnitOfWorkBehavior<,>` workaround from Step 4:
 
 ```csharp
 using TodoTasks.Api.Infrastructure;
@@ -1718,14 +1916,14 @@ interlocutor.Pipeline
     .AddAuditingBehavior()         // 2.
     .AddAuthorizationBehavior()    // 3.
     .AddValidationBehavior()       // 4.
-    .AddUnitOfWorkBehavior()       // 5.
-    .AddBehavior(typeof(SlowHandlerWarningBehavior<,>)); // 6. Innermost - wraps only the handler
+    .AddBehavior(typeof(TodoTasksUnitOfWorkBehavior<,>))         // 5.
+    .AddBehavior(typeof(SlowHandlerWarningBehavior<,>));         // 6. Innermost - wraps only the handler
 ```
 
 Registered anywhere else in the list, it would measure something else entirely: placed *first* (outermost), it would time logging, auditing, authorization, validation, and the transaction commit right along with the handler - indistinguishable from what `LoggingBehavior` already reports. Placed between Validation and the Transaction, it would include the transaction's own commit/rollback cost in its measurement, not just the handler. There's no configuration flag for "measure just the handler" - there's only where in the list you register it.
 
 > [!NOTE]
-> This behavior isn't wired into Step 10's `Program.cs` - it's here to demonstrate composition, not because the finished project needs it. Adding it for real is exactly the six-line change shown above, nothing else.
+> This behavior isn't wired into Step 10's `Program.cs` - it's here to demonstrate composition, not because the finished project needs it. Adding it for real is exactly the six-line change shown above, nothing else. See [Sample App Walkthrough](sample-app-walkthrough.md) for it wired into `TutorialProject/TodoTasks.Api` for real, with a test proving the isolation this section describes.
 
 > [!TIP]
 > FYI: a full `IPipelineBehavior<TRequest, TResponse>` like `SlowHandlerWarningBehavior` above is the general tool, but it's more machinery than a simple pre/post hook needs - it owns the `next()` delegate and has to remember to call it. `IPipelineStage<TRequest, TResponse>` (via `PipelineStageBase<TRequest, TResponse>`) is a lighter alternative for exactly that case: override `OnBeforeAsync`/`OnAfterAsync`, no delegate to manage, with the option to short-circuit before the handler runs. Multiple stages share a single `PipelineStageBehavior` entry in the chain, registered with `.AddStage(...)`/`.AddStageHost()`. See [Pipeline & Behavior Composition § Pipeline Stages](pipeline-and-behaviors.md#pipeline-stages-ipipelinestage).
@@ -1734,7 +1932,7 @@ Registered anywhere else in the list, it would measure something else entirely: 
 
 `UseRecommendedChain()` is opt-in sugar for one documented order - not a constraint the library enforces. Nothing stops you from composing the same five behaviors, a subset of them, or your own alongside them, in whatever order an actual need in your application justifies.
 
-Take `DeleteTodoTaskCommand` (Step 9): its `AuthorizationBehavior` check runs `TodoTaskPolicyEvaluator`, which - in a real app - might delegate to an external permissions service over the network, while `ValidationBehavior`'s FluentValidation rules are pure in-memory checks. The recommended order puts Authorization before Validation specifically so a request the caller isn't allowed to make never pays for validation - but that reasoning assumes authorization is the *cheap* step. If it's actually the expensive one, some teams deliberately invert the two: reject cheap-to-detect bad input first, and only pay for the network call once the input was well-formed to begin with.
+Take `DeleteTodoTaskCommand` (Step 9): its `AuthorizationBehavior` check runs `TodoTaskPolicyEvaluator`, which loads the task itself to compare ownership - in a real app, a policy check like this might delegate to an external permissions service over the network besides, while `ValidationBehavior`'s FluentValidation rules are pure in-memory checks. The recommended order puts Authorization before Validation specifically so a request the caller isn't allowed to make never pays for validation - but that reasoning assumes authorization is the *cheap* step. If it's actually the expensive one, some teams deliberately invert the two: reject cheap-to-detect bad input first, and only pay for the network call once the input was well-formed to begin with.
 
 ```csharp
 interlocutor.Pipeline
@@ -1742,12 +1940,12 @@ interlocutor.Pipeline
     .AddAuditingBehavior()         // 2. Unchanged
     .AddValidationBehavior()       // 3. Swapped ahead of Authorization - reject bad input first
     .AddAuthorizationBehavior()    // 4. Only reached once the input is well-formed
-    .AddUnitOfWorkBehavior();      // 5. Unchanged
+    .AddBehavior(typeof(TodoTasksUnitOfWorkBehavior<,>));  // 5. Unchanged
 ```
 
 This is a genuine trade-off, not a strict improvement - per [Pipeline & Behavior Composition § Why This Order](pipeline-and-behaviors.md#why-this-order), the recommended order saves the validator's work for a request the caller couldn't make at all; this swap gives that up in exchange for never paying for the authorization call on a malformed request. Which one is worth more depends entirely on which behavior is actually expensive in your application - the library has no opinion here. That same doc says as much directly: the recommendation is "not a default... If your application has different needs, compose what serves you."
 
-The mechanical consequence, using the ingress/egress model from earlier in this section: ingress now runs Logging -> Auditing -> **Validation -> Authorization** -> Transaction -> handler, egress unwinds in the exact reverse, and a request that fails validation now short-circuits *before* Authorization's ingress ever runs - that caller's authorization check for that policy simply never happens, cheap or not.
+The mechanical consequence, using the ingress/egress model from earlier in this section: ingress now runs Logging -> Auditing -> **Validation -> Authorization** -> Transaction -> handler, egress unwinds in the exact reverse, and a request that fails validation now short-circuits *before* Authorization's ingress ever runs - that caller's authorization check for that policy simply never happens, cheap or not. See [Sample App Walkthrough](sample-app-walkthrough.md) for this proven directly against the real behaviors, not just described.
 
 </details>
 
@@ -1756,11 +1954,11 @@ The mechanical consequence, using the ingress/egress model from earlier in this 
 This guide deliberately left a few things out - not because they don't matter, but because they're either well-covered elsewhere or genuinely out of scope for a first pass:
 
 - **Tests.** Not covered here on purpose - see [Testing Handlers & Pipelines](testing.md) once you're ready to add them; the patterns there apply directly to everything built above.
-- **Cross-assembly handler discovery.** This guide kept everything in one project for simplicity. [Sample App Walkthrough](sample-app-walkthrough.md) shows the same handler discovery working across a domain assembly and an API assembly.
+- **Cross-assembly handler discovery.** This guide, and its runnable counterpart, keep everything in one project for simplicity - see [Handler Selection & Dispatch](handler-selection-and-dispatch.md) for how discovery generalizes across assemblies when a real application's needs call for it.
 - **Cancellation, timeouts, and rate limiting.** Three more opt-in behaviors, additive to the recommended chain rather than part of it - see [Pipeline & Behavior Composition § Cancellation, Timeout & Rate Limiting Behaviors](pipeline-and-behaviors.md#cancellation-timeout--rate-limiting-behaviors).
 - **Runtime-typed dispatch.** Useful for outbox/inbox/queue consumers that don't know a request's concrete type until runtime - see [Runtime-Typed Dispatch](runtime-typed-dispatch.md).
 - **Trimming/AOT.** If you plan to publish trimmed, see [Trim & AOT Support](trim-and-aot-support.md) for what's currently supported and what isn't yet.
-- **The root-scope guard.** Every endpoint in this guide is a Minimal API route handler, and ASP.NET Core hands those a per-request scope automatically, so `ISender sender` as a parameter always resolves cleanly - this guide never hits the guard that stops `IMediator`/`ISender`/`IPublisher` from resolving directly against the root container. The moment you add anything that runs outside a request (a `BackgroundService`, a console tool, a test host), you need `container.BeginLifetimeScope()` (Autofac) or `serviceProvider.CreateScope()` (Microsoft DI) yourself - see [Mediator, Lifetimes, Scope & Ambient Context § Root-Scope Exception & Guard](mediator-lifetimes-and-scope.md#root-scope-exception--guard).
+- **The root-scope guard.** Every endpoint in this guide is a Minimal API route handler, and ASP.NET Core hands those a per-request scope automatically, so `ISender sender` as a parameter always resolves cleanly - this guide never hits the guard that stops `IMediator`/`ISender`/`IPublisher` from resolving directly against the root container. The moment you add anything that runs outside a request (a `BackgroundService`, a console tool, a test host), you need `serviceProvider.CreateScope()` (Microsoft DI) or `container.BeginLifetimeScope()` (Autofac) yourself - see [Mediator, Lifetimes, Scope & Ambient Context § Root-Scope Exception & Guard](mediator-lifetimes-and-scope.md#root-scope-exception--guard).
 - **Compile-time registration.** `ScanAssembly` (used throughout this guide) is a reflection-based scan resolved at DI-configuration time - a missing handler surfaces at first dispatch, unless caught earlier by `ValidateOnBuild()` (Step 2's "Advanced" section). There's a separate, additive compile-time path via `Interlocutor.Generator`/`AddGeneratedRegistrations` that this guide doesn't use - see [Builder & Registration § Assembly Scanning](builder-and-registration.md#assembly-scanning) and [Handler Selection & Dispatch](handler-selection-and-dispatch.md) for how the two relate.
 - **Response type variance.** Every handler in this guide implements its interface with the exact response type the request declares, so this never comes up - but it's worth knowing the boundary exists: `IQueryHandler<TQuery, TResponse>`/`ICommandHandler<TCommand, TResponse>` can't be implemented against a *more specific* `Outcome<...>` than the request declares and substituted in where the less-specific one is expected, or vice versa. `TResponse` is invariant everywhere in the library, permanently, for reasons that go beyond a missing feature - see [Messages, Result Types & Variance § Variance: Response Type Is Never Variant](messages-and-result-types.md#variance-response-type-is-never-variant).
 
@@ -1768,5 +1966,5 @@ And the two swaps this guide called out inline throughout, gathered in one place
 
 | Swap out | Swap in | Where it changed |
 |---|---|---|
-| Autofac | Microsoft.Extensions.DependencyInjection | Steps 1 and 2 |
-| NHibernate + Fluent NHibernate | Entity Framework Core | Steps 1 and 4 |
+| Microsoft.Extensions.DependencyInjection | Autofac | Steps 1 and 2 |
+| Entity Framework Core | NHibernate + Fluent NHibernate | Steps 1, 3, and 4 |
