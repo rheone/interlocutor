@@ -8,8 +8,10 @@ Interlocutor.FluentValidation.FluentValidationErrors.Messages.get -> System.Coll
 Interlocutor.FluentValidation.FluentValidationErrorsBehavior<TRequest, TResponse>
 Interlocutor.FluentValidation.FluentValidationErrorsBehavior<TRequest, TResponse>.FluentValidationErrorsBehavior(System.Collections.Generic.IEnumerable<FluentValidation.IValidator<TRequest>!>! validators, Interlocutor.Abstractions.Pipeline.Cases.IOutcomeCaseRegistry! caseRegistry) -> void
 Interlocutor.FluentValidation.FluentValidationErrorsBehavior<TRequest, TResponse>.Handle(TRequest request, System.Func<System.Threading.Tasks.Task<TResponse>!>! next, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
+Interlocutor.FluentValidation.FluentValidationErrorsBehavior<TRequest, TResponse>.HandleAsync(TRequest request, System.Func<System.Threading.Tasks.Task<TResponse>!>! next, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
 Interlocutor.FluentValidation.ValidationBehavior<TRequest, TResponse>
 Interlocutor.FluentValidation.ValidationBehavior<TRequest, TResponse>.Handle(TRequest request, System.Func<System.Threading.Tasks.Task<TResponse>!>! next, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
+Interlocutor.FluentValidation.ValidationBehavior<TRequest, TResponse>.HandleAsync(TRequest request, System.Func<System.Threading.Tasks.Task<TResponse>!>! next, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
 Interlocutor.FluentValidation.ValidationBehavior<TRequest, TResponse>.ValidationBehavior(System.Collections.Generic.IEnumerable<FluentValidation.IValidator<TRequest>!>! validators, Interlocutor.Abstractions.Pipeline.Cases.IOutcomeCaseRegistry! caseRegistry) -> void
 override Interlocutor.FluentValidation.FluentValidationErrors.GetHashCode() -> int
 override Interlocutor.FluentValidation.FluentValidationErrors.ToString() -> string!

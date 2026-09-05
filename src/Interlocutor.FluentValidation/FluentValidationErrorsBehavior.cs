@@ -60,6 +60,10 @@ public sealed class FluentValidationErrorsBehavior<TRequest, TResponse> : IPipel
         this.caseRegistry = caseRegistry;
     }
 
+    /// <inheritdoc/>
+    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
+        this.HandleAsync(request, next, ct);
+
     /// <summary>
     /// Validates the request using all registered validators. If validation succeeds,
     /// the request is forwarded to the next pipeline stage.
@@ -73,7 +77,7 @@ public sealed class FluentValidationErrorsBehavior<TRequest, TResponse> : IPipel
     /// Validation failed, but <typeparamref name="TResponse"/> has no <see cref="FluentValidationErrors"/>
     /// case to construct - use a response type that has one.
     /// </exception>
-    public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+    public async Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         // Short-circuit when no validators are registered - the pipeline proceeds without validation.
         if (!this.validators.Any())

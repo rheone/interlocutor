@@ -90,6 +90,10 @@ public class UnitOfWorkBehavior<TRequest, TResponse, TContext>(
 
     /// <inheritdoc/>
     public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
+        this.HandleAsync(request, next, ct);
+
+    /// <inheritdoc/>
+    public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
         CommitGateDriver.Handle(
             request,
             () => RunWithExternalStoreSuppressionAsync(request, next),

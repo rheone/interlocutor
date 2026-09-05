@@ -46,13 +46,16 @@ public sealed class EntityFrameworkUnitOfWork<TContext>(Lazy<TContext> context) 
     }
 
     /// <inheritdoc/>
+    public Task Cancel(CancellationToken cancellationToken = default) => this.CancelAsync(cancellationToken);
+
+    /// <inheritdoc/>
     /// <remarks>
     /// Rolls back and disposes <c>Database.CurrentTransaction</c> if one is open, then clears the change
     /// tracker (<c>ChangeTracker.Clear()</c>) so nothing staged during this dispatch remains pending - the
     /// commit-gate behavior's end-of-pipeline check finds no open transaction and no pending changes, and
     /// does nothing further. A no-op if no transaction is open.
     /// </remarks>
-    public async Task Cancel(CancellationToken cancellationToken = default)
+    public async Task CancelAsync(CancellationToken cancellationToken = default)
     {
         var db = context.Value;
         if (db.Database.CurrentTransaction is { } transaction)

@@ -3,10 +3,12 @@ Interlocutor.Persistence.EntityFrameworkCore.EntityFrameworkRepository<TEntity, 
 Interlocutor.Persistence.EntityFrameworkCore.EntityFrameworkRepository<TEntity, TKey, TContext>.EntityFrameworkRepository(System.Lazy<TContext!>! context, System.Linq.Expressions.Expression<System.Func<TEntity!, TKey>!>! idSelector) -> void
 Interlocutor.Persistence.EntityFrameworkCore.EntityFrameworkUnitOfWork<TContext>
 Interlocutor.Persistence.EntityFrameworkCore.EntityFrameworkUnitOfWork<TContext>.Cancel(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Interlocutor.Persistence.EntityFrameworkCore.EntityFrameworkUnitOfWork<TContext>.CancelAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Interlocutor.Persistence.EntityFrameworkCore.EntityFrameworkUnitOfWork<TContext>.EntityFrameworkUnitOfWork(System.Lazy<TContext!>! context) -> void
 Interlocutor.Persistence.EntityFrameworkCore.EntityFrameworkUnitOfWork<TContext>.SaveChangesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Interlocutor.Persistence.EntityFrameworkCore.UnitOfWorkBehavior<TRequest, TResponse, TContext>
 Interlocutor.Persistence.EntityFrameworkCore.UnitOfWorkBehavior<TRequest, TResponse, TContext>.Handle(TRequest request, System.Func<System.Threading.Tasks.Task<TResponse>!>! next, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
+Interlocutor.Persistence.EntityFrameworkCore.UnitOfWorkBehavior<TRequest, TResponse, TContext>.HandleAsync(TRequest request, System.Func<System.Threading.Tasks.Task<TResponse>!>! next, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
 Interlocutor.Persistence.EntityFrameworkCore.UnitOfWorkBehavior<TRequest, TResponse, TContext>.UnitOfWorkBehavior(System.Lazy<TContext!>! db, Interlocutor.Abstractions.Pipeline.Classifiers.IOutcomeClassifier? classifier = null, Interlocutor.Abstractions.Pipeline.IResponseOutcomeDescriber? describer = null, Microsoft.Extensions.Logging.ILogger<Interlocutor.Persistence.EntityFrameworkCore.UnitOfWorkBehavior<TRequest, TResponse, TContext!>!>? logger = null) -> void
 Interlocutor.Persistence.EntityFrameworkCore.UnitOfWorkSaveChangesInterceptor
 Interlocutor.Persistence.EntityFrameworkCore.UnitOfWorkSaveChangesInterceptor.UnitOfWorkSaveChangesInterceptor() -> void

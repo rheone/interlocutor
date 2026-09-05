@@ -30,13 +30,13 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<EntityFrameworkTestF
     }
 
     [Fact]
-    public async Task Handle_DispatchThatNeverWrites_NeverOpensTransaction()
+    public async Task HandleAsync_DispatchThatNeverWrites_NeverOpensTransaction()
     {
         // Arrange
         var behavior = this.CreateBehavior();
 
         // Act
-        var result = await behavior.Handle(
+        var result = await behavior.HandleAsync(
             new PlainRequest(),
             () => Task.FromResult<Outcome<Success, Failure>>(default(Success)),
             CancellationToken.None
@@ -48,13 +48,13 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<EntityFrameworkTestF
     }
 
     [Fact]
-    public async Task Handle_WriteStagedDirectlyOnContext_OpensTransactionAndCommitsOnSuccess()
+    public async Task HandleAsync_WriteStagedDirectlyOnContext_OpensTransactionAndCommitsOnSuccess()
     {
         // Arrange
         var behavior = this.CreateBehavior();
 
         // Act
-        var result = await behavior.Handle(
+        var result = await behavior.HandleAsync(
             new PlainRequest(),
             async () =>
             {
@@ -75,14 +75,14 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<EntityFrameworkTestF
     }
 
     [Fact]
-    public async Task Handle_NullPayloadSuccess_CommitsNotRollsBack()
+    public async Task HandleAsync_NullPayloadSuccess_CommitsNotRollsBack()
     {
         // Arrange - a handler that legitimately succeeds with a null case payload (see finding 01) must
         // still commit, not roll back a genuine write as if it had failed.
         var behavior = new UnitOfWorkBehavior<PlainRequest, Outcome<string?, Failure>, TestDbContext>(this.lazyContext);
 
         // Act
-        var result = await behavior.Handle(
+        var result = await behavior.HandleAsync(
             new PlainRequest(),
             async () =>
             {
@@ -101,7 +101,7 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<EntityFrameworkTestF
     }
 
     [Fact]
-    public async Task Handle_NullPayloadSuccessRoutedThroughResourceCommandHandler_CommitsNotRollsBack()
+    public async Task HandleAsync_NullPayloadSuccessRoutedThroughResourceCommandHandler_CommitsNotRollsBack()
     {
         // Arrange - the realistic trigger from finding 01: ResourceCommandHandler<TCommand, TEntity, TSuccess>
         // (the library's own built-in resource-authorization template) lets a consumer pick a nullable
@@ -115,7 +115,7 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<EntityFrameworkTestF
         var command = new NullableSuccessResourceCommand();
 
         // Act
-        var result = await behavior.Handle(
+        var result = await behavior.HandleAsync(
             command,
             () => resourceHandler.Handle(command, CancellationToken.None),
             CancellationToken.None
@@ -128,13 +128,13 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<EntityFrameworkTestF
     }
 
     [Fact]
-    public async Task Handle_ClassifiedFailure_RollsBack_NoRowPersisted()
+    public async Task HandleAsync_ClassifiedFailure_RollsBack_NoRowPersisted()
     {
         // Arrange
         var behavior = this.CreateBehavior();
 
         // Act
-        var result = await behavior.Handle(
+        var result = await behavior.HandleAsync(
             new PlainRequest(),
             async () =>
             {
@@ -153,14 +153,14 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<EntityFrameworkTestF
     }
 
     [Fact]
-    public async Task Handle_TransactionalRequest_BeginsEagerly_BeforeHandlerWrites()
+    public async Task HandleAsync_TransactionalRequest_BeginsEagerly_BeforeHandlerWrites()
     {
         // Arrange
         var behavior = new UnitOfWorkBehavior<TransactionalRequest, Outcome<Success, Failure>, TestDbContext>(this.lazyContext);
         var transactionOpenBeforeWrite = false;
 
         // Act
-        await behavior.Handle(
+        await behavior.HandleAsync(
             new TransactionalRequest(),
             () =>
             {
@@ -177,13 +177,13 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<EntityFrameworkTestF
     }
 
     [Fact]
-    public async Task Handle_ExternalStoreRequest_NeverOpensLocalTransaction_EvenWhenItWrites()
+    public async Task HandleAsync_ExternalStoreRequest_NeverOpensLocalTransaction_EvenWhenItWrites()
     {
         // Arrange
         var behavior = new UnitOfWorkBehavior<ExternalStoreRequest, Outcome<Success, Failure>, TestDbContext>(this.lazyContext);
 
         // Act
-        var result = await behavior.Handle(
+        var result = await behavior.HandleAsync(
             new ExternalStoreRequest(),
             async () =>
             {
@@ -205,14 +205,14 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<EntityFrameworkTestF
     }
 
     [Fact]
-    public async Task Handle_UnitOfWorkCancel_RollsBackImmediately_AndPreservesHandlerOutcome()
+    public async Task HandleAsync_UnitOfWorkCancel_RollsBackImmediately_AndPreservesHandlerOutcome()
     {
         // Arrange
         var unitOfWork = new EntityFrameworkUnitOfWork<TestDbContext>(this.lazyContext);
         var behavior = this.CreateBehavior();
 
         // Act
-        var result = await behavior.Handle(
+        var result = await behavior.HandleAsync(
             new PlainRequest(),
             async () =>
             {
@@ -223,7 +223,7 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<EntityFrameworkTestF
 
                 // The handler cancels, then still returns its own Success outcome - Cancel is not a
                 // short-circuit primitive, so the handler retains control of what it returns.
-                await unitOfWork.Cancel(CancellationToken.None).ConfigureAwait(false);
+                await unitOfWork.CancelAsync(CancellationToken.None).ConfigureAwait(false);
                 return default(Success);
             },
             CancellationToken.None
@@ -241,7 +241,7 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<EntityFrameworkTestF
     }
 
     [Fact]
-    public async Task Handle_UsesInjectedClassifier_NotOutcomeShape_ToDecideCommitVersusRollback()
+    public async Task HandleAsync_UsesInjectedClassifier_NotOutcomeShape_ToDecideCommitVersusRollback()
     {
         // Arrange
         var classifier = Substitute.For<IOutcomeClassifier>();
@@ -252,7 +252,7 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<EntityFrameworkTestF
         );
 
         // Act
-        var result = await behavior.Handle(
+        var result = await behavior.HandleAsync(
             new PlainRequest(),
             async () =>
             {
@@ -271,6 +271,31 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<EntityFrameworkTestF
         // ... but the injected classifier said "failure", so the behavior rolled back instead of committing.
         await using var verify = this.CreateVerificationContext();
         Assert.Empty(verify.Widgets);
+    }
+
+    [Fact]
+    public async Task Handle_ForwardsToHandleAsync()
+    {
+        // Arrange
+        var behavior = this.CreateBehavior();
+
+        // Act - calling the superseded member must still commit a real write, just like HandleAsync.
+        var result = await behavior.Handle(
+            new PlainRequest(),
+            async () =>
+            {
+                await this
+                    .context.Widgets.AddAsync(new Widget { Name = "via-handle" }, CancellationToken.None)
+                    .ConfigureAwait(false);
+                return default(Success);
+            },
+            CancellationToken.None
+        );
+
+        // Assert
+        Assert.True(result.IsSuccess);
+        await using var verify = this.CreateVerificationContext();
+        Assert.Equal(["via-handle"], verify.Widgets.Select(w => w.Name));
     }
 
     public void Dispose()

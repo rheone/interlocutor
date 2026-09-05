@@ -65,7 +65,7 @@ public sealed class EjectEmissionTests
         var dispatchSource = GetGeneratedSource(result, "InterlocutorGeneratedDispatch.g.cs");
 
         Assert.Contains(
-            "return await behavior.Handle(request, next, ct).ConfigureAwait(false);",
+            "return await behavior.HandleAsync(request, next, ct).ConfigureAwait(false);",
             dispatchSource,
             StringComparison.Ordinal
         );

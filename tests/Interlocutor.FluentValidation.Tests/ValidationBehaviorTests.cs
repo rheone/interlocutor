@@ -11,7 +11,7 @@ using NSubstitute;
 public class ValidationBehaviorTests
 {
     [Fact]
-    public async Task Handle_PassesThroughWhenNoValidatorsRegistered()
+    public async Task HandleAsync_PassesThroughWhenNoValidatorsRegistered()
     {
         // Arrange
         var request = new TestRequest("Alice", 30);
@@ -29,7 +29,7 @@ public class ValidationBehaviorTests
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert
         Assert.True(handlerInvoked, "Handler should be invoked when no validators present");
@@ -37,7 +37,7 @@ public class ValidationBehaviorTests
     }
 
     [Fact]
-    public async Task Handle_InvokesHandlerWhenValidationPasses()
+    public async Task HandleAsync_InvokesHandlerWhenValidationPasses()
     {
         // Arrange
         var request = new TestRequest("Alice", 30);
@@ -56,7 +56,7 @@ public class ValidationBehaviorTests
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert
         Assert.True(handlerInvoked, "Handler should be invoked when validation passes");
@@ -64,7 +64,7 @@ public class ValidationBehaviorTests
     }
 
     [Fact]
-    public async Task Handle_DoesNotCallNextWhenValidationFails()
+    public async Task HandleAsync_DoesNotCallNextWhenValidationFails()
     {
         // Arrange
         var request = new TestRequest(string.Empty, 30);
@@ -83,7 +83,7 @@ public class ValidationBehaviorTests
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert
         Assert.False(handlerInvoked, "Handler should NOT be invoked when validation fails");
@@ -91,7 +91,7 @@ public class ValidationBehaviorTests
     }
 
     [Fact]
-    public async Task Handle_ReturnsAllErrorMessagesAcrossValidatorsWhenValidationFails()
+    public async Task HandleAsync_ReturnsAllErrorMessagesAcrossValidatorsWhenValidationFails()
     {
         // Arrange
         var request = new TestRequest("Al", -5);
@@ -108,7 +108,7 @@ public class ValidationBehaviorTests
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert
         var validationErrors = Assert.IsType<ValidationErrors>(result.Value);
@@ -121,7 +121,7 @@ public class ValidationBehaviorTests
     }
 
     [Fact]
-    public async Task Handle_DeDuplicatesErrorMessagesAcrossValidators()
+    public async Task HandleAsync_DeDuplicatesErrorMessagesAcrossValidators()
     {
         // Arrange
         var request = new TestRequest(string.Empty, -5);
@@ -140,7 +140,7 @@ public class ValidationBehaviorTests
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert
         var validationErrors = Assert.IsType<ValidationErrors>(result.Value);
@@ -152,7 +152,7 @@ public class ValidationBehaviorTests
 
     // Auto Generated, verify expected behavior:
     [Fact]
-    public async Task Handle_PreservesOrderOfFirstOccurrenceAcrossValidators()
+    public async Task HandleAsync_PreservesOrderOfFirstOccurrenceAcrossValidators()
     {
         // Arrange
         var request = new TestRequest(string.Empty, -5);
@@ -168,7 +168,7 @@ public class ValidationBehaviorTests
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert - name validator runs first, so its errors ("Name is required") must precede the age
         // validator's ("Age must be non-negative") in the aggregated message list.
@@ -182,7 +182,7 @@ public class ValidationBehaviorTests
 
     // Auto Generated, verify expected behavior:
     [Fact]
-    public async Task Handle_ForwardsCancellationTokenToEachValidator()
+    public async Task HandleAsync_ForwardsCancellationTokenToEachValidator()
     {
         // Arrange
         // NSubstitute/Castle DynamicProxy can only proxy IValidator<T> when T is public (an internal request
@@ -204,14 +204,14 @@ public class ValidationBehaviorTests
         }
 
         // Act
-        await behavior.Handle(request, Next, token);
+        await behavior.HandleAsync(request, Next, token);
 
         // Assert
         await validator.Received(1).ValidateAsync(request, token);
     }
 
     [Fact]
-    public async Task Handle_WithResponseTypeThatHasNoValidationErrorsCase_ThrowsNamedExceptionOnFailure()
+    public async Task HandleAsync_WithResponseTypeThatHasNoValidationErrorsCase_ThrowsNamedExceptionOnFailure()
     {
         // Arrange
         // TResponse is no longer decomposed at compile time into a success-type parameter with
@@ -233,7 +233,7 @@ public class ValidationBehaviorTests
 
         // Act
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            behavior.Handle(request, Next, CancellationToken.None)
+            behavior.HandleAsync(request, Next, CancellationToken.None)
         );
 
         // Assert
@@ -241,7 +241,7 @@ public class ValidationBehaviorTests
     }
 
     [Fact]
-    public async Task Handle_HandRolledNonUnionResponse_ShortCircuitsWithValidationErrorsViaCustomRegistry()
+    public async Task HandleAsync_HandRolledNonUnionResponse_ShortCircuitsWithValidationErrorsViaCustomRegistry()
     {
         // Arrange
         // TResponse need not be a compiler-generated union at all - IOutcomeCaseRegistry is the seam that
@@ -265,12 +265,35 @@ public class ValidationBehaviorTests
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, Next, CancellationToken.None);
 
         // Assert
         Assert.False(handlerInvoked, "Handler should NOT be invoked when validation fails");
         var validationErrors = Assert.IsType<ValidationErrors>(result.CaseValue);
         Assert.Contains("Name is required", validationErrors.Messages);
+    }
+
+    [Fact]
+    public async Task Handle_ForwardsToHandleAsync()
+    {
+        // Arrange
+        var request = new TestRequest(string.Empty, 30);
+        var validators = new AbstractValidator<TestRequest>[] { new TestRequestNameValidator() };
+        var behavior = new ValidationBehavior<TestRequest, Outcome<string, ValidationErrors>>(
+            validators,
+            DefaultOutcomeCaseRegistry.Instance
+        );
+
+        static Task<Outcome<string, ValidationErrors>> Next()
+        {
+            return Task.FromResult<Outcome<string, ValidationErrors>>(new Outcome<string, ValidationErrors>("success"));
+        }
+
+        // Act - calling the superseded member must produce the same validation-failure behavior as HandleAsync.
+        var result = await behavior.Handle(request, Next, CancellationToken.None);
+
+        // Assert
+        Assert.IsType<ValidationErrors>(result.Value);
     }
 
     /// <summary>A hand-rolled, non-union <see cref="IOutcome"/> implementation with no
