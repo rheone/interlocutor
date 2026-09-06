@@ -4,7 +4,7 @@
 
 **Blocked by:** None — can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `cbc4980`.
 
 - [ ] A new builder type in `Interlocutor.Abstractions.Pipeline.Mapping` accumulates `Type -> Func<TFailure, TResult>` registrations via a generic `RegisterType<TFailure>(Func<TFailure, TResult>)` method and a by-`Type`/`Delegate` overload, mirroring `OutcomeClassifierBuilder.RegisterType`'s two-overload shape.
 - [ ] Registering a second mapping for a type already registered overrides the first (last-write-wins), matching `OutcomeClassifierBuilder`'s documented behavior.
