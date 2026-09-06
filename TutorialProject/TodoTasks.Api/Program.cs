@@ -21,6 +21,7 @@ using TodoTasks.Api.Features.Tasks.UpdateTodoTask;
 using TodoTasks.Api.Features.Users.CreateUser;
 using TodoTasks.Api.Features.Users.DeleteUser;
 using TodoTasks.Api.Features.Users.GetUserById;
+using TodoTasks.Api.Features.Users.SendWelcomeEmail;
 using TodoTasks.Api.Infrastructure;
 using TodoTasks.Api.Persistence;
 
@@ -96,6 +97,11 @@ builder.Services.AddInterlocutorRepository<TodoTask, int, EntityFrameworkReposit
 // TodoTaskCompletionCounterHandler, the notification subscriber this backs.
 builder.Services.AddSingleton<ICompletionCounter, InMemoryCompletionCounter>();
 
+// Stateless, so a singleton is fine - the same reasoning as ICompletionCounter above doesn't apply here
+// (this fake never accumulates anything across requests), but there's no reason to pay for a new
+// instance per scope either. Backs SendWelcomeEmailHandler; see IWelcomeMailerClient's own remarks.
+builder.Services.AddSingleton<IWelcomeMailerClient, InMemoryWelcomeMailerClient>();
+
 // Registered before AddInterlocutor() below, same reasoning as AspNetCoreRequestContextAccessor above:
 // AddAuthorizationBehavior() only try-adds its own default (DefaultPolicyEvaluator, which grants every
 // policy), so registering this one first makes it win. Scoped because it depends on the scoped
@@ -134,7 +140,14 @@ builder.Services.AddInterlocutor(interlocutor =>
         .AddBehavior(typeof(TodoTasksUnitOfWorkBehavior<,>))
         // A second custom behavior beyond the recommended chain - see its own remarks for why
         // "innermost, registered last" is what makes it measure only the handler's own work.
-        .AddBehavior(typeof(SlowHandlerWarningBehavior<,>));
+        .AddBehavior(typeof(SlowHandlerWarningBehavior<,>))
+        // Teaches the pipeline's IOutcomeCaseRegistry to construct SendWelcomeEmailResult's cases -
+        // Interlocutor's own worked example of a hand-rolled IUnion response type, per
+        // documentation/messages-and-result-types.md's "IUnion as an Extension Point" section. Falls back
+        // to DefaultOutcomeCaseRegistry for every other response type this project uses (every
+        // compiler-generated Outcome<...> arity), so this doesn't disturb any existing feature's
+        // construction/extraction - see SendWelcomeEmailResultCaseRegistry's own remarks.
+        .OverrideOutcomeCaseRegistry<SendWelcomeEmailResultCaseRegistry>();
 });
 
 var app = builder.Build();
@@ -170,6 +183,7 @@ app.MapGet(
 app.MapCreateUserEndpoint();
 app.MapGetUserByIdEndpoint();
 app.MapDeleteUserEndpoint();
+app.MapSendWelcomeEmailEndpoint();
 app.MapCreateTodoTaskEndpoint();
 app.MapGetTodoTaskByIdEndpoint();
 app.MapListTodoTasksEndpoint();

@@ -9,7 +9,7 @@ If you haven't read [Glossary](glossary.md), [Messages, Result Types & Variance]
 
 ## What it is
 
-A to-do list API with two features: **Tasks** (create, look up by id, list, list paged, search, update, complete, reopen, delete, clear completed) and **Users** (create, look up by id, delete). Every piece maps to a piece of Interlocutor's design:
+A to-do list API with two features: **Tasks** (create, look up by id, list, list paged, search, update, complete, reopen, delete, clear completed) and **Users** (create, look up by id, delete, send a welcome email). Every piece maps to a piece of Interlocutor's design:
 
 | Project piece | What it demonstrates |
 | --- | --- |
@@ -18,6 +18,7 @@ A to-do list API with two features: **Tasks** (create, look up by id, list, list
 | `DeleteTodoTaskCommand` | `IRequiresPolicy`, evaluated before the entity ever loads for the handler's own use |
 | `UpdateTodoTaskHandler` | `ResourceCommandHandler`'s load/authorize/handle template - fine-grained, entity-based authorization |
 | `DeleteUserHandler` | One `IUnitOfWork` spanning two repositories - a user and every task they own deleted together or not at all |
+| `SendWelcomeEmailResult` | A hand-rolled `IUnion` response type (not a compiler-generated `Outcome<...>`), constructed via a factory registered against `OutcomeCaseRegistryBuilder`/`OverrideOutcomeCaseRegistry` |
 | `TodoTaskCompletedNotification` with two handlers | A multi-subscriber notification |
 | `DevHeaderAuthenticationHandler` | A minimal `AuthenticationHandler` standing in for real authentication, backed by the Users feature's own repository |
 | `SearchTodoTasksHandler` | Dropping to `TodoTasksDbContext` directly where `IDomainRepository<TEntity, TKey>`'s fixed method set doesn't reach |
@@ -39,7 +40,7 @@ TutorialProject/TodoTasks.Api/
 │   ├── Tasks/                  # one folder per use case: CreateTodoTask, GetTodoTaskById, ListTodoTasks,
 │   │   │                       # ListTodoTasksPaged, SearchTodoTasks, UpdateTodoTask, CompleteTodoTask,
 │   │   │                       # ReopenTodoTask, DeleteTodoTask, ClearCompletedTodoTasks
-│   └── Users/                  # CreateUser, GetUserById, DeleteUser
+│   └── Users/                  # CreateUser, GetUserById, DeleteUser, SendWelcomeEmail
 └── Program.cs                  # Microsoft DI host, EF Core + Interlocutor wiring, one MapXEndpoint() call per feature
 ```
 
@@ -265,7 +266,7 @@ It trusts an `X-User-Id` request header as the caller's claimed identity, but on
 
 It populates `ClaimsIdentity` with the matched user's id as the `ClaimTypes.Name` claim specifically - not `ClaimTypes.NameIdentifier` - because `Interlocutor.AspNetCore.AspNetCoreRequestContextAccessor` reads `RequestContext.UserId` from `HttpContext.User.Identity.Name`, which `ClaimsIdentity` resolves from `ClaimTypes.Name` by default. Ties the Tasks and Users features together: the accessor reads the matched user's id off `HttpContext.User` exactly as the guide describes, nothing custom needed on Interlocutor's side.
 
-`Users` and `POST /todo-tasks/clear-completed`'s sibling read/write endpoints aren't uniformly open, though - every Tasks endpoint calls `.RequireAuthorization()`; the Users endpoints (`Features/Users/CreateUser`, `Features/Users/GetUserById`, `Features/Users/DeleteUser`) don't, since user management itself isn't gated behind caller identity in this proof of concept. A small extension method centralizes the "read the authenticated caller or throw" pattern every authenticated Tasks endpoint needs:
+`Users` and `POST /todo-tasks/clear-completed`'s sibling read/write endpoints aren't uniformly open, though - every Tasks endpoint calls `.RequireAuthorization()`; the Users endpoints (`Features/Users/CreateUser`, `Features/Users/GetUserById`, `Features/Users/DeleteUser`, `Features/Users/SendWelcomeEmail`) don't, since user management itself isn't gated behind caller identity in this proof of concept. A small extension method centralizes the "read the authenticated caller or throw" pattern every authenticated Tasks endpoint needs:
 
 ```csharp
 public static class RequestContextAccessorExtensions
