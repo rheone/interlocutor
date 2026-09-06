@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <!-- Lets the test project exercise the internal dispatch-wrapper interfaces (IHandlerWrapper,
-       IVoidHandlerWrapper) directly, rather than only indirectly through Mediator. -->
+       IBareHandlerWrapper) directly, rather than only indirectly through Mediator. -->
   <ItemGroup>
     <InternalsVisibleTo Include="Interlocutor.Abstractions.Tests" />
   </ItemGroup>

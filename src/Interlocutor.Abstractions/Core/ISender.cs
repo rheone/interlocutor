@@ -42,7 +42,7 @@ public interface ISender
         where TResponse : IUnion;
 
     /// <summary>
-    /// Dispatches a void command to its registered handler, returning the outcome through all pipeline
+    /// Dispatches a bare command to its registered handler, returning the outcome through all pipeline
     /// behaviors.
     /// </summary>
     /// <typeparam name="TResult">The <see cref="IUnion"/>-shaped outcome type to resolve a handler for.</typeparam>
@@ -80,7 +80,7 @@ public interface ISender
     /// <c>InterlocutorBuilder.AddGeneratedRegistrations</c>, this overload dispatches through a compile-time
     /// generated type switch (<see cref="IGeneratedRequestDispatcher"/>) - no reflection runs on that path.
     /// Otherwise it falls back to locating the closed <c>IQuery{TResponse}</c> or <c>ICommand{TResponse}</c>
-    /// interface (or, for a unit command, the registered <c>IVoidCommandHandler{TCommand, TResult}</c>) on the
+    /// interface (or, for a unit command, the registered <c>IBareCommandHandler{TCommand, TResult}</c>) on the
     /// request's runtime type and invoking the matching generic <c>SendAsync</c> overload via reflection - the
     /// explicitly opted-in runtime-scanning fallback. Either way this method's contract - exceptions included
     /// - is identical to the caller.

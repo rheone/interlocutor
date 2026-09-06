@@ -41,21 +41,21 @@ public class GreetCommandHandler : ICommandHandler<GreetCommand, Outcome<string,
         Task.FromResult(new Outcome<string, Failure>($"Hello {command.PersonName}"));
 }
 
-public record TestVoidCommand(string Value) : ICommand;
+public record TestBareCommand(string Value) : ICommand;
 
-// IVoidCommandHandler<,> has no HandleAsync member (known gap - ticket 01 never added one), so this fake
+// IBareCommandHandler<,> has no HandleAsync member (known gap - ticket 01 never added one), so this fake
 // stays on Handle as-is.
-public class TestVoidHandler : IVoidCommandHandler<TestVoidCommand, Outcome>
+public class TestBareHandler : IBareCommandHandler<TestBareCommand, Outcome>
 {
-    public Task<Outcome> Handle(TestVoidCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
+    public Task<Outcome> Handle(TestBareCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
 }
 
-/// <summary>A second <see cref="TestVoidCommand"/> handler, registered against <see cref="Outcome{T1, T2}"/>
+/// <summary>A second <see cref="TestBareCommand"/> handler, registered against <see cref="Outcome{T1, T2}"/>
 /// (arity 2) rather than the case-less arity-0 <see cref="Outcome"/> - used only by the eject test, which needs
 /// a response shape an ejected value can be distinguished from.</summary>
-public class TestVoidHandlerWithFailureCase : IVoidCommandHandler<TestVoidCommand, Outcome<Success, Failure>>
+public class TestBareHandlerWithFailureCase : IBareCommandHandler<TestBareCommand, Outcome<Success, Failure>>
 {
-    public Task<Outcome<Success, Failure>> Handle(TestVoidCommand command, CancellationToken ct) =>
+    public Task<Outcome<Success, Failure>> Handle(TestBareCommand command, CancellationToken ct) =>
         Task.FromResult<Outcome<Success, Failure>>(default(Success));
 }
 
@@ -399,19 +399,19 @@ public class MediatorTests
     }
 
     [Fact]
-    public async Task Send_VoidCommand_RunsPipelineBehaviors()
+    public async Task Send_BareCommand_RunsPipelineBehaviors()
     {
         // Arrange
         var invoked = false;
-        var mediator = CreateMediator<TestVoidHandler>(services =>
+        var mediator = CreateMediator<TestBareHandler>(services =>
         {
-            services.AddSingleton<IPipelineBehavior<TestVoidCommand, Outcome>>(
-                new TrackingBehavior<TestVoidCommand, Outcome>(() => invoked = true)
+            services.AddSingleton<IPipelineBehavior<TestBareCommand, Outcome>>(
+                new TrackingBehavior<TestBareCommand, Outcome>(() => invoked = true)
             );
         });
 
         // Act
-        await mediator.SendAsync<Outcome>(new TestVoidCommand("test"), CancellationToken.None);
+        await mediator.SendAsync<Outcome>(new TestBareCommand("test"), CancellationToken.None);
 
         // Assert
         Assert.True(invoked);
@@ -441,25 +441,25 @@ public class MediatorTests
     }
 
     [Fact]
-    public async Task Send_VoidCommand_BehaviorEjectsBeforeNext_ReturnsEjectedOutcomeWithoutThrowing()
+    public async Task Send_BareCommand_BehaviorEjectsBeforeNext_ReturnsEjectedOutcomeWithoutThrowing()
     {
-        // Arrange - covers VoidCommandHandlerWrapper's composition site, distinct from the other two wrappers.
+        // Arrange - covers BareCommandHandlerWrapper's composition site, distinct from the other two wrappers.
         // Uses Outcome<Success, Failure> rather than the case-less arity-0 Outcome the other tests in this
-        // class use: the ejected value needs to be distinguishable from whatever TestVoidHandlerWithFailureCase
+        // class use: the ejected value needs to be distinguishable from whatever TestBareHandlerWithFailureCase
         // itself would have returned, which a case-less Outcome (every instance equal to every other) can't be.
         var services = new ServiceCollection();
         services.AddSingleton<
-            IVoidCommandHandler<TestVoidCommand, Outcome<Success, Failure>>,
-            TestVoidHandlerWithFailureCase
+            IBareCommandHandler<TestBareCommand, Outcome<Success, Failure>>,
+            TestBareHandlerWithFailureCase
         >();
-        services.AddSingleton<IPipelineBehavior<TestVoidCommand, Outcome<Success, Failure>>>(
-            new EjectingBeforeNextBehavior<TestVoidCommand, Outcome<Success, Failure>>(new Failure("dead end"))
+        services.AddSingleton<IPipelineBehavior<TestBareCommand, Outcome<Success, Failure>>>(
+            new EjectingBeforeNextBehavior<TestBareCommand, Outcome<Success, Failure>>(new Failure("dead end"))
         );
         services.AddSingleton<IMediator, Mediator>();
         var mediator = services.BuildServiceProvider().GetRequiredService<IMediator>();
 
         // Act
-        var result = await mediator.SendAsync<Outcome<Success, Failure>>(new TestVoidCommand("test"), CancellationToken.None);
+        var result = await mediator.SendAsync<Outcome<Success, Failure>>(new TestBareCommand("test"), CancellationToken.None);
 
         // Assert
         Assert.Equal(new Failure("dead end"), result.Value);
@@ -484,15 +484,15 @@ public class MediatorTests
     }
 
     [Fact]
-    public async Task Send_VoidCommand_ReturnsAcknowledgment()
+    public async Task Send_BareCommand_ReturnsAcknowledgment()
     {
         // Arrange
-        var mediator = CreateMediator<TestVoidHandler>(_ => { });
+        var mediator = CreateMediator<TestBareHandler>(_ => { });
 
         // Act
-        var result = await mediator.SendAsync<Outcome>(new TestVoidCommand("test"), CancellationToken.None);
+        var result = await mediator.SendAsync<Outcome>(new TestBareCommand("test"), CancellationToken.None);
 
-        // Assert - holding an Outcome instance is itself the acknowledgment that TestVoidHandler ran; there is
+        // Assert - holding an Outcome instance is itself the acknowledgment that TestBareHandler ran; there is
         // nothing further to inspect on it (see Outcome's own remarks).
         Assert.Equal(default(Outcome), result);
     }
@@ -615,9 +615,9 @@ public class MediatorTests
         {
             services.AddSingleton<ICommandHandler<GreetCommand, Outcome<string, Failure>>, GreetCommandHandler>();
         }
-        else if (typeof(THandler) == typeof(TestVoidHandler))
+        else if (typeof(THandler) == typeof(TestBareHandler))
         {
-            services.AddSingleton<IVoidCommandHandler<TestVoidCommand, Outcome>, TestVoidHandler>();
+            services.AddSingleton<IBareCommandHandler<TestBareCommand, Outcome>, TestBareHandler>();
         }
 
         configure(services);

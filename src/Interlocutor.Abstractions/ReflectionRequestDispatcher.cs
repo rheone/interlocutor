@@ -20,7 +20,7 @@ using Interlocutor.Abstractions.Queries;
 /// <remarks>
 /// Kept as its own internal type, separate from <see cref="Mediator"/>'s typed dispatch, activity tracing, and
 /// generated-dispatcher routing, since a future generator-backed implementation replaces this fallback entirely
-/// (see <see cref="ResolveVoidCommandResultType"/>'s remarks) without touching any of those other concerns.
+/// (see <see cref="ResolveBareCommandResultType"/>'s remarks) without touching any of those other concerns.
 /// </remarks>
 internal static class ReflectionRequestDispatcher
 {
@@ -30,14 +30,14 @@ internal static class ReflectionRequestDispatcher
     // MakeGenericMethod on an already-resolved MethodInfo is cheap relative to re-scanning the type's methods.
     private static readonly MethodInfo QuerySendMethod = ResolveSendMethod(typeof(IQuery<>));
     private static readonly MethodInfo CommandSendMethod = ResolveSendMethod(typeof(ICommand<>));
-    private static readonly MethodInfo VoidCommandSendMethod = ResolveSendMethod(typeof(ICommand));
+    private static readonly MethodInfo BareCommandSendMethod = ResolveSendMethod(typeof(ICommand));
 
     // A unit command (ICommand) does not declare its own response type - the caller picks it via Send<TResult>'s
     // type argument. Runtime-typed dispatch has no caller-supplied type argument, so it discovers the response
-    // type by scanning loaded assemblies for a registered IVoidCommandHandler<TCommand, TResult> closing over the
+    // type by scanning loaded assemblies for a registered IBareCommandHandler<TCommand, TResult> closing over the
     // concrete command type. This is the expensive part of the reflection fallback; results are cached per command
     // type since the answer cannot change without reloading assemblies.
-    private static readonly ConcurrentDictionary<Type, Type?> VoidCommandResultTypes = new();
+    private static readonly ConcurrentDictionary<Type, Type?> BareCommandResultTypes = new();
 
     /// <summary>
     /// Resolves and invokes the correct strongly-typed <c>SendAsync</c> overload for <paramref name="request"/>'s
@@ -89,9 +89,9 @@ internal static class ReflectionRequestDispatcher
         {
             // A unit command doesn't declare its own response type - Send<TResult>'s caller-supplied type
             // argument picks it. Runtime-typed dispatch has no caller-supplied type argument, so the response
-            // type is discovered by scanning loaded assemblies for a registered IVoidCommandHandler<TCommand,
+            // type is discovered by scanning loaded assemblies for a registered IBareCommandHandler<TCommand,
             // TResult> closing over this concrete command type (cached per command type - see the field doc).
-            var resultType = VoidCommandResultTypes.GetOrAdd(requestType, ResolveVoidCommandResultType);
+            var resultType = BareCommandResultTypes.GetOrAdd(requestType, ResolveBareCommandResultType);
             if (resultType is null)
             {
                 throw new HandlerNotRegisteredException(requestType);
@@ -100,9 +100,9 @@ internal static class ReflectionRequestDispatcher
             EnsureHandlerRegistered(
                 services,
                 requestType,
-                typeof(IVoidCommandHandler<,>).MakeGenericType(requestType, resultType)
+                typeof(IBareCommandHandler<,>).MakeGenericType(requestType, resultType)
             );
-            return await InvokeSendAsync(VoidCommandSendMethod, mediator, resultType, request, ct).ConfigureAwait(false);
+            return await InvokeSendAsync(BareCommandSendMethod, mediator, resultType, request, ct).ConfigureAwait(false);
         }
 
         throw new UnsupportedRequestTypeException(requestType);
@@ -216,12 +216,12 @@ internal static class ReflectionRequestDispatcher
     }
 
     /// <summary>
-    /// Scans loaded assemblies for a concrete type implementing <c>IVoidCommandHandler&lt;TCommand, TResult&gt;</c>
+    /// Scans loaded assemblies for a concrete type implementing <c>IBareCommandHandler&lt;TCommand, TResult&gt;</c>
     /// closed over <paramref name="commandType"/>, returning the <c>TResult</c> it was implemented against, or
     /// <see langword="null"/> if no such implementation is loaded.
     /// </summary>
     /// <remarks>
-    /// This is the expensive part of the reflection-based fallback (see the <see cref="VoidCommandResultTypes"/>
+    /// This is the expensive part of the reflection-based fallback (see the <see cref="BareCommandResultTypes"/>
     /// field doc) - a future generator-backed implementation replaces it with a compiled lookup, without
     /// changing <see cref="Mediator.SendAsync(object, CancellationToken)"/>'s contract.
     /// </remarks>
@@ -233,7 +233,7 @@ internal static class ReflectionRequestDispatcher
     [RequiresDynamicCode(
         "The runtime-typed dispatch fallback closes generic types/methods reflectively - see documentation/trim-and-aot-support.md."
     )]
-    private static Type? ResolveVoidCommandResultType(Type commandType)
+    private static Type? ResolveBareCommandResultType(Type commandType)
     {
         foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
         {
@@ -258,7 +258,7 @@ internal static class ReflectionRequestDispatcher
                 {
                     if (
                         !candidateInterface.IsGenericType
-                        || candidateInterface.GetGenericTypeDefinition() != typeof(IVoidCommandHandler<,>)
+                        || candidateInterface.GetGenericTypeDefinition() != typeof(IBareCommandHandler<,>)
                     )
                     {
                         continue;

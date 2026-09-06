@@ -9,7 +9,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// <remarks>
 /// <para>
 /// Extracted from the identical ~70-line chain-build/eject-guard logic every handler wrapper
-/// (<c>QueryHandlerWrapper</c>, <c>CommandHandlerWrapper</c>, <c>VoidCommandHandlerWrapper</c>) used to carry
+/// (<c>QueryHandlerWrapper</c>, <c>CommandHandlerWrapper</c>, <c>BareCommandHandlerWrapper</c>) used to carry
 /// its own copy of. Each wrapper still resolves its own handler type from DI and tags the dispatch
 /// <see cref="System.Diagnostics.Activity"/> itself - only the part identical across all three (composing
 /// <see cref="PipelineChainResolver.ResolveChain{TRequest,TResponse}"/>'s behaviors around the handler, with a

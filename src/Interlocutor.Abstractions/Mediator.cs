@@ -21,7 +21,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </para>
 /// <para>
 /// Handler resolution is cached by request type to avoid expensive reflection on every dispatch. Five static caches
-/// hold wrapper instances: one for queries, one for value-returning commands, one for void commands (keyed by both
+/// hold wrapper instances: one for queries, one for value-returning commands, one for bare commands (keyed by both
 /// command and result type), and two for notifications (one for sequential, one for parallel strategies).
 /// </para>
 /// <para>
@@ -44,10 +44,10 @@ public sealed class Mediator(IServiceProvider services) : IMediator
 {
     // Handler wrappers are cached by request type to avoid Activator.CreateInstance on every dispatch.
     // Each dictionary covers a distinct handler category: queries, value-returning commands,
-    // void commands, and notifications (sequential and parallel strategies).
+    // bare commands, and notifications (sequential and parallel strategies).
     private static readonly ConcurrentDictionary<Type, object> QueryWrappers = new();
     private static readonly ConcurrentDictionary<Type, object> CommandWrappers = new();
-    private static readonly ConcurrentDictionary<(Type CommandType, Type ResultType), object> VoidCommandWrappers = new();
+    private static readonly ConcurrentDictionary<(Type CommandType, Type ResultType), object> BareCommandWrappers = new();
     private static readonly ConcurrentDictionary<Type, NotificationHandlerWrapper> SequentialNotificationWrappers = new();
     private static readonly ConcurrentDictionary<Type, NotificationHandlerWrapper> ParallelNotificationWrappers = new();
 
@@ -83,15 +83,15 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     public Task<TResult> SendAsync<TResult>(ICommand command, CancellationToken ct = default)
         where TResult : IUnion
     {
-        // For void commands, cache by both command type and result type because the same command can be
+        // For bare commands, cache by both command type and result type because the same command can be
         // handled with different outcome shapes depending on what the caller needs (e.g., caller may want
         // just Success/Failure, or may need additional cases like NotFound).
-        return DispatchWithTraceAsync<(Type CommandType, Type ResultType), IVoidHandlerWrapper<TResult>, TResult>(
-            VoidCommandWrappers,
+        return DispatchWithTraceAsync<(Type CommandType, Type ResultType), IBareHandlerWrapper<TResult>, TResult>(
+            BareCommandWrappers,
             (command.GetType(), typeof(TResult)),
             key =>
                 Activator.CreateInstance(
-                    typeof(VoidCommandHandlerWrapper<,>).MakeGenericType(key.CommandType, key.ResultType)
+                    typeof(BareCommandHandlerWrapper<,>).MakeGenericType(key.CommandType, key.ResultType)
                 )!,
             command,
             (wrapper, act) => wrapper.HandleAsync(command, services, ct, act)
@@ -156,10 +156,10 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     /// live here once instead of being repeated per overload.
     /// </summary>
     /// <typeparam name="TKey">The cache's key type - a bare <see cref="Type"/> for query/command dispatch, or a
-    /// <c>(Type CommandType, Type ResultType)</c> tuple for void-command dispatch, since the same void command can
+    /// <c>(Type CommandType, Type ResultType)</c> tuple for bare-command dispatch, since the same bare command can
     /// be handled with different outcome shapes depending on what the caller needs.</typeparam>
     /// <typeparam name="TWrapper">The resolved handler wrapper's interface - <see cref="IHandlerWrapper{TResponse}"/>
-    /// or <see cref="IVoidHandlerWrapper{TResult}"/>.</typeparam>
+    /// or <see cref="IBareHandlerWrapper{TResult}"/>.</typeparam>
     /// <typeparam name="TResponse">The outcome type <paramref name="invoke"/> ultimately returns.</typeparam>
     /// <param name="cache">The overload's own static wrapper cache.</param>
     /// <param name="key">The cache key identifying which wrapper to resolve or construct.</param>

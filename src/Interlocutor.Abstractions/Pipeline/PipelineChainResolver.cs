@@ -8,7 +8,7 @@ namespace Interlocutor.Abstractions.Pipeline;
 /// <remarks>
 /// <para>
 /// Both <see cref="PipelineChainExecutor"/> - shared by every hand-written handler wrapper
-/// (<c>QueryHandlerWrapper</c>, <c>CommandHandlerWrapper</c>, <c>VoidCommandHandlerWrapper</c>) - and the
+/// (<c>QueryHandlerWrapper</c>, <c>CommandHandlerWrapper</c>, <c>BareCommandHandlerWrapper</c>) - and the
 /// source-generator's emitted dispatch wrappers call <see cref="ResolveChain{TRequest,TResponse}"/> instead
 /// of resolving <see cref="IPipelineBehavior{TRequest,TResponse}"/> themselves, so this is the one place
 /// either dispatch path's chain-building logic changes to add override support - not a per-behavior check

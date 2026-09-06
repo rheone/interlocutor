@@ -14,7 +14,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// <para>
 /// Resolves the query handler from DI and tags the dispatch activity; <see cref="PipelineChainExecutor"/>
 /// composes the pipeline behaviors around it (see that type's remarks for the chain-build/eject-guard logic
-/// shared with <c>CommandHandlerWrapper</c> and <c>VoidCommandHandlerWrapper</c>). This wrapper is created
+/// shared with <c>CommandHandlerWrapper</c> and <c>BareCommandHandlerWrapper</c>). This wrapper is created
 /// once per query type and cached by the mediator to avoid repeated reflection.
 /// </para>
 /// </remarks>

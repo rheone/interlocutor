@@ -47,7 +47,7 @@ public class MediatorActivityTracingTests
     }
 
     [Fact]
-    public async Task Send_VoidCommand_WithCaseLessOutcome_TagsOutcomeAsNone()
+    public async Task Send_BareCommand_WithCaseLessOutcome_TagsOutcomeAsNone()
     {
         // Arrange
         var captured = new ConcurrentBag<Activity>();
@@ -55,7 +55,7 @@ public class MediatorActivityTracingTests
         ActivitySource.AddActivityListener(listener);
 
         var services = new ServiceCollection();
-        services.AddSingleton<IVoidCommandHandler<TracingSuccessCommand, Outcome>, TracingSuccessCommandHandler>();
+        services.AddSingleton<IBareCommandHandler<TracingSuccessCommand, Outcome>, TracingSuccessCommandHandler>();
         services.AddSingleton<IMediator, Mediator>();
         var provider = services.BuildServiceProvider();
         var mediator = provider.GetRequiredService<IMediator>();
@@ -293,9 +293,9 @@ public class TracingInnerQueryHandler : IQueryHandler<TracingInnerQuery, Outcome
 
 public record TracingSuccessCommand : ICommand;
 
-// IVoidCommandHandler<,> has no HandleAsync member (known gap - ticket 01 never added one), so this fake
+// IBareCommandHandler<,> has no HandleAsync member (known gap - ticket 01 never added one), so this fake
 // stays on Handle as-is.
-public class TracingSuccessCommandHandler : IVoidCommandHandler<TracingSuccessCommand, Outcome>
+public class TracingSuccessCommandHandler : IBareCommandHandler<TracingSuccessCommand, Outcome>
 {
     public Task<Outcome> Handle(TracingSuccessCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
 }

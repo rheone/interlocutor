@@ -22,7 +22,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// (handlers return <see cref="IOutcome"/> unions for expected failures; exceptions are reserved for
 /// bugs or infrastructure faults), this type must never be observed by a caller of
 /// <c>Interlocutor.Abstractions.Core.IMediator</c>. Every place that composes a pipeline behavior chain around
-/// a handler call (<c>CommandHandlerWrapper</c>, <c>VoidCommandHandlerWrapper</c>, <c>QueryHandlerWrapper</c>,
+/// a handler call (<c>CommandHandlerWrapper</c>, <c>BareCommandHandlerWrapper</c>, <c>QueryHandlerWrapper</c>,
 /// and the source-generator's emitted dispatch wrappers) catches this exception immediately at the call site
 /// that invoked the throwing <c>Handle</c> method, converting it back into an ordinary <see cref="Response"/>
 /// value one frame at a time - so every enclosing behavior's own post-<c>next()</c> logic (auditing, the

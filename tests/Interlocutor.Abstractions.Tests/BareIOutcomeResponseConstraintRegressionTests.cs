@@ -29,7 +29,7 @@ public sealed class BareIOutcomeResponseConstraintRegressionTests
     // constraint in this package before this ticket. Every site the ticket's own site list names is exercised
     // below: the mediator core (ISender - Mediator's own SendAsync overloads must carry an identical
     // constraint to compile at all, per CS0425), the handler contracts (IQuery, ICommand, IQueryHandler,
-    // ICommandHandler, IVoidCommandHandler), every pipeline behavior (AuthorizationBehavior,
+    // ICommandHandler, IBareCommandHandler), every pipeline behavior (AuthorizationBehavior,
     // CancellationBehavior, TimeoutBehavior, RateLimitedBehavior), Eject, NoCommit, PipelineEjectException,
     // and the IOutcomeCaseRegistry family (IOutcomeCaseRegistry, OutcomeCaseRegistryBuilder,
     // OutcomeCaseRegistryExtensions). Every one of these now constrains its type parameter to
@@ -56,7 +56,7 @@ public sealed class BareIOutcomeResponseConstraintRegressionTests
 
         public sealed class BareIOutcomeCommand : ICommand<BareIOutcomeResponse>;
 
-        public sealed class BareIOutcomeVoidCommand : ICommand;
+        public sealed class BareIOutcomeBareCommand : ICommand;
 
         public sealed class BareIOutcomeQueryHandler : IQueryHandler<BareIOutcomeQuery, BareIOutcomeResponse>
         {
@@ -70,9 +70,9 @@ public sealed class BareIOutcomeResponseConstraintRegressionTests
                 throw new System.NotImplementedException();
         }
 
-        public sealed class BareIOutcomeVoidCommandHandler : IVoidCommandHandler<BareIOutcomeVoidCommand, BareIOutcomeResponse>
+        public sealed class BareIOutcomeBareCommandHandler : IBareCommandHandler<BareIOutcomeBareCommand, BareIOutcomeResponse>
         {
-            public Task<BareIOutcomeResponse> Handle(BareIOutcomeVoidCommand command, CancellationToken ct) =>
+            public Task<BareIOutcomeResponse> Handle(BareIOutcomeBareCommand command, CancellationToken ct) =>
                 throw new System.NotImplementedException();
         }
 
@@ -164,7 +164,7 @@ public sealed class BareIOutcomeResponseConstraintRegressionTests
         Assert.True(
             constraintErrors.Count >= 15,
             "Expected at least 15 constraint-violation errors (one per site this ticket's site list names: "
-                + "ISender, IQuery<>, ICommand<>, IQueryHandler<,>, ICommandHandler<,>, IVoidCommandHandler<,>, "
+                + "ISender, IQuery<>, ICommand<>, IQueryHandler<,>, ICommandHandler<,>, IBareCommandHandler<,>, "
                 + "AuthorizationBehavior<,>, CancellationBehavior<,>, TimeoutBehavior<,>, RateLimitedBehavior<,>, "
                 + "Eject, NoCommit (both members), PipelineEjectException<>, IOutcomeCaseRegistry.Construct/"
                 + "TryGetActiveCase, OutcomeCaseRegistryBuilder.RegisterFactory, OutcomeCaseRegistryExtensions."
