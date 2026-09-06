@@ -257,6 +257,13 @@ virtual Interlocutor.Abstractions.Pipeline.PipelineStageBase<TRequest, TResponse
 virtual Interlocutor.Abstractions.Pipeline.PipelineStageBase<TRequest, TResponse>.OnBeforeAsync(TRequest request, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Interlocutor.Abstractions.Pipeline.StageResult<TResponse>>!
 ~override Interlocutor.Abstractions.Pipeline.RateLimitResult.Equals(object obj) -> bool
 ~override Interlocutor.Abstractions.Pipeline.RateLimitResult.ToString() -> string
+Interlocutor.Abstractions.Pipeline.Mapping.CustomFailureCaseRegistryBuilder<TResult>
+Interlocutor.Abstractions.Pipeline.Mapping.CustomFailureCaseRegistryBuilder<TResult>.Build() -> Interlocutor.Abstractions.Pipeline.Mapping.ICustomFailureCaseRegistry<TResult>!
+Interlocutor.Abstractions.Pipeline.Mapping.CustomFailureCaseRegistryBuilder<TResult>.CustomFailureCaseRegistryBuilder() -> void
+Interlocutor.Abstractions.Pipeline.Mapping.CustomFailureCaseRegistryBuilder<TResult>.RegisterType(System.Type! type, System.Delegate! mapping) -> Interlocutor.Abstractions.Pipeline.Mapping.CustomFailureCaseRegistryBuilder<TResult>!
+Interlocutor.Abstractions.Pipeline.Mapping.CustomFailureCaseRegistryBuilder<TResult>.RegisterType<TFailure>(System.Func<TFailure, TResult>! mapping) -> Interlocutor.Abstractions.Pipeline.Mapping.CustomFailureCaseRegistryBuilder<TResult>!
+Interlocutor.Abstractions.Pipeline.Mapping.ICustomFailureCaseRegistry<TResult>
+Interlocutor.Abstractions.Pipeline.Mapping.ICustomFailureCaseRegistry<TResult>.TryMap<TFailure>(TFailure failure, out TResult result) -> bool
 Interlocutor.Abstractions.Pipeline.Mapping.IOutcomeMapper<TResult>
 Interlocutor.Abstractions.Pipeline.Mapping.IOutcomeMapper<TResult>.Map<TFailure>(TFailure failure) -> TResult
 Interlocutor.Abstractions.Pipeline.Mapping.OutcomeMapperBase<TResult>
