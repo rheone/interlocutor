@@ -4,15 +4,15 @@
 
 This is a pure identifier rename with no behavioral change: C# has no named-type-argument syntax, so nothing that closes `Outcome<Foo, Bar>` references a generic parameter by name - the blast radius is limited to declaration-site doc comments, `PublicAPI.Unshipped.txt` entries (which do encode parameter names as text), and this repo's own prose. Matches this repo's existing precedent for pre-release renames (no shipped consumers yet) - no compatibility shim.
 
-Leave `ResourceCommandHandler<TCommand, TEntity, TSuccess>`, `AuthorizationBehavior<TRequest, TSuccess>`, and `OutcomeClassifierBuilder.RegisterSuccessType<TSuccess>` untouched - each names a real, contractual success payload for that specific construct, not a positional union-case template.
+Leave `ResourceCommandHandler<TCommand, TEntity, TSuccess>` and `AuthorizationBehavior<TRequest, TSuccess>` untouched - each names a real, contractual success payload for that specific construct, not a positional union-case template. (Note: this issue originally also named `OutcomeClassifierBuilder.RegisterSuccessType<TSuccess>` here, but `outcome-classifier-retirement` issue 01 already collapsed `RegisterSuccessType`/`RegisterFailureType` into a single `RegisterType<T>` - see ADR-0022. That method no longer exists, so there's nothing left to leave untouched on that front.)
 
-**Blocked by:** `outcome-classifier-retirement` issues 01-05 (same `Outcome.cs`/`messages-and-result-types.md` member-set prose the `IsSuccess` removal touches - land that first to avoid rework).
+**Blocked by:** `outcome-classifier-retirement` issues 01-05 (same `Outcome.cs`/`messages-and-result-types.md` member-set prose the `IsSuccess` removal touches - land that first to avoid rework). **Resolved:** issues 01-05 landed (see ADR-0022, commits `d065429`/`8581b00`/`311ce89`) - this issue is unblocked.
 
 **Status:** ready-for-agent
 
 - [ ] All six arities of `Outcome<...>` in `Interlocutor.CommonKernel/Outcome.cs` (two-case through six-case) declare `T1..TN` generic parameters instead of `TSuccessResult`/`TCase2`.../`TFailureResult`; every XML doc comment on those declarations is updated to match - describe case 1 as a convention the shipped family follows, not a compiler-enforced meaning.
 - [ ] `ResultExtensionsEmitter`'s case-name template array emits `T1..TN` instead of `["TSuccess", "TFailure"]`/`["TSuccess", "TCase2", ...]`; the generated `Interlocutor.AspNetCore.ResultExtensions` extension members and their doc comments reflect the new names.
-- [ ] `ResourceCommandHandler`, `AuthorizationBehavior`, and `OutcomeClassifierBuilder.RegisterSuccessType` are unchanged - confirm with `rg -n "TSuccess"` that only their three declarations (and any doc-comment prose describing them) still use that name.
+- [ ] `ResourceCommandHandler` and `AuthorizationBehavior` are unchanged - confirm with `rg -n "TSuccess"` that only their two declarations (and any doc-comment prose describing them) still use that name.
 - [ ] `PublicAPI.Unshipped.txt` (`Interlocutor.CommonKernel`) updated for every renamed generic parameter.
 - [ ] `documentation/messages-and-result-types.md` and any other `documentation/` page naming `TSuccessResult`/`TCase2`... on the shipped family or on `ResultExtensions` is updated to `T1..TN`.
 - [ ] `dotnet build` and `dotnet test` pass for the whole solution; `dotnet csharpier .` produces no diff.
