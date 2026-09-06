@@ -156,6 +156,8 @@ Interlocutor.Abstractions.Pipeline.DefaultResponseOutcomeDescriber.Describe(obje
 Interlocutor.Abstractions.Pipeline.DefaultTimeoutPolicy
 Interlocutor.Abstractions.Pipeline.DefaultTimeoutPolicy.DefaultTimeoutPolicy() -> void
 Interlocutor.Abstractions.Pipeline.DefaultTimeoutPolicy.ResolveBudget(Interlocutor.Abstractions.Markers.ITimeoutRequest! request) -> System.TimeSpan
+Interlocutor.Abstractions.Pipeline.DelegatePipelineBehavior<TRequest, TResponse>
+Interlocutor.Abstractions.Pipeline.DelegatePipelineBehavior<TRequest, TResponse>.DelegatePipelineBehavior(System.Func<TRequest, System.Threading.CancellationToken, System.Threading.Tasks.Task<Interlocutor.Abstractions.Pipeline.StageResult<TResponse>>!>? onEnter, System.Func<TRequest, TResponse, System.Threading.CancellationToken, System.Threading.Tasks.Task<TResponse>!>? onExit) -> void
 Interlocutor.Abstractions.Pipeline.DelegatePipelineStage<TRequest, TResponse>
 Interlocutor.Abstractions.Pipeline.DelegatePipelineStage<TRequest, TResponse>.DelegatePipelineStage(System.Func<TRequest, System.Threading.CancellationToken, System.Threading.Tasks.Task<Interlocutor.Abstractions.Pipeline.StageResult<TResponse>>!>? onBefore, System.Func<TRequest, TResponse, System.Threading.CancellationToken, System.Threading.Tasks.Task!>? onAfter) -> void
 Interlocutor.Abstractions.Pipeline.DelegateRateLimiter
@@ -188,6 +190,9 @@ Interlocutor.Abstractions.Pipeline.LoggingAuditSink.RecordAsync(Interlocutor.Abs
 Interlocutor.Abstractions.Pipeline.LoggingBehavior<TRequest, TResponse>
 Interlocutor.Abstractions.Pipeline.LoggingBehavior<TRequest, TResponse>.LoggingBehavior(Microsoft.Extensions.Logging.ILogger<Interlocutor.Abstractions.Pipeline.LoggingBehavior<TRequest, TResponse>!>! logger, Interlocutor.Abstractions.Pipeline.IResponseOutcomeDescriber? describer = null) -> void
 Interlocutor.Abstractions.Pipeline.NoCommit
+Interlocutor.Abstractions.Pipeline.PipelineBehaviorBase<TRequest, TResponse>
+Interlocutor.Abstractions.Pipeline.PipelineBehaviorBase<TRequest, TResponse>.HandleAsync(TRequest request, System.Func<System.Threading.Tasks.Task<TResponse>!>! next, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
+Interlocutor.Abstractions.Pipeline.PipelineBehaviorBase<TRequest, TResponse>.PipelineBehaviorBase() -> void
 Interlocutor.Abstractions.Pipeline.PipelineChainResolver
 Interlocutor.Abstractions.Pipeline.PipelineEjectException<TResponse>
 Interlocutor.Abstractions.Pipeline.PipelineEjectException<TResponse>.Response.get -> TResponse
@@ -253,6 +258,8 @@ virtual Interlocutor.Abstractions.Pipeline.AuditEntry.EqualityContract.get -> Sy
 virtual Interlocutor.Abstractions.Pipeline.AuditEntry.Equals(Interlocutor.Abstractions.Pipeline.AuditEntry? other) -> bool
 virtual Interlocutor.Abstractions.Pipeline.AuditEntry.PrintMembers(System.Text.StringBuilder! builder) -> bool
 virtual Interlocutor.Abstractions.Pipeline.Cases.OutcomeCaseExtractor<TResponse>.Invoke(TResponse response, out System.Type! caseType, out object? caseValue) -> bool
+virtual Interlocutor.Abstractions.Pipeline.PipelineBehaviorBase<TRequest, TResponse>.OnEnterAsync(TRequest request, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Interlocutor.Abstractions.Pipeline.StageResult<TResponse>>!
+virtual Interlocutor.Abstractions.Pipeline.PipelineBehaviorBase<TRequest, TResponse>.OnExitAsync(TRequest request, TResponse result, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
 virtual Interlocutor.Abstractions.Pipeline.PipelineStageBase<TRequest, TResponse>.OnAfterAsync(TRequest request, TResponse result, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
 virtual Interlocutor.Abstractions.Pipeline.PipelineStageBase<TRequest, TResponse>.OnBeforeAsync(TRequest request, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Interlocutor.Abstractions.Pipeline.StageResult<TResponse>>!
 ~override Interlocutor.Abstractions.Pipeline.RateLimitResult.Equals(object obj) -> bool
