@@ -52,12 +52,12 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
     {
         // Arrange
         var sender = CreateSenderWithGeneratedRegistrationsOnly();
-        object request = new GeneratedSwitchVoidCommand();
+        object request = new GeneratedSwitchBareCommand();
 
         // Act
         var outcome = await sender.SendAsync(request, TestContext.Current.CancellationToken);
 
-        // Assert - GeneratedSwitchVoidCommandHandler returns the case-less Outcome, whose Value is always null
+        // Assert - GeneratedSwitchBareCommandHandler returns the case-less Outcome, whose Value is always null
         // (see its own remarks); reaching this point without throwing already proves dispatch through the
         // generated switch reached the handler.
         var union = Assert.IsType<System.Runtime.CompilerServices.IUnion>(outcome, exactMatch: false);
@@ -146,13 +146,13 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
             Task.FromResult<Outcome<string, Failure>>($"Hello {command.Name}");
     }
 
-    public sealed record GeneratedSwitchVoidCommand : ICommand;
+    public sealed record GeneratedSwitchBareCommand : ICommand;
 
-    // IVoidCommandHandler<,> has no HandleAsync member (known gap - ticket 01 never added one), so this fake
-    // stays on Handle as-is.
-    public sealed class GeneratedSwitchVoidCommandHandler : IVoidCommandHandler<GeneratedSwitchVoidCommand, Outcome>
+    // IBareCommandHandler<,> has no HandleAsync member (deliberately unsuffixed - see that interface's own
+    // remarks), so this fake stays on Handle as-is.
+    public sealed class GeneratedSwitchBareCommandHandler : IBareCommandHandler<GeneratedSwitchBareCommand, Outcome>
     {
-        public Task<Outcome> Handle(GeneratedSwitchVoidCommand command, CancellationToken ct) =>
+        public Task<Outcome> Handle(GeneratedSwitchBareCommand command, CancellationToken ct) =>
             Task.FromResult(default(Outcome));
     }
 

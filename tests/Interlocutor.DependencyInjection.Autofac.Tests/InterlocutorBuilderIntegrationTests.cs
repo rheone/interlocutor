@@ -4,6 +4,7 @@ using global::Autofac;
 using global::Microsoft.Extensions.Logging;
 using global::Microsoft.Extensions.Logging.Abstractions;
 using Interlocutor.Abstractions;
+using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Markers;
 using Interlocutor.Abstractions.Pipeline;
@@ -28,6 +29,20 @@ public class InterlocutorBuilderIntegrationTests
         Assert.NotNull(container.ResolveOptional<IMediator>());
         Assert.NotNull(container.ResolveOptional<IQueryHandler<SampleQuery, Outcome>>());
         Assert.Empty(container.Resolve<IEnumerable<IPipelineBehavior<SampleQuery, Outcome>>>());
+    }
+
+    [Fact]
+    public void AddInterlocutor_ScansAndRegisters_BareCommandHandler()
+    {
+        // Arrange
+        var containerBuilder = new ContainerBuilder();
+        containerBuilder.AddInterlocutor(builder => builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly));
+
+        // Act
+        var container = containerBuilder.Build();
+
+        // Assert
+        Assert.IsType<SampleBareCommandHandler>(container.Resolve<IBareCommandHandler<SampleBareCommand, Outcome>>());
     }
 
     [Fact]
@@ -353,6 +368,15 @@ public class InterlocutorBuilderIntegrationTests
     private sealed class SampleQueryHandler : IQueryHandler<SampleQuery, Outcome>
     {
         public Task<Outcome> HandleAsync(SampleQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
+    }
+
+    private sealed record SampleBareCommand : ICommand;
+
+    // IBareCommandHandler<,> has no HandleAsync member (deliberately unsuffixed - see that interface's own
+    // remarks), so this fake stays on Handle as-is.
+    private sealed class SampleBareCommandHandler : IBareCommandHandler<SampleBareCommand, Outcome>
+    {
+        public Task<Outcome> Handle(SampleBareCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 
     /// <summary>Deliberately has no handler, so ValidateOnBuild() tests have a deterministic problem to find.</summary>

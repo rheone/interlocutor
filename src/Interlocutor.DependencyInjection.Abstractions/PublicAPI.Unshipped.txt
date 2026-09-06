@@ -1,9 +1,9 @@
 #nullable enable
 Interlocutor.DependencyInjection.Abstractions.GeneratedHandlerKind
+Interlocutor.DependencyInjection.Abstractions.GeneratedHandlerKind.BareCommand = 2 -> Interlocutor.DependencyInjection.Abstractions.GeneratedHandlerKind
 Interlocutor.DependencyInjection.Abstractions.GeneratedHandlerKind.Command = 1 -> Interlocutor.DependencyInjection.Abstractions.GeneratedHandlerKind
 Interlocutor.DependencyInjection.Abstractions.GeneratedHandlerKind.Notification = 3 -> Interlocutor.DependencyInjection.Abstractions.GeneratedHandlerKind
 Interlocutor.DependencyInjection.Abstractions.GeneratedHandlerKind.Query = 0 -> Interlocutor.DependencyInjection.Abstractions.GeneratedHandlerKind
-Interlocutor.DependencyInjection.Abstractions.GeneratedHandlerKind.VoidCommand = 2 -> Interlocutor.DependencyInjection.Abstractions.GeneratedHandlerKind
 Interlocutor.DependencyInjection.Abstractions.HandlerDiscovery
 Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder
 Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.AddGeneratedRegistrations(System.Collections.Generic.IEnumerable<Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration>! registrations) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder!

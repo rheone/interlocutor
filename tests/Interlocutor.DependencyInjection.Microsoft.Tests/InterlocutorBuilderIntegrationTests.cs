@@ -3,6 +3,7 @@ namespace Interlocutor.DependencyInjection.Microsoft.Tests;
 using global::Microsoft.Extensions.DependencyInjection;
 using global::Microsoft.Extensions.Logging;
 using Interlocutor.Abstractions;
+using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Markers;
 using Interlocutor.Abstractions.Pipeline;
@@ -51,6 +52,24 @@ public class InterlocutorBuilderIntegrationTests
         Assert.Contains(services, s => s.ServiceType == typeof(IMediator));
         Assert.Contains(services, s => s.ServiceType == typeof(IQueryHandler<SampleQuery, Outcome>));
         Assert.DoesNotContain(services, s => s.ServiceType == typeof(IPipelineBehavior<,>));
+    }
+
+    [Fact]
+    public void AddInterlocutor_ScansAndRegisters_BareCommandHandler()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+
+        // Act
+        services.AddInterlocutor(builder => builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly));
+        using var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+
+        // Assert
+        Assert.Contains(services, s => s.ServiceType == typeof(IBareCommandHandler<SampleBareCommand, Outcome>));
+        Assert.IsType<SampleBareCommandHandler>(
+            scope.ServiceProvider.GetRequiredService<IBareCommandHandler<SampleBareCommand, Outcome>>()
+        );
     }
 
     [Fact]
@@ -602,6 +621,18 @@ public class InterlocutorBuilderIntegrationTests
     {
         public Task<Outcome> HandleAsync(SampleQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
+
+    private sealed record SampleBareCommand : ICommand;
+
+    // IBareCommandHandler<,> has no HandleAsync member (deliberately unsuffixed - see that interface's own
+    // remarks), so this fake stays on Handle as-is. Resolved only via AddInterlocutor()'s assembly-scanning DI
+    // registration - never new'd or typeof'd directly, so this constructor is invisible to static analysis.
+#pragma warning disable S1144
+    private sealed class SampleBareCommandHandler : IBareCommandHandler<SampleBareCommand, Outcome>
+    {
+        public Task<Outcome> Handle(SampleBareCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
+    }
+#pragma warning restore S1144
 
     /// <summary>Deliberately has no handler, so ValidateOnBuild() tests have a deterministic problem to find.</summary>
     private sealed record UnhandledValidationQuery : IQuery<Outcome>;

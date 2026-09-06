@@ -38,7 +38,7 @@ public class HandlerDiscoveryTests
     }
 
     [Fact]
-    public void Discover_FindsVoidCommandHandler_AndNotificationHandler()
+    public void Discover_FindsBareCommandHandler_AndNotificationHandler()
     {
         // Act
         var registrations = HandlerDiscovery.Discover([typeof(HandlerDiscoveryTests).Assembly]);
@@ -47,8 +47,8 @@ public class HandlerDiscoveryTests
         Assert.Contains(
             registrations,
             r =>
-                r.ImplementationType == typeof(SampleVoidCommandHandler)
-                && r.ServiceType == typeof(IVoidCommandHandler<SampleCommand, Outcome>)
+                r.ImplementationType == typeof(SampleBareCommandHandler)
+                && r.ServiceType == typeof(IBareCommandHandler<SampleCommand, Outcome>)
                 && r.Kind == RegistrationKind.Handler
         );
 
@@ -177,9 +177,9 @@ public class HandlerDiscoveryTests
         public Task<Outcome> HandleAsync(SampleQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 
-    // IVoidCommandHandler<,> has no HandleAsync member (known gap - ticket 01 never added one), so this fake
-    // stays on Handle as-is.
-    private sealed class SampleVoidCommandHandler : IVoidCommandHandler<SampleCommand, Outcome>
+    // IBareCommandHandler<,> has no HandleAsync member (deliberately unsuffixed - see that interface's own
+    // remarks), so this fake stays on Handle as-is.
+    private sealed class SampleBareCommandHandler : IBareCommandHandler<SampleCommand, Outcome>
     {
         public Task<Outcome> Handle(SampleCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
     }

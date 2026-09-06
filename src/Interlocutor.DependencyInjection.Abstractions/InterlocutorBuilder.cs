@@ -97,7 +97,7 @@ public sealed class InterlocutorBuilder
     [
         typeof(IQueryHandler<,>),
         typeof(ICommandHandler<,>),
-        typeof(IVoidCommandHandler<,>),
+        typeof(IBareCommandHandler<,>),
     ];
 
     private readonly List<(Assembly Assembly, RegistrationLifetime Lifetime)> _assembliesToScan = [];
@@ -281,7 +281,7 @@ public sealed class InterlocutorBuilder
     /// <summary>
     /// Opts a consumer-supplied open-generic contract into the same "at most one implementation per closed
     /// instantiation" expectation the three built-in mediator handler contracts (<c>IQueryHandler&lt;,&gt;</c>,
-    /// <c>ICommandHandler&lt;,&gt;</c>, <c>IVoidCommandHandler&lt;,&gt;</c>) already carry - both
+    /// <c>ICommandHandler&lt;,&gt;</c>, <c>IBareCommandHandler&lt;,&gt;</c>) already carry - both
     /// <see cref="ValidateOnBuild"/>'s <see cref="RegistrationProblemKind.AmbiguousClosure"/> check and
     /// <see cref="Eject(Type[])"/>'s conflict-clearing escape hatch cover it from then on.
     /// </summary>
