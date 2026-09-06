@@ -1,0 +1,68 @@
+# PRD: PipelineBehaviorBase — a template-method convenience base class for IPipelineBehavior
+
+**Status:** ready-for-agent
+
+## Problem Statement
+
+Anyone authoring a custom [`IPipelineBehavior<TRequest, TResponse>`](../../src/Interlocutor.Abstractions/Pipeline/IPipelineBehavior.cs) that needs both a "before the handler" and an "after the handler" phase — for example, one that opens a resource before `next()` and decides whether to commit, roll back, or replace the response after `next()` returns — has to hand-write the whole `HandleAsync` method every time: manually invoke `next()`, decide whether a pre-check should skip it, and get the "does my post-phase still run when my pre-phase declined the call" pairing right themselves.
+
+`IPipelineStage<TRequest, TResponse>` already solves this ergonomics problem for the lighter case — pre/post hooks via `OnBeforeAsync`/`OnAfterAsync`, both defaulting to a no-op via `PipelineStageBase<TRequest, TResponse>` — but it deliberately cannot replace the response: `OnAfterAsync` returns `Task`, not `Task<TResponse>`, because a stage is meant to be a non-mutating observer composed alongside arbitrarily many other stages. A behavior author who specifically needs the post-hook to veto or override the response (without throwing) has no equivalent convenience today and must reimplement the full onion-wrapping boilerplate by hand, including the short-circuit/pairing contract, each time.
+
+## Solution
+
+Add `PipelineBehaviorBase<TRequest, TResponse>` to `Interlocutor.Abstractions.Pipeline`, a template-method abstract base class implementing `IPipelineBehavior<TRequest, TResponse>.HandleAsync` once and for all: it calls a virtual `OnEnterAsync` hook, skips the inner `next()` call when that hook short-circuits, otherwise awaits `next()`, and then always calls a virtual `OnExitAsync` hook with whatever response resulted — a hook that returns `Task<TResponse>`, so it is free to replace the response, unlike a stage's after-hook. Both hooks default to a no-op (continue / pass-through), exactly matching `PipelineStageBase`'s existing convenience for the lighter interface.
+
+Add the matching delegate-based sugar to `InterlocutorPipelineBuilder`, paralleling the existing `AddStage` delegate overloads, so a simple enter/exit behavior can be registered as a pair of lambdas without writing a dedicated class — plus a service-provider-aware overload for a hook that needs to resolve a scoped dependency fresh per dispatch.
+
+## User Stories
+
+1. As a pipeline-behavior author, I want a base class that implements `HandleAsync`'s onion-wrapping for me, so that I don't re-derive the same `next()`-invocation boilerplate for every behavior that needs a before/after split.
+2. As a pipeline-behavior author, I want both hooks to default to a no-op, so that a behavior that only cares about one phase overrides only that one method.
+3. As a pipeline-behavior author, I want my `OnEnterAsync` override to be able to short-circuit the request (skip `next()` entirely) and hand back a chosen response, so that a preflight rejection never reaches the handler.
+4. As a pipeline-behavior author, I want `OnExitAsync` to still run with the short-circuited response when `OnEnterAsync` declined the call, so that setup/teardown-style logic in my behavior stays paired even on the short-circuit path.
+5. As a pipeline-behavior author, I want `OnExitAsync` to receive the actual response type (`TResponse`) and be able to return a different value, so that I can veto or override what the pipeline ultimately returns without throwing an exception.
+6. As a pipeline-behavior author managing a transactional resource, I want `OnExitAsync` to run after a normal `next()` completion, so that I can decide to commit, roll back, or replace the response based on what the handler actually produced.
+7. As a pipeline-behavior author, I want `OnExitAsync` to NOT run when `next()` throws, so that my behavior's contract matches `IPipelineStage`'s existing "no after-hook on an unhandled exception" rule and matches how the shipped `CommitGateDriver`/`UnitOfWorkBehavior` already behave (an unhandled exception propagates untouched; a transaction it opened is left for the underlying store session to roll back on disposal, not caught and rolled back explicitly).
+8. As a pipeline-behavior author, I want the short-circuit type in `OnEnterAsync`'s return value to be the same `StageResult<TResponse>` type `IPipelineStage` already uses, so that short-circuiting a behavior and short-circuiting a stage share one vocabulary rather than two parallel concepts.
+9. As a library maintainer, I want `PipelineBehaviorBase` to sit beside `PipelineStageBase` in `Interlocutor.Abstractions.Pipeline` with cross-referencing XML docs, so that a reader choosing between the two understands the trade-off: `IPipelineStage` for a non-mutating observer composed with other stages, `PipelineBehaviorBase` for a single behavior that owns the response and needs to replace it.
+10. As a pipeline-behavior author, I want to register a simple enter/exit behavior as a pair of delegates without writing a dedicated class, so that a small, one-off behavior doesn't need its own file.
+11. As a pipeline-behavior author, I want a delegate overload that captures state at configuration time (mirroring `AddStage`'s plain delegate overload), so that a stateless or closure-capturing enter/exit pair can be registered inline.
+12. As a pipeline-behavior author, I want a delegate overload that receives the container's `IServiceProvider`, so that my enter/exit delegates can resolve a scoped dependency freshly per dispatch rather than capturing one at startup.
+13. As a pipeline-behavior author, I want the delegate-backed registration to go through the same `IPipelineBehavior<TRequest, TResponse>` registration path as a hand-authored class, so that behavior ordering, lifetime, and chain composition work identically regardless of which form I chose.
+14. As a library maintainer, I want a `DelegatePipelineBehavior<TRequest, TResponse>` type backing the delegate overloads, mirroring `DelegatePipelineStage`'s relationship to `IPipelineStage`, so that the delegate sugar is implemented consistently with the existing stage sugar rather than as a one-off.
+15. As a developer registering a hand-authored `PipelineBehaviorBase` subclass, I want to register it through the existing `InterlocutorPipelineBuilder.AddBehavior(Type, RegistrationLifetime)` method unchanged, so that adopting the new base class requires no new registration API for the class-based case.
+16. As a developer reading the pipeline documentation, I want the choice between `IPipelineStage` and `PipelineBehaviorBase` explained in prose, so that I pick the right extension point without trial and error.
+
+## Implementation Decisions
+
+- New public abstract class `PipelineBehaviorBase<TRequest, TResponse>` in `Interlocutor.Abstractions.Pipeline`, implementing `IPipelineBehavior<TRequest, TResponse>`.
+- `HandleAsync` is implemented once on the base class and is not an extension point itself (no reason for a derived type to override the wrapping logic) — the only extension points are the two virtual hooks below.
+- `protected virtual Task<StageResult<TResponse>> OnEnterAsync(TRequest request, CancellationToken ct)` — defaults to `StageResult<TResponse>.Continue`. Reuses the existing `StageResult<TResponse>` type from the `IPipelineStage` vocabulary rather than introducing a parallel short-circuit type.
+- `protected virtual Task<TResponse> OnExitAsync(TRequest request, TResponse result, CancellationToken ct)` — defaults to returning `result` unchanged. Return type is what gives this hook the ability `IPipelineStage.OnAfterAsync` deliberately lacks: replacing the response.
+- Contract: `OnExitAsync` runs whenever a response exists (either `next()` returned normally, or `OnEnterAsync` short-circuited) and is never invoked when `next()` throws — the exception propagates straight out of `HandleAsync` untouched. This mirrors `IPipelineStage`'s existing after-hook contract and matches the shipped `CommitGateDriver`'s actual design (it does not catch exceptions to decide rollback; an open transaction is left for the underlying store session's own disposal).
+- New public sealed class `DelegatePipelineBehavior<TRequest, TResponse>` in the same namespace, constructed from a nullable enter delegate and a nullable exit delegate (either omittable for a no-op), mirroring `DelegatePipelineStage`'s shape and its relationship to `IPipelineStage`.
+- New `InterlocutorPipelineBuilder.AddBehavior<TRequest, TResponse>(Func<TRequest, CancellationToken, Task<StageResult<TResponse>>>? onEnter, Func<TRequest, TResponse, CancellationToken, Task<TResponse>>? onExit, RegistrationLifetime lifetime = Singleton)` overload — plain-delegate form, mirroring `AddStage`'s equivalent overload and its default `Singleton` lifetime rationale (the delegates already capture whatever state they need).
+- New `InterlocutorPipelineBuilder.AddBehavior<TRequest, TResponse>(Func<IServiceProvider, TRequest, CancellationToken, Task<StageResult<TResponse>>>? onEnter, Func<IServiceProvider, TRequest, TResponse, CancellationToken, Task<TResponse>>? onExit, RegistrationLifetime lifetime = Scoped)` overload — service-provider-aware form, mirroring `AddStage`'s equivalent overload and its default `Scoped` lifetime rationale.
+- Both new overloads register through the same factory-registration path `AddStage`'s delegate overloads already use (`InterlocutorFactoryRegistration` against `IPipelineBehavior<TRequest, TResponse>`), so they compose with `AddBehavior(Type, RegistrationLifetime)` entries in the same flat, ordered `Behaviors` list — no separate collection, no separate resolution path.
+- The existing `AddBehavior(Type, RegistrationLifetime)` method is unchanged; a hand-authored `PipelineBehaviorBase` subclass registers through it exactly like any other `IPipelineBehavior` implementation.
+- No prescribed position in the pipeline for a `PipelineBehaviorBase`-derived behavior — ordering is entirely the caller's choice, same as every other behavior.
+- XML docs on `PipelineBehaviorBase` cross-reference `IPipelineStage`/`PipelineStageBase` (and vice versa) explaining the choice: reach for `IPipelineStage` for a non-mutating observer meant to compose with other stages via `PipelineStageBehavior`; reach for `PipelineBehaviorBase` for a single behavior that needs to replace the response or otherwise fully own the call.
+
+## Testing Decisions
+
+- Only test externally observable behavior through the public `IPipelineBehavior<TRequest, TResponse>.HandleAsync` contract (what's returned, whether `next()` was invoked) — never internal call bookkeeping beyond what's needed to assert enter/next/exit ordering.
+- New `PipelineBehaviorBaseTests.cs` in `tests/Interlocutor.Abstractions.Tests/`, prior art `PipelineStageBehaviorTests.cs` (same project, same test-double-subclass style). Cases: default subclass is a pure pass-through; an `OnEnterAsync` override that continues lets `next()` run and `OnExitAsync` see its result; an `OnEnterAsync` override that short-circuits skips `next()` but still runs `OnExitAsync` with the short-circuited response; an `OnExitAsync` override returns a different response than `next()` produced; an exception thrown from `next()` propagates without `OnExitAsync` running.
+- New `DelegatePipelineBehaviorTests.cs`, prior art `DelegatePipelineStageTests.cs` — covers both delegates supplied, either omitted (falls back to no-op), and both omitted.
+- Additions to `tests/Interlocutor.DependencyInjection.Abstractions.Tests/InterlocutorPipelineBuilderTests.cs`, prior art the existing `AddStage_WithDelegates_RegistersFactoryForClosedPipelineStageInterface` and `AddStage_WithServiceProviderDelegates_FactoryReceivesTheProvider` tests — equivalent assertions for the new `AddBehavior` delegate overloads (factory registered against the closed `IPipelineBehavior<TRequest, TResponse>` interface; the service-provider overload's delegates receive the resolving provider).
+
+## Out of Scope
+
+- Any change to `IPipelineStage`, `PipelineStageBase`, or `PipelineStageBehavior` — this is a parallel, independent convenience, not a replacement or refactor of the stage machinery.
+- Migrating the shipped `UnitOfWorkBehavior` (EF Core or NHibernate) or `CommitGateDriver` onto `PipelineBehaviorBase` — they remain hand-written; a future ticket could consider that migration once this base class ships.
+- Any change to `NoCommit`, `Eject`, `ITransactionalRequest`, or any other existing transaction/short-circuit primitive.
+- Any change to `UseRecommendedChain` or the documented canonical pipeline ordering.
+- Any new marker interface or DI persistence registration change.
+
+## Further Notes
+
+This emerged from a design conversation about giving a single custom `IPipelineBehavior` a convenient enter/exit split (analogous to `IPipelineStage`, but with the ability to replace the response) rather than reimplementing `HandleAsync`'s `next()`-wrapping boilerplate by hand each time. The scenario that motivated it — a behavior managing a transactional resource that can veto its own commit and swap the returned outcome without throwing — is already fully achievable today with existing primitives (`NoCommit.With`, `Eject.With`, positioning `UnitOfWorkBehavior` relative to a stage host); this PRD is scoped strictly to the general-purpose convenience base class and its builder sugar, not to any change in how transactions are actually managed.
