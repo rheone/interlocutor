@@ -4,7 +4,7 @@
 
 **Blocked by:** 01 (needs the registration builder to exist).
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `6b88c43`.
 
 - [ ] `OutcomeMapperBase<TResult>` gains a way to be constructed with (or supplied) a built custom-case registry from ticket 01; omitting it preserves today's exact behavior.
 - [ ] `Map<TFailure>`'s dispatch, after exhausting every built-in case and the reflective `NotFound<TId>` check, consults the supplied registry (exact-type lookup) before calling the subclass's `MapUnrecognized<TFailure>` override.
