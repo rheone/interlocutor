@@ -4,7 +4,7 @@
 
 **Blocked by:** 01 (generated code must target the renamed runtime types, not the retired ones).
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `c5ee8b4`. (`dotnet test` for this project only became runnable once ticket 03 landed, since the test project transitively references `Interlocutor.DependencyInjection.Abstractions`; full-suite verification confirmed alongside ticket 03.)
 
 - [ ] `WellKnownTypeNames` (or equivalent) references `IBareCommandHandler`/`BareCommandHandlerWrapper`/`IBareHandlerWrapper` by their new metadata names.
 - [ ] `HandlerKind`/`RequestKind` models and `DispatchWrapperEmitter` are updated to match - any enum member or emitted identifier named after "Void" is renamed to "Bare."
