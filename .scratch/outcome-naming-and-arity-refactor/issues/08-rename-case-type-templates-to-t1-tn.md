@@ -8,7 +8,7 @@ Leave `ResourceCommandHandler<TCommand, TEntity, TSuccess>` and `AuthorizationBe
 
 **Blocked by:** `outcome-classifier-retirement` issues 01-05 (same `Outcome.cs`/`messages-and-result-types.md` member-set prose the `IsSuccess` removal touches - land that first to avoid rework). **Resolved:** issues 01-05 landed (see ADR-0022, commits `d065429`/`8581b00`/`311ce89`) - this issue is unblocked.
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `45e32be`.
 
 - [x] All six arities of `Outcome<...>` in `Interlocutor.CommonKernel/Outcome.cs` (two-case through six-case) declare `T1..TN` generic parameters instead of `TSuccessResult`/`TCase2`.../`TFailureResult`; every XML doc comment on those declarations is updated to match - describe case 1 as a convention the shipped family follows, not a compiler-enforced meaning.
 - [x] `ResultExtensionsEmitter`'s case-name template array emits `T1..TN` instead of `["TSuccess", "TFailure"]`/`["TSuccess", "TCase2", ...]`; the generated `Interlocutor.AspNetCore.ResultExtensions` extension members and their doc comments reflect the new names.
