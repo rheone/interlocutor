@@ -1,5 +1,6 @@
 namespace Interlocutor.Abstractions.Pipeline;
 
+using System.Runtime.CompilerServices;
 using Interlocutor.Abstractions.Markers;
 using Interlocutor.Abstractions.Pipeline.Cases;
 using Interlocutor.CommonKernel.ResultTypes;
@@ -12,7 +13,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// close this generic - a container-neutral, compile-time-checked replacement for a runtime <c>is</c> check.
 /// </typeparam>
 /// <typeparam name="TResponse">
-/// The response type, constrained only to <see cref="IOutcome"/> - deliberately unconstrained
+/// The response type, constrained only to <see cref="IUnion"/> - deliberately unconstrained
 /// beyond that. See the Remarks for why.
 /// </typeparam>
 /// <remarks>
@@ -52,7 +53,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 public class AuthorizationBehavior<TRequest, TResponse>(IPolicyEvaluator policyEvaluator, IOutcomeCaseRegistry caseRegistry)
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequiresPolicy
-    where TResponse : IOutcome
+    where TResponse : IUnion
 {
     /// <summary>
     /// Handles the request, evaluating the authorization policy and short-circuiting with <see cref="Forbidden"/>

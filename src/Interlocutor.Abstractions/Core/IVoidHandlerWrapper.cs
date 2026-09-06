@@ -1,10 +1,11 @@
 namespace Interlocutor.Abstractions.Core;
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>Defines the base contract for handlers that produce an outcome-only (no data payload) result.</summary>
-/// <typeparam name="TResult">The <see cref="IOutcome"/>-shaped outcome type produced by the handler.</typeparam>
+/// <typeparam name="TResult">The <see cref="IUnion"/>-shaped outcome type produced by the handler.</typeparam>
 /// <remarks>
 /// <para>
 /// This is an internal abstraction used by the mediator to wrap void command handlers. Concrete implementations
@@ -17,7 +18,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </para>
 /// </remarks>
 internal interface IVoidHandlerWrapper<TResult>
-    where TResult : IOutcome
+    where TResult : IUnion
 {
     /// <summary>
     /// Executes the handler with the given request, resolving behaviors and the handler from the service

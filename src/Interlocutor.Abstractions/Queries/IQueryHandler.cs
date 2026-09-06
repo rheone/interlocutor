@@ -1,5 +1,6 @@
 namespace Interlocutor.Abstractions.Queries;
 
+using System.Runtime.CompilerServices;
 using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
@@ -22,7 +23,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </remarks>
 public interface IQueryHandler<in TQuery, TResponse>
     where TQuery : IQuery<TResponse>
-    where TResponse : IOutcome
+    where TResponse : IUnion
 {
     /// <summary>
     /// Handles the specified query and returns a result that represents success or failure.

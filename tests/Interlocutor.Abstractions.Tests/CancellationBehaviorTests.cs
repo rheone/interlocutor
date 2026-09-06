@@ -1,5 +1,6 @@
 namespace Interlocutor.Abstractions.Tests;
 
+using System.Runtime.CompilerServices;
 using Interlocutor.Abstractions.Markers;
 using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Pipeline.Cases;
@@ -177,10 +178,12 @@ public class CancellationBehaviorTests
     /// <summary>A request whose response type is a hand-rolled, non-union <see cref="IOutcome"/>.</summary>
     public record CancellableHandRolledQuery : ICancellable;
 
-    /// <summary>A hand-rolled, non-union <see cref="IOutcome"/> implementation - no compiler-generated
-    /// case constructor, so it can only participate in <see cref="CancellationBehavior{TRequest, TResponse}"/>
-    /// via a custom <see cref="IOutcomeCaseRegistry"/> registration.</summary>
-    public sealed class HandRolledOutcome : IOutcome
+    /// <summary>A hand-rolled <see cref="IOutcome"/>/<see cref="IUnion"/> implementation that is not a
+    /// compiler-generated <c>union</c> - it has no case constructor for <see cref="Interlocutor.Abstractions.Pipeline.UnionCaseFactory"/>
+    /// to find reflectively, so it can only be constructed via a custom <see cref="IOutcomeCaseRegistry"/>
+    /// registration even though <see cref="DefaultOutcomeCaseRegistry"/> can read its active case back out
+    /// through <see cref="IUnion.Value"/> alone.</summary>
+    public sealed class HandRolledOutcome : IOutcome, IUnion
     {
         private HandRolledOutcome(Type caseType, object? caseValue)
         {
@@ -191,6 +194,8 @@ public class CancellationBehaviorTests
         public Type CaseType { get; }
 
         public object? CaseValue { get; }
+
+        object? IUnion.Value => this.CaseValue;
 
         public static HandRolledOutcome FromCancelled(Cancelled cancelled) => new(typeof(Cancelled), cancelled);
     }

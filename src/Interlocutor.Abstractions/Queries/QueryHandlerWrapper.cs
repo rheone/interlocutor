@@ -1,6 +1,7 @@
 namespace Interlocutor.Abstractions.Queries;
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Diagnostics;
 using Interlocutor.Abstractions.Pipeline;
@@ -19,7 +20,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </remarks>
 internal sealed class QueryHandlerWrapper<TQuery, TResponse> : IHandlerWrapper<TResponse>
     where TQuery : IQuery<TResponse>
-    where TResponse : IOutcome
+    where TResponse : IUnion
 {
     /// <summary>
     /// Executes the query with its handler and pipeline behaviors.

@@ -5,6 +5,9 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <!-- Only for BareIOutcomeResponseConstraintRegressionTests: compiling a small in-memory snippet to prove
+         a response type is now rejected at compile time by the IUnion constraint - see that file's remarks. -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="Microsoft.Testing.Platform" />

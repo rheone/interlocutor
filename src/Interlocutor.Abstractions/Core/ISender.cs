@@ -1,6 +1,7 @@
 namespace Interlocutor.Abstractions.Core;
 
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Queries;
 using Interlocutor.CommonKernel.ResultTypes;
@@ -28,7 +29,7 @@ public interface ISender
     /// <param name="ct">The cancellation token.</param>
     /// <returns>A <see cref="Task{TResult}"/> representing the asynchronous operation.</returns>
     Task<TResponse> SendAsync<TResponse>(IQuery<TResponse> query, CancellationToken ct = default)
-        where TResponse : IOutcome;
+        where TResponse : IUnion;
 
     /// <summary>
     /// Dispatches a value-returning command to its registered handler, returning the result through all
@@ -39,18 +40,18 @@ public interface ISender
     /// <param name="ct">The cancellation token.</param>
     /// <returns>A <see cref="Task{TResult}"/> representing the asynchronous operation.</returns>
     Task<TResponse> SendAsync<TResponse>(ICommand<TResponse> command, CancellationToken ct = default)
-        where TResponse : IOutcome;
+        where TResponse : IUnion;
 
     /// <summary>
     /// Dispatches a void command to its registered handler, returning the outcome through all pipeline
     /// behaviors.
     /// </summary>
-    /// <typeparam name="TResult">The <see cref="CommonKernel.ResultTypes.IOutcome"/>-shaped outcome type to resolve a handler for.</typeparam>
+    /// <typeparam name="TResult">The <see cref="IUnion"/>-shaped outcome type to resolve a handler for.</typeparam>
     /// <param name="command">The command to dispatch.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>A <see cref="Task{TResult}"/> representing the asynchronous operation.</returns>
     Task<TResult> SendAsync<TResult>(ICommand command, CancellationToken ct = default)
-        where TResult : IOutcome;
+        where TResult : IUnion;
 
     /// <summary>
     /// Dispatches a request whose static type is not known at the call site - a query, a value-returning

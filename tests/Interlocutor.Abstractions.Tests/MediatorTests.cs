@@ -1,6 +1,7 @@
 namespace Interlocutor.Abstractions.Tests;
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Markers;
@@ -93,10 +94,10 @@ public class EjectingQueryHandler : IQueryHandler<TestQuery, Outcome<int, Failur
 /// <summary>A behavior that ejects before calling <c>next()</c> - the handler (and any behavior further in)
 /// must never run.</summary>
 /// <typeparam name="TRequest">The request type, unconstrained since this behavior never inspects it.</typeparam>
-/// <typeparam name="TResponse">The response type, constrained to <see cref="IOutcome"/> so
+/// <typeparam name="TResponse">The response type, constrained to <see cref="IUnion"/> so
 /// <paramref name="response"/> can be ejected via <see cref="Eject.With{TResult}(TResult)"/>.</typeparam>
 public class EjectingBeforeNextBehavior<TRequest, TResponse>(TResponse response) : IPipelineBehavior<TRequest, TResponse>
-    where TResponse : IOutcome
+    where TResponse : IUnion
 {
     public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
         Task.FromResult(Eject.With(response));
@@ -118,10 +119,10 @@ public class ThrowingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest,
 /// proving the eject is recovered at this behavior's own call site, not only when thrown straight from a
 /// handler.</summary>
 /// <typeparam name="TRequest">The request type, unconstrained since this behavior never inspects it.</typeparam>
-/// <typeparam name="TResponse">The response type, constrained to <see cref="IOutcome"/> so
+/// <typeparam name="TResponse">The response type, constrained to <see cref="IUnion"/> so
 /// <paramref name="response"/> can be ejected via <see cref="Eject.With{TResult}(TResult)"/>.</typeparam>
 public class EjectingAfterNextBehavior<TRequest, TResponse>(TResponse response) : IPipelineBehavior<TRequest, TResponse>
-    where TResponse : IOutcome
+    where TResponse : IUnion
 {
     public async Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {

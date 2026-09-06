@@ -1,6 +1,7 @@
 namespace Interlocutor.Abstractions.Commands;
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Diagnostics;
 using Interlocutor.Abstractions.Pipeline;
@@ -8,7 +9,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>Wraps a void command handler, constructing the pipeline chain around it at invocation time.</summary>
 /// <typeparam name="TCommand">The command type.</typeparam>
-/// <typeparam name="TResult">The <see cref="IOutcome"/>-shaped outcome type produced by the handler.</typeparam>
+/// <typeparam name="TResult">The <see cref="IUnion"/>-shaped outcome type produced by the handler.</typeparam>
 /// <remarks>
 /// <para>
 /// Resolves the void command handler from DI and tags the dispatch activity; <see cref="PipelineChainExecutor"/>
@@ -20,7 +21,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </remarks>
 internal sealed class VoidCommandHandlerWrapper<TCommand, TResult> : IVoidHandlerWrapper<TResult>
     where TCommand : ICommand
-    where TResult : IOutcome
+    where TResult : IUnion
 {
     /// <summary>
     /// Executes the void command with its handler and pipeline behaviors.

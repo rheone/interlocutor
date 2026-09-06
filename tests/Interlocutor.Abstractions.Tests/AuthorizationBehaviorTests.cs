@@ -1,5 +1,6 @@
 namespace Interlocutor.Abstractions.Tests;
 
+using System.Runtime.CompilerServices;
 using Interlocutor.Abstractions.Markers;
 using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Pipeline.Cases;
@@ -201,8 +202,9 @@ public class AuthorizationBehaviorTests
     public async Task Handle_HandRolledNonUnionResponse_ShortCircuitsWithForbiddenViaCustomRegistry()
     {
         // Proves IOutcomeCaseRegistry is a genuine drop-in for UnionCaseFactory, not just for compiler
-        // unions: HandRolledOutcome has no case constructor and no IUnion marker, so DefaultOutcomeCaseRegistry
-        // alone could never construct it - it only works here because a custom factory is registered.
+        // unions: HandRolledOutcome has no case constructor for UnionCaseFactory to find reflectively, so
+        // DefaultOutcomeCaseRegistry alone could never construct it - it only works here because a custom
+        // factory is registered.
         // Arrange
         var policyEvaluator = Substitute.For<IPolicyEvaluator>();
         policyEvaluator
@@ -248,11 +250,13 @@ public class AuthorizationBehaviorTests
         public string PolicyName => "CanRead";
     }
 
-    /// <summary>A hand-rolled, non-union <see cref="IOutcome"/> implementation - no compiler-generated
-    /// case constructor and no <see cref="System.Runtime.CompilerServices.IUnion"/> marker, so it can only participate in
-    /// <see cref="AuthorizationBehavior{TRequest, TResponse}"/> via a custom <see cref="IOutcomeCaseRegistry"/>
-    /// registration, never via <see cref="DefaultOutcomeCaseRegistry"/> alone.</summary>
-    public sealed class HandRolledOutcome : IOutcome
+    /// <summary>A hand-rolled <see cref="IOutcome"/>/<see cref="IUnion"/> implementation that is not a
+    /// compiler-generated <c>union</c> - it has no case constructor for <see cref="Interlocutor.Abstractions.Pipeline.UnionCaseFactory"/>
+    /// to find reflectively, so constructing it via <see cref="AuthorizationBehavior{TRequest, TResponse}"/>
+    /// still requires a custom <see cref="IOutcomeCaseRegistry"/> registration, even though
+    /// <see cref="DefaultOutcomeCaseRegistry"/> alone can read its active case back out through
+    /// <see cref="IUnion.Value"/>.</summary>
+    public sealed class HandRolledOutcome : IOutcome, IUnion
     {
         private HandRolledOutcome(Type caseType, object? caseValue)
         {
@@ -263,6 +267,8 @@ public class AuthorizationBehaviorTests
         public Type CaseType { get; }
 
         public object? CaseValue { get; }
+
+        object? IUnion.Value => this.CaseValue;
 
         public static HandRolledOutcome FromForbidden(Forbidden forbidden) => new(typeof(Forbidden), forbidden);
     }

@@ -1,5 +1,6 @@
 namespace Interlocutor.Abstractions.Pipeline.Cases;
 
+using System.Runtime.CompilerServices;
 using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
@@ -24,7 +25,7 @@ public static class OutcomeCaseRegistryExtensions
     /// the mismatch. This extension centralizes that wrapping so each behavior only supplies the pieces of the
     /// message that are actually specific to it.
     /// </remarks>
-    /// <typeparam name="TResponse">The <see cref="IOutcome"/> type to construct.</typeparam>
+    /// <typeparam name="TResponse">The <see cref="IUnion"/> type to construct.</typeparam>
     /// <typeparam name="TCase">The case type being constructed.</typeparam>
     /// <param name="caseRegistry">The registry to construct <typeparamref name="TResponse"/> from.</param>
     /// <param name="caseValue">The case value the constructed response should carry.</param>
@@ -50,7 +51,7 @@ public static class OutcomeCaseRegistryExtensions
         string eventPhrase,
         string requirementClause
     )
-        where TResponse : IOutcome
+        where TResponse : IUnion
     {
         try
         {

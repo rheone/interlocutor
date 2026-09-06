@@ -1,5 +1,6 @@
 namespace Interlocutor.Abstractions.Pipeline;
 
+using System.Runtime.CompilerServices;
 using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
@@ -7,7 +8,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// dispatch to end immediately with a developer-chosen <typeparamref name="TResponse"/>, from anywhere inside
 /// a handler's or pipeline behavior's own call graph.
 /// </summary>
-/// <typeparam name="TResponse">The <see cref="IOutcome"/> type the ejecting dispatch returns.</typeparam>
+/// <typeparam name="TResponse">The <see cref="IUnion"/> type the ejecting dispatch returns.</typeparam>
 /// <remarks>
 /// <para>
 /// <b>Not related to <see cref="CancellationBehavior{TRequest, TResponse}"/>/<see cref="Cancelled"/>.</b> This
@@ -39,7 +40,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 // HandlerNotRegisteredException's identical rationale.
 #pragma warning disable RCS1194
 public sealed class PipelineEjectException<TResponse> : Exception
-    where TResponse : IOutcome
+    where TResponse : IUnion
 {
     /// <summary>Initializes a new instance of the <see cref="PipelineEjectException{TResponse}"/> class.</summary>
     /// <param name="response">The outcome the ejecting dispatch should return.</param>

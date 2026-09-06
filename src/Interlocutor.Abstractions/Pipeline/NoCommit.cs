@@ -73,7 +73,7 @@ public static class NoCommit
     /// for this request at all.
     /// </remarks>
     public static TResponse With<TResponse>(TResponse response)
-        where TResponse : IOutcome
+        where TResponse : IUnion
     {
         if (ActiveSignal.Value is { } flag)
         {
@@ -94,7 +94,7 @@ public static class NoCommit
     /// <returns>Never returns - always throws, exactly like <see cref="Eject.With{TResponse}(TResponse)"/>.</returns>
     /// <exception cref="PipelineEjectException{TResponse}">Always thrown - see <see cref="Eject.With{TResponse}(TResponse)"/>.</exception>
     public static TResponse AndEject<TResponse>(TResponse response)
-        where TResponse : IOutcome
+        where TResponse : IUnion
     {
         if (ActiveSignal.Value is { } flag)
         {

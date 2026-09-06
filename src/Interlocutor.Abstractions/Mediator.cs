@@ -3,6 +3,7 @@ namespace Interlocutor.Abstractions;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Diagnostics;
@@ -52,7 +53,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
 
     /// <inheritdoc/>
     public Task<TResponse> SendAsync<TResponse>(IQuery<TResponse> query, CancellationToken ct = default)
-        where TResponse : IOutcome
+        where TResponse : IUnion
     {
         return DispatchWithTraceAsync<Type, IHandlerWrapper<TResponse>, TResponse>(
             QueryWrappers,
@@ -66,7 +67,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
 
     /// <inheritdoc/>
     public Task<TResponse> SendAsync<TResponse>(ICommand<TResponse> command, CancellationToken ct = default)
-        where TResponse : IOutcome
+        where TResponse : IUnion
     {
         return DispatchWithTraceAsync<Type, IHandlerWrapper<TResponse>, TResponse>(
             CommandWrappers,
@@ -80,7 +81,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
 
     /// <inheritdoc/>
     public Task<TResult> SendAsync<TResult>(ICommand command, CancellationToken ct = default)
-        where TResult : IOutcome
+        where TResult : IUnion
     {
         // For void commands, cache by both command type and result type because the same command can be
         // handled with different outcome shapes depending on what the caller needs (e.g., caller may want

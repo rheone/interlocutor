@@ -1,5 +1,6 @@
 namespace Interlocutor.Abstractions.Commands;
 
+using System.Runtime.CompilerServices;
 using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
@@ -21,7 +22,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </remarks>
 public interface ICommandHandler<in TCommand, TResponse>
     where TCommand : ICommand<TResponse>
-    where TResponse : IOutcome
+    where TResponse : IUnion
 {
     /// <summary>
     /// Handles the specified command and returns a result containing the response or a failure.

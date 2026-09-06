@@ -1,5 +1,6 @@
 namespace Interlocutor.Abstractions.Pipeline;
 
+using System.Runtime.CompilerServices;
 using Interlocutor.Abstractions.Markers;
 using Interlocutor.Abstractions.Pipeline.Cases;
 using Interlocutor.CommonKernel.ResultTypes;
@@ -13,7 +14,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// generic - a container-neutral, compile-time-checked replacement for a runtime <c>is</c> check.
 /// </typeparam>
 /// <typeparam name="TResponse">
-/// The response type, constrained only to <see cref="IOutcome"/> - deliberately unconstrained
+/// The response type, constrained only to <see cref="IUnion"/> - deliberately unconstrained
 /// beyond that, matching <see cref="AuthorizationBehavior{TRequest, TResponse}"/>. This behavior's type
 /// parameters must map 1:1 onto <see cref="IPipelineBehavior{TRequest, TResponse}"/>'s generic arguments -
 /// no extra type parameters - because Microsoft.Extensions.DependencyInjection's open-generic resolver
@@ -48,7 +49,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 public class CancellationBehavior<TRequest, TResponse>(IOutcomeCaseRegistry caseRegistry)
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : ICancellable
-    where TResponse : IOutcome
+    where TResponse : IUnion
 {
     /// <summary>
     /// Handles the request, converting a cancellation of the ambient <paramref name="ct"/> observed while

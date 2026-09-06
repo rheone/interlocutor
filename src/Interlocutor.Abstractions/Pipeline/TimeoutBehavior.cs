@@ -1,6 +1,7 @@
 namespace Interlocutor.Abstractions.Pipeline;
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Interlocutor.Abstractions.Markers;
 using Interlocutor.Abstractions.Pipeline.Cases;
 using Interlocutor.CommonKernel.ResultTypes;
@@ -13,7 +14,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// this generic - a container-neutral, compile-time-checked replacement for a runtime <c>is</c> check.
 /// </typeparam>
 /// <typeparam name="TResponse">
-/// The response type, constrained only to <see cref="IOutcome"/>, mirroring
+/// The response type, constrained only to <see cref="IUnion"/>, mirroring
 /// <see cref="AuthorizationBehavior{TRequest, TResponse}"/>'s <c>TResponse</c> shape for the same reason: both
 /// type parameters must map 1:1 onto <see cref="IPipelineBehavior{TRequest, TResponse}"/>'s so Microsoft
 /// DI's open-generic resolver can construct this behavior.
@@ -48,7 +49,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 public class TimeoutBehavior<TRequest, TResponse>(ITimeoutPolicy timeoutPolicy, IOutcomeCaseRegistry caseRegistry)
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IHasTimeout
-    where TResponse : IOutcome
+    where TResponse : IUnion
 {
     /// <summary>
     /// Handles the request, racing it against the resolved time budget and short-circuiting with

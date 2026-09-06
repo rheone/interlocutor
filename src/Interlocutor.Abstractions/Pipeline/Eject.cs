@@ -1,5 +1,6 @@
 namespace Interlocutor.Abstractions.Pipeline;
 
+using System.Runtime.CompilerServices;
 using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
@@ -50,10 +51,10 @@ public static class Eject
     /// Ejects the current pipeline dispatch, forcing it to end with <paramref name="response"/> instead of
     /// whatever the calling code would otherwise have produced.
     /// </summary>
-    /// <typeparam name="TResponse">The <see cref="IOutcome"/> type to return.</typeparam>
+    /// <typeparam name="TResponse">The <see cref="IUnion"/> type to return.</typeparam>
     /// <param name="response">The outcome the dispatch should return.</param>
     /// <returns>Never returns - always throws. Typed as <typeparamref name="TResponse"/> so it can be used directly in a <see langword="return"/> statement.</returns>
     /// <exception cref="PipelineEjectException{TResponse}">Always thrown - caught by the pipeline's dispatch machinery, never observed by callers of the mediator.</exception>
     public static TResponse With<TResponse>(TResponse response)
-        where TResponse : IOutcome => throw new PipelineEjectException<TResponse>(response);
+        where TResponse : IUnion => throw new PipelineEjectException<TResponse>(response);
 }

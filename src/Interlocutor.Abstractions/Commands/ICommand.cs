@@ -1,5 +1,6 @@
 namespace Interlocutor.Abstractions.Commands;
 
+using System.Runtime.CompilerServices;
 using Interlocutor.CommonKernel.ResultTypes;
 
 #pragma warning disable SA1402 // Allowing multiple types of same name with different arity
@@ -8,7 +9,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// Marks a command that produces a typed response of type <typeparamref name="TResponse"/>.
 /// </summary>
 /// <typeparam name="TResponse">
-/// The <see cref="IOutcome"/>-shaped union returned when the command is handled. Commands never
+/// The <see cref="IUnion"/>-shaped union returned when the command is handled. Commands never
 /// return a bare DTO - the response must be (or be wrapped in) an outcome union so callers exhaustively
 /// handle every case.
 /// </typeparam>
@@ -21,7 +22,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </remarks>
 #pragma warning disable S2326
 public interface ICommand<TResponse>
-    where TResponse : IOutcome;
+    where TResponse : IUnion;
 #pragma warning restore S2326
 
 /// <summary>

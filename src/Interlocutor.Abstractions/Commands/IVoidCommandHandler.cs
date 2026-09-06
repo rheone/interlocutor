@@ -1,5 +1,6 @@
 namespace Interlocutor.Abstractions.Commands;
 
+using System.Runtime.CompilerServices;
 using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 
@@ -8,7 +9,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </summary>
 /// <typeparam name="TCommand">The command type that this handler processes.</typeparam>
 /// <typeparam name="TResult">
-/// The <see cref="IOutcome"/>-shaped union describing the outcome. Chosen by the handler/call site
+/// The <see cref="IUnion"/>-shaped union describing the outcome. Chosen by the handler/call site
 /// - may be any public union type in <c>Interlocutor.CommonKernel</c> (<see cref="Outcome"/>,
 /// <see cref="Outcome{T1, T2}"/>, etc.).
 /// </typeparam>
@@ -29,7 +30,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </remarks>
 public interface IVoidCommandHandler<in TCommand, TResult>
     where TCommand : ICommand
-    where TResult : IOutcome
+    where TResult : IUnion
 {
     /// <summary>
     /// Handles the specified command and returns the outcome.
