@@ -7,6 +7,7 @@ This directory contains internal documentation for people building and maintaini
 - [Start here](#start-here) - the current spec and open questions
 - [Architecture Decision Records](#architecture-decision-records-adr) - why the library is shaped the way it is, grouped by theme
 - [Agent process docs](#agent-process-docs-agents) - how agents work this repo's issue tracker and triage
+- [Repo tooling](#repo-tooling) - devcontainer/CI operational notes that aren't ADRs
 - [Historical: bootstrapreference/](#historical-bootstrapreference) - superseded, context only
 
 ## Start here
@@ -57,6 +58,10 @@ Immutable once accepted - a changed decision gets a new ADR that supersedes the 
 - [issue-tracker.md](agents/issue-tracker.md) - the local `.scratch/` markdown issue tracker: file layout, ticket format, numbering convention.
 - [triage-labels.md](agents/triage-labels.md) - triage role → label mapping used across `.scratch/` tickets.
 - [documentation-maintenance.md](agents/documentation-maintenance.md) - keeping `documentation/` and `maintainer_docs/` in sync with each code change, instead of batching documentation into a separate pass.
+
+## Repo tooling
+
+- [pre-commit-devcontainer-provisioning.md](pre-commit-devcontainer-provisioning.md) - why `pre-commit` wasn't running in the devcontainer, whether CI covers the same checks (it doesn't - notably `gitleaks`), and what was provisioned to fix it.
 
 ## Historical: bootstrapreference/
 
