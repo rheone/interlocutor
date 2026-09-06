@@ -179,7 +179,7 @@ public readonly partial union Outcome<T1, T2, T3, T4, T5, T6>(T1, T2, T3, T4, T5
 /// </para>
 /// <para>
 /// Reserve <see cref="Outcome"/> for a request that is genuinely infallible and opts into none of
-/// <c>ICancellable</c>, <c>IHasTimeout</c>, or <c>IRateLimited</c> - none of those cross-cutting pipeline
+/// <c>ICancellableRequest</c>, <c>ITimeoutRequest</c>, or <c>IRateLimitedRequest</c> - none of those cross-cutting pipeline
 /// behaviors has a case to construct into a case-less type, so pairing one of them with <see cref="Outcome"/>
 /// throws the first time it actually needs to short-circuit, rather than silently doing nothing. An operation
 /// that can genuinely fail should declare an explicit <c>Outcome&lt;Success, Failure&gt;</c> (or whichever

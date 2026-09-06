@@ -38,7 +38,7 @@ public static class OutcomeCaseRegistryExtensions
     /// </param>
     /// <param name="requirementClause">
     /// A complete sentence (no trailing period) stating what response shape the caller must use instead (e.g.
-    /// <c>$"A request implementing {nameof(IRequiresPolicy)} must use a response type with a {nameof(Forbidden)} case"</c>).
+    /// <c>$"A request implementing {nameof(IRequiresPolicyRequest)} must use a response type with a {nameof(Forbidden)} case"</c>).
     /// </param>
     /// <returns>A <typeparamref name="TResponse"/> whose active case is <paramref name="caseValue"/>.</returns>
     /// <exception cref="InvalidOperationException">

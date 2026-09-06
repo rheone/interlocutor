@@ -238,7 +238,7 @@ public sealed class InterlocutorBuilder
     /// <paramref name="predicate"/> matches (and <paramref name="except"/>, if given, does not) is
     /// registered as <paramref name="target"/> describes. Strictly additive to the existing
     /// marker-interface-based behavior scoping (<see cref="ITransactionalRequest"/>, <see cref="IAuditableRequest"/>,
-    /// <see cref="IRequiresPolicy"/>, <see cref="IExternalStoreRequest"/>) - a behavior scoped by a marker
+    /// <see cref="IRequiresPolicyRequest"/>, <see cref="IExternalStoreRequest"/>) - a behavior scoped by a marker
     /// interface constraint is unaffected by whether any match rules are configured.
     /// </summary>
     /// <remarks>

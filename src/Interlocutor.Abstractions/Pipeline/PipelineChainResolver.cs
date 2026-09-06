@@ -14,7 +14,7 @@ namespace Interlocutor.Abstractions.Pipeline;
 /// either dispatch path's chain-building logic changes to add override support - not a per-behavior check
 /// every behavior (including a consumer's own) would otherwise have to remember to perform. A request
 /// matched by an override rule that also structurally satisfies an existing marker interface
-/// (<c>IAuditableRequest</c>, <c>IRequiresPolicy</c>, etc.) never runs that marker-constrained behavior
+/// (<c>IAuditableRequest</c>, <c>IRequiresPolicyRequest</c>, etc.) never runs that marker-constrained behavior
 /// unless the override rule names it explicitly - the returned list is the override's declared set and
 /// nothing else.
 /// </para>

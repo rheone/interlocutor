@@ -200,7 +200,7 @@ public sealed class InterlocutorPipelineBuilder
     /// </para>
     /// <para>
     /// A request matched by this rule that also structurally satisfies an existing marker interface
-    /// (<c>IAuditableRequest</c>, <c>IRequiresPolicy</c>, etc.) does not run that marker-constrained
+    /// (<c>IAuditableRequest</c>, <c>IRequiresPolicyRequest</c>, etc.) does not run that marker-constrained
     /// behavior unless <paramref name="behaviors"/> names it explicitly - the matched request's resolved
     /// pipeline is exactly and only <paramref name="behaviors"/>, enforced once, centrally, at the point
     /// each dispatch path builds its behavior chain (see <c>Interlocutor.Abstractions.Pipeline.PipelineChainResolver</c>),

@@ -14,11 +14,11 @@ namespace Interlocutor.Abstractions.Markers;
 /// <para>
 /// <see cref="Budget"/> is the request's own declared budget. <see cref="Pipeline.ITimeoutPolicy"/> can
 /// override it (for example, to apply a tenant-wide ceiling), so the value <see cref="Pipeline.TimeoutBehavior{TRequest, TResponse}"/>
-/// actually races against is whatever <see cref="Pipeline.ITimeoutPolicy.ResolveBudget(IHasTimeout)"/> returns,
+/// actually races against is whatever <see cref="Pipeline.ITimeoutPolicy.ResolveBudget(ITimeoutRequest)"/> returns,
 /// not necessarily this property directly.
 /// </para>
 /// </remarks>
-public interface IHasTimeout
+public interface ITimeoutRequest
 {
     /// <summary>
     /// Gets the time budget this request should complete within.

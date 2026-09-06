@@ -4,7 +4,7 @@ namespace Interlocutor.Abstractions.Pipeline;
 /// <remarks>
 /// <para>
 /// Implement <see cref="IRateLimiter"/> to provide throttling decisions for requests implementing
-/// <see cref="Markers.IRateLimited"/>. Register your implementation in DI, and
+/// <see cref="Markers.IRateLimitedRequest"/>. Register your implementation in DI, and
 /// <see cref="RateLimitedBehavior{TRequest, TResponse}"/> will invoke it to check limits.
 /// </para>
 /// <para>
@@ -15,7 +15,7 @@ namespace Interlocutor.Abstractions.Pipeline;
 public interface IRateLimiter
 {
     /// <summary>Checks whether the request is allowed to proceed under the named limit.</summary>
-    /// <param name="limitKey">The limit/bucket key to check, from <see cref="Markers.IRateLimited.LimitKey"/>.</param>
+    /// <param name="limitKey">The limit/bucket key to check, from <see cref="Markers.IRateLimitedRequest.LimitKey"/>.</param>
     /// <param name="request">The request context for the rate-limit check.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>A <see cref="Task{TResult}"/> representing the asynchronous operation, with a <see cref="RateLimitResult"/> describing the decision.</returns>

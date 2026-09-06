@@ -21,4 +21,4 @@ namespace Interlocutor.Abstractions.Markers;
 /// implement this marker - cancellation is only converted where a request has opted in.
 /// </para>
 /// </remarks>
-public interface ICancellable;
+public interface ICancellableRequest;

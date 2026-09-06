@@ -78,14 +78,14 @@ Interlocutor.Abstractions.Diagnostics.MediatorActivitySource
 Interlocutor.Abstractions.InterlocutorStartupValidation
 Interlocutor.Abstractions.Markers.IAuditableRequest
 Interlocutor.Abstractions.Markers.IAuditableRequest.ActionName.get -> string!
-Interlocutor.Abstractions.Markers.ICancellable
+Interlocutor.Abstractions.Markers.ICancellableRequest
 Interlocutor.Abstractions.Markers.IExternalStoreRequest
-Interlocutor.Abstractions.Markers.IHasTimeout
-Interlocutor.Abstractions.Markers.IHasTimeout.Budget.get -> System.TimeSpan
-Interlocutor.Abstractions.Markers.IRateLimited
-Interlocutor.Abstractions.Markers.IRateLimited.LimitKey.get -> string!
-Interlocutor.Abstractions.Markers.IRequiresPolicy
-Interlocutor.Abstractions.Markers.IRequiresPolicy.PolicyName.get -> string!
+Interlocutor.Abstractions.Markers.IRateLimitedRequest
+Interlocutor.Abstractions.Markers.IRateLimitedRequest.LimitKey.get -> string!
+Interlocutor.Abstractions.Markers.IRequiresPolicyRequest
+Interlocutor.Abstractions.Markers.IRequiresPolicyRequest.PolicyName.get -> string!
+Interlocutor.Abstractions.Markers.ITimeoutRequest
+Interlocutor.Abstractions.Markers.ITimeoutRequest.Budget.get -> System.TimeSpan
 Interlocutor.Abstractions.Markers.ITransactionalRequest
 Interlocutor.Abstractions.Mediator
 Interlocutor.Abstractions.Mediator.Mediator(System.IServiceProvider! services) -> void
@@ -155,15 +155,15 @@ Interlocutor.Abstractions.Pipeline.DefaultResponseOutcomeDescriber.DefaultRespon
 Interlocutor.Abstractions.Pipeline.DefaultResponseOutcomeDescriber.Describe(object? response) -> string!
 Interlocutor.Abstractions.Pipeline.DefaultTimeoutPolicy
 Interlocutor.Abstractions.Pipeline.DefaultTimeoutPolicy.DefaultTimeoutPolicy() -> void
-Interlocutor.Abstractions.Pipeline.DefaultTimeoutPolicy.ResolveBudget(Interlocutor.Abstractions.Markers.IHasTimeout! request) -> System.TimeSpan
+Interlocutor.Abstractions.Pipeline.DefaultTimeoutPolicy.ResolveBudget(Interlocutor.Abstractions.Markers.ITimeoutRequest! request) -> System.TimeSpan
 Interlocutor.Abstractions.Pipeline.DelegatePipelineStage<TRequest, TResponse>
 Interlocutor.Abstractions.Pipeline.DelegatePipelineStage<TRequest, TResponse>.DelegatePipelineStage(System.Func<TRequest, System.Threading.CancellationToken, System.Threading.Tasks.Task<Interlocutor.Abstractions.Pipeline.StageResult<TResponse>>!>? onBefore, System.Func<TRequest, TResponse, System.Threading.CancellationToken, System.Threading.Tasks.Task!>? onAfter) -> void
 Interlocutor.Abstractions.Pipeline.DelegateRateLimiter
 Interlocutor.Abstractions.Pipeline.DelegateRateLimiter.CheckAsync(string! limitKey, object! request, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Interlocutor.Abstractions.Pipeline.RateLimitResult>!
 Interlocutor.Abstractions.Pipeline.DelegateRateLimiter.DelegateRateLimiter(System.Func<string!, object!, System.Threading.CancellationToken, System.Threading.Tasks.Task<Interlocutor.Abstractions.Pipeline.RateLimitResult>!>! check) -> void
 Interlocutor.Abstractions.Pipeline.DelegateTimeoutPolicy
-Interlocutor.Abstractions.Pipeline.DelegateTimeoutPolicy.DelegateTimeoutPolicy(System.Func<Interlocutor.Abstractions.Markers.IHasTimeout!, System.TimeSpan>! resolveBudget) -> void
-Interlocutor.Abstractions.Pipeline.DelegateTimeoutPolicy.ResolveBudget(Interlocutor.Abstractions.Markers.IHasTimeout! request) -> System.TimeSpan
+Interlocutor.Abstractions.Pipeline.DelegateTimeoutPolicy.DelegateTimeoutPolicy(System.Func<Interlocutor.Abstractions.Markers.ITimeoutRequest!, System.TimeSpan>! resolveBudget) -> void
+Interlocutor.Abstractions.Pipeline.DelegateTimeoutPolicy.ResolveBudget(Interlocutor.Abstractions.Markers.ITimeoutRequest! request) -> System.TimeSpan
 Interlocutor.Abstractions.Pipeline.Eject
 Interlocutor.Abstractions.Pipeline.IAuditSink
 Interlocutor.Abstractions.Pipeline.IAuditSink.RecordAsync(Interlocutor.Abstractions.Pipeline.AuditEntry! entry, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!
@@ -181,7 +181,7 @@ Interlocutor.Abstractions.Pipeline.IRateLimiter.CheckAsync(string! limitKey, obj
 Interlocutor.Abstractions.Pipeline.IResponseOutcomeDescriber
 Interlocutor.Abstractions.Pipeline.IResponseOutcomeDescriber.Describe(object? response) -> string!
 Interlocutor.Abstractions.Pipeline.ITimeoutPolicy
-Interlocutor.Abstractions.Pipeline.ITimeoutPolicy.ResolveBudget(Interlocutor.Abstractions.Markers.IHasTimeout! request) -> System.TimeSpan
+Interlocutor.Abstractions.Pipeline.ITimeoutPolicy.ResolveBudget(Interlocutor.Abstractions.Markers.ITimeoutRequest! request) -> System.TimeSpan
 Interlocutor.Abstractions.Pipeline.LoggingAuditSink
 Interlocutor.Abstractions.Pipeline.LoggingAuditSink.LoggingAuditSink(Microsoft.Extensions.Logging.ILogger<Interlocutor.Abstractions.Pipeline.LoggingAuditSink!>! logger) -> void
 Interlocutor.Abstractions.Pipeline.LoggingAuditSink.RecordAsync(Interlocutor.Abstractions.Pipeline.AuditEntry! entry, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task!

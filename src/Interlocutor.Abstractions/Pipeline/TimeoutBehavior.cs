@@ -10,7 +10,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// Pipeline behavior that enforces a time budget by racing the rest of the pipeline against a delay.
 /// </summary>
 /// <typeparam name="TRequest">
-/// The request type. Constrained to <see cref="IHasTimeout"/> so only requests that declare a budget close
+/// The request type. Constrained to <see cref="ITimeoutRequest"/> so only requests that declare a budget close
 /// this generic - a container-neutral, compile-time-checked replacement for a runtime <c>is</c> check.
 /// </typeparam>
 /// <typeparam name="TResponse">
@@ -41,14 +41,14 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// (<see cref="Task.IsCanceled"/>) rather than by racing to completion normally.
 /// </para>
 /// <para>
-/// Because <typeparamref name="TRequest"/> is constrained to <see cref="IHasTimeout"/>, both Microsoft DI and
+/// Because <typeparamref name="TRequest"/> is constrained to <see cref="ITimeoutRequest"/>, both Microsoft DI and
 /// Autofac skip this open generic registration for a request type that does not implement the marker - the
 /// container never even attempts to construct this behavior for it.
 /// </para>
 /// </remarks>
 public class TimeoutBehavior<TRequest, TResponse>(ITimeoutPolicy timeoutPolicy, IOutcomeCaseRegistry caseRegistry)
     : IPipelineBehavior<TRequest, TResponse>
-    where TRequest : IHasTimeout
+    where TRequest : ITimeoutRequest
     where TResponse : IUnion
 {
     /// <summary>
@@ -67,7 +67,7 @@ public class TimeoutBehavior<TRequest, TResponse>(ITimeoutPolicy timeoutPolicy, 
     /// </exception>
     /// <exception cref="InvalidOperationException">
     /// The budget elapsed, but <typeparamref name="TResponse"/> has no <see cref="Timeout"/> case to
-    /// construct - pair <see cref="IHasTimeout"/> only with response shapes that include one.
+    /// construct - pair <see cref="ITimeoutRequest"/> only with response shapes that include one.
     /// </exception>
     public async Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
@@ -102,6 +102,6 @@ public class TimeoutBehavior<TRequest, TResponse>(ITimeoutPolicy timeoutPolicy, 
             timeout,
             $"TimeoutBehavior<{typeof(TRequest).Name}, {typeof(TResponse).Name}>",
             "timed out a request",
-            $"A request implementing {nameof(IHasTimeout)} must use a response type with a {nameof(Timeout)} case"
+            $"A request implementing {nameof(ITimeoutRequest)} must use a response type with a {nameof(Timeout)} case"
         );
 }

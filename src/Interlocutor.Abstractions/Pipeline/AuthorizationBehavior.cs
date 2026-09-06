@@ -9,7 +9,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// Pipeline behavior that enforces declarative authorization policies.
 /// </summary>
 /// <typeparam name="TRequest">
-/// The request type. Constrained to <see cref="IRequiresPolicy"/> so only requests that declare a policy
+/// The request type. Constrained to <see cref="IRequiresPolicyRequest"/> so only requests that declare a policy
 /// close this generic - a container-neutral, compile-time-checked replacement for a runtime <c>is</c> check.
 /// </typeparam>
 /// <typeparam name="TResponse">
@@ -41,18 +41,18 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// construction/extraction extension point every hand-rolled, non-union <see cref="IOutcome"/>
 /// implementation participates in. A <typeparamref name="TResponse"/> with no <see cref="Forbidden"/> case
 /// throws a clear, named exception the first time authorization is actually denied for it - a configuration
-/// mistake (pairing <see cref="IRequiresPolicy"/> with a response shape that can't express denial), not a
+/// mistake (pairing <see cref="IRequiresPolicyRequest"/> with a response shape that can't express denial), not a
 /// silent failure.
 /// </para>
 /// <para>
-/// Because <typeparamref name="TRequest"/> is constrained to <see cref="IRequiresPolicy"/>, both Microsoft
+/// Because <typeparamref name="TRequest"/> is constrained to <see cref="IRequiresPolicyRequest"/>, both Microsoft
 /// DI and Autofac skip this open generic registration for a request type that does not implement the marker
 /// - the container never even attempts to construct this behavior for it.
 /// </para>
 /// </remarks>
 public class AuthorizationBehavior<TRequest, TResponse>(IPolicyEvaluator policyEvaluator, IOutcomeCaseRegistry caseRegistry)
     : IPipelineBehavior<TRequest, TResponse>
-    where TRequest : IRequiresPolicy
+    where TRequest : IRequiresPolicyRequest
     where TResponse : IUnion
 {
     /// <summary>
@@ -65,7 +65,7 @@ public class AuthorizationBehavior<TRequest, TResponse>(IPolicyEvaluator policyE
     /// <returns>A <see cref="Forbidden"/> outcome if authorization fails, otherwise the result from the next behavior or handler.</returns>
     /// <exception cref="InvalidOperationException">
     /// Authorization was denied, but <typeparamref name="TResponse"/> has no <see cref="Forbidden"/> case to
-    /// construct - pair <see cref="IRequiresPolicy"/> only with response shapes that include one.
+    /// construct - pair <see cref="IRequiresPolicyRequest"/> only with response shapes that include one.
     /// </exception>
     public async Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
@@ -87,6 +87,6 @@ public class AuthorizationBehavior<TRequest, TResponse>(IPolicyEvaluator policyE
             forbidden,
             $"AuthorizationBehavior<{typeof(TRequest).Name}, {typeof(TResponse).Name}>",
             "denied a request",
-            $"A request implementing {nameof(IRequiresPolicy)} must use a response type with a {nameof(Forbidden)} case"
+            $"A request implementing {nameof(IRequiresPolicyRequest)} must use a response type with a {nameof(Forbidden)} case"
         );
 }
