@@ -414,4 +414,50 @@ internal static class InterlocutorDiagnostics
             + "wider overload of either family, so a union past sixteen case types has no signature Match/Switch "
             + "could ever be emitted with. Reduce the union to sixteen or fewer case types."
     );
+
+    /// <summary>
+    /// Reported when a <c>partial union</c> decorated with <c>GenerateOutcomeMembersAttribute</c> declares more
+    /// case types than the configured recommended maximum (default six, matching the shipped
+    /// <c>Outcome</c>/<c>Outcome&lt;...&gt;</c> family's own ceiling).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Unlike <see cref="TooManyOutcomeCaseTypes"/> - a hard, unconfigurable ceiling forced by
+    /// <c>Func&lt;T1..T16, TResult&gt;</c>/<c>Action&lt;T1..T16&gt;</c>'s own arity limit - this is a style
+    /// nudge, not a structural limit: an operation whose response needs this many independently-branchable
+    /// cases is usually a sign the underlying type or handler is doing too much, and splitting the operation is
+    /// more often the right fix than growing the union further. Default severity is
+    /// <see cref="DiagnosticSeverity.Warning"/>, escalated the same way as <see cref="MissingHandler"/>:
+    /// <code>
+    /// dotnet_diagnostic.INTERLOC014.severity = error
+    /// </code>
+    /// </para>
+    /// <para>
+    /// The threshold itself - distinct from severity - is also configurable, via an <c>.editorconfig</c>-style
+    /// analyzer option read per-declaring-file:
+    /// <code>
+    /// interlocutor_max_recommended_outcome_arity = 8
+    /// </code>
+    /// A deliberate outlier (a payment gateway integration with several genuinely independent decline reasons,
+    /// say) dismisses this per-declaration with a targeted <c>#pragma warning disable INTERLOC014</c> /
+    /// <c>#pragma warning restore INTERLOC014</c> pair around the union declaration, the same as any other
+    /// warning - no bespoke suppression mechanism exists for this diagnostic.
+    /// </para>
+    /// </remarks>
+    public static readonly DiagnosticDescriptor RecommendedOutcomeArityExceeded = new(
+        id: "INTERLOC014",
+        title: "Attributed union declares more cases than the recommended maximum",
+        messageFormat: "'{0}' is decorated with GenerateOutcomeMembersAttribute but declares {1} case type(s), "
+            + "more than the recommended maximum of {2} - a type or handler needing this many cases is usually "
+            + "a sign it's doing too much; consider splitting the operation instead of growing the union further",
+        category: "Interlocutor.Outcomes",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "GenerateOutcomeMembersAttribute marks a partial union declaration for source-generated "
+            + "Match/Switch/TryGetValue/ToString members. Declaring more case types than the recommended "
+            + "maximum (default six, configurable via the interlocutor_max_recommended_outcome_arity "
+            + ".editorconfig option) usually signals the underlying type or handler is doing too much. Split "
+            + "the operation into more specific requests, or dismiss this warning per-declaration with "
+            + "#pragma warning disable/restore INTERLOC014 for a genuine outlier."
+    );
 }

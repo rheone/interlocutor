@@ -1,5 +1,6 @@
 namespace Interlocutor.Generator.Tests;
 
+using System.Collections.Generic;
 using System.Linq;
 using Interlocutor.Generator.Diagnostics;
 using Microsoft.CodeAnalysis;
@@ -120,8 +121,12 @@ public sealed class OutcomeMemberGeneratorTests
             out var diagnostics
         );
 
-        // Assert
-        Assert.Empty(diagnostics);
+        // Assert - sixteen is past the (default six) recommended maximum, so INTERLOC014 fires, but the
+        // style nudge never blocks emission the way the hard sixteen-case ceiling (INTERLOC013) would.
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("INTERLOC014", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+
         var emitResult = result.GetDiagnostics(TestContext.Current.CancellationToken);
         Assert.Empty(emitResult.Where(static d => d.Severity == DiagnosticSeverity.Error));
 
@@ -552,6 +557,184 @@ public sealed class OutcomeMemberGeneratorTests
 
         var successArgsOnSuccess = new object?[] { success, null };
         Assert.True((bool)factory.GetMethod("TryGetSuccess")!.Invoke(null, successArgsOnSuccess)!);
+    }
+
+    [Fact]
+    public void OutcomeMemberGenerator_SixCaseUnion_NoRecommendedArityWarning_Test()
+    {
+        // Arrange - exactly the default recommended maximum (six); must not warn
+        const string source = """
+            namespace Test;
+
+            using Interlocutor.CommonKernel;
+            using Interlocutor.CommonKernel.ResultTypes;
+
+            [GenerateOutcomeMembers]
+            public readonly partial union SixCaseOutcome(Success, NotFound, Forbidden, Conflict, ValidationError, RateLimited) : IOutcome
+            {
+            }
+            """;
+
+        // Act
+        _ = GeneratorTestHarness.RunAndUpdate(
+            new OutcomeMemberGenerator(),
+            source,
+            "OutcomeMemberGenerator.Tests.SixCase",
+            null,
+            LanguageVersion.Preview,
+            out var diagnostics
+        );
+
+        // Assert
+        Assert.Empty(diagnostics);
+    }
+
+    [Fact]
+    public void OutcomeMemberGenerator_SevenCaseUnion_ReportsRecommendedArityWarning_Test()
+    {
+        // Arrange - one past the default recommended maximum (six), well under the hard sixteen-case ceiling
+        const string source = """
+            namespace Test;
+
+            using Interlocutor.CommonKernel;
+            using Interlocutor.CommonKernel.ResultTypes;
+
+            [GenerateOutcomeMembers]
+            public readonly partial union SevenCaseOutcome(
+                Success, NotFound, Forbidden, Conflict, ValidationError, RateLimited, Timeout
+            ) : IOutcome
+            {
+            }
+            """;
+
+        // Act
+        var result = GeneratorTestHarness.RunAndUpdate(
+            new OutcomeMemberGenerator(),
+            source,
+            "OutcomeMemberGenerator.Tests.SevenCase",
+            null,
+            LanguageVersion.Preview,
+            out var diagnostics
+        );
+
+        // Assert - a non-blocking style nudge: the diagnostic fires, but generation still proceeds.
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("INTERLOC014", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        Assert.Contains("SevenCaseOutcome", diagnostic.GetMessage(), StringComparison.Ordinal);
+        Assert.Contains("doing too much", diagnostic.GetMessage(), StringComparison.Ordinal);
+
+        var emitResult = result.GetDiagnostics(TestContext.Current.CancellationToken);
+        Assert.Empty(emitResult.Where(static d => d.Severity == DiagnosticSeverity.Error));
+        var generatedText = string.Join(
+            System.Environment.NewLine,
+            result
+                .SyntaxTrees.Where(static t => t.FilePath.Contains("OutcomeMembers", StringComparison.Ordinal))
+                .Select(static t => t.ToString())
+        );
+        Assert.Contains("public TResult Match<TResult>(", generatedText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void OutcomeMemberGenerator_ConfiguredThreshold_ChangesWhereRecommendedArityWarningFires_Test()
+    {
+        // Arrange - four cases, well under the default recommended maximum of six, but past a configured
+        // threshold of three.
+        const string source = """
+            namespace Test;
+
+            using Interlocutor.CommonKernel;
+            using Interlocutor.CommonKernel.ResultTypes;
+
+            [GenerateOutcomeMembers]
+            public readonly partial union FourCaseOutcome(Success, NotFound, Forbidden, Conflict) : IOutcome
+            {
+            }
+            """;
+
+        // Act
+        _ = GeneratorTestHarness.RunAndUpdateWithEditorConfigOptions(
+            new OutcomeMemberGenerator(),
+            source,
+            "OutcomeMemberGenerator.Tests.ConfiguredThreshold",
+            LanguageVersion.Preview,
+            new Dictionary<string, string> { ["interlocutor_max_recommended_outcome_arity"] = "3" },
+            out var diagnostics
+        );
+
+        // Assert
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("INTERLOC014", diagnostic.Id);
+        Assert.Contains("recommended maximum of 3", diagnostic.GetMessage(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void OutcomeMemberGenerator_ConfiguredThreshold_RaisingItSuppressesTheDefaultWarning_Test()
+    {
+        // Arrange - seven cases, which warns by default (see the sibling test above), but a configured
+        // threshold of ten raises the bar past it.
+        const string source = """
+            namespace Test;
+
+            using Interlocutor.CommonKernel;
+            using Interlocutor.CommonKernel.ResultTypes;
+
+            [GenerateOutcomeMembers]
+            public readonly partial union SevenCaseOutcome(
+                Success, NotFound, Forbidden, Conflict, ValidationError, RateLimited, Timeout
+            ) : IOutcome
+            {
+            }
+            """;
+
+        // Act
+        _ = GeneratorTestHarness.RunAndUpdateWithEditorConfigOptions(
+            new OutcomeMemberGenerator(),
+            source,
+            "OutcomeMemberGenerator.Tests.ConfiguredThresholdRaised",
+            LanguageVersion.Preview,
+            new Dictionary<string, string> { ["interlocutor_max_recommended_outcome_arity"] = "10" },
+            out var diagnostics
+        );
+
+        // Assert
+        Assert.Empty(diagnostics);
+    }
+
+    [Fact]
+    public void OutcomeMemberGenerator_PragmaDisable_SuppressesRecommendedArityWarning_Test()
+    {
+        // Arrange - the same seven-case shape as the warning test above, wrapped in a disable/restore pair.
+        const string source = """
+            namespace Test;
+
+            using Interlocutor.CommonKernel;
+            using Interlocutor.CommonKernel.ResultTypes;
+
+            #pragma warning disable INTERLOC014
+            [GenerateOutcomeMembers]
+            public readonly partial union SevenCaseOutcome(
+                Success, NotFound, Forbidden, Conflict, ValidationError, RateLimited, Timeout
+            ) : IOutcome
+            {
+            }
+            #pragma warning restore INTERLOC014
+            """;
+
+        // Act
+        var result = GeneratorTestHarness.RunAndUpdate(
+            new OutcomeMemberGenerator(),
+            source,
+            "OutcomeMemberGenerator.Tests.PragmaSuppressed",
+            null,
+            LanguageVersion.Preview,
+            out _
+        );
+
+        // Assert - the generator-reported diagnostic is subject to the same #pragma suppression as a
+        // compiler-reported one, since it flows through the normal diagnostic pipeline against the source tree.
+        var emitResult = result.GetDiagnostics(TestContext.Current.CancellationToken);
+        Assert.DoesNotContain(emitResult, static d => d.Id == "INTERLOC014");
     }
 
     /// <summary>Counts non-overlapping occurrences of <paramref name="value"/> in <paramref name="text"/>.</summary>

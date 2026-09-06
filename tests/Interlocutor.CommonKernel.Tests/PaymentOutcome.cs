@@ -15,6 +15,9 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// and the documentation excerpt it's drawn from - <c>GenerateOutcomeMembersAttribute</c> itself has no
 /// accessibility requirement of its own; a real consumer's own custom-arity union is just as often public.
 /// </remarks>
+// Seven cases is past the default recommended maximum of six (INTERLOC014) - a deliberate outlier, dismissed
+// here the same way documentation/extensibility.md's worked example (drawn from this file) demonstrates.
+#pragma warning disable INTERLOC014
 [GenerateOutcomeMembers]
 internal readonly partial union PaymentOutcome(
     Receipt,
@@ -25,3 +28,4 @@ internal readonly partial union PaymentOutcome(
     GatewayTimeout,
     NetworkError
 ) : IOutcome;
+#pragma warning restore INTERLOC014

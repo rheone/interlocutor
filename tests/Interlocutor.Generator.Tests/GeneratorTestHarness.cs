@@ -3,6 +3,7 @@ namespace Interlocutor.Generator.Tests;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -188,6 +189,45 @@ internal static class GeneratorTestHarness
     /// <returns>The output compilation with the generator's emitted sources merged in.</returns>
     public static Compilation RunAndUpdate(string source, out ImmutableArray<Diagnostic> generatorDiagnostics) =>
         RunAndUpdate(source, "Interlocutor.Generator.Tests.Compilation", null, out generatorDiagnostics);
+
+    /// <summary>
+    /// Like <see cref="RunAndUpdate(IIncrementalGenerator, string, string, System.Collections.Generic.IEnumerable{MetadataReference}?, LanguageVersion, out ImmutableArray{Diagnostic})"/>,
+    /// but wires <paramref name="editorConfigOptions"/> into the driver as its <see cref="AnalyzerConfigOptionsProvider"/> -
+    /// for a generator (e.g. <see cref="OutcomeMemberGenerator"/>) that reads an <c>.editorconfig</c>-style
+    /// analyzer option, without needing a real <c>.editorconfig</c> file on disk.
+    /// </summary>
+    /// <param name="generator">The incremental generator to run.</param>
+    /// <param name="source">The C# source to compile and analyze.</param>
+    /// <param name="assemblyName">The compilation's assembly name.</param>
+    /// <param name="languageVersion">The parse options' language version - see <see cref="CreateCompilation"/>.</param>
+    /// <param name="editorConfigOptions">
+    /// The <c>.editorconfig</c>-style key/value pairs every syntax tree in the compilation resolves via
+    /// <see cref="AnalyzerConfigOptionsProvider.GetOptions(SyntaxTree)"/> and <see cref="AnalyzerConfigOptionsProvider.GlobalOptions"/> alike.
+    /// </param>
+    /// <param name="generatorDiagnostics">Diagnostics the generator itself reported (not compiler diagnostics).</param>
+    /// <returns>The output compilation with the generator's emitted sources merged in.</returns>
+    public static Compilation RunAndUpdateWithEditorConfigOptions(
+        IIncrementalGenerator generator,
+        string source,
+        string assemblyName,
+        LanguageVersion languageVersion,
+        IReadOnlyDictionary<string, string> editorConfigOptions,
+        out ImmutableArray<Diagnostic> generatorDiagnostics
+    )
+    {
+        var driver = CSharpGeneratorDriver.Create(
+            [generator.AsSourceGenerator()],
+            additionalTexts: null,
+            parseOptions: new CSharpParseOptions(languageVersion),
+            optionsProvider: new FixedAnalyzerConfigOptionsProvider(new FixedAnalyzerConfigOptions(editorConfigOptions))
+        );
+        _ = driver.RunGeneratorsAndUpdateCompilation(
+            CreateCompilation(source, assemblyName, null, languageVersion),
+            out var outputCompilation,
+            out generatorDiagnostics
+        );
+        return outputCompilation;
+    }
 
     /// <summary>
     /// Turns a compilation (typically the output of <see cref="RunAndUpdate(string, string, System.Collections.Generic.IEnumerable{MetadataReference}?, out ImmutableArray{Diagnostic})"/>)
@@ -378,5 +418,37 @@ internal static class GeneratorTestHarness
         }
 
         return builder.ToImmutable();
+    }
+
+    /// <summary>
+    /// A minimal <see cref="AnalyzerConfigOptions"/> implementation backed by a fixed key/value dictionary - for
+    /// feeding a test <c>.editorconfig</c>-style analyzer option (e.g.
+    /// <c>interlocutor_max_recommended_outcome_arity</c>) into a generator run without a real
+    /// <c>.editorconfig</c> file on disk. See <see cref="RunAndUpdateWithEditorConfigOptions"/>.
+    /// </summary>
+    /// <param name="values">The fixed key/value pairs every lookup resolves against.</param>
+    private sealed class FixedAnalyzerConfigOptions(IReadOnlyDictionary<string, string> values) : AnalyzerConfigOptions
+    {
+        /// <inheritdoc />
+        public override bool TryGetValue(string key, [NotNullWhen(true)] out string? value) =>
+            values.TryGetValue(key, out value!);
+    }
+
+    /// <summary>
+    /// A minimal <see cref="AnalyzerConfigOptionsProvider"/> that hands every syntax tree and additional text the
+    /// same fixed <see cref="AnalyzerConfigOptions"/> - a test double standing in for a real per-file
+    /// <c>.editorconfig</c> section merge. See <see cref="RunAndUpdateWithEditorConfigOptions"/>.
+    /// </summary>
+    /// <param name="options">The fixed options every lookup resolves to.</param>
+    private sealed class FixedAnalyzerConfigOptionsProvider(AnalyzerConfigOptions options) : AnalyzerConfigOptionsProvider
+    {
+        /// <inheritdoc />
+        public override AnalyzerConfigOptions GlobalOptions { get; } = options;
+
+        /// <inheritdoc />
+        public override AnalyzerConfigOptions GetOptions(SyntaxTree tree) => this.GlobalOptions;
+
+        /// <inheritdoc />
+        public override AnalyzerConfigOptions GetOptions(AdditionalText textFile) => this.GlobalOptions;
     }
 }

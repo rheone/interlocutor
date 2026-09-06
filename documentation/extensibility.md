@@ -105,9 +105,22 @@ dotnet_diagnostic.INTERLOC009.severity = error
 
 Every shipped `Outcome`/`Outcome<...>` arity gets its `Match`/`Switch`/`TryGetValue`/`ToString`/equality (`Equals`, `GetHashCode`, `IEquatable<TSelf>`, `==`/`!=`) member set from `GenerateOutcomeMembersAttribute` (`Interlocutor.CommonKernel`, zero dependency) - not from anything the shipped family gets that a consumer's own union can't. Decorate your own `partial union` with the same attribute and it gets the identical generated surface, including for an arity the shipped family doesn't cover (2-6 only) or a non-default case ordering.
 
-This is an escape hatch for a genuine outlier, not a routine choice - see [Messages, Result Types & Variance § Choosing Arities](messages-and-result-types.md#choosing-arities): an operation needing more cases than the shipped family's six is usually a sign it's trying to do too much, not that the type needs to grow. A payment gateway integration is a plausible exception - one success case plus several genuinely independent decline/error reasons a caller needs to branch on individually:
+This is an escape hatch for a genuine outlier, not a routine choice - see [Messages, Result Types & Variance § Choosing Arities](messages-and-result-types.md#choosing-arities): an operation needing more cases than the shipped family's six is usually a sign it's trying to do too much, not that the type needs to grow. A build-time analyzer backs that guidance: any attributed union declaring more case types than a configurable recommended maximum (default six) gets a warning (`INTERLOC014`) naming the type and nudging toward splitting the operation, distinct from the hard sixteen-case ceiling (`INTERLOC013`) below - configurable the same two ways as any other diagnostic here, severity via `.editorconfig`:
+
+```
+dotnet_diagnostic.INTERLOC014.severity = error
+```
+
+and the recommended-maximum threshold itself, also via `.editorconfig`:
+
+```
+interlocutor_max_recommended_outcome_arity = 8
+```
+
+A payment gateway integration is a plausible exception to the six-case guideline - one success case plus several genuinely independent decline/error reasons a caller needs to branch on individually. Dismissing `INTERLOC014` for a specific, deliberate outlier like this one - rather than raising the threshold repository-wide - is a targeted `#pragma warning disable`/`restore` pair around the declaration, the same as any other warning:
 
 ```csharp
+#pragma warning disable INTERLOC014
 [GenerateOutcomeMembers]
 public readonly partial union PaymentOutcome(
     Receipt,
@@ -118,6 +131,7 @@ public readonly partial union PaymentOutcome(
     GatewayTimeout,
     NetworkError
 ) : IOutcome;
+#pragma warning restore INTERLOC014
 
 public readonly record struct Receipt(string TransactionId);
 public readonly record struct InsufficientFunds(decimal ShortfallAmount);
