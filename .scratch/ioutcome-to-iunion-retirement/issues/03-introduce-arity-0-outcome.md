@@ -4,7 +4,7 @@
 
 **Blocked by:** 01, 02 (the new type only implements `IUnion`, not `IOutcome` - it fails to compile as a `TResponse` under the constraint these tickets replace).
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `24b3315`.
 
 - [x] `Interlocutor.CommonKernel`'s non-generic `Outcome` is a small, hand-written type (not generator-emitted, since it declares no case types), implementing `System.Runtime.CompilerServices.IUnion` with `Value` always returning `null`.
 - [x] `IOutcomeCaseRegistry.Construct<Outcome, TCase>` fails clearly (not silently) for any `TCase`, since there is no case to construct into - covered by a test.
