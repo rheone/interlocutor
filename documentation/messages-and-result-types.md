@@ -41,7 +41,7 @@ var result = await mediator.Send(new CreateUser("Alice", "alice@example.com"));
 // result is Outcome<int, ValidationError> with new user ID or validation errors
 ```
 
-### ICommand (Unit Command)
+### Bare Command
 
 Marks a write request with no domain data payload - only an outcome. Unlike `ICommand<TResponse>`, the outcome type isn't declared on the command itself - it's chosen **at the call site** via `Send<TResult>`'s type argument, so the same command can be handled differently depending on what outcome information a given caller needs:
 
@@ -51,10 +51,10 @@ public record DeleteAllUsers() : ICommand;
 public record ClearCache() : ICommand;
 ```
 
-A handler is `IVoidCommandHandler<TCommand, TResult>`, pairing the command with whichever `IUnion`-shaped result that handler produces - any union is legal, including the case-less, non-generic `Outcome` for an operation that is genuinely infallible:
+A handler is `IBareCommandHandler<TCommand, TResult>`, pairing the command with whichever `IUnion`-shaped result that handler produces - any union is legal, including the case-less, non-generic `Outcome` for an operation that is genuinely infallible:
 
 ```csharp
-public class ClearCacheHandler : IVoidCommandHandler<ClearCache, Outcome>
+public class ClearCacheHandler : IBareCommandHandler<ClearCache, Outcome>
 {
     public async Task<Outcome> Handle(ClearCache command, CancellationToken ct)
     {
@@ -152,7 +152,7 @@ Anything left unregistered still falls back to `DefaultOutcomeCaseRegistry`, so 
 
 ### Success
 
-Marker type for an operation that succeeds with no payload - one ordinary case among an arity's others, for an operation that genuinely can fail (an infallible operation uses the case-less, non-generic `Outcome` instead - see [ICommand (Unit Command)](#icommand-unit-command) above):
+Marker type for an operation that succeeds with no payload - one ordinary case among an arity's others, for an operation that genuinely can fail (an infallible operation uses the case-less, non-generic `Outcome` instead - see [Bare Command](#bare-command) above):
 
 ```csharp
 public readonly record struct Success;

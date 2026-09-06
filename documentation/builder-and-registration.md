@@ -110,7 +110,7 @@ Matching zero types is legal and silent by default; pass `require: true` to reco
 
 ## Extending Ambiguity Checking to Your Own Contracts
 
-The three built-in mediator handler contracts (`IQueryHandler<,>`, `ICommandHandler<,>`, `IVoidCommandHandler<>`) are checked for "at most one implementation per closed instantiation" automatically. `RequireUniqueClosure` opts a consumer-supplied open-generic contract into that same check:
+The three built-in mediator handler contracts (`IQueryHandler<,>`, `ICommandHandler<,>`, `IBareCommandHandler<,>`) are checked for "at most one implementation per closed instantiation" automatically. `RequireUniqueClosure` opts a consumer-supplied open-generic contract into that same check:
 
 ```csharp
 builder.ScanAssembly(typeof(Program).Assembly);

@@ -1,6 +1,6 @@
 # ADR-0005: Void Command Pipeline Support
 
-**Status:** Accepted (amended - terminology only)
+**Status:** Accepted (amended twice - terminology only)
 
 ## Context
 
@@ -46,3 +46,7 @@ public override Task<TResult> Handle(object request, IServiceProvider services, 
 ## Amendment (terminology)
 
 "Void command" is the name used throughout this ADR and the shipped type names (`ICommand`, `IVoidCommandHandler<,>`, `VoidCommandHandlerWrapper<,>`) - that naming is unchanged. Elsewhere in the project's documentation and glossary, the same concept is now called a **unit command**: "void" wrongly implies the handler returns nothing, when it always returns an outcome - only the success payload is empty. Read "void command" in this ADR as that same concept.
+
+## Second Amendment (terminology, finalized to "Bare")
+
+The amendment above renamed the concept from "void command" to "unit command" in the project's documentation and glossary, but explicitly left the shipped type names unchanged, leaving `IVoidCommandHandler<,>`/`VoidCommandHandlerWrapper<,>`/`IVoidHandlerWrapper` in code while prose said "unit command." That gap is now closed, and the name is finalized to **bare command**, not "unit": the shipped types are renamed to `IBareCommandHandler<TCommand, TResult>`, `BareCommandHandlerWrapper<TCommand, TResult>`, and `IBareHandlerWrapper`, and the project's documentation and glossary now say "bare command" rather than "unit command" - "unit" turned out to collide with the unrelated `IUnitOfWork`, a name already prominent in this same library. Tracked under `.scratch/bare-command-rename/`. Read "void command" throughout the Decision and Consequences sections above, and "unit command" in the first amendment, as this same concept under its final, shipped name.

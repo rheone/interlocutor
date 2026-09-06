@@ -46,7 +46,7 @@ Handles a command that returns a typed response.
 | --- | --- |
 | `Task<TResponse> Handle(TCommand command, CancellationToken ct)` | Handles the specified command and returns a result containing the response or a failure. |
 
-### `IVoidCommandHandler<TCommand, TResult>` interface
+### `IBareCommandHandler<TCommand, TResult>` interface
 
 Handles a command that produces no data payload - only an outcome.
 
@@ -138,8 +138,8 @@ Send-only interface for request/response operations. Exposes Send overloads for 
 | --- | --- |
 | `Task<TResponse> Send<TResponse>(IQuery<TResponse> query, CancellationToken ct = default(CancellationToken))` | Dispatches a query to its registered handler, returning the result through all pipeline behaviors. |
 | `Task<TResponse> Send<TResponse>(ICommand<TResponse> command, CancellationToken ct = default(CancellationToken))` | Dispatches a value-returning command to its registered handler, returning the result through all pipeline behaviors. |
-| `Task<TResult> Send<TResult>(ICommand command, CancellationToken ct = default(CancellationToken))` | Dispatches a void command to its registered handler, returning the outcome through all pipeline behaviors. |
-| `Task<IOutcome> Send(object request, CancellationToken ct = default(CancellationToken))` | Dispatches a request whose static type is not known at the call site - a query, a value-returning command, or a unit command deserialized off a message - to its registered handler, returning the result through all pipeline behaviors as the library's base outcome interface. |
+| `Task<TResult> Send<TResult>(ICommand command, CancellationToken ct = default(CancellationToken))` | Dispatches a bare command to its registered handler, returning the outcome through all pipeline behaviors. |
+| `Task<IOutcome> Send(object request, CancellationToken ct = default(CancellationToken))` | Dispatches a request whose static type is not known at the call site - a query, a value-returning command, or a bare command deserialized off a message - to its registered handler, returning the result through all pipeline behaviors as the library's base outcome interface. |
 
 ### `MediatorResolvedFromRootScopeException` sealed class
 

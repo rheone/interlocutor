@@ -27,7 +27,7 @@ namespace Interlocutor.DependencyInjection.Abstractions;
 /// <param name="requestType">The handler's request type.</param>
 /// <param name="responseType">
 /// The handler's response type, or <see langword="null"/> for a bare-command handler's request-matching
-/// purposes - a unit command's result type is chosen by the caller, not declared on the request, so matching
+/// purposes - a bare command's result type is chosen by the caller, not declared on the request, so matching
 /// ignores it (mirrors <c>Interlocutor.Generator.RequestKind.BareCommand</c>).
 /// </param>
 /// <param name="kind">Which handler contract <paramref name="requestType"/> is handled by.</param>

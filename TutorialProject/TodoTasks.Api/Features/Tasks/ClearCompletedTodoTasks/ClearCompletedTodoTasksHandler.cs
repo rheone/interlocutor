@@ -12,7 +12,7 @@ using TodoTasks.Api.Domain;
 /// acknowledgment rather than naming a failure case that could never actually construct.
 /// </summary>
 public sealed class ClearCompletedTodoTasksHandler(IDomainRepository<TodoTask, int> tasks, IUnitOfWork unitOfWork)
-    : IVoidCommandHandler<ClearCompletedTodoTasksCommand, Outcome>
+    : IBareCommandHandler<ClearCompletedTodoTasksCommand, Outcome>
 {
     /// <inheritdoc/>
     public async Task<Outcome> Handle(ClearCompletedTodoTasksCommand command, CancellationToken ct)

@@ -8,7 +8,7 @@ using Interlocutor.Abstractions.Markers;
 /// domain data to hand back, and no failure mode this operation can actually hit - a natural fit for the bare
 /// <see cref="ICommand"/> marker (no <c>&lt;TResponse&gt;</c>) instead of <see cref="ICommand{TResponse}"/>,
 /// which every other command in this project uses. Its handler contract is
-/// <see cref="IVoidCommandHandler{TCommand,TResult}"/>, where <c>TResult</c> - any
+/// <see cref="IBareCommandHandler{TCommand,TResult}"/>, where <c>TResult</c> - any
 /// <c>IUnion</c>-implementing type - is chosen by the <em>caller</em>, via the type argument on
 /// <c>ISender.SendAsync&lt;TResult&gt;(ICommand, CancellationToken)</c>, not fixed by this command or baked
 /// into the handler's registration. See the endpoint for where that type argument actually gets

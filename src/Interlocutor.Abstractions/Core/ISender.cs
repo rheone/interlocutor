@@ -54,7 +54,7 @@ public interface ISender
 
     /// <summary>
     /// Dispatches a request whose static type is not known at the call site - a query, a value-returning
-    /// command, or a unit command deserialized off a message - to its registered handler, returning the
+    /// command, or a bare command deserialized off a message - to its registered handler, returning the
     /// result through all pipeline behaviors as the library's base outcome interface.
     /// </summary>
     /// <param name="request">
@@ -80,7 +80,7 @@ public interface ISender
     /// <c>InterlocutorBuilder.AddGeneratedRegistrations</c>, this overload dispatches through a compile-time
     /// generated type switch (<see cref="IGeneratedRequestDispatcher"/>) - no reflection runs on that path.
     /// Otherwise it falls back to locating the closed <c>IQuery{TResponse}</c> or <c>ICommand{TResponse}</c>
-    /// interface (or, for a unit command, the registered <c>IBareCommandHandler{TCommand, TResult}</c>) on the
+    /// interface (or, for a bare command, the registered <c>IBareCommandHandler{TCommand, TResult}</c>) on the
     /// request's runtime type and invoking the matching generic <c>SendAsync</c> overload via reflection - the
     /// explicitly opted-in runtime-scanning fallback. Either way this method's contract - exceptions included
     /// - is identical to the caller.

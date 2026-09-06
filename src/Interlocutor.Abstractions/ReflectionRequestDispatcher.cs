@@ -32,7 +32,7 @@ internal static class ReflectionRequestDispatcher
     private static readonly MethodInfo CommandSendMethod = ResolveSendMethod(typeof(ICommand<>));
     private static readonly MethodInfo BareCommandSendMethod = ResolveSendMethod(typeof(ICommand));
 
-    // A unit command (ICommand) does not declare its own response type - the caller picks it via Send<TResult>'s
+    // A bare command (ICommand) does not declare its own response type - the caller picks it via Send<TResult>'s
     // type argument. Runtime-typed dispatch has no caller-supplied type argument, so it discovers the response
     // type by scanning loaded assemblies for a registered IBareCommandHandler<TCommand, TResult> closing over the
     // concrete command type. This is the expensive part of the reflection fallback; results are cached per command
@@ -87,7 +87,7 @@ internal static class ReflectionRequestDispatcher
 
         if (request is ICommand)
         {
-            // A unit command doesn't declare its own response type - Send<TResult>'s caller-supplied type
+            // A bare command doesn't declare its own response type - Send<TResult>'s caller-supplied type
             // argument picks it. Runtime-typed dispatch has no caller-supplied type argument, so the response
             // type is discovered by scanning loaded assemblies for a registered IBareCommandHandler<TCommand,
             // TResult> closing over this concrete command type (cached per command type - see the field doc).

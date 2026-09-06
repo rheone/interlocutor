@@ -32,7 +32,7 @@ public sealed class HandlerNotRegisteredException : Exception
     /// <param name="handlerType">
     /// The specific closed handler interface (e.g. <c>IQueryHandler&lt;MyQuery, MyResult&gt;</c>) that was
     /// expected to be registered, or <see langword="null"/> when no single closed handler interface could be
-    /// determined (e.g. a unit command, whose result type is chosen by the caller rather than declared on
+    /// determined (e.g. a bare command, whose result type is chosen by the caller rather than declared on
     /// the command).
     /// </param>
     public HandlerNotRegisteredException(Type requestType, Type? handlerType = null)

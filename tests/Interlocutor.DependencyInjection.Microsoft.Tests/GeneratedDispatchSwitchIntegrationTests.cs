@@ -11,7 +11,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// Proves <see cref="ISender.SendAsync(object, CancellationToken)"/> (ticket 09) dispatches through the compile-time
 /// generated type switch (ticket 13, <see cref="IGeneratedRequestDispatcher"/>) - not reflection - when only
 /// <c>AddGeneratedRegistrations</c> is used, with the exact caller-visible contract ticket 09 established
-/// unchanged: a query, a value-returning command, and a unit command all dispatch correctly, an unregistered
+/// unchanged: a query, a value-returning command, and a bare command all dispatch correctly, an unregistered
 /// request type names itself in <see cref="HandlerNotRegisteredException"/>, and a non-request object produces
 /// <see cref="UnsupportedRequestTypeException"/>.
 /// </summary>
