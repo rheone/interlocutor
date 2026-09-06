@@ -28,7 +28,7 @@ Interlocutor.Abstractions.Core.HandlerOverrideAttribute.HandlerType.get -> Syste
 Interlocutor.Abstractions.Core.IGeneratedNotificationHandlerOrder
 Interlocutor.Abstractions.Core.IGeneratedNotificationHandlerOrder.Rank(System.Type! handlerType) -> int
 Interlocutor.Abstractions.Core.IGeneratedRequestDispatcher
-Interlocutor.Abstractions.Core.IGeneratedRequestDispatcher.DispatchAsync(object! request, System.IServiceProvider! services, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Interlocutor.CommonKernel.ResultTypes.IOutcome!>!
+Interlocutor.Abstractions.Core.IGeneratedRequestDispatcher.DispatchAsync(object! request, System.IServiceProvider! services, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<System.Runtime.CompilerServices.IUnion!>!
 Interlocutor.Abstractions.Core.IMediator
 Interlocutor.Abstractions.Core.IPublisher
 Interlocutor.Abstractions.Core.IPublisher.PublishAsync<TNotification>(TNotification notification, Interlocutor.Abstractions.Core.PublishStrategy strategy, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
@@ -37,7 +37,7 @@ Interlocutor.Abstractions.Core.IRequestContextAccessor
 Interlocutor.Abstractions.Core.IRequestContextAccessor.Context.get -> Interlocutor.Abstractions.Core.RequestContext?
 Interlocutor.Abstractions.Core.IRequestContextAccessor.Context.set -> void
 Interlocutor.Abstractions.Core.ISender
-Interlocutor.Abstractions.Core.ISender.SendAsync(object! request, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Interlocutor.CommonKernel.ResultTypes.IOutcome!>!
+Interlocutor.Abstractions.Core.ISender.SendAsync(object! request, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Runtime.CompilerServices.IUnion!>!
 Interlocutor.Abstractions.Core.ISender.SendAsync<TResponse>(Interlocutor.Abstractions.Commands.ICommand<TResponse>! command, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResponse>!
 Interlocutor.Abstractions.Core.ISender.SendAsync<TResponse>(Interlocutor.Abstractions.Queries.IQuery<TResponse>! query, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResponse>!
 Interlocutor.Abstractions.Core.ISender.SendAsync<TResult>(Interlocutor.Abstractions.Commands.ICommand! command, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResult>!
@@ -280,7 +280,7 @@ abstract Interlocutor.Abstractions.Pipeline.Mapping.OutcomeMapperBase<TResult>.M
 Interlocutor.Abstractions.Commands.ResourceCommandHandler<TCommand, TEntity, TSuccess>.HandleAsync(TCommand command, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Interlocutor.CommonKernel.Outcome<TSuccess, Interlocutor.CommonKernel.ResultTypes.NotFound, Interlocutor.CommonKernel.ResultTypes.Forbidden>>!
 Interlocutor.Abstractions.Mediator.PublishAsync<TNotification>(TNotification notification, Interlocutor.Abstractions.Core.PublishStrategy strategy, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Interlocutor.Abstractions.Mediator.PublishAsync<TNotification>(TNotification notification, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
-Interlocutor.Abstractions.Mediator.SendAsync(object! request, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Interlocutor.CommonKernel.ResultTypes.IOutcome!>!
+Interlocutor.Abstractions.Mediator.SendAsync(object! request, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Runtime.CompilerServices.IUnion!>!
 Interlocutor.Abstractions.Mediator.SendAsync<TResponse>(Interlocutor.Abstractions.Commands.ICommand<TResponse>! command, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResponse>!
 Interlocutor.Abstractions.Mediator.SendAsync<TResponse>(Interlocutor.Abstractions.Queries.IQuery<TResponse>! query, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResponse>!
 Interlocutor.Abstractions.Mediator.SendAsync<TResult>(Interlocutor.Abstractions.Commands.ICommand! command, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResult>!

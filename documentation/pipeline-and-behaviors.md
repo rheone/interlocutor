@@ -215,7 +215,7 @@ Enforces policy-based, non-resource authorization. Short-circuits with `Forbidde
 - Constraint: `TResponse : IOutcome` (must be able to construct a `Forbidden` case)
 
 ```csharp
-public record DeleteAllUsers() : ICommand<Outcome>, IRequiresPolicy
+public record DeleteAllUsers() : ICommand<Outcome<Success, Forbidden>>, IRequiresPolicy
 {
     public string PolicyName => "AdminOnly";
 }
@@ -223,6 +223,10 @@ public record DeleteAllUsers() : ICommand<Outcome>, IRequiresPolicy
 // AuthorizationBehavior evaluates the AdminOnly policy and short-circuits with Forbidden if denied
 var result = await mediator.Send(new DeleteAllUsers());
 ```
+
+The response type must have a `Forbidden` case to short-circuit into - the case-less, non-generic
+`Outcome` has none, so pairing it with `IRequiresPolicy` throws the first time a policy check
+actually denies, rather than silently granting or swallowing the denial.
 
 > [!WARNING]
 > If no `IPolicyEvaluator` is registered, `AuthorizationBehavior` falls back to the try-added `DefaultPolicyEvaluator` - which **always returns `true`, granting every policy check unconditionally**. That default exists for development and testing, where authorization isn't implemented yet and shouldn't block work; it is not safe for production. Register your own `IPolicyEvaluator` (or `builder.Pipeline.OverridePolicyEvaluator<TEvaluator>()`) before deploying anything that uses `IRequiresPolicy`.

@@ -41,7 +41,8 @@ internal static class WellKnownTypeNames
 
     /// <summary>
     /// The base outcome marker interface, <c>IOutcome</c> - not to be confused with
-    /// <see cref="ConcreteNonGenericOutcome"/>, the concrete non-generic <c>Outcome</c> union that implements it.
+    /// <see cref="ConcreteNonGenericOutcome"/>, the concrete non-generic <c>Outcome</c> type, which does not
+    /// implement it (it has no case-classification surface to expose - see that field's own remarks).
     /// </summary>
     public const string Outcome = "Interlocutor.CommonKernel.ResultTypes.IOutcome";
 
@@ -83,9 +84,9 @@ internal static class WellKnownTypeNames
     public const string ValidationErrorOfErrorCode = "Interlocutor.CommonKernel.ResultTypes.ValidationError`1";
 
     /// <summary>
-    /// The library's own non-generic, fixed-shape <c>Outcome</c> union (<c>Success | Failure</c>) - unlike
-    /// every generic arity, its case set can never include a validation-shaped case, so it is recognized by
-    /// this exact metadata name rather than by inspecting type arguments it doesn't have.
+    /// The library's own non-generic, case-less <c>Outcome</c> acknowledgment - unlike every generic arity, it
+    /// declares no case types at all (so its case set can never include a validation-shaped one), and it is
+    /// recognized by this exact metadata name rather than by inspecting type arguments it doesn't have.
     /// </summary>
     public const string ConcreteNonGenericOutcome = "Interlocutor.CommonKernel.Outcome";
 

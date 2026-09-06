@@ -47,7 +47,7 @@ public class MediatorActivityTracingTests
     }
 
     [Fact]
-    public async Task Send_VoidCommand_WithSuccessOutcome_TagsOutcomeAsSuccess()
+    public async Task Send_VoidCommand_WithCaseLessOutcome_TagsOutcomeAsNone()
     {
         // Arrange
         var captured = new ConcurrentBag<Activity>();
@@ -63,10 +63,12 @@ public class MediatorActivityTracingTests
         // Act
         await mediator.SendAsync<Outcome>(new TracingSuccessCommand(), CancellationToken.None);
 
-        // Assert
+        // Assert - the case-less Outcome carries no success/failure judgment, so the classifier's genuinely-
+        // unset-union fallback ("None") is exactly what tags it - not a literal "Success" label, which is
+        // reserved for a response whose active case is actually the Success marker type.
         var activity = SingleFor<TracingSuccessCommand>(captured);
         Assert.Equal(typeof(TracingSuccessCommandHandler).FullName, activity.GetTagItem(MediatorActivitySource.HandlerTypeTag));
-        Assert.Equal("Success", activity.GetTagItem(MediatorActivitySource.OutcomeTag));
+        Assert.Equal("None", activity.GetTagItem(MediatorActivitySource.OutcomeTag));
         Assert.Equal(ActivityStatusCode.Unset, activity.Status);
     }
 
@@ -295,8 +297,7 @@ public record TracingSuccessCommand : ICommand;
 // stays on Handle as-is.
 public class TracingSuccessCommandHandler : IVoidCommandHandler<TracingSuccessCommand, Outcome>
 {
-    public Task<Outcome> Handle(TracingSuccessCommand command, CancellationToken ct) =>
-        Task.FromResult(new Outcome(default(Success)));
+    public Task<Outcome> Handle(TracingSuccessCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
 }
 
 public record TracingNotification(string Message) : INotification;

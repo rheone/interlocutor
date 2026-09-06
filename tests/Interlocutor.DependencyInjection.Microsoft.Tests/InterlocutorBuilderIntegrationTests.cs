@@ -418,7 +418,9 @@ public class InterlocutorBuilderIntegrationTests
         services.AddSingleton(new HandlerRanFlag(() => handlerRan = true));
         services.AddLogging();
 
-        var declined = new Outcome(new Interlocutor.CommonKernel.ResultTypes.Failure("declined by stage"));
+        // Case-less, so there's no payload to carry the "declined by stage" reason - the real proof this stage
+        // short-circuited is handlerRan staying false below, not the value's own (trivially-equal) identity.
+        var declined = default(Outcome);
 
         services.AddInterlocutor(builder =>
             builder

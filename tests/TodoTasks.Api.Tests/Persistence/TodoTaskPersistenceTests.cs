@@ -1,6 +1,7 @@
 namespace TodoTasks.Api.Tests.Persistence;
 
 using Interlocutor.Abstractions.Core;
+using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 using Interlocutor.Persistence.Abstractions;
 using Microsoft.EntityFrameworkCore;
@@ -570,8 +571,9 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
         // Act
         var result = await handler.Handle(new ClearCompletedTodoTasksCommand(owner), TestContext.Current.CancellationToken);
 
-        // Assert
-        Assert.IsType<Success>(result.Value);
+        // Assert - Outcome is case-less; reaching this line without throwing already is the acknowledgment
+        // (see Outcome's own remarks). What's worth proving is the database state below.
+        Assert.Equal(default(Outcome), result);
         using var readScope = this.factory.Services.CreateScope();
         var readContext = readScope.ServiceProvider.GetRequiredService<TodoTasksDbContext>();
         var remainingIds = await readContext
@@ -608,8 +610,9 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
         // Act
         var result = await handler.Handle(new ClearCompletedTodoTasksCommand(owner), TestContext.Current.CancellationToken);
 
-        // Assert
-        Assert.IsType<Success>(result.Value);
+        // Assert - Outcome is case-less; reaching this line without throwing already is the acknowledgment
+        // (see Outcome's own remarks). What's worth proving is the database state below.
+        Assert.Equal(default(Outcome), result);
         using var readScope = this.factory.Services.CreateScope();
         var readContext = readScope.ServiceProvider.GetRequiredService<TodoTasksDbContext>();
         var reloaded = await readContext.Tasks.FirstOrDefaultAsync(

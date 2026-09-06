@@ -28,10 +28,11 @@ public class ResultExtensionsTests
     }
 
     [Fact]
-    public void ToActionResult_WithSuccessNoPayload_ReturnsNoContent()
+    public void ToActionResult_CaseLessOutcome_ReturnsNoContent()
     {
-        // Arrange
-        Outcome result = new(default(Success));
+        // Arrange - the case-less Outcome has no failure case to map, so its dedicated overload always
+        // renders 204 unconditionally.
+        var result = default(Outcome);
 
         // Act
         var actionResult = result.ToActionResult();

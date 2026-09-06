@@ -99,7 +99,7 @@ flowchart TD
 | Outcome Case | HTTP Status | Body | Details |
 |--------------|-------------|------|---------|
 | Success (payload) | 200 OK | The success payload (JSON) | For `Outcome<T1, ...>`, `T1` is serialized. |
-| Success (unit) | 204 No Content | None | For the non-generic `Outcome`. |
+| Success (unit) | 204 No Content | None | For the non-generic `Outcome`, whose dedicated overload always maps this way unconditionally - it has no failure case to map. |
 | ValidationErrors | 400 Bad Request | `ProblemDetails` | `Detail` is every message joined with `"; "` - no per-field errors dictionary, since `ValidationError` carries a message and optional code, not a field name. |
 | Any other [`IValidationFailureCase`](glossary.md#result-types) implementer with no field data | 400 Bad Request | `ProblemDetails` | Recognized via the interface, not a type-specific branch - a consumer's own validation-shaped failure case maps the same way without a mapper override. `Detail` is every `Messages` entry joined with `"; "`. |
 | [`IFieldValidationFailureCase`](glossary.md#outcome-mapping) implementer (e.g. `FluentValidationErrors`) | 400 Bad Request | `ValidationProblemDetails` | `Errors` is `FieldMessages` grouped by property name (empty-string key for an entry with no property) - see [Field-Keyed Validation Errors](#field-keyed-validation-errors) below. |

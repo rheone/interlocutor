@@ -34,8 +34,16 @@ public record TestVoidCommand(string Value) : ICommand;
 // stays on Handle as-is.
 public class TestVoidHandler : IVoidCommandHandler<TestVoidCommand, Outcome>
 {
-    public Task<Outcome> Handle(TestVoidCommand command, CancellationToken ct) =>
-        Task.FromResult(new Outcome(default(Success)));
+    public Task<Outcome> Handle(TestVoidCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
+}
+
+/// <summary>A second <see cref="TestVoidCommand"/> handler, registered against <see cref="Outcome{T1, T2}"/>
+/// (arity 2) rather than the case-less arity-0 <see cref="Outcome"/> - used only by the eject test, which needs
+/// a response shape an ejected value can be distinguished from.</summary>
+public class TestVoidHandlerWithFailureCase : IVoidCommandHandler<TestVoidCommand, Outcome<Success, Failure>>
+{
+    public Task<Outcome<Success, Failure>> Handle(TestVoidCommand command, CancellationToken ct) =>
+        Task.FromResult<Outcome<Success, Failure>>(default(Success));
 }
 
 public record TestNotification(string Message) : INotification;
@@ -400,15 +408,22 @@ public class MediatorTests
     public async Task Send_VoidCommand_BehaviorEjectsBeforeNext_ReturnsEjectedOutcomeWithoutThrowing()
     {
         // Arrange - covers VoidCommandHandlerWrapper's composition site, distinct from the other two wrappers.
-        var mediator = CreateMediator<TestVoidHandler>(services =>
-        {
-            services.AddSingleton<IPipelineBehavior<TestVoidCommand, Outcome>>(
-                new EjectingBeforeNextBehavior<TestVoidCommand, Outcome>(new Outcome(new Failure("dead end")))
-            );
-        });
+        // Uses Outcome<Success, Failure> rather than the case-less arity-0 Outcome the other tests in this
+        // class use: the ejected value needs to be distinguishable from whatever TestVoidHandlerWithFailureCase
+        // itself would have returned, which a case-less Outcome (every instance equal to every other) can't be.
+        var services = new ServiceCollection();
+        services.AddSingleton<
+            IVoidCommandHandler<TestVoidCommand, Outcome<Success, Failure>>,
+            TestVoidHandlerWithFailureCase
+        >();
+        services.AddSingleton<IPipelineBehavior<TestVoidCommand, Outcome<Success, Failure>>>(
+            new EjectingBeforeNextBehavior<TestVoidCommand, Outcome<Success, Failure>>(new Failure("dead end"))
+        );
+        services.AddSingleton<IMediator, Mediator>();
+        var mediator = services.BuildServiceProvider().GetRequiredService<IMediator>();
 
         // Act
-        var result = await mediator.SendAsync<Outcome>(new TestVoidCommand("test"), CancellationToken.None);
+        var result = await mediator.SendAsync<Outcome<Success, Failure>>(new TestVoidCommand("test"), CancellationToken.None);
 
         // Assert
         Assert.Equal(new Failure("dead end"), result.Value);
@@ -433,7 +448,7 @@ public class MediatorTests
     }
 
     [Fact]
-    public async Task Send_VoidCommand_ReturnsSuccess()
+    public async Task Send_VoidCommand_ReturnsAcknowledgment()
     {
         // Arrange
         var mediator = CreateMediator<TestVoidHandler>(_ => { });
@@ -441,14 +456,9 @@ public class MediatorTests
         // Act
         var result = await mediator.SendAsync<Outcome>(new TestVoidCommand("test"), CancellationToken.None);
 
-        // Assert
-        var isSuccess = result.Value switch
-        {
-            Success => true,
-            Failure => false,
-            _ => throw new UnreachableException(),
-        };
-        Assert.True(isSuccess);
+        // Assert - holding an Outcome instance is itself the acknowledgment that TestVoidHandler ran; there is
+        // nothing further to inspect on it (see Outcome's own remarks).
+        Assert.Equal(default(Outcome), result);
     }
 
     [Fact]

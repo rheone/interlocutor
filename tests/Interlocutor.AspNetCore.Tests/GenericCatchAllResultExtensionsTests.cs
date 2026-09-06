@@ -92,9 +92,10 @@ public class GenericCatchAllResultExtensionsTests
         // Act
         var method = ((MethodCallExpression)expression.Body).Method;
 
-        // Assert - the dedicated void overload isn't even generic; the catch-all always has one type parameter.
+        // Assert - the dedicated void overload isn't even generic and takes no mapper parameter (there is no
+        // failure case for one to map); the catch-all always has one type parameter and three parameters.
         Assert.False(method.IsGenericMethod);
-        Assert.Equal(2, method.GetParameters().Length);
+        Assert.Single(method.GetParameters());
     }
 
     // --- Catch-all end to end, against a hand-rolled, non-union IUnion ---

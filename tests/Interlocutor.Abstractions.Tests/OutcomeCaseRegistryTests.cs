@@ -144,6 +144,48 @@ public class OutcomeCaseRegistryTests
         Assert.Equal("ok", caseValue);
     }
 
+    // --- DefaultOutcomeCaseRegistry against the case-less, non-generic Outcome ---
+
+    [Fact]
+    public void Construct_CaseLessOutcome_AnyCase_ThrowsClearlyRatherThanSilently()
+    {
+        // Arrange - Outcome declares no case types at all (see its own remarks), so there is no case
+        // constructor for UnionCaseFactory to find for any TCase - the same failure mode a generic union hits
+        // for a case it doesn't declare (Construct_RealUnion_MissingCase_ThrowsOutcomeCaseNotSupportedException
+        // above), just for every case rather than one in particular. Cancelled is the case CancellationBehavior
+        // would try to construct into if a request implementing ICancellable chose Outcome as its response
+        // type - this is exactly the incompatibility that produces a clear, documented-runtime signal instead
+        // of a silent no-op the first time such a request actually observes cancellation.
+        var registry = DefaultOutcomeCaseRegistry.Instance;
+
+        // Act
+        var ex = Assert.Throws<OutcomeCaseNotSupportedException>(() =>
+            registry.Construct<Outcome, Cancelled>(new Cancelled("cancelled"))
+        );
+
+        // Assert
+        Assert.Equal(typeof(Outcome), ex.ResponseType);
+        Assert.Equal(typeof(Cancelled), ex.CaseType);
+    }
+
+    [Fact]
+    public void TryGetActiveCase_CaseLessOutcome_ReportsNoActiveCase()
+    {
+        // Arrange - Outcome doesn't implement IOutcomeCase, so a null Value can't be resolved to a declared
+        // case type the way a generic union's ActiveCaseType fallback would; it reports the container type
+        // itself, exactly like a genuinely unset generic union.
+        var registry = DefaultOutcomeCaseRegistry.Instance;
+        var response = default(Outcome);
+
+        // Act
+        var found = registry.TryGetActiveCase(response, out var caseType, out var caseValue);
+
+        // Assert
+        Assert.False(found);
+        Assert.Equal(typeof(Outcome), caseType);
+        Assert.Null(caseValue);
+    }
+
     // --- OutcomeCaseRegistryBuilder against a hand-rolled, non-union IOutcome ---
 
     [Fact]

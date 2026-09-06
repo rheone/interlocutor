@@ -105,7 +105,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     [RequiresDynamicCode(
         "SendAsync(object, CancellationToken) may run the runtime-typed dispatch fallback - see documentation/trim-and-aot-support.md."
     )]
-    public Task<IOutcome> SendAsync(object request, CancellationToken ct = default)
+    public Task<IUnion> SendAsync(object request, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -186,7 +186,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     /// Wraps a dispatch with activity tracing: tags the request type up front, invokes <paramref name="dispatch"/>
     /// (a closure over the resolved handler wrapper/routing call that tags the resolved handler type once it
     /// resolves it), tags the resulting outcome case on success when <typeparamref name="TResult"/> is an
-    /// <see cref="IOutcome"/>, and records a thrown exception as an <see cref="ActivityStatusCode.Error"/>
+    /// <see cref="IUnion"/>, and records a thrown exception as an <see cref="ActivityStatusCode.Error"/>
     /// status rather than an outcome - before, either way, stopping the activity.
     /// </summary>
     /// <remarks>
@@ -198,9 +198,9 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     /// </para>
     /// <para>
     /// Serves all three dispatch shapes the mediator traces - <c>SendAsync&lt;TResponse&gt;</c>'s and the runtime-typed
-    /// <see cref="SendAsync(object, CancellationToken)"/>'s <see cref="IOutcome"/> result, and <c>PublishAsync</c>'s
+    /// <see cref="SendAsync(object, CancellationToken)"/>'s <see cref="IUnion"/> result, and <c>PublishAsync</c>'s
     /// no-result <see cref="Task"/> - by checking <paramref name="dispatch"/>'s result for
-    /// <see cref="IOutcome"/> at run time rather than constraining <typeparamref name="TResult"/> to it: a
+    /// <see cref="IUnion"/> at run time rather than constraining <typeparamref name="TResult"/> to it: a
     /// notification publish has no single outcome to tag (it may fan out to several handlers), so that call site
     /// passes a <see langword="null"/>-shaped <typeparamref name="TResult"/> and this method simply skips the
     /// outcome tag for it.
@@ -227,11 +227,11 @@ public sealed class Mediator(IServiceProvider services) : IMediator
 
                 // An Outcome failure case is an expected business outcome, not a bug - record it as the
                 // outcome it is, via the same classifier LoggingBehavior uses, rather than as an activity error.
-                if (result is IOutcome outcome)
+                if (result is IUnion union)
                 {
                     activity.SetTag(
                         MediatorActivitySource.OutcomeTag,
-                        OutcomeClassifierBuilder.DefaultClassifier.GetLabel(outcome)
+                        OutcomeClassifierBuilder.DefaultClassifier.GetLabel(union)
                     );
                 }
 
@@ -270,7 +270,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
     [RequiresDynamicCode(
         "The runtime-typed dispatch fallback closes generic types/methods reflectively - see documentation/trim-and-aot-support.md."
     )]
-    private Task<IOutcome> DispatchAsync(object request, CancellationToken ct)
+    private Task<IUnion> DispatchAsync(object request, CancellationToken ct)
     {
         var generatedDispatcher = (IGeneratedRequestDispatcher?)services.GetService(typeof(IGeneratedRequestDispatcher));
         return generatedDispatcher is not null
@@ -339,7 +339,7 @@ public sealed class Mediator(IServiceProvider services) : IMediator
 
         var activity = MediatorActivitySource.Source.StartActivity();
 
-        // Publish has no IOutcome to tag - notifications return Task, not an outcome, and may fan out
+        // Publish has no IUnion to tag - notifications return Task, not an outcome, and may fan out
         // to several handlers - so TraceAsync's generic TResult is a placeholder, always-null nullable object.
         // TraceAsync's own outcome-tagging check is simply a no-op for it. See TraceAsync's remarks.
         return activity is null

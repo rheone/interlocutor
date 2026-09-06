@@ -4,10 +4,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using global::Autofac;
 using global::Microsoft.Extensions.DependencyInjection;
 using Interlocutor.Abstractions.Core;
-using Interlocutor.CommonKernel.ResultTypes;
 using Interlocutor.DependencyInjection.Abstractions;
 using Interlocutor.DependencyInjection.Autofac;
 using Interlocutor.DependencyInjection.Microsoft;
@@ -153,12 +153,12 @@ public sealed class CrossAssemblyContainerResolutionTests
 
     /// <summary>
     /// <see cref="ISender.SendAsync(object, System.Threading.CancellationToken)"/>'s runtime-typed overload
-    /// returns the marker <see cref="IOutcome"/> (compile-time common ground with the caller); the
+    /// returns the base <see cref="IUnion"/> interface (compile-time common ground with the caller); the
     /// concrete case is read back by reflection over the boxed union value's own
     /// <c>ActiveCaseType</c>/<c>Value</c> members, since the caller has no compile-time reference to the
     /// library's own success/failure types.
     /// </summary>
-    private static void AssertSuccessfulGreeting(IOutcome outcome)
+    private static void AssertSuccessfulGreeting(IUnion outcome)
     {
         var outcomeType = outcome.GetType();
         var activeCaseType = (Type?)outcomeType.GetProperty("ActiveCaseType")!.GetValue(outcome);

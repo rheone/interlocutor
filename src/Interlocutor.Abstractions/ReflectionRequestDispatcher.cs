@@ -4,10 +4,10 @@ using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Queries;
-using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
 /// The runtime-typed dispatch fallback <see cref="Mediator"/> delegates to when no
@@ -56,7 +56,7 @@ internal static class ReflectionRequestDispatcher
     [RequiresDynamicCode(
         "The runtime-typed dispatch fallback closes generic types/methods reflectively - see documentation/trim-and-aot-support.md."
     )]
-    public static async Task<IOutcome> DispatchAsync(
+    public static async Task<IUnion> DispatchAsync(
         Mediator mediator,
         IServiceProvider services,
         object request,
@@ -163,7 +163,7 @@ internal static class ReflectionRequestDispatcher
     [RequiresDynamicCode(
         "The runtime-typed dispatch fallback closes generic types/methods reflectively - see documentation/trim-and-aot-support.md."
     )]
-    private static async Task<IOutcome> InvokeSendAsync(
+    private static async Task<IUnion> InvokeSendAsync(
         MethodInfo openGenericSendMethod,
         Mediator mediator,
         Type responseType,
@@ -180,7 +180,7 @@ internal static class ReflectionRequestDispatcher
         // is safe to read unconditionally here: the preceding await already completed (or faulted/threw out of)
         // the task, so a completed Task<T> always has a non-null Result property to reflect.
         var resultProperty = task.GetType().GetProperty("Result")!;
-        return (IOutcome)resultProperty.GetValue(task)!;
+        return (IUnion)resultProperty.GetValue(task)!;
     }
 
     /// <summary>

@@ -71,7 +71,7 @@ public sealed class RootScopeGuardedMediator(IMediator inner, IRootScopeDetector
         "May run the runtime-typed dispatch fallback when no generated dispatcher is registered - see "
             + "documentation/trim-and-aot-support.md."
     )]
-    public Task<IOutcome> SendAsync(object request, CancellationToken ct = default)
+    public Task<IUnion> SendAsync(object request, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(request);
         this.EnsureNotRootScope(request.GetType());

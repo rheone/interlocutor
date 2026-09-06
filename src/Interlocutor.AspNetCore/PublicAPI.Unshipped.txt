@@ -40,14 +40,14 @@ override Interlocutor.AspNetCore.OutcomeHttpMapping.GetHashCode() -> int
 override Interlocutor.AspNetCore.OutcomeHttpMapping.ToString() -> string!
 static Interlocutor.AspNetCore.OutcomeHttpMapping.operator !=(Interlocutor.AspNetCore.OutcomeHttpMapping? left, Interlocutor.AspNetCore.OutcomeHttpMapping? right) -> bool
 static Interlocutor.AspNetCore.OutcomeHttpMapping.operator ==(Interlocutor.AspNetCore.OutcomeHttpMapping? left, Interlocutor.AspNetCore.OutcomeHttpMapping? right) -> bool
-static Interlocutor.AspNetCore.ResultExtensions.ToActionResult(this Interlocutor.CommonKernel.Outcome result, Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper = null) -> Microsoft.AspNetCore.Mvc.IActionResult!
+static Interlocutor.AspNetCore.ResultExtensions.ToActionResult(this Interlocutor.CommonKernel.Outcome result) -> Microsoft.AspNetCore.Mvc.IActionResult!
 static Interlocutor.AspNetCore.ResultExtensions.ToActionResult<TResponse>(this TResponse response, Interlocutor.Abstractions.Pipeline.Cases.IOutcomeCaseRegistry? caseRegistry, Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper = null) -> Microsoft.AspNetCore.Mvc.IActionResult!
 static Interlocutor.AspNetCore.ResultExtensions.ToActionResult<T1, T2, T3, T4, T5, T6>(this Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6> result, Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper = null) -> Microsoft.AspNetCore.Mvc.IActionResult!
 static Interlocutor.AspNetCore.ResultExtensions.ToActionResult<T1, T2, T3, T4, T5>(this Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5> result, Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper = null) -> Microsoft.AspNetCore.Mvc.IActionResult!
 static Interlocutor.AspNetCore.ResultExtensions.ToActionResult<T1, T2, T3, T4>(this Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4> result, Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper = null) -> Microsoft.AspNetCore.Mvc.IActionResult!
 static Interlocutor.AspNetCore.ResultExtensions.ToActionResult<T1, T2, T3>(this Interlocutor.CommonKernel.Outcome<T1, T2, T3> result, Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper = null) -> Microsoft.AspNetCore.Mvc.IActionResult!
 static Interlocutor.AspNetCore.ResultExtensions.ToActionResult<T1, T2>(this Interlocutor.CommonKernel.Outcome<T1, T2> result, Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper = null) -> Microsoft.AspNetCore.Mvc.IActionResult!
-static Interlocutor.AspNetCore.ResultExtensions.ToMinimalApiResult(this Interlocutor.CommonKernel.Outcome result, Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper = null) -> Microsoft.AspNetCore.Http.IResult!
+static Interlocutor.AspNetCore.ResultExtensions.ToMinimalApiResult(this Interlocutor.CommonKernel.Outcome result) -> Microsoft.AspNetCore.Http.IResult!
 static Interlocutor.AspNetCore.ResultExtensions.ToMinimalApiResult<TResponse>(this TResponse response, Interlocutor.Abstractions.Pipeline.Cases.IOutcomeCaseRegistry? caseRegistry, Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper = null) -> Microsoft.AspNetCore.Http.IResult!
 static Interlocutor.AspNetCore.ResultExtensions.ToMinimalApiResult<T1, T2, T3, T4, T5, T6>(this Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6> result, Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper = null) -> Microsoft.AspNetCore.Http.IResult!
 static Interlocutor.AspNetCore.ResultExtensions.ToMinimalApiResult<T1, T2, T3, T4, T5>(this Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5> result, Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper = null) -> Microsoft.AspNetCore.Http.IResult!
@@ -56,8 +56,8 @@ static Interlocutor.AspNetCore.ResultExtensions.ToMinimalApiResult<T1, T2, T3>(t
 static Interlocutor.AspNetCore.ResultExtensions.ToMinimalApiResult<T1, T2>(this Interlocutor.CommonKernel.Outcome<T1, T2> result, Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper = null) -> Microsoft.AspNetCore.Http.IResult!
 Interlocutor.AspNetCore.ResultExtensions.extension(Interlocutor.AspNetCore.OutcomeHttpMapping!)
 Interlocutor.AspNetCore.ResultExtensions.extension(Interlocutor.CommonKernel.Outcome)
-Interlocutor.AspNetCore.ResultExtensions.extension(Interlocutor.CommonKernel.Outcome).ToActionResult(Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper = null) -> Microsoft.AspNetCore.Mvc.IActionResult!
-Interlocutor.AspNetCore.ResultExtensions.extension(Interlocutor.CommonKernel.Outcome).ToMinimalApiResult(Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper = null) -> Microsoft.AspNetCore.Http.IResult!
+Interlocutor.AspNetCore.ResultExtensions.extension(Interlocutor.CommonKernel.Outcome).ToActionResult() -> Microsoft.AspNetCore.Mvc.IActionResult!
+Interlocutor.AspNetCore.ResultExtensions.extension(Interlocutor.CommonKernel.Outcome).ToMinimalApiResult() -> Microsoft.AspNetCore.Http.IResult!
 Interlocutor.AspNetCore.ResultExtensions.extension<TResponse>(TResponse)
 Interlocutor.AspNetCore.ResultExtensions.extension<TResponse>(TResponse).ToActionResult(Interlocutor.Abstractions.Pipeline.Cases.IOutcomeCaseRegistry? caseRegistry, Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper = null) -> Microsoft.AspNetCore.Mvc.IActionResult!
 Interlocutor.AspNetCore.ResultExtensions.extension<TResponse>(TResponse).ToMinimalApiResult(Interlocutor.Abstractions.Pipeline.Cases.IOutcomeCaseRegistry? caseRegistry, Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper = null) -> Microsoft.AspNetCore.Http.IResult!

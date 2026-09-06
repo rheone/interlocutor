@@ -3,9 +3,6 @@ Interlocutor.CommonKernel.GenerateOutcomeMembersAttribute
 Interlocutor.CommonKernel.GenerateOutcomeMembersAttribute.GenerateOutcomeMembersAttribute() -> void
 Interlocutor.CommonKernel.Outcome
 Interlocutor.CommonKernel.Outcome.Outcome() -> void
-Interlocutor.CommonKernel.Outcome.Outcome(Interlocutor.CommonKernel.ResultTypes.Failure value) -> void
-Interlocutor.CommonKernel.Outcome.Outcome(Interlocutor.CommonKernel.ResultTypes.Success value) -> void
-Interlocutor.CommonKernel.Outcome.Value.get -> object?
 Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>
 Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.Outcome() -> void
 Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.Outcome(T2 value) -> void
@@ -297,6 +294,7 @@ static Interlocutor.CommonKernel.ResultTypes.ValidationErrors<TErrorCode>.operat
 ~override Interlocutor.CommonKernel.ResultTypes.ValidationError<TErrorCode>.Equals(object obj) -> bool
 ~override Interlocutor.CommonKernel.ResultTypes.ValidationErrors.Equals(object obj) -> bool
 ~override Interlocutor.CommonKernel.ResultTypes.ValidationErrors<TErrorCode>.Equals(object obj) -> bool
+~override Interlocutor.CommonKernel.Outcome.Equals(object obj) -> bool
 Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage
 Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage.Deconstruct(out string? PropertyName, out string! Message) -> void
 Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage.Equals(Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage other) -> bool
@@ -313,16 +311,11 @@ static Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage.operator !=(
 static Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage.operator ==(Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage left, Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage right) -> bool
 ~override Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage.Equals(object obj) -> bool
 ~override Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage.ToString() -> string
-Interlocutor.CommonKernel.Outcome.ActiveCaseType.get -> System.Type?
 Interlocutor.CommonKernel.Outcome<T1, T2>.ActiveCaseType.get -> System.Type?
 Interlocutor.CommonKernel.Outcome<T1, T2, T3>.ActiveCaseType.get -> System.Type?
 Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4>.ActiveCaseType.get -> System.Type?
 Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5>.ActiveCaseType.get -> System.Type?
 Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.ActiveCaseType.get -> System.Type?
-Interlocutor.CommonKernel.Outcome.Match<TResult>(System.Func<Interlocutor.CommonKernel.ResultTypes.Success, TResult>! onCase1, System.Func<Interlocutor.CommonKernel.ResultTypes.Failure, TResult>! onCase2) -> TResult
-Interlocutor.CommonKernel.Outcome.Switch(System.Action<Interlocutor.CommonKernel.ResultTypes.Success>! onCase1, System.Action<Interlocutor.CommonKernel.ResultTypes.Failure>! onCase2) -> void
-Interlocutor.CommonKernel.Outcome.TryGetValue(out Interlocutor.CommonKernel.ResultTypes.Failure value) -> bool
-Interlocutor.CommonKernel.Outcome.TryGetValue(out Interlocutor.CommonKernel.ResultTypes.Success value) -> bool
 Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.Match<TResult>(System.Func<T1, TResult>! onCase1, System.Func<T2, TResult>! onCase2, System.Func<T3, TResult>! onCase3, System.Func<T4, TResult>! onCase4, System.Func<T5, TResult>! onCase5, System.Func<T6, TResult>! onCase6) -> TResult
 Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.Switch(System.Action<T1>! onCase1, System.Action<T2>! onCase2, System.Action<T3>! onCase3, System.Action<T4>! onCase4, System.Action<T5>! onCase5, System.Action<T6>! onCase6) -> void
 Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.TryGetValue(out T2 value) -> bool
@@ -355,7 +348,6 @@ override Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5>.ToString() -> str
 override Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4>.ToString() -> string!
 override Interlocutor.CommonKernel.Outcome<T1, T2, T3>.ToString() -> string!
 Interlocutor.CommonKernel.Outcome.Equals(Interlocutor.CommonKernel.Outcome other) -> bool
-override Interlocutor.CommonKernel.Outcome.Equals(object? obj) -> bool
 override Interlocutor.CommonKernel.Outcome.GetHashCode() -> int
 static Interlocutor.CommonKernel.Outcome.operator !=(Interlocutor.CommonKernel.Outcome left, Interlocutor.CommonKernel.Outcome right) -> bool
 static Interlocutor.CommonKernel.Outcome.operator ==(Interlocutor.CommonKernel.Outcome left, Interlocutor.CommonKernel.Outcome right) -> bool

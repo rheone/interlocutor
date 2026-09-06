@@ -64,10 +64,8 @@ public sealed class ResultExtensionsEmitterTests
     /// <see cref="StatusCodes.Status500InternalServerError"/> with the failure value itself as the body - the
     /// same "unrecognized failure type" fallback <c>ResultExtensionsTests.ToActionResult_WithUnknownFailureType_Returns500</c>
     /// exercises against the real, shipped <see cref="Interlocutor.AspNetCore.ResultExtensions"/>. The void
-    /// probe's failure case has no such freedom - the non-generic <c>Outcome</c> union's failure case is fixed
-    /// to the built-in <see cref="Interlocutor.CommonKernel.ResultTypes.Failure"/> type - so it renders as
-    /// <see cref="StatusCodes.Status400BadRequest"/> via <see cref="DefaultHttpOutcomeStatusMapper"/>'s own
-    /// recognized-type mapping instead.
+    /// probe has no failure case at all - the case-less <c>Outcome</c> acknowledgment always renders 204,
+    /// unconditionally, with no mapper involved.
     /// </summary>
     private const string Scaffold = """
         public static partial class GeneratedResultExtensions
@@ -95,14 +93,11 @@ public sealed class ResultExtensionsEmitterTests
 
         public static class ResultExtensionsEmitterProbe
         {
-            public static global::Microsoft.AspNetCore.Mvc.IActionResult VoidSuccessAction() =>
-                new global::Interlocutor.CommonKernel.Outcome(default(global::Interlocutor.CommonKernel.ResultTypes.Success)).ToActionResult();
+            public static global::Microsoft.AspNetCore.Mvc.IActionResult VoidAction() =>
+                new global::Interlocutor.CommonKernel.Outcome().ToActionResult();
 
-            public static global::Microsoft.AspNetCore.Mvc.IActionResult VoidFailureAction() =>
-                new global::Interlocutor.CommonKernel.Outcome(new global::Interlocutor.CommonKernel.ResultTypes.Failure("boom")).ToActionResult();
-
-            public static global::Microsoft.AspNetCore.Http.IResult VoidSuccessMinimal() =>
-                new global::Interlocutor.CommonKernel.Outcome(default(global::Interlocutor.CommonKernel.ResultTypes.Success)).ToMinimalApiResult();
+            public static global::Microsoft.AspNetCore.Http.IResult VoidMinimal() =>
+                new global::Interlocutor.CommonKernel.Outcome().ToMinimalApiResult();
 
             public static global::Microsoft.AspNetCore.Mvc.IActionResult Arity2SuccessAction() =>
                 new global::Interlocutor.CommonKernel.Outcome<string, int>("ok").ToActionResult();
@@ -133,23 +128,15 @@ public sealed class ResultExtensionsEmitterTests
     // --- Source shape: the void, non-generic overload ---
 
     [Fact]
-    public void Emit_Void_EmitsNonGenericOutcomeExtensionWithNoContentSuccess_Test()
+    public void Emit_Void_EmitsNonGenericOutcomeExtensionAlwaysRenderingNoContent_Test()
     {
         Assert.Contains(
             "extension(global::Interlocutor.CommonKernel.Outcome result)",
             GeneratedSource,
             StringComparison.Ordinal
         );
-        Assert.Contains(
-            "static _ => new global::Microsoft.AspNetCore.Mvc.NoContentResult(),",
-            GeneratedSource,
-            StringComparison.Ordinal
-        );
-        Assert.Contains(
-            "static _ => global::Microsoft.AspNetCore.Http.Results.NoContent(),",
-            GeneratedSource,
-            StringComparison.Ordinal
-        );
+        Assert.Contains("new global::Microsoft.AspNetCore.Mvc.NoContentResult();", GeneratedSource, StringComparison.Ordinal);
+        Assert.Contains("global::Microsoft.AspNetCore.Http.Results.NoContent();", GeneratedSource, StringComparison.Ordinal);
     }
 
     // --- Source shape: one extension<...> declaration per arity, table-driven over arities 2-6 ---
@@ -189,12 +176,12 @@ public sealed class ResultExtensionsEmitterTests
     }
 
     /// <summary>
-    /// A failure-arm rendering line for case index <c>K</c> (<c>"failure"</c> for the arity-2/void-shared name,
-    /// <c>"caseK"</c> above that) appears once per emitted arity that actually has a case at that index - i.e.
-    /// once for every arity from <c>K</c> through the emitter's own ceiling (6), except <c>K == 2</c>, whose
-    /// "failure" name is shared by both the arity-2 block and the unrelated void block (2 occurrences: arity 2
-    /// only has one failure case, and the void overload's own single failure arm happens to reuse the same
-    /// parameter name). This is the single check most likely to catch an off-by-one in
+    /// A failure-arm rendering line for case index <c>K</c> (<c>"failure"</c> for arity 2, <c>"caseK"</c> above
+    /// that) appears once per emitted arity that actually has a case at that index - i.e. once for every arity
+    /// from <c>K</c> through the emitter's own ceiling (6). The void overload has no failure arm at all (the
+    /// case-less <c>Outcome</c> acknowledgment always renders 204 unconditionally - see
+    /// <see cref="Emit_Void_EmitsNonGenericOutcomeExtensionAlwaysRenderingNoContent_Test"/>), so it contributes
+    /// nothing to any of these counts. This is the single check most likely to catch an off-by-one in
     /// <c>ResultExtensionsEmitter.EmitFailureMatchArms</c>'s loop bound: a dropped or duplicated arm at some
     /// arity shows up as a count that doesn't match this table.
     /// </summary>
@@ -204,7 +191,7 @@ public sealed class ResultExtensionsEmitterTests
     /// once for <c>ToMinimalApiResult</c> - see this test's own remarks for how each expected count is derived.
     /// </param>
     [Theory]
-    [InlineData("failure", 2)]
+    [InlineData("failure", 1)]
     [InlineData("case2", 4)]
     [InlineData("case3", 4)]
     [InlineData("case4", 3)]
@@ -248,23 +235,19 @@ public sealed class ResultExtensionsEmitterTests
     }
 
     [Fact]
-    public void Emit_CompiledAndLoaded_VoidOverload_DispatchesSuccessAndFailure_Test()
+    public void Emit_CompiledAndLoaded_VoidOverload_AlwaysRendersNoContent_Test()
     {
         // Arrange
         var probe = LoadProbe("ResultExtensionsEmitter.Tests.VoidRuntime");
 
         // Act
-        var success = (IActionResult)probe.GetMethod("VoidSuccessAction")!.Invoke(null, null)!;
-        var failure = (IActionResult)probe.GetMethod("VoidFailureAction")!.Invoke(null, null)!;
-        var successMinimal = (IResult)probe.GetMethod("VoidSuccessMinimal")!.Invoke(null, null)!;
+        var action = (IActionResult)probe.GetMethod("VoidAction")!.Invoke(null, null)!;
+        var minimal = (IResult)probe.GetMethod("VoidMinimal")!.Invoke(null, null)!;
 
-        // Assert - the void Outcome's failure case is fixed to the built-in Failure type (unlike the other
-        // probes below, which use unrecognized types deliberately), so DefaultHttpOutcomeStatusMapper maps it
-        // to 400 via its own MapFailure branch rather than the MapUnrecognized fallback.
-        Assert.IsType<NoContentResult>(success);
-        var objectResult = Assert.IsType<ObjectResult>(failure);
-        Assert.Equal(StatusCodes.Status400BadRequest, objectResult.StatusCode);
-        Assert.Equal("NoContent", successMinimal.GetType().Name);
+        // Assert - the case-less Outcome has no failure case to map, so both overloads always render 204,
+        // unconditionally, with no mapper ever consulted.
+        Assert.IsType<NoContentResult>(action);
+        Assert.Equal("NoContent", minimal.GetType().Name);
     }
 
     [Fact]

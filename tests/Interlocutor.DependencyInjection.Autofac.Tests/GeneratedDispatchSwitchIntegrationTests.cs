@@ -41,9 +41,11 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
         // Act
         var outcome = await sender.SendAsync(request, TestContext.Current.CancellationToken);
 
-        // Assert
+        // Assert - GeneratedSwitchVoidCommandHandler returns the case-less Outcome, whose Value is always null
+        // (see its own remarks); reaching this point without throwing already proves dispatch through the
+        // generated switch reached the handler.
         var union = Assert.IsType<System.Runtime.CompilerServices.IUnion>(outcome, exactMatch: false);
-        Assert.IsType<Success>(union.Value);
+        Assert.Null(union.Value);
     }
 
     [Fact]
@@ -117,7 +119,7 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
     public sealed class GeneratedSwitchVoidCommandHandler : IVoidCommandHandler<GeneratedSwitchVoidCommand, Outcome>
     {
         public Task<Outcome> Handle(GeneratedSwitchVoidCommand command, CancellationToken ct) =>
-            Task.FromResult(new Outcome(default(Success)));
+            Task.FromResult(default(Outcome));
     }
 
     /// <summary>A query with no handler anywhere in this compilation - proves the generated switch's

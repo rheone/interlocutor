@@ -69,26 +69,22 @@ internal static class ResultExtensionsEmitter
         return builder.ToString();
     }
 
-    /// <summary>Emits the <c>extension(Outcome result)</c> block for the non-generic, void-success union.</summary>
+    /// <summary>
+    /// Emits the <c>extension(Outcome result)</c> block for the non-generic, case-less acknowledgment. Unlike
+    /// every generic arity below, there is no failure case to map - holding a <c>result</c> instance is itself
+    /// the acknowledgment (see <c>Outcome</c>'s own remarks) - so both members always render 204/<c>NoContent</c>
+    /// unconditionally, and neither takes an <c>IOutcomeStatusMapper</c> parameter: there is nothing for one to
+    /// map.
+    /// </summary>
     private static void EmitVoidOutcomeExtension(StringBuilder builder)
     {
         builder.AppendLine("    extension(global::Interlocutor.CommonKernel.Outcome result)");
         builder.AppendLine("    {");
-        builder.AppendLine(
-            "        public global::Microsoft.AspNetCore.Mvc.IActionResult ToActionResult(global::Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper = null) =>"
-        );
-        builder.AppendLine("            result.Match<global::Microsoft.AspNetCore.Mvc.IActionResult>(");
-        builder.AppendLine("                static _ => new global::Microsoft.AspNetCore.Mvc.NoContentResult(),");
-        builder.AppendLine("                failure => (mapper ?? DefaultMapper).Map(failure).ToActionResult()");
-        builder.AppendLine("            );");
+        builder.AppendLine("        public global::Microsoft.AspNetCore.Mvc.IActionResult ToActionResult() =>");
+        builder.AppendLine("            new global::Microsoft.AspNetCore.Mvc.NoContentResult();");
         builder.AppendLine();
-        builder.AppendLine(
-            "        public global::Microsoft.AspNetCore.Http.IResult ToMinimalApiResult(global::Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper = null) =>"
-        );
-        builder.AppendLine("            result.Match<global::Microsoft.AspNetCore.Http.IResult>(");
-        builder.AppendLine("                static _ => global::Microsoft.AspNetCore.Http.Results.NoContent(),");
-        builder.AppendLine("                failure => (mapper ?? DefaultMapper).Map(failure).ToMinimalApiResult()");
-        builder.AppendLine("            );");
+        builder.AppendLine("        public global::Microsoft.AspNetCore.Http.IResult ToMinimalApiResult() =>");
+        builder.AppendLine("            global::Microsoft.AspNetCore.Http.Results.NoContent();");
         builder.AppendLine("    }");
     }
 

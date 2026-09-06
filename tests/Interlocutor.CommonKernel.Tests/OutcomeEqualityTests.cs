@@ -4,10 +4,12 @@ using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
 /// Covers the generated value equality (<c>Equals</c>, <c>GetHashCode</c>, <c>IEquatable&lt;TSelf&gt;</c>,
-/// <c>==</c>/<c>!=</c>) every shipped <see cref="Outcome"/>/<see cref="Outcome{T1, T2}"/>
-/// arity carries: delegation to the boxed case value's own equality, union-type identity (no cross-arity or
-/// cross-case-type false positives), and composition with the order-independent aggregate equality
-/// <see cref="ResultTypes.Failures"/> and its siblings already carry.
+/// <c>==</c>/<c>!=</c>) every shipped generic <see cref="Outcome{T1, T2}"/> arity carries: delegation to the
+/// boxed case value's own equality, union-type identity (no cross-arity or cross-case-type false positives),
+/// and composition with the order-independent aggregate equality <see cref="ResultTypes.Failures"/> and its
+/// siblings already carry. The case-less, non-generic <see cref="Outcome"/> carries a different, trivial
+/// equality (every instance equals every other, since there is no state to differ on) - see
+/// <see cref="NonGenericOutcome_AnyTwoInstances_AreAlwaysEqual"/>.
 /// </summary>
 public class OutcomeEqualityTests
 {
@@ -111,14 +113,17 @@ public class OutcomeEqualityTests
     }
 
     [Fact]
-    public void NonGenericOutcome_TwoInstancesHoldingEqualCaseValues_AreEqual()
+    public void NonGenericOutcome_AnyTwoInstances_AreAlwaysEqual()
     {
-        // Arrange
-        Outcome left = new Failure("boom");
-        Outcome right = new Failure("boom");
+        // Arrange - the case-less Outcome carries no state to differ on, so every instance equals every other,
+        // unlike the generic arities above whose equality delegates to the boxed case value.
+        var left = default(Outcome);
+        var right = default(Outcome);
 
         // Act & Assert
         Assert.Equal(left, right);
+        Assert.True(left == right);
+        Assert.False(left != right);
         Assert.Equal(left.GetHashCode(), right.GetHashCode());
     }
 

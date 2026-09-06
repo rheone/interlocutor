@@ -64,7 +64,7 @@ internal static class RequestDispatchSwitchEmitter
         builder.AppendLine("    {");
         builder.AppendLine("        /// <inheritdoc/>");
         builder.AppendLine(
-            "        public async global::System.Threading.Tasks.Task<global::Interlocutor.CommonKernel.ResultTypes.IOutcome> DispatchAsync(object request, global::System.IServiceProvider services, global::System.Threading.CancellationToken ct)"
+            "        public async global::System.Threading.Tasks.Task<global::System.Runtime.CompilerServices.IUnion> DispatchAsync(object request, global::System.IServiceProvider services, global::System.Threading.CancellationToken ct)"
         );
         builder.AppendLine("        {");
         builder.AppendLine("            switch (request)");

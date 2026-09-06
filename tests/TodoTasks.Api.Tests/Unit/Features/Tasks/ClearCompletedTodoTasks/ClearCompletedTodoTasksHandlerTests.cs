@@ -1,7 +1,7 @@
 namespace TodoTasks.Api.Tests.Unit.Features.Tasks.ClearCompletedTodoTasks;
 
 using System.Linq.Expressions;
-using Interlocutor.CommonKernel.ResultTypes;
+using Interlocutor.CommonKernel;
 using Interlocutor.Persistence.Abstractions;
 using NSubstitute;
 using TodoTasks.Api.Domain;
@@ -43,8 +43,9 @@ public sealed class ClearCompletedTodoTasksHandlerTests
         // Act
         var result = await this.handler.Handle(command, CancellationToken.None);
 
-        // Assert
-        Assert.IsType<Success>(result.Value);
+        // Assert - Outcome is case-less; reaching this line without throwing already is the acknowledgment
+        // (see Outcome's own remarks). What's worth proving is the delete/save behavior below.
+        Assert.Equal(default(Outcome), result);
         await this.tasks.Received(1).DeleteAsync(first, Arg.Any<CancellationToken>());
         await this.tasks.Received(1).DeleteAsync(second, Arg.Any<CancellationToken>());
         await this.unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
@@ -125,9 +126,9 @@ public sealed class ClearCompletedTodoTasksHandlerTests
         // Act
         var result = await this.handler.Handle(command, CancellationToken.None);
 
-        // Assert - still saves (a no-op SaveChangesAsync is harmless) and reports Success even when
-        // there was nothing to clear.
-        Assert.IsType<Success>(result.Value);
+        // Assert - still saves (a no-op SaveChangesAsync is harmless) and acknowledges even when there
+        // was nothing to clear - Outcome is case-less, so there's no distinct "nothing to do" case to report.
+        Assert.Equal(default(Outcome), result);
         await this.tasks.DidNotReceive().DeleteAsync(Arg.Any<TodoTask>(), Arg.Any<CancellationToken>());
         await this.unitOfWork.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }

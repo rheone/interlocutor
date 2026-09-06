@@ -22,10 +22,11 @@ public class MinimalApiResultExtensionsTests
     }
 
     [Fact]
-    public void ToMinimalApiResult_WithSuccessNoPayload_CreatesNoContentResult()
+    public void ToMinimalApiResult_CaseLessOutcome_CreatesNoContentResult()
     {
-        // Arrange
-        Outcome result = new(default(Success));
+        // Arrange - the case-less Outcome has no failure case to map, so its dedicated overload always
+        // renders 204 unconditionally.
+        var result = default(Outcome);
 
         // Act
         var minimalResult = result.ToMinimalApiResult();

@@ -254,7 +254,9 @@ public class InterlocutorBuilderIntegrationTests
         var handlerRan = false;
         containerBuilder.RegisterInstance(new HandlerRanFlag(() => handlerRan = true)).SingleInstance();
 
-        var declined = new Outcome(new Failure("declined by stage"));
+        // Case-less, so there's no payload to carry the "declined by stage" reason - the real proof this stage
+        // short-circuited is handlerRan staying false below, not the value's own (trivially-equal) identity.
+        var declined = default(Outcome);
 
         containerBuilder.AddInterlocutor(builder =>
             builder

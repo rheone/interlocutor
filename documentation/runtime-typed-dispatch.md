@@ -27,19 +27,22 @@ var request = JsonSerializer.Deserialize(message.Payload, requestType);
 var result = await mediator.Send(request);  // object, no generic parameter
 ```
 
-The `result` is `IOutcome` - the base interface all outcomes implement, but a bare marker with no members of its own (see below for how to actually inspect it).
+The `result` is `IUnion` - the base interface every outcome union implements, exposing only a single boxed `Value` member (see below for how to actually inspect it).
 
 A per-request-type pipeline override (`Pipeline.OverridePipelineFor`) applies uniformly regardless of dispatch path: a request type with a declared override resolves that same override whether it arrives through the ordinary typed `Send<TResponse>` API or through this runtime-typed overload - there is no divergence for a caller who uses both. See [Per-Request-Type Pipeline Overrides](pipeline-and-behaviors.md#per-request-type-pipeline-overrides) for how to declare one.
 
-## IOutcome Interface
+## IUnion Interface
 
-All outcome unions implement `IOutcome` - but it's a bare marker with no members of its own:
+Every outcome union implements `System.Runtime.CompilerServices.IUnion` - the interface the compiler generates for every `union` declaration - exposing a single boxed `Value` member:
 
 ```csharp
-public interface IOutcome;
+public interface IUnion
+{
+    object? Value { get; }
+}
 ```
 
-That means runtime-typed `Send(object request)`'s `IOutcome` result carries no case-reading member to call directly. Inspecting it without knowing the concrete union type is exactly what [`IOutcomeCaseRegistry`](messages-and-result-types.md#iunion-as-an-extension-point) is for - inject it and call `TryGetActiveCase(response, out caseType, out caseValue)`. The Outbox Pattern example below shows the full pattern.
+That means runtime-typed `Send(object request)`'s `IUnion` result exposes only its boxed `Value` directly - not enough on its own to know the active case's type, since a `null` `Value` can mean either a legitimate null payload or a genuinely unset union. Resolving that fully, without knowing the concrete union type, is exactly what [`IOutcomeCaseRegistry`](messages-and-result-types.md#iunion-as-an-extension-point) is for - inject it and call `TryGetActiveCase(response, out caseType, out caseValue)`. The Outbox Pattern example below shows the full pattern.
 
 > [!NOTE]
 > `IOutcomeCaseRegistry` is try-added by several `Pipeline.Add*Behavior()` calls (`AddAuthorizationBehavior`, `AddCancellationBehavior`, `AddTimeoutBehavior`, `AddRateLimitedBehavior`) and by `UseRecommendedChain()`, which includes `AddAuthorizationBehavior`. If your pipeline uses none of those, register `DefaultOutcomeCaseRegistry` yourself, or supply a custom `IOutcomeCaseRegistry` per [messages-and-result-types.md](messages-and-result-types.md#iunion-as-an-extension-point).
@@ -66,7 +69,7 @@ sequenceDiagram
         loop for each message
             Processor->>Processor: deserialize Payload as RequestType
             Processor->>Mediator: Send(request) - runtime-typed
-            Mediator-->>Processor: IOutcome
+            Mediator-->>Processor: IUnion
             alt outcome succeeded
                 Processor->>OutboxTable: MarkProcessedAsync
             else outcome failed
@@ -104,7 +107,7 @@ public class OutboxProcessor : BackgroundService
                     // Runtime-typed dispatch
                     var result = await mediator.Send(request, ct);
 
-                    // IOutcome is a bare marker - extract the active case to inspect it
+                    // IUnion exposes only Value - extract the active case via IOutcomeCaseRegistry to inspect it
                     caseRegistry.TryGetActiveCase(result, out var caseType, out var caseValue);
 
                     if (caseType == typeof(Success))

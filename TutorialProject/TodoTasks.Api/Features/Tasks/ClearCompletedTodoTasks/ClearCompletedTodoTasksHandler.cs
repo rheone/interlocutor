@@ -2,14 +2,14 @@ namespace TodoTasks.Api.Features.Tasks.ClearCompletedTodoTasks;
 
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.CommonKernel;
-using Interlocutor.CommonKernel.ResultTypes;
 using Interlocutor.Persistence.Abstractions;
 using TodoTasks.Api.Domain;
 
 /// <summary>
-/// Handles <see cref="ClearCompletedTodoTasksCommand"/>. Registered against the specific
-/// <c>TResult</c> this handler produces - this one only ever needs <see cref="Success"/> or
-/// <see cref="Failure"/>, which the non-generic <see cref="Outcome"/> union covers.
+/// Handles <see cref="ClearCompletedTodoTasksCommand"/>. Registered against the specific <c>TResult</c> this
+/// handler produces - clearing every completed task for an owner is genuinely infallible (there is no
+/// not-found/conflict/validation case it can hit), so it uses the case-less, non-generic <see cref="Outcome"/>
+/// acknowledgment rather than naming a failure case that could never actually construct.
 /// </summary>
 public sealed class ClearCompletedTodoTasksHandler(IDomainRepository<TodoTask, int> tasks, IUnitOfWork unitOfWork)
     : IVoidCommandHandler<ClearCompletedTodoTasksCommand, Outcome>
@@ -27,6 +27,6 @@ public sealed class ClearCompletedTodoTasksHandler(IDomainRepository<TodoTask, i
         }
 
         await unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
-        return default(Success);
+        return default(Outcome);
     }
 }

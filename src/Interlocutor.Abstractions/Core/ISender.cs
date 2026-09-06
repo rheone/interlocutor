@@ -4,7 +4,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Queries;
-using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>Send-only interface for request/response operations. Exposes SendAsync overloads for queries and commands.</summary>
 /// <remarks>
@@ -65,10 +64,9 @@ public interface ISender
     /// <param name="ct">The cancellation token.</param>
     /// <returns>
     /// A <see cref="Task{TResult}"/> whose result is the handler's response as an
-    /// <see cref="CommonKernel.ResultTypes.IOutcome"/>. Callers can pattern-match the union's case value
-    /// (via <see cref="System.Runtime.CompilerServices.IUnion"/>) or use its generated
-    /// <c>TryGetValue</c>/<c>TryGet{TypeName}</c> accessors without knowing the concrete outcome type
-    /// statically.
+    /// <see cref="System.Runtime.CompilerServices.IUnion"/>. Callers can pattern-match the union's case value
+    /// directly, or use its generated <c>TryGetValue</c>/<c>TryGet{TypeName}</c> accessors, without knowing the
+    /// concrete outcome type statically.
     /// </returns>
     /// <remarks>
     /// <para>
@@ -105,5 +103,5 @@ public interface ISender
         "May run the runtime-typed dispatch fallback when no generated dispatcher is registered - see "
             + "documentation/trim-and-aot-support.md."
     )]
-    Task<IOutcome> SendAsync(object request, CancellationToken ct = default);
+    Task<IUnion> SendAsync(object request, CancellationToken ct = default);
 }

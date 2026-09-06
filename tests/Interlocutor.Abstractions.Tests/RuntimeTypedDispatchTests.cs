@@ -140,9 +140,10 @@ public class RuntimeTypedDispatchTests
         // Act
         var outcome = await sender.SendAsync(request, CancellationToken.None);
 
-        // Assert
+        // Assert - TestVoidHandler returns the case-less Outcome, whose Value is always null (see its own
+        // remarks); reaching this point without throwing already proves the dispatch reached the handler.
         var union = Assert.IsType<IUnion>(outcome, exactMatch: false);
-        Assert.IsType<Success>(union.Value);
+        Assert.Null(union.Value);
     }
 
     [Fact]

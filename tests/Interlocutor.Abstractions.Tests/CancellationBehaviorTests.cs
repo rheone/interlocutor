@@ -140,6 +140,32 @@ public class CancellationBehaviorTests
     }
 
     [Fact]
+    public async Task Handle_WithCaseLessOutcomeResponse_ThrowsNamedExceptionOnCancellation()
+    {
+        // The case-less, non-generic Outcome (see its own remarks) is the specific incompatibility this
+        // ticket calls out: pairing ICancellable with a response that has no case to construct into at all
+        // is a configuration mistake, surfaced loudly the first time cancellation is actually observed -
+        // not a silent no-op - via the same mechanism the misshapen-generic-union test above exercises.
+        // Arrange
+        var behavior = new CancellationBehavior<CaseLessCancellableQuery, Outcome>(DefaultOutcomeCaseRegistry.Instance);
+        var request = new CaseLessCancellableQuery();
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+        var ct = cts.Token;
+
+        Task<Outcome> NextAsync()
+        {
+            throw new OperationCanceledException(ct);
+        }
+
+        // Act
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => behavior.HandleAsync(request, NextAsync, ct));
+
+        // Assert
+        Assert.Contains("Cancelled", ex.Message);
+    }
+
+    [Fact]
     public async Task Handle_HandRolledNonUnionResponse_ShortCircuitsWithCancelledViaCustomRegistry()
     {
         // Proves IOutcomeCaseRegistry is a genuine drop-in for hand-rolled response shapes here too, not
@@ -174,6 +200,9 @@ public class CancellationBehaviorTests
     public record MisshapenCancellableQuery
         : IQuery<Outcome<string, Interlocutor.CommonKernel.ResultTypes.NotFound>>,
             ICancellable;
+
+    /// <summary>A request implementing <see cref="ICancellable"/> whose response is the case-less <see cref="Outcome"/>.</summary>
+    public record CaseLessCancellableQuery : IQuery<Outcome>, ICancellable;
 
     /// <summary>A request whose response type is a hand-rolled, non-union <see cref="IOutcome"/>.</summary>
     public record CancellableHandRolledQuery : ICancellable;

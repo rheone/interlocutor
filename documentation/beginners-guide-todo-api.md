@@ -1591,9 +1591,9 @@ That's all five recommended-chain behaviors exercised: Logging and Auditing from
 
 ### One more command: no payload, caller-chosen outcome type
 
-Every command so far implements `ICommand<TResponse>` - a response type fixed in the command's own declaration. The bare `ICommand` marker (no type parameter) works differently: its handler contract is `IVoidCommandHandler<TCommand, TResult>`, where `TResult` - any `IOutcome`-implementing type - is chosen by the *caller*, via the type argument on `ISender.Send<TResult>(ICommand, CancellationToken)`, not fixed by the command or baked into the handler's registration.
+Every command so far implements `ICommand<TResponse>` - a response type fixed in the command's own declaration. The bare `ICommand` marker (no type parameter) works differently: its handler contract is `IVoidCommandHandler<TCommand, TResult>`, where `TResult` - any `IUnion`-implementing type - is chosen by the *caller*, via the type argument on `ISender.Send<TResult>(ICommand, CancellationToken)`, not fixed by the command or baked into the handler's registration.
 
-Clearing every completed task for a caller is a natural fit for this - there's no domain data to hand back, only whether it worked:
+Clearing every completed task for a caller is a natural fit for this - there's no domain data to hand back, and no failure mode this operation can actually hit:
 
 **`Application/TodoTasks/ClearCompletedTodoTasksCommand.cs`**
 
@@ -1616,13 +1616,14 @@ public sealed record ClearCompletedTodoTasksCommand(string OwnerId) : ICommand, 
 ```csharp
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.CommonKernel;
-using Interlocutor.CommonKernel.ResultTypes;
 using Interlocutor.Persistence.Abstractions;
 
 namespace TodoTasks.Api.Application.TodoTasks;
 
 // IVoidCommandHandler<TCommand, TResult> is the contract for a bare ICommand - registered against
-// the specific TResult this handler produces. This one only ever needs Success or Failure.
+// the specific TResult this handler produces. Clearing completed tasks is genuinely infallible (no
+// not-found/conflict case it can hit), so it uses the case-less, non-generic Outcome acknowledgment
+// rather than naming a failure case that could never actually construct.
 public sealed class ClearCompletedTodoTasksHandler(IDomainRepository<TodoTask, int> repository, IUnitOfWork unitOfWork)
     : IVoidCommandHandler<ClearCompletedTodoTasksCommand, Outcome>
 {
@@ -1637,7 +1638,7 @@ public sealed class ClearCompletedTodoTasksHandler(IDomainRepository<TodoTask, i
         }
 
         await unitOfWork.SaveChangesAsync(ct);
-        return new Success();
+        return new Outcome();
     }
 }
 ```

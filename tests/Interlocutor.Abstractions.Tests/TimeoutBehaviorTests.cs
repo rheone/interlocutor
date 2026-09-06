@@ -119,5 +119,37 @@ public class TimeoutBehaviorTests
         Assert.Equal(overriddenBudget, timeout.Budget);
     }
 
+    [Fact]
+    public async Task Handle_WithCaseLessOutcomeResponse_ThrowsNamedExceptionWhenBudgetElapses()
+    {
+        // The case-less, non-generic Outcome (see its own remarks) is the specific incompatibility this
+        // ticket calls out: pairing IHasTimeout with a response that has no Timeout case to construct into
+        // at all is a configuration mistake, surfaced loudly the moment the budget actually elapses - not a
+        // silent no-op.
+        // Arrange
+        var budget = TimeSpan.FromMilliseconds(50);
+        var behavior = new TimeoutBehavior<CaseLessTimeBoundQuery, Outcome>(
+            DefaultTimeoutPolicy.Instance,
+            DefaultOutcomeCaseRegistry.Instance
+        );
+        var request = new CaseLessTimeBoundQuery(budget);
+        static async Task<Outcome> NextAsync()
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(500), CancellationToken.None).ConfigureAwait(false);
+            return default(Outcome);
+        }
+
+        // Act
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            behavior.HandleAsync(request, NextAsync, CancellationToken.None)
+        );
+
+        // Assert
+        Assert.Contains("Timeout", ex.Message);
+    }
+
     public record TimeBoundQuery(TimeSpan Budget) : IQuery<Outcome<string, Timeout>>, IHasTimeout;
+
+    /// <summary>A request implementing <see cref="IHasTimeout"/> whose response is the case-less <see cref="Outcome"/>.</summary>
+    public record CaseLessTimeBoundQuery(TimeSpan Budget) : IQuery<Outcome>, IHasTimeout;
 }

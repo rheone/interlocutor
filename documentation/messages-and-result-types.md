@@ -51,7 +51,7 @@ public record DeleteAllUsers() : ICommand;
 public record ClearCache() : ICommand;
 ```
 
-A handler is `IVoidCommandHandler<TCommand, TResult>`, pairing the command with whichever `IUnion`-shaped result that handler produces - most commonly the non-generic `Outcome` (`Success | Failure`), but any union is legal:
+A handler is `IVoidCommandHandler<TCommand, TResult>`, pairing the command with whichever `IUnion`-shaped result that handler produces - any union is legal, including the case-less, non-generic `Outcome` for an operation that is genuinely infallible:
 
 ```csharp
 public class ClearCacheHandler : IVoidCommandHandler<ClearCache, Outcome>
@@ -59,7 +59,7 @@ public class ClearCacheHandler : IVoidCommandHandler<ClearCache, Outcome>
     public async Task<Outcome> Handle(ClearCache command, CancellationToken ct)
     {
         await this.cache.ClearAsync(ct);
-        return new Success();
+        return new Outcome();
     }
 }
 ```
@@ -67,8 +67,8 @@ public class ClearCacheHandler : IVoidCommandHandler<ClearCache, Outcome>
 Dispatch:
 
 ```csharp
-var result = await mediator.Send<Outcome>(new DeleteAllUsers());
-// result is Outcome (Success or Failure)
+var result = await mediator.Send<Outcome>(new ClearCache());
+// result confirms ClearCache ran - there is nothing further to inspect (see Result Types § Outcome below)
 ```
 
 ## IUnion Constraint
@@ -152,20 +152,19 @@ Anything left unregistered still falls back to `DefaultOutcomeCaseRegistry`, so 
 
 ### Success
 
-Marker type for unit command success - carries no payload:
+Marker type for an operation that succeeds with no payload - one ordinary case among an arity's others, for an operation that genuinely can fail (an infallible operation uses the case-less, non-generic `Outcome` instead - see [ICommand (Unit Command)](#icommand-unit-command) above):
 
 ```csharp
 public readonly record struct Success;
 
-// Use in unit commands
-public record ClearCache() : ICommand;
+public record ArchiveOldOrders() : ICommand<Outcome<Success, Failure>>;
 
-public class ClearCacheHandler : ICommandHandler<ClearCache>
+public class ArchiveOldOrdersHandler : ICommandHandler<ArchiveOldOrders, Outcome<Success, Failure>>
 {
-    public async Task<Outcome> Handle(ClearCache command, CancellationToken ct)
+    public async Task<Outcome<Success, Failure>> Handle(ArchiveOldOrders command, CancellationToken ct)
     {
-        await this.cache.ClearAsync(ct);
-        return new Success();
+        var archived = await this.orders.ArchiveOlderThanAsync(TimeSpan.FromDays(90), ct);
+        return archived > 0 ? new Success() : new Failure("No orders were old enough to archive.");
     }
 }
 ```
@@ -284,11 +283,11 @@ None of these three participate unless the request opts in via the matching mark
 
 ## Outcome Unions
 
-Results are C# 15 discriminated unions:
+Every generic arity is a C# 15 discriminated union - except arity 0, which is deliberately not a union at all:
 
 ```csharp
-// Two-case union: success or generic failure
-public readonly union Outcome(Success, Failure);
+// Arity 0: case-less acknowledgment - no cases, no payload, no success/failure judgment
+public readonly record struct Outcome : IUnion;
 
 // Generic union: success + specific failure cases
 public readonly union Outcome<T1, T2>(T1, T2);
@@ -298,7 +297,9 @@ public readonly union Outcome<T1, T2, T3>(
     T1, T2, T3);
 ```
 
-Every shipped arity - the non-generic `Outcome` and every generic form from two cases through six - carries the identical generated member set: `Match`, `Switch`, a per-case `TryGetValue`, `ToString`, and value equality (`Equals`, `GetHashCode`, `IEquatable<TSelf>`, `==`/`!=`). None of it is hand-written; each arity is declared as a `partial union` attributed with `GenerateOutcomeMembersAttribute`, and a source generator emits the second partial declaration - see [Pattern Matching](#pattern-matching) below for how to use the generated surface, [Value Equality](#value-equality) for how the generated equality members behave, and [Extensibility § Duplicate case type detection](extensibility.md#duplicate-case-type-detection-interloc009) for the companion analyzer that keeps every arity's case types distinct.
+The non-generic `Outcome` is a small, hand-written type - not generator-emitted, since it declares no case types at all. Holding an instance of it is itself the acknowledgment that an operation ran; it has no `Match`, `Switch`, or `TryGetValue` members, since there is nothing to dispatch over. Reserve it for a request that is genuinely infallible and opts into none of `ICancellable`/`IHasTimeout`/`IRateLimited` - see [Choosing Arities](#choosing-arities) below.
+
+Every generic form from two cases through six carries the identical generated member set: `Match`, `Switch`, a per-case `TryGetValue`, `ToString`, and value equality (`Equals`, `GetHashCode`, `IEquatable<TSelf>`, `==`/`!=`). None of it is hand-written; each arity is declared as a `partial union` attributed with `GenerateOutcomeMembersAttribute`, and a source generator emits the second partial declaration - see [Pattern Matching](#pattern-matching) below for how to use the generated surface, [Value Equality](#value-equality) for how the generated equality members behave, and [Extensibility § Duplicate case type detection](extensibility.md#duplicate-case-type-detection-interloc009) for the companion analyzer that keeps every arity's case types distinct.
 
 ### Pattern Matching
 
@@ -391,9 +392,11 @@ Outcome<Success, Failures> collectedBThenA = new Failures([failureB, failureA]);
 collectedAThenB == collectedBThenA; // true - same distinct items, different collection order
 ```
 
+The case-less, non-generic `Outcome` carries a different, trivial equality: every instance equals every other, since there is no state to differ on.
+
 ## Choosing Arities
 
-Don't route every failure through a single `Failure`. Pick the arity that an operation can actually produce:
+Before picking among failure cases, first ask whether the operation can fail at all. A genuinely infallible operation - one with no not-found/conflict/validation/business-rule case it could ever hit - is the case-less arity 0 (`Outcome`), not an `Outcome<Success, Failure>` whose `Failure` arm can never actually construct. Reach for a generic arity only once there's a real failure mode to report, and then don't route every failure through a single `Failure` - pick the arity that an operation can actually produce:
 
 ```csharp
 // ✅ Specific - only NotFound and Failure are possible
