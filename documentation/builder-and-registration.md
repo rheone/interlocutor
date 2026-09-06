@@ -250,6 +250,8 @@ provider.ValidateHandlerRegistrations(typeof(Program).Assembly);
 
 Call this once at startup (after building your provider/container) if you want missing-handler detection before the first request, rather than discovering it the first time a request with no handler is dispatched.
 
+A separate, equally opt-in check covers a different question: not whether a handler is registered, but whether a request's response type is *shaped* correctly for the pipeline behaviors it opts into. `IServiceProvider.ValidatePipelineCaseFidelity(params Assembly[])` checks, for each scanned request type, that its response has a matching case for every marker-interface-gated behavior it implements (a policy-gated request needs a `Forbidden` case, a cancellable one needs `Cancelled`, and so on) - and, since only a live container can see it, that a request with at least one `FluentValidation.IValidator<TRequest>` actually registered declares a matching validation-errors case too. See [dependency-injection-abstractions.md](dependency-injection-abstractions.md) for the full explanation.
+
 ## Microsoft.Extensions.DependencyInjection
 
 Entry point: `IServiceCollection.AddInterlocutor(Action<InterlocutorBuilder>)`

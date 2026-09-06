@@ -11,6 +11,7 @@ Provides startup validation that all handler types are properly registered in th
 | Member | Summary |
 | --- | --- |
 | `public static IServiceProvider ValidateHandlerRegistrations(IServiceProvider provider, params Assembly[] assembliesToScan)` | Validates that all handler types referenced by query and command types in the specified assemblies are registered in the DI container. |
+| `public static IServiceProvider ValidatePipelineCaseFidelity(IServiceProvider provider, params Assembly[] assembliesToScan)` | Validates that every scanned request type's response is shaped to satisfy the pipeline behaviors its marker interfaces (and, for FluentValidation, its actually-registered validators) opt it into. |
 
 ### `Mediator` sealed class
 

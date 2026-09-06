@@ -8,6 +8,11 @@
     <!-- Only for BareIOutcomeResponseConstraintRegressionTests: compiling a small in-memory snippet to prove
          a response type is now rejected at compile time by the IUnion constraint - see that file's remarks. -->
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+    <!-- Only for InterlocutorStartupValidationCaseFidelityTests: registering a real FluentValidation.IValidator<>
+         in a built IServiceProvider so ValidatePipelineCaseFidelity's DI-registration-time validator probe has
+         something genuine to find. Interlocutor.Abstractions itself never references this package - see that
+         method's own remarks and tests/Interlocutor.Architecture.Tests. -->
+    <PackageReference Include="FluentValidation" />
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="Microsoft.Testing.Platform" />
