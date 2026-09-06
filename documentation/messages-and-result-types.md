@@ -283,11 +283,14 @@ None of these three participate unless the request opts in via the matching mark
 
 ## Outcome Unions
 
-Every generic arity is a C# 15 discriminated union - except arity 0, which is deliberately not a union at all:
+Every generic arity from two cases up is a C# 15 discriminated union - arity 0 and arity 1 are deliberately not unions at all, since neither has more than one case to discriminate between:
 
 ```csharp
 // Arity 0: case-less acknowledgment - no cases, no payload, no success/failure judgment
 public readonly record struct Outcome : IUnion;
+
+// Arity 1: single always-succeeding payload - one case, so nothing to discriminate either
+public readonly record struct Outcome<T>(T Value) : IUnion;
 
 // Generic union: success + specific failure cases
 public readonly union Outcome<T1, T2>(T1, T2);
@@ -298,6 +301,8 @@ public readonly union Outcome<T1, T2, T3>(
 ```
 
 The non-generic `Outcome` is a small, hand-written type - not generator-emitted, since it declares no case types at all. Holding an instance of it is itself the acknowledgment that an operation ran; it has no `Match`, `Switch`, or `TryGetValue` members, since there is nothing to dispatch over. Reserve it for a request that is genuinely infallible and opts into none of `ICancellable`/`IHasTimeout`/`IRateLimited` - see [Choosing Arities](#choosing-arities) below.
+
+`Outcome<T>` is a small, hand-written generic type sitting between arity 0 and the generic union family: unlike `Outcome`, it does carry a payload, but that payload is the only thing it can ever hold, so it's a "fake union" with nothing to distinguish - not generator-emitted either. It hand-declares the same `Match`/`Switch`/`TryGetValue`/`ToString`/equality member shape every generic arity carries (one-delegate `Match`/`Switch`, an always-succeeding `TryGetValue`), so a caller never has to special-case it: `Value` is a strongly-typed `T` rather than the boxed `object?` a real union exposes, with an explicit `IUnion.Value` implementation forwarding to it to satisfy the constraint. Reserve it for an operation that always succeeds but still needs to hand back exactly one value - an operation with a real failure mode should declare an explicit `Outcome<T, Failure>` (or whichever richer arity matches its real failure modes) instead.
 
 Every generic form from two cases through six carries the identical generated member set: `Match`, `Switch`, a per-case `TryGetValue`, `ToString`, and value equality (`Equals`, `GetHashCode`, `IEquatable<TSelf>`, `==`/`!=`). None of it is hand-written; each arity is declared as a `partial union` attributed with `GenerateOutcomeMembersAttribute`, and a source generator emits the second partial declaration - see [Pattern Matching](#pattern-matching) below for how to use the generated surface, [Value Equality](#value-equality) for how the generated equality members behave, and [Extensibility § Duplicate case type detection](extensibility.md#duplicate-case-type-detection-interloc009) for the companion analyzer that keeps every arity's case types distinct.
 
@@ -392,11 +397,11 @@ Outcome<Success, Failures> collectedBThenA = new Failures([failureB, failureA]);
 collectedAThenB == collectedBThenA; // true - same distinct items, different collection order
 ```
 
-The case-less, non-generic `Outcome` carries a different, trivial equality: every instance equals every other, since there is no state to differ on.
+The case-less, non-generic `Outcome` carries a different, trivial equality: every instance equals every other, since there is no state to differ on. `Outcome<T>` carries the same shape of equality as the generic arities above (`Equals`, `GetHashCode`, `IEquatable<Outcome<T>>`, `==`/`!=`), just delegated to its strongly-typed `Value` directly rather than through a boxed `object?`.
 
 ## Choosing Arities
 
-Before picking among failure cases, first ask whether the operation can fail at all. A genuinely infallible operation - one with no not-found/conflict/validation/business-rule case it could ever hit - is the case-less arity 0 (`Outcome`), not an `Outcome<Success, Failure>` whose `Failure` arm can never actually construct. Reach for a generic arity only once there's a real failure mode to report, and then don't route every failure through a single `Failure` - pick the arity that an operation can actually produce:
+Before picking among failure cases, first ask whether the operation can fail at all. A genuinely infallible operation - one with no not-found/conflict/validation/business-rule case it could ever hit - is arity 0 or arity 1, never an `Outcome<Success, Failure>` whose `Failure` arm can never actually construct: the case-less arity 0 (`Outcome`) when there's no payload either, or `Outcome<T>` when the operation still hands back exactly one value. Reach for a generic arity only once there's a real failure mode to report, and then don't route every failure through a single `Failure` - pick the arity that an operation can actually produce:
 
 ```csharp
 // ✅ Specific - only NotFound and Failure are possible

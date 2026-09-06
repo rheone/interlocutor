@@ -151,8 +151,17 @@ public readonly partial union Outcome<T1, T2, T3, T4, T5, T6>(T1, T2, T3, T4, T5
 
 // Declared last in this file, rather than first alongside the other arities in reading order: every arity
 // above is a `union` declaration, a single syntax kind StyleCop's element-ordering rule (SA1201) does not
-// recognize and so never flags against itself; the one `record struct` below is a different, recognized
-// kind, and placing it ahead of that uniform run trips the rule where placing it after does not.
+// recognize and so never flags against itself; the two `record struct` types below are a different,
+// recognized kind, and placing them ahead of that uniform run trips the rule where placing them after does
+// not.
+//
+// SA1402 ("file may only contain a single type") also fires once a second recognized-kind type joins this
+// file - `union` declarations above are the same "unrecognized kind" exemption noted above, but a `struct`
+// is a kind StyleCop's `topLevelTypes` setting does track, and two of them (arity 0 and arity 1, distinct
+// generic arity) are exactly two. Suppressed rather than split into separate files: these two hand-written
+// arities complete the same `Outcome` family the generator-emitted arities above already share this file
+// with, for the same reason - one place a reader goes to see every arity side by side.
+#pragma warning disable SA1402
 
 /// <summary>
 /// Represents a fire-and-forget acknowledgment that an operation ran to completion - no case types, no
@@ -192,3 +201,58 @@ public readonly record struct Outcome : IUnion
     /// <returns>The literal string <c>"Outcome"</c>.</returns>
     public override string ToString() => nameof(Outcome);
 }
+
+/// <summary>
+/// Represents a single, always-succeeding payload wrapper for an operation that is genuinely infallible but
+/// still produces exactly one value.
+/// </summary>
+/// <typeparam name="T">The type of the value this outcome always carries.</typeparam>
+/// <param name="Value">The value this outcome carries.</param>
+/// <remarks>
+/// <para>
+/// Unlike every generic <c>Outcome&lt;T1, ...&gt;</c> arity above, <see cref="Outcome{T}"/> is a small,
+/// hand-written type - not a compiler-generated <c>union</c> and not routed through
+/// <see cref="GenerateOutcomeMembersAttribute"/>/<c>OutcomeMemberGenerator</c>, since there is only one case:
+/// nothing to discriminate. It implements <see cref="IUnion"/> directly - never <see cref="IOutcome"/>, unlike
+/// the rest of this shipped family - purely to satisfy the response constraint every handler contract and
+/// pipeline behavior applies to <c>TResponse</c>, and hand-declares the same <c>Match</c>/<c>Switch</c>/
+/// <c>TryGetValue</c>/<c>ToString</c>/equality member shape every other arity carries, so a caller never has to
+/// special-case it.
+/// </para>
+/// <para>
+/// Reserve <see cref="Outcome{T}"/> for an operation that always succeeds but still needs to carry exactly one
+/// value. An operation with a real failure mode should declare an explicit <c>Outcome&lt;T, Failure&gt;</c> (or
+/// whichever richer arity matches its real failure modes) instead of reaching for this type.
+/// </para>
+/// </remarks>
+public readonly record struct Outcome<T>(T Value) : IUnion
+{
+    /// <summary>Gets <see cref="Value"/> boxed as an <see cref="object"/>, to satisfy <see cref="IUnion"/>.</summary>
+    /// <value>The boxed <see cref="Value"/>.</value>
+    object? IUnion.Value => this.Value;
+
+    /// <summary>Projects this outcome's value through <paramref name="onValue"/>.</summary>
+    /// <typeparam name="TResult">The type <paramref name="onValue"/> projects <see cref="Value"/> to.</typeparam>
+    /// <param name="onValue">Invoked with <see cref="Value"/>.</param>
+    /// <returns>The result of invoking <paramref name="onValue"/> with <see cref="Value"/>.</returns>
+    public TResult Match<TResult>(Func<T, TResult> onValue) => onValue(this.Value);
+
+    /// <summary>Invokes <paramref name="onValue"/> with this outcome's value.</summary>
+    /// <param name="onValue">Invoked with <see cref="Value"/>.</param>
+    public void Switch(Action<T> onValue) => onValue(this.Value);
+
+    /// <summary>Reads this outcome's value. Always succeeds - <see cref="Outcome{T}"/> has exactly one case.</summary>
+    /// <param name="value">Set to <see cref="Value"/>.</param>
+    /// <returns>Always <see langword="true"/>.</returns>
+    public bool TryGetValue(out T value)
+    {
+        value = this.Value;
+        return true;
+    }
+
+    /// <summary>Forwards to <see cref="Value"/>'s own <see cref="object.ToString"/> override.</summary>
+    /// <returns><c>this.Value?.ToString()</c>, or an empty string when <see cref="Value"/> is <see langword="null"/>.</returns>
+    public override string ToString() => this.Value?.ToString() ?? string.Empty;
+}
+
+#pragma warning restore SA1402

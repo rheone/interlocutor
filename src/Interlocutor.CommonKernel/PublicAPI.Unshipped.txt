@@ -3,6 +3,21 @@ Interlocutor.CommonKernel.GenerateOutcomeMembersAttribute
 Interlocutor.CommonKernel.GenerateOutcomeMembersAttribute.GenerateOutcomeMembersAttribute() -> void
 Interlocutor.CommonKernel.Outcome
 Interlocutor.CommonKernel.Outcome.Outcome() -> void
+Interlocutor.CommonKernel.Outcome<T>
+Interlocutor.CommonKernel.Outcome<T>.Deconstruct(out T Value) -> void
+Interlocutor.CommonKernel.Outcome<T>.Equals(Interlocutor.CommonKernel.Outcome<T> other) -> bool
+Interlocutor.CommonKernel.Outcome<T>.Match<TResult>(System.Func<T, TResult>! onValue) -> TResult
+Interlocutor.CommonKernel.Outcome<T>.Outcome() -> void
+Interlocutor.CommonKernel.Outcome<T>.Outcome(T Value) -> void
+Interlocutor.CommonKernel.Outcome<T>.Switch(System.Action<T>! onValue) -> void
+Interlocutor.CommonKernel.Outcome<T>.TryGetValue(out T value) -> bool
+Interlocutor.CommonKernel.Outcome<T>.Value.get -> T
+Interlocutor.CommonKernel.Outcome<T>.Value.init -> void
+override Interlocutor.CommonKernel.Outcome<T>.GetHashCode() -> int
+override Interlocutor.CommonKernel.Outcome<T>.ToString() -> string!
+static Interlocutor.CommonKernel.Outcome<T>.operator !=(Interlocutor.CommonKernel.Outcome<T> left, Interlocutor.CommonKernel.Outcome<T> right) -> bool
+static Interlocutor.CommonKernel.Outcome<T>.operator ==(Interlocutor.CommonKernel.Outcome<T> left, Interlocutor.CommonKernel.Outcome<T> right) -> bool
+~override Interlocutor.CommonKernel.Outcome<T>.Equals(object obj) -> bool
 Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>
 Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.Outcome() -> void
 Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.Outcome(T2 value) -> void

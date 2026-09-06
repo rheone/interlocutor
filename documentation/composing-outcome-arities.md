@@ -8,21 +8,24 @@ by how many outcome shapes ("arms") they carry:
 | Type | Arms | Declared as |
 |---|---|---|
 | `Outcome` | 0, case-less | `record struct Outcome : IUnion` |
+| `Outcome<T>` | 1, always-succeeding | `record struct Outcome<T>(T Value) : IUnion` |
 | `Outcome<T1, T2>` | 2, generic | `union Outcome<T1, T2>(T1, T2)` |
 | `Outcome<T1, T2, T3>` | 3, generic | `union Outcome<T1, T2, T3>(T1, T2, T3)` |
 | `Outcome<T1, T2, T3, T4>` | 4, generic | `union Outcome<T1, T2, T3, T4>(T1, T2, T3, T4)` |
 | `Outcome<T1, T2, T3, T4, T5>` | 5, generic | `union Outcome<T1, T2, T3, T4, T5>(T1, T2, T3, T4, T5)` |
 
 They coexist by arity, the same way `Action`/`Action<T>`/`Action<T1,T2>` coexist in the BCL -
-the case-less `Outcome` is not a special case of `Outcome<T1,T2>`, it's a sibling declaration with
-no cases at all, reserved for a genuinely infallible operation (see Example 1 below for the
-boundary between the two).
+the case-less `Outcome` is not a special case of `Outcome<T1,T2>`, and `Outcome<T>` is not a
+one-case union either, it's a hand-written "fake union" with nothing to discriminate. Both sit
+below the generic union family, reserved for a genuinely infallible operation - `Outcome` when
+there's no payload to report, `Outcome<T>` when there's exactly one (see Example 1 below for the
+boundary between the case-less form and the generic family).
 
 Nothing in the mediator, the pipeline, or the DI wiring is hardcoded to one arity.
 `ICommandHandler<TCommand,TResponse>`, `IQueryHandler<TQuery,TResponse>`,
 `IVoidCommandHandler<TCommand,TResult>`, and `IPipelineBehavior<TRequest,TResponse>` are all
-generic over `TResponse`/`TResult` - that type parameter can be `Outcome`, `Outcome<A,B>`,
-`Outcome<A,B,C,D,E>`, or a plain non-`Outcome` type. `IResponseOutcomeDescriber` (used by
+generic over `TResponse`/`TResult` - that type parameter can be `Outcome`, `Outcome<T>`,
+`Outcome<A,B>`, `Outcome<A,B,C,D,E>`, or a plain non-`Outcome` type. `IResponseOutcomeDescriber` (used by
 `LoggingBehavior`, `AuditingBehavior`, and `UnitOfWorkBehavior`) never inspects which arity
 produced a response either - it unwraps the union via `IUnion.Value` and pattern-matches on the
 *case type* (`NotFound`, `Forbidden`, `Conflict`, `ValidationError`, `Failure`), so those three
@@ -32,10 +35,12 @@ The three examples below build a full vertical slice - a command, a query, their
 the DI composition root - for `Outcome<T1, T2>`, `Outcome<T1, T2>` again with a different
 failure case, and `Outcome<T1, T2, T3, T4, T5>` respectively, so the differences show up in real
 code rather than in isolated type signatures. (The 3- and 4-arm forms sit between examples 2 and 3
-on the same spectrum - same mechanics, just more or fewer arms. The case-less `Outcome` has no
-worked example of its own here - there's no vertical slice to build around a type with nothing to
-project or branch on - see [Messages, Result Types & Variance § ICommand (Unit Command)](messages-and-result-types.md#icommand-unit-command)
-for its one worked example, `ClearCache`.)
+on the same spectrum - same mechanics, just more or fewer arms. Neither the case-less `Outcome`
+nor the single-payload `Outcome<T>` has a worked example of its own here - there's no vertical
+slice to build around a type with nothing to project or branch on for `Outcome`, or nothing to
+branch on (only ever one case) for `Outcome<T>` - see [Messages, Result Types & Variance § ICommand (Unit Command)](messages-and-result-types.md#icommand-unit-command)
+for `Outcome`'s one worked example, `ClearCache`, and [Messages, Result Types & Variance § Outcome Unions](messages-and-result-types.md#outcome-unions)
+for `Outcome<T>`'s member shape.)
 
 Shared plumbing referenced by every example:
 
@@ -450,7 +455,9 @@ object? arm = result.GetValue();
 | Works for resource-dependent checks (ownership, entity state) | n/a | n/a | no, at any arity - always needs `ResourceCommandHandler` or an inline check after loading, never a pre-handler behavior |
 | Best for | one payload, one well-known failure mode, no distinguishable success payload worth naming | one payload, one well-known failure mode | rich operations with several distinguishable outcomes |
 
-The case-less, non-generic `Outcome` (0 arms, no payload, no failure case at all) sits outside this
-table entirely - it isn't one more point on this spectrum, since there's nothing here for it to
-compare against. It's reserved for the narrower case where an operation is genuinely infallible;
-see `ClearCache` in [Messages, Result Types & Variance](messages-and-result-types.md#icommand-unit-command).
+The case-less, non-generic `Outcome` (0 arms, no payload, no failure case at all) and the
+single-payload `Outcome<T>` (1 arm, always succeeds) both sit outside this table entirely - neither
+is one more point on this spectrum, since there's no failure mode here for either to compare
+against. They're reserved for the narrower case where an operation is genuinely infallible: `Outcome`
+when it has no payload either (see `ClearCache` in [Messages, Result Types & Variance](messages-and-result-types.md#icommand-unit-command)),
+`Outcome<T>` when it still hands back exactly one value (see [Messages, Result Types & Variance § Outcome Unions](messages-and-result-types.md#outcome-unions)).

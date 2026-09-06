@@ -20,6 +20,19 @@ public class TestQueryHandler : IQueryHandler<TestQuery, Outcome<int, Failure>>
         Task.FromResult(new Outcome<int, Failure>(query.Value * 2));
 }
 
+/// <summary>
+/// A genuinely infallible query that still produces a value - the real end-to-end proof that
+/// <see cref="Outcome{T}"/> (arity 1: <see cref="IUnion"/>-only, not <see cref="IOutcome"/>) is legal as a
+/// handler's <c>TResponse</c> and dispatches through the full pipeline exactly like every other arity.
+/// </summary>
+public record TestSinglePayloadQuery(int Value) : IQuery<Outcome<int>>;
+
+public class TestSinglePayloadQueryHandler : IQueryHandler<TestSinglePayloadQuery, Outcome<int>>
+{
+    public Task<Outcome<int>> HandleAsync(TestSinglePayloadQuery query, CancellationToken ct) =>
+        Task.FromResult(new Outcome<int>(query.Value * 2));
+}
+
 public record GreetCommand(string PersonName) : ICommand<Outcome<string, Failure>>;
 
 public class GreetCommandHandler : ICommandHandler<GreetCommand, Outcome<string, Failure>>
@@ -405,6 +418,29 @@ public class MediatorTests
     }
 
     [Fact]
+    public async Task Send_Query_WithSinglePayloadOutcome_RunsPipelineBehaviorsAndReturnsTheValue()
+    {
+        // Arrange - Outcome<T> implements IUnion directly, never IOutcome (see its own remarks); this proves
+        // that constraint alone is enough for a genuinely infallible, single-payload response to dispatch
+        // through the full pipeline exactly like every other arity, not just compile against TResponse in
+        // isolation.
+        var invoked = false;
+        var mediator = CreateMediator<TestSinglePayloadQueryHandler>(services =>
+        {
+            services.AddSingleton<IPipelineBehavior<TestSinglePayloadQuery, Outcome<int>>>(
+                new TrackingBehavior<TestSinglePayloadQuery, Outcome<int>>(() => invoked = true)
+            );
+        });
+
+        // Act
+        var result = await mediator.SendAsync(new TestSinglePayloadQuery(21), CancellationToken.None);
+
+        // Assert
+        Assert.True(invoked);
+        Assert.Equal(42, result.Value);
+    }
+
+    [Fact]
     public async Task Send_VoidCommand_BehaviorEjectsBeforeNext_ReturnsEjectedOutcomeWithoutThrowing()
     {
         // Arrange - covers VoidCommandHandlerWrapper's composition site, distinct from the other two wrappers.
@@ -566,6 +602,10 @@ public class MediatorTests
         if (typeof(THandler) == typeof(TestQueryHandler))
         {
             services.AddSingleton<IQueryHandler<TestQuery, Outcome<int, Failure>>, TestQueryHandler>();
+        }
+        else if (typeof(THandler) == typeof(TestSinglePayloadQueryHandler))
+        {
+            services.AddSingleton<IQueryHandler<TestSinglePayloadQuery, Outcome<int>>, TestSinglePayloadQueryHandler>();
         }
         else if (typeof(THandler) == typeof(EjectingQueryHandler))
         {
