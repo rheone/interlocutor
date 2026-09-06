@@ -268,7 +268,7 @@ Interlocutor.Abstractions.Pipeline.Mapping.IOutcomeMapper<TResult>
 Interlocutor.Abstractions.Pipeline.Mapping.IOutcomeMapper<TResult>.Map<TFailure>(TFailure failure) -> TResult
 Interlocutor.Abstractions.Pipeline.Mapping.OutcomeMapperBase<TResult>
 Interlocutor.Abstractions.Pipeline.Mapping.OutcomeMapperBase<TResult>.Map<TFailure>(TFailure failure) -> TResult
-Interlocutor.Abstractions.Pipeline.Mapping.OutcomeMapperBase<TResult>.OutcomeMapperBase() -> void
+Interlocutor.Abstractions.Pipeline.Mapping.OutcomeMapperBase<TResult>.OutcomeMapperBase(Interlocutor.Abstractions.Pipeline.Mapping.ICustomFailureCaseRegistry<TResult>? customCaseRegistry = null) -> void
 abstract Interlocutor.Abstractions.Pipeline.Mapping.OutcomeMapperBase<TResult>.MapCancelled(Interlocutor.CommonKernel.ResultTypes.Cancelled cancelled) -> TResult
 abstract Interlocutor.Abstractions.Pipeline.Mapping.OutcomeMapperBase<TResult>.MapConflict(Interlocutor.CommonKernel.ResultTypes.Conflict conflict) -> TResult
 abstract Interlocutor.Abstractions.Pipeline.Mapping.OutcomeMapperBase<TResult>.MapFailure(Interlocutor.CommonKernel.ResultTypes.Failure failure) -> TResult

@@ -226,6 +226,26 @@ return result.Value switch
 
 `Interlocutor.AspNetCore.IOutcomeStatusMapper : IOutcomeMapper<OutcomeHttpMapping>` and `DefaultHttpOutcomeStatusMapper : OutcomeMapperBase<OutcomeHttpMapping>` (see [ASP.NET Core Integration § Custom HTTP Mapping](aspnetcore-integration.md#custom-http-mapping)) are themselves just one instantiation of this same shape - HTTP has no special status in `OutcomeMapperBase<TResult>` beyond being the first consumer.
 
+### Registering a custom failure type
+
+`GrpcOutcomeMapper` above still only teaches `OutcomeMapperBase<Status>` about the built-in cases; a consumer's own failure case type - one none of those override points recognizes - falls into the single `MapUnrecognized<TFailure>` catch-all by default, indistinguishable from any other unrecognized type. To give one of those types its own distinct mapping instead of extending `MapUnrecognized` with a type check, build a registry with [`CustomFailureCaseRegistryBuilder<TResult>`](glossary.md#outcome-mapping) - the same builder-then-immutable-lookup shape `OutcomeClassifierBuilder` and `OutcomeCaseRegistryBuilder` already use elsewhere - and pass it to the base constructor:
+
+```csharp
+public sealed record PaymentDeclined(string Reason);
+
+private static readonly ICustomFailureCaseRegistry<Status> CustomCases =
+    new CustomFailureCaseRegistryBuilder<Status>()
+        .RegisterType<PaymentDeclined>(declined => new Status(StatusCode.FailedPrecondition, declined.Reason))
+        .Build();
+
+public sealed class GrpcOutcomeMapper() : OutcomeMapperBase<Status>(CustomCases)
+{
+    // ... every built-in case override from the example above, unchanged
+}
+```
+
+`Mapper.Map(new PaymentDeclined("insufficient funds"))` now resolves through the registered rule instead of `MapUnrecognized` - the registry is consulted only after every built-in case (including the generic `NotFound<TId>`) has already missed, so nothing about built-in dispatch changes. Any other type the registry has no rule for still reaches `MapUnrecognized` exactly as it did before the registry existed - registering `PaymentDeclined` doesn't change how any other unrecognized type is handled. The registry is entirely optional: omit the constructor argument (or pass `null`) and `OutcomeMapperBase<TResult>` behaves exactly as it did before this constructor parameter existed.
+
 ## Full-fidelity failure cases: `IValidationFailureCase` and its siblings
 
 `Interlocutor.FluentValidation.ValidationBehavior` collapses every validator's failures down to

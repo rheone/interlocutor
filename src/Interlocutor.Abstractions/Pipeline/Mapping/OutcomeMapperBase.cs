@@ -8,7 +8,8 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// forms, dispatching each to its own protected abstract method - a concrete <typeparamref name="TResult"/>-
 /// specific mapper (e.g. <c>Interlocutor.AspNetCore.DefaultHttpOutcomeStatusMapper</c>) implements one method
 /// per case instead of writing the dispatch itself. Anything else - including a consumer's own custom
-/// failure type - falls back to <see cref="MapUnrecognized{TFailure}"/>.
+/// failure type - is looked up in the optional, constructor-supplied
+/// <see cref="ICustomFailureCaseRegistry{TResult}"/> before falling back to <see cref="MapUnrecognized{TFailure}"/>.
 /// </summary>
 /// <typeparam name="TResult">The transport- or format-specific representation a failure case maps to.</typeparam>
 /// <remarks>
@@ -18,6 +19,24 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </remarks>
 public abstract class OutcomeMapperBase<TResult> : IOutcomeMapper<TResult>
 {
+    private readonly ICustomFailureCaseRegistry<TResult>? _customCaseRegistry;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="OutcomeMapperBase{TResult}"/> class.
+    /// </summary>
+    /// <param name="customCaseRegistry">
+    /// An optional, built <see cref="ICustomFailureCaseRegistry{TResult}"/> (from
+    /// <see cref="CustomFailureCaseRegistryBuilder{TResult}"/>) consulted for a consumer-defined custom
+    /// failure case type after every built-in case - including the reflective <c>NotFound&lt;TId&gt;</c>
+    /// check - has been exhausted, and before falling into <see cref="MapUnrecognized{TFailure}"/>. Omit this
+    /// (or pass <see langword="null"/>) to preserve today's exact behavior: any type not recognized as a
+    /// built-in case reaches <see cref="MapUnrecognized{TFailure}"/> directly.
+    /// </param>
+    protected OutcomeMapperBase(ICustomFailureCaseRegistry<TResult>? customCaseRegistry = null)
+    {
+        this._customCaseRegistry = customCaseRegistry;
+    }
+
     /// <inheritdoc/>
     public TResult Map<TFailure>(TFailure failure) =>
         failure switch
@@ -154,11 +173,17 @@ public abstract class OutcomeMapperBase<TResult> : IOutcomeMapper<TResult>
     protected abstract TResult MapNotFoundGeneric(Type entityType, object? id, string? message);
 
     /// <summary>
-    /// Maps a failure case this mapper was never taught, including any consumer-defined custom failure type.
+    /// Maps a failure case neither a built-in case nor the supplied <see cref="ICustomFailureCaseRegistry{TResult}"/>
+    /// (if any) recognized.
     /// </summary>
     /// <typeparam name="TFailure">The static failure case type.</typeparam>
     /// <param name="failure">The failure value to map.</param>
     /// <returns>The mapped <typeparamref name="TResult"/>.</returns>
+    /// <remarks>
+    /// Reached only after the constructor-supplied <see cref="ICustomFailureCaseRegistry{TResult}"/> (when
+    /// one was supplied) has also missed <typeparamref name="TFailure"/> - see
+    /// <see cref="MapNotFoundGenericOrUnrecognized{TFailure}"/> for the exact ordering.
+    /// </remarks>
     protected abstract TResult MapUnrecognized<TFailure>(TFailure failure);
 
     [UnconditionalSuppressMessage(
@@ -182,6 +207,14 @@ public abstract class OutcomeMapperBase<TResult> : IOutcomeMapper<TResult>
             var id = failureType.GetProperty("Id")?.GetValue(failure);
             var message = (string?)failureType.GetProperty("Message")?.GetValue(failure);
             return this.MapNotFoundGeneric(entityType, id, message);
+        }
+
+        // Every built-in case (and NotFound<TId> above) has now been exhausted. Consult the consumer-supplied
+        // custom-case registry, if any, before falling into the subclass's MapUnrecognized catch-all - a
+        // registry hit maps TFailure distinctly instead of landing in that single generic bucket.
+        if (this._customCaseRegistry is not null && this._customCaseRegistry.TryMap(failure, out var customResult))
+        {
+            return customResult;
         }
 
         return this.MapUnrecognized(failure);

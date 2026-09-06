@@ -14,9 +14,10 @@ namespace Interlocutor.Abstractions.Pipeline.Mapping;
 /// matching, matching those registries' exact-type-key dictionaries.
 /// </para>
 /// <para>
-/// This type is a standalone lookup only - nothing in <c>OutcomeMapperBase&lt;TResult&gt;</c>'s dispatch
-/// consults it yet. A consumer builds and holds one of these today for its own direct use; wiring it into
-/// <c>OutcomeMapperBase&lt;TResult&gt;.MapUnrecognized</c> is a separate, later change.
+/// A consumer builds one of these and supplies it to <see cref="OutcomeMapperBase{TResult}"/>'s constructor;
+/// <see cref="OutcomeMapperBase{TResult}.Map{TFailure}"/> consults it after every built-in case and before
+/// falling back to <see cref="OutcomeMapperBase{TResult}.MapUnrecognized{TFailure}"/>. A registry is also usable
+/// standalone, independent of <see cref="OutcomeMapperBase{TResult}"/>, via <see cref="TryMap{TFailure}"/> directly.
 /// </para>
 /// </remarks>
 public interface ICustomFailureCaseRegistry<TResult>
