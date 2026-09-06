@@ -120,6 +120,35 @@ public class TimeoutBehaviorTests
     }
 
     [Fact]
+    public async Task Handle_WithResponseTypeThatHasNoTimeoutCase_ThrowsNamedExceptionWhenBudgetElapses()
+    {
+        // TResponse is an arbitrary IOutcome the caller chose, constructed reflectively from a
+        // Timeout case constructor when the budget actually elapses. A response shape with no such
+        // case (like Outcome<string, NotFound> here) can't express "timed out" at all, so it must
+        // fail loudly and specifically rather than silently succeeding or crashing obscurely.
+        // Arrange
+        var budget = TimeSpan.FromMilliseconds(50);
+        var behavior = new TimeoutBehavior<
+            MisshapenTimeBoundQuery,
+            Outcome<string, Interlocutor.CommonKernel.ResultTypes.NotFound>
+        >(DefaultTimeoutPolicy.Instance, DefaultOutcomeCaseRegistry.Instance);
+        var request = new MisshapenTimeBoundQuery(budget);
+        static async Task<Outcome<string, NotFound>> NextAsync()
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(500), CancellationToken.None).ConfigureAwait(false);
+            return new Outcome<string, NotFound>("too slow");
+        }
+
+        // Act
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            behavior.HandleAsync(request, NextAsync, CancellationToken.None)
+        );
+
+        // Assert
+        Assert.Contains("Timeout", ex.Message);
+    }
+
+    [Fact]
     public async Task Handle_WithCaseLessOutcomeResponse_ThrowsNamedExceptionWhenBudgetElapses()
     {
         // The case-less, non-generic Outcome (see its own remarks) is the specific incompatibility this
@@ -149,6 +178,11 @@ public class TimeoutBehaviorTests
     }
 
     public record TimeBoundQuery(TimeSpan Budget) : IQuery<Outcome<string, Timeout>>, ITimeoutRequest;
+
+    /// <summary>A request implementing <see cref="ITimeoutRequest"/> whose response has no <see cref="Timeout"/> case at all.</summary>
+    public record MisshapenTimeBoundQuery(TimeSpan Budget)
+        : IQuery<Outcome<string, Interlocutor.CommonKernel.ResultTypes.NotFound>>,
+            ITimeoutRequest;
 
     /// <summary>A request implementing <see cref="ITimeoutRequest"/> whose response is the case-less <see cref="Outcome"/>.</summary>
     public record CaseLessTimeBoundQuery(TimeSpan Budget) : IQuery<Outcome>, ITimeoutRequest;
