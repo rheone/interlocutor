@@ -4,7 +4,7 @@
 
 **Blocked by:** None - can start immediately
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `5070da0`.
 
 - [ ] `TimeoutBehaviorTests.cs` gains a fixture request implementing `IHasTimeout` whose response type declares no timeout case, mirroring the sibling fixtures already used in `AuthorizationBehaviorTests`/`CancellationBehaviorTests`/`RateLimitedBehaviorTests`
 - [ ] A test asserts `Assert.ThrowsAsync<InvalidOperationException>` when that fixture's request times out, matching the assertion style and exception-message expectations already used by the sibling behaviors' equivalent tests
