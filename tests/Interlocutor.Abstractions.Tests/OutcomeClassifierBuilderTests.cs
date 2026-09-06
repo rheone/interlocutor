@@ -184,7 +184,7 @@ public class OutcomeClassifierBuilderTests
     [Fact]
     public void GetLabel_CompilerGeneratedUnion_UnwrapsToTheActiveCaseBeforeLabeling()
     {
-        // Arrange - Outcome<TSuccess, TFailure> implements IUnion; the classifier must unwrap it to
+        // Arrange - Outcome<T1, T2> implements IUnion; the classifier must unwrap it to
         // the active case value (a Failure here) rather than labeling the union wrapper's own type.
         var classifier = OutcomeClassifierBuilder.DefaultClassifier;
         Outcome<string, Failure> response = new Failure("boom");

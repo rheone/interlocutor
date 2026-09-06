@@ -10,9 +10,9 @@ Leave `ResourceCommandHandler<TCommand, TEntity, TSuccess>` and `AuthorizationBe
 
 **Status:** ready-for-agent
 
-- [ ] All six arities of `Outcome<...>` in `Interlocutor.CommonKernel/Outcome.cs` (two-case through six-case) declare `T1..TN` generic parameters instead of `TSuccessResult`/`TCase2`.../`TFailureResult`; every XML doc comment on those declarations is updated to match - describe case 1 as a convention the shipped family follows, not a compiler-enforced meaning.
-- [ ] `ResultExtensionsEmitter`'s case-name template array emits `T1..TN` instead of `["TSuccess", "TFailure"]`/`["TSuccess", "TCase2", ...]`; the generated `Interlocutor.AspNetCore.ResultExtensions` extension members and their doc comments reflect the new names.
-- [ ] `ResourceCommandHandler` and `AuthorizationBehavior` are unchanged - confirm with `rg -n "TSuccess"` that only their two declarations (and any doc-comment prose describing them) still use that name.
-- [ ] `PublicAPI.Unshipped.txt` (`Interlocutor.CommonKernel`) updated for every renamed generic parameter.
-- [ ] `documentation/messages-and-result-types.md` and any other `documentation/` page naming `TSuccessResult`/`TCase2`... on the shipped family or on `ResultExtensions` is updated to `T1..TN`.
-- [ ] `dotnet build` and `dotnet test` pass for the whole solution; `dotnet csharpier .` produces no diff.
+- [x] All six arities of `Outcome<...>` in `Interlocutor.CommonKernel/Outcome.cs` (two-case through six-case) declare `T1..TN` generic parameters instead of `TSuccessResult`/`TCase2`.../`TFailureResult`; every XML doc comment on those declarations is updated to match - describe case 1 as a convention the shipped family follows, not a compiler-enforced meaning.
+- [x] `ResultExtensionsEmitter`'s case-name template array emits `T1..TN` instead of `["TSuccess", "TFailure"]`/`["TSuccess", "TCase2", ...]`; the generated `Interlocutor.AspNetCore.ResultExtensions` extension members and their doc comments reflect the new names.
+- [x] `ResourceCommandHandler` and `AuthorizationBehavior` are unchanged - confirm with `rg -n "TSuccess"` that only their two declarations (and any doc-comment prose describing them) still use that name.
+- [x] `PublicAPI.Unshipped.txt` (`Interlocutor.CommonKernel`) updated for every renamed generic parameter.
+- [x] `documentation/messages-and-result-types.md` and any other `documentation/` page naming `TSuccessResult`/`TCase2`... on the shipped family or on `ResultExtensions` is updated to `T1..TN`.
+- [x] `dotnet build` and `dotnet test` pass for the whole solution; `dotnet csharpier .` produces no diff.

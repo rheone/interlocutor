@@ -11,7 +11,7 @@
 
 ## Why ahead-of-time compilation doesn't work yet
 
-A response is a compiler-generated union type (`Outcome<TSuccess, ...>` and its arities), which is
+A response is a compiler-generated union type (`Outcome<T1, ...>` and its arities), which is
 always a value type. Pipeline behaviors are registered as open generics
 (`IPipelineBehavior<TRequest, TResponse>`) and closed over the concrete request/response pair by the
 container the first time a matching request is dispatched.

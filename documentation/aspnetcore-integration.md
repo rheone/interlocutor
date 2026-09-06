@@ -72,7 +72,7 @@ app.MapDelete("/api/orders/{id}", async (int id, ISender mediator, CancellationT
 
 ## Status Code Mapping
 
-Each outcome case maps to an HTTP status code via `IOutcomeStatusMapper.Map<TFailure>(failure)`, which both `ToActionResult()` and `ToMinimalApiResult()` delegate to for every failure case - the success case never reaches the mapper, since `ToActionResult`/`ToMinimalApiResult` handle it directly. The dedicated arity-specific overloads (`Outcome<TSuccess, TFailure>`, `<TSuccess, TCase2, TCase3>`, ...) resolve which case is active via an ordinary `switch` at compile time; only the base-`IOutcome` overload used for runtime-typed dispatch needs `IOutcomeCaseRegistry`'s reflective lookup:
+Each outcome case maps to an HTTP status code via `IOutcomeStatusMapper.Map<TFailure>(failure)`, which both `ToActionResult()` and `ToMinimalApiResult()` delegate to for every failure case - the success case never reaches the mapper, since `ToActionResult`/`ToMinimalApiResult` handle it directly. The dedicated arity-specific overloads (`Outcome<T1, T2>`, `<T1, T2, T3>`, ...) resolve which case is active via an ordinary `switch` at compile time; only the base-`IOutcome` overload used for runtime-typed dispatch needs `IOutcomeCaseRegistry`'s reflective lookup:
 
 ```mermaid
 flowchart TD
@@ -98,7 +98,7 @@ flowchart TD
 
 | Outcome Case | HTTP Status | Body | Details |
 |--------------|-------------|------|---------|
-| Success (payload) | 200 OK | The success payload (JSON) | For `Outcome<TSuccess, ...>`, `TSuccess` is serialized. |
+| Success (payload) | 200 OK | The success payload (JSON) | For `Outcome<T1, ...>`, `T1` is serialized. |
 | Success (unit) | 204 No Content | None | For the non-generic `Outcome`. |
 | ValidationErrors | 400 Bad Request | `ProblemDetails` | `Detail` is every message joined with `"; "` - no per-field errors dictionary, since `ValidationError` carries a message and optional code, not a field name. |
 | Any other [`IValidationFailureCase`](glossary.md#result-types) implementer with no field data | 400 Bad Request | `ProblemDetails` | Recognized via the interface, not a type-specific branch - a consumer's own validation-shaped failure case maps the same way without a mapper override. `Detail` is every `Messages` entry joined with `"; "`. |
@@ -118,9 +118,9 @@ flowchart TD
 
 ### Runtime-Typed Dispatch and Unmappable Cases
 
-The base-`IOutcome` overload (the one reached only when a caller has no concrete `Outcome<...>` type to dispatch on at compile time - a hand-rolled `IOutcome` implementation, or generic code constrained only to `IOutcome`) has no static `TSuccess`/`TFailure` to switch over, so it classifies the active case at runtime instead: the bare `Success` marker is success, a resolved case whose payload is legitimately `null` is success, and any of the failure case types/interfaces listed in the table above is a failure dispatched to the status mapper as usual.
+The base-`IOutcome` overload (the one reached only when a caller has no concrete `Outcome<...>` type to dispatch on at compile time - a hand-rolled `IOutcome` implementation, or generic code constrained only to `IOutcome`) has no static `T1`/`T2` to switch over, so it classifies the active case at runtime instead: the bare `Success` marker is success, a resolved case whose payload is legitimately `null` is success, and any of the failure case types/interfaces listed in the table above is a failure dispatched to the status mapper as usual.
 
-A case matching none of those - most commonly a hand-rolled or generically-dispatched response whose success case carries some payload type other than `Success` - throws `OutcomeCaseNotMappableException` rather than guessing. This is deliberate: an HTTP response must carry *some* status code, and a wrong guess here (misreporting a custom success payload as a failure, or vice versa) is worse than an immediate, loud failure. Fix it by calling the dedicated `Outcome<TSuccess, ...>` overload against the concrete type instead of the reflective one - it resolves success-versus-failure at compile time and cannot hit this ambiguity - or, for a hand-rolled `IOutcome`, use `Success` as the success payload the way the built-in unions do.
+A case matching none of those - most commonly a hand-rolled or generically-dispatched response whose success case carries some payload type other than `Success` - throws `OutcomeCaseNotMappableException` rather than guessing. This is deliberate: an HTTP response must carry *some* status code, and a wrong guess here (misreporting a custom success payload as a failure, or vice versa) is worse than an immediate, loud failure. Fix it by calling the dedicated `Outcome<T1, ...>` overload against the concrete type instead of the reflective one - it resolves success-versus-failure at compile time and cannot hit this ambiguity - or, for a hand-rolled `IOutcome`, use `Success` as the success payload the way the built-in unions do.
 
 ## Custom HTTP Mapping
 

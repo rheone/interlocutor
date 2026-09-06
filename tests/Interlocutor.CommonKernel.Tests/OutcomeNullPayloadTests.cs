@@ -93,7 +93,7 @@ public class OutcomeNullPayloadTests
     public void ImplicitConversion_FromNullableValueTypeFailureWithNoValue_IsFailure()
     {
         // Arrange & Act - Nullable<T> with HasValue == false boxes to a null Value, same ambiguity as a
-        // nullable reference type. TSuccessResult (NotFound) never accepts null, so the null payload
+        // nullable reference type. T1 (NotFound) never accepts null, so the null payload
         // unambiguously belongs to the failure case.
         Outcome<NotFound, int?> result = (int?)null;
 

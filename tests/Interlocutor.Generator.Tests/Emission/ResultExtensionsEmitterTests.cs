@@ -13,7 +13,7 @@ using Microsoft.CodeAnalysis.CSharp;
 /// <summary>
 /// Table-driven emission tests for <c>Interlocutor.Generator.Emission.ResultExtensionsEmitter</c> - the
 /// generator behind <see cref="Interlocutor.AspNetCore.ResultExtensions"/>'s per-arity <c>ToActionResult</c>/<c>ToMinimalApiResult</c>
-/// overloads (the non-generic void-success <c>Outcome</c> overload, plus every <c>Outcome&lt;TSuccess, ...&gt;</c>
+/// overloads (the non-generic void-success <c>Outcome</c> overload, plus every <c>Outcome&lt;T1, ...&gt;</c>
 /// arity from 2 through 6). Mirrors <see cref="OutcomeMemberGeneratorTests"/>'s two-pronged approach: assert on
 /// the emitted source text's shape, then compile and run it to prove the emitted overloads actually dispatch to
 /// the right case.
@@ -36,7 +36,7 @@ using Microsoft.CodeAnalysis.CSharp;
 /// alongside a small hand-written scaffold (a second partial declaration supplying the <c>DefaultMapper</c>
 /// field the hand-written half of the real <see cref="Interlocutor.AspNetCore.ResultExtensions"/> normally provides, plus probe
 /// factory methods) - proving the emitted overloads are not just textually plausible but real, type-checked C#
-/// that dispatches correctly against the real <see cref="Interlocutor.CommonKernel.Outcome{TSuccessResult,TFailureResult}"/>
+/// that dispatches correctly against the real <see cref="Interlocutor.CommonKernel.Outcome{T1,T2}"/>
 /// family and <see cref="DefaultHttpOutcomeStatusMapper"/>.
 /// </para>
 /// </remarks>
@@ -155,22 +155,13 @@ public sealed class ResultExtensionsEmitterTests
     // --- Source shape: one extension<...> declaration per arity, table-driven over arities 2-6 ---
 
     [Theory]
-    [InlineData(2, "extension<TSuccess, TFailure>(global::Interlocutor.CommonKernel.Outcome<TSuccess, TFailure> result)")]
-    [InlineData(
-        3,
-        "extension<TSuccess, TCase2, TCase3>(global::Interlocutor.CommonKernel.Outcome<TSuccess, TCase2, TCase3> result)"
-    )]
-    [InlineData(
-        4,
-        "extension<TSuccess, TCase2, TCase3, TCase4>(global::Interlocutor.CommonKernel.Outcome<TSuccess, TCase2, TCase3, TCase4> result)"
-    )]
-    [InlineData(
-        5,
-        "extension<TSuccess, TCase2, TCase3, TCase4, TCase5>(global::Interlocutor.CommonKernel.Outcome<TSuccess, TCase2, TCase3, TCase4, TCase5> result)"
-    )]
+    [InlineData(2, "extension<T1, T2>(global::Interlocutor.CommonKernel.Outcome<T1, T2> result)")]
+    [InlineData(3, "extension<T1, T2, T3>(global::Interlocutor.CommonKernel.Outcome<T1, T2, T3> result)")]
+    [InlineData(4, "extension<T1, T2, T3, T4>(global::Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4> result)")]
+    [InlineData(5, "extension<T1, T2, T3, T4, T5>(global::Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5> result)")]
     [InlineData(
         6,
-        "extension<TSuccess, TCase2, TCase3, TCase4, TCase5, TCase6>(global::Interlocutor.CommonKernel.Outcome<TSuccess, TCase2, TCase3, TCase4, TCase5, TCase6> result)"
+        "extension<T1, T2, T3, T4, T5, T6>(global::Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6> result)"
     )]
     public void Emit_EachArity_EmitsExpectedExtensionDeclaration_Test(int arity, string expectedDeclaration)
     {

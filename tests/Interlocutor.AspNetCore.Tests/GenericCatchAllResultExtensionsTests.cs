@@ -45,8 +45,8 @@ public class GenericCatchAllResultExtensionsTests
         // Act
         var method = ((MethodCallExpression)expression.Body).Method;
 
-        // Assert - the dedicated arity-2 overload is `ToActionResult<TSuccess, TFailure>(this
-        // Outcome<TSuccess, TFailure>, IOutcomeStatusMapper? mapper = null)` - two type arguments,
+        // Assert - the dedicated arity-2 overload is `ToActionResult<T1, T2>(this
+        // Outcome<T1, T2>, IOutcomeStatusMapper? mapper = null)` - two type arguments,
         // two parameters (result, mapper). The catch-all is `ToActionResult<TResponse>(this TResponse,
         // IOutcomeStatusMapper?, IOutcomeCaseRegistry?)` - one type argument, three parameters. The two
         // overloads are distinguishable by shape alone.
@@ -80,7 +80,7 @@ public class GenericCatchAllResultExtensionsTests
         // Act
         var method = ((MethodCallExpression)expression.Body).Method;
 
-        // Assert - six type arguments (TSuccess + five case types) is only possible on the dedicated arity-6
+        // Assert - six type arguments (T1 + five case types) is only possible on the dedicated arity-6
         // overload - the catch-all always has exactly one type argument (TResponse).
         Assert.Equal(6, method.GetGenericArguments().Length);
         Assert.Equal(2, method.GetParameters().Length);
@@ -209,7 +209,7 @@ public class GenericCatchAllResultExtensionsTests
     public void ToActionResult_CatchAll_HandRolledOutcome_WithUnrecognizedSuccessPayload_ThrowsOutcomeCaseNotMappableException()
     {
         // Arrange - CustomOutcome's own success case carries an arbitrary payload type (a plain string)
-        // rather than the bare Success marker. This overload has no compile-time TSuccess to fall back on
+        // rather than the bare Success marker. This overload has no compile-time T1 to fall back on
         // (unlike the dedicated arity overloads), and a plain string is not one of the built-in failure case
         // types/interfaces DefaultHttpOutcomeStatusMapper recognizes either, so it cannot be classified as
         // either success or failure without guessing.

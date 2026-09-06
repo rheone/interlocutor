@@ -158,7 +158,7 @@ public class RuntimeTypedDispatchTests
         var outcome = await sender.SendAsync(request, CancellationToken.None);
 
         // Assert - The caller here only has IOutcome - no generic arguments, no knowledge of the
-        // concrete Outcome<TSuccess, TFailure> shape. IUnion.Value is the union's case value, and
+        // concrete Outcome<T1, T2> shape. IUnion.Value is the union's case value, and
         // case types (Failure, Success, plain data) can still be pattern-matched from it.
         var isFailure = outcome switch
         {

@@ -159,7 +159,7 @@ if (outcome.TryGetValue(out CardDeclined declined))
 
 // TryGet{TypeName} - a named counterpart to TryGetValue, additive rather than a replacement, for every
 // concrete case type (skipped for a case type that is one of the union's own type parameters, since a type
-// parameter's name carries no case-specific meaning - the shipped Outcome<TSuccessResult, ...> family has no
+// parameter's name carries no case-specific meaning - the shipped Outcome<T1, ...> family has no
 // named accessors for exactly that reason). Same behavior as TryGetValue above, just self-documenting by name.
 if (outcome.TryGetCardDeclined(out CardDeclined sameByName))
 {
@@ -215,7 +215,7 @@ public sealed class GrpcOutcomeMapper : OutcomeMapperBase<Status>
 }
 ```
 
-Like `IOutcomeStatusMapper`, there's no DI registration to configure - construct an instance and call `Map` directly, the same way `ResultExtensions.ToActionResult` does internally, by pattern-matching `Outcome<TSuccess, TFailure>.Value`:
+Like `IOutcomeStatusMapper`, there's no DI registration to configure - construct an instance and call `Map` directly, the same way `ResultExtensions.ToActionResult` does internally, by pattern-matching `Outcome<T1, T2>.Value`:
 
 ```csharp
 private static readonly GrpcOutcomeMapper Mapper = new();

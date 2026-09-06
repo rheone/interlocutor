@@ -4,7 +4,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
 /// Covers the six-case generic
-/// <see cref="Outcome{TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6}"/> union: construction from
+/// <see cref="Outcome{T1, T2, T3, T4, T5, T6}"/> union: construction from
 /// each case type, implicit conversion from a bare case value, exhaustive switch pattern matching, and the
 /// generated <c>Match</c>/<c>Switch</c>/<c>TryGetValue</c>/<c>ToString</c> member set.
 /// </summary>

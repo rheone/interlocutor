@@ -18,7 +18,7 @@ using Microsoft.AspNetCore.Mvc;
 /// <remarks>
 /// <para>
 /// The dedicated, per-case-arity <c>ToActionResult</c>/<c>ToMinimalApiResult</c> overloads (the non-generic
-/// <c>Outcome</c> and every <c>Outcome&lt;TSuccess, ...&gt;</c> arity) are source-generated into a second
+/// <c>Outcome</c> and every <c>Outcome&lt;T1, ...&gt;</c> arity) are source-generated into a second
 /// partial declaration by <c>Interlocutor.Generator</c>'s <c>ResultExtensionsGenerator</c>, marked via
 /// <see cref="GenerateResultExtensionsAttribute"/> above - see that attribute's remarks. This file keeps only
 /// the reflective catch-all overload (for a hand-rolled <see cref="IOutcome"/> implementation) and the
@@ -57,7 +57,7 @@ public static partial class ResultExtensions
         /// </para>
         /// <para>
         /// The dedicated overloads distinguish success from failure at compile time, via a <c>switch</c> against
-        /// the statically known <c>TSuccess</c>/<c>TCaseN</c> type parameters. This overload has no such static
+        /// the statically known <c>T1..TN</c> type parameters. This overload has no such static
         /// information, so it classifies the extracted case against a small set of recognized shapes instead:
         /// the bare <see cref="Success"/> marker (success), a resolved case whose payload is legitimately
         /// <see langword="null"/> (success - see <see cref="ExtractCase{TResponse}"/>'s remarks), or one of the
@@ -70,7 +70,7 @@ public static partial class ResultExtensions
         /// </para>
         /// <para>
         /// C# overload resolution always prefers a dedicated overload over this one for the six built-in union
-        /// arities: a constructed generic formal parameter (e.g. <c>Outcome&lt;TSuccess, TFailure&gt;</c>)
+        /// arities: a constructed generic formal parameter (e.g. <c>Outcome&lt;T1, T2&gt;</c>)
         /// is more specific than this overload's bare type-parameter formal parameter (<typeparamref name="TResponse"/>),
         /// so callers get the faster, compile-time-checked path automatically and only pay for reflection when
         /// this overload is genuinely the only option.

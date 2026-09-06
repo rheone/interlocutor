@@ -5,7 +5,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// <summary>
 /// A seven-case union - one success case plus six independent failure cases - for a payment gateway
 /// integration whose distinct decline/error reasons a caller genuinely needs to branch on individually. This is
-/// the kind of outlier the shipped 2-6 case <see cref="Outcome{TSuccessResult, TFailureResult}"/> family
+/// the kind of outlier the shipped 2-6 case <see cref="Outcome{T1, T2}"/> family
 /// deliberately doesn't try to cover - see <c>documentation/extensibility.md</c>'s custom-arity worked example,
 /// drawn from this file, and <c>documentation/messages-and-result-types.md</c>'s <c>## Choosing Arities</c>
 /// guidance on why the shipped family stops at six.

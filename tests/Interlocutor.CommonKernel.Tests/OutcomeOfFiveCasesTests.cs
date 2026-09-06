@@ -3,7 +3,7 @@ namespace Interlocutor.CommonKernel.Tests;
 using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
-/// Covers the five-case generic <see cref="Outcome{TSuccessResult, TCase2, TCase3, TCase4, TCase5}"/>
+/// Covers the five-case generic <see cref="Outcome{T1, T2, T3, T4, T5}"/>
 /// union: construction from each case type, implicit conversion from a bare case value, exhaustive switch
 /// pattern matching, and the generated <c>Match</c>/<c>Switch</c>/<c>TryGetValue</c>/<c>ToString</c> member set.
 /// </summary>

@@ -8,13 +8,13 @@ by how many outcome shapes ("arms") they carry:
 | Type | Arms | Declared as |
 |---|---|---|
 | `Outcome` | 2, fixed | `union Outcome(Success, Failure)` |
-| `Outcome<TSuccessResult, TFailureResult>` | 2, generic | `union Outcome<TSuccessResult, TFailureResult>(TSuccessResult, TFailureResult)` |
-| `Outcome<TSuccessResult, TCase2, TCase3>` | 3, generic | `union Outcome<TSuccessResult, TCase2, TCase3>(TSuccessResult, TCase2, TCase3)` |
-| `Outcome<TSuccessResult, TCase2, TCase3, TCase4>` | 4, generic | `union Outcome<TSuccessResult, TCase2, TCase3, TCase4>(TSuccessResult, TCase2, TCase3, TCase4)` |
-| `Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>` | 5, generic | `union Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>(TSuccessResult, TCase2, TCase3, TCase4, TCase5)` |
+| `Outcome<T1, T2>` | 2, generic | `union Outcome<T1, T2>(T1, T2)` |
+| `Outcome<T1, T2, T3>` | 3, generic | `union Outcome<T1, T2, T3>(T1, T2, T3)` |
+| `Outcome<T1, T2, T3, T4>` | 4, generic | `union Outcome<T1, T2, T3, T4>(T1, T2, T3, T4)` |
+| `Outcome<T1, T2, T3, T4, T5>` | 5, generic | `union Outcome<T1, T2, T3, T4, T5>(T1, T2, T3, T4, T5)` |
 
-They coexist by arity, the same way `Action`/`Action<T>`/`Action<T1,TCase2>` coexist in the BCL -
-`Outcome` is not a special case of `Outcome<T1,TCase2>`, it's a sibling declaration with its own fixed
+They coexist by arity, the same way `Action`/`Action<T>`/`Action<T1,T2>` coexist in the BCL -
+`Outcome` is not a special case of `Outcome<T1,T2>`, it's a sibling declaration with its own fixed
 two cases (`Success`/`Failure`).
 
 Nothing in the mediator, the pipeline, or the DI wiring is hardcoded to one arity.
@@ -28,8 +28,8 @@ produced a response either - it unwraps the union via `IUnion.Value` and pattern
 behaviors work identically no matter which arity you choose.
 
 The three examples below build a full vertical slice - a command, a query, their handlers, and
-the DI composition root - for `Outcome`, `Outcome<TSuccessResult, TFailureResult>`, and
-`Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>` respectively, so the differences show up in real code
+the DI composition root - for `Outcome`, `Outcome<T1, T2>`, and
+`Outcome<T1, T2, T3, T4, T5>` respectively, so the differences show up in real code
 rather than in isolated type signatures. (The 3- and 4-arm forms sit between examples 2 and 3 on
 the same spectrum - same mechanics, just more or fewer arms.)
 
@@ -165,10 +165,10 @@ directly on the query itself.
 
 ---
 
-## Example 2 - `Outcome<TSuccessResult, TFailureResult>`: "Approve Time-Off Request"
+## Example 2 - `Outcome<T1, T2>`: "Approve Time-Off Request"
 
 Use the 2-arm generic form when there **is** a success payload, but only **one** distinguishable
-failure shape. Picking a well-known `ResultTypes` case as `TFailureResult` - here, `Forbidden` -
+failure shape. Picking a well-known `ResultTypes` case as `T2` - here, `Forbidden` -
 lets `AuthorizationBehavior<TRequest, TResponse>` short-circuit the pipeline generically, before
 the handler ever runs, for a request implementing `IRequiresPolicy`.
 
@@ -200,10 +200,10 @@ public sealed class ApproveTimeOffRequestCommandHandler(AppDbContext db)
         // Forbidden before this method is ever called if the policy fails) - so the only step
         // left here is the operation itself.
         //
-        // Note what this shape *can't* express: there's no NotFound arm. A 2-arm Outcome<TSuccess,
-        // TFailure> assumes the entity exists by the time the handler runs. If "the request might
+        // Note what this shape *can't* express: there's no NotFound arm. A 2-arm Outcome<T1,
+        // T2> assumes the entity exists by the time the handler runs. If "the request might
         // not exist" is a real case you need to report distinctly from "forbidden", reach for
-        // Outcome<TSuccess, NotFound, Forbidden> (3 arms) instead - see Example 3 for the pattern.
+        // Outcome<T1, NotFound, Forbidden> (3 arms) instead - see Example 3 for the pattern.
         var request = await db.TimeOffRequests.FirstAsync(r => r.Id == command.RequestId, ct);
         request.Status = "Approved";
 
@@ -268,7 +268,7 @@ on the command itself, so it's inferred.
 
 ---
 
-## Example 3 - `Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>`: "Submit Payment"
+## Example 3 - `Outcome<T1, T2, T3, T4, T5>`: "Submit Payment"
 
 Use the widest generic form for operations with several genuinely distinct outcomes that callers
 need to handle differently. The ownership check below can't move into `AuthorizationBehavior`
@@ -400,7 +400,7 @@ services.AddScoped<
 
 // Nothing new needed here - LoggingBehavior, AuditingBehavior, and AppDbUnitOfWorkBehavior are
 // already registered open-generic from Example 1 and apply to this 5-arm shape exactly as they
-// do to Outcome and Outcome<TSuccess,TFailure>, with zero changes.
+// do to Outcome and Outcome<T1,T2>, with zero changes.
 ```
 
 **Call site:**
@@ -418,7 +418,7 @@ var response = result.Value switch
     _ => throw new UnreachableException(),
 };
 
-// Outcome<T1..TCase5>.GetValue() is also available for callers that just need an untyped peek
+// Outcome<T1..T5>.GetValue() is also available for callers that just need an untyped peek
 // at whichever arm is present, without an exhaustive switch - e.g. generic logging:
 object? arm = result.GetValue();
 ```
@@ -427,13 +427,13 @@ object? arm = result.GetValue();
 
 ## Summary
 
-| | `Outcome` | `Outcome<TSuccessResult, TFailureResult>` | `Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>` |
+| | `Outcome` | `Outcome<T1, T2>` | `Outcome<T1, T2, T3, T4, T5>` |
 |---|---|---|---|
-| Success payload | none | `TSuccessResult` | `TSuccessResult` |
-| Distinguishable failure shapes | 1 (`Failure`, fixed) | 1 (`TFailureResult`, your choice) | up to 4 (`TCase2`..`TCase5`, your choice) |
-| Failure detail available | `Failure.Reason` / `Failure.ErrorCode` | whatever `TFailureResult` carries | whatever each of `TCase2..TCase5` carries |
+| Success payload | none | `T1` | `T1` |
+| Distinguishable failure shapes | 1 (`Failure`, fixed) | 1 (`T2`, your choice) | up to 4 (`T2`..`T5`, your choice) |
+| Failure detail available | `Failure.Reason` / `Failure.ErrorCode` | whatever `T2` carries | whatever each of `T2..T5` carries |
 | Dispatch path | `ICommand` + `IVoidCommandHandler<,>`, or `IQuery<Outcome>` | `ICommand<TResponse>` / `IQuery<TResponse>` with `TResponse = Outcome<...>` | same, just a wider `TResponse` |
 | Works with Logging / Auditing / Transaction behaviors | yes, unmodified | yes, unmodified | yes, unmodified |
-| Works with `AuthorizationBehavior<TRequest, TResponse>` for non-resource (`IRequiresPolicy`) checks | no - `Outcome` has no `Forbidden` case to construct | yes, when `TFailureResult = Forbidden` | yes, if one of `TCase2..TCase5` is `Forbidden` - arity never limits it, only whether a `Forbidden` case exists |
+| Works with `AuthorizationBehavior<TRequest, TResponse>` for non-resource (`IRequiresPolicy`) checks | no - `Outcome` has no `Forbidden` case to construct | yes, when `T2 = Forbidden` | yes, if one of `T2..T5` is `Forbidden` - arity never limits it, only whether a `Forbidden` case exists |
 | Works for resource-dependent checks (ownership, entity state) | n/a | n/a | no, at any arity - always needs `ResourceCommandHandler` or an inline check after loading, never a pre-handler behavior |
 | Best for | outcome-only operations, no payload | one payload, one well-known failure mode | rich operations with several distinguishable outcomes |

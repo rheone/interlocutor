@@ -4,7 +4,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
 /// Covers the generated value equality (<c>Equals</c>, <c>GetHashCode</c>, <c>IEquatable&lt;TSelf&gt;</c>,
-/// <c>==</c>/<c>!=</c>) every shipped <see cref="Outcome"/>/<see cref="Outcome{TSuccessResult, TFailureResult}"/>
+/// <c>==</c>/<c>!=</c>) every shipped <see cref="Outcome"/>/<see cref="Outcome{T1, T2}"/>
 /// arity carries: delegation to the boxed case value's own equality, union-type identity (no cross-arity or
 /// cross-case-type false positives), and composition with the order-independent aggregate equality
 /// <see cref="ResultTypes.Failures"/> and its siblings already carry.

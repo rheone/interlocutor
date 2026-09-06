@@ -295,11 +295,11 @@ Results are C# 15 discriminated unions:
 public readonly union Outcome(Success, Failure);
 
 // Generic union: success + specific failure cases
-public readonly union Outcome<TSuccess, TFailure>(TSuccess, TFailure);
+public readonly union Outcome<T1, T2>(T1, T2);
 
 // Wider arities (2 to 6 cases)
-public readonly union Outcome<TSuccess, TCase2, TCase3>(
-    TSuccess, TCase2, TCase3);
+public readonly union Outcome<T1, T2, T3>(
+    T1, T2, T3);
 ```
 
 Every shipped arity - the non-generic `Outcome` and every generic form from two cases through six - carries the identical generated member set: `Match`, `Switch`, a per-case `TryGetValue`, `ToString`, and value equality (`Equals`, `GetHashCode`, `IEquatable<TSelf>`, `==`/`!=`). None of it is hand-written; each arity is declared as a `partial union` attributed with `GenerateOutcomeMembersAttribute`, and a source generator emits the second partial declaration - see [Pattern Matching](#pattern-matching) below for how to use the generated surface, [Value Equality](#value-equality) for how the generated equality members behave, and [Extensibility § Duplicate case type detection](extensibility.md#duplicate-case-type-detection-interloc009) for the companion analyzer that keeps every arity's case types distinct.
@@ -383,7 +383,7 @@ left.GetHashCode() == right.GetHashCode(); // true
 Two semantics are load-bearing here:
 
 - **Union-type identity matters.** `Equals(object?)` checks `obj is TSelf` before delegating, so two different case types boxed into the same union never compare equal by coincidence, and a value boxed into one union arity never equals the "same" value boxed into a different arity - `Outcome<string, NotFound>` and `Outcome<string, NotFound, Forbidden>` are different runtime types even when both hold the success string `"hello"`.
-- **Item order never matters for a collection-bearing case.** `Failures`, `Conflicts`, `ValidationErrors`, and their `<TErrorCode>`/FluentValidation counterparts already compare equal for the same distinct items regardless of the order those items were collected in - a result assembled from concurrent/async work that completes in a different order is still the same result. Because the union's own equality just delegates to `Value.Equals(other.Value)`, this order-independence carries straight through an `Outcome<TSuccess, Failures>` (or any arity pairing one of these aggregate types) with no extra work:
+- **Item order never matters for a collection-bearing case.** `Failures`, `Conflicts`, `ValidationErrors`, and their `<TErrorCode>`/FluentValidation counterparts already compare equal for the same distinct items regardless of the order those items were collected in - a result assembled from concurrent/async work that completes in a different order is still the same result. Because the union's own equality just delegates to `Value.Equals(other.Value)`, this order-independence carries straight through an `Outcome<T1, Failures>` (or any arity pairing one of these aggregate types) with no extra work:
 
 ```csharp
 var failureA = new Failure("a");

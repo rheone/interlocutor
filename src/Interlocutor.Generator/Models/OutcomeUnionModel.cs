@@ -47,7 +47,7 @@ using Microsoft.CodeAnalysis;
 /// union's own declared type parameters. <see cref="OutcomeMemberEmitter"/> emits a named
 /// <c>TryGet{Name}(out {Type} value)</c> accessor, additive alongside the anonymous <c>TryGetValue</c>
 /// overload, for every non-null entry - a type parameter's name carries no case-specific meaning (every case
-/// type at the shipped <c>Outcome&lt;TSuccessResult, TCase2, ...&gt;</c> family's declaration site *is* a type
+/// type at the shipped <c>Outcome&lt;T1, T2, ...&gt;</c> family's declaration site *is* a type
 /// parameter), so those stay reachable only through the anonymous, type-inferred overload.
 /// </param>
 [DebuggerDisplay("{DisplayName}")]

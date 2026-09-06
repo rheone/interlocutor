@@ -10,7 +10,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// <typeparam name="TResult">
 /// The <see cref="IOutcome"/>-shaped union describing the outcome. Chosen by the handler/call site
 /// - may be any public union type in <c>Interlocutor.CommonKernel</c> (<see cref="Outcome"/>,
-/// <see cref="Outcome{TSuccessResult, TFailureResult}"/>, etc.).
+/// <see cref="Outcome{T1, T2}"/>, etc.).
 /// </typeparam>
 /// <remarks>
 /// <para>

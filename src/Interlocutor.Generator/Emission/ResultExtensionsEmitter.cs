@@ -8,7 +8,7 @@ using Interlocutor.Generator.Models;
 /// <summary>
 /// Emits the second partial declaration <see cref="ResultExtensionsGenerator"/> adds for the attributed
 /// <see cref="ResultExtensionsTargetModel"/>: the <c>ToActionResult</c>/<c>ToMinimalApiResult</c> extension
-/// members for the non-generic <c>Outcome</c> and every <c>Outcome&lt;TSuccess, ...&gt;</c> case-arity from
+/// members for the non-generic <c>Outcome</c> and every <c>Outcome&lt;T1, ...&gt;</c> case-arity from
 /// <see cref="MinCaseArity"/> through <see cref="MaxCaseArity"/> - the boilerplate that used to be six
 /// hand-written <c>extension</c> blocks. The reflective catch-all overload (constrained to <c>IOutcome</c>
 /// alone, for a hand-rolled response type) and the private <c>OutcomeHttpMapping</c> rendering helpers stay
@@ -20,7 +20,7 @@ using Interlocutor.Generator.Models;
 /// </remarks>
 internal static class ResultExtensionsEmitter
 {
-    /// <summary>The lowest case arity emitted - a two-case <c>Outcome&lt;TSuccess, TFailure&gt;</c>.</summary>
+    /// <summary>The lowest case arity emitted - a two-case <c>Outcome&lt;T1, T2&gt;</c>.</summary>
     private const int MinCaseArity = 2;
 
     /// <summary>The highest case arity emitted, matching the shipped <c>Outcome</c> union family's own ceiling.</summary>
@@ -93,7 +93,7 @@ internal static class ResultExtensionsEmitter
     }
 
     /// <summary>
-    /// Emits the <c>extension&lt;TSuccess, ...&gt;(Outcome&lt;TSuccess, ...&gt; result)</c> block for one
+    /// Emits the <c>extension&lt;T1, ...&gt;(Outcome&lt;T1, ...&gt; result)</c> block for one
     /// case-arity.
     /// </summary>
     /// <param name="builder">The source being built.</param>
@@ -165,11 +165,10 @@ internal static class ResultExtensionsEmitter
     }
 
     /// <summary>
-    /// The type parameter names for one arity, matching today's hand-written names exactly (public API text,
-    /// not just shape): <c>TSuccess, TFailure</c> for arity 2, <c>TSuccess, TCase2, TCase3, ...</c> above that.
+    /// The type parameter names for one arity, matching the shipped <c>Outcome&lt;T1, ..., TN&gt;</c> family's
+    /// own fully symmetric naming: <c>T1, T2, ..., TN</c> - no case position implies a privileged role.
     /// </summary>
-    private static string[] CaseTypeParameterNames(int arity) =>
-        arity == 2 ? ["TSuccess", "TFailure"] : ["TSuccess", .. Enumerable.Range(2, arity - 1).Select(static i => $"TCase{i}")];
+    private static string[] CaseTypeParameterNames(int arity) => [.. Enumerable.Range(1, arity).Select(static i => $"T{i}")];
 
     /// <summary>
     /// The <c>Match</c> lambda parameter names for one arity: <c>ok, failure</c> for arity 2, <c>ok, case2,

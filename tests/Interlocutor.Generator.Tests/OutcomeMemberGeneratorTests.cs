@@ -389,7 +389,7 @@ public sealed class OutcomeMemberGeneratorTests
     [Fact]
     public void OutcomeMemberGenerator_ShippedFamilyShape_EveryCaseIsATypeParameter_EmitsNoNamedAccessors_Test()
     {
-        // Arrange - mirrors the shipped Outcome<TSuccessResult, TCase2, ...> family: every case type at the
+        // Arrange - mirrors the shipped Outcome<T1, T2, ...> family: every case type at the
         // declaration site is the union's own type parameter, so none should get a named accessor.
         // Act
         var result = GeneratorTestHarness.RunAndUpdate(

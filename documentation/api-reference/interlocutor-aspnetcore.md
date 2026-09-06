@@ -49,18 +49,18 @@ Converts Interlocutor Outcome unions to ASP.NET Core result types. Provides both
 
 | Member | Summary |
 | --- | --- |
-| `public static IActionResult ToActionResult<TSuccess, TFailure>(Outcome<TSuccess, TFailure> result, IOutcomeStatusMapper? mapper = null)` | Converts a `Outcome` to an `IActionResult` with the appropriate HTTP status code. |
+| `public static IActionResult ToActionResult<T1, T2>(Outcome<T1, T2> result, IOutcomeStatusMapper? mapper = null)` | Converts a `Outcome` to an `IActionResult` with the appropriate HTTP status code. |
 | `public static IActionResult ToActionResult(Outcome result, IOutcomeStatusMapper? mapper = null)` | Converts a void `Outcome` to an `IActionResult` with the appropriate HTTP status code. |
-| `public static IActionResult ToActionResult<TSuccess, TCase2, TCase3>(Outcome<TSuccess, TCase2, TCase3> result, IOutcomeStatusMapper? mapper = null)` | Converts a `Outcome` to an `IActionResult` with the appropriate HTTP status code. |
-| `public static IActionResult ToActionResult<TSuccess, TCase2, TCase3, TCase4>(Outcome<TSuccess, TCase2, TCase3, TCase4> result, IOutcomeStatusMapper? mapper = null)` | Converts a `Outcome` to an `IActionResult` with the appropriate HTTP status code. |
-| `public static IActionResult ToActionResult<TSuccess, TCase2, TCase3, TCase4, TCase5>(Outcome<TSuccess, TCase2, TCase3, TCase4, TCase5> result, IOutcomeStatusMapper? mapper = null)` | Converts a `Outcome` to an `IActionResult` with the appropriate HTTP status code. |
-| `public static IActionResult ToActionResult<TSuccess, TCase2, TCase3, TCase4, TCase5, TCase6>(Outcome<TSuccess, TCase2, TCase3, TCase4, TCase5, TCase6> result, IOutcomeStatusMapper? mapper = null)` | Converts a `Outcome` to an `IActionResult` with the appropriate HTTP status code. |
+| `public static IActionResult ToActionResult<T1, T2, T3>(Outcome<T1, T2, T3> result, IOutcomeStatusMapper? mapper = null)` | Converts a `Outcome` to an `IActionResult` with the appropriate HTTP status code. |
+| `public static IActionResult ToActionResult<T1, T2, T3, T4>(Outcome<T1, T2, T3, T4> result, IOutcomeStatusMapper? mapper = null)` | Converts a `Outcome` to an `IActionResult` with the appropriate HTTP status code. |
+| `public static IActionResult ToActionResult<T1, T2, T3, T4, T5>(Outcome<T1, T2, T3, T4, T5> result, IOutcomeStatusMapper? mapper = null)` | Converts a `Outcome` to an `IActionResult` with the appropriate HTTP status code. |
+| `public static IActionResult ToActionResult<T1, T2, T3, T4, T5, T6>(Outcome<T1, T2, T3, T4, T5, T6> result, IOutcomeStatusMapper? mapper = null)` | Converts a `Outcome` to an `IActionResult` with the appropriate HTTP status code. |
 | `public static IActionResult ToActionResult<TResponse>(TResponse response, IOutcomeCaseRegistry? caseRegistry, IOutcomeStatusMapper? mapper = null)` | Converts an arbitrary `IOutcome` to an `IActionResult` with the appropriate HTTP status code. |
-| `public static IResult ToMinimalApiResult<TSuccess, TFailure>(Outcome<TSuccess, TFailure> result, IOutcomeStatusMapper? mapper = null)` | Converts a `Outcome` to a minimal API result with the appropriate HTTP status code. |
+| `public static IResult ToMinimalApiResult<T1, T2>(Outcome<T1, T2> result, IOutcomeStatusMapper? mapper = null)` | Converts a `Outcome` to a minimal API result with the appropriate HTTP status code. |
 | `public static IResult ToMinimalApiResult(Outcome result, IOutcomeStatusMapper? mapper = null)` | Converts a void `Outcome` to a minimal API result with the appropriate HTTP status code. |
-| `public static IResult ToMinimalApiResult<TSuccess, TCase2, TCase3>(Outcome<TSuccess, TCase2, TCase3> result, IOutcomeStatusMapper? mapper = null)` | Converts a `Outcome` to a minimal API result with the appropriate HTTP status code. |
-| `public static IResult ToMinimalApiResult<TSuccess, TCase2, TCase3, TCase4>(Outcome<TSuccess, TCase2, TCase3, TCase4> result, IOutcomeStatusMapper? mapper = null)` | Converts a `Outcome` to a minimal API result with the appropriate HTTP status code. |
-| `public static IResult ToMinimalApiResult<TSuccess, TCase2, TCase3, TCase4, TCase5>(Outcome<TSuccess, TCase2, TCase3, TCase4, TCase5> result, IOutcomeStatusMapper? mapper = null)` | Converts a `Outcome` to a minimal API result with the appropriate HTTP status code. |
-| `public static IResult ToMinimalApiResult<TSuccess, TCase2, TCase3, TCase4, TCase5, TCase6>(Outcome<TSuccess, TCase2, TCase3, TCase4, TCase5, TCase6> result, IOutcomeStatusMapper? mapper = null)` | Converts a `Outcome` to a minimal API result with the appropriate HTTP status code. |
+| `public static IResult ToMinimalApiResult<T1, T2, T3>(Outcome<T1, T2, T3> result, IOutcomeStatusMapper? mapper = null)` | Converts a `Outcome` to a minimal API result with the appropriate HTTP status code. |
+| `public static IResult ToMinimalApiResult<T1, T2, T3, T4>(Outcome<T1, T2, T3, T4> result, IOutcomeStatusMapper? mapper = null)` | Converts a `Outcome` to a minimal API result with the appropriate HTTP status code. |
+| `public static IResult ToMinimalApiResult<T1, T2, T3, T4, T5>(Outcome<T1, T2, T3, T4, T5> result, IOutcomeStatusMapper? mapper = null)` | Converts a `Outcome` to a minimal API result with the appropriate HTTP status code. |
+| `public static IResult ToMinimalApiResult<T1, T2, T3, T4, T5, T6>(Outcome<T1, T2, T3, T4, T5, T6> result, IOutcomeStatusMapper? mapper = null)` | Converts a `Outcome` to a minimal API result with the appropriate HTTP status code. |
 | `public static IResult ToMinimalApiResult<TResponse>(TResponse response, IOutcomeCaseRegistry? caseRegistry, IOutcomeStatusMapper? mapper = null)` | Converts an arbitrary `IOutcome` to a minimal API result with the appropriate HTTP status code. |
 

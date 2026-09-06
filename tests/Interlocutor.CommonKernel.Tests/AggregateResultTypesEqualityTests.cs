@@ -7,7 +7,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// <see cref="ValidationErrors"/>, <see cref="ValidationErrors{TErrorCode}"/>, and <see cref="Failures{TErrorCode}"/> -
 /// the same order-independent-equality guarantee <see cref="OutcomeEqualityTests"/> already proves for
 /// <see cref="Failures"/>, but exercised directly against these types themselves rather than only indirectly
-/// through a wrapping <see cref="Outcome{TSuccessResult, TFailureResult}"/>.
+/// through a wrapping <see cref="Outcome{T1, T2}"/>.
 /// </summary>
 public class AggregateResultTypesEqualityTests
 {

@@ -6,51 +6,51 @@ Interlocutor.CommonKernel.Outcome.Outcome() -> void
 Interlocutor.CommonKernel.Outcome.Outcome(Interlocutor.CommonKernel.ResultTypes.Failure value) -> void
 Interlocutor.CommonKernel.Outcome.Outcome(Interlocutor.CommonKernel.ResultTypes.Success value) -> void
 Interlocutor.CommonKernel.Outcome.Value.get -> object?
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>.Outcome() -> void
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>.Outcome(TCase2 value) -> void
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>.Outcome(TCase3 value) -> void
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>.Outcome(TCase4 value) -> void
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>.Outcome(TCase5 value) -> void
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>.Outcome(TCase6 value) -> void
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>.Outcome(TSuccessResult value) -> void
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>.Value.get -> object?
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>.Outcome() -> void
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>.Outcome(TCase2 value) -> void
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>.Outcome(TCase3 value) -> void
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>.Outcome(TCase4 value) -> void
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>.Outcome(TCase5 value) -> void
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>.Outcome(TSuccessResult value) -> void
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>.Value.get -> object?
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4>
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4>.Outcome() -> void
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4>.Outcome(TCase2 value) -> void
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4>.Outcome(TCase3 value) -> void
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4>.Outcome(TCase4 value) -> void
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4>.Outcome(TSuccessResult value) -> void
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4>.Value.get -> object?
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3>
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3>.Outcome() -> void
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3>.Outcome(TCase2 value) -> void
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3>.Outcome(TCase3 value) -> void
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3>.Outcome(TSuccessResult value) -> void
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3>.Value.get -> object?
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TFailureResult>
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TFailureResult>.Equals(Interlocutor.CommonKernel.Outcome<TSuccessResult, TFailureResult> other) -> bool
-override Interlocutor.CommonKernel.Outcome<TSuccessResult, TFailureResult>.Equals(object? obj) -> bool
-override Interlocutor.CommonKernel.Outcome<TSuccessResult, TFailureResult>.GetHashCode() -> int
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TFailureResult>.Match<TResult>(System.Func<TSuccessResult, TResult>! onCase1, System.Func<TFailureResult, TResult>! onCase2) -> TResult
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TFailureResult>.Outcome() -> void
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TFailureResult>.Outcome(TFailureResult value) -> void
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TFailureResult>.Outcome(TSuccessResult value) -> void
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TFailureResult>.Switch(System.Action<TSuccessResult>! onCase1, System.Action<TFailureResult>! onCase2) -> void
-override Interlocutor.CommonKernel.Outcome<TSuccessResult, TFailureResult>.ToString() -> string!
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TFailureResult>.TryGetValue(out TFailureResult value) -> bool
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TFailureResult>.TryGetValue(out TSuccessResult value) -> bool
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TFailureResult>.Value.get -> object?
-static Interlocutor.CommonKernel.Outcome<TSuccessResult, TFailureResult>.operator !=(Interlocutor.CommonKernel.Outcome<TSuccessResult, TFailureResult> left, Interlocutor.CommonKernel.Outcome<TSuccessResult, TFailureResult> right) -> bool
-static Interlocutor.CommonKernel.Outcome<TSuccessResult, TFailureResult>.operator ==(Interlocutor.CommonKernel.Outcome<TSuccessResult, TFailureResult> left, Interlocutor.CommonKernel.Outcome<TSuccessResult, TFailureResult> right) -> bool
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.Outcome() -> void
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.Outcome(T2 value) -> void
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.Outcome(T3 value) -> void
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.Outcome(T4 value) -> void
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.Outcome(T5 value) -> void
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.Outcome(T6 value) -> void
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.Outcome(T1 value) -> void
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.Value.get -> object?
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5>
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5>.Outcome() -> void
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5>.Outcome(T2 value) -> void
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5>.Outcome(T3 value) -> void
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5>.Outcome(T4 value) -> void
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5>.Outcome(T5 value) -> void
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5>.Outcome(T1 value) -> void
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5>.Value.get -> object?
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4>
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4>.Outcome() -> void
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4>.Outcome(T2 value) -> void
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4>.Outcome(T3 value) -> void
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4>.Outcome(T4 value) -> void
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4>.Outcome(T1 value) -> void
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4>.Value.get -> object?
+Interlocutor.CommonKernel.Outcome<T1, T2, T3>
+Interlocutor.CommonKernel.Outcome<T1, T2, T3>.Outcome() -> void
+Interlocutor.CommonKernel.Outcome<T1, T2, T3>.Outcome(T2 value) -> void
+Interlocutor.CommonKernel.Outcome<T1, T2, T3>.Outcome(T3 value) -> void
+Interlocutor.CommonKernel.Outcome<T1, T2, T3>.Outcome(T1 value) -> void
+Interlocutor.CommonKernel.Outcome<T1, T2, T3>.Value.get -> object?
+Interlocutor.CommonKernel.Outcome<T1, T2>
+Interlocutor.CommonKernel.Outcome<T1, T2>.Equals(Interlocutor.CommonKernel.Outcome<T1, T2> other) -> bool
+override Interlocutor.CommonKernel.Outcome<T1, T2>.Equals(object? obj) -> bool
+override Interlocutor.CommonKernel.Outcome<T1, T2>.GetHashCode() -> int
+Interlocutor.CommonKernel.Outcome<T1, T2>.Match<TResult>(System.Func<T1, TResult>! onCase1, System.Func<T2, TResult>! onCase2) -> TResult
+Interlocutor.CommonKernel.Outcome<T1, T2>.Outcome() -> void
+Interlocutor.CommonKernel.Outcome<T1, T2>.Outcome(T2 value) -> void
+Interlocutor.CommonKernel.Outcome<T1, T2>.Outcome(T1 value) -> void
+Interlocutor.CommonKernel.Outcome<T1, T2>.Switch(System.Action<T1>! onCase1, System.Action<T2>! onCase2) -> void
+override Interlocutor.CommonKernel.Outcome<T1, T2>.ToString() -> string!
+Interlocutor.CommonKernel.Outcome<T1, T2>.TryGetValue(out T2 value) -> bool
+Interlocutor.CommonKernel.Outcome<T1, T2>.TryGetValue(out T1 value) -> bool
+Interlocutor.CommonKernel.Outcome<T1, T2>.Value.get -> object?
+static Interlocutor.CommonKernel.Outcome<T1, T2>.operator !=(Interlocutor.CommonKernel.Outcome<T1, T2> left, Interlocutor.CommonKernel.Outcome<T1, T2> right) -> bool
+static Interlocutor.CommonKernel.Outcome<T1, T2>.operator ==(Interlocutor.CommonKernel.Outcome<T1, T2> left, Interlocutor.CommonKernel.Outcome<T1, T2> right) -> bool
 Interlocutor.CommonKernel.ResultTypes.Cancelled
 Interlocutor.CommonKernel.ResultTypes.Cancelled.Cancelled() -> void
 Interlocutor.CommonKernel.ResultTypes.Cancelled.Cancelled(string? Reason = null) -> void
@@ -314,68 +314,68 @@ static Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage.operator ==(
 ~override Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage.Equals(object obj) -> bool
 ~override Interlocutor.CommonKernel.ResultTypes.FieldValidationMessage.ToString() -> string
 Interlocutor.CommonKernel.Outcome.ActiveCaseType.get -> System.Type?
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TFailureResult>.ActiveCaseType.get -> System.Type?
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3>.ActiveCaseType.get -> System.Type?
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4>.ActiveCaseType.get -> System.Type?
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>.ActiveCaseType.get -> System.Type?
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>.ActiveCaseType.get -> System.Type?
+Interlocutor.CommonKernel.Outcome<T1, T2>.ActiveCaseType.get -> System.Type?
+Interlocutor.CommonKernel.Outcome<T1, T2, T3>.ActiveCaseType.get -> System.Type?
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4>.ActiveCaseType.get -> System.Type?
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5>.ActiveCaseType.get -> System.Type?
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.ActiveCaseType.get -> System.Type?
 Interlocutor.CommonKernel.Outcome.Match<TResult>(System.Func<Interlocutor.CommonKernel.ResultTypes.Success, TResult>! onCase1, System.Func<Interlocutor.CommonKernel.ResultTypes.Failure, TResult>! onCase2) -> TResult
 Interlocutor.CommonKernel.Outcome.Switch(System.Action<Interlocutor.CommonKernel.ResultTypes.Success>! onCase1, System.Action<Interlocutor.CommonKernel.ResultTypes.Failure>! onCase2) -> void
 Interlocutor.CommonKernel.Outcome.TryGetValue(out Interlocutor.CommonKernel.ResultTypes.Failure value) -> bool
 Interlocutor.CommonKernel.Outcome.TryGetValue(out Interlocutor.CommonKernel.ResultTypes.Success value) -> bool
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>.Match<TResult>(System.Func<TSuccessResult, TResult>! onCase1, System.Func<TCase2, TResult>! onCase2, System.Func<TCase3, TResult>! onCase3, System.Func<TCase4, TResult>! onCase4, System.Func<TCase5, TResult>! onCase5, System.Func<TCase6, TResult>! onCase6) -> TResult
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>.Switch(System.Action<TSuccessResult>! onCase1, System.Action<TCase2>! onCase2, System.Action<TCase3>! onCase3, System.Action<TCase4>! onCase4, System.Action<TCase5>! onCase5, System.Action<TCase6>! onCase6) -> void
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>.TryGetValue(out TCase2 value) -> bool
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>.TryGetValue(out TCase3 value) -> bool
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>.TryGetValue(out TCase4 value) -> bool
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>.TryGetValue(out TCase5 value) -> bool
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>.TryGetValue(out TCase6 value) -> bool
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>.TryGetValue(out TSuccessResult value) -> bool
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>.Match<TResult>(System.Func<TSuccessResult, TResult>! onCase1, System.Func<TCase2, TResult>! onCase2, System.Func<TCase3, TResult>! onCase3, System.Func<TCase4, TResult>! onCase4, System.Func<TCase5, TResult>! onCase5) -> TResult
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>.Switch(System.Action<TSuccessResult>! onCase1, System.Action<TCase2>! onCase2, System.Action<TCase3>! onCase3, System.Action<TCase4>! onCase4, System.Action<TCase5>! onCase5) -> void
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>.TryGetValue(out TCase2 value) -> bool
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>.TryGetValue(out TCase3 value) -> bool
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>.TryGetValue(out TCase4 value) -> bool
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>.TryGetValue(out TCase5 value) -> bool
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>.TryGetValue(out TSuccessResult value) -> bool
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4>.Match<TResult>(System.Func<TSuccessResult, TResult>! onCase1, System.Func<TCase2, TResult>! onCase2, System.Func<TCase3, TResult>! onCase3, System.Func<TCase4, TResult>! onCase4) -> TResult
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4>.Switch(System.Action<TSuccessResult>! onCase1, System.Action<TCase2>! onCase2, System.Action<TCase3>! onCase3, System.Action<TCase4>! onCase4) -> void
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4>.TryGetValue(out TCase2 value) -> bool
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4>.TryGetValue(out TCase3 value) -> bool
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4>.TryGetValue(out TCase4 value) -> bool
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4>.TryGetValue(out TSuccessResult value) -> bool
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3>.Match<TResult>(System.Func<TSuccessResult, TResult>! onCase1, System.Func<TCase2, TResult>! onCase2, System.Func<TCase3, TResult>! onCase3) -> TResult
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3>.Switch(System.Action<TSuccessResult>! onCase1, System.Action<TCase2>! onCase2, System.Action<TCase3>! onCase3) -> void
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3>.TryGetValue(out TCase2 value) -> bool
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3>.TryGetValue(out TCase3 value) -> bool
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3>.TryGetValue(out TSuccessResult value) -> bool
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.Match<TResult>(System.Func<T1, TResult>! onCase1, System.Func<T2, TResult>! onCase2, System.Func<T3, TResult>! onCase3, System.Func<T4, TResult>! onCase4, System.Func<T5, TResult>! onCase5, System.Func<T6, TResult>! onCase6) -> TResult
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.Switch(System.Action<T1>! onCase1, System.Action<T2>! onCase2, System.Action<T3>! onCase3, System.Action<T4>! onCase4, System.Action<T5>! onCase5, System.Action<T6>! onCase6) -> void
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.TryGetValue(out T2 value) -> bool
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.TryGetValue(out T3 value) -> bool
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.TryGetValue(out T4 value) -> bool
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.TryGetValue(out T5 value) -> bool
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.TryGetValue(out T6 value) -> bool
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.TryGetValue(out T1 value) -> bool
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5>.Match<TResult>(System.Func<T1, TResult>! onCase1, System.Func<T2, TResult>! onCase2, System.Func<T3, TResult>! onCase3, System.Func<T4, TResult>! onCase4, System.Func<T5, TResult>! onCase5) -> TResult
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5>.Switch(System.Action<T1>! onCase1, System.Action<T2>! onCase2, System.Action<T3>! onCase3, System.Action<T4>! onCase4, System.Action<T5>! onCase5) -> void
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5>.TryGetValue(out T2 value) -> bool
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5>.TryGetValue(out T3 value) -> bool
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5>.TryGetValue(out T4 value) -> bool
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5>.TryGetValue(out T5 value) -> bool
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5>.TryGetValue(out T1 value) -> bool
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4>.Match<TResult>(System.Func<T1, TResult>! onCase1, System.Func<T2, TResult>! onCase2, System.Func<T3, TResult>! onCase3, System.Func<T4, TResult>! onCase4) -> TResult
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4>.Switch(System.Action<T1>! onCase1, System.Action<T2>! onCase2, System.Action<T3>! onCase3, System.Action<T4>! onCase4) -> void
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4>.TryGetValue(out T2 value) -> bool
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4>.TryGetValue(out T3 value) -> bool
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4>.TryGetValue(out T4 value) -> bool
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4>.TryGetValue(out T1 value) -> bool
+Interlocutor.CommonKernel.Outcome<T1, T2, T3>.Match<TResult>(System.Func<T1, TResult>! onCase1, System.Func<T2, TResult>! onCase2, System.Func<T3, TResult>! onCase3) -> TResult
+Interlocutor.CommonKernel.Outcome<T1, T2, T3>.Switch(System.Action<T1>! onCase1, System.Action<T2>! onCase2, System.Action<T3>! onCase3) -> void
+Interlocutor.CommonKernel.Outcome<T1, T2, T3>.TryGetValue(out T2 value) -> bool
+Interlocutor.CommonKernel.Outcome<T1, T2, T3>.TryGetValue(out T3 value) -> bool
+Interlocutor.CommonKernel.Outcome<T1, T2, T3>.TryGetValue(out T1 value) -> bool
 override Interlocutor.CommonKernel.Outcome.ToString() -> string!
-override Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>.ToString() -> string!
-override Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>.ToString() -> string!
-override Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4>.ToString() -> string!
-override Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3>.ToString() -> string!
+override Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.ToString() -> string!
+override Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5>.ToString() -> string!
+override Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4>.ToString() -> string!
+override Interlocutor.CommonKernel.Outcome<T1, T2, T3>.ToString() -> string!
 Interlocutor.CommonKernel.Outcome.Equals(Interlocutor.CommonKernel.Outcome other) -> bool
 override Interlocutor.CommonKernel.Outcome.Equals(object? obj) -> bool
 override Interlocutor.CommonKernel.Outcome.GetHashCode() -> int
 static Interlocutor.CommonKernel.Outcome.operator !=(Interlocutor.CommonKernel.Outcome left, Interlocutor.CommonKernel.Outcome right) -> bool
 static Interlocutor.CommonKernel.Outcome.operator ==(Interlocutor.CommonKernel.Outcome left, Interlocutor.CommonKernel.Outcome right) -> bool
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>.Equals(Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6> other) -> bool
-override Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>.Equals(object? obj) -> bool
-override Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>.GetHashCode() -> int
-static Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>.operator !=(Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6> left, Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6> right) -> bool
-static Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>.operator ==(Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6> left, Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6> right) -> bool
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>.Equals(Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5> other) -> bool
-override Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>.Equals(object? obj) -> bool
-override Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>.GetHashCode() -> int
-static Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>.operator !=(Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5> left, Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5> right) -> bool
-static Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>.operator ==(Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5> left, Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5> right) -> bool
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4>.Equals(Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4> other) -> bool
-override Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4>.Equals(object? obj) -> bool
-override Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4>.GetHashCode() -> int
-static Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4>.operator !=(Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4> left, Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4> right) -> bool
-static Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4>.operator ==(Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4> left, Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3, TCase4> right) -> bool
-Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3>.Equals(Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3> other) -> bool
-override Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3>.Equals(object? obj) -> bool
-override Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3>.GetHashCode() -> int
-static Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3>.operator !=(Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3> left, Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3> right) -> bool
-static Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3>.operator ==(Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3> left, Interlocutor.CommonKernel.Outcome<TSuccessResult, TCase2, TCase3> right) -> bool
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.Equals(Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6> other) -> bool
+override Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.Equals(object? obj) -> bool
+override Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.GetHashCode() -> int
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.operator !=(Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6> left, Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6> right) -> bool
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.operator ==(Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6> left, Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6> right) -> bool
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5>.Equals(Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5> other) -> bool
+override Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5>.Equals(object? obj) -> bool
+override Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5>.GetHashCode() -> int
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5>.operator !=(Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5> left, Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5> right) -> bool
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5>.operator ==(Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5> left, Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5> right) -> bool
+Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4>.Equals(Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4> other) -> bool
+override Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4>.Equals(object? obj) -> bool
+override Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4>.GetHashCode() -> int
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4>.operator !=(Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4> left, Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4> right) -> bool
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4>.operator ==(Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4> left, Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4> right) -> bool
+Interlocutor.CommonKernel.Outcome<T1, T2, T3>.Equals(Interlocutor.CommonKernel.Outcome<T1, T2, T3> other) -> bool
+override Interlocutor.CommonKernel.Outcome<T1, T2, T3>.Equals(object? obj) -> bool
+override Interlocutor.CommonKernel.Outcome<T1, T2, T3>.GetHashCode() -> int
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3>.operator !=(Interlocutor.CommonKernel.Outcome<T1, T2, T3> left, Interlocutor.CommonKernel.Outcome<T1, T2, T3> right) -> bool
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3>.operator ==(Interlocutor.CommonKernel.Outcome<T1, T2, T3> left, Interlocutor.CommonKernel.Outcome<T1, T2, T3> right) -> bool
