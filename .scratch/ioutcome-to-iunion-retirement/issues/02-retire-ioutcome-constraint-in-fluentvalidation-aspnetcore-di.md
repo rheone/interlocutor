@@ -4,7 +4,7 @@
 
 **Blocked by:** 01 (these packages consume `Interlocutor.Abstractions`'s updated handler-contract shape).
 
-**Status:** done - implemented in `d0c7e8a`.
+**Status:** done - implemented in `62aaa87`.
 
 - [x] Every `where TResponse : IOutcome` site in `Interlocutor.FluentValidation`, `Interlocutor.AspNetCore`, and `Interlocutor.DependencyInjection.Abstractions` reads `IUnion` instead.
 - [x] `documentation/messages-and-result-types.md`'s "IOutcome Constraint" section is rewritten to describe the `IUnion` constraint, and its "IOutcome as an Extension Point" section is updated to reflect that a hand-rolled response type now only needs to satisfy `IUnion` to be legal as `TResponse` - not implement a project-owned marker - while still noting `IOutcome`/`IOutcomeCase` remain available as an opt-in for the classification surface. (Both sections were renamed to "IUnion Constraint"/"IUnion as an Extension Point" since their content is now literally about `IUnion`; every cross-reference to their old anchors elsewhere in `documentation/` was updated in the same commit so no link 404s.)
