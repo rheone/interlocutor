@@ -116,7 +116,7 @@ Interlocutor.Abstractions.Pipeline.AuditEntry.UserId.init -> void
 Interlocutor.Abstractions.Pipeline.AuditingBehavior<TRequest, TResponse>
 Interlocutor.Abstractions.Pipeline.AuditingBehavior<TRequest, TResponse>.AuditingBehavior(Interlocutor.Abstractions.Pipeline.IAuditSink! sink, Interlocutor.Abstractions.Pipeline.IResponseOutcomeDescriber? describer = null, Interlocutor.Abstractions.Core.IRequestContextAccessor? contextAccessor = null) -> void
 Interlocutor.Abstractions.Pipeline.AuthorizationBehavior<TRequest, TResponse>
-Interlocutor.Abstractions.Pipeline.AuthorizationBehavior<TRequest, TResponse>.AuthorizationBehavior(Interlocutor.Abstractions.Pipeline.IPolicyEvaluator! policyEvaluator, Interlocutor.Abstractions.Pipeline.Cases.IOutcomeCaseRegistry! caseRegistry) -> void
+Interlocutor.Abstractions.Pipeline.AuthorizationBehavior<TRequest, TResponse>.AuthorizationBehavior(Interlocutor.Abstractions.Pipeline.IPolicyEvaluator! policyEvaluator) -> void
 Interlocutor.Abstractions.Pipeline.CancellationBehavior<TRequest, TResponse>
 Interlocutor.Abstractions.Pipeline.CancellationBehavior<TRequest, TResponse>.CancellationBehavior(Interlocutor.Abstractions.Pipeline.Cases.IOutcomeCaseRegistry! caseRegistry) -> void
 Interlocutor.Abstractions.Pipeline.Cases.DefaultOutcomeCaseRegistry
@@ -195,6 +195,9 @@ Interlocutor.Abstractions.Pipeline.PipelineBehaviorBase<TRequest, TResponse>
 Interlocutor.Abstractions.Pipeline.PipelineBehaviorBase<TRequest, TResponse>.HandleAsync(TRequest request, System.Func<System.Threading.Tasks.Task<TResponse>!>! next, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
 Interlocutor.Abstractions.Pipeline.PipelineBehaviorBase<TRequest, TResponse>.PipelineBehaviorBase() -> void
 Interlocutor.Abstractions.Pipeline.PipelineChainResolver
+Interlocutor.Abstractions.Pipeline.PipelineEjectCaseException
+Interlocutor.Abstractions.Pipeline.PipelineEjectCaseException.CaseType.get -> System.Type!
+Interlocutor.Abstractions.Pipeline.PipelineEjectCaseException.CaseValue.get -> object!
 Interlocutor.Abstractions.Pipeline.PipelineEjectException<TResponse>
 Interlocutor.Abstractions.Pipeline.PipelineEjectException<TResponse>.Response.get -> TResponse
 Interlocutor.Abstractions.Pipeline.PipelineStageBase<TRequest, TResponse>
@@ -238,8 +241,10 @@ static Interlocutor.Abstractions.Pipeline.AuditEntry.operator !=(Interlocutor.Ab
 static Interlocutor.Abstractions.Pipeline.AuditEntry.operator ==(Interlocutor.Abstractions.Pipeline.AuditEntry? left, Interlocutor.Abstractions.Pipeline.AuditEntry? right) -> bool
 static Interlocutor.Abstractions.Pipeline.Cases.DefaultOutcomeCaseRegistry.Instance.get -> Interlocutor.Abstractions.Pipeline.Cases.IOutcomeCaseRegistry!
 static Interlocutor.Abstractions.Pipeline.Cases.OutcomeCaseRegistryExtensions.ConstructOrThrow<TResponse, TCase>(this Interlocutor.Abstractions.Pipeline.Cases.IOutcomeCaseRegistry! caseRegistry, TCase caseValue, string! behaviorName, string! eventPhrase, string! requirementClause) -> TResponse
+static Interlocutor.Abstractions.Pipeline.Cases.OutcomeCaseRegistryExtensions.ConstructOrThrow<TResponse>(this Interlocutor.Abstractions.Pipeline.Cases.IOutcomeCaseRegistry! caseRegistry, Interlocutor.Abstractions.Pipeline.PipelineEjectCaseException! eject) -> TResponse
 static Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder.DefaultClassifier.get -> Interlocutor.Abstractions.Pipeline.Classifiers.IOutcomeClassifier!
 static Interlocutor.Abstractions.Pipeline.Eject.With<TResponse>(TResponse response) -> TResponse
+static Interlocutor.Abstractions.Pipeline.Eject.WithCase<TCase>(TCase caseValue) -> Interlocutor.Abstractions.Pipeline.PipelineEjectCaseException!
 static Interlocutor.Abstractions.Pipeline.NoCommit.AndEject<TResponse>(TResponse response) -> TResponse
 static Interlocutor.Abstractions.Pipeline.NoCommit.BeginDispatch() -> System.Runtime.CompilerServices.StrongBox<bool>!
 static Interlocutor.Abstractions.Pipeline.NoCommit.With<TResponse>(TResponse response) -> TResponse

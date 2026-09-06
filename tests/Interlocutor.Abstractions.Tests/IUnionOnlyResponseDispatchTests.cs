@@ -17,8 +17,32 @@ using NSubstitute;
 /// <c>where TResponse : IOutcome</c>, so a response type like this one would not even have compiled as their
 /// type argument, regardless of its runtime shape.
 /// </summary>
+// PROTOTYPE (spike/eject-withcase-case-fidelity): AuthorizationBehavior no longer takes an
+// IOutcomeCaseRegistry dependency - it ejects the bare Forbidden case via Eject.WithCase/PipelineEjectCaseException
+// instead of constructing a UnionOnlyResponse itself. RunAuthorizationBehaviorAsync stands in for the catch
+// site that would otherwise do that construction (PipelineChainExecutor, in production), calling the same
+// OutcomeCaseRegistryExtensions.ConstructOrThrow<TResponse> production code calls.
 public class IUnionOnlyResponseDispatchTests
 {
+    private static async Task<TResponse> RunAuthorizationBehaviorAsync<TRequest, TResponse>(
+        AuthorizationBehavior<TRequest, TResponse> behavior,
+        TRequest request,
+        Func<Task<TResponse>> next,
+        IOutcomeCaseRegistry caseRegistry
+    )
+        where TRequest : IRequiresPolicyRequest
+        where TResponse : IUnion
+    {
+        try
+        {
+            return await behavior.HandleAsync(request, next, CancellationToken.None);
+        }
+        catch (PipelineEjectCaseException eject)
+        {
+            return caseRegistry.ConstructOrThrow<TResponse>(eject);
+        }
+    }
+
     [Fact]
     public async Task AuthorizationBehavior_HandlesUnionOnlyResponse_ShortCircuitsWithForbidden()
     {
@@ -32,12 +56,12 @@ public class IUnionOnlyResponseDispatchTests
             .RegisterFactory<UnionOnlyResponse, Forbidden>(UnionOnlyResponse.FromForbidden)
             .Build();
 
-        var behavior = new AuthorizationBehavior<ProtectedUnionOnlyQuery, UnionOnlyResponse>(policyEvaluator, caseRegistry);
+        var behavior = new AuthorizationBehavior<ProtectedUnionOnlyQuery, UnionOnlyResponse>(policyEvaluator);
         var request = new ProtectedUnionOnlyQuery();
         static Task<UnionOnlyResponse> NextAsync() => throw new InvalidOperationException("Should not be called");
 
         // Act
-        var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
+        var result = await RunAuthorizationBehaviorAsync(behavior, request, NextAsync, caseRegistry);
 
         // Assert
         Assert.IsType<Forbidden>(result.Value);
@@ -52,15 +76,12 @@ public class IUnionOnlyResponseDispatchTests
             .EvaluateAsync(Arg.Any<string>(), Arg.Any<object>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(true));
 
-        var behavior = new AuthorizationBehavior<ProtectedUnionOnlyQuery, UnionOnlyResponse>(
-            policyEvaluator,
-            DefaultOutcomeCaseRegistry.Instance
-        );
+        var behavior = new AuthorizationBehavior<ProtectedUnionOnlyQuery, UnionOnlyResponse>(policyEvaluator);
         var request = new ProtectedUnionOnlyQuery();
         static Task<UnionOnlyResponse> NextAsync() => Task.FromResult(UnionOnlyResponse.FromSuccess("ok"));
 
         // Act
-        var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
+        var result = await RunAuthorizationBehaviorAsync(behavior, request, NextAsync, DefaultOutcomeCaseRegistry.Instance);
 
         // Assert
         Assert.Equal("ok", result.Value);
