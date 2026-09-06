@@ -1,12 +1,13 @@
 ---
 name: dispatch-tasks
-description: Dispatch work to one or more sub-agents - serially as a dependent chain, or in parallel as an independent batch - and relay each one's status into this thread as it finishes. Use when the user says "dispatch", asks to do something "for each" item in a list, wants work run "in parallel", wants steps done "serially" one after another, or wants work handed off to a background "thread".
+description: Dispatch tasks to one or more sub-agents - serially as a dependent chain, or in parallel as an independent batch - and relay each one's status into this thread as it finishes. Use when the user says "dispatch", asks to do something "for each" item in a list, wants work run "in parallel", wants steps done "serially" one after another, or wants work handed off to a background "thread".
 argument-hint: "What should be dispatched, and serially or in parallel?"
 ---
 
-Run work on sub-agents instead of doing it inline, and keep this thread posted as each piece lands. Every run is either a **chain** (serial, dependent, ordered) or a **batch** (parallel, independent, unordered) - never both in the same run.
+Run tasks on individual sub-agents instead of doing it inline, and keep this thread posted as each piece lands. Every task gets its own sub-agent call - its own context thread - rather than being worked in this thread; that's the point of dispatching at all, since it keeps this thread's own context from filling up with every task's exploration and back-and-forth. Every run is either a **chain** (serial, dependent, ordered) or a **batch** (parallel, independent, unordered) - never both in the same run. If task has predecessors they must be completed before the next step can run, it's a chain. If task is independent and can run in any order, it's a batch.
 
 1. **Gather the tasks.** If the invocation already lists or enumerates the work, use that list as given - it's unambiguous. If it doesn't (e.g. "dispatch these"), derive a numbered task list from the recent conversation. Each task must be self-contained enough to hand to a sub-agent as its whole prompt.
+   When a gathered task is itself implementation work (building or fixing code against a spec or tickets, as opposed to research, analysis, or a non-code chore), fold its own workflow into that task's prompt: implement the work described by the user, the spec, or tickets; use /tdd where possible, at pre-agreed seams; run typechecking regularly and single test files regularly, with the full test suite once at the end; once done, use /code-review to review the work.
    Done when: a numbered task list exists.
 
 2. **Confirm only what you inferred.** Skip this step entirely when the list came from step 1's explicit path - re-confirming the user's own words back to them is a no-op. When the list was derived from context, show it and get a yes before continuing; don't proceed on "no" or silence.
@@ -35,3 +36,6 @@ Run work on sub-agents instead of doing it inline, and keep this thread posted a
 
 8. **Close out.** Once the chain has ended (finished or aborted-tail) or every batch/queued task has resolved: cancel the heartbeat job if step 7 armed one, then post one consolidated summary - each task, done or failed, with a one-line outcome.
    Done when: the heartbeat job (if any) is deleted, and the summary accounts for every task from step 1, aborted ones included.
+
+9. **Commit.** If a git repository is present here and nothing in the invocation said otherwise, commit the resulting changes to the current branch. This covers chain steps and any non-isolated batch tasks, which land directly in this working tree; a batch task dispatched with `isolation: "worktree"` leaves its changes in its own worktree instead, so call those out in the summary rather than folding them into this commit - merging or discarding them is the user's call.
+   Done when: the commit is made, or skipped with a stated reason (no git repo, the user said not to, or nothing landed in this working tree to commit).
