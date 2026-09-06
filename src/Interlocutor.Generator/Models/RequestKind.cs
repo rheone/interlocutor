@@ -14,7 +14,7 @@ internal enum RequestKind
 
     /// <summary>
     /// Implements the non-generic <c>ICommand</c> - needs at least one matching
-    /// <c>IVoidCommandHandler&lt;TCommand, *&gt;</c> for any result type.
+    /// <c>IBareCommandHandler&lt;TCommand, *&gt;</c> for any result type.
     /// </summary>
-    VoidCommand,
+    BareCommand,
 }

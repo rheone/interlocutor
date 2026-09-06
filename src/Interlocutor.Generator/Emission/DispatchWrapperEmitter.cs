@@ -5,7 +5,7 @@ using System.Text;
 using Interlocutor.Generator.Models;
 
 /// <summary>
-/// Emits one closed dispatch wrapper per query, command, or void-command handler discovered in the
+/// Emits one closed dispatch wrapper per query, command, or bare-command handler discovered in the
 /// compilation - the compile-time replacement for the runtime
 /// <c>Activator.CreateInstance(typeof(QueryHandlerWrapper&lt;,&gt;).MakeGenericType(requestType, responseType))</c>
 /// construction <c>Mediator.SendAsync</c> performs today for a request type seen for the first time.
@@ -40,7 +40,7 @@ internal static class DispatchWrapperEmitter
     public const string GeneratedNamespace = "Interlocutor.Generated.Dispatch";
 
     /// <summary>
-    /// Emits the full source text for every query/command/void-command handler's closed dispatch wrapper.
+    /// Emits the full source text for every query/command/bare-command handler's closed dispatch wrapper.
     /// </summary>
     /// <param name="handlers">Every handler discovered in the compilation.</param>
     /// <returns>Compilable C# source text. Empty of wrapper classes (but still valid) when no handlers dispatch through the pipeline.</returns>
@@ -78,7 +78,7 @@ internal static class DispatchWrapperEmitter
     public static string GetWrapperClassName(HandlerModel handler) =>
         $"{IdentifierSanitizer.ToIdentifier(handler.HandlerTypeName)}_{handler.Kind}_Dispatch";
 
-    /// <summary>Emits one wrapper class for a query, command, or void-command handler.</summary>
+    /// <summary>Emits one wrapper class for a query, command, or bare-command handler.</summary>
     private static void EmitWrapper(StringBuilder builder, HandlerModel handler)
     {
         var className = GetWrapperClassName(handler);
@@ -120,7 +120,7 @@ internal static class DispatchWrapperEmitter
         builder.AppendLine();
 
         // Each closure below is wrapped in a try/catch for PipelineEjectException<TResponse>, mirroring the
-        // hand-written wrappers (QueryHandlerWrapper/CommandHandlerWrapper/VoidCommandHandlerWrapper): a
+        // hand-written wrappers (QueryHandlerWrapper/CommandHandlerWrapper/BareCommandHandlerWrapper): a
         // handler or behavior that calls Eject.With deep in its own call graph returns an ordinary response
         // at the nearest enclosing HandleAsync/Handle call, so nothing further out in the chain ever observes
         // a thrown exception.
@@ -130,10 +130,10 @@ internal static class DispatchWrapperEmitter
         builder.AppendLine("            {");
         builder.AppendLine("                try");
         builder.AppendLine("                {");
-        // IVoidCommandHandler<,> still has no HandleAsync member (a known, deliberate open gap - see
+        // IBareCommandHandler<,> still has no HandleAsync member (a known, deliberate open gap - see
         // .scratch/async-method-naming) - ICommandHandler<,> and IQueryHandler<,> no longer have Handle at
         // all, so the emitted call must branch by handler kind rather than use one member name uniformly.
-        var handlerCallMember = handler.Kind == HandlerKind.VoidCommand ? "Handle" : "HandleAsync";
+        var handlerCallMember = handler.Kind == HandlerKind.BareCommand ? "Handle" : "HandleAsync";
         builder.AppendLine($"                    return await handler.{handlerCallMember}(request, ct).ConfigureAwait(false);");
         builder.AppendLine("                }");
         builder.AppendLine(

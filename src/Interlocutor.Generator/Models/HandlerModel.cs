@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis;
 /// <summary>
 /// An equatable, incremental-pipeline-safe snapshot of one discovered handler-to-contract match: a concrete
 /// handler type implementing one of the four mediator handler contracts, closed over its request (and, for
-/// query/command/void-command handlers, response) type.
+/// query/command/bare-command handlers, response) type.
 /// </summary>
 /// <remarks>
 /// One handler type implementing more than one handler contract (or the same contract closed over more than

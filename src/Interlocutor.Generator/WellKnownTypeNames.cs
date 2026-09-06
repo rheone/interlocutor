@@ -19,11 +19,11 @@ internal static class WellKnownTypeNames
     /// <summary>The open generic command marker, <c>ICommand&lt;TResponse&gt;</c>.</summary>
     public const string Command = "Interlocutor.Abstractions.Commands.ICommand`1";
 
-    /// <summary>The non-generic unit-command marker, <c>ICommand</c>.</summary>
-    public const string VoidCommand = "Interlocutor.Abstractions.Commands.ICommand";
+    /// <summary>The non-generic bare-command marker, <c>ICommand</c>.</summary>
+    public const string BareCommand = "Interlocutor.Abstractions.Commands.ICommand";
 
-    /// <summary>The open generic unit-command-handler contract, <c>IVoidCommandHandler&lt;TCommand, TResult&gt;</c>.</summary>
-    public const string VoidCommandHandler = "Interlocutor.Abstractions.Commands.IVoidCommandHandler`2";
+    /// <summary>The open generic bare-command-handler contract, <c>IBareCommandHandler&lt;TCommand, TResult&gt;</c>.</summary>
+    public const string BareCommandHandler = "Interlocutor.Abstractions.Commands.IBareCommandHandler`2";
 
     /// <summary>The open generic notification-handler contract, <c>INotificationHandler&lt;TNotification&gt;</c>.</summary>
     public const string NotificationHandler = "Interlocutor.Abstractions.Notifications.INotificationHandler`1";

@@ -26,6 +26,22 @@ public sealed class HandlerDiscoveryEmissionTests
         }
         """;
 
+    private const string SingleBareCommandHandlerSource = """
+        namespace TestApp;
+
+        using System.Threading;
+        using System.Threading.Tasks;
+        using Interlocutor.Abstractions.Commands;
+        using Interlocutor.CommonKernel;
+
+        public sealed class DeleteFooCommand : ICommand;
+
+        public sealed class DeleteFooCommandHandler : IBareCommandHandler<DeleteFooCommand, Outcome>
+        {
+            public Task<Outcome> Handle(DeleteFooCommand command, CancellationToken ct) => throw new System.NotImplementedException();
+        }
+        """;
+
     [Fact]
     public void HandlerDiscovery_QueryHandler_ProducesNoDiagnostics_Test()
     {
@@ -109,6 +125,39 @@ public sealed class HandlerDiscoveryEmissionTests
             dispatchSource,
             StringComparison.Ordinal
         );
+    }
+
+    [Fact]
+    public void DispatchWrapper_BareCommandHandler_ResolvesIBareCommandHandlerAndCallsHandle_Test()
+    {
+        // Arrange
+        // (no separate setup; uses class fixtures or direct act/assert)
+        // Act
+        var result = GeneratorTestHarness.Run(SingleBareCommandHandlerSource);
+
+        // Assert
+        var dispatchSource = GetGeneratedSource(result, "InterlocutorGeneratedDispatch.g.cs");
+
+        // The generated wrapper class is named after HandlerKind.BareCommand (not the retired VoidCommand
+        // name), resolves the real, current IBareCommandHandler<,> service type from the container, and calls
+        // its synchronous Handle member - IBareCommandHandler<,> has no HandleAsync (see DispatchWrapperEmitter's
+        // own remarks).
+        Assert.Contains(
+            "internal static class global__TestApp_DeleteFooCommandHandler_BareCommand_Dispatch",
+            dispatchSource,
+            StringComparison.Ordinal
+        );
+        Assert.Contains(
+            "services.GetService(typeof(global::Interlocutor.Abstractions.Commands.IBareCommandHandler<global::TestApp.DeleteFooCommand, global::Interlocutor.CommonKernel.Outcome>))",
+            dispatchSource,
+            StringComparison.Ordinal
+        );
+        Assert.Contains(
+            "return await handler.Handle(request, ct).ConfigureAwait(false);",
+            dispatchSource,
+            StringComparison.Ordinal
+        );
+        Assert.DoesNotContain("VoidCommand", dispatchSource, StringComparison.Ordinal);
     }
 
     [Fact]

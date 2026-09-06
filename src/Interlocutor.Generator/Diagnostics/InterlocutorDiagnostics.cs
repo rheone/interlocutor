@@ -48,7 +48,7 @@ internal static class InterlocutorDiagnostics
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
         description: "A type implementing IQuery<TResponse>, ICommand<TResponse>, or ICommand was found with no "
-            + "corresponding IQueryHandler<,>, ICommandHandler<,>, or IVoidCommandHandler<,> implementation "
+            + "corresponding IQueryHandler<,>, ICommandHandler<,>, or IBareCommandHandler<,> implementation "
             + "reachable from this compilation, including transitively-referenced assemblies. Add a handler, or "
             + "reference the assembly that defines one."
     );

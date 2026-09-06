@@ -43,11 +43,11 @@ internal static class HandlerTypeAnalyzer
 
         var queryHandlerContract = compilation.GetTypeByMetadataName(WellKnownTypeNames.QueryHandler);
         var commandHandlerContract = compilation.GetTypeByMetadataName(WellKnownTypeNames.CommandHandler);
-        var voidCommandHandlerContract = compilation.GetTypeByMetadataName(WellKnownTypeNames.VoidCommandHandler);
+        var bareCommandHandlerContract = compilation.GetTypeByMetadataName(WellKnownTypeNames.BareCommandHandler);
         var notificationHandlerContract = compilation.GetTypeByMetadataName(WellKnownTypeNames.NotificationHandler);
         var queryMarker = compilation.GetTypeByMetadataName(WellKnownTypeNames.Query);
         var commandMarker = compilation.GetTypeByMetadataName(WellKnownTypeNames.Command);
-        var voidCommandMarker = compilation.GetTypeByMetadataName(WellKnownTypeNames.VoidCommand);
+        var bareCommandMarker = compilation.GetTypeByMetadataName(WellKnownTypeNames.BareCommand);
         var runAfterAttribute = compilation.GetTypeByMetadataName(WellKnownTypeNames.NotificationHandlerRunAfter);
         var runBeforeAttribute = compilation.GetTypeByMetadataName(WellKnownTypeNames.NotificationHandlerRunBefore);
         var handlerOverrideAttribute = compilation.GetTypeByMetadataName(WellKnownTypeNames.HandlerOverride);
@@ -62,10 +62,10 @@ internal static class HandlerTypeAnalyzer
             {
                 // The only non-generic contract either side of this analysis cares about is the bare
                 // ICommand marker itself.
-                if (SymbolEqualityComparer.Default.Equals(candidateInterface, voidCommandMarker))
+                if (SymbolEqualityComparer.Default.Equals(candidateInterface, bareCommandMarker))
                 {
                     request = new RequestModel(
-                        RequestKind.VoidCommand,
+                        RequestKind.BareCommand,
                         SymbolFormatting.Format(candidate),
                         null,
                         declarationLocation
@@ -101,12 +101,12 @@ internal static class HandlerTypeAnalyzer
                     handlerOverrideAttribute
                 );
             }
-            else if (SymbolEqualityComparer.Default.Equals(openDefinition, voidCommandHandlerContract))
+            else if (SymbolEqualityComparer.Default.Equals(openDefinition, bareCommandHandlerContract))
             {
                 var args = candidateInterface.TypeArguments;
                 handlers.Add(
                     new HandlerModel(
-                        HandlerKind.VoidCommand,
+                        HandlerKind.BareCommand,
                         SymbolFormatting.Format(candidate),
                         SymbolFormatting.Format(args[0]),
                         SymbolFormatting.Format(args[1]),

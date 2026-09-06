@@ -61,7 +61,7 @@ public sealed class MissingHandlerDiagnosticTests
     }
 
     [Fact]
-    public void MissingHandlerDiagnostic_VoidCommand_Reports_Test()
+    public void MissingHandlerDiagnostic_BareCommand_Reports_Test()
     {
         // Arrange
         const string source = """
@@ -109,7 +109,7 @@ public sealed class MissingHandlerDiagnosticTests
     }
 
     [Fact]
-    public void HandlerMatching_VoidCommandAnyResult_Matches_Test()
+    public void HandlerMatching_BareCommandAnyResult_Matches_Test()
     {
         // Arrange
         const string source = """
@@ -122,7 +122,7 @@ public sealed class MissingHandlerDiagnosticTests
 
             public sealed class DeleteFooCommand : ICommand;
 
-            public sealed class DeleteFooCommandHandler : IVoidCommandHandler<DeleteFooCommand, Outcome<int, string>>
+            public sealed class DeleteFooCommandHandler : IBareCommandHandler<DeleteFooCommand, Outcome<int, string>>
             {
                 public Task<Outcome<int, string>> Handle(DeleteFooCommand command, CancellationToken ct) =>
                     throw new System.NotImplementedException();

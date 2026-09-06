@@ -12,8 +12,8 @@ using Microsoft.CodeAnalysis;
 /// <param name="RequestTypeName">The request type's fully-qualified (<c>global::</c>-prefixed) type name.</param>
 /// <param name="ResponseTypeName">
 /// The response type's fully-qualified (<c>global::</c>-prefixed) type name, or <see langword="null"/> for
-/// <see cref="RequestKind.VoidCommand"/> - a unit command's result type is chosen by the caller, not declared
-/// on the request, so matching ignores it (see <see cref="RequestKind.VoidCommand"/>).
+/// <see cref="RequestKind.BareCommand"/> - a bare command's result type is chosen by the caller, not declared
+/// on the request, so matching ignores it (see <see cref="RequestKind.BareCommand"/>).
 /// </param>
 /// <param name="Location">
 /// The request type declaration's identifier location, used to anchor the missing-handler diagnostic at the

@@ -12,9 +12,9 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 /// <summary>
-/// Discovers Interlocutor query, command, void-command, and notification handlers in the current compilation
+/// Discovers Interlocutor query, command, bare-command, and notification handlers in the current compilation
 /// at build time (ADR-0008), emits a container-neutral registration module, emits closed dispatch wrappers for
-/// query/command/void-command handlers, emits a reflection-free type switch dispatching a runtime-typed
+/// query/command/bare-command handlers, emits a reflection-free type switch dispatching a runtime-typed
 /// request across all of them (ticket 13), and reports a diagnostic for any query or command request with no
 /// matching handler.
 /// </summary>

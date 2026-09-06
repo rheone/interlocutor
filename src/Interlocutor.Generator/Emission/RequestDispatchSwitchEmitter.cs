@@ -14,7 +14,7 @@ using Interlocutor.Generator.Models;
 /// <remarks>
 /// <para>
 /// Every case in the switch is a concrete, compile-time-known type: one case per request type discovered in
-/// the compilation with a matching query/command/void-command handler (dispatching into the corresponding
+/// the compilation with a matching query/command/bare-command handler (dispatching into the corresponding
 /// <see cref="DispatchWrapperEmitter"/>-emitted wrapper), and one case per request type discovered with no
 /// matching handler (throwing <c>HandlerNotRegisteredException</c>, naming the request and - for a query or
 /// command, whose expected handler interface is fully determined by the request's own declared response type
@@ -71,7 +71,7 @@ internal static class RequestDispatchSwitchEmitter
         builder.AppendLine("            {");
 
         var dispatchable = handlers
-            .Where(static h => h.Kind is HandlerKind.Query or HandlerKind.Command or HandlerKind.VoidCommand)
+            .Where(static h => h.Kind is HandlerKind.Query or HandlerKind.Command or HandlerKind.BareCommand)
             .GroupBy(static h => h.RequestTypeName)
             .Select(static group => group.First());
 
@@ -122,7 +122,7 @@ internal static class RequestDispatchSwitchEmitter
             RequestKind.Command =>
                 $"typeof(global::Interlocutor.Abstractions.Commands.ICommandHandler<{request.RequestTypeName}, {request.ResponseTypeName}>)",
 
-            // A unit command's result type is caller-chosen, not declared on the command - there is no single
+            // A bare command's result type is caller-chosen, not declared on the command - there is no single
             // closed handler interface to name, mirroring the reflection path's own null handlerType here.
             _ => null,
         };

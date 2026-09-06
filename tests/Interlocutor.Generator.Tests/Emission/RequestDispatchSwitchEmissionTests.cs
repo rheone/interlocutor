@@ -115,7 +115,7 @@ public sealed class RequestDispatchSwitchEmissionTests
     }
 
     [Fact]
-    public void DispatchSwitch_VoidCommandUnregistered_ThrowsWithoutHandlerType_Test()
+    public void DispatchSwitch_BareCommandUnregistered_ThrowsWithoutHandlerType_Test()
     {
         // Arrange
         const string source = """
@@ -134,7 +134,7 @@ public sealed class RequestDispatchSwitchEmissionTests
 
         Assert.Contains("case global::TestApp.DeleteFooCommand:", dispatchSwitchSource, StringComparison.Ordinal);
 
-        // A unit command's result type is caller-chosen, not declared on the command - no single closed
+        // A bare command's result type is caller-chosen, not declared on the command - no single closed
         // handler interface to name, mirroring the reflection path's null handlerType for this same case.
         Assert.Contains(
             "throw new global::Interlocutor.Abstractions.Core.HandlerNotRegisteredException(typeof(global::TestApp.DeleteFooCommand));",
@@ -144,7 +144,7 @@ public sealed class RequestDispatchSwitchEmissionTests
     }
 
     [Fact]
-    public void DispatchSwitch_VoidCommandRegistered_EmitsDispatchCase_Test()
+    public void DispatchSwitch_BareCommandRegistered_EmitsDispatchCase_Test()
     {
         // Arrange
         const string source = """
@@ -157,7 +157,7 @@ public sealed class RequestDispatchSwitchEmissionTests
 
             public sealed class DeleteFooCommand : ICommand;
 
-            public sealed class DeleteFooCommandHandler : IVoidCommandHandler<DeleteFooCommand, Outcome>
+            public sealed class DeleteFooCommandHandler : IBareCommandHandler<DeleteFooCommand, Outcome>
             {
                 public Task<Outcome> Handle(DeleteFooCommand command, CancellationToken ct) => throw new System.NotImplementedException();
             }

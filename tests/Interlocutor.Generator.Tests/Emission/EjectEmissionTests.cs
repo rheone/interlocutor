@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis;
 /// Snapshot tests proving the generator's emitted dispatch wrappers catch
 /// <c>Interlocutor.Abstractions.Pipeline.PipelineEjectException&lt;TResponse&gt;</c> around both the handler
 /// call and each behavior call, matching the hand-written wrappers' (<c>QueryHandlerWrapper</c>,
-/// <c>CommandHandlerWrapper</c>, <c>VoidCommandHandlerWrapper</c>) identical try/catch.
+/// <c>CommandHandlerWrapper</c>, <c>BareCommandHandlerWrapper</c>) identical try/catch.
 /// </summary>
 public sealed class EjectEmissionTests
 {
