@@ -4,7 +4,7 @@
 
 **Blocked by:** 01, 02 (needs to be usable as a real handler response to be demoed end-to-end, and the old constraint would reject an `IUnion`-only type).
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `3666556`.
 
 - [ ] `Interlocutor.CommonKernel` gains `Outcome<T>`: a strongly-typed public `T Value` property (not boxed); an explicit `object? System.Runtime.CompilerServices.IUnion.Value` implementation forwarding to it; `TResult Match<TResult>(Func<T, TResult> onValue)`; `void Switch(Action<T> onValue)`; `bool TryGetValue(out T value)` (always returns `true`); `ToString()` forwarding to `Value?.ToString()`.
 - [ ] Value-equality shape matches every other arity: `Equals`, `GetHashCode`, `IEquatable<Outcome<T>>`, `==`/`!=`, all delegating to `Value`'s own equality.
