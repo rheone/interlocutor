@@ -4,7 +4,7 @@
 
 **Blocked by:** 02 (cites ADR-0022's design reasoning and documented scope)
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `5a8d547`. Shipped as `INTERLOC015`, not `INTERLOC012` as this ticket's title/text name - `INTERLOC012`-`INTERLOC014` were claimed by other tickets since this one was written. Cites ADR-0023, not ADR-0022 (renumbered - see ticket 02's status note).
 
 - [ ] `INTERLOC012` is added to `InterlocutorDiagnostics.cs` following the existing diagnostic definitions' shape and doc-comment style
 - [ ] The generator emits `INTERLOC012` for a `TRequest` implementing any of the four marker interfaces whose paired `TResponse` union has no assignable case for what that behavior constructs
