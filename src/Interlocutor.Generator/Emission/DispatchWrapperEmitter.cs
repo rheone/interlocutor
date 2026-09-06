@@ -123,7 +123,12 @@ internal static class DispatchWrapperEmitter
         // hand-written wrappers (QueryHandlerWrapper/CommandHandlerWrapper/BareCommandHandlerWrapper): a
         // handler or behavior that calls Eject.With deep in its own call graph returns an ordinary response
         // at the nearest enclosing HandleAsync/Handle call, so nothing further out in the chain ever observes
-        // a thrown exception.
+        // a thrown exception. Each catch also tags MediatorActivitySource.EjectedTag on the ambient activity,
+        // matching PipelineChainExecutor's identical tagging for the hand-written wrappers - this static
+        // wrapper has no Activity parameter of its own (adding one would be a breaking change to the public
+        // IGeneratedRequestDispatcher contract), so it reads System.Diagnostics.Activity.Current instead, which
+        // Mediator's dispatch already keeps current for the whole nested call (see Mediator.SendAsync(object,
+        // CancellationToken)'s remarks on nested-activity parenting).
         builder.AppendLine(
             $"            global::System.Func<global::System.Threading.Tasks.Task<{responseType}>> pipeline = async () =>"
         );
@@ -140,6 +145,9 @@ internal static class DispatchWrapperEmitter
             $"                catch (global::Interlocutor.Abstractions.Pipeline.PipelineEjectException<{responseType}> eject)"
         );
         builder.AppendLine("                {");
+        builder.AppendLine(
+            "                    global::System.Diagnostics.Activity.Current?.SetTag(global::Interlocutor.Abstractions.Diagnostics.MediatorActivitySource.EjectedTag, true);"
+        );
         builder.AppendLine("                    return eject.Response;");
         builder.AppendLine("                }");
         builder.AppendLine("            };");
@@ -164,6 +172,9 @@ internal static class DispatchWrapperEmitter
             $"                        catch (global::Interlocutor.Abstractions.Pipeline.PipelineEjectException<{responseType}> eject)"
         );
         builder.AppendLine("                        {");
+        builder.AppendLine(
+            "                            global::System.Diagnostics.Activity.Current?.SetTag(global::Interlocutor.Abstractions.Diagnostics.MediatorActivitySource.EjectedTag, true);"
+        );
         builder.AppendLine("                            return eject.Response;");
         builder.AppendLine("                        }");
         builder.AppendLine("                    };");

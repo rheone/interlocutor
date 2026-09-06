@@ -41,6 +41,6 @@ internal sealed class CommandHandlerWrapper<TCommand, TResponse> : IHandlerWrapp
         var handler = services.GetRequiredService<ICommandHandler<TCommand, TResponse>>();
         activity?.SetTag(MediatorActivitySource.HandlerTypeTag, handler.GetType().FullName);
 
-        return PipelineChainExecutor.ExecuteAsync(typedRequest, handler.HandleAsync, services, ct);
+        return PipelineChainExecutor.ExecuteAsync(typedRequest, handler.HandleAsync, services, ct, activity);
     }
 }

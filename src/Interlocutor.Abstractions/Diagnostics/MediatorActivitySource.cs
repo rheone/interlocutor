@@ -47,6 +47,15 @@ public static class MediatorActivitySource
     public const string OutcomeTag = "interlocutor.outcome";
 
     /// <summary>
+    /// The tag key recording that a dispatch ended via <c>Eject.With</c> rather than an ordinary handler/behavior
+    /// return. Set to <see langword="true"/> on the activity at the exact pipeline layer whose
+    /// <c>catch (PipelineEjectException&lt;TResponse&gt; eject)</c> block converted the thrown signal back into
+    /// <see cref="OutcomeTag"/>'s response - never set at all on a dispatch that returned normally, so its mere
+    /// presence (rather than any particular value) is what a trace viewer or outer behavior checks for.
+    /// </summary>
+    public const string EjectedTag = "interlocutor.ejected";
+
+    /// <summary>
     /// The single <see cref="ActivitySource"/> instance every mediator dispatch starts activities from. Internal -
     /// external code observes it through a listener registered against <see cref="Name"/>, not through this field.
     /// </summary>

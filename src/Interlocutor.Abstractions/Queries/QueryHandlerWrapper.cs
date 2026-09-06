@@ -41,6 +41,6 @@ internal sealed class QueryHandlerWrapper<TQuery, TResponse> : IHandlerWrapper<T
         var handler = services.GetRequiredService<IQueryHandler<TQuery, TResponse>>();
         activity?.SetTag(MediatorActivitySource.HandlerTypeTag, handler.GetType().FullName);
 
-        return PipelineChainExecutor.ExecuteAsync(typedRequest, handler.HandleAsync, services, ct);
+        return PipelineChainExecutor.ExecuteAsync(typedRequest, handler.HandleAsync, services, ct, activity);
     }
 }

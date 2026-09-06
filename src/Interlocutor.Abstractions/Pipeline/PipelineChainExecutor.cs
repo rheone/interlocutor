@@ -1,6 +1,8 @@
 namespace Interlocutor.Abstractions.Pipeline;
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using Interlocutor.Abstractions.Diagnostics;
 using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
@@ -16,6 +18,13 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// <see cref="PipelineEjectException{TResponse}"/> guard at every layer) lives here now. A prefactor: no
 /// observable change to dispatch, pipeline ordering, or ejection.
 /// </para>
+/// <para>
+/// Every <see cref="PipelineEjectException{TResponse}"/> guard also tags the dispatch's
+/// <see cref="System.Diagnostics.Activity"/> with <see cref="MediatorActivitySource.EjectedTag"/> as it
+/// converts the caught signal back into a response - exactly one guard ever fires per eject (the exception is
+/// caught, not re-thrown, so it never reaches an outer guard), so this tags the activity once, at whichever
+/// layer actually ejected. A dispatch that returns normally never sets the tag at all.
+/// </para>
 /// </remarks>
 internal static class PipelineChainExecutor
 {
@@ -30,12 +39,17 @@ internal static class PipelineChainExecutor
     /// <param name="handle">The resolved handler's own <c>HandleAsync</c> method, already bound to its instance.</param>
     /// <param name="services">The service provider to resolve the behavior chain from.</param>
     /// <param name="ct">The cancellation token.</param>
+    /// <param name="activity">
+    /// The dispatch's activity, tagged with <see cref="MediatorActivitySource.EjectedTag"/> if the chain ends via
+    /// <c>Eject.With</c>, or <see langword="null"/> when nothing is listening.
+    /// </param>
     /// <returns>The response from running the composed chain.</returns>
     public static Task<TResponse> ExecuteAsync<TRequest, TResponse>(
         TRequest request,
         Func<TRequest, CancellationToken, Task<TResponse>> handle,
         IServiceProvider services,
-        CancellationToken ct
+        CancellationToken ct,
+        Activity? activity = null
     )
         where TResponse : IUnion
     {
@@ -50,6 +64,7 @@ internal static class PipelineChainExecutor
             }
             catch (PipelineEjectException<TResponse> eject)
             {
+                activity?.SetTag(MediatorActivitySource.EjectedTag, true);
                 return eject.Response;
             }
         };
@@ -70,6 +85,7 @@ internal static class PipelineChainExecutor
                 }
                 catch (PipelineEjectException<TResponse> eject)
                 {
+                    activity?.SetTag(MediatorActivitySource.EjectedTag, true);
                     return eject.Response;
                 }
             };

@@ -2,6 +2,7 @@ namespace Interlocutor.Abstractions.Tests;
 
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Diagnostics;
@@ -44,6 +45,9 @@ public class MediatorActivityTracingTests
         // not literally "Success" - that label is reserved for the Success marker type itself (covered below).
         Assert.Equal("Int32", activity.GetTagItem(MediatorActivitySource.OutcomeTag));
         Assert.Equal(ActivityStatusCode.Unset, activity.Status);
+
+        // A handler that returns normally never ejects - EjectedTag must be entirely absent, not merely false.
+        Assert.Null(activity.GetTagItem(MediatorActivitySource.EjectedTag));
     }
 
     [Fact]
@@ -70,6 +74,111 @@ public class MediatorActivityTracingTests
         Assert.Equal(typeof(TracingSuccessCommandHandler).FullName, activity.GetTagItem(MediatorActivitySource.HandlerTypeTag));
         Assert.Equal("None", activity.GetTagItem(MediatorActivitySource.OutcomeTag));
         Assert.Equal(ActivityStatusCode.Unset, activity.Status);
+        Assert.Null(activity.GetTagItem(MediatorActivitySource.EjectedTag));
+    }
+
+    [Fact]
+    public async Task Send_Command_HandlerEjects_TagsActivityAsEjected()
+    {
+        // Arrange - covers CommandHandlerWrapper's own pass-through of the activity parameter into
+        // PipelineChainExecutor, distinct from the query and bare-command wrappers covered elsewhere here.
+        var captured = new ConcurrentBag<Activity>();
+        using var listener = CreateListener(captured);
+        ActivitySource.AddActivityListener(listener);
+
+        var services = new ServiceCollection();
+        services.AddSingleton<
+            ICommandHandler<TracingEjectingCommand, Outcome<string, Failure>>,
+            TracingEjectingCommandHandler
+        >();
+        services.AddSingleton<IMediator, Mediator>();
+        var provider = services.BuildServiceProvider();
+        var mediator = provider.GetRequiredService<IMediator>();
+
+        // Act
+        await mediator.SendAsync(new TracingEjectingCommand(), CancellationToken.None);
+
+        // Assert
+        var activity = SingleFor<TracingEjectingCommand>(captured);
+        Assert.True((bool?)activity.GetTagItem(MediatorActivitySource.EjectedTag));
+    }
+
+    [Fact]
+    public async Task Send_BareCommand_HandlerEjects_TagsActivityAsEjected()
+    {
+        // Arrange - covers BareCommandHandlerWrapper's own pass-through of the activity parameter into
+        // PipelineChainExecutor.
+        var captured = new ConcurrentBag<Activity>();
+        using var listener = CreateListener(captured);
+        ActivitySource.AddActivityListener(listener);
+
+        var services = new ServiceCollection();
+        services.AddSingleton<
+            IBareCommandHandler<TracingEjectingBareCommand, Outcome<Success, Failure>>,
+            TracingEjectingBareCommandHandler
+        >();
+        services.AddSingleton<IMediator, Mediator>();
+        var provider = services.BuildServiceProvider();
+        var mediator = provider.GetRequiredService<IMediator>();
+
+        // Act
+        await mediator.SendAsync<Outcome<Success, Failure>>(new TracingEjectingBareCommand(), CancellationToken.None);
+
+        // Assert
+        var activity = SingleFor<TracingEjectingBareCommand>(captured);
+        Assert.True((bool?)activity.GetTagItem(MediatorActivitySource.EjectedTag));
+    }
+
+    [Fact]
+    public async Task Send_Query_HandlerEjects_TagsActivityAsEjected()
+    {
+        // Arrange
+        var captured = new ConcurrentBag<Activity>();
+        using var listener = CreateListener(captured);
+        ActivitySource.AddActivityListener(listener);
+
+        var services = new ServiceCollection();
+        services.AddSingleton<IQueryHandler<TracingEjectingQuery, Outcome<int, Failure>>, TracingEjectingQueryHandler>();
+        services.AddSingleton<IMediator, Mediator>();
+        var provider = services.BuildServiceProvider();
+        var mediator = provider.GetRequiredService<IMediator>();
+
+        // Act
+        await mediator.SendAsync(new TracingEjectingQuery(), CancellationToken.None);
+
+        // Assert - the handler never returned normally; PipelineChainExecutor's own catch converted the thrown
+        // PipelineEjectException back into a response and tagged the activity as it did so.
+        var activity = SingleFor<TracingEjectingQuery>(captured);
+        Assert.True((bool?)activity.GetTagItem(MediatorActivitySource.EjectedTag));
+    }
+
+    [Fact]
+    public async Task Send_Query_BehaviorEjectsBeforeNext_TagsActivityAsEjected()
+    {
+        // Arrange
+        var captured = new ConcurrentBag<Activity>();
+        using var listener = CreateListener(captured);
+        ActivitySource.AddActivityListener(listener);
+
+        var services = new ServiceCollection();
+        services.AddSingleton<
+            IQueryHandler<TracingEjectViaBehaviorQuery, Outcome<int, Failure>>,
+            TracingEjectViaBehaviorQueryHandler
+        >();
+        services.AddSingleton<IPipelineBehavior<TracingEjectViaBehaviorQuery, Outcome<int, Failure>>>(
+            new TracingEjectingBehavior<TracingEjectViaBehaviorQuery, Outcome<int, Failure>>(new Failure("dead end"))
+        );
+        services.AddSingleton<IMediator, Mediator>();
+        var provider = services.BuildServiceProvider();
+        var mediator = provider.GetRequiredService<IMediator>();
+
+        // Act
+        await mediator.SendAsync(new TracingEjectViaBehaviorQuery(), CancellationToken.None);
+
+        // Assert - a behavior ejecting before calling next() is caught at that behavior's own composition
+        // site, distinct from the handler's - the same EjectedTag proves either layer is observable.
+        var activity = SingleFor<TracingEjectViaBehaviorQuery>(captured);
+        Assert.True((bool?)activity.GetTagItem(MediatorActivitySource.EjectedTag));
     }
 
     [Fact]
@@ -298,6 +407,58 @@ public record TracingSuccessCommand : ICommand;
 public class TracingSuccessCommandHandler : IBareCommandHandler<TracingSuccessCommand, Outcome>
 {
     public Task<Outcome> Handle(TracingSuccessCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
+}
+
+/// <summary>A query whose handler ejects deep in its own call graph - covers <c>QueryHandlerWrapper</c>'s
+/// pass-through of the activity into <c>PipelineChainExecutor</c>'s handler-call eject guard.</summary>
+public record TracingEjectingQuery : IQuery<Outcome<int, Failure>>;
+
+public class TracingEjectingQueryHandler : IQueryHandler<TracingEjectingQuery, Outcome<int, Failure>>
+{
+    public Task<Outcome<int, Failure>> HandleAsync(TracingEjectingQuery query, CancellationToken ct) =>
+        Task.FromResult(Eject.With<Outcome<int, Failure>>(new Failure("ejected")));
+}
+
+/// <summary>A query whose own handler returns normally, but a registered behavior ejects before calling
+/// <c>next()</c> - covers <c>PipelineChainExecutor</c>'s per-behavior eject guard, distinct from the
+/// handler-call guard <see cref="TracingEjectingQuery"/> covers.</summary>
+public record TracingEjectViaBehaviorQuery : IQuery<Outcome<int, Failure>>;
+
+public class TracingEjectViaBehaviorQueryHandler : IQueryHandler<TracingEjectViaBehaviorQuery, Outcome<int, Failure>>
+{
+    public Task<Outcome<int, Failure>> HandleAsync(TracingEjectViaBehaviorQuery query, CancellationToken ct) =>
+        Task.FromResult(new Outcome<int, Failure>(1));
+}
+
+/// <summary>A behavior that ejects before calling <c>next()</c>, so the handler never runs.</summary>
+/// <typeparam name="TRequest">The request type, unconstrained since this behavior never inspects it.</typeparam>
+/// <typeparam name="TResponse">The response type, constrained to <see cref="IUnion"/> so
+/// <paramref name="response"/> can be ejected via <see cref="Eject.With{TResult}(TResult)"/>.</typeparam>
+public class TracingEjectingBehavior<TRequest, TResponse>(TResponse response) : IPipelineBehavior<TRequest, TResponse>
+    where TResponse : IUnion
+{
+    public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
+        Task.FromResult(Eject.With(response));
+}
+
+/// <summary>A value-returning command whose handler ejects - covers <c>CommandHandlerWrapper</c>'s pass-through
+/// of the activity into <c>PipelineChainExecutor</c>.</summary>
+public record TracingEjectingCommand : ICommand<Outcome<string, Failure>>;
+
+public class TracingEjectingCommandHandler : ICommandHandler<TracingEjectingCommand, Outcome<string, Failure>>
+{
+    public Task<Outcome<string, Failure>> HandleAsync(TracingEjectingCommand command, CancellationToken ct) =>
+        Task.FromResult(Eject.With<Outcome<string, Failure>>(new Failure("ejected")));
+}
+
+/// <summary>A bare command whose handler ejects - covers <c>BareCommandHandlerWrapper</c>'s pass-through of the
+/// activity into <c>PipelineChainExecutor</c>.</summary>
+public record TracingEjectingBareCommand : ICommand;
+
+public class TracingEjectingBareCommandHandler : IBareCommandHandler<TracingEjectingBareCommand, Outcome<Success, Failure>>
+{
+    public Task<Outcome<Success, Failure>> Handle(TracingEjectingBareCommand command, CancellationToken ct) =>
+        Task.FromResult(Eject.With<Outcome<Success, Failure>>(new Failure("ejected")));
 }
 
 public record TracingNotification(string Message) : INotification;
