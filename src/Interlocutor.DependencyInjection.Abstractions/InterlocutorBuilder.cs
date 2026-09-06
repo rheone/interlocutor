@@ -29,8 +29,8 @@ using Interlocutor.Abstractions.Queries;
 /// than <see cref="OverrideRequestContextAccessor{TAccessor}"/> - lives on <see cref="InterlocutorPipelineBuilder"/>,
 /// reachable only via <see cref="Pipeline"/>. This keeps "what runs in what order" a self-contained
 /// concern, separate from this type's own discovery (<c>Scan*</c>) and the one genuinely ambient default
-/// it still owns directly. <see cref="Behaviors"/>, <see cref="Stages"/>, and <see cref="StageFactories"/>
-/// remain pass-through projections of <see cref="Pipeline"/>'s state.
+/// it still owns directly. <see cref="Behaviors"/>, <see cref="BehaviorFactories"/>, <see cref="Stages"/>,
+/// and <see cref="StageFactories"/> remain pass-through projections of <see cref="Pipeline"/>'s state.
 /// </para>
 /// <para>
 /// Per <c>ADR-0009</c> ("No Default Pipeline"), a builder with no behavior calls produces zero pipeline
@@ -151,6 +151,14 @@ public sealed class InterlocutorBuilder
     /// </summary>
     /// <value>The flat, ordered list of pipeline behavior registrations, in builder-call order.</value>
     public IReadOnlyList<InterlocutorRegistration> Behaviors => this._pipeline.Behaviors;
+
+    /// <summary>
+    /// Gets the delegate-backed pipeline behavior registrations added via the
+    /// <see cref="InterlocutorPipelineBuilder.AddBehavior{TRequest,TResponse}(Func{TRequest,CancellationToken,Task{StageResult{TResponse}}},Func{TRequest,TResponse,CancellationToken,Task{TResponse}},RegistrationLifetime)"/>
+    /// delegate overloads - the lambda-form counterpart to <see cref="Behaviors"/>.
+    /// </summary>
+    /// <value>The delegate-backed pipeline behavior registrations.</value>
+    public IReadOnlyList<InterlocutorFactoryRegistration> BehaviorFactories => this._pipeline.BehaviorFactories;
 
     /// <summary>
     /// Gets the try-add-able default registrations, one per service type. Always contains exactly one

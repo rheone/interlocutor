@@ -7,14 +7,14 @@ using Interlocutor.CommonKernel;
 
 /// <summary>
 /// Covers <see cref="RegistrationApplier"/> directly, independent of either container package: the
-/// seven-step order it drives an <see cref="InterlocutorBuilder"/>'s accumulated registrations through, and
+/// eight-step order it drives an <see cref="InterlocutorBuilder"/>'s accumulated registrations through, and
 /// that it forwards each registration's <see cref="RegistrationLifetime"/> to its callback unchanged
 /// regardless of which lifetime it is.
 /// </summary>
 public class RegistrationApplierTests
 {
     [Fact]
-    public void Apply_DrivesEveryStep_InTheSevenStepOrder()
+    public void Apply_DrivesEveryStep_InTheEightStepOrder()
     {
         // Arrange
         var builder = new InterlocutorBuilder();
@@ -42,7 +42,16 @@ public class RegistrationApplierTests
                     null,
                 onAfter: null
             )
-            .AddBehavior(typeof(MarkerBehavior<,>));
+            .AddBehavior(typeof(MarkerBehavior<,>))
+            .AddBehavior<MarkerBehaviorFactoryRequest, MarkerBehaviorFactoryResponse>(
+                onEnter: (Func<
+                    MarkerBehaviorFactoryRequest,
+                    CancellationToken,
+                    Task<StageResult<MarkerBehaviorFactoryResponse>>
+                >?)
+                    null,
+                onExit: null
+            );
 
         var steps = new List<(string Category, Type MarkerType)>();
         var applier = new RegistrationApplier(
@@ -68,12 +77,16 @@ public class RegistrationApplierTests
             typeof(IPipelineStage<MarkerStageFactoryRequest, MarkerStageFactoryResponse>)
         );
         var behaviorIndex = IndexOf("registration", typeof(MarkerBehavior<,>));
+        var behaviorFactoryIndex = IndexOf(
+            "factory",
+            typeof(IPipelineBehavior<MarkerBehaviorFactoryRequest, MarkerBehaviorFactoryResponse>)
+        );
 
         // MarkerMatchedHandler is discovered twice: once by ordinary assembly scanning (it implements a
         // handler contract, so HandlerDiscovery.Discover finds it as part of the Handlers step like any other
         // scanned handler - Handlers and MatchedRegistrations are independent, non-deduplicated lists by
         // design) and once by the type-matching rule itself, in the MatchedRegistrations step. The step under
-        // test here is the latter, always the last occurrence given the seven-step order.
+        // test here is the latter, always the last occurrence given the eight-step order.
         var matchedIndex = steps.FindLastIndex(s =>
             s.Category == "registration" && s.MarkerType == typeof(MarkerMatchedHandler)
         );
@@ -84,6 +97,7 @@ public class RegistrationApplierTests
         Assert.True(stageIndex >= 0, "Stage marker was not applied.");
         Assert.True(stageFactoryIndex >= 0, "Stage-factory marker was not applied.");
         Assert.True(behaviorIndex >= 0, "Behavior marker was not applied.");
+        Assert.True(behaviorFactoryIndex >= 0, "Behavior-factory marker was not applied.");
         Assert.True(matchedIndex >= 0, "Matched-registration marker was not applied.");
         Assert.True(defaultIndex >= 0, "Default marker was not applied.");
 
@@ -91,7 +105,8 @@ public class RegistrationApplierTests
         Assert.True(generatedIndex < stageIndex, "Generated registrations must be applied before stages.");
         Assert.True(stageIndex < stageFactoryIndex, "Stages must be applied before stage factories.");
         Assert.True(stageFactoryIndex < behaviorIndex, "Stage factories must be applied before behaviors.");
-        Assert.True(behaviorIndex < matchedIndex, "Behaviors must be applied before matched registrations.");
+        Assert.True(behaviorIndex < behaviorFactoryIndex, "Behaviors must be applied before behavior factories.");
+        Assert.True(behaviorFactoryIndex < matchedIndex, "Behavior factories must be applied before matched registrations.");
         Assert.True(matchedIndex < defaultIndex, "Matched registrations must be applied before defaults.");
     }
 
@@ -163,6 +178,10 @@ public class RegistrationApplierTests
     private sealed record MarkerStageFactoryRequest;
 
     private sealed record MarkerStageFactoryResponse;
+
+    private sealed record MarkerBehaviorFactoryRequest;
+
+    private sealed record MarkerBehaviorFactoryResponse;
 #pragma warning restore S2094
 
     private sealed class MarkerStage : IPipelineStage<MarkerStageFactoryRequest, MarkerStageFactoryResponse>

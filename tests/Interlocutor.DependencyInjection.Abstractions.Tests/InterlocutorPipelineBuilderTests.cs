@@ -436,6 +436,150 @@ public class InterlocutorPipelineBuilderTests
     }
 
     [Fact]
+    public void AddBehavior_WithDelegates_RegistersFactoryForClosedPipelineBehaviorInterface()
+    {
+        // Arrange
+        var builder = new InterlocutorPipelineBuilder();
+
+        // Act
+        builder.AddBehavior<SampleRequest, SampleResponse>(
+            (_, _) => Task.FromResult(StageResult<SampleResponse>.Continue),
+            (_, response, _) => Task.FromResult(response)
+        );
+
+        // Assert
+        var registration = Assert.Single(builder.BehaviorFactories);
+        Assert.Equal(typeof(IPipelineBehavior<SampleRequest, SampleResponse>), registration.ServiceType);
+        Assert.Equal(RegistrationKind.Behavior, registration.Kind);
+        Assert.IsType<DelegatePipelineBehavior<SampleRequest, SampleResponse>>(
+            registration.Factory(Substitute.For<IServiceProvider>())
+        );
+    }
+
+    [Fact]
+    public async Task AddBehavior_WithServiceProviderDelegates_FactoryReceivesTheProvider()
+    {
+        // Arrange
+        var builder = new InterlocutorPipelineBuilder();
+        var sp = Substitute.For<IServiceProvider>();
+        IServiceProvider? observed = null;
+
+        // Act
+        builder.AddBehavior<SampleRequest, SampleResponse>(
+            (provider, _, _) =>
+            {
+                observed = provider;
+                return Task.FromResult(StageResult<SampleResponse>.Continue);
+            },
+            null
+        );
+
+        var registration = Assert.Single(builder.BehaviorFactories);
+        var behavior = Assert.IsType<DelegatePipelineBehavior<SampleRequest, SampleResponse>>(registration.Factory(sp));
+        await ((IPipelineBehavior<SampleRequest, SampleResponse>)behavior).HandleAsync(
+            new SampleRequest(),
+            () => Task.FromResult(new SampleResponse()),
+            CancellationToken.None
+        );
+
+        // Assert
+        Assert.Same(sp, observed);
+    }
+
+    [Fact]
+    public async Task AddBehavior_DelegateRegistration_BehavesIdenticallyToATypeBasedPipelineBehaviorBase_ForShortCircuitAndExitOverride()
+    {
+        // Arrange: a hand-authored PipelineBehaviorBase subclass (the type-based AddBehavior(Type) path from
+        // ticket 01) and a delegate-backed registration from this ticket's new overload, configured with
+        // equivalent enter (short-circuit) / exit (override) logic.
+        var typeBased = new ShortCircuitingBehavior();
+
+        var builder = new InterlocutorPipelineBuilder();
+        builder.AddBehavior<SampleRequest, int>(
+            onEnter: (_, _) => Task.FromResult(StageResult<int>.ShortCircuit(42)),
+            onExit: (_, response, _) => Task.FromResult(response + 1)
+        );
+        var delegateBased =
+            (IPipelineBehavior<SampleRequest, int>)
+                Assert.IsType<DelegatePipelineBehavior<SampleRequest, int>>(
+                    Assert.Single(builder.BehaviorFactories).Factory(Substitute.For<IServiceProvider>())
+                );
+
+        var typeBasedHandlerCalled = false;
+        var delegateBasedHandlerCalled = false;
+
+        // Act
+        var typeBasedResult = await typeBased.HandleAsync(
+            new SampleRequest(),
+            () =>
+            {
+                typeBasedHandlerCalled = true;
+                return Task.FromResult(0);
+            },
+            CancellationToken.None
+        );
+        var delegateBasedResult = await delegateBased.HandleAsync(
+            new SampleRequest(),
+            () =>
+            {
+                delegateBasedHandlerCalled = true;
+                return Task.FromResult(0);
+            },
+            CancellationToken.None
+        );
+
+        // Assert - both skip next() (short-circuit) and both hand back the exit-overridden response, unchanged
+        // by which registration form produced the instance.
+        Assert.False(typeBasedHandlerCalled);
+        Assert.False(delegateBasedHandlerCalled);
+        Assert.Equal(43, typeBasedResult);
+        Assert.Equal(typeBasedResult, delegateBasedResult);
+    }
+
+    [Fact]
+    public async Task AddBehavior_DelegateRegistration_ComposesInOnionOrder_LikeATypeBasedBehavior()
+    {
+        // Arrange
+        var callOrder = new List<string>();
+        IPipelineBehavior<SampleRequest, int> outer = new RecordingBehavior<SampleRequest, int>(callOrder, "outer");
+
+        var builder = new InterlocutorPipelineBuilder();
+        builder.AddBehavior<SampleRequest, int>(
+            onEnter: (_, _) =>
+            {
+                callOrder.Add("delegate-enter");
+                return Task.FromResult(StageResult<int>.Continue);
+            },
+            onExit: (_, response, _) =>
+            {
+                callOrder.Add("delegate-exit");
+                return Task.FromResult(response);
+            }
+        );
+        var inner =
+            (IPipelineBehavior<SampleRequest, int>)
+                Assert.IsType<DelegatePipelineBehavior<SampleRequest, int>>(
+                    Assert.Single(builder.BehaviorFactories).Factory(Substitute.For<IServiceProvider>())
+                );
+
+        Task<int> HandlerAsync()
+        {
+            callOrder.Add("handler");
+            return Task.FromResult(1);
+        }
+
+        // Act - outer wraps inner exactly as it would if inner had been registered via AddBehavior(Type)
+        // instead; the chain-composition contract doesn't distinguish the two registration forms.
+        Func<Task<int>> next = HandlerAsync;
+        var wrapped = () => inner.HandleAsync(new SampleRequest(), next, CancellationToken.None);
+        var result = await outer.HandleAsync(new SampleRequest(), wrapped, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(["outer-enter", "delegate-enter", "handler", "delegate-exit", "outer-exit"], callOrder);
+        Assert.Equal(1, result);
+    }
+
+    [Fact]
     public void AddStageHost_AddsPipelineStageBehaviorAtCallPosition()
     {
         // Arrange
@@ -487,6 +631,33 @@ public class InterlocutorPipelineBuilderTests
     private sealed class SecondBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     {
         public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) => next();
+    }
+
+    /// <summary>
+    /// A hand-authored <see cref="PipelineBehaviorBase{TRequest,TResponse}"/> subclass - the type-based
+    /// <c>AddBehavior(Type, RegistrationLifetime)</c> registration path - used to prove the delegate-backed
+    /// overload composes identically to it.
+    /// </summary>
+    private sealed class ShortCircuitingBehavior : PipelineBehaviorBase<SampleRequest, int>
+    {
+        protected override Task<StageResult<int>> OnEnterAsync(SampleRequest request, CancellationToken ct) =>
+            Task.FromResult(StageResult<int>.ShortCircuit(42));
+
+        protected override Task<int> OnExitAsync(SampleRequest request, int result, CancellationToken ct) =>
+            Task.FromResult(result + 1);
+    }
+
+    /// <summary>A plain pass-through behavior that logs enter/exit against <paramref name="log"/>, for asserting onion-composition order.</summary>
+    private sealed class RecordingBehavior<TRequest, TResponse>(List<string> log, string name)
+        : IPipelineBehavior<TRequest, TResponse>
+    {
+        public async Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+        {
+            log.Add($"{name}-enter");
+            var result = await next();
+            log.Add($"{name}-exit");
+            return result;
+        }
     }
 
     private sealed class CustomAuditSink : IAuditSink
