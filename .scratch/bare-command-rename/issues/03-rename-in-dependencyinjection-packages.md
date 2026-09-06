@@ -4,7 +4,7 @@
 
 **Blocked by:** 01 (depends on `Interlocutor.Abstractions`'s renamed handler contracts). Independent of 02 - both depend only on 01.
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `866ef8a`.
 
 - [ ] `GeneratedHandlerKind`, `HandlerDiscovery`, `InterlocutorBuilder`, and `RegistrationProblemKind` in `Interlocutor.DependencyInjection.Abstractions` are updated wherever they reference the old names.
 - [ ] `Interlocutor.DependencyInjection.Microsoft`'s `InterlocutorServiceCollectionExtensions` is updated to match.
