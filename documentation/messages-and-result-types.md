@@ -421,6 +421,8 @@ public record UpdateProduct(int Id, string Name, int Version)
 
 When a handler's response arity is specific (only the cases it can produce), the compiler forces callers to handle exactly those cases - no more, no less.
 
+The shipped family stops at six cases, and even a consumer's own [custom-arity union](extensibility.md#custom-arity-outcome-unions-generateoutcomemembersattribute) has a hard ceiling above that: at most sixteen case types. `Match<TResult>`/`Switch` bind one delegate parameter per case type to the BCL's `System.Func<T1..T16, TResult>`/`System.Action<T1..T16>` delegate families, and neither family defines an overload wider than sixteen type parameters - there is no signature past that point for the source generator to emit. A `GenerateOutcomeMembersAttribute`-attributed union declaring more than sixteen case types is a build error naming the same reason. In practice this ceiling is never a real constraint: an operation needing that many independently-branchable outcomes is a stronger sign the request is trying to do too much than that the arity needs to grow further.
+
 ## Marker Interfaces
 
 Requests opt into cross-cutting pipeline behavior by implementing a [marker interface](glossary.md#marker-interfaces) - never by editing a central configuration list:

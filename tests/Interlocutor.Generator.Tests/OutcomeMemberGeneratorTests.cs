@@ -93,6 +93,85 @@ public sealed class OutcomeMemberGeneratorTests
     }
 
     [Fact]
+    public void OutcomeMemberGenerator_SixteenCaseUnion_EmitsExpectedMembers_Test()
+    {
+        // Arrange - exactly the BCL's Func<T1..T16, TResult>/Action<T1..T16> ceiling; must still succeed
+        const string source = """
+            namespace Test;
+
+            using Interlocutor.CommonKernel;
+            using Interlocutor.CommonKernel.ResultTypes;
+
+            [GenerateOutcomeMembers]
+            public readonly partial union SixteenCaseOutcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>(
+                T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16
+            ) : IOutcome
+            {
+            }
+            """;
+
+        // Act
+        var result = GeneratorTestHarness.RunAndUpdate(
+            new OutcomeMemberGenerator(),
+            source,
+            "OutcomeMemberGenerator.Tests.SixteenCase",
+            null,
+            LanguageVersion.Preview,
+            out var diagnostics
+        );
+
+        // Assert
+        Assert.Empty(diagnostics);
+        var emitResult = result.GetDiagnostics(TestContext.Current.CancellationToken);
+        Assert.Empty(emitResult.Where(static d => d.Severity == DiagnosticSeverity.Error));
+
+        var generatedText = string.Join(
+            System.Environment.NewLine,
+            result
+                .SyntaxTrees.Where(static t => t.FilePath.Contains("OutcomeMembers", StringComparison.Ordinal))
+                .Select(static t => t.ToString())
+        );
+        Assert.Contains("public TResult Match<TResult>(", generatedText, StringComparison.Ordinal);
+        Assert.Contains("public void Switch(", generatedText, StringComparison.Ordinal);
+        Assert.Equal(16, CountOccurrences(generatedText, "public bool TryGetValue(out"));
+    }
+
+    [Fact]
+    public void OutcomeMemberGenerator_SeventeenCases_ReportsError_Test()
+    {
+        // Arrange - one past the BCL's Func<T1..T16, TResult>/Action<T1..T16> ceiling
+        const string source = """
+            namespace Test;
+
+            using Interlocutor.CommonKernel;
+            using Interlocutor.CommonKernel.ResultTypes;
+
+            [GenerateOutcomeMembers]
+            public readonly partial union SeventeenCaseOutcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17>(
+                T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17
+            ) : IOutcome
+            {
+            }
+            """;
+
+        // Act
+        _ = GeneratorTestHarness.RunAndUpdate(
+            new OutcomeMemberGenerator(),
+            source,
+            "OutcomeMemberGenerator.Tests.SeventeenCase",
+            null,
+            LanguageVersion.Preview,
+            out var diagnostics
+        );
+
+        // Assert
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("INTERLOC013", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Contains("Func<T1..T16,TResult>", diagnostic.GetMessage(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void OutcomeMemberGenerator_TwoCaseUnion_RuntimeBehavior_Test()
     {
         // Arrange

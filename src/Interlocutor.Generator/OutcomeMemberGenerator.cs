@@ -43,8 +43,9 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 /// this step touches Roslyn syntax or semantic types again.
 /// </description></item>
 /// <item><description>
-/// <see cref="InterlocutorDiagnostics"/> - the descriptor catalog both diagnostic checks below report from:
-/// <see cref="InterlocutorDiagnostics.TooFewOutcomeCaseTypes"/> for an under-arity union, and
+/// <see cref="InterlocutorDiagnostics"/> - the descriptor catalog all three diagnostic checks below report
+/// from: <see cref="InterlocutorDiagnostics.TooFewOutcomeCaseTypes"/> for an under-arity union,
+/// <see cref="InterlocutorDiagnostics.TooManyOutcomeCaseTypes"/> for an over-arity one, and
 /// <see cref="InterlocutorDiagnostics.AccessorNameCollision"/> for a colliding named accessor.
 /// </description></item>
 /// <item><description>
@@ -62,13 +63,20 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 /// <item><description>
 /// <see cref="OutcomeMemberGenerator"/> (this class) - the <c>[Generator]</c> entry point wiring the six
 /// collaborators above together: <see cref="Initialize"/> registers the incremental pipeline that builds the
-/// model, and <see cref="Execute"/> sequences the two diagnostic checks ahead of emission.
+/// model, and <see cref="Execute"/> sequences the three diagnostic checks ahead of emission.
 /// </description></item>
 /// </list>
 /// </remarks>
 [Generator(LanguageNames.CSharp)]
 public sealed class OutcomeMemberGenerator : IIncrementalGenerator
 {
+    /// <summary>
+    /// The most case types <c>Match&lt;TResult&gt;</c>/<c>Switch</c> can bind, one delegate parameter per case,
+    /// to the BCL's widest <c>System.Func&lt;T1..T16, TResult&gt;</c>/<c>System.Action&lt;T1..T16&gt;</c>
+    /// overload.
+    /// </summary>
+    private const int MaxCaseTypes = 16;
+
     /// <inheritdoc />
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -87,7 +95,8 @@ public sealed class OutcomeMemberGenerator : IIncrementalGenerator
 
     /// <summary>
     /// Reports <see cref="InterlocutorDiagnostics.TooFewOutcomeCaseTypes"/> for an under-arity attributed
-    /// union, <see cref="InterlocutorDiagnostics.AccessorNameCollision"/> for a colliding named accessor, or
+    /// union, <see cref="InterlocutorDiagnostics.TooManyOutcomeCaseTypes"/> for an over-arity one,
+    /// <see cref="InterlocutorDiagnostics.AccessorNameCollision"/> for a colliding named accessor, or
     /// otherwise emits its generated partial declaration via <see cref="OutcomeMemberEmitter"/>.
     /// </summary>
     /// <param name="context">The source production context to add the generated source (or diagnostics) to.</param>
@@ -99,6 +108,19 @@ public sealed class OutcomeMemberGenerator : IIncrementalGenerator
             context.ReportDiagnostic(
                 Diagnostic.Create(
                     InterlocutorDiagnostics.TooFewOutcomeCaseTypes,
+                    model.Location,
+                    model.DisplayName,
+                    model.CaseTypeDisplayStrings.Length
+                )
+            );
+            return;
+        }
+
+        if (model.CaseTypeDisplayStrings.Length > MaxCaseTypes)
+        {
+            context.ReportDiagnostic(
+                Diagnostic.Create(
+                    InterlocutorDiagnostics.TooManyOutcomeCaseTypes,
                     model.Location,
                     model.DisplayName,
                     model.CaseTypeDisplayStrings.Length

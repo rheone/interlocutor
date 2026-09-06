@@ -1,6 +1,7 @@
 namespace Interlocutor.Generator.Diagnostics;
 
 using Interlocutor.Generator.Analysis;
+using Interlocutor.Generator.Emission;
 using Interlocutor.Generator.Models;
 using Microsoft.CodeAnalysis;
 
@@ -380,5 +381,37 @@ internal static class InterlocutorDiagnostics
             + "generate the same accessor name with different, non-var-inferable signatures; a case type whose "
             + "own name matches an already-reserved generated member name would generate a duplicate member "
             + "outright. Rename the colliding case type(s), or use distinct case types."
+    );
+
+    /// <summary>
+    /// Reported when a <c>partial union</c> decorated with <c>GenerateOutcomeMembersAttribute</c> declares
+    /// more than sixteen case types.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="OutcomeMemberEmitter"/>'s generated <c>Match&lt;TResult&gt;</c>/<c>Switch</c> signatures bind
+    /// one delegate parameter per case type to the BCL's <c>System.Func&lt;T1..T16, TResult&gt;</c>/
+    /// <c>System.Action&lt;T1..T16&gt;</c> families, which stop at sixteen input type parameters - there is no
+    /// wider overload to grow into past that point. Left unchecked, a seventeen-or-more-case union would fail
+    /// deep inside the generated member body with a confusing "no overload of Func/Action takes this many type
+    /// arguments" error rather than a clear message at the declaration site; this diagnostic surfaces the same
+    /// ceiling there instead. Always <see cref="DiagnosticSeverity.Error"/>, the same posture as
+    /// <see cref="TooFewOutcomeCaseTypes"/>: past sixteen cases, there is no meaningful partial member set to
+    /// fall back to - <c>Match</c>/<c>Switch</c> themselves cannot be emitted at all.
+    /// </remarks>
+    public static readonly DiagnosticDescriptor TooManyOutcomeCaseTypes = new(
+        id: "INTERLOC013",
+        title: "Attributed union declares more than sixteen case types",
+        messageFormat: "'{0}' is decorated with GenerateOutcomeMembersAttribute but declares {1} case type(s) - "
+            + "at most sixteen are supported, because Match/Switch bind one delegate parameter per case to the "
+            + "BCL's Func<T1..T16,TResult>/Action<T1..T16> delegate families, which top out at sixteen type "
+            + "parameters",
+        category: "Interlocutor.Outcomes",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "GenerateOutcomeMembersAttribute marks a partial union declaration for source-generated "
+            + "Match/Switch/TryGetValue/ToString members. Match<TResult> and Switch bind one delegate parameter "
+            + "per case type to System.Func<T1..T16, TResult>/System.Action<T1..T16>, and the BCL defines no "
+            + "wider overload of either family, so a union past sixteen case types has no signature Match/Switch "
+            + "could ever be emitted with. Reduce the union to sixteen or fewer case types."
     );
 }

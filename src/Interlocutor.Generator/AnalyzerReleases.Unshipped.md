@@ -16,3 +16,4 @@ INTERLOC009 | Interlocutor.Outcomes | Warning | Duplicate outcome case type
 INTERLOC010 | Interlocutor.Validation | Warning | Validator exists for a request with no validation-shaped response case
 INTERLOC011 | Interlocutor.Outcomes | Error | Attributed union declares fewer than two case types
 INTERLOC012 | Interlocutor.Outcomes | Error | Colliding TryGet accessor name among a union's case types
+INTERLOC013 | Interlocutor.Outcomes | Error | Attributed union declares more than sixteen case types
