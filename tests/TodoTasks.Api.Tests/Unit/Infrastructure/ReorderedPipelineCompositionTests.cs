@@ -108,7 +108,7 @@ public sealed class ReorderedPipelineCompositionTests
     }
 
     /// <summary>A request guarded by both a policy and a validator, so which one runs first is observable.</summary>
-    public sealed record GuardedRequest : IRequiresPolicy
+    public sealed record GuardedRequest : IRequiresPolicyRequest
     {
         /// <inheritdoc/>
         public string PolicyName => "AlwaysDenied";

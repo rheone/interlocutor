@@ -152,10 +152,10 @@ public class BehaviorSubsetConstraintTests
             .ToList();
 
         // Assert
-        // AuditableCommand: satisfies IAuditableRequest but not IRequiresPolicy -> logging + auditing only.
+        // AuditableCommand: satisfies IAuditableRequest but not IRequiresPolicyRequest -> logging + auditing only.
         Assert.Equal(["LoggingBehavior`2", "AuditingBehavior`2"], auditableChain);
 
-        // PolicyCommand: satisfies IRequiresPolicy (and the Forbidden response shape) but not IAuditableRequest
+        // PolicyCommand: satisfies IRequiresPolicyRequest (and the Forbidden response shape) but not IAuditableRequest
         // -> logging + authorization only. Drawn from the exact same registration list as the other two chains.
         Assert.Equal(["LoggingBehavior`2", "AuthorizationBehavior`2"], policyChain);
 
@@ -224,7 +224,7 @@ public class BehaviorSubsetConstraintTests
         public string ActionName => "Test.Audit";
     }
 
-    private sealed record PolicyCommand(string Name) : ICommand<Outcome<string, Forbidden>>, IRequiresPolicy
+    private sealed record PolicyCommand(string Name) : ICommand<Outcome<string, Forbidden>>, IRequiresPolicyRequest
     {
         public string PolicyName => "Test.Policy";
     }

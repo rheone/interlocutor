@@ -153,7 +153,7 @@ public class OutcomeCaseRegistryTests
         // constructor for UnionCaseFactory to find for any TCase - the same failure mode a generic union hits
         // for a case it doesn't declare (Construct_RealUnion_MissingCase_ThrowsOutcomeCaseNotSupportedException
         // above), just for every case rather than one in particular. Cancelled is the case CancellationBehavior
-        // would try to construct into if a request implementing ICancellable chose Outcome as its response
+        // would try to construct into if a request implementing ICancellableRequest chose Outcome as its response
         // type - this is exactly the incompatibility that produces a clear, documented-runtime signal instead
         // of a silent no-op the first time such a request actually observes cancellation.
         var registry = DefaultOutcomeCaseRegistry.Instance;

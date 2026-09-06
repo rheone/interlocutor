@@ -501,7 +501,7 @@ public class InterlocutorPipelineBuilderTests
 
     private sealed class CustomTimeoutPolicy : ITimeoutPolicy
     {
-        public TimeSpan ResolveBudget(IHasTimeout request) => TimeSpan.FromSeconds(1);
+        public TimeSpan ResolveBudget(ITimeoutRequest request) => TimeSpan.FromSeconds(1);
     }
 
     private sealed class CustomRateLimiter : IRateLimiter

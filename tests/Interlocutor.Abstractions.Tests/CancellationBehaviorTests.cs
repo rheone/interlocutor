@@ -8,9 +8,9 @@ using Interlocutor.Abstractions.Queries;
 using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 
-// CancellationBehavior<TRequest, TResponse> constrains TRequest : ICancellable, so a request that doesn't
+// CancellationBehavior<TRequest, TResponse> constrains TRequest : ICancellableRequest, so a request that doesn't
 // opt in cannot close this generic at all - there is no runtime "skip" branch left to unit test here, matching
-// AuthorizationBehaviorTests' treatment of IRequiresPolicy. TResponse is the whole outcome type directly, not
+// AuthorizationBehaviorTests' treatment of IRequiresPolicyRequest. TResponse is the whole outcome type directly, not
 // decomposed into a success-type parameter, for the same open-generic-resolution reason documented on
 // AuthorizationBehavior.
 public class CancellationBehaviorTests
@@ -143,7 +143,7 @@ public class CancellationBehaviorTests
     public async Task Handle_WithCaseLessOutcomeResponse_ThrowsNamedExceptionOnCancellation()
     {
         // The case-less, non-generic Outcome (see its own remarks) is the specific incompatibility this
-        // ticket calls out: pairing ICancellable with a response that has no case to construct into at all
+        // ticket calls out: pairing ICancellableRequest with a response that has no case to construct into at all
         // is a configuration mistake, surfaced loudly the first time cancellation is actually observed -
         // not a silent no-op - via the same mechanism the misshapen-generic-union test above exercises.
         // Arrange
@@ -194,18 +194,18 @@ public class CancellationBehaviorTests
         Assert.IsType<Cancelled>(result.CaseValue);
     }
 
-    public record CancellableQuery(string Name) : IQuery<Outcome<string, Cancelled>>, ICancellable;
+    public record CancellableQuery(string Name) : IQuery<Outcome<string, Cancelled>>, ICancellableRequest;
 
-    /// <summary>A request implementing <see cref="ICancellable"/> whose response has no <see cref="Cancelled"/> case at all.</summary>
+    /// <summary>A request implementing <see cref="ICancellableRequest"/> whose response has no <see cref="Cancelled"/> case at all.</summary>
     public record MisshapenCancellableQuery
         : IQuery<Outcome<string, Interlocutor.CommonKernel.ResultTypes.NotFound>>,
-            ICancellable;
+            ICancellableRequest;
 
-    /// <summary>A request implementing <see cref="ICancellable"/> whose response is the case-less <see cref="Outcome"/>.</summary>
-    public record CaseLessCancellableQuery : IQuery<Outcome>, ICancellable;
+    /// <summary>A request implementing <see cref="ICancellableRequest"/> whose response is the case-less <see cref="Outcome"/>.</summary>
+    public record CaseLessCancellableQuery : IQuery<Outcome>, ICancellableRequest;
 
     /// <summary>A request whose response type is a hand-rolled, non-union <see cref="IOutcome"/>.</summary>
-    public record CancellableHandRolledQuery : ICancellable;
+    public record CancellableHandRolledQuery : ICancellableRequest;
 
     /// <summary>A hand-rolled <see cref="IOutcome"/>/<see cref="IUnion"/> implementation that is not a
     /// compiler-generated <c>union</c> - it has no case constructor for <see cref="Interlocutor.Abstractions.Pipeline.UnionCaseFactory"/>

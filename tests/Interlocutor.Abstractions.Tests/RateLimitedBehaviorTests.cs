@@ -158,7 +158,7 @@ public class RateLimitedBehaviorTests
     public async Task Handle_WithCaseLessOutcomeResponse_ThrowsNamedExceptionOnThrottle()
     {
         // The case-less, non-generic Outcome (see its own remarks) is the specific incompatibility this
-        // ticket calls out: pairing IRateLimited with a response that has no RateLimited case to construct
+        // ticket calls out: pairing IRateLimitedRequest with a response that has no RateLimited case to construct
         // into at all is a configuration mistake, surfaced loudly the moment the limiter actually throttles -
         // not a silent no-op.
         // Arrange
@@ -239,19 +239,19 @@ public class RateLimitedBehaviorTests
         Assert.Equal(TimeSpan.FromSeconds(5), rateLimited.RetryAfter);
     }
 
-    public record ThrottledQuery(string Name) : IQuery<Outcome<string, RateLimited>>, IRateLimited
+    public record ThrottledQuery(string Name) : IQuery<Outcome<string, RateLimited>>, IRateLimitedRequest
     {
         public string LimitKey => "per-user";
     }
 
     /// <summary>A request declaring a limit key whose response has no <see cref="RateLimited"/> case at all.</summary>
-    public record MisshapenThrottledQuery : IQuery<Outcome<string, NotFound>>, IRateLimited
+    public record MisshapenThrottledQuery : IQuery<Outcome<string, NotFound>>, IRateLimitedRequest
     {
         public string LimitKey => "per-user";
     }
 
-    /// <summary>A request implementing <see cref="IRateLimited"/> whose response is the case-less <see cref="Outcome"/>.</summary>
-    public record CaseLessThrottledQuery : IQuery<Outcome>, IRateLimited
+    /// <summary>A request implementing <see cref="IRateLimitedRequest"/> whose response is the case-less <see cref="Outcome"/>.</summary>
+    public record CaseLessThrottledQuery : IQuery<Outcome>, IRateLimitedRequest
     {
         public string LimitKey => "per-user";
     }

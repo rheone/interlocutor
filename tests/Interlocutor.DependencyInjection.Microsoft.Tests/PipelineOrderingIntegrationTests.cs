@@ -158,7 +158,7 @@ public sealed class PipelineOrderingIntegrationTests
         : ICommand<Outcome<Success, Forbidden>>,
             ITransactionalRequest,
             IAuditableRequest,
-            IRequiresPolicy
+            IRequiresPolicyRequest
     {
         public string ActionName => "Test.Ordered";
 

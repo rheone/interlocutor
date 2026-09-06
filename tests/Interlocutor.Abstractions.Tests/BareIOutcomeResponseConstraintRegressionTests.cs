@@ -87,19 +87,19 @@ public sealed class BareIOutcomeResponseConstraintRegressionTests
 
         // --- Every pipeline behavior: a closed generic field declaration alone triggers the constraint
         // check, independent of whether the behavior is ever constructed. ---
-        public sealed record BareIOutcomePolicyRequest : IRequiresPolicy
+        public sealed record BareIOutcomePolicyRequest : IRequiresPolicyRequest
         {
             public string PolicyName => "x";
         }
 
-        public sealed record BareIOutcomeCancellableRequest : ICancellable;
+        public sealed record BareIOutcomeCancellableRequest : ICancellableRequest;
 
-        public sealed record BareIOutcomeTimeBoundRequest : IHasTimeout
+        public sealed record BareIOutcomeTimeBoundRequest : ITimeoutRequest
         {
             public System.TimeSpan Budget => System.TimeSpan.Zero;
         }
 
-        public sealed record BareIOutcomeThrottledRequest : IRateLimited
+        public sealed record BareIOutcomeThrottledRequest : IRateLimitedRequest
         {
             public string LimitKey => "x";
         }

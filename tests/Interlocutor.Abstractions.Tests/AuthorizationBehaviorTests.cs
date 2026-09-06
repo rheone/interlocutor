@@ -9,7 +9,7 @@ using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 using NSubstitute;
 
-// AuthorizationBehavior<TRequest, TResponse> now constrains TRequest : IRequiresPolicy, so a request that
+// AuthorizationBehavior<TRequest, TResponse> now constrains TRequest : IRequiresPolicyRequest, so a request that
 // doesn't require a policy cannot close this generic at all - there is no runtime "skip" branch left to unit
 // test here. The "a request without the marker never resolves the behavior" guarantee is proven at the
 // container level instead: see BehaviorSubsetConstraintTests in the DependencyInjection.Microsoft/Autofac
@@ -231,7 +231,7 @@ public class AuthorizationBehaviorTests
         Assert.Contains("CanRead", forbidden.Reason ?? string.Empty);
     }
 
-    public record ProtectedQuery(string Name) : IQuery<Outcome<string, Forbidden>>, IRequiresPolicy
+    public record ProtectedQuery(string Name) : IQuery<Outcome<string, Forbidden>>, IRequiresPolicyRequest
     {
         public string PolicyName => "CanRead";
     }
@@ -239,13 +239,13 @@ public class AuthorizationBehaviorTests
     /// <summary>A request declaring a policy whose response has no <see cref="Forbidden"/> case at all.</summary>
     public record MisshapenProtectedQuery
         : IQuery<Outcome<string, Interlocutor.CommonKernel.ResultTypes.NotFound>>,
-            IRequiresPolicy
+            IRequiresPolicyRequest
     {
         public string PolicyName => "CanRead";
     }
 
     /// <summary>A request whose response type is a hand-rolled, non-union <see cref="IOutcome"/>.</summary>
-    public record ProtectedHandRolledQuery : IRequiresPolicy
+    public record ProtectedHandRolledQuery : IRequiresPolicyRequest
     {
         public string PolicyName => "CanRead";
     }

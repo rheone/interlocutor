@@ -197,16 +197,16 @@ public class IUnionOnlyResponseDispatchTests
         Assert.Equal("ok", result.Value);
     }
 
-    public sealed record ProtectedUnionOnlyQuery : IRequiresPolicy
+    public sealed record ProtectedUnionOnlyQuery : IRequiresPolicyRequest
     {
         public string PolicyName => "CanRead";
     }
 
-    public sealed record CancellableUnionOnlyQuery : ICancellable;
+    public sealed record CancellableUnionOnlyQuery : ICancellableRequest;
 
-    public sealed record TimeBoundUnionOnlyQuery(TimeSpan Budget) : IHasTimeout;
+    public sealed record TimeBoundUnionOnlyQuery(TimeSpan Budget) : ITimeoutRequest;
 
-    public sealed record ThrottledUnionOnlyQuery : IRateLimited
+    public sealed record ThrottledUnionOnlyQuery : IRateLimitedRequest
     {
         public string LimitKey => "per-user";
     }

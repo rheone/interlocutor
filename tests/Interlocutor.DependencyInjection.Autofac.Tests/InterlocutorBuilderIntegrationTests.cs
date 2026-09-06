@@ -230,7 +230,7 @@ public class InterlocutorBuilderIntegrationTests
         // shaped Outcome<TSuccess, Forbidden> (it needs a Forbidden case to construct on denial), so
         // it's resolved against AuthorizableQuery (not the plain-Outcome SampleQuery every other test
         // here uses) to genuinely exercise closed-generic resolution rather than only the open-generic
-        // registration list. AuthorizableQuery also implements IAuditableRequest and IRequiresPolicy so that,
+        // registration list. AuthorizableQuery also implements IAuditableRequest and IRequiresPolicyRequest so that,
         // now that AuditingBehavior/AuthorizationBehavior constrain TRequest to those markers, this query still
         // draws all three behaviors from the recommended chain instead of being filtered down to just logging.
         var behaviors = container
@@ -358,7 +358,7 @@ public class InterlocutorBuilderIntegrationTests
     /// <summary>Deliberately has no handler, so ValidateOnBuild() tests have a deterministic problem to find.</summary>
     private sealed record UnhandledValidationQuery : IQuery<Outcome>;
 
-    private sealed record CancellableQuery : IQuery<Outcome<string, Cancelled>>, ICancellable;
+    private sealed record CancellableQuery : IQuery<Outcome<string, Cancelled>>, ICancellableRequest;
 
     private sealed class CancellableQueryHandler : IQueryHandler<CancellableQuery, Outcome<string, Cancelled>>
     {
@@ -366,7 +366,7 @@ public class InterlocutorBuilderIntegrationTests
             Task.FromResult<Outcome<string, Cancelled>>("ok");
     }
 
-    private sealed record TimeBoundQuery : IQuery<Outcome<string, Timeout>>, IHasTimeout
+    private sealed record TimeBoundQuery : IQuery<Outcome<string, Timeout>>, ITimeoutRequest
     {
         public TimeSpan Budget => TimeSpan.FromSeconds(30);
     }
@@ -377,7 +377,7 @@ public class InterlocutorBuilderIntegrationTests
             Task.FromResult<Outcome<string, Timeout>>("ok");
     }
 
-    private sealed record ThrottledQuery : IQuery<Outcome<string, RateLimited>>, IRateLimited
+    private sealed record ThrottledQuery : IQuery<Outcome<string, RateLimited>>, IRateLimitedRequest
     {
         public string LimitKey => "test-limit";
     }
@@ -388,7 +388,7 @@ public class InterlocutorBuilderIntegrationTests
             Task.FromResult<Outcome<string, RateLimited>>("ok");
     }
 
-    private sealed record AuthorizableQuery : IQuery<Outcome<string, Forbidden>>, IAuditableRequest, IRequiresPolicy
+    private sealed record AuthorizableQuery : IQuery<Outcome<string, Forbidden>>, IAuditableRequest, IRequiresPolicyRequest
     {
         public string ActionName => "Query.Authorizable";
 
