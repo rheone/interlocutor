@@ -11,7 +11,7 @@ Both overloads construct a `DelegatePipelineBehavior<TRequest, TResponse>` via t
 
 **Blocked by:** 01 — needs `DelegatePipelineBehavior<TRequest, TResponse>` to exist
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `89fb634`.
 
 - [ ] `InterlocutorPipelineBuilder.AddBehavior<TRequest, TResponse>` plain-delegate overload added, default lifetime `Singleton`
 - [ ] `InterlocutorPipelineBuilder.AddBehavior<TRequest, TResponse>` service-provider-aware overload added, default lifetime `Scoped`
