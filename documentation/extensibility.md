@@ -17,7 +17,7 @@ public interface IIdempotent
 public sealed class IdempotencyBehavior<TRequest, TResponse>(IIdempotencyStore store)
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IIdempotent
-    where TResponse : IOutcome
+    where TResponse : IUnion
 {
     public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
@@ -48,12 +48,12 @@ See [Pipeline & Behavior Composition](pipeline-and-behaviors.md) for the full be
 
 When a behavior only needs a before/after hook - no need to own the `next()` delegate - `IPipelineStage<TRequest, TResponse>` (via `PipelineStageBase<TRequest, TResponse>`) is the lighter alternative, registered via `builder.Pipeline.AddStage(...)`/`.AddStageHost()`. See [Pipeline & Behavior Composition § Pipeline Stages](pipeline-and-behaviors.md#pipeline-stages-ipipelinestage) for the full contract, including short-circuiting.
 
-## Custom `IOutcome` implementations
+## Custom `IUnion` implementations
 
-`IOutcome` is a bare marker - any type can implement it, not only the library's own compiler-generated `Outcome<...>` unions. A hand-rolled response type is legal anywhere a handler response is expected:
+`System.Runtime.CompilerServices.IUnion` - the interface the compiler generates for every `union` declaration - is all a response type needs to implement; any type can implement it, not only the library's own compiler-generated `Outcome<...>` unions. A hand-rolled response type is legal anywhere a handler response is expected:
 
 ```csharp
-public sealed class PaymentOutcome : IOutcome
+public sealed class PaymentOutcome : IUnion
 {
     private PaymentOutcome(Type caseType, object? caseValue) => (this.CaseType, this.CaseValue) = (caseType, caseValue);
 
@@ -61,39 +61,35 @@ public sealed class PaymentOutcome : IOutcome
 
     public object? CaseValue { get; }
 
+    object? IUnion.Value => this.CaseValue;
+
     public static PaymentOutcome FromSuccess(Receipt value) => new(typeof(Receipt), value);
 
     public static PaymentOutcome FromFailure<TFailure>(TFailure failure) where TFailure : notnull => new(typeof(TFailure), failure);
 }
 ```
 
-What makes this usable by the pipeline isn't implementing some richer interface - it's being teachable to `IOutcomeCaseRegistry`, the construction/extraction seam `AuthorizationBehavior`, `CancellationBehavior`, `TimeoutBehavior`, `RateLimitedBehavior`, and `Interlocutor.FluentValidation`'s `ValidationBehavior` all go through instead of constructing a case directly. `OverrideOutcomeCaseRegistry<TRegistry>()` takes a type, constructed through DI like any other service - not a pre-built instance - so wrap the `OutcomeCaseRegistryBuilder` output in a small class:
+`PaymentOutcome` doesn't need to implement `IOutcome` - the project-owned marker the shipped `Outcome`/`Outcome<...>` family also declares for its own, separate opt-in classification surface (see [Glossary § Result Types](glossary.md#result-types)). What makes it usable by the *pipeline* isn't implementing some richer interface either - it's being teachable to `IOutcomeCaseRegistry`, the construction/extraction seam `AuthorizationBehavior`, `CancellationBehavior`, `TimeoutBehavior`, `RateLimitedBehavior`, and `Interlocutor.FluentValidation`'s `ValidationBehavior` all go through instead of constructing a case directly. *Extracting* `PaymentOutcome`'s active case already works against the zero-config `DefaultOutcomeCaseRegistry`, since it reads any `IUnion`'s `Value` generically - only *constructing* one from a case value needs help, since `PaymentOutcome` has no compiler-generated case constructor for the default registry to find. `OverrideOutcomeCaseRegistry<TRegistry>()` takes a type, constructed through DI like any other service - not a pre-built instance - so wrap the `OutcomeCaseRegistryBuilder` output in a small class:
 
 ```csharp
 public sealed class PaymentOutcomeCaseRegistry : IOutcomeCaseRegistry
 {
     private static readonly IOutcomeCaseRegistry Inner = new OutcomeCaseRegistryBuilder()
         .RegisterFactory<PaymentOutcome, Forbidden>(PaymentOutcome.FromFailure)
-        .RegisterExtractor<PaymentOutcome>((PaymentOutcome response, out Type caseType, out object? caseValue) =>
-        {
-            caseType = response.CaseType;
-            caseValue = response.CaseValue;
-            return true;
-        })
         .Build();
 
-    public TResponse Construct<TResponse, TCase>(TCase caseValue) where TResponse : IOutcome =>
+    public TResponse Construct<TResponse, TCase>(TCase caseValue) where TResponse : IUnion =>
         Inner.Construct<TResponse, TCase>(caseValue);
 
     public bool TryGetActiveCase<TResponse>(TResponse response, out Type caseType, out object? caseValue)
-        where TResponse : IOutcome =>
+        where TResponse : IUnion =>
         Inner.TryGetActiveCase(response, out caseType, out caseValue);
 }
 
 builder.Pipeline.OverrideOutcomeCaseRegistry<PaymentOutcomeCaseRegistry>();
 ```
 
-Anything left unregistered still falls back to `DefaultOutcomeCaseRegistry`, so you only register the response types that aren't compiler-generated unions. See [Messages, Result Types & Variance § IOutcome as an Extension Point](messages-and-result-types.md#ioutcome-as-an-extension-point) for the full walkthrough.
+Anything left unregistered still falls back to `DefaultOutcomeCaseRegistry`, so you only register construction for the response types that aren't compiler-generated unions. See [Messages, Result Types & Variance § IUnion as an Extension Point](messages-and-result-types.md#iunion-as-an-extension-point) for the full walkthrough.
 
 A related but separate extension point: `LoggingBehavior` and `AuditingBehavior` need to describe a response for a log/audit line - a human-readable label, not a success/failure judgment - which is a different question from constructing/extracting a case. That's `IResponseOutcomeDescriber`, built on `OutcomeClassifierBuilder` - see [Pipeline & Behavior Composition § Outcome Description](pipeline-and-behaviors.md#outcome-description) for the worked example. And at the HTTP boundary, `IOutcomeStatusMapper` maps a failure case to a status code and body - see [ASP.NET Core Integration § Custom HTTP Mapping](aspnetcore-integration.md#custom-http-mapping).
 
@@ -250,7 +246,7 @@ projected away - while still implementing [`IValidationFailureCase`](glossary.md
 minimal interface `ValidationErrors` implements. A consumer that recognizes `IValidationFailureCase` - such as
 `DefaultHttpOutcomeStatusMapper` (see [ASP.NET Core Integration § Status Code Mapping](aspnetcore-integration.md#status-code-mapping))
 - handles either case type the same way, without needing to know which validation technology produced it.
-This is the same extension-point shape as a custom `IOutcome` implementation above: a minimal marker
+This is the same extension-point shape as a custom `IUnion` implementation above: a minimal marker
 interface a technology-specific case type implements, rather than a base type every case would need to
 inherit from - record structs can't be inherited from at all, which is exactly why this couldn't be modeled
 as `FluentValidationErrors : ValidationErrors`.

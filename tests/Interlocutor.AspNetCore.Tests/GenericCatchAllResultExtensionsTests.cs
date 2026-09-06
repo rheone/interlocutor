@@ -1,6 +1,7 @@
 namespace Interlocutor.AspNetCore.Tests;
 
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 using Interlocutor.Abstractions.Pipeline.Cases;
 using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
@@ -11,20 +12,16 @@ using Microsoft.AspNetCore.Mvc;
 /// Tests for the generic <c>ToActionResult&lt;TResponse&gt;</c>/<c>ToMinimalApiResult&lt;TResponse&gt;</c>
 /// catch-all overloads on <see cref="ResultExtensions"/>: that the six built-in union arities still bind to
 /// their dedicated overloads at compile time (ticket 13's overloads), and that the catch-all is what finally
-/// lets a hand-rolled, non-union <see cref="IOutcome"/> implementation produce an HTTP result at all.
+/// lets a hand-rolled, non-union <see cref="IUnion"/> implementation produce an HTTP result at all.
 /// </summary>
 public class GenericCatchAllResultExtensionsTests
 {
-    private static readonly IOutcomeCaseRegistry Registry = new OutcomeCaseRegistryBuilder()
-        .RegisterExtractor<CustomOutcome>(
-            (CustomOutcome response, out Type caseType, out object? caseValue) =>
-            {
-                caseType = response.CaseType;
-                caseValue = response.CaseValue;
-                return true;
-            }
-        )
-        .Build();
+    // No custom IOutcomeCaseRegistry is registered anywhere in this file: CustomOutcome is a real,
+    // hand-rolled IUnion implementer (see CustomOutcome.cs), so the zero-config DefaultOutcomeCaseRegistry
+    // already extracts its active case generically, reading IUnion.Value directly - no per-type
+    // registration needed. A custom registry remains necessary only for *constructing* a hand-rolled type
+    // like this one (see messages-and-result-types.md § IUnion as an Extension Point), which none of these
+    // tests do - each builds its CustomOutcome directly via FromSuccess/FromFailure.
 
     // --- Overload resolution: the dedicated arity overloads must still win over the catch-all ---
     //
@@ -100,7 +97,7 @@ public class GenericCatchAllResultExtensionsTests
         Assert.Equal(2, method.GetParameters().Length);
     }
 
-    // --- Catch-all end to end, against a hand-rolled, non-union IOutcome ---
+    // --- Catch-all end to end, against a hand-rolled, non-union IUnion ---
 
     [Fact]
     public void ToActionResult_CatchAll_HandRolledOutcome_WithSuccess_ReturnsOkObjectResult()
@@ -108,8 +105,9 @@ public class GenericCatchAllResultExtensionsTests
         // Arrange
         var response = CustomOutcome.FromSuccess(default(Success));
 
-        // Act
-        var actionResult = response.ToActionResult(caseRegistry: Registry);
+        // Act - a null caseRegistry falls back to DefaultOutcomeCaseRegistry, which extracts CustomOutcome's
+        // active case without any custom registration (see the class remarks above).
+        var actionResult = response.ToActionResult(caseRegistry: null);
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(actionResult);
@@ -123,7 +121,7 @@ public class GenericCatchAllResultExtensionsTests
         var response = CustomOutcome.FromFailure(new NotFound("Widget not found"));
 
         // Act
-        var actionResult = response.ToActionResult(caseRegistry: Registry);
+        var actionResult = response.ToActionResult(caseRegistry: null);
 
         // Assert
         var objectResult = Assert.IsType<ObjectResult>(actionResult);
@@ -138,7 +136,7 @@ public class GenericCatchAllResultExtensionsTests
         var response = CustomOutcome.FromFailure(new Forbidden("No access"));
 
         // Act
-        var actionResult = response.ToActionResult(Registry, new TeapotOutcomeStatusMapper());
+        var actionResult = response.ToActionResult(caseRegistry: null, new TeapotOutcomeStatusMapper());
 
         // Assert
         var statusCodeResult = Assert.IsType<StatusCodeResult>(actionResult);
@@ -152,7 +150,7 @@ public class GenericCatchAllResultExtensionsTests
         var response = CustomOutcome.FromSuccess(default(Success));
 
         // Act
-        var minimalResult = response.ToMinimalApiResult(caseRegistry: Registry);
+        var minimalResult = response.ToMinimalApiResult(caseRegistry: null);
 
         // Assert
         Assert.Contains("Ok", minimalResult.GetType().Name);
@@ -165,23 +163,11 @@ public class GenericCatchAllResultExtensionsTests
         var response = CustomOutcome.FromFailure(new Conflict("Data changed", "stale.data"));
 
         // Act
-        var minimalResult = response.ToMinimalApiResult(caseRegistry: Registry);
+        var minimalResult = response.ToMinimalApiResult(caseRegistry: null);
 
         // Assert
         var statusCode = (int?)minimalResult.GetType().GetProperty("StatusCode")?.GetValue(minimalResult);
         Assert.Equal(StatusCodes.Status409Conflict, statusCode);
-    }
-
-    [Fact]
-    public void ToActionResult_CatchAll_HandRolledOutcome_WithoutRegisteredRegistry_ThrowsOutcomeCaseNotSupportedException()
-    {
-        // Arrange - a null caseRegistry falls back to DefaultOutcomeCaseRegistry, which cannot decompose a
-        // non-union IOutcome reflectively (this is exactly what registering a custom registry, as the
-        // tests above do, is for).
-        var response = CustomOutcome.FromSuccess(default(Success));
-
-        // Act & Assert
-        Assert.Throws<OutcomeCaseNotSupportedException>(() => response.ToActionResult(caseRegistry: null));
     }
 
     // --- Catch-all also handles the built-in unions correctly when called explicitly as TResponse ---
@@ -216,7 +202,7 @@ public class GenericCatchAllResultExtensionsTests
         var response = CustomOutcome.FromFailure("just a string, not a recognized case type");
 
         // Act & Assert
-        var exception = Assert.Throws<OutcomeCaseNotMappableException>(() => response.ToActionResult(caseRegistry: Registry));
+        var exception = Assert.Throws<OutcomeCaseNotMappableException>(() => response.ToActionResult(caseRegistry: null));
         Assert.Equal(typeof(CustomOutcome), exception.ResponseType);
         Assert.Equal(typeof(string), exception.CaseType);
     }
@@ -228,9 +214,7 @@ public class GenericCatchAllResultExtensionsTests
         var response = CustomOutcome.FromFailure(42);
 
         // Act & Assert
-        var exception = Assert.Throws<OutcomeCaseNotMappableException>(() =>
-            response.ToMinimalApiResult(caseRegistry: Registry)
-        );
+        var exception = Assert.Throws<OutcomeCaseNotMappableException>(() => response.ToMinimalApiResult(caseRegistry: null));
         Assert.Equal(typeof(CustomOutcome), exception.ResponseType);
         Assert.Equal(typeof(int), exception.CaseType);
     }

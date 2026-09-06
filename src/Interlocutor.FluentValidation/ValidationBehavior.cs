@@ -1,5 +1,6 @@
 namespace Interlocutor.FluentValidation;
 
+using System.Runtime.CompilerServices;
 using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Pipeline.Cases;
 using Interlocutor.CommonKernel.ResultTypes;
@@ -10,7 +11,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </summary>
 /// <typeparam name="TRequest">The type of the request being validated.</typeparam>
 /// <typeparam name="TResponse">
-/// The response type, constrained only to <see cref="IOutcome"/> - deliberately unconstrained
+/// The response type, constrained only to <see cref="IUnion"/> - deliberately unconstrained
 /// beyond that. See the Remarks for why, and for the same reasoning applied to <see cref="AuthorizationBehavior{TRequest, TResponse}"/>.
 /// </typeparam>
 /// <remarks>
@@ -19,18 +20,18 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// aggregate. This behavior preserves every violation from every validator rather than stopping at the first failure.
 /// </para>
 /// <para>
-/// <typeparamref name="TResponse"/> is constrained only to <see cref="IOutcome"/>, not decomposed
+/// <typeparamref name="TResponse"/> is constrained only to <see cref="IUnion"/>, not decomposed
 /// into a success-type parameter with <see cref="ValidationErrors"/> pinned as the failure case - for exactly
 /// the reason <see cref="AuthorizationBehavior{TRequest, TResponse}"/>'s remarks describe in full: the
 /// decomposed shape broke Microsoft.Extensions.DependencyInjection's open-generic resolution outright.
 /// Constructing the <see cref="ValidationErrors"/> case of an unconstrained <typeparamref name="TResponse"/>
 /// is delegated to an injected <see cref="IOutcomeCaseRegistry"/> rather than performed reflectively inline,
-/// so a consumer with a hand-rolled, non-union <see cref="IOutcome"/> implementation can register a
+/// so a consumer with a hand-rolled, non-union <see cref="IUnion"/> implementation can register a
 /// custom factory for it instead of being limited to compiler-generated unions.
 /// </para>
 /// </remarks>
 public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
-    where TResponse : IOutcome
+    where TResponse : IUnion
 {
     private readonly IOutcomeCaseRegistry caseRegistry;
     private readonly IEnumerable<global::FluentValidation.IValidator<TRequest>> validators;

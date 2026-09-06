@@ -1,5 +1,6 @@
 namespace Interlocutor.DependencyInjection.Abstractions.Tests;
 
+using System.Runtime.CompilerServices;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Markers;
 using Interlocutor.Abstractions.Pipeline;
@@ -512,10 +513,10 @@ public class InterlocutorPipelineBuilderTests
     private sealed class CustomOutcomeCaseRegistry : IOutcomeCaseRegistry
     {
         public TResponse Construct<TResponse, TCase>(TCase caseValue)
-            where TResponse : IOutcome => throw new NotSupportedException();
+            where TResponse : IUnion => throw new NotSupportedException();
 
         public bool TryGetActiveCase<TResponse>(TResponse response, out Type caseType, out object? caseValue)
-            where TResponse : IOutcome
+            where TResponse : IUnion
         {
             caseType = typeof(TResponse);
             caseValue = null;

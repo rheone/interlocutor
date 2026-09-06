@@ -1,5 +1,6 @@
 namespace Interlocutor.FluentValidation;
 
+using System.Runtime.CompilerServices;
 using global::FluentValidation.Results;
 using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Pipeline.Cases;
@@ -11,7 +12,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </summary>
 /// <typeparam name="TRequest">The type of the request being validated.</typeparam>
 /// <typeparam name="TResponse">
-/// The response type, constrained only to <see cref="IOutcome"/> - deliberately unconstrained
+/// The response type, constrained only to <see cref="IUnion"/> - deliberately unconstrained
 /// beyond that. See the Remarks for why, and for the same reasoning applied to <see cref="AuthorizationBehavior{TRequest, TResponse}"/>.
 /// </typeparam>
 /// <remarks>
@@ -27,16 +28,16 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// recommended, alongside) <see cref="ValidationBehavior{TRequest, TResponse}"/>.
 /// </para>
 /// <para>
-/// <typeparamref name="TResponse"/> is constrained only to <see cref="IOutcome"/> for the same
+/// <typeparamref name="TResponse"/> is constrained only to <see cref="IUnion"/> for the same
 /// reason <see cref="ValidationBehavior{TRequest, TResponse}"/>'s remarks give in full. Constructing the
 /// <see cref="FluentValidationErrors"/> case of an unconstrained <typeparamref name="TResponse"/> is
 /// delegated to an injected <see cref="IOutcomeCaseRegistry"/> rather than performed reflectively inline, so a
-/// consumer with a hand-rolled, non-union <see cref="IOutcome"/> implementation can register a
+/// consumer with a hand-rolled, non-union <see cref="IUnion"/> implementation can register a
 /// custom factory for it instead of being limited to compiler-generated unions.
 /// </para>
 /// </remarks>
 public sealed class FluentValidationErrorsBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
-    where TResponse : IOutcome
+    where TResponse : IUnion
 {
     private readonly IOutcomeCaseRegistry caseRegistry;
     private readonly IEnumerable<global::FluentValidation.IValidator<TRequest>> validators;

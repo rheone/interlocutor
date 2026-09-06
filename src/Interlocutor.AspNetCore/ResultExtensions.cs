@@ -3,6 +3,7 @@ namespace Interlocutor.AspNetCore;
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Interlocutor.Abstractions.Pipeline.Cases;
 using Interlocutor.Abstractions.Pipeline.Mapping;
 using Interlocutor.CommonKernel;
@@ -21,7 +22,7 @@ using Microsoft.AspNetCore.Mvc;
 /// <c>Outcome</c> and every <c>Outcome&lt;T1, ...&gt;</c> arity) are source-generated into a second
 /// partial declaration by <c>Interlocutor.Generator</c>'s <c>ResultExtensionsGenerator</c>, marked via
 /// <see cref="GenerateResultExtensionsAttribute"/> above - see that attribute's remarks. This file keeps only
-/// the reflective catch-all overload (for a hand-rolled <see cref="IOutcome"/> implementation) and the
+/// the reflective catch-all overload (for a hand-rolled <see cref="IUnion"/> implementation) and the
 /// private <see cref="OutcomeHttpMapping"/> rendering helpers both partials share.
 /// </para>
 /// <para>
@@ -41,16 +42,16 @@ using Microsoft.AspNetCore.Mvc;
 public static partial class ResultExtensions
 {
     extension<TResponse>(TResponse response)
-        where TResponse : IOutcome
+        where TResponse : IUnion
     {
         /// <summary>
-        /// Converts an arbitrary <see cref="IOutcome"/> to an <see cref="IActionResult"/> with the
+        /// Converts an arbitrary <see cref="IUnion"/> to an <see cref="IActionResult"/> with the
         /// appropriate HTTP status code.
         /// </summary>
         /// <remarks>
         /// <para>
         /// Unlike the dedicated arity overloads above, this overload is constrained only to
-        /// <see cref="IOutcome"/>, so it works for a hand-rolled response type as well as any of the
+        /// <see cref="IUnion"/>, so it works for a hand-rolled response type as well as any of the
         /// built-in <c>Outcome</c> union arities. It uses <paramref name="caseRegistry"/> to extract the
         /// active case at runtime, then dispatches to <paramref name="mapper"/> reflectively for failures - the
         /// dedicated overloads above dispatch to the same mapper via a compile-time <c>switch</c> instead.
@@ -93,7 +94,7 @@ public static partial class ResultExtensions
         /// The registry used to extract <paramref name="response"/>'s active case. Pass
         /// <see langword="null"/> (or <see cref="DefaultOutcomeCaseRegistry.Instance"/> explicitly) to use the
         /// default registry, which handles any compiler-generated union but throws for a hand-rolled
-        /// <see cref="IOutcome"/> implementation unless a custom registry covering it is supplied.
+        /// <see cref="IUnion"/> implementation unless a custom registry covering it is supplied.
         /// </param>
         /// <param name="mapper">
         /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
@@ -109,7 +110,7 @@ public static partial class ResultExtensions
         }
 
         /// <summary>
-        /// Converts an arbitrary <see cref="IOutcome"/> to a minimal API result with the appropriate
+        /// Converts an arbitrary <see cref="IUnion"/> to a minimal API result with the appropriate
         /// HTTP status code.
         /// </summary>
         /// <remarks>
@@ -122,7 +123,7 @@ public static partial class ResultExtensions
         /// The registry used to extract <paramref name="response"/>'s active case. Pass
         /// <see langword="null"/> (or <see cref="DefaultOutcomeCaseRegistry.Instance"/> explicitly) to use the
         /// default registry, which handles any compiler-generated union but throws for a hand-rolled
-        /// <see cref="IOutcome"/> implementation unless a custom registry covering it is supplied.
+        /// <see cref="IUnion"/> implementation unless a custom registry covering it is supplied.
         /// </param>
         /// <param name="mapper">
         /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
@@ -191,7 +192,7 @@ public static partial class ResultExtensions
     /// Extracts <paramref name="response"/>'s active case via <paramref name="caseRegistry"/> (or the default
     /// registry) and determines whether it should be mapped as a failure.
     /// </summary>
-    /// <typeparam name="TResponse">The <see cref="IOutcome"/> type to extract from.</typeparam>
+    /// <typeparam name="TResponse">The <see cref="IUnion"/> type to extract from.</typeparam>
     /// <param name="response">The response to extract the active case from.</param>
     /// <param name="caseRegistry">The registry to use, or <see langword="null"/> to use the default registry.</param>
     /// <returns>Whether the active case is a failure, its runtime type, and its value.</returns>
@@ -205,7 +206,7 @@ public static partial class ResultExtensions
         TResponse response,
         IOutcomeCaseRegistry? caseRegistry
     )
-        where TResponse : IOutcome
+        where TResponse : IUnion
     {
         var registry = caseRegistry ?? DefaultOutcomeCaseRegistry.Instance;
         var found = registry.TryGetActiveCase(response, out var caseType, out var caseValue);

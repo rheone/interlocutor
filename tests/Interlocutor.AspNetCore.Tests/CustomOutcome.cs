@@ -1,14 +1,18 @@
 namespace Interlocutor.AspNetCore.Tests;
 
+using System.Runtime.CompilerServices;
 using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
-/// A hand-rolled, non-union <see cref="IOutcome"/> implementation - standing in for a consumer
-/// type that has no compiler-generated case constructor and no <c>IUnion</c> marker, so the generic
-/// catch-all overloads on <see cref="ResultExtensions"/> can only handle it via a custom
-/// <see cref="Interlocutor.Abstractions.Pipeline.Cases.IOutcomeCaseRegistry"/> registration.
+/// A hand-rolled, non-union <see cref="IUnion"/> implementation - standing in for a consumer
+/// type that has no compiler-generated case constructor, so the generic catch-all overloads on
+/// <see cref="ResultExtensions"/> can extract its active case automatically (any real <see cref="IUnion"/>
+/// implementer is enough for that), but can only *construct* it via a custom
+/// <see cref="Interlocutor.Abstractions.Pipeline.Cases.IOutcomeCaseRegistry"/> registration, since
+/// <see cref="Interlocutor.Abstractions.Pipeline.UnionCaseFactory"/> has no case constructor to find
+/// reflectively for it.
 /// </summary>
-public sealed class CustomOutcome : IOutcome
+public sealed class CustomOutcome : IUnion
 {
     private CustomOutcome(Type caseType, object? caseValue)
     {
@@ -23,6 +27,9 @@ public sealed class CustomOutcome : IOutcome
     /// <summary>Gets the active case value.</summary>
     /// <value>The active case value.</value>
     public object? CaseValue { get; }
+
+    /// <inheritdoc/>
+    object? IUnion.Value => this.CaseValue;
 
     /// <summary>Creates a <see cref="CustomOutcome"/> carrying a success value.</summary>
     /// <remarks>

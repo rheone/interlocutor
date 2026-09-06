@@ -1,5 +1,6 @@
 namespace Interlocutor.FluentValidation.Tests;
 
+using System.Runtime.CompilerServices;
 using global::FluentValidation;
 using global::FluentValidation.Results;
 using Interlocutor.Abstractions.Pipeline;
@@ -296,11 +297,11 @@ public class ValidationBehaviorTests
         Assert.IsType<ValidationErrors>(result.Value);
     }
 
-    /// <summary>A hand-rolled, non-union <see cref="IOutcome"/> implementation with no
+    /// <summary>A hand-rolled, non-union <see cref="IUnion"/> implementation with no
     /// compiler-generated case constructor for <see cref="UnionCaseFactory"/> to find reflectively - proves
     /// <see cref="ValidationBehavior{TRequest, TResponse}"/> goes through the injected
     /// <see cref="IOutcomeCaseRegistry"/> rather than assuming the response type is a union.</summary>
-    public sealed class HandRolledOutcome : IOutcome
+    public sealed class HandRolledOutcome : IUnion
     {
         private HandRolledOutcome(Type caseType, object? caseValue)
         {
@@ -311,6 +312,9 @@ public class ValidationBehaviorTests
         public Type CaseType { get; }
 
         public object? CaseValue { get; }
+
+        /// <inheritdoc/>
+        object? IUnion.Value => this.CaseValue;
 
         public static HandRolledOutcome FromSuccess(string value) => new(typeof(string), value);
 

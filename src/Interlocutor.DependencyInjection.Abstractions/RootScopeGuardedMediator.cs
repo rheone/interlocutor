@@ -1,6 +1,7 @@
 namespace Interlocutor.DependencyInjection.Abstractions;
 
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using Interlocutor.Abstractions;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
@@ -36,7 +37,7 @@ public sealed class RootScopeGuardedMediator(IMediator inner, IRootScopeDetector
 {
     /// <inheritdoc/>
     public Task<TResponse> SendAsync<TResponse>(IQuery<TResponse> query, CancellationToken ct = default)
-        where TResponse : IOutcome
+        where TResponse : IUnion
     {
         ArgumentNullException.ThrowIfNull(query);
         this.EnsureNotRootScope(query.GetType());
@@ -45,7 +46,7 @@ public sealed class RootScopeGuardedMediator(IMediator inner, IRootScopeDetector
 
     /// <inheritdoc/>
     public Task<TResponse> SendAsync<TResponse>(ICommand<TResponse> command, CancellationToken ct = default)
-        where TResponse : IOutcome
+        where TResponse : IUnion
     {
         ArgumentNullException.ThrowIfNull(command);
         this.EnsureNotRootScope(command.GetType());
@@ -54,7 +55,7 @@ public sealed class RootScopeGuardedMediator(IMediator inner, IRootScopeDetector
 
     /// <inheritdoc/>
     public Task<TResult> SendAsync<TResult>(ICommand command, CancellationToken ct = default)
-        where TResult : IOutcome
+        where TResult : IUnion
     {
         ArgumentNullException.ThrowIfNull(command);
         this.EnsureNotRootScope(command.GetType());

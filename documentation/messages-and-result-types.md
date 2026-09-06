@@ -1,6 +1,6 @@
 # Messages, Result Types & Variance
 
-Request types (queries and commands) and their response type constraints. Result types are C# 15 discriminated unions, and every response is constrained to implement `IOutcome` - a bare DTO response type fails to compile.
+Request types (queries and commands) and their response type constraints. Result types are C# 15 discriminated unions, and every response is constrained to implement `System.Runtime.CompilerServices.IUnion` - a bare DTO response type fails to compile.
 
 ## Request Types (Messages)
 
@@ -8,7 +8,7 @@ Requests are marked with a carrier interface:
 
 ### IQuery<TResponse>
 
-Marks a read request. Never writes data. Always returns `TResponse : IOutcome`.
+Marks a read request. Never writes data. Always returns `TResponse : IUnion`.
 
 ```csharp
 public record GetUser(int UserId) : IQuery<Outcome<UserDto, NotFound>>;
@@ -24,7 +24,7 @@ var result = await mediator.Send(new GetUser(42));  // Outcome<UserDto, NotFound
 
 ### ICommand<TResponse>
 
-Marks a write request that returns a value. Returns `TResponse : IOutcome`.
+Marks a write request that returns a value. Returns `TResponse : IUnion`.
 
 ```csharp
 public record CreateUser(string Name, string Email)
@@ -51,7 +51,7 @@ public record DeleteAllUsers() : ICommand;
 public record ClearCache() : ICommand;
 ```
 
-A handler is `IVoidCommandHandler<TCommand, TResult>`, pairing the command with whichever `IOutcome`-shaped result that handler produces - most commonly the non-generic `Outcome` (`Success | Failure`), but any union is legal:
+A handler is `IVoidCommandHandler<TCommand, TResult>`, pairing the command with whichever `IUnion`-shaped result that handler produces - most commonly the non-generic `Outcome` (`Success | Failure`), but any union is legal:
 
 ```csharp
 public class ClearCacheHandler : IVoidCommandHandler<ClearCache, Outcome>
@@ -71,18 +71,18 @@ var result = await mediator.Send<Outcome>(new DeleteAllUsers());
 // result is Outcome (Success or Failure)
 ```
 
-## IOutcome Constraint
+## IUnion Constraint
 
-Every handler's `TResponse` must implement `IOutcome`:
+Every handler's `TResponse` must implement `System.Runtime.CompilerServices.IUnion` - the interface the compiler generates for every `union` declaration:
 
 ```csharp
 public interface IQuery<TResponse>
-    where TResponse : IOutcome
+    where TResponse : IUnion
 {
 }
 
 public interface ICommand<TResponse>
-    where TResponse : IOutcome
+    where TResponse : IUnion
 {
 }
 ```
@@ -90,7 +90,7 @@ public interface ICommand<TResponse>
 This constraint is **compiler-enforced**. A bare DTO response type fails to compile:
 
 ```csharp
-// ❌ Compile error - UserDto doesn't implement IOutcome
+// ❌ Compile error - UserDto doesn't implement IUnion
 public record GetUser(int UserId) : IQuery<UserDto>;
 
 // ✅ Correct
@@ -99,12 +99,12 @@ public record GetUser(int UserId) : IQuery<Outcome<UserDto, NotFound>>;
 
 The constraint enables runtime-typed dispatch (see [runtime-typed-dispatch.md](runtime-typed-dispatch.md)) and ensures callers can pattern-match on success/failure without knowing the concrete outcome shape.
 
-## IOutcome as an Extension Point
+## IUnion as an Extension Point
 
-`IOutcome` is the real extension surface, not an implementation detail of the built-in unions. The compiler-generated `Outcome<...>` unions documented throughout this page are the library's own built-in implementation of that marker interface - not the only legal one. Any type that implements `IOutcome` can stand in as a handler's response, including a hand-rolled class that isn't a compiler-generated `union` at all:
+`IUnion` is the real extension surface, not an implementation detail of the built-in unions. The compiler-generated `Outcome<...>` unions documented throughout this page are the library's own built-in implementation of that interface - not the only legal one. Any type that implements `IUnion` can stand in as a handler's response, including a hand-rolled class that isn't a compiler-generated `union` at all:
 
 ```csharp
-public sealed class CustomOutcome : IOutcome
+public sealed class CustomOutcome : IUnion
 {
     private CustomOutcome(Type caseType, object? caseValue)
     {
@@ -116,6 +116,8 @@ public sealed class CustomOutcome : IOutcome
 
     public object? CaseValue { get; }
 
+    object? IUnion.Value => this.CaseValue;
+
     public static CustomOutcome FromSuccess(Success value) => new(typeof(Success), value);
 
     public static CustomOutcome FromFailure<TFailure>(TFailure failure)
@@ -123,25 +125,19 @@ public sealed class CustomOutcome : IOutcome
 }
 ```
 
-What makes a response type usable by the pipeline isn't a `union` declaration - it's being teachable to `IOutcomeCaseRegistry`, the construction/extraction seam behaviors use to build and inspect a response's active case without knowing its concrete shape. `AuthorizationBehavior`, `CancellationBehavior`, `TimeoutBehavior`, `RateLimitedBehavior`, and the FluentValidation `ValidationBehavior` all go through this registry rather than constructing a case directly, which is what lets them work against both compiler-generated unions and a consumer's own `IOutcome` implementation.
+A hand-rolled `IUnion` implementer needs nothing beyond that one interface to be a legal `TResponse` - it does **not** need to implement `IOutcome`, the project-owned marker the shipped `Outcome`/`Outcome<...>` family also declares. `IOutcome` and its companion `IOutcomeCase` still exist in `Interlocutor.CommonKernel.ResultTypes`, but they're a separate, opt-in classification surface now, not what makes a type legal as `TResponse`: the shipped family declares `: IOutcome` to expose it, and your own hand-rolled type may declare `IOutcomeCase` too if it wants the same surface - see [Glossary § Result Types](glossary.md#result-types) for what that surface actually gives you.
 
-`DefaultOutcomeCaseRegistry` is the zero-config default: it handles any `IOutcome` that is a compiler-generated `union`, via reflection over the union's case constructors and its compiler-generated `IUnion` marker. A response type that isn't a `union` - like `CustomOutcome` above - has no case constructor for the default registry to find, so it needs a custom factory/extractor pair registered via `OutcomeCaseRegistryBuilder`:
+What makes a response type usable by the *pipeline*, though, isn't a `union` declaration either - it's being teachable to `IOutcomeCaseRegistry`, the construction/extraction seam behaviors use to build and inspect a response's active case without knowing its concrete shape. `AuthorizationBehavior`, `CancellationBehavior`, `TimeoutBehavior`, `RateLimitedBehavior`, and the FluentValidation `ValidationBehavior` all go through this registry rather than constructing a case directly, which is what lets them work against both compiler-generated unions and a consumer's own `IUnion` implementation.
+
+`DefaultOutcomeCaseRegistry` is the zero-config default, and it splits into two halves that aren't equally permissive. *Extracting* a response's active case works for any `IUnion` implementer generically - it just reads `Value` - so `CustomOutcome` above needs no custom extractor registered at all. *Constructing* one from a case value is narrower: the default registry finds a case constructor only for a compiler-generated `union`, so a hand-rolled type like `CustomOutcome`, which has no case constructor to find, still needs a custom factory registered via `OutcomeCaseRegistryBuilder`:
 
 ```csharp
 var registry = new OutcomeCaseRegistryBuilder()
     .RegisterFactory<CustomOutcome, Forbidden>(CustomOutcome.FromFailure)
-    .RegisterExtractor<CustomOutcome>(
-        (CustomOutcome response, out Type caseType, out object? caseValue) =>
-        {
-            caseType = response.CaseType;
-            caseValue = response.CaseValue;
-            return true;
-        }
-    )
     .Build();
 ```
 
-Anything left unregistered still falls back to `DefaultOutcomeCaseRegistry`, so a consumer only needs to register the response types that aren't unions - every `Outcome<...>` shape keeps working unmodified. Register a custom registry via `InterlocutorPipelineBuilder.OverrideOutcomeCaseRegistry<TRegistry>()` (reachable via `builder.Pipeline`); see [pipeline-and-behaviors.md](pipeline-and-behaviors.md) for how the behaviors that depend on it are wired.
+Anything left unregistered still falls back to `DefaultOutcomeCaseRegistry`, so a consumer only needs to register construction for the response types that aren't unions - every `Outcome<...>` shape keeps working unmodified. Register a custom registry via `InterlocutorPipelineBuilder.OverrideOutcomeCaseRegistry<TRegistry>()` (reachable via `builder.Pipeline`); see [pipeline-and-behaviors.md](pipeline-and-behaviors.md) for how the behaviors that depend on it are wired.
 
 ## Result Types
 
@@ -152,7 +148,7 @@ Anything left unregistered still falls back to `DefaultOutcomeCaseRegistry`, so 
 >
 > - **Singular default** (`Conflict`, `NotFound`, `Failure`, `ValidationError`, ...) - one occurrence of that failure.
 > - **Plural aggregate** (`Conflicts`, `Failures`, `ValidationErrors`, ...) - a collection of one or more occurrences of the same singular case, for a handler that can fail for more than one independent reason in a single response. Reach for the plural aggregate instead of collecting your own `List<T>` of the singular: it de-duplicates, is safe at its default value, and exposes the same `.Items`-plus-semantic-projection shape (`.Reasons`, `.Messages`, `.ErrorCodes`, ...) across every aggregate, so callers pattern-match one familiar shape regardless of which aggregate they're holding.
-> - **`I<Concept>FailureCase` marker** (`IForbiddenFailureCase`, `IRateLimitedFailureCase`, `ITimeoutFailureCase`, `IValidationFailureCase`, `IFieldValidationFailureCase`) - a minimal interface the matching built-in case type implements, naming just enough shape (a `Message`, or `Messages`) for a consumer to recognize *any* implementer of that concept generically. Implementing one on your own case type buys substitutability: `OutcomeMapperBase` (and anything built on it, like `DefaultHttpOutcomeStatusMapper`) already recognizes the marker rather than the concrete built-in type, so a domain-specific replacement - a richer `Forbidden`, a technology-specific `RateLimited` - maps correctly with zero mapper changes. This mirrors the [`IOutcome`](#ioutcome-constraint) extension-point shape one level down: `IOutcome` lets you substitute the whole union, an `I<Concept>FailureCase` marker lets you substitute one of its cases.
+> - **`I<Concept>FailureCase` marker** (`IForbiddenFailureCase`, `IRateLimitedFailureCase`, `ITimeoutFailureCase`, `IValidationFailureCase`, `IFieldValidationFailureCase`) - a minimal interface the matching built-in case type implements, naming just enough shape (a `Message`, or `Messages`) for a consumer to recognize *any* implementer of that concept generically. Implementing one on your own case type buys substitutability: `OutcomeMapperBase` (and anything built on it, like `DefaultHttpOutcomeStatusMapper`) already recognizes the marker rather than the concrete built-in type, so a domain-specific replacement - a richer `Forbidden`, a technology-specific `RateLimited` - maps correctly with zero mapper changes. This mirrors the [`IUnion`](#iunion-as-an-extension-point) extension-point shape one level down: `IUnion` lets you substitute the whole union, an `I<Concept>FailureCase` marker lets you substitute one of its cases.
 
 ### Success
 
@@ -462,7 +458,7 @@ public interface IPipelineBehavior<TRequest, TResponse>
     // AND inside Func<Task<TResponse>> - an argument position (contravariance)
 }
 
-public interface IQueryHandler<TQuery, TResponse> where TResponse : IOutcome
+public interface IQueryHandler<TQuery, TResponse> where TResponse : IUnion
 {
     Task<TResponse> Handle(TQuery query, CancellationToken ct);
     // TResponse is in return position (covariance wanted here)
@@ -496,7 +492,7 @@ Polymorphism is request-side only. Queries and commands can inherit from a base 
 
 There is no `IAsyncEnumerable<T>` / streaming response type - streaming and "commit/rollback as one unit" don't compose, so it's deliberately kept out permanently, not a gap waiting to be filled.
 
-The constraint (all responses must be `IOutcome`) ensures:
+The constraint (all responses must be `IUnion`) ensures:
 
 - A caller can inspect success/failure without knowing the concrete outcome shape (enables runtime-typed dispatch).
 - Transactions can guarantee "all or nothing" - a single commit/rollback boundary.
