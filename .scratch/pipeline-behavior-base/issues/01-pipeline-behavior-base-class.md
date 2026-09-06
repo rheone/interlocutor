@@ -10,7 +10,7 @@ Both types are usable immediately through the *existing* `InterlocutorPipelineBu
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `e195f77`.
 
 - [ ] `PipelineBehaviorBase<TRequest, TResponse>` exists in `Interlocutor.Abstractions.Pipeline`, implements `IPipelineBehavior<TRequest, TResponse>`, and is not sealed/does not expose `HandleAsync` as an extension point (only `OnEnterAsync`/`OnExitAsync` are virtual)
 - [ ] Default (no override) behavior is a pure pass-through: `next()` runs, its result is returned unchanged
