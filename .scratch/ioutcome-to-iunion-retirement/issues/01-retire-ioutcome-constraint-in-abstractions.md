@@ -4,7 +4,7 @@
 
 **Blocked by:** None — can start immediately.
 
-**Status:** done - implemented in `efa653a`.
+**Status:** done - implemented in `ec9a2f3`.
 
 - [x] Every constraint site in `Interlocutor.Abstractions` currently reading `where TResponse : IOutcome` or `where TResult : IOutcome` - across the mediator core (`Mediator`, `ISender`), handler contracts (`IQuery`, `ICommand`, `IQueryHandler`, `ICommandHandler`, `IVoidCommandHandler`, their wrappers), every pipeline behavior (`AuthorizationBehavior`, `CancellationBehavior`, `TimeoutBehavior`, `RateLimitedBehavior`, `PipelineChainExecutor`), `Eject`, `NoCommit`, `PipelineEjectException`, and `IOutcomeCaseRegistry`/`OutcomeCaseRegistryBuilder`/`DefaultOutcomeCaseRegistry`/`OutcomeCaseExtractor`/`OutcomeCaseRegistryExtensions` - reads `IUnion` instead.
 - [x] `IOutcome` and `IOutcomeCase` remain in `Interlocutor.CommonKernel.ResultTypes`, unchanged in shape; the generator's existing behavior (a union declaring `: IOutcome` gets the `IOutcomeCase`/`ActiveCaseType` classification surface, one that doesn't gets only the sum-type surface) is untouched.
