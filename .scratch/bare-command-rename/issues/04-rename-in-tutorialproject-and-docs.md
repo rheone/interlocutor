@@ -4,7 +4,7 @@
 
 **Blocked by:** 01, 02, 03 (every renamed type must exist across the whole solution before the sample app and docs can reference the final name consistently).
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `5d143cb`.
 
 - [ ] `TutorialProject/TodoTasks.Api/Features/Tasks/ClearCompletedTodoTasks/ClearCompletedTodoTasksCommand.cs` and `ClearCompletedTodoTasksHandler.cs` are updated to implement `IBareCommandHandler<TCommand, TResult>`.
 - [ ] `documentation/glossary.md`'s "Unit command" entry is updated to name and describe `IBareCommandHandler` as the shipped type, resolving the prose/code mismatch that motivated this rename.
