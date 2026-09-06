@@ -101,4 +101,60 @@ internal static class WellKnownTypeNames
     /// <see cref="ResultExtensionsGenerator"/>.
     /// </summary>
     public const string GenerateResultExtensionsAttribute = "Interlocutor.AspNetCore.GenerateResultExtensionsAttribute";
+
+    /// <summary>
+    /// The authorization marker interface, <c>IRequiresPolicyRequest</c> - gates
+    /// <c>Interlocutor.Abstractions.Pipeline.AuthorizationBehavior{TRequest, TResponse}</c>, which needs a
+    /// <see cref="ForbiddenCase"/> case to short-circuit into. See
+    /// <see cref="Analysis.PipelineBehaviorCaseFidelityAnalyzer"/>.
+    /// </summary>
+    public const string RequiresPolicyRequestMarker = "Interlocutor.Abstractions.Markers.IRequiresPolicyRequest";
+
+    /// <summary>
+    /// The cancellation marker interface, <c>ICancellableRequest</c> - gates
+    /// <c>Interlocutor.Abstractions.Pipeline.CancellationBehavior{TRequest, TResponse}</c>, which needs a
+    /// <see cref="CancelledCase"/> case to short-circuit into. See
+    /// <see cref="Analysis.PipelineBehaviorCaseFidelityAnalyzer"/>.
+    /// </summary>
+    public const string CancellableRequestMarker = "Interlocutor.Abstractions.Markers.ICancellableRequest";
+
+    /// <summary>
+    /// The rate-limiting marker interface, <c>IRateLimitedRequest</c> - gates
+    /// <c>Interlocutor.Abstractions.Pipeline.RateLimitedBehavior{TRequest, TResponse}</c>, which needs a
+    /// <see cref="RateLimitedCase"/> case to short-circuit into. See
+    /// <see cref="Analysis.PipelineBehaviorCaseFidelityAnalyzer"/>.
+    /// </summary>
+    public const string RateLimitedRequestMarker = "Interlocutor.Abstractions.Markers.IRateLimitedRequest";
+
+    /// <summary>
+    /// The time-budget marker interface, <c>ITimeoutRequest</c> - gates
+    /// <c>Interlocutor.Abstractions.Pipeline.TimeoutBehavior{TRequest, TResponse}</c>, which needs a
+    /// <see cref="TimeoutCase"/> case to short-circuit into. See
+    /// <see cref="Analysis.PipelineBehaviorCaseFidelityAnalyzer"/>.
+    /// </summary>
+    public const string TimeoutRequestMarker = "Interlocutor.Abstractions.Markers.ITimeoutRequest";
+
+    /// <summary>
+    /// The case type <c>AuthorizationBehavior</c> constructs when <see cref="RequiresPolicyRequestMarker"/>'s
+    /// policy check fails, <c>Forbidden</c>.
+    /// </summary>
+    public const string ForbiddenCase = "Interlocutor.CommonKernel.ResultTypes.Forbidden";
+
+    /// <summary>
+    /// The case type <c>CancellationBehavior</c> constructs when a <see cref="CancellableRequestMarker"/>
+    /// request's ambient token is cancelled, <c>Cancelled</c>.
+    /// </summary>
+    public const string CancelledCase = "Interlocutor.CommonKernel.ResultTypes.Cancelled";
+
+    /// <summary>
+    /// The case type <c>RateLimitedBehavior</c> constructs when a <see cref="RateLimitedRequestMarker"/>
+    /// request's rate limit check disallows it, <c>RateLimited</c>.
+    /// </summary>
+    public const string RateLimitedCase = "Interlocutor.CommonKernel.ResultTypes.RateLimited";
+
+    /// <summary>
+    /// The case type <c>TimeoutBehavior</c> constructs when a <see cref="TimeoutRequestMarker"/> request's
+    /// time budget elapses, <c>Timeout</c>.
+    /// </summary>
+    public const string TimeoutCase = "Interlocutor.CommonKernel.ResultTypes.Timeout";
 }

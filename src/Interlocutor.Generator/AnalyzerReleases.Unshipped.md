@@ -18,3 +18,4 @@ INTERLOC011 | Interlocutor.Outcomes | Error | Attributed union declares fewer th
 INTERLOC012 | Interlocutor.Outcomes | Error | Colliding TryGet accessor name among a union's case types
 INTERLOC013 | Interlocutor.Outcomes | Error | Attributed union declares more than sixteen case types
 INTERLOC014 | Interlocutor.Outcomes | Warning | Attributed union declares more cases than the recommended maximum
+INTERLOC015 | Interlocutor.Pipeline | Warning | Pipeline behavior marker interface without a matching response case

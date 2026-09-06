@@ -460,4 +460,65 @@ internal static class InterlocutorDiagnostics
             + "the operation into more specific requests, or dismiss this warning per-declaration with "
             + "#pragma warning disable/restore INTERLOC014 for a genuine outlier."
     );
+
+    /// <summary>
+    /// Reported when a <c>TRequest</c> implements one of the four marker-interface-gated pipeline behaviors'
+    /// marker interfaces (<c>IRequiresPolicyRequest</c>, <c>ICancellableRequest</c>, <c>IRateLimitedRequest</c>,
+    /// <c>ITimeoutRequest</c>) but its paired <c>TResponse</c> declares no case of the exact type that
+    /// behavior needs to construct (<c>Forbidden</c>, <c>Cancelled</c>, <c>RateLimited</c>, <c>Timeout</c>
+    /// respectively).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Per ADR-0023 ("Pipeline Behavior Case Construction Fails Fast, Never Degrades or Reshapes"), a pipeline
+    /// behavior that can't construct the case it needs from a handler's <c>TResponse</c> already fails fast
+    /// with a named <see cref="InvalidOperationException"/> at run time, via <c>OutcomeCaseRegistryExtensions.ConstructOrThrow</c> -
+    /// this diagnostic is an earlier-feedback layer on top of that same runtime guarantee, not a replacement
+    /// for it: it reads what the generator already knows about <c>TRequest</c>'s implemented interfaces and
+    /// <c>TResponse</c>'s declared case types, without touching <c>TResponse</c>'s type,
+    /// <c>IOutcomeCaseRegistry</c>'s contract, or how any container resolves these behaviors. The match is
+    /// exact-type, not "implements the same marker interface the case type happens to implement" - the
+    /// underlying runtime construction (<c>UnionCaseFactory.FindCaseConstructor</c>) looks for a constructor
+    /// accepting the literal case type, so a response declaring some other type that merely implements
+    /// <c>IForbiddenFailureCase</c>/<c>IRateLimitedFailureCase</c>/<c>ITimeoutFailureCase</c> still doesn't
+    /// satisfy the behavior that needs the concrete <c>Forbidden</c>/<c>RateLimited</c>/<c>Timeout</c> case.
+    /// </para>
+    /// <para>
+    /// <b>Scope:</b> only these four marker-interface-gated behaviors (<c>AuthorizationBehavior</c>,
+    /// <c>CancellationBehavior</c>, <c>RateLimitedBehavior</c>, <c>TimeoutBehavior</c>) are covered.
+    /// <c>ValidationBehavior</c>/<c>FluentValidationErrorsBehavior</c> are gated by whether a
+    /// <c>FluentValidation.IValidator&lt;TRequest&gt;</c> is actually registered in the built container - a
+    /// DI-registration-time fact, not a static marker interface on <c>TRequest</c>, and therefore invisible to
+    /// a compile-time analyzer working only from a type's declared shape. Those two behaviors are deliberately
+    /// out of scope for this diagnostic; see <see cref="ValidationShapeMismatch"/> for the closest
+    /// already-shipped build-time coverage they do get, and a later opt-in startup-validation extension for
+    /// the runtime-registered coverage the rest of their surface gets instead.
+    /// </para>
+    /// <para>
+    /// Default severity is <see cref="DiagnosticSeverity.Warning"/>, escalated the same way as
+    /// <see cref="MissingHandler"/>:
+    /// <code>
+    /// dotnet_diagnostic.INTERLOC015.severity = error
+    /// </code>
+    /// </para>
+    /// </remarks>
+    public static readonly DiagnosticDescriptor PipelineBehaviorCaseFidelityMismatch = new(
+        id: "INTERLOC015",
+        title: "Pipeline behavior marker interface without a matching response case",
+        messageFormat: "'{0}' implements '{1}' but its response type '{2}' has no '{3}' case for {4} to "
+            + "construct - add a '{3}' case to the response type, or remove '{1}'",
+        category: "Interlocutor.Pipeline",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "AuthorizationBehavior, CancellationBehavior, RateLimitedBehavior, and TimeoutBehavior "
+            + "each construct a specific outcome case (Forbidden, Cancelled, RateLimited, Timeout "
+            + "respectively) via IOutcomeCaseRegistry when their gating marker interface "
+            + "(IRequiresPolicyRequest, ICancellableRequest, IRateLimitedRequest, ITimeoutRequest) is "
+            + "implemented by TRequest - the response type must declare that exact case, or the behavior "
+            + "throws InvalidOperationException at runtime the first time it actually short-circuits. "
+            + "ValidationBehavior/FluentValidationErrorsBehavior are gated by DI-registered-validator "
+            + "presence, not a static marker interface, and are out of scope for this diagnostic. Add the "
+            + "missing case to the response type's declared arity, or remove the marker interface if the "
+            + "cross-cutting behavior does not apply to this request."
+    );
 }

@@ -4,7 +4,7 @@ A map of every point where a consumer plugs their own type into Interlocutor, an
 
 ## Marker interfaces: the general pattern
 
-A request opts into a cross-cutting pipeline behavior by implementing a marker interface - never by editing a central configuration list, and never by the behavior inspecting the request's concrete type. The shipped markers (`ITransactionalRequest`, `IExternalStoreRequest`, `IAuditableRequest`, `IRequiresPolicy`, `ICancellable`, `IHasTimeout`, `IRateLimited` - see [Glossary § Marker Interfaces](glossary.md#marker-interfaces)) are all built the same way, and your own pipeline behavior can follow the identical shape:
+A request opts into a cross-cutting pipeline behavior by implementing a marker interface - never by editing a central configuration list, and never by the behavior inspecting the request's concrete type. The shipped markers (`ITransactionalRequest`, `IExternalStoreRequest`, `IAuditableRequest`, `IRequiresPolicyRequest`, `ICancellableRequest`, `ITimeoutRequest`, `IRateLimitedRequest` - see [Glossary § Marker Interfaces](glossary.md#marker-interfaces)) are all built the same way, and your own pipeline behavior can follow the identical shape:
 
 ```csharp
 // 1. Declare the marker - a plain interface, no base type required
@@ -195,6 +195,16 @@ A named `TryGet{TypeName}` accessor is derived from each concrete case type's si
 ```
 dotnet_diagnostic.INTERLOC012.severity = warning
 ```
+
+### Marker interface without a matching response case (`INTERLOC015`)
+
+`AuthorizationBehavior`, `CancellationBehavior`, `RateLimitedBehavior`, and `TimeoutBehavior` each construct a specific outcome case - `Forbidden`, `Cancelled`, `RateLimited`, `Timeout` respectively - via `IOutcomeCaseRegistry` when their gating marker interface (`IRequiresPolicyRequest`, `ICancellableRequest`, `IRateLimitedRequest`, `ITimeoutRequest`) is implemented by a request's `TRequest`. If the paired response type declares no case of that exact type, the behavior throws a named `InvalidOperationException` the first time it actually needs to short-circuit - correct, but previously silent until a real request triggered it. A build-time analyzer catches the same mismatch earlier, for any request implementing one of the four markers whose declared response arity has no matching case, naming the request, the marker, the response type, and the missing case - configurable the same way as every other diagnostic here:
+
+```
+dotnet_diagnostic.INTERLOC015.severity = error
+```
+
+This diagnostic is scoped to exactly these four marker-interface-gated behaviors. `ValidationBehavior` and `Interlocutor.FluentValidation.FluentValidationErrorsBehavior` are deliberately not covered: neither is gated by a marker interface on `TRequest` at all - both run for every request and short-circuit at runtime based on whether at least one `FluentValidation.IValidator<TRequest>` is actually registered in the built container, a DI-registration fact invisible to a compile-time analyzer working only from `TRequest`'s and `TResponse`'s declared shape. Those two behaviors keep the build-time coverage `INTERLOC010` above already gives them (a validator registered for a request whose response has no validation-shaped case at all) plus the same runtime fail-fast guarantee every one of these six behaviors shares - they simply don't get this diagnostic's earlier, marker-driven signal.
 
 ## Mapping failure cases to any output shape: `IOutcomeMapper<TResult>`
 
