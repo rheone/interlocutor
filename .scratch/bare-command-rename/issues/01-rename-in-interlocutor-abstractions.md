@@ -4,7 +4,7 @@
 
 **Blocked by:** None — can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `e700e26`.
 
 - [ ] `IVoidCommandHandler<TCommand, TResult>` → `IBareCommandHandler<TCommand, TResult>`; `VoidCommandHandlerWrapper<TCommand, TResult>` → `BareCommandHandlerWrapper<TCommand, TResult>`; `IVoidHandlerWrapper` → `IBareHandlerWrapper`, each in its own correctly-renamed file.
 - [ ] Every in-package reference is updated: `Mediator`, `ISender`, `PipelineChainExecutor`, `PipelineChainResolver`, `PipelineEjectException`, `QueryHandlerWrapper`, `ReflectionRequestDispatcher`, `CommandHandlerWrapper`, and `ICommandHandler`'s doc-comment cross-reference.
