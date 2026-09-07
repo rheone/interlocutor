@@ -54,6 +54,12 @@ Each `src/*` project has a matching `tests/*.Tests` project (xunit.v3, NSubstitu
   - Use /csharp-test-sweep when writing and improving tests
   - Use /github-markdown and /mermaid-diagram-generator when writing, organizing or updating markdown documentation
 
+### Async method naming
+
+Any method whose return type signals asynchrony (`Task`, `Task<T>`, `ValueTask`, `ValueTask<T>`, `IAsyncEnumerable<T>`, etc.) must end in `Async`. This is enforced at build time by `VSTHRD200`, raised to `Warning` uniformly across `src/`, `TutorialProject`, and `tests/` (see `.editorconfig`) - there are no remaining exceptions for the mediator's dispatch-contract verbs: the old unsuffixed `Handle`/`Send`/`Publish`/`Cancel` members were removed from their interfaces entirely, leaving `HandleAsync`/`SendAsync`/`PublishAsync`/`CancelAsync` as the only forms. The one deliberate holdout is `IBareCommandHandler<TCommand, TResult>.Handle`, which was out of scope for the rename from the start (no `HandleAsync` form exists to rename it to - see that interface's own doc comments) and is suppressed with a single `#pragma warning disable VSTHRD200` at its declaration rather than a rule-level carve-out.
+
+`[Fact]`/`[Theory]`-attributed test methods are exempt from `VSTHRD200` - verified experimentally, not just read from docs: the analyzer already excludes them with no configuration needed, since they're named for behavior, not signature. Every other async method in test code - helpers, fixtures, factories, local functions - is not exempt and must carry the `Async` suffix like everywhere else; `VSTHRD200` enforces this in `tests/` the same way it does in `src/` and `TutorialProject`.
+
 ## Agent skills
 
 ### Issue tracker
