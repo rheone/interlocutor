@@ -297,6 +297,8 @@ services.AddInterlocutor(builder =>
 - **`RegisterPredicate(predicate, label)`** - for shapes that can't be keyed by exact type (e.g. an open generic family). Predicates are evaluated in registration order, after the type table misses, and the first match wins.
 - **`.Build()`** - produces the immutable `IOutcomeClassifier`.
 
+`IOutcomeClassifier` is a pure label registry rather than a success/failure judgment because no case type carries a universal success/failure meaning - a `ValidationErrors` result is a failure for one caller and a legitimate "persist and report" outcome for another, and `Conflict` might mean "nothing more to do here" rather than "roll this back." Only the specific consumer asking, at its own call site, can say what "success" means for its own purpose; that's why `UnitOfWorkBehavior`'s commit/rollback decision (see the note above) never asks a classifier to decide anything either.
+
 > [!IMPORTANT]
 > Labeling never throws: if neither the type table nor any predicate matches a response, `GetLabel()` falls back to the response's runtime type name (or `"None"` for a null/unset response). A custom outcome type you forget to register just logs under its raw type name instead of a friendlier label - it has no effect on commit/rollback, which no longer depends on classification at all.
 
