@@ -340,6 +340,95 @@ public async Task OrderShippedEmailHandler_SendsEmail()
 }
 ```
 
+## Faking ISender and IPublisher
+
+The sections above test handlers and behaviors directly. Code that instead depends on [`ISender`](glossary.md#interface-segregation)/[`IPublisher`](glossary.md#interface-segregation) - an application service, a background job, a minimal API endpoint that dispatches through the mediator rather than calling a handler itself - needs a different seam: a fake mediator, not a fake dependency of one. The `Interlocutor.Testing` package ships `FakeSender` and `FakePublisher` for exactly that: plain in-memory implementations with no container, no registered handlers, and no pipeline behaviors involved.
+
+`FakeSender` lets a test stub the response for a given request type, then records every request it's sent. `FakePublisher` records every notification passed to `PublishAsync`, and can invoke fake [notification handlers](glossary.md#notifications) a test supplies so handler-side effects are assertable too - without standing up a real `INotificationHandler<T>`:
+
+```csharp
+public sealed record CreateOrder(string CustomerId) : ICommand<Outcome<OrderId, ValidationError>>;
+
+public sealed record OrderId(int Value);
+
+public sealed record OrderPlaced(int OrderId) : INotification;
+
+public sealed class OrderService(ISender sender, IPublisher publisher)
+{
+    public async Task<OrderId> PlaceOrderAsync(string customerId, CancellationToken ct)
+    {
+        var result = await sender.SendAsync<Outcome<OrderId, ValidationError>>(new CreateOrder(customerId), ct);
+        if (!result.TryGetValue(out OrderId orderId))
+        {
+            throw new InvalidOperationException("Order creation failed validation.");
+        }
+
+        await publisher.PublishAsync(new OrderPlaced(orderId.Value), ct);
+        return orderId;
+    }
+}
+
+[Fact]
+public async Task PlaceOrderAsync_SendsCreateOrderAndPublishesOrderPlaced()
+{
+    // Arrange
+    var sender = new FakeSender();
+    sender.SetResponse<CreateOrder, Outcome<OrderId, ValidationError>>(new OrderId(42));
+    var publisher = new FakePublisher();
+    var service = new OrderService(sender, publisher);
+
+    // Act
+    var orderId = await service.PlaceOrderAsync("customer-1", CancellationToken.None);
+
+    // Assert: what was sent, and what came back
+    var sentCommand = Assert.IsType<CreateOrder>(Assert.Single(sender.ReceivedRequests));
+    Assert.Equal("customer-1", sentCommand.CustomerId);
+    Assert.Equal(42, orderId.Value);
+
+    // Assert: what was published
+    var published = Assert.IsType<OrderPlaced>(Assert.Single(publisher.PublishedNotifications));
+    Assert.Equal(42, published.OrderId);
+}
+```
+
+`FakeSender` resolves a stub by the request's runtime type, so one call to `SetResponse` answers every `SendAsync` overload for that request - the type-safe query/command overloads and the runtime-typed `SendAsync(object, ...)` overload alike. Sending a request with no matching stub throws `InvalidOperationException` naming the missing type, rather than returning a default value that would silently pass a loosely written assertion.
+
+To assert on what a handler itself observed - not just that a notification was published - supply a fake handler via `AddHandler` before publishing:
+
+```csharp
+public sealed class RecordingOrderPlacedHandler : INotificationHandler<OrderPlaced>
+{
+    public List<OrderPlaced> Handled { get; } = [];
+
+    public Task HandleAsync(OrderPlaced notification, CancellationToken ct)
+    {
+        this.Handled.Add(notification);
+        return Task.CompletedTask;
+    }
+}
+
+[Fact]
+public async Task PlaceOrderAsync_HandlerObservesThePublishedNotification()
+{
+    // Arrange
+    var sender = new FakeSender();
+    sender.SetResponse<CreateOrder, Outcome<OrderId, ValidationError>>(new OrderId(42));
+    var publisher = new FakePublisher();
+    var handler = new RecordingOrderPlacedHandler();
+    publisher.AddHandler<OrderPlaced>(handler);
+    var service = new OrderService(sender, publisher);
+
+    // Act
+    await service.PlaceOrderAsync("customer-1", CancellationToken.None);
+
+    // Assert: asserted on the fake handler itself, not on FakePublisher
+    var observed = Assert.Single(handler.Handled);
+    Assert.Equal(42, observed.OrderId);
+}
+```
+
+A notification type with no registered fake handler is still recorded on `PublishedNotifications` - a test asserting only that the right notification was published never needs to register one. Registering more than one handler for the same notification type is supported too, mirroring `IPublisher`'s real many-handlers-per-notification contract: each one runs in registration order for `PublishStrategy.Sequential` (the default, stopping at the first handler that throws), or concurrently for `PublishStrategy.Parallel`.
+
 ## Best Practices
 
 1. **Unit test handlers directly** - mock their dependencies, bypass the mediator. Fast and focused.

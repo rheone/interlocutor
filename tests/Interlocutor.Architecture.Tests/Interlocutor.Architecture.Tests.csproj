@@ -11,6 +11,7 @@
     <ProjectReference Include="..\..\src\Interlocutor.Persistence.Abstractions\Interlocutor.Persistence.Abstractions.csproj" />
     <ProjectReference Include="..\..\src\Interlocutor.Persistence.EntityFrameworkCore\Interlocutor.Persistence.EntityFrameworkCore.csproj" />
     <ProjectReference Include="..\..\src\Interlocutor.Persistence.NHibernate\Interlocutor.Persistence.NHibernate.csproj" />
+    <ProjectReference Include="..\..\src\Interlocutor.Testing\Interlocutor.Testing.csproj" />
   </ItemGroup>
 
   <ItemGroup>
