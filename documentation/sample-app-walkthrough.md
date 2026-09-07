@@ -233,6 +233,21 @@ await publisher.Publish(new TodoTaskCompletedNotification(task.Id, task.OwnerId,
 
 Two independent handlers subscribe to it, neither aware of the other: [`TodoTaskCompletionCounterHandler`](../TutorialProject/TodoTasks.Api/Features/Tasks/CompleteTodoTask/TodoTaskCompletionCounterHandler.cs) increments an in-process per-owner completion count, and [`TodoTaskCompletionAuditLogHandler`](../TutorialProject/TodoTasks.Api/Features/Tasks/CompleteTodoTask/TodoTaskCompletionAuditLogHandler.cs) writes a log entry. See [Notifications & Fan-out](notifications-and-fan-out.md) for execution order guarantees (unspecified) and the Sequential/Parallel publish strategies, and [Transactions & Store Integration](transactions-and-store-integration.md)'s "Transactions with Notifications" section for how a command's transaction and its published notification relate - publishing from inside the handler here, before `UnitOfWorkBehavior` has actually committed, is the guide's own worked example of that trade-off (see its Step 8), not a fix applied only to this project.
 
+## Choosing a request shape: query, command, bare command, or messaging
+
+The sections above cover the request and message shapes this project reaches for; picking among them for a new feature comes down to two questions - does it mutate, and if so, does the caller need anything back afterward:
+
+| Reach for... | When... | This project's example |
+| --- | --- | --- |
+| A query | the request only reads, and never has a reason to sit inside a transaction | `GetTodoTaskByIdQuery`, `SearchTodoTasksQuery` |
+| A value-returning command | the request mutates state and the caller needs something back that only exists once the mutation has run - the row it just created, the entity in its new shape | `CreateTodoTaskCommand`, `CompleteTodoTaskCommand` |
+| A [bare command](glossary.md#cqrs) | the request mutates state but there's no domain payload for the caller to do anything with afterward - only whether it succeeded | `ClearCompletedTodoTasksCommand` |
+| An [`INotification`](glossary.md#notifications) | a mutation has a side effect that's independent of the caller's own response and shouldn't block or fail it | `TodoTaskCompletedNotification`, published by `CompleteTodoTaskHandler` |
+
+`ClearCompletedTodoTasksHandler` is the clearest case for a bare command: deleting every completed task for an owner can't fail in any way this project models - no not-found, no conflict, no validation - and there's nothing to hand back beyond the fact that it ran. The case-less `Outcome` acknowledgment fits that shape exactly, and `IBareCommandHandler<TCommand, TResult>` leaves `TResult` for the caller to choose via `ISender`'s own type argument rather than fixing it on the command or its registration. Most mutations in this project aren't like this - `CreateTodoTaskCommand` and `CompleteTodoTaskCommand` each have real failure cases to report (`ValidationErrors`, `Conflict`, `NotFound`, `Forbidden`) and real data to return, so they stay value-returning commands rather than reaching for the bare shape.
+
+`TodoTaskCompletedNotification` is the messaging case: `CompleteTodoTaskHandler` doesn't need its subscribers' work to succeed, or even to finish, before it returns - `TodoTaskCompletionCounterHandler`'s counter increment and `TodoTaskCompletionAuditLogHandler`'s log entry are bystanders to the command's own outcome, not something its caller is waiting on. That's the test worth applying to a new feature: if a side effect has to succeed for the response to be correct, or the caller needs its result, it belongs in the command's own handler (or another repository call inside the same unit of work), not behind a published notification whose subscribers may run sequentially or in parallel and whose own failures the triggering command never sees. See [Notifications & Fan-out](notifications-and-fan-out.md) for the mechanics behind that isolation.
+
 ## Development authentication
 
 The guide's own "Before you start" section assumes real authentication middleware already exists and deliberately doesn't teach it. This project needs *something* to populate an authenticated caller, so [`DevHeaderAuthenticationHandler`](../TutorialProject/TodoTasks.Api/Infrastructure/DevHeaderAuthenticationHandler.cs) fills that gap - never a pattern to carry into a real application:
