@@ -32,5 +32,6 @@
     <Project Path="tests/Interlocutor.Persistence.Abstractions.Tests/Interlocutor.Persistence.Abstractions.Tests.csproj" />
     <Project Path="tests/Interlocutor.Persistence.EntityFrameworkCore.Tests/Interlocutor.Persistence.EntityFrameworkCore.Tests.csproj" />
     <Project Path="tests/Interlocutor.Persistence.NHibernate.Tests/Interlocutor.Persistence.NHibernate.Tests.csproj" />
+    <Project Path="tests/Interlocutor.IntegrationTests/Interlocutor.IntegrationTests.csproj" />
   </Folder>
 </Solution>

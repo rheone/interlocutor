@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Directory.Build.targets' test-project auto-configuration (MTP runner, IsTestProject, the global Xunit
+       using, etc.) matches on MSBuildProjectName.EndsWith('.Tests') - true for every other test project in
+       this solution (Interlocutor.CommonKernel.Tests, etc.), but false for this project's own ticket-mandated
+       name, which ends in "Tests" with no preceding dot. Reproduced by hand here instead of renaming this
+       project or broadening the shared repo-wide condition. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+    <TestingPlatformExitCodeOnZeroTests>0</TestingPlatformExitCodeOnZeroTests>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <!-- StyleCop's SA0001 ("XML comment analysis is disabled") is the direct, expected consequence of
+         GenerateDocumentationFile=false above - the same tradeoff every other tests/*.Tests project in this
+         solution already makes (doc comments still required by CLAUDE.md's own convention, just unchecked by
+         StyleCop), reachable there through Directory.Build.targets' own GenerateDocumentationFile=false for
+         '.Tests'-suffixed projects instead of a local override. Suppressed explicitly here rather than left
+         to fire, since this project's name doesn't match that shared condition (see the comment above). -->
+    <NoWarn>$(NoWarn);SA0001</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Interlocutor.Abstractions\Interlocutor.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\Interlocutor.DependencyInjection.Microsoft\Interlocutor.DependencyInjection.Microsoft.csproj" />
+    <!-- Full canonical order (documentation/pipeline-and-behaviors.md) needs ValidationBehavior too, even
+         though this ticket's own package list didn't spell it out - AddValidationBehavior() no-ops unless
+         Interlocutor.FluentValidation is referenced (see InterlocutorPipelineBuilder.AddValidationBehavior). -->
+    <ProjectReference Include="..\..\src\Interlocutor.FluentValidation\Interlocutor.FluentValidation.csproj" />
+    <ProjectReference Include="..\..\src\Interlocutor.Persistence.EntityFrameworkCore\Interlocutor.Persistence.EntityFrameworkCore.csproj" />
+    <!-- Analyzer-only reference: runs Interlocutor.Generator over this project's own compilation so the
+         dispatch test below can call AddGeneratedRegistrations() against the real, compile-time discovered
+         Interlocutor.Generated.Interlocutor_IntegrationTests.InterlocutorGeneratedRegistrations module instead
+         of ScanAssembly's runtime reflection scanning - see tests/Interlocutor.DependencyInjection.Microsoft.Tests's
+         identical reference for the same reason. -->
+    <ProjectReference
+      Include="..\..\src\Interlocutor.Generator\Interlocutor.Generator.csproj"
+      OutputItemType="Analyzer"
+      ReferenceOutputAssembly="false"
+    />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Microsoft.Testing.Platform" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+  </ItemGroup>
+</Project>
