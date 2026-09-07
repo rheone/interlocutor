@@ -17,6 +17,20 @@ public record UnregisteredQuery(int Value) : IQuery<Outcome<int, Failure>>;
 /// "unregistered request type" failure path for the unit-command shape.</summary>
 public record UnregisteredBareCommand : ICommand;
 
+/// <summary>A bare command with exactly one <c>IBareCommandHandler&lt;,&gt;</c> closing loaded in this test
+/// assembly - unlike <see cref="TestBareCommand"/>, which <c>MediatorTests.cs</c> deliberately gives two
+/// closings (<see cref="TestBareHandler"/> and <see cref="TestBareHandlerWithFailureCase"/>) for the ambiguity
+/// test below. Runtime-typed dispatch has to see exactly one closing to prove the unambiguous path is
+/// unchanged by ticket 03's ambiguity check.</summary>
+public record UnambiguousBareCommand : ICommand;
+
+// IBareCommandHandler<,> has no HandleAsync member (known gap - ticket 01 never added one), so this fake
+// stays on Handle as-is, same as TestBareHandler in MediatorTests.cs.
+public class UnambiguousBareCommandHandler : IBareCommandHandler<UnambiguousBareCommand, Outcome>
+{
+    public Task<Outcome> Handle(UnambiguousBareCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
+}
+
 /// <summary>A query whose handler always returns the failure case, used to prove the runtime-dispatched
 /// outcome is pattern-matchable for failure without the caller knowing the concrete outcome shape.</summary>
 public record FailingQuery : IQuery<Outcome<int, Failure>>;
@@ -131,19 +145,45 @@ public class RuntimeTypedDispatchTests
     [Fact]
     public async Task Send_ObjectUnitCommand_DispatchesToRegisteredHandler()
     {
-        // Arrange
+        // Arrange - UnambiguousBareCommand, not TestBareCommand: TestBareCommand deliberately has two
+        // IBareCommandHandler<,> closings loaded in this test assembly (see the ambiguity test below), so it
+        // can no longer stand in for the single-closing path this test means to prove unchanged.
         var sender = CreateSender(services =>
-            services.AddSingleton<IBareCommandHandler<TestBareCommand, Outcome>, TestBareHandler>()
+            services.AddSingleton<IBareCommandHandler<UnambiguousBareCommand, Outcome>, UnambiguousBareCommandHandler>()
         );
-        object request = new TestBareCommand("test");
+        object request = new UnambiguousBareCommand();
 
         // Act
         var outcome = await sender.SendAsync(request, CancellationToken.None);
 
-        // Assert - TestBareHandler returns the case-less Outcome, whose Value is always null (see its own
-        // remarks); reaching this point without throwing already proves the dispatch reached the handler.
+        // Assert - UnambiguousBareCommandHandler returns the case-less Outcome, whose Value is always null (see
+        // its own remarks); reaching this point without throwing already proves the dispatch reached the handler.
         var union = Assert.IsType<IUnion>(outcome, exactMatch: false);
         Assert.Null(union.Value);
+    }
+
+    [Fact]
+    public async Task Send_ObjectUnitCommand_AmbiguousResultTypeAcrossHandlers_ThrowsNamedExceptionListingBothTypes()
+    {
+        // Arrange - TestBareCommand (declared in MediatorTests.cs) has two IBareCommandHandler<,> closings
+        // loaded in this test assembly: TestBareHandler closes over the case-less Outcome, and
+        // TestBareHandlerWithFailureCase closes over Outcome<Success, Failure>. Runtime-typed dispatch has no
+        // caller-supplied TResult to disambiguate between them, so it must fail fast rather than silently pick
+        // whichever closing assembly-enumeration order happens to find first.
+        var sender = CreateSender(_ => { });
+        object request = new TestBareCommand("test");
+
+        // Act
+        var ex = await Assert.ThrowsAsync<AmbiguousBareCommandResultTypeException>(() =>
+            sender.SendAsync(request, CancellationToken.None)
+        );
+
+        // Assert
+        Assert.Equal(typeof(TestBareCommand), ex.CommandType);
+        Assert.Contains(typeof(Outcome), ex.AmbiguousResultTypes);
+        Assert.Contains(typeof(Outcome<Success, Failure>), ex.AmbiguousResultTypes);
+        Assert.Contains(nameof(TestBareCommand), ex.Message);
+        Assert.Contains(nameof(Outcome), ex.Message);
     }
 
     [Fact]

@@ -216,8 +216,8 @@ internal static class ReflectionRequestDispatcher
     }
 
     /// <summary>
-    /// Scans loaded assemblies for a concrete type implementing <c>IBareCommandHandler&lt;TCommand, TResult&gt;</c>
-    /// closed over <paramref name="commandType"/>, returning the <c>TResult</c> it was implemented against, or
+    /// Scans loaded assemblies for concrete types implementing <c>IBareCommandHandler&lt;TCommand, TResult&gt;</c>
+    /// closed over <paramref name="commandType"/>, returning the single <c>TResult</c> found, or
     /// <see langword="null"/> if no such implementation is loaded.
     /// </summary>
     /// <remarks>
@@ -225,6 +225,11 @@ internal static class ReflectionRequestDispatcher
     /// field doc) - a future generator-backed implementation replaces it with a compiled lookup, without
     /// changing <see cref="Mediator.SendAsync(object, CancellationToken)"/>'s contract.
     /// </remarks>
+    /// <exception cref="AmbiguousBareCommandResultTypeException">
+    /// More than one distinct <c>TResult</c> was found closing over <paramref name="commandType"/>. There is no
+    /// principled way to pick a winner among them, so this throws rather than silently returning whichever
+    /// closing assembly-enumeration order happened to find first.
+    /// </exception>
     [RequiresUnreferencedCode(
         "The runtime-typed dispatch fallback reflects over runtime types and is only reached when no IGeneratedRequestDispatcher "
             + "is registered (Interlocutor.Generator did not run, or its output was never passed to "
@@ -235,6 +240,8 @@ internal static class ReflectionRequestDispatcher
     )]
     private static Type? ResolveBareCommandResultType(Type commandType)
     {
+        List<Type>? foundResultTypes = null;
+
         foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
         {
             Type[] types;
@@ -265,14 +272,26 @@ internal static class ReflectionRequestDispatcher
                     }
 
                     var genericArguments = candidateInterface.GetGenericArguments();
-                    if (genericArguments[0] == commandType)
+                    if (genericArguments[0] != commandType)
                     {
-                        return genericArguments[1];
+                        continue;
+                    }
+
+                    var resultType = genericArguments[1];
+                    foundResultTypes ??= [];
+                    if (!foundResultTypes.Contains(resultType))
+                    {
+                        foundResultTypes.Add(resultType);
                     }
                 }
             }
         }
 
-        return null;
+        return foundResultTypes switch
+        {
+            null => null,
+            [var singleResultType] => singleResultType,
+            _ => throw new AmbiguousBareCommandResultTypeException(commandType, foundResultTypes),
+        };
     }
 }

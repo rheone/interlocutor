@@ -19,6 +19,10 @@ Interlocutor.Abstractions.Core.AmbientRequestContextAccessor
 Interlocutor.Abstractions.Core.AmbientRequestContextAccessor.AmbientRequestContextAccessor() -> void
 Interlocutor.Abstractions.Core.AmbientRequestContextAccessor.Context.get -> Interlocutor.Abstractions.Core.RequestContext?
 Interlocutor.Abstractions.Core.AmbientRequestContextAccessor.Context.set -> void
+Interlocutor.Abstractions.Core.AmbiguousBareCommandResultTypeException
+Interlocutor.Abstractions.Core.AmbiguousBareCommandResultTypeException.AmbiguousBareCommandResultTypeException(System.Type! commandType, System.Collections.Generic.IReadOnlyList<System.Type!>! ambiguousResultTypes) -> void
+Interlocutor.Abstractions.Core.AmbiguousBareCommandResultTypeException.AmbiguousResultTypes.get -> System.Collections.Generic.IReadOnlyList<System.Type!>!
+Interlocutor.Abstractions.Core.AmbiguousBareCommandResultTypeException.CommandType.get -> System.Type!
 Interlocutor.Abstractions.Core.HandlerNotRegisteredException
 Interlocutor.Abstractions.Core.HandlerNotRegisteredException.HandlerNotRegisteredException(System.Type! requestType, System.Type? handlerType = null) -> void
 Interlocutor.Abstractions.Core.HandlerNotRegisteredException.HandlerType.get -> System.Type?

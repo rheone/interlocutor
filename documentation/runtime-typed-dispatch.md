@@ -195,10 +195,11 @@ public class InboxProcessor : BackgroundService
 
 ## Error Handling
 
-Beyond type resolution and deserialization failures, `Send(object, ct)` itself throws two specific, named exceptions (both `Interlocutor.Abstractions.Core`, both carrying a `RequestType` property for diagnostics):
+Beyond type resolution and deserialization failures, `Send(object, ct)` itself throws three specific, named exceptions (all `Interlocutor.Abstractions.Core`):
 
-- **`UnsupportedRequestTypeException`** - the deserialized object doesn't implement `IQuery<TResponse>`, `ICommand<TResponse>`, or `ICommand` at all. This means the object was never a request to begin with - a deserialization or caller bug, not a missing registration.
+- **`UnsupportedRequestTypeException`** - the deserialized object doesn't implement `IQuery<TResponse>`, `ICommand<TResponse>`, or `ICommand` at all. This means the object was never a request to begin with - a deserialization or caller bug, not a missing registration. Carries `RequestType` for diagnostics.
 - **`HandlerNotRegisteredException`** - the object *is* a recognized request shape, but no handler for it is registered. This is the runtime-typed path's equivalent of the generic `InvalidOperationException` typed dispatch throws (see [Builder & Registration § Verifying Your Registration](builder-and-registration.md#verifying-your-registration)) - a specific, named type instead, since an infrastructure caller needs `RequestType` to log which message it couldn't process. It also carries `HandlerType` - the specific closed handler interface expected, or `null` when none could be determined (a bare command, whose result type isn't fixed by the command).
+- **`AmbiguousBareCommandResultTypeException`** - the object is a bare command (`ICommand`), and more than one distinct result type was found across the loaded `IBareCommandHandler<TCommand, TResult>` closings registered for it. A bare command carries no result type of its own - the strongly-typed `Send<TResult>` overload's caller-supplied type argument normally picks it - so `Send(object, ct)` has no such argument to fall back on, and refuses to guess by returning whichever closing happened to be discovered first. Carries `CommandType` and `AmbiguousResultTypes` (every distinct result type found) for diagnostics; the fix is to register only one handler per bare command type.
 
 ```csharp
 // ❌ Type doesn't exist
@@ -227,6 +228,12 @@ catch (HandlerNotRegisteredException ex)
 {
     // A recognized request shape, but no handler registered - a deployment/configuration bug
     await outbox.MarkFailedAsync(message.Id, $"No handler for {ex.RequestType}", ct);
+}
+catch (AmbiguousBareCommandResultTypeException ex)
+{
+    // A bare command with more than one registered handler closing over a different result type - a
+    // deployment/configuration bug, not something a per-message retry can resolve
+    await outbox.MarkFailedAsync(message.Id, $"Ambiguous result type for {ex.CommandType}", ct);
 }
 catch (JsonException ex)
 {
