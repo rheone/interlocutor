@@ -4,7 +4,7 @@
 
 **Blocked by:** 03 - Migrate src/ implementers; 04 - Migrate TutorialProject implementers; 05 - Migrate tests/ fakes.
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `ea8d0b2`.
 
 - [ ] `Handle`, `Send`, `Publish`, `Cancel` (old, non-suffixed forms) and the two dispatch-wrapper interfaces' old `Handle` member are removed from their interfaces entirely.
 - [ ] No production or test code anywhere in the solution references the old member names.

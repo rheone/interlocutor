@@ -19,7 +19,7 @@ public static class DeleteUserEndpoint
             "/users/{id:int}",
             async (int id, ISender sender, CancellationToken ct) =>
             {
-                var result = await sender.Send(new DeleteUserCommand(id), ct).ConfigureAwait(false);
+                var result = await sender.SendAsync(new DeleteUserCommand(id), ct).ConfigureAwait(false);
                 return result.ToMinimalApiResult();
             }
         );

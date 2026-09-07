@@ -1,10 +1,10 @@
 namespace Interlocutor.Abstractions.Core;
 
-using Interlocutor.CommonKernel.ResultTypes;
+using System.Runtime.CompilerServices;
 
 /// <summary>
 /// Implemented by <c>Interlocutor.Generator</c>'s emitted type switch - the reflection-free replacement for
-/// <see cref="ISender.Send(object, CancellationToken)"/>'s hot path when the generator had visibility into
+/// <see cref="ISender.SendAsync(object, CancellationToken)"/>'s hot path when the generator had visibility into
 /// the full set of request types in the compilation.
 /// </summary>
 /// <remarks>
@@ -12,7 +12,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// A single generated implementation, <c>Interlocutor.Generated.Dispatch.GeneratedRequestDispatcher</c>, is
 /// registered as a singleton alongside the rest of a compilation's generated registrations (see
 /// <c>InterlocutorBuilder.AddGeneratedRegistrations</c>) - never constructed directly.
-/// <see cref="Interlocutor.Abstractions.Mediator"/> resolves it once per <see cref="Dispatch"/> call via
+/// <see cref="Interlocutor.Abstractions.Mediator"/> resolves it once per <see cref="DispatchAsync"/> call via
 /// <see cref="IServiceProvider.GetService(Type)"/> and, when present, dispatches through it exclusively - no
 /// <see cref="System.Reflection.Assembly.GetTypes"/>/<see cref="Type.MakeGenericType"/>/
 /// <see cref="Activator.CreateInstance(Type)"/> call runs on that path. When absent (the generator never ran
@@ -39,7 +39,7 @@ public interface IGeneratedRequestDispatcher
     /// <param name="services">The service provider to resolve the handler and behaviors from.</param>
     /// <param name="ct">A token that may be used to cancel the operation.</param>
     /// <returns>
-    /// A <see cref="Task{TResult}"/> whose result is the handler's response as an <see cref="IOutcome"/>.
+    /// A <see cref="Task{TResult}"/> whose result is the handler's response as an <see cref="IUnion"/>.
     /// </returns>
     /// <exception cref="HandlerNotRegisteredException">
     /// <paramref name="request"/>'s runtime type is a request shape the generator saw in the compilation, but
@@ -49,5 +49,5 @@ public interface IGeneratedRequestDispatcher
     /// <paramref name="request"/>'s runtime type does not match any case in the generated switch - either it
     /// is not a request at all, or it is a request type the generator never saw.
     /// </exception>
-    Task<IOutcome> Dispatch(object request, IServiceProvider services, CancellationToken ct);
+    Task<IUnion> DispatchAsync(object request, IServiceProvider services, CancellationToken ct);
 }

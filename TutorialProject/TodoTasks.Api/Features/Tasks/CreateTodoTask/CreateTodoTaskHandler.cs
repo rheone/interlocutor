@@ -11,7 +11,7 @@ public sealed class CreateTodoTaskHandler(IDomainRepository<TodoTask, int> tasks
     : ICommandHandler<CreateTodoTaskCommand, Outcome<TodoTaskDto, ValidationErrors, Conflict>>
 {
     /// <inheritdoc/>
-    public async Task<Outcome<TodoTaskDto, ValidationErrors, Conflict>> Handle(
+    public async Task<Outcome<TodoTaskDto, ValidationErrors, Conflict>> HandleAsync(
         CreateTodoTaskCommand command,
         CancellationToken ct
     )

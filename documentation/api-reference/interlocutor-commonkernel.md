@@ -6,7 +6,7 @@ Every public type in `Interlocutor.CommonKernel`, grouped by namespace - the [re
 
 ### `GenerateOutcomeMembersAttribute` sealed class
 
-Marks a partial union declaration for source-generated Match, Switch, per-case TryGetValue, ToString, and IsSuccess members.
+Marks a partial union declaration for source-generated Match, Switch, per-case TryGetValue, and ToString members.
 
 | Member | Summary |
 | --- | --- |
@@ -21,7 +21,6 @@ Represents the outcome of a void operation as one of two possible cases: success
 | `public Outcome(Success value)` |  |
 | `public Outcome(Failure value)` |  |
 | `public Type? ActiveCaseType` | Gets the active case's declared type, or `null` if no case was ever set. |
-| `public bool IsSuccess` | Gets a value indicating whether this result holds the success case (the first declared case type). |
 | `public object? Value` |  |
 | `public bool Equals(Outcome other)` | Determines whether this result and `other` hold equal case values. |
 | `public override bool Equals(object? obj)` | Determines whether this result and `obj` hold equal case values. |
@@ -34,135 +33,130 @@ Represents the outcome of a void operation as one of two possible cases: success
 | `public static bool operator ==(Outcome left, Outcome right)` | Determines whether `left` and `right` hold equal case values. |
 | `public static bool operator !=(Outcome left, Outcome right)` | Determines whether `left` and `right` hold unequal case values. |
 
-### `Outcome<TSuccessResult, TFailureResult>` struct
+### `Outcome<T1, T2>` struct
 
 Represents the outcome of an operation as one of two possible cases: a successful result or a failure result.
 
 | Member | Summary |
 | --- | --- |
-| `public Outcome(TSuccessResult value)` |  |
-| `public Outcome(TFailureResult value)` |  |
+| `public Outcome(T1 value)` |  |
+| `public Outcome(T2 value)` |  |
 | `public Type? ActiveCaseType` | Gets the active case's declared type, or `null` if no case was ever set. |
-| `public bool IsSuccess` | Gets a value indicating whether this result holds the success case (the first declared case type). |
 | `public object? Value` |  |
-| `public bool Equals(Outcome<TSuccessResult, TFailureResult> other)` | Determines whether this result and `other` hold equal case values. |
+| `public bool Equals(Outcome<T1, T2> other)` | Determines whether this result and `other` hold equal case values. |
 | `public override bool Equals(object? obj)` | Determines whether this result and `obj` hold equal case values. |
 | `public override int GetHashCode()` | Returns a hash code derived from the active case value. |
-| `public TResult Match<TResult>(Func<TSuccessResult, TResult> onCase1, Func<TFailureResult, TResult> onCase2)` | Projects this result to a `TResult` by dispatching to the delegate matching its active case. |
-| `public void Switch(Action<TSuccessResult> onCase1, Action<TFailureResult> onCase2)` | Dispatches to the action matching this result's active case. |
+| `public TResult Match<TResult>(Func<T1, TResult> onCase1, Func<T2, TResult> onCase2)` | Projects this result to a `TResult` by dispatching to the delegate matching its active case. |
+| `public void Switch(Action<T1> onCase1, Action<T2> onCase2)` | Dispatches to the action matching this result's active case. |
 | `public override string ToString()` | Forwards to the active case value's own `ToString` override. |
-| `public bool TryGetValue(out TSuccessResult value)` | Attempts to read this result's value as its TSuccessResult case. |
-| `public bool TryGetValue(out TFailureResult value)` | Attempts to read this result's value as its TFailureResult case. |
-| `public static bool operator ==(Outcome<TSuccessResult, TFailureResult> left, Outcome<TSuccessResult, TFailureResult> right)` | Determines whether `left` and `right` hold equal case values. |
-| `public static bool operator !=(Outcome<TSuccessResult, TFailureResult> left, Outcome<TSuccessResult, TFailureResult> right)` | Determines whether `left` and `right` hold unequal case values. |
+| `public bool TryGetValue(out T1 value)` | Attempts to read this result's value as its T1 case. |
+| `public bool TryGetValue(out T2 value)` | Attempts to read this result's value as its T2 case. |
+| `public static bool operator ==(Outcome<T1, T2> left, Outcome<T1, T2> right)` | Determines whether `left` and `right` hold equal case values. |
+| `public static bool operator !=(Outcome<T1, T2> left, Outcome<T1, T2> right)` | Determines whether `left` and `right` hold unequal case values. |
 
-### `Outcome<TSuccessResult, TCase2, TCase3>` struct
+### `Outcome<T1, T2, T3>` struct
 
 Represents the outcome of an operation as one of three possible cases: a successful result or one of two result cases.
 
 | Member | Summary |
 | --- | --- |
-| `public Outcome(TSuccessResult value)` |  |
-| `public Outcome(TCase2 value)` |  |
-| `public Outcome(TCase3 value)` |  |
+| `public Outcome(T1 value)` |  |
+| `public Outcome(T2 value)` |  |
+| `public Outcome(T3 value)` |  |
 | `public Type? ActiveCaseType` | Gets the active case's declared type, or `null` if no case was ever set. |
-| `public bool IsSuccess` | Gets a value indicating whether this result holds the success case (the first declared case type). |
 | `public object? Value` |  |
-| `public bool Equals(Outcome<TSuccessResult, TCase2, TCase3> other)` | Determines whether this result and `other` hold equal case values. |
+| `public bool Equals(Outcome<T1, T2, T3> other)` | Determines whether this result and `other` hold equal case values. |
 | `public override bool Equals(object? obj)` | Determines whether this result and `obj` hold equal case values. |
 | `public override int GetHashCode()` | Returns a hash code derived from the active case value. |
-| `public TResult Match<TResult>(Func<TSuccessResult, TResult> onCase1, Func<TCase2, TResult> onCase2, Func<TCase3, TResult> onCase3)` | Projects this result to a `TResult` by dispatching to the delegate matching its active case. |
-| `public void Switch(Action<TSuccessResult> onCase1, Action<TCase2> onCase2, Action<TCase3> onCase3)` | Dispatches to the action matching this result's active case. |
+| `public TResult Match<TResult>(Func<T1, TResult> onCase1, Func<T2, TResult> onCase2, Func<T3, TResult> onCase3)` | Projects this result to a `TResult` by dispatching to the delegate matching its active case. |
+| `public void Switch(Action<T1> onCase1, Action<T2> onCase2, Action<T3> onCase3)` | Dispatches to the action matching this result's active case. |
 | `public override string ToString()` | Forwards to the active case value's own `ToString` override. |
-| `public bool TryGetValue(out TSuccessResult value)` | Attempts to read this result's value as its TSuccessResult case. |
-| `public bool TryGetValue(out TCase2 value)` | Attempts to read this result's value as its TCase2 case. |
-| `public bool TryGetValue(out TCase3 value)` | Attempts to read this result's value as its TCase3 case. |
-| `public static bool operator ==(Outcome<TSuccessResult, TCase2, TCase3> left, Outcome<TSuccessResult, TCase2, TCase3> right)` | Determines whether `left` and `right` hold equal case values. |
-| `public static bool operator !=(Outcome<TSuccessResult, TCase2, TCase3> left, Outcome<TSuccessResult, TCase2, TCase3> right)` | Determines whether `left` and `right` hold unequal case values. |
+| `public bool TryGetValue(out T1 value)` | Attempts to read this result's value as its T1 case. |
+| `public bool TryGetValue(out T2 value)` | Attempts to read this result's value as its T2 case. |
+| `public bool TryGetValue(out T3 value)` | Attempts to read this result's value as its T3 case. |
+| `public static bool operator ==(Outcome<T1, T2, T3> left, Outcome<T1, T2, T3> right)` | Determines whether `left` and `right` hold equal case values. |
+| `public static bool operator !=(Outcome<T1, T2, T3> left, Outcome<T1, T2, T3> right)` | Determines whether `left` and `right` hold unequal case values. |
 
-### `Outcome<TSuccessResult, TCase2, TCase3, TCase4>` struct
+### `Outcome<T1, T2, T3, T4>` struct
 
 Represents the outcome of an operation as one of four possible cases: a successful result or one of three result cases.
 
 | Member | Summary |
 | --- | --- |
-| `public Outcome(TSuccessResult value)` |  |
-| `public Outcome(TCase2 value)` |  |
-| `public Outcome(TCase3 value)` |  |
-| `public Outcome(TCase4 value)` |  |
+| `public Outcome(T1 value)` |  |
+| `public Outcome(T2 value)` |  |
+| `public Outcome(T3 value)` |  |
+| `public Outcome(T4 value)` |  |
 | `public Type? ActiveCaseType` | Gets the active case's declared type, or `null` if no case was ever set. |
-| `public bool IsSuccess` | Gets a value indicating whether this result holds the success case (the first declared case type). |
 | `public object? Value` |  |
-| `public bool Equals(Outcome<TSuccessResult, TCase2, TCase3, TCase4> other)` | Determines whether this result and `other` hold equal case values. |
+| `public bool Equals(Outcome<T1, T2, T3, T4> other)` | Determines whether this result and `other` hold equal case values. |
 | `public override bool Equals(object? obj)` | Determines whether this result and `obj` hold equal case values. |
 | `public override int GetHashCode()` | Returns a hash code derived from the active case value. |
-| `public TResult Match<TResult>(Func<TSuccessResult, TResult> onCase1, Func<TCase2, TResult> onCase2, Func<TCase3, TResult> onCase3, Func<TCase4, TResult> onCase4)` | Projects this result to a `TResult` by dispatching to the delegate matching its active case. |
-| `public void Switch(Action<TSuccessResult> onCase1, Action<TCase2> onCase2, Action<TCase3> onCase3, Action<TCase4> onCase4)` | Dispatches to the action matching this result's active case. |
+| `public TResult Match<TResult>(Func<T1, TResult> onCase1, Func<T2, TResult> onCase2, Func<T3, TResult> onCase3, Func<T4, TResult> onCase4)` | Projects this result to a `TResult` by dispatching to the delegate matching its active case. |
+| `public void Switch(Action<T1> onCase1, Action<T2> onCase2, Action<T3> onCase3, Action<T4> onCase4)` | Dispatches to the action matching this result's active case. |
 | `public override string ToString()` | Forwards to the active case value's own `ToString` override. |
-| `public bool TryGetValue(out TSuccessResult value)` | Attempts to read this result's value as its TSuccessResult case. |
-| `public bool TryGetValue(out TCase2 value)` | Attempts to read this result's value as its TCase2 case. |
-| `public bool TryGetValue(out TCase3 value)` | Attempts to read this result's value as its TCase3 case. |
-| `public bool TryGetValue(out TCase4 value)` | Attempts to read this result's value as its TCase4 case. |
-| `public static bool operator ==(Outcome<TSuccessResult, TCase2, TCase3, TCase4> left, Outcome<TSuccessResult, TCase2, TCase3, TCase4> right)` | Determines whether `left` and `right` hold equal case values. |
-| `public static bool operator !=(Outcome<TSuccessResult, TCase2, TCase3, TCase4> left, Outcome<TSuccessResult, TCase2, TCase3, TCase4> right)` | Determines whether `left` and `right` hold unequal case values. |
+| `public bool TryGetValue(out T1 value)` | Attempts to read this result's value as its T1 case. |
+| `public bool TryGetValue(out T2 value)` | Attempts to read this result's value as its T2 case. |
+| `public bool TryGetValue(out T3 value)` | Attempts to read this result's value as its T3 case. |
+| `public bool TryGetValue(out T4 value)` | Attempts to read this result's value as its T4 case. |
+| `public static bool operator ==(Outcome<T1, T2, T3, T4> left, Outcome<T1, T2, T3, T4> right)` | Determines whether `left` and `right` hold equal case values. |
+| `public static bool operator !=(Outcome<T1, T2, T3, T4> left, Outcome<T1, T2, T3, T4> right)` | Determines whether `left` and `right` hold unequal case values. |
 
-### `Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>` struct
+### `Outcome<T1, T2, T3, T4, T5>` struct
 
 Represents the outcome of an operation as one of five possible cases: a successful result or one of four result cases.
 
 | Member | Summary |
 | --- | --- |
-| `public Outcome(TSuccessResult value)` |  |
-| `public Outcome(TCase2 value)` |  |
-| `public Outcome(TCase3 value)` |  |
-| `public Outcome(TCase4 value)` |  |
-| `public Outcome(TCase5 value)` |  |
+| `public Outcome(T1 value)` |  |
+| `public Outcome(T2 value)` |  |
+| `public Outcome(T3 value)` |  |
+| `public Outcome(T4 value)` |  |
+| `public Outcome(T5 value)` |  |
 | `public Type? ActiveCaseType` | Gets the active case's declared type, or `null` if no case was ever set. |
-| `public bool IsSuccess` | Gets a value indicating whether this result holds the success case (the first declared case type). |
 | `public object? Value` |  |
-| `public bool Equals(Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5> other)` | Determines whether this result and `other` hold equal case values. |
+| `public bool Equals(Outcome<T1, T2, T3, T4, T5> other)` | Determines whether this result and `other` hold equal case values. |
 | `public override bool Equals(object? obj)` | Determines whether this result and `obj` hold equal case values. |
 | `public override int GetHashCode()` | Returns a hash code derived from the active case value. |
-| `public TResult Match<TResult>(Func<TSuccessResult, TResult> onCase1, Func<TCase2, TResult> onCase2, Func<TCase3, TResult> onCase3, Func<TCase4, TResult> onCase4, Func<TCase5, TResult> onCase5)` | Projects this result to a `TResult` by dispatching to the delegate matching its active case. |
-| `public void Switch(Action<TSuccessResult> onCase1, Action<TCase2> onCase2, Action<TCase3> onCase3, Action<TCase4> onCase4, Action<TCase5> onCase5)` | Dispatches to the action matching this result's active case. |
+| `public TResult Match<TResult>(Func<T1, TResult> onCase1, Func<T2, TResult> onCase2, Func<T3, TResult> onCase3, Func<T4, TResult> onCase4, Func<T5, TResult> onCase5)` | Projects this result to a `TResult` by dispatching to the delegate matching its active case. |
+| `public void Switch(Action<T1> onCase1, Action<T2> onCase2, Action<T3> onCase3, Action<T4> onCase4, Action<T5> onCase5)` | Dispatches to the action matching this result's active case. |
 | `public override string ToString()` | Forwards to the active case value's own `ToString` override. |
-| `public bool TryGetValue(out TSuccessResult value)` | Attempts to read this result's value as its TSuccessResult case. |
-| `public bool TryGetValue(out TCase2 value)` | Attempts to read this result's value as its TCase2 case. |
-| `public bool TryGetValue(out TCase3 value)` | Attempts to read this result's value as its TCase3 case. |
-| `public bool TryGetValue(out TCase4 value)` | Attempts to read this result's value as its TCase4 case. |
-| `public bool TryGetValue(out TCase5 value)` | Attempts to read this result's value as its TCase5 case. |
-| `public static bool operator ==(Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5> left, Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5> right)` | Determines whether `left` and `right` hold equal case values. |
-| `public static bool operator !=(Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5> left, Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5> right)` | Determines whether `left` and `right` hold unequal case values. |
+| `public bool TryGetValue(out T1 value)` | Attempts to read this result's value as its T1 case. |
+| `public bool TryGetValue(out T2 value)` | Attempts to read this result's value as its T2 case. |
+| `public bool TryGetValue(out T3 value)` | Attempts to read this result's value as its T3 case. |
+| `public bool TryGetValue(out T4 value)` | Attempts to read this result's value as its T4 case. |
+| `public bool TryGetValue(out T5 value)` | Attempts to read this result's value as its T5 case. |
+| `public static bool operator ==(Outcome<T1, T2, T3, T4, T5> left, Outcome<T1, T2, T3, T4, T5> right)` | Determines whether `left` and `right` hold equal case values. |
+| `public static bool operator !=(Outcome<T1, T2, T3, T4, T5> left, Outcome<T1, T2, T3, T4, T5> right)` | Determines whether `left` and `right` hold unequal case values. |
 
-### `Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>` struct
+### `Outcome<T1, T2, T3, T4, T5, T6>` struct
 
 Represents the outcome of an operation as one of six possible cases: a successful result or one of five alternative result cases.
 
 | Member | Summary |
 | --- | --- |
-| `public Outcome(TSuccessResult value)` |  |
-| `public Outcome(TCase2 value)` |  |
-| `public Outcome(TCase3 value)` |  |
-| `public Outcome(TCase4 value)` |  |
-| `public Outcome(TCase5 value)` |  |
-| `public Outcome(TCase6 value)` |  |
+| `public Outcome(T1 value)` |  |
+| `public Outcome(T2 value)` |  |
+| `public Outcome(T3 value)` |  |
+| `public Outcome(T4 value)` |  |
+| `public Outcome(T5 value)` |  |
+| `public Outcome(T6 value)` |  |
 | `public Type? ActiveCaseType` | Gets the active case's declared type, or `null` if no case was ever set. |
-| `public bool IsSuccess` | Gets a value indicating whether this result holds the success case (the first declared case type). |
 | `public object? Value` |  |
-| `public bool Equals(Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6> other)` | Determines whether this result and `other` hold equal case values. |
+| `public bool Equals(Outcome<T1, T2, T3, T4, T5, T6> other)` | Determines whether this result and `other` hold equal case values. |
 | `public override bool Equals(object? obj)` | Determines whether this result and `obj` hold equal case values. |
 | `public override int GetHashCode()` | Returns a hash code derived from the active case value. |
-| `public TResult Match<TResult>(Func<TSuccessResult, TResult> onCase1, Func<TCase2, TResult> onCase2, Func<TCase3, TResult> onCase3, Func<TCase4, TResult> onCase4, Func<TCase5, TResult> onCase5, Func<TCase6, TResult> onCase6)` | Projects this result to a `TResult` by dispatching to the delegate matching its active case. |
-| `public void Switch(Action<TSuccessResult> onCase1, Action<TCase2> onCase2, Action<TCase3> onCase3, Action<TCase4> onCase4, Action<TCase5> onCase5, Action<TCase6> onCase6)` | Dispatches to the action matching this result's active case. |
+| `public TResult Match<TResult>(Func<T1, TResult> onCase1, Func<T2, TResult> onCase2, Func<T3, TResult> onCase3, Func<T4, TResult> onCase4, Func<T5, TResult> onCase5, Func<T6, TResult> onCase6)` | Projects this result to a `TResult` by dispatching to the delegate matching its active case. |
+| `public void Switch(Action<T1> onCase1, Action<T2> onCase2, Action<T3> onCase3, Action<T4> onCase4, Action<T5> onCase5, Action<T6> onCase6)` | Dispatches to the action matching this result's active case. |
 | `public override string ToString()` | Forwards to the active case value's own `ToString` override. |
-| `public bool TryGetValue(out TSuccessResult value)` | Attempts to read this result's value as its TSuccessResult case. |
-| `public bool TryGetValue(out TCase2 value)` | Attempts to read this result's value as its TCase2 case. |
-| `public bool TryGetValue(out TCase3 value)` | Attempts to read this result's value as its TCase3 case. |
-| `public bool TryGetValue(out TCase4 value)` | Attempts to read this result's value as its TCase4 case. |
-| `public bool TryGetValue(out TCase5 value)` | Attempts to read this result's value as its TCase5 case. |
-| `public bool TryGetValue(out TCase6 value)` | Attempts to read this result's value as its TCase6 case. |
-| `public static bool operator ==(Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6> left, Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6> right)` | Determines whether `left` and `right` hold equal case values. |
-| `public static bool operator !=(Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6> left, Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6> right)` | Determines whether `left` and `right` hold unequal case values. |
+| `public bool TryGetValue(out T1 value)` | Attempts to read this result's value as its T1 case. |
+| `public bool TryGetValue(out T2 value)` | Attempts to read this result's value as its T2 case. |
+| `public bool TryGetValue(out T3 value)` | Attempts to read this result's value as its T3 case. |
+| `public bool TryGetValue(out T4 value)` | Attempts to read this result's value as its T4 case. |
+| `public bool TryGetValue(out T5 value)` | Attempts to read this result's value as its T5 case. |
+| `public bool TryGetValue(out T6 value)` | Attempts to read this result's value as its T6 case. |
+| `public static bool operator ==(Outcome<T1, T2, T3, T4, T5, T6> left, Outcome<T1, T2, T3, T4, T5, T6> right)` | Determines whether `left` and `right` hold equal case values. |
+| `public static bool operator !=(Outcome<T1, T2, T3, T4, T5, T6> left, Outcome<T1, T2, T3, T4, T5, T6> right)` | Determines whether `left` and `right` hold unequal case values. |
 
 ## Interlocutor.CommonKernel.ResultTypes
 
@@ -348,7 +342,6 @@ Implemented by every compiler-generated union`GenerateOutcomeMembersAttribute` e
 | Member | Summary |
 | --- | --- |
 | `Type? ActiveCaseType` | Gets the active case's declared type, or `null` if no case was ever set. |
-| `bool IsSuccess` | Gets a value indicating whether the active case is the success case (the first declared case type). |
 
 ### `IRateLimitedFailureCase` interface
 
@@ -415,7 +408,6 @@ Convenience projections over an arbitrary response, checking whether it implemen
 | Member | Summary |
 | --- | --- |
 | `public static Type? AsOutcomeCaseActiveType(object? response)` | Gets `ActiveCaseType` if `response` implements `IOutcomeCase` and has a non-`null` active case type, or `null` otherwise. |
-| `public static bool? AsOutcomeCaseIsSuccess(object? response)` | Gets `IsSuccess` if `response` implements `IOutcomeCase`, or `null` if it doesn't. |
 
 ### `RateLimited` struct
 

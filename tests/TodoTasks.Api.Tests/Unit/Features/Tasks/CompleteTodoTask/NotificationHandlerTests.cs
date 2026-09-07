@@ -22,7 +22,7 @@ public sealed class NotificationHandlerTests
         var notification = new TodoTaskCompletedNotification(1, "owner-1", "Buy milk");
 
         // Act
-        await handler.Handle(notification, CancellationToken.None);
+        await handler.HandleAsync(notification, CancellationToken.None);
 
         // Assert
         counter.Received(1).Increment("owner-1");
@@ -37,7 +37,7 @@ public sealed class NotificationHandlerTests
         var notification = new TodoTaskCompletedNotification(1, "owner-1", "Buy milk");
 
         // Act
-        await handler.Handle(notification, CancellationToken.None);
+        await handler.HandleAsync(notification, CancellationToken.None);
 
         // Assert - matches the pattern LoggingBehaviorTests uses to assert an ILogger call occurred.
         logger

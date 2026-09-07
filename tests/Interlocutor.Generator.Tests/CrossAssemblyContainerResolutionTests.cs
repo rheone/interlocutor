@@ -4,10 +4,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using global::Autofac;
 using global::Microsoft.Extensions.DependencyInjection;
 using Interlocutor.Abstractions.Core;
-using Interlocutor.CommonKernel.ResultTypes;
 using Interlocutor.DependencyInjection.Abstractions;
 using Interlocutor.DependencyInjection.Autofac;
 using Interlocutor.DependencyInjection.Microsoft;
@@ -43,7 +43,7 @@ public sealed class CrossAssemblyContainerResolutionTests
 
         public sealed class GetGreetingQueryHandler(IGreeter greeter) : IQueryHandler<GetGreetingQuery, Outcome<string, Failure>>
         {
-            public Task<Outcome<string, Failure>> Handle(GetGreetingQuery query, CancellationToken ct) =>
+            public Task<Outcome<string, Failure>> HandleAsync(GetGreetingQuery query, CancellationToken ct) =>
                 Task.FromResult(new Outcome<string, Failure>(greeter.Greet()));
         }
         """;
@@ -77,7 +77,7 @@ public sealed class CrossAssemblyContainerResolutionTests
         var request = app.CreateRequest();
 
         // Act
-        var outcome = await mediator.Send(request, TestContext.Current.CancellationToken);
+        var outcome = await mediator.SendAsync(request, TestContext.Current.CancellationToken);
 
         // Assert
         AssertSuccessfulGreeting(outcome);
@@ -101,7 +101,7 @@ public sealed class CrossAssemblyContainerResolutionTests
         var request = app.CreateRequest();
 
         // Act
-        var outcome = await mediator.Send(request, TestContext.Current.CancellationToken);
+        var outcome = await mediator.SendAsync(request, TestContext.Current.CancellationToken);
 
         // Assert
         AssertSuccessfulGreeting(outcome);
@@ -152,16 +152,17 @@ public sealed class CrossAssemblyContainerResolutionTests
     }
 
     /// <summary>
-    /// <see cref="ISender.Send(object, System.Threading.CancellationToken)"/>'s runtime-typed overload
-    /// returns the marker <see cref="IOutcome"/> (compile-time common ground with the caller); the
-    /// concrete case is read back by reflection over the boxed union value's own <c>IsSuccess</c>/<c>Value</c>
-    /// members, since the caller has no compile-time reference to the library's own success/failure types.
+    /// <see cref="ISender.SendAsync(object, System.Threading.CancellationToken)"/>'s runtime-typed overload
+    /// returns the base <see cref="IUnion"/> interface (compile-time common ground with the caller); the
+    /// concrete case is read back by reflection over the boxed union value's own
+    /// <c>ActiveCaseType</c>/<c>Value</c> members, since the caller has no compile-time reference to the
+    /// library's own success/failure types.
     /// </summary>
-    private static void AssertSuccessfulGreeting(IOutcome outcome)
+    private static void AssertSuccessfulGreeting(IUnion outcome)
     {
         var outcomeType = outcome.GetType();
-        var isSuccess = (bool)outcomeType.GetProperty("IsSuccess")!.GetValue(outcome)!;
-        Assert.True(isSuccess, $"Expected a successful outcome but got {outcome}.");
+        var activeCaseType = (Type?)outcomeType.GetProperty("ActiveCaseType")!.GetValue(outcome);
+        Assert.Equal(typeof(string), activeCaseType);
 
         var value = outcomeType.GetProperty("Value")!.GetValue(outcome);
         Assert.Equal("hello from the cross-assembly library", value);

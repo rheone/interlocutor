@@ -1,6 +1,7 @@
 namespace Interlocutor.Generator.Diagnostics;
 
 using Interlocutor.Generator.Analysis;
+using Interlocutor.Generator.Emission;
 using Interlocutor.Generator.Models;
 using Microsoft.CodeAnalysis;
 
@@ -48,7 +49,7 @@ internal static class InterlocutorDiagnostics
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
         description: "A type implementing IQuery<TResponse>, ICommand<TResponse>, or ICommand was found with no "
-            + "corresponding IQueryHandler<,>, ICommandHandler<,>, or IVoidCommandHandler<,> implementation "
+            + "corresponding IQueryHandler<,>, ICommandHandler<,>, or IBareCommandHandler<,> implementation "
             + "reachable from this compilation, including transitively-referenced assemblies. Add a handler, or "
             + "reference the assembly that defines one."
     );
@@ -60,7 +61,7 @@ internal static class InterlocutorDiagnostics
     /// </summary>
     /// <remarks>
     /// Unlike a notification (see <see cref="RequestKind"/>'s remarks), a query or command must resolve to
-    /// exactly one handler - <c>Mediator.Send</c> and the generated dispatch wrapper both resolve the handler's
+    /// exactly one handler - <c>Mediator.SendAsync</c> and the generated dispatch wrapper both resolve the handler's
     /// service interface as a single service, so a second registration silently shadows the first rather than
     /// being an error at resolution time. This diagnostic catches that ambiguity at build time instead. Default
     /// severity is <see cref="DiagnosticSeverity.Warning"/>, escalated the same way as
@@ -218,7 +219,7 @@ internal static class InterlocutorDiagnostics
     /// closed instantiation in application B (which references A), is invisible to both sides' own generator
     /// runs - A's run finished before B exists, and B's run never sees A's syntax, only its metadata. Left
     /// unresolved, that produced a request no registered handler ever backs, previously discovered only when
-    /// <c>Mediator.Send</c> throws <c>Interlocutor.Abstractions.Core.HandlerNotRegisteredException</c>
+    /// <c>Mediator.SendAsync</c> throws <c>Interlocutor.Abstractions.Core.HandlerNotRegisteredException</c>
     /// at first dispatch. This diagnostic surfaces the same gap at build time instead.
     /// </para>
     /// <para>
@@ -330,7 +331,7 @@ internal static class InterlocutorDiagnostics
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true,
         description: "GenerateOutcomeMembersAttribute marks a partial union declaration for source-generated "
-            + "Match/Switch/TryGetValue/ToString/IsSuccess members. A union with fewer than two case types has "
+            + "Match/Switch/TryGetValue/ToString members. A union with fewer than two case types has "
             + "no alternative for a switch to be exhaustive over, so it isn't a meaningful outcome - add at "
             + "least one more case type, or remove the attribute."
     );
@@ -348,7 +349,7 @@ internal static class InterlocutorDiagnostics
     /// generic case type as peer cases (e.g. <c>ValidationError&lt;string&gt;</c> and
     /// <c>ValidationError&lt;int&gt;</c> would both want <c>TryGetValidationError</c>); and a case type whose
     /// own simple name exactly matches a reserved generated member name (<c>Value</c>, <c>Match</c>,
-    /// <c>Switch</c>, <c>ToString</c>, <c>Equals</c>, <c>GetHashCode</c>, <c>TryGetValue</c>, <c>IsSuccess</c>,
+    /// <c>Switch</c>, <c>ToString</c>, <c>Equals</c>, <c>GetHashCode</c>, <c>TryGetValue</c>,
     /// <c>ActiveCaseType</c>).
     /// </para>
     /// <para>
@@ -380,5 +381,144 @@ internal static class InterlocutorDiagnostics
             + "generate the same accessor name with different, non-var-inferable signatures; a case type whose "
             + "own name matches an already-reserved generated member name would generate a duplicate member "
             + "outright. Rename the colliding case type(s), or use distinct case types."
+    );
+
+    /// <summary>
+    /// Reported when a <c>partial union</c> decorated with <c>GenerateOutcomeMembersAttribute</c> declares
+    /// more than sixteen case types.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="OutcomeMemberEmitter"/>'s generated <c>Match&lt;TResult&gt;</c>/<c>Switch</c> signatures bind
+    /// one delegate parameter per case type to the BCL's <c>System.Func&lt;T1..T16, TResult&gt;</c>/
+    /// <c>System.Action&lt;T1..T16&gt;</c> families, which stop at sixteen input type parameters - there is no
+    /// wider overload to grow into past that point. Left unchecked, a seventeen-or-more-case union would fail
+    /// deep inside the generated member body with a confusing "no overload of Func/Action takes this many type
+    /// arguments" error rather than a clear message at the declaration site; this diagnostic surfaces the same
+    /// ceiling there instead. Always <see cref="DiagnosticSeverity.Error"/>, the same posture as
+    /// <see cref="TooFewOutcomeCaseTypes"/>: past sixteen cases, there is no meaningful partial member set to
+    /// fall back to - <c>Match</c>/<c>Switch</c> themselves cannot be emitted at all.
+    /// </remarks>
+    public static readonly DiagnosticDescriptor TooManyOutcomeCaseTypes = new(
+        id: "INTERLOC013",
+        title: "Attributed union declares more than sixteen case types",
+        messageFormat: "'{0}' is decorated with GenerateOutcomeMembersAttribute but declares {1} case type(s) - "
+            + "at most sixteen are supported, because Match/Switch bind one delegate parameter per case to the "
+            + "BCL's Func<T1..T16,TResult>/Action<T1..T16> delegate families, which top out at sixteen type "
+            + "parameters",
+        category: "Interlocutor.Outcomes",
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true,
+        description: "GenerateOutcomeMembersAttribute marks a partial union declaration for source-generated "
+            + "Match/Switch/TryGetValue/ToString members. Match<TResult> and Switch bind one delegate parameter "
+            + "per case type to System.Func<T1..T16, TResult>/System.Action<T1..T16>, and the BCL defines no "
+            + "wider overload of either family, so a union past sixteen case types has no signature Match/Switch "
+            + "could ever be emitted with. Reduce the union to sixteen or fewer case types."
+    );
+
+    /// <summary>
+    /// Reported when a <c>partial union</c> decorated with <c>GenerateOutcomeMembersAttribute</c> declares more
+    /// case types than the configured recommended maximum (default six, matching the shipped
+    /// <c>Outcome</c>/<c>Outcome&lt;...&gt;</c> family's own ceiling).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Unlike <see cref="TooManyOutcomeCaseTypes"/> - a hard, unconfigurable ceiling forced by
+    /// <c>Func&lt;T1..T16, TResult&gt;</c>/<c>Action&lt;T1..T16&gt;</c>'s own arity limit - this is a style
+    /// nudge, not a structural limit: an operation whose response needs this many independently-branchable
+    /// cases is usually a sign the underlying type or handler is doing too much, and splitting the operation is
+    /// more often the right fix than growing the union further. Default severity is
+    /// <see cref="DiagnosticSeverity.Warning"/>, escalated the same way as <see cref="MissingHandler"/>:
+    /// <code>
+    /// dotnet_diagnostic.INTERLOC014.severity = error
+    /// </code>
+    /// </para>
+    /// <para>
+    /// The threshold itself - distinct from severity - is also configurable, via an <c>.editorconfig</c>-style
+    /// analyzer option read per-declaring-file:
+    /// <code>
+    /// interlocutor_max_recommended_outcome_arity = 8
+    /// </code>
+    /// A deliberate outlier (a payment gateway integration with several genuinely independent decline reasons,
+    /// say) dismisses this per-declaration with a targeted <c>#pragma warning disable INTERLOC014</c> /
+    /// <c>#pragma warning restore INTERLOC014</c> pair around the union declaration, the same as any other
+    /// warning - no bespoke suppression mechanism exists for this diagnostic.
+    /// </para>
+    /// </remarks>
+    public static readonly DiagnosticDescriptor RecommendedOutcomeArityExceeded = new(
+        id: "INTERLOC014",
+        title: "Attributed union declares more cases than the recommended maximum",
+        messageFormat: "'{0}' is decorated with GenerateOutcomeMembersAttribute but declares {1} case type(s), "
+            + "more than the recommended maximum of {2} - a type or handler needing this many cases is usually "
+            + "a sign it's doing too much; consider splitting the operation instead of growing the union further",
+        category: "Interlocutor.Outcomes",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "GenerateOutcomeMembersAttribute marks a partial union declaration for source-generated "
+            + "Match/Switch/TryGetValue/ToString members. Declaring more case types than the recommended "
+            + "maximum (default six, configurable via the interlocutor_max_recommended_outcome_arity "
+            + ".editorconfig option) usually signals the underlying type or handler is doing too much. Split "
+            + "the operation into more specific requests, or dismiss this warning per-declaration with "
+            + "#pragma warning disable/restore INTERLOC014 for a genuine outlier."
+    );
+
+    /// <summary>
+    /// Reported when a <c>TRequest</c> implements one of the four marker-interface-gated pipeline behaviors'
+    /// marker interfaces (<c>IRequiresPolicyRequest</c>, <c>ICancellableRequest</c>, <c>IRateLimitedRequest</c>,
+    /// <c>ITimeoutRequest</c>) but its paired <c>TResponse</c> declares no case of the exact type that
+    /// behavior needs to construct (<c>Forbidden</c>, <c>Cancelled</c>, <c>RateLimited</c>, <c>Timeout</c>
+    /// respectively).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Per ADR-0023 ("Pipeline Behavior Case Construction Fails Fast, Never Degrades or Reshapes"), a pipeline
+    /// behavior that can't construct the case it needs from a handler's <c>TResponse</c> already fails fast
+    /// with a named <see cref="InvalidOperationException"/> at run time, via <c>OutcomeCaseRegistryExtensions.ConstructOrThrow</c> -
+    /// this diagnostic is an earlier-feedback layer on top of that same runtime guarantee, not a replacement
+    /// for it: it reads what the generator already knows about <c>TRequest</c>'s implemented interfaces and
+    /// <c>TResponse</c>'s declared case types, without touching <c>TResponse</c>'s type,
+    /// <c>IOutcomeCaseRegistry</c>'s contract, or how any container resolves these behaviors. The match is
+    /// exact-type, not "implements the same marker interface the case type happens to implement" - the
+    /// underlying runtime construction (<c>UnionCaseFactory.FindCaseConstructor</c>) looks for a constructor
+    /// accepting the literal case type, so a response declaring some other type that merely implements
+    /// <c>IForbiddenFailureCase</c>/<c>IRateLimitedFailureCase</c>/<c>ITimeoutFailureCase</c> still doesn't
+    /// satisfy the behavior that needs the concrete <c>Forbidden</c>/<c>RateLimited</c>/<c>Timeout</c> case.
+    /// </para>
+    /// <para>
+    /// <b>Scope:</b> only these four marker-interface-gated behaviors (<c>AuthorizationBehavior</c>,
+    /// <c>CancellationBehavior</c>, <c>RateLimitedBehavior</c>, <c>TimeoutBehavior</c>) are covered.
+    /// <c>ValidationBehavior</c>/<c>FluentValidationErrorsBehavior</c> are gated by whether a
+    /// <c>FluentValidation.IValidator&lt;TRequest&gt;</c> is actually registered in the built container - a
+    /// DI-registration-time fact, not a static marker interface on <c>TRequest</c>, and therefore invisible to
+    /// a compile-time analyzer working only from a type's declared shape. Those two behaviors are deliberately
+    /// out of scope for this diagnostic; see <see cref="ValidationShapeMismatch"/> for the closest
+    /// already-shipped build-time coverage they do get, and a later opt-in startup-validation extension for
+    /// the runtime-registered coverage the rest of their surface gets instead.
+    /// </para>
+    /// <para>
+    /// Default severity is <see cref="DiagnosticSeverity.Warning"/>, escalated the same way as
+    /// <see cref="MissingHandler"/>:
+    /// <code>
+    /// dotnet_diagnostic.INTERLOC015.severity = error
+    /// </code>
+    /// </para>
+    /// </remarks>
+    public static readonly DiagnosticDescriptor PipelineBehaviorCaseFidelityMismatch = new(
+        id: "INTERLOC015",
+        title: "Pipeline behavior marker interface without a matching response case",
+        messageFormat: "'{0}' implements '{1}' but its response type '{2}' has no '{3}' case for {4} to "
+            + "construct - add a '{3}' case to the response type, or remove '{1}'",
+        category: "Interlocutor.Pipeline",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: "AuthorizationBehavior, CancellationBehavior, RateLimitedBehavior, and TimeoutBehavior "
+            + "each construct a specific outcome case (Forbidden, Cancelled, RateLimited, Timeout "
+            + "respectively) via IOutcomeCaseRegistry when their gating marker interface "
+            + "(IRequiresPolicyRequest, ICancellableRequest, IRateLimitedRequest, ITimeoutRequest) is "
+            + "implemented by TRequest - the response type must declare that exact case, or the behavior "
+            + "throws InvalidOperationException at runtime the first time it actually short-circuits. "
+            + "ValidationBehavior/FluentValidationErrorsBehavior are gated by DI-registered-validator "
+            + "presence, not a static marker interface, and are out of scope for this diagnostic. Add the "
+            + "missing case to the response type's declared arity, or remove the marker interface if the "
+            + "cross-cutting behavior does not apply to this request."
     );
 }

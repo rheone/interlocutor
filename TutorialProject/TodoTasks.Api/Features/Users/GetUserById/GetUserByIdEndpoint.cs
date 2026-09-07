@@ -15,7 +15,7 @@ public static class GetUserByIdEndpoint
             "/users/{id:int}",
             async (int id, ISender sender, CancellationToken ct) =>
             {
-                var result = await sender.Send(new GetUserByIdQuery(id), ct).ConfigureAwait(false);
+                var result = await sender.SendAsync(new GetUserByIdQuery(id), ct).ConfigureAwait(false);
                 return result.ToMinimalApiResult();
             }
         );

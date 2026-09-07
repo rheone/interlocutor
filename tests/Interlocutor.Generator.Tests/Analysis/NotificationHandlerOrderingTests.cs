@@ -23,7 +23,7 @@ public sealed class NotificationHandlerOrderingTests
 
             public sealed class AuditEverythingHandler : INotificationHandler<INotification>
             {
-                public Task Handle(INotification notification, CancellationToken ct) => Task.CompletedTask;
+                public Task HandleAsync(INotification notification, CancellationToken ct) => Task.CompletedTask;
             }
             """;
 
@@ -52,7 +52,7 @@ public sealed class NotificationHandlerOrderingTests
 
             public sealed class FooHappenedHandler : INotificationHandler<FooHappened>
             {
-                public Task Handle(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
+                public Task HandleAsync(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
             }
             """;
 
@@ -78,13 +78,13 @@ public sealed class NotificationHandlerOrderingTests
 
             public sealed class FirstHandler : INotificationHandler<FooHappened>
             {
-                public Task Handle(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
+                public Task HandleAsync(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
             }
 
             [NotificationHandlerRunAfter(typeof(FirstHandler))]
             public sealed class SecondHandler : INotificationHandler<FooHappened>
             {
-                public Task Handle(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
+                public Task HandleAsync(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
             }
             """;
 
@@ -115,12 +115,12 @@ public sealed class NotificationHandlerOrderingTests
             [NotificationHandlerRunBefore(typeof(SecondHandler))]
             public sealed class FirstHandler : INotificationHandler<FooHappened>
             {
-                public Task Handle(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
+                public Task HandleAsync(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
             }
 
             public sealed class SecondHandler : INotificationHandler<FooHappened>
             {
-                public Task Handle(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
+                public Task HandleAsync(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
             }
             """;
 
@@ -150,18 +150,18 @@ public sealed class NotificationHandlerOrderingTests
 
             public sealed class FirstHandler : INotificationHandler<FooHappened>
             {
-                public Task Handle(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
+                public Task HandleAsync(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
             }
 
             [NotificationHandlerRunAfter(typeof(FirstHandler))]
             public sealed class SecondHandler : INotificationHandler<FooHappened>
             {
-                public Task Handle(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
+                public Task HandleAsync(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
             }
 
             public sealed class UnrelatedHandler : INotificationHandler<FooHappened>
             {
-                public Task Handle(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
+                public Task HandleAsync(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
             }
             """;
 
@@ -189,13 +189,13 @@ public sealed class NotificationHandlerOrderingTests
             [NotificationHandlerRunAfter(typeof(SecondHandler))]
             public sealed class FirstHandler : INotificationHandler<FooHappened>
             {
-                public Task Handle(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
+                public Task HandleAsync(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
             }
 
             [NotificationHandlerRunAfter(typeof(FirstHandler))]
             public sealed class SecondHandler : INotificationHandler<FooHappened>
             {
-                public Task Handle(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
+                public Task HandleAsync(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
             }
             """;
 
@@ -228,7 +228,7 @@ public sealed class NotificationHandlerOrderingTests
             [NotificationHandlerRunAfter(typeof(NotAHandler))]
             public sealed class FirstHandler : INotificationHandler<FooHappened>
             {
-                public Task Handle(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
+                public Task HandleAsync(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
             }
             """;
 
@@ -261,7 +261,7 @@ public sealed class NotificationHandlerOrderingTests
             [NotificationHandlerRunBefore(typeof(NotAHandler))]
             public sealed class FirstHandler : INotificationHandler<FooHappened>
             {
-                public Task Handle(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
+                public Task HandleAsync(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
             }
             """;
 
@@ -291,7 +291,7 @@ public sealed class NotificationHandlerOrderingTests
 
             public sealed class FooHappenedHandler : INotificationHandler<FooHappened>
             {
-                public Task Handle(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
+                public Task HandleAsync(FooHappened notification, CancellationToken ct) => Task.CompletedTask;
             }
             """;
 

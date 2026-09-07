@@ -171,7 +171,7 @@ public sealed class ValidationShapeMismatchAnalyzer : DiagnosticAnalyzer
 
     /// <summary>
     /// Determines the response type's case types - the type arguments of a closed generic <c>IOutcome</c>
-    /// union, or the fixed <c>Success | Failure</c> pair for the shipped non-generic <c>Outcome</c>.
+    /// union, or the empty set for the shipped, case-less non-generic <c>Outcome</c>.
     /// </summary>
     /// <param name="responseType">The request's declared response type.</param>
     /// <param name="wellKnown">The resolved well-known symbols.</param>
@@ -191,7 +191,7 @@ public sealed class ValidationShapeMismatchAnalyzer : DiagnosticAnalyzer
 
         if (SymbolEqualityComparer.Default.Equals(responseType.OriginalDefinition, wellKnown.ConcreteNonGenericOutcome))
         {
-            // Fixed Success | Failure shape - neither case is ever validation-shaped.
+            // Case-less acknowledgment - no case is ever validation-shaped, since there are no cases at all.
             caseTypes = ImmutableArray<ITypeSymbol>.Empty;
             return true;
         }

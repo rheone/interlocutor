@@ -30,7 +30,7 @@ public sealed class NotificationFanOutTests
         var mediator = services.BuildServiceProvider().GetRequiredService<IMediator>();
 
         // Act
-        await mediator.Publish(new OrderCreated(1), CancellationToken.None);
+        await mediator.PublishAsync(new OrderCreated(1), CancellationToken.None);
 
         // Assert
         Assert.True(invoked);
@@ -51,7 +51,7 @@ public sealed class NotificationFanOutTests
         var mediator = services.BuildServiceProvider().GetRequiredService<IMediator>();
 
         // Act
-        await mediator.Publish(new OrderCreated(1), CancellationToken.None);
+        await mediator.PublishAsync(new OrderCreated(1), CancellationToken.None);
 
         // Assert
         Assert.True(concreteInvoked);
@@ -71,7 +71,7 @@ public sealed class NotificationFanOutTests
         var mediator = services.BuildServiceProvider().GetRequiredService<IMediator>();
 
         // Act
-        await mediator.Publish(new AuditedOrderCreated(1), CancellationToken.None);
+        await mediator.PublishAsync(new AuditedOrderCreated(1), CancellationToken.None);
 
         // Assert
         Assert.True(invoked);
@@ -89,7 +89,7 @@ public sealed class NotificationFanOutTests
 
         // Act - AuditedOrderCreated is a sibling of OrderCreated (both derive from DomainEvent, neither from
         // the other) - a handler registered against OrderCreated specifically must not receive it.
-        await mediator.Publish(new AuditedOrderCreated(1), CancellationToken.None);
+        await mediator.PublishAsync(new AuditedOrderCreated(1), CancellationToken.None);
 
         // Assert
         Assert.False(invoked);
@@ -106,7 +106,7 @@ public sealed class NotificationFanOutTests
         var mediator = services.BuildServiceProvider().GetRequiredService<IMediator>();
 
         // Act
-        await mediator.Publish(new OrderCreated(1), CancellationToken.None);
+        await mediator.PublishAsync(new OrderCreated(1), CancellationToken.None);
 
         // Assert
         Assert.True(invoked);
@@ -123,7 +123,7 @@ public sealed class NotificationFanOutTests
         // Act - compiles and runs only if the strategy overload lives on IPublisher itself, not just on
         // the concrete Mediator class.
         var exception = await Record.ExceptionAsync(() =>
-            publisher.Publish(new OrderCreated(1), PublishStrategy.Parallel, CancellationToken.None)
+            publisher.PublishAsync(new OrderCreated(1), PublishStrategy.Parallel, CancellationToken.None)
         );
 
         // Assert
@@ -151,7 +151,7 @@ public sealed class NotificationFanOutTests
         var mediator = services.BuildServiceProvider().GetRequiredService<IMediator>();
 
         // Act
-        await mediator.Publish(new OrderCreated(1), CancellationToken.None);
+        await mediator.PublishAsync(new OrderCreated(1), CancellationToken.None);
 
         // Assert
         Assert.Equal(["first", "second"], order);
@@ -170,7 +170,7 @@ public sealed class NotificationFanOutTests
         var mediator = services.BuildServiceProvider().GetRequiredService<IMediator>();
 
         // Act
-        await mediator.Publish(new OrderCreated(1), CancellationToken.None);
+        await mediator.PublishAsync(new OrderCreated(1), CancellationToken.None);
 
         // Assert
         Assert.Equal(["a", "b"], order);
@@ -185,7 +185,7 @@ public sealed class NotificationFanOutTests
 public class RecordingHandler<TNotification>(Action action) : INotificationHandler<TNotification>
     where TNotification : INotification
 {
-    public Task Handle(TNotification notification, CancellationToken ct)
+    public Task HandleAsync(TNotification notification, CancellationToken ct)
     {
         action();
         return Task.CompletedTask;

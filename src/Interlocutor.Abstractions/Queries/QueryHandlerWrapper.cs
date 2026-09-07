@@ -1,6 +1,7 @@
 namespace Interlocutor.Abstractions.Queries;
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Diagnostics;
 using Interlocutor.Abstractions.Pipeline;
@@ -13,13 +14,13 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// <para>
 /// Resolves the query handler from DI and tags the dispatch activity; <see cref="PipelineChainExecutor"/>
 /// composes the pipeline behaviors around it (see that type's remarks for the chain-build/eject-guard logic
-/// shared with <c>CommandHandlerWrapper</c> and <c>VoidCommandHandlerWrapper</c>). This wrapper is created
+/// shared with <c>CommandHandlerWrapper</c> and <c>BareCommandHandlerWrapper</c>). This wrapper is created
 /// once per query type and cached by the mediator to avoid repeated reflection.
 /// </para>
 /// </remarks>
 internal sealed class QueryHandlerWrapper<TQuery, TResponse> : IHandlerWrapper<TResponse>
     where TQuery : IQuery<TResponse>
-    where TResponse : IOutcome
+    where TResponse : IUnion
 {
     /// <summary>
     /// Executes the query with its handler and pipeline behaviors.
@@ -29,12 +30,17 @@ internal sealed class QueryHandlerWrapper<TQuery, TResponse> : IHandlerWrapper<T
     /// <param name="ct">The cancellation token.</param>
     /// <param name="activity">The activity to tag with the resolved handler type, or <see langword="null"/>.</param>
     /// <returns>The response from the handler.</returns>
-    public Task<TResponse> Handle(object request, IServiceProvider services, CancellationToken ct, Activity? activity = null)
+    public Task<TResponse> HandleAsync(
+        object request,
+        IServiceProvider services,
+        CancellationToken ct,
+        Activity? activity = null
+    )
     {
         var typedRequest = (TQuery)request;
         var handler = services.GetRequiredService<IQueryHandler<TQuery, TResponse>>();
         activity?.SetTag(MediatorActivitySource.HandlerTypeTag, handler.GetType().FullName);
 
-        return PipelineChainExecutor.Execute(typedRequest, handler.Handle, services, ct);
+        return PipelineChainExecutor.ExecuteAsync(typedRequest, handler.HandleAsync, services, ct, activity);
     }
 }

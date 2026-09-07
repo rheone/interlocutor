@@ -26,7 +26,7 @@ public enum RegistrationProblemKind
     /// <summary>
     /// More than one distinct implementation type closes the same instantiation of a single-winner open
     /// generic contract - one of <c>IQueryHandler&lt;,&gt;</c>, <c>ICommandHandler&lt;,&gt;</c>,
-    /// <c>IVoidCommandHandler&lt;,&gt;</c>, or a contract a consumer opted in via
+    /// <c>IBareCommandHandler&lt;,&gt;</c>, or a contract a consumer opted in via
     /// <see cref="InterlocutorBuilder.RequireUniqueClosure"/>. <c>INotificationHandler&lt;&gt;</c> is
     /// deliberately never checked - fan-out to many handlers per notification is its whole design.
     /// </summary>

@@ -129,7 +129,7 @@ public class ServiceCollectionExtensionsTests
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         // Act
-        var result = await mediator.Send(new RegressionQuery(), TestContext.Current.CancellationToken);
+        var result = await mediator.SendAsync(new RegressionQuery(), TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(Expected, executionOrder);
@@ -143,7 +143,7 @@ public class ServiceCollectionExtensionsTests
 
         public OpenGenericBehavior(List<string> executionOrder) => this._executionOrder = executionOrder;
 
-        public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+        public async Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
         {
             this._executionOrder.Add("open-enter");
             var result = await next().ConfigureAwait(false);
@@ -158,7 +158,7 @@ public class ServiceCollectionExtensionsTests
 
         public ClosedGenericBehavior(List<string> executionOrder) => this._executionOrder = executionOrder;
 
-        public async Task<Outcome<string, Failure>> Handle(
+        public async Task<Outcome<string, Failure>> HandleAsync(
             RegressionQuery request,
             Func<Task<Outcome<string, Failure>>> next,
             CancellationToken ct
@@ -176,7 +176,7 @@ public class ServiceCollectionExtensionsTests
     public sealed class RegressionQueryHandler(List<string> executionOrder)
         : IQueryHandler<RegressionQuery, Outcome<string, Failure>>
     {
-        public Task<Outcome<string, Failure>> Handle(RegressionQuery query, CancellationToken ct)
+        public Task<Outcome<string, Failure>> HandleAsync(RegressionQuery query, CancellationToken ct)
         {
             executionOrder.Add("handle");
             return Task.FromResult<Outcome<string, Failure>>("regression-handled");

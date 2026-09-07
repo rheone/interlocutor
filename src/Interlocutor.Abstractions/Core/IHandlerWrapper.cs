@@ -13,7 +13,7 @@ using System.Diagnostics;
 /// <para>
 /// Was an abstract class before Sonar's S1694 flagged it as interface-shaped (no fields, no non-abstract
 /// members). Converting it was safe: every consumer only ever casts a freshly <see cref="Activator"/>-constructed
-/// instance to this type (see <c>Mediator</c>'s query/command dispatch) and calls <see cref="Handle"/> - no
+/// instance to this type (see <c>Mediator</c>'s query/command dispatch) and calls <see cref="HandleAsync"/> - no
 /// shared state, no base-class extension point, and no <c>tests/Interlocutor.Architecture.Tests</c> assumption
 /// tied to it being a class. It stays <see langword="internal"/>, so this isn't a public API shape change.
 /// </para>
@@ -21,7 +21,8 @@ using System.Diagnostics;
 internal interface IHandlerWrapper<TResponse>
 {
     /// <summary>
-    /// Executes the handler with the given request, resolving behaviors and the handler from the service provider.
+    /// Executes the handler with the given request, resolving behaviors and the handler from the service
+    /// provider.
     /// </summary>
     /// <param name="request">The request to handle.</param>
     /// <param name="services">The service provider for resolving handlers and behaviors.</param>
@@ -32,5 +33,5 @@ internal interface IHandlerWrapper<TResponse>
     /// must stay a no-op so the unlistened dispatch path performs no extra work.
     /// </param>
     /// <returns>The response from the handler.</returns>
-    Task<TResponse> Handle(object request, IServiceProvider services, CancellationToken ct, Activity? activity = null);
+    Task<TResponse> HandleAsync(object request, IServiceProvider services, CancellationToken ct, Activity? activity = null);
 }

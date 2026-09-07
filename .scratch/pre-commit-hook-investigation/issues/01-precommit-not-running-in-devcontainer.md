@@ -1,6 +1,6 @@
 # 01 - Investigate pre-commit hook not running in this dev environment
 
-Status: ready-for-agent
+Status: done - implemented in `f08a3fb`. Root cause: `pre-commit` CLI was never installed in the devcontainer (not a regression). Fixed by adding `pipx install pre-commit` to `.devcontainer/post-create.sh`; the generated hook file itself, including its intentional fail-open `exit 0`, was left untouched. CI covers none of `.pre-commit-config.yaml`'s hooks (`gitleaks` notably has no CI equivalent) - this was a real gap, not double coverage. Write-up: `maintainer_docs/pre-commit-devcontainer-provisioning.md`. Whether the fail-open behavior should still apply now that hooks actually execute is flagged there as an open maintainer decision, not resolved by this ticket.
 
 ## Labels
 

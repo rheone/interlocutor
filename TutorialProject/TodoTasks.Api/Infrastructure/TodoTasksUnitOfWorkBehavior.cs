@@ -24,7 +24,7 @@ using TodoTasks.Api.Persistence;
 /// <typeparam name="TRequest">The request type this behavior processes. Unconstrained, matching the base type.</typeparam>
 /// <typeparam name="TResponse">The response type returned after pipeline execution.</typeparam>
 /// <param name="context">Lazy factory for the scoped <see cref="TodoTasksDbContext"/> backing the transaction.</param>
-/// <param name="classifier">The outcome classifier used to determine success vs. failure for rollback decisions.</param>
+/// <param name="classifier">The outcome classifier used to label the outcome for the commit debug log line, when <paramref name="describer"/> is not supplied.</param>
 /// <param name="describer">Optional custom describer for converting response outcomes to human-readable strings for logging.</param>
 /// <param name="logger">Optional logger for the commit/rollback decision.</param>
 internal sealed class TodoTasksUnitOfWorkBehavior<TRequest, TResponse>(

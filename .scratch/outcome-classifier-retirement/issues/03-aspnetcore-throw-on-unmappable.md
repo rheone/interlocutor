@@ -1,6 +1,6 @@
 # 03 - AspNetCore's catch-all case mapping throws when it can't map a case
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `311ce89`.
 
 **What to build:** `ResultExtensions.ExtractCase` ([ResultExtensions.cs:199-220](../../../src/Interlocutor.AspNetCore/ResultExtensions.cs#L199-L220)) currently falls back to `OutcomeClassifierBuilder.DefaultClassifier.IsFailure(caseValue)` (line 217) for a case type the registry didn't resolve via the union fallback. Once issue 01 removes `IsFailure`, this call site needs its own resolution: keep a small default HTTP-status mapping set as a convenience for consumers who don't supply their own (most will), but when a case genuinely can't be mapped to a status code, throw a new named exception rather than guessing - this is the one place in the codebase where "can't decide" is itself the caller's actual problem (an HTTP response must have *some* status code), scoped entirely to this project per house style (only `aspnetcore-integration.md` references HTTP status codes).
 

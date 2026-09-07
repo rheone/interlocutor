@@ -51,10 +51,10 @@ public sealed class PipelineOrderingIntegrationTests
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         // Act
-        var sendResult = await mediator.Send(new OrderedRequest(), TestContext.Current.CancellationToken);
+        var sendResult = await mediator.SendAsync(new OrderedRequest(), TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.True(sendResult.IsSuccess);
+        Assert.True(sendResult.TryGetValue(out Success _));
         // The real transaction never stays open past a successful dispatch - it was either committed or
         // rolled back; the ordered log below (ending in "transaction-commit") proves which.
         Assert.False(session.GetCurrentTransaction() is { IsActive: true });
@@ -103,7 +103,7 @@ public sealed class PipelineOrderingIntegrationTests
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         // Act
-        await mediator.Send(new OrderedRequest(), TestContext.Current.CancellationToken);
+        await mediator.SendAsync(new OrderedRequest(), TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotEqual(
@@ -158,7 +158,7 @@ public sealed class PipelineOrderingIntegrationTests
         : ICommand<Outcome<Success, Forbidden>>,
             ITransactionalRequest,
             IAuditableRequest,
-            IRequiresPolicy
+            IRequiresPolicyRequest
     {
         public string ActionName => "Test.Ordered";
 
@@ -171,7 +171,7 @@ public sealed class PipelineOrderingIntegrationTests
     private sealed class OrderedRequestHandler(Lazy<ISession> session, List<string> log)
         : ICommandHandler<OrderedRequest, Outcome<Success, Forbidden>>
     {
-        public Task<Outcome<Success, Forbidden>> Handle(OrderedRequest command, CancellationToken ct)
+        public Task<Outcome<Success, Forbidden>> HandleAsync(OrderedRequest command, CancellationToken ct)
         {
             // UnitOfWorkBehavior<,> begins a transaction eagerly for ITransactionalRequest, before next()
             // runs - checking the real session here proves that already happened, rather than assuming it

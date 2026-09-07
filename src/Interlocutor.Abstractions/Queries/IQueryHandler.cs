@@ -1,5 +1,6 @@
 namespace Interlocutor.Abstractions.Queries;
 
+using System.Runtime.CompilerServices;
 using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
@@ -22,7 +23,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </remarks>
 public interface IQueryHandler<in TQuery, TResponse>
     where TQuery : IQuery<TResponse>
-    where TResponse : IOutcome
+    where TResponse : IUnion
 {
     /// <summary>
     /// Handles the specified query and returns a result that represents success or failure.
@@ -33,5 +34,5 @@ public interface IQueryHandler<in TQuery, TResponse>
     /// A task that represents the asynchronous operation. The task result contains the
     /// query's response - which may itself be a union type distinguishing success from failure.
     /// </returns>
-    Task<TResponse> Handle(TQuery query, CancellationToken ct);
+    Task<TResponse> HandleAsync(TQuery query, CancellationToken ct);
 }

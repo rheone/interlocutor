@@ -27,7 +27,7 @@ public static class ClearCompletedTodoTasksEndpoint
                     var ownerId = contextAccessor.RequireUserId();
 
                     var result = await sender
-                        .Send<Outcome>(new ClearCompletedTodoTasksCommand(ownerId), ct)
+                        .SendAsync<Outcome>(new ClearCompletedTodoTasksCommand(ownerId), ct)
                         .ConfigureAwait(false);
                     return result.ToMinimalApiResult();
                 }

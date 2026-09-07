@@ -4,7 +4,7 @@
 
 **Blocked by:** None - can start immediately
 
-**Status:** open
+**Status:** done - implemented in `7a94a16`.
 
 - [ ] Every wrapper's `catch (PipelineEjectException<TResponse> eject)` block tags or adds an event to the ambient `Activity` (when non-null) recording that an eject occurred
 - [ ] The `Outcome`/`IUnion` shape returned to the caller is completely unchanged - this is tracing-only, no behavior or type change

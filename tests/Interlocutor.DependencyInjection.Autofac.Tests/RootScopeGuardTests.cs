@@ -64,7 +64,7 @@ public class RootScopeGuardTests
         var mediator = scope.Resolve<IMediator>();
 
         // Act
-        var result = await mediator.Send(new SharedScopeQuery(), TestContext.Current.CancellationToken);
+        var result = await mediator.SendAsync(new SharedScopeQuery(), TestContext.Current.CancellationToken);
 
         // Assert
         var recorder = scope.Resolve<ScopedDependencyRecorder>();
@@ -95,7 +95,7 @@ public class RootScopeGuardTests
     private sealed class SharedScopeQueryHandler(ScopedThing scopedThing, ScopedDependencyRecorder recorder)
         : IQueryHandler<SharedScopeQuery, Outcome<Guid, Failure>>
     {
-        public Task<Outcome<Guid, Failure>> Handle(SharedScopeQuery query, CancellationToken ct)
+        public Task<Outcome<Guid, Failure>> HandleAsync(SharedScopeQuery query, CancellationToken ct)
         {
             recorder.RecordedIds.Add(scopedThing.Id);
             return Task.FromResult<Outcome<Guid, Failure>>(scopedThing.Id);
@@ -108,7 +108,7 @@ public class RootScopeGuardTests
         ScopedDependencyRecorder recorder
     ) : IPipelineBehavior<TRequest, TResponse>
     {
-        public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+        public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
         {
             recorder.RecordedIds.Add(scopedThing.Id);
             return next();
@@ -120,6 +120,7 @@ public class RootScopeGuardTests
     /// dispatch when reached this way.</summary>
     private sealed class SingletonMediatorConsumer(IMediator mediator)
     {
-        public Task<Outcome<Guid, Failure>> DispatchAsync(CancellationToken ct) => mediator.Send(new SharedScopeQuery(), ct);
+        public Task<Outcome<Guid, Failure>> DispatchAsync(CancellationToken ct) =>
+            mediator.SendAsync(new SharedScopeQuery(), ct);
     }
 }

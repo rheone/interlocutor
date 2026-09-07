@@ -17,13 +17,6 @@ public static class OutcomeCaseExtensions
     extension(object? response)
     {
         /// <summary>
-        /// Gets <see cref="IOutcomeCase.IsSuccess"/> if <paramref name="response"/> implements
-        /// <see cref="IOutcomeCase"/>, or <see langword="null"/> if it doesn't.
-        /// </summary>
-        /// <returns><see cref="IOutcomeCase.IsSuccess"/>, or <see langword="null"/>.</returns>
-        public bool? AsOutcomeCaseIsSuccess() => response is IOutcomeCase outcomeCase ? outcomeCase.IsSuccess : null;
-
-        /// <summary>
         /// Gets <see cref="IOutcomeCase.ActiveCaseType"/> if <paramref name="response"/> implements
         /// <see cref="IOutcomeCase"/> and has a non-<see langword="null"/> active case type, or
         /// <see langword="null"/> otherwise.

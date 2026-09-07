@@ -26,7 +26,9 @@ public static class ListTodoTasksEndpoint
                     // See CreateTodoTaskEndpoint's own remarks on RequireUserId().
                     var ownerId = contextAccessor.RequireUserId();
 
-                    var result = await sender.Send(new ListTodoTasksQuery(onlyIncomplete, ownerId), ct).ConfigureAwait(false);
+                    var result = await sender
+                        .SendAsync(new ListTodoTasksQuery(onlyIncomplete, ownerId), ct)
+                        .ConfigureAwait(false);
                     return result.ToMinimalApiResult();
                 }
             )

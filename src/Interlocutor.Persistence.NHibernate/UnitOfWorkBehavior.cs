@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
 /// <summary>
-/// The NHibernate commit-gate pipeline behavior: commits or rolls back whatever transaction a dispatch
+/// The NHibernate commit-gate pipeline behavior: commits whatever transaction a dispatch
 /// opened, implementing the unit-of-work-owned transaction model, where <c>IUnitOfWork</c> - not a separate
 /// transaction-marker-driven behavior - owns transaction begin/commit/rollback.
 /// </summary>
@@ -21,7 +21,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 /// </typeparam>
 /// <typeparam name="TResponse">The response type returned after pipeline execution.</typeparam>
 /// <param name="session">Lazy factory for the NHibernate <see cref="ISession"/> instance backing the transaction.</param>
-/// <param name="classifier">The outcome classifier used to determine success vs. failure for rollback decisions.</param>
+/// <param name="classifier">The outcome classifier used to label the outcome for the commit debug log line, when <paramref name="describer"/> is not supplied.</param>
 /// <param name="describer">Optional custom describer for converting response outcomes to human-readable strings for logging. Defaults to a default classifier-based describer.</param>
 /// <param name="logger">
 /// Optional logger for a debug-level line recording the commit/rollback decision. Defaults to
@@ -29,11 +29,11 @@ using Microsoft.Extensions.Logging.Abstractions;
 /// </param>
 /// <remarks>
 /// <para>
-/// This behavior implements only the NHibernate-specific primitives the begin/run/check/commit-or-rollback
-/// algorithm needs - flush-mode priming, detecting an active transaction, detecting pending work, and
+/// This behavior implements only the NHibernate-specific primitives the begin/run/check/commit algorithm
+/// needs - flush-mode priming, detecting an active transaction, detecting pending work, and
 /// beginning/committing/rolling one back - behind the <see cref="NHibernateCommitGateSession"/> adapter. The
 /// control flow itself lives in <see cref="CommitGateDriver"/>, shared with every other store's commit-gate
-/// behavior, so this type and its EF Core counterpart can never drift on when they begin, commit, or roll back.
+/// behavior, so this type and its EF Core counterpart can never drift on when they begin or commit.
 /// </para>
 /// <para>
 /// <b>Flush-mode default.</b> NHibernate's default flush mode can auto-flush pending changes before a query
@@ -55,11 +55,11 @@ using Microsoft.Extensions.Logging.Abstractions;
 /// pipeline completion, the driver checks <see cref="SessionExtensions.GetCurrentTransaction(ISession)"/> and
 /// <see cref="ISession.IsDirty()"/> -
 /// if neither indicates pending work, the dispatch never wrote anything (or an explicit
-/// <see cref="Interlocutor.Persistence.Abstractions.IUnitOfWork.Cancel"/> already cleaned up) and nothing
+/// <see cref="Interlocutor.Persistence.Abstractions.IUnitOfWork.CancelAsync"/> already cleaned up) and nothing
 /// further happens, so a pure-read dispatch never pays for an open transaction.
 /// </para>
 /// <para>
-/// <b>Whole-session protection.</b> The commit/rollback decision is driven by the session's own
+/// <b>Whole-session protection.</b> The commit decision is driven by the session's own
 /// <c>Transaction</c>/<c>IsDirty()</c> state, not by which API staged the change - so a write through an
 /// <c>IDomainRepository</c>, through <see cref="NHibernateUnitOfWork"/>, or through a directly-injected
 /// <c>Lazy&lt;ISession&gt;</c> is protected uniformly, matching the retired <c>TransactionBehavior</c>'s
@@ -68,8 +68,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 /// </para>
 /// <para>
 /// <b>Diagnostics:</b> <see cref="CommitGateDriver"/> emits one <see cref="LogLevel.Debug"/> line per
-/// invocation that actually commits or rolls back, naming which and the <paramref name="describer"/>-rendered
-/// outcome that drove that decision. Nothing is logged for a dispatch that never opened a transaction.
+/// invocation that actually commits, naming the <paramref name="describer"/>-rendered outcome alongside it.
+/// Nothing is logged for a dispatch that never opened a transaction.
 /// </para>
 /// </remarks>
 public sealed class UnitOfWorkBehavior<TRequest, TResponse>(
@@ -79,8 +79,6 @@ public sealed class UnitOfWorkBehavior<TRequest, TResponse>(
     ILogger<UnitOfWorkBehavior<TRequest, TResponse>>? logger = null
 ) : IPipelineBehavior<TRequest, TResponse>
 {
-    private readonly IOutcomeClassifier classifier = classifier ?? OutcomeClassifierBuilder.DefaultClassifier;
-
     private readonly IResponseOutcomeDescriber describer =
         describer ?? new DefaultResponseOutcomeDescriber(classifier ?? OutcomeClassifierBuilder.DefaultClassifier);
 
@@ -88,12 +86,11 @@ public sealed class UnitOfWorkBehavior<TRequest, TResponse>(
         logger ?? NullLogger<UnitOfWorkBehavior<TRequest, TResponse>>.Instance;
 
     /// <inheritdoc/>
-    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
-        CommitGateDriver.Handle(
+    public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
+        CommitGateDriver.HandleAsync(
             request,
             next,
             () => new NHibernateCommitGateSession(session.Value),
-            this.classifier,
             this.describer,
             this.logger,
             ct

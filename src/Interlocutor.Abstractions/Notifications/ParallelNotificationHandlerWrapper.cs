@@ -25,7 +25,12 @@ internal sealed class ParallelNotificationHandlerWrapper<
     /// <param name="ct">The cancellation token.</param>
     /// <param name="activity">The activity to tag with the resolved handler types, or <see langword="null"/>.</param>
     /// <returns>A task that completes when all handlers complete or any handler throws.</returns>
-    public override Task Handle(object notification, IServiceProvider services, CancellationToken ct, Activity? activity = null)
+    public override Task HandleAsync(
+        object notification,
+        IServiceProvider services,
+        CancellationToken ct,
+        Activity? activity = null
+    )
     {
         var (typedNotification, handlers) = ResolveHandlers<TNotification>(notification, services, activity);
 
@@ -33,7 +38,7 @@ internal sealed class ParallelNotificationHandlerWrapper<
         // independent. If any handler throws, all tasks are awaited and exceptions are aggregated into
         // an AggregateException (all-or-nothing failure semantics). Use this for performance-critical
         // notifications where order doesn't matter.
-        var tasks = handlers.Select(h => h.Handle(typedNotification, ct));
+        var tasks = handlers.Select(h => h.HandleAsync(typedNotification, ct));
         return Task.WhenAll(tasks);
     }
 }

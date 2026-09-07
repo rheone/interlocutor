@@ -8,13 +8,13 @@ using Interlocutor.Generator.Models;
 
 /// <summary>
 /// Emits <c>GeneratedRequestDispatcher</c> - a single <c>IGeneratedRequestDispatcher</c> implementation whose
-/// <c>Dispatch</c> method is a type switch on the runtime type of an untyped request, replacing the
-/// reflection <c>Mediator.Send(object, CancellationToken)</c> otherwise falls back to (ticket 09).
+/// <c>DispatchAsync</c> method is a type switch on the runtime type of an untyped request, replacing the
+/// reflection <c>Mediator.SendAsync(object, CancellationToken)</c> otherwise falls back to (ticket 09).
 /// </summary>
 /// <remarks>
 /// <para>
 /// Every case in the switch is a concrete, compile-time-known type: one case per request type discovered in
-/// the compilation with a matching query/command/void-command handler (dispatching into the corresponding
+/// the compilation with a matching query/command/bare-command handler (dispatching into the corresponding
 /// <see cref="DispatchWrapperEmitter"/>-emitted wrapper), and one case per request type discovered with no
 /// matching handler (throwing <c>HandlerNotRegisteredException</c>, naming the request and - for a query or
 /// command, whose expected handler interface is fully determined by the request's own declared response type
@@ -26,7 +26,7 @@ using Interlocutor.Generator.Models;
 /// <para>
 /// Notification handlers are not part of this switch, for the same reason <see cref="DispatchWrapperEmitter"/>
 /// gives them no wrapper - a notification fans out to every registered handler outside the pipeline chain,
-/// and <c>ISender.Send(object, CancellationToken)</c> only ever dispatches queries and commands.
+/// and <c>ISender.SendAsync(object, CancellationToken)</c> only ever dispatches queries and commands.
 /// </para>
 /// </remarks>
 internal static class RequestDispatchSwitchEmitter
@@ -64,14 +64,14 @@ internal static class RequestDispatchSwitchEmitter
         builder.AppendLine("    {");
         builder.AppendLine("        /// <inheritdoc/>");
         builder.AppendLine(
-            "        public async global::System.Threading.Tasks.Task<global::Interlocutor.CommonKernel.ResultTypes.IOutcome> Dispatch(object request, global::System.IServiceProvider services, global::System.Threading.CancellationToken ct)"
+            "        public async global::System.Threading.Tasks.Task<global::System.Runtime.CompilerServices.IUnion> DispatchAsync(object request, global::System.IServiceProvider services, global::System.Threading.CancellationToken ct)"
         );
         builder.AppendLine("        {");
         builder.AppendLine("            switch (request)");
         builder.AppendLine("            {");
 
         var dispatchable = handlers
-            .Where(static h => h.Kind is HandlerKind.Query or HandlerKind.Command or HandlerKind.VoidCommand)
+            .Where(static h => h.Kind is HandlerKind.Query or HandlerKind.Command or HandlerKind.BareCommand)
             .GroupBy(static h => h.RequestTypeName)
             .Select(static group => group.First());
 
@@ -122,7 +122,7 @@ internal static class RequestDispatchSwitchEmitter
             RequestKind.Command =>
                 $"typeof(global::Interlocutor.Abstractions.Commands.ICommandHandler<{request.RequestTypeName}, {request.ResponseTypeName}>)",
 
-            // A unit command's result type is caller-chosen, not declared on the command - there is no single
+            // A bare command's result type is caller-chosen, not declared on the command - there is no single
             // closed handler interface to name, mirroring the reflection path's own null handlerType here.
             _ => null,
         };

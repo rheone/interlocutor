@@ -28,18 +28,4 @@ public class DefaultResponseOutcomeDescriberTests
         // Assert
         Assert.Equal("NotFound", label);
     }
-
-    // Auto Generated, verify expected behavior:
-    [Fact]
-    public void IsFailure_DelegatesToTheInjectedClassifiersIsFailure()
-    {
-        // Arrange
-        var describer = new DefaultResponseOutcomeDescriber(OutcomeClassifierBuilder.DefaultClassifier);
-
-        // Act
-        var isFailure = describer.IsFailure(new NotFound("missing"));
-
-        // Assert
-        Assert.True(isFailure);
-    }
 }

@@ -22,7 +22,7 @@ public class LoggingBehavior<TRequest, TResponse>(
     /// <param name="next">The next behavior in the pipeline.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>The result from the next behavior or handler.</returns>
-    public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+    public async Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         // Capture the start time using Stopwatch for high-resolution timing. This is more accurate than
         // DateTime.UtcNow for elapsed time calculations.

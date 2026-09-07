@@ -12,6 +12,14 @@ namespace Interlocutor.Abstractions.Pipeline;
 /// are invoked via <see cref="PipelineStageBehavior{TRequest, TResponse}"/>.
 /// </para>
 /// <para>
+/// <c>OnAfterAsync</c> deliberately cannot replace the response - it returns <see cref="Task"/>, not
+/// <see cref="Task{TResult}"/> - because a stage is meant to be a non-mutating observer composed alongside
+/// arbitrarily many other stages. A behavior that specifically needs its after-hook to veto or replace the
+/// response, without throwing, should reach for
+/// <see cref="PipelineBehaviorBase{TRequest, TResponse}"/> instead - the
+/// single-behavior, response-owning counterpart to this interface.
+/// </para>
+/// <para>
 /// <c>OnBeforeAsync</c> runs before the handler; <c>OnAfterAsync</c> runs after, paired with every
 /// before-hook that completed - including when a before-hook short-circuits, but not when the handler
 /// itself throws. See <see cref="PipelineStageBehavior{TRequest, TResponse}"/> for the full unwind

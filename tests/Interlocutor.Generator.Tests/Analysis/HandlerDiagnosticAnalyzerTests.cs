@@ -51,12 +51,12 @@ public sealed class HandlerDiagnosticAnalyzerTests
 
             public sealed class DuplicatedQueryHandlerA : IQueryHandler<DuplicatedQuery, Outcome>
             {
-                public Task<Outcome> Handle(DuplicatedQuery query, CancellationToken ct) => throw new System.NotImplementedException();
+                public Task<Outcome> HandleAsync(DuplicatedQuery query, CancellationToken ct) => throw new System.NotImplementedException();
             }
 
             public sealed class DuplicatedQueryHandlerB : IQueryHandler<DuplicatedQuery, Outcome>
             {
-                public Task<Outcome> Handle(DuplicatedQuery query, CancellationToken ct) => throw new System.NotImplementedException();
+                public Task<Outcome> HandleAsync(DuplicatedQuery query, CancellationToken ct) => throw new System.NotImplementedException();
             }
             """;
 
@@ -83,7 +83,7 @@ public sealed class HandlerDiagnosticAnalyzerTests
 
             public sealed class CatchAllHandler : INotificationHandler<INotification>
             {
-                public Task Handle(INotification notification, CancellationToken ct) => Task.CompletedTask;
+                public Task HandleAsync(INotification notification, CancellationToken ct) => Task.CompletedTask;
             }
             """;
 

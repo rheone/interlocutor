@@ -3,6 +3,7 @@ namespace Interlocutor.DependencyInjection.Microsoft.Tests;
 using global::Microsoft.Extensions.DependencyInjection;
 using global::Microsoft.Extensions.Logging;
 using Interlocutor.Abstractions;
+using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Markers;
 using Interlocutor.Abstractions.Pipeline;
@@ -51,6 +52,24 @@ public class InterlocutorBuilderIntegrationTests
         Assert.Contains(services, s => s.ServiceType == typeof(IMediator));
         Assert.Contains(services, s => s.ServiceType == typeof(IQueryHandler<SampleQuery, Outcome>));
         Assert.DoesNotContain(services, s => s.ServiceType == typeof(IPipelineBehavior<,>));
+    }
+
+    [Fact]
+    public void AddInterlocutor_ScansAndRegisters_BareCommandHandler()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+
+        // Act
+        services.AddInterlocutor(builder => builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly));
+        using var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+
+        // Assert
+        Assert.Contains(services, s => s.ServiceType == typeof(IBareCommandHandler<SampleBareCommand, Outcome>));
+        Assert.IsType<SampleBareCommandHandler>(
+            scope.ServiceProvider.GetRequiredService<IBareCommandHandler<SampleBareCommand, Outcome>>()
+        );
     }
 
     [Fact]
@@ -233,7 +252,7 @@ public class InterlocutorBuilderIntegrationTests
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         // Act
-        await mediator.Send(new SampleQuery(), TestContext.Current.CancellationToken);
+        await mediator.SendAsync(new SampleQuery(), TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(["first-before", "second-before", "second-after", "first-after"], executionLog);
@@ -260,7 +279,7 @@ public class InterlocutorBuilderIntegrationTests
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         // Act
-        await mediator.Send(new SampleQuery(), TestContext.Current.CancellationToken);
+        await mediator.SendAsync(new SampleQuery(), TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(["first-before", "first-before", "first-after", "first-after"], executionLog);
@@ -294,7 +313,7 @@ public class InterlocutorBuilderIntegrationTests
         // shape that made Microsoft DI throw ArgumentException on every single dispatch the instant either
         // was registered (see both types' XML remarks) - a registration-list check, like the test above,
         // could never have caught that; only an actual dispatch through a built container can. This request
-        // satisfies every marker in the recommended chain (IAuditableRequest, IRequiresPolicy) and carries no
+        // satisfies every marker in the recommended chain (IAuditableRequest, IRequiresPolicyRequest) and carries no
         // FluentValidation validators, so it exercises every fixed behavior on the real send path and must
         // complete without throwing.
         // Arrange
@@ -315,7 +334,7 @@ public class InterlocutorBuilderIntegrationTests
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         // Act
-        var result = await mediator.Send(new AuthorizableQuery(), TestContext.Current.CancellationToken);
+        var result = await mediator.SendAsync(new AuthorizableQuery(), TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal("ok", result.Value);
@@ -345,7 +364,7 @@ public class InterlocutorBuilderIntegrationTests
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         // Act
-        await mediator.Send(new AuditOnlyQuery(), TestContext.Current.CancellationToken);
+        await mediator.SendAsync(new AuditOnlyQuery(), TestContext.Current.CancellationToken);
 
         // Assert
         var entry = Assert.Single(sink.Entries);
@@ -373,7 +392,7 @@ public class InterlocutorBuilderIntegrationTests
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         // Act
-        await mediator.Send(new AuditOnlyQuery(), TestContext.Current.CancellationToken);
+        await mediator.SendAsync(new AuditOnlyQuery(), TestContext.Current.CancellationToken);
 
         // Assert
         var entry = Assert.Single(sink.Entries);
@@ -402,7 +421,7 @@ public class InterlocutorBuilderIntegrationTests
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         // Act
-        var result = await mediator.Send(new SampleQuery(), TestContext.Current.CancellationToken);
+        var result = await mediator.SendAsync(new SampleQuery(), TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(default, result);
@@ -418,7 +437,9 @@ public class InterlocutorBuilderIntegrationTests
         services.AddSingleton(new HandlerRanFlag(() => handlerRan = true));
         services.AddLogging();
 
-        var declined = new Outcome(new Interlocutor.CommonKernel.ResultTypes.Failure("declined by stage"));
+        // Case-less, so there's no payload to carry the "declined by stage" reason - the real proof this stage
+        // short-circuited is handlerRan staying false below, not the value's own (trivially-equal) identity.
+        var declined = default(Outcome);
 
         services.AddInterlocutor(builder =>
             builder
@@ -437,7 +458,7 @@ public class InterlocutorBuilderIntegrationTests
 
         // Act: the response flows out of the mediator exactly as a handled response would --
         // nothing observing it from outside the stage host can tell it was short-circuited.
-        var result = await mediator.Send(new ShortCircuitQuery(), TestContext.Current.CancellationToken);
+        var result = await mediator.SendAsync(new ShortCircuitQuery(), TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(declined, result);
@@ -471,7 +492,7 @@ public class InterlocutorBuilderIntegrationTests
 
         // Act & Assert: dispatch completes normally - the after-hook's exception does not propagate out of
         // Send, matching PipelineStageBehavior's default (non-rethrowing) after-hook exception handling.
-        var result = await mediator.Send(new SampleQuery(), TestContext.Current.CancellationToken);
+        var result = await mediator.SendAsync(new SampleQuery(), TestContext.Current.CancellationToken);
         Assert.Equal(default, result);
     }
 
@@ -546,7 +567,7 @@ public class InterlocutorBuilderIntegrationTests
         Assert.Contains(behaviors, b => b.GetType().Name.StartsWith("RateLimitedBehavior"));
     }
 
-    private sealed record CancellableQuery : IQuery<Outcome<string, Cancelled>>, ICancellable;
+    private sealed record CancellableQuery : IQuery<Outcome<string, Cancelled>>, ICancellableRequest;
 
     // The four handler classes through AuthorizableQueryHandler below are resolved only via
     // AddInterlocutor()'s assembly-scanning DI registration - never new'd or typeof'd directly in
@@ -554,33 +575,33 @@ public class InterlocutorBuilderIntegrationTests
 #pragma warning disable S1144
     private sealed class CancellableQueryHandler : IQueryHandler<CancellableQuery, Outcome<string, Cancelled>>
     {
-        public Task<Outcome<string, Cancelled>> Handle(CancellableQuery query, CancellationToken ct) =>
+        public Task<Outcome<string, Cancelled>> HandleAsync(CancellableQuery query, CancellationToken ct) =>
             Task.FromResult<Outcome<string, Cancelled>>("ok");
     }
 
-    private sealed record TimeBoundQuery : IQuery<Outcome<string, Timeout>>, IHasTimeout
+    private sealed record TimeBoundQuery : IQuery<Outcome<string, Timeout>>, ITimeoutRequest
     {
         public TimeSpan Budget => TimeSpan.FromSeconds(30);
     }
 
     private sealed class TimeBoundQueryHandler : IQueryHandler<TimeBoundQuery, Outcome<string, Timeout>>
     {
-        public Task<Outcome<string, Timeout>> Handle(TimeBoundQuery query, CancellationToken ct) =>
+        public Task<Outcome<string, Timeout>> HandleAsync(TimeBoundQuery query, CancellationToken ct) =>
             Task.FromResult<Outcome<string, Timeout>>("ok");
     }
 
-    private sealed record ThrottledQuery : IQuery<Outcome<string, RateLimited>>, IRateLimited
+    private sealed record ThrottledQuery : IQuery<Outcome<string, RateLimited>>, IRateLimitedRequest
     {
         public string LimitKey => "test-limit";
     }
 
     private sealed class ThrottledQueryHandler : IQueryHandler<ThrottledQuery, Outcome<string, RateLimited>>
     {
-        public Task<Outcome<string, RateLimited>> Handle(ThrottledQuery query, CancellationToken ct) =>
+        public Task<Outcome<string, RateLimited>> HandleAsync(ThrottledQuery query, CancellationToken ct) =>
             Task.FromResult<Outcome<string, RateLimited>>("ok");
     }
 
-    private sealed record AuthorizableQuery : IQuery<Outcome<string, Forbidden>>, IAuditableRequest, IRequiresPolicy
+    private sealed record AuthorizableQuery : IQuery<Outcome<string, Forbidden>>, IAuditableRequest, IRequiresPolicyRequest
     {
         public string ActionName => "Test.Audit";
 
@@ -589,7 +610,7 @@ public class InterlocutorBuilderIntegrationTests
 
     private sealed class AuthorizableQueryHandler : IQueryHandler<AuthorizableQuery, Outcome<string, Forbidden>>
     {
-        public Task<Outcome<string, Forbidden>> Handle(AuthorizableQuery query, CancellationToken ct) =>
+        public Task<Outcome<string, Forbidden>> HandleAsync(AuthorizableQuery query, CancellationToken ct) =>
             Task.FromResult<Outcome<string, Forbidden>>("ok");
     }
 #pragma warning restore S1144
@@ -598,8 +619,20 @@ public class InterlocutorBuilderIntegrationTests
 
     private sealed class SampleQueryHandler : IQueryHandler<SampleQuery, Outcome>
     {
-        public Task<Outcome> Handle(SampleQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
+        public Task<Outcome> HandleAsync(SampleQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
+
+    private sealed record SampleBareCommand : ICommand;
+
+    // IBareCommandHandler<,> has no HandleAsync member (deliberately unsuffixed - see that interface's own
+    // remarks), so this fake stays on Handle as-is. Resolved only via AddInterlocutor()'s assembly-scanning DI
+    // registration - never new'd or typeof'd directly, so this constructor is invisible to static analysis.
+#pragma warning disable S1144
+    private sealed class SampleBareCommandHandler : IBareCommandHandler<SampleBareCommand, Outcome>
+    {
+        public Task<Outcome> Handle(SampleBareCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
+    }
+#pragma warning restore S1144
 
     /// <summary>Deliberately has no handler, so ValidateOnBuild() tests have a deterministic problem to find.</summary>
     private sealed record UnhandledValidationQuery : IQuery<Outcome>;
@@ -632,7 +665,7 @@ public class InterlocutorBuilderIntegrationTests
 #pragma warning disable S1144
     private sealed class ShortCircuitQueryHandler(HandlerRanFlag flag) : IQueryHandler<ShortCircuitQuery, Outcome>
     {
-        public Task<Outcome> Handle(ShortCircuitQuery query, CancellationToken ct)
+        public Task<Outcome> HandleAsync(ShortCircuitQuery query, CancellationToken ct)
         {
             flag.MarkHandled();
             return Task.FromResult(default(Outcome));
@@ -655,7 +688,7 @@ public class InterlocutorBuilderIntegrationTests
 #pragma warning disable S1144
     private sealed class AuditOnlyQueryHandler : IQueryHandler<AuditOnlyQuery, Outcome>
     {
-        public Task<Outcome> Handle(AuditOnlyQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
+        public Task<Outcome> HandleAsync(AuditOnlyQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 #pragma warning restore S1144
 
@@ -676,7 +709,7 @@ public class InterlocutorBuilderIntegrationTests
     {
         public sealed class First(List<string> log) : IPipelineBehavior<TRequest, TResponse>
         {
-            public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+            public async Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
             {
                 log.Add("first-before");
                 var result = await next().ConfigureAwait(false);
@@ -687,7 +720,7 @@ public class InterlocutorBuilderIntegrationTests
 
         public sealed class Second(List<string> log) : IPipelineBehavior<TRequest, TResponse>
         {
-            public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+            public async Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
             {
                 log.Add("second-before");
                 var result = await next().ConfigureAwait(false);

@@ -1,6 +1,7 @@
 namespace Interlocutor.Abstractions.Pipeline;
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Interlocutor.Abstractions.Markers;
 using Interlocutor.Abstractions.Pipeline.Cases;
 using Interlocutor.CommonKernel.ResultTypes;
@@ -9,18 +10,18 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// Pipeline behavior that enforces a time budget by racing the rest of the pipeline against a delay.
 /// </summary>
 /// <typeparam name="TRequest">
-/// The request type. Constrained to <see cref="IHasTimeout"/> so only requests that declare a budget close
+/// The request type. Constrained to <see cref="ITimeoutRequest"/> so only requests that declare a budget close
 /// this generic - a container-neutral, compile-time-checked replacement for a runtime <c>is</c> check.
 /// </typeparam>
 /// <typeparam name="TResponse">
-/// The response type, constrained only to <see cref="IOutcome"/>, mirroring
+/// The response type, constrained only to <see cref="IUnion"/>, mirroring
 /// <see cref="AuthorizationBehavior{TRequest, TResponse}"/>'s <c>TResponse</c> shape for the same reason: both
 /// type parameters must map 1:1 onto <see cref="IPipelineBehavior{TRequest, TResponse}"/>'s so Microsoft
 /// DI's open-generic resolver can construct this behavior.
 /// </typeparam>
 /// <remarks>
 /// <para>
-/// <b>This behavior can only report a timeout, not enforce one.</b> <see cref="IPipelineBehavior{TRequest, TResponse}.Handle"/>'s
+/// <b>This behavior can only report a timeout, not enforce one.</b> <see cref="IPipelineBehavior{TRequest, TResponse}.HandleAsync"/>'s
 /// <c>next</c> parameter is a parameterless <c>Func&lt;Task&lt;TResponse&gt;&gt;</c> - there is no way to hand
 /// it a linked, shorter-lived token, so there is no way to ask the handler (or any inner behavior) to actually
 /// stop. When the budget elapses first, this behavior returns a <see cref="Timeout"/> response to the caller,
@@ -40,15 +41,15 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// (<see cref="Task.IsCanceled"/>) rather than by racing to completion normally.
 /// </para>
 /// <para>
-/// Because <typeparamref name="TRequest"/> is constrained to <see cref="IHasTimeout"/>, both Microsoft DI and
+/// Because <typeparamref name="TRequest"/> is constrained to <see cref="ITimeoutRequest"/>, both Microsoft DI and
 /// Autofac skip this open generic registration for a request type that does not implement the marker - the
 /// container never even attempts to construct this behavior for it.
 /// </para>
 /// </remarks>
 public class TimeoutBehavior<TRequest, TResponse>(ITimeoutPolicy timeoutPolicy, IOutcomeCaseRegistry caseRegistry)
     : IPipelineBehavior<TRequest, TResponse>
-    where TRequest : IHasTimeout
-    where TResponse : IOutcome
+    where TRequest : ITimeoutRequest
+    where TResponse : IUnion
 {
     /// <summary>
     /// Handles the request, racing it against the resolved time budget and short-circuiting with
@@ -66,9 +67,9 @@ public class TimeoutBehavior<TRequest, TResponse>(ITimeoutPolicy timeoutPolicy, 
     /// </exception>
     /// <exception cref="InvalidOperationException">
     /// The budget elapsed, but <typeparamref name="TResponse"/> has no <see cref="Timeout"/> case to
-    /// construct - pair <see cref="IHasTimeout"/> only with response shapes that include one.
+    /// construct - pair <see cref="ITimeoutRequest"/> only with response shapes that include one.
     /// </exception>
-    public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+    public async Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         var budget = timeoutPolicy.ResolveBudget(request);
         var stopwatch = Stopwatch.StartNew();
@@ -101,6 +102,6 @@ public class TimeoutBehavior<TRequest, TResponse>(ITimeoutPolicy timeoutPolicy, 
             timeout,
             $"TimeoutBehavior<{typeof(TRequest).Name}, {typeof(TResponse).Name}>",
             "timed out a request",
-            $"A request implementing {nameof(IHasTimeout)} must use a response type with a {nameof(Timeout)} case"
+            $"A request implementing {nameof(ITimeoutRequest)} must use a response type with a {nameof(Timeout)} case"
         );
 }

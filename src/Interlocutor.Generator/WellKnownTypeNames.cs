@@ -19,11 +19,11 @@ internal static class WellKnownTypeNames
     /// <summary>The open generic command marker, <c>ICommand&lt;TResponse&gt;</c>.</summary>
     public const string Command = "Interlocutor.Abstractions.Commands.ICommand`1";
 
-    /// <summary>The non-generic unit-command marker, <c>ICommand</c>.</summary>
-    public const string VoidCommand = "Interlocutor.Abstractions.Commands.ICommand";
+    /// <summary>The non-generic bare-command marker, <c>ICommand</c>.</summary>
+    public const string BareCommand = "Interlocutor.Abstractions.Commands.ICommand";
 
-    /// <summary>The open generic unit-command-handler contract, <c>IVoidCommandHandler&lt;TCommand, TResult&gt;</c>.</summary>
-    public const string VoidCommandHandler = "Interlocutor.Abstractions.Commands.IVoidCommandHandler`2";
+    /// <summary>The open generic bare-command-handler contract, <c>IBareCommandHandler&lt;TCommand, TResult&gt;</c>.</summary>
+    public const string BareCommandHandler = "Interlocutor.Abstractions.Commands.IBareCommandHandler`2";
 
     /// <summary>The open generic notification-handler contract, <c>INotificationHandler&lt;TNotification&gt;</c>.</summary>
     public const string NotificationHandler = "Interlocutor.Abstractions.Notifications.INotificationHandler`1";
@@ -41,7 +41,8 @@ internal static class WellKnownTypeNames
 
     /// <summary>
     /// The base outcome marker interface, <c>IOutcome</c> - not to be confused with
-    /// <see cref="ConcreteNonGenericOutcome"/>, the concrete non-generic <c>Outcome</c> union that implements it.
+    /// <see cref="ConcreteNonGenericOutcome"/>, the concrete non-generic <c>Outcome</c> type, which does not
+    /// implement it (it has no case-classification surface to expose - see that field's own remarks).
     /// </summary>
     public const string Outcome = "Interlocutor.CommonKernel.ResultTypes.IOutcome";
 
@@ -83,9 +84,9 @@ internal static class WellKnownTypeNames
     public const string ValidationErrorOfErrorCode = "Interlocutor.CommonKernel.ResultTypes.ValidationError`1";
 
     /// <summary>
-    /// The library's own non-generic, fixed-shape <c>Outcome</c> union (<c>Success | Failure</c>) - unlike
-    /// every generic arity, its case set can never include a validation-shaped case, so it is recognized by
-    /// this exact metadata name rather than by inspecting type arguments it doesn't have.
+    /// The library's own non-generic, case-less <c>Outcome</c> acknowledgment - unlike every generic arity, it
+    /// declares no case types at all (so its case set can never include a validation-shaped one), and it is
+    /// recognized by this exact metadata name rather than by inspecting type arguments it doesn't have.
     /// </summary>
     public const string ConcreteNonGenericOutcome = "Interlocutor.CommonKernel.Outcome";
 
@@ -100,4 +101,60 @@ internal static class WellKnownTypeNames
     /// <see cref="ResultExtensionsGenerator"/>.
     /// </summary>
     public const string GenerateResultExtensionsAttribute = "Interlocutor.AspNetCore.GenerateResultExtensionsAttribute";
+
+    /// <summary>
+    /// The authorization marker interface, <c>IRequiresPolicyRequest</c> - gates
+    /// <c>Interlocutor.Abstractions.Pipeline.AuthorizationBehavior{TRequest, TResponse}</c>, which needs a
+    /// <see cref="ForbiddenCase"/> case to short-circuit into. See
+    /// <see cref="Analysis.PipelineBehaviorCaseFidelityAnalyzer"/>.
+    /// </summary>
+    public const string RequiresPolicyRequestMarker = "Interlocutor.Abstractions.Markers.IRequiresPolicyRequest";
+
+    /// <summary>
+    /// The cancellation marker interface, <c>ICancellableRequest</c> - gates
+    /// <c>Interlocutor.Abstractions.Pipeline.CancellationBehavior{TRequest, TResponse}</c>, which needs a
+    /// <see cref="CancelledCase"/> case to short-circuit into. See
+    /// <see cref="Analysis.PipelineBehaviorCaseFidelityAnalyzer"/>.
+    /// </summary>
+    public const string CancellableRequestMarker = "Interlocutor.Abstractions.Markers.ICancellableRequest";
+
+    /// <summary>
+    /// The rate-limiting marker interface, <c>IRateLimitedRequest</c> - gates
+    /// <c>Interlocutor.Abstractions.Pipeline.RateLimitedBehavior{TRequest, TResponse}</c>, which needs a
+    /// <see cref="RateLimitedCase"/> case to short-circuit into. See
+    /// <see cref="Analysis.PipelineBehaviorCaseFidelityAnalyzer"/>.
+    /// </summary>
+    public const string RateLimitedRequestMarker = "Interlocutor.Abstractions.Markers.IRateLimitedRequest";
+
+    /// <summary>
+    /// The time-budget marker interface, <c>ITimeoutRequest</c> - gates
+    /// <c>Interlocutor.Abstractions.Pipeline.TimeoutBehavior{TRequest, TResponse}</c>, which needs a
+    /// <see cref="TimeoutCase"/> case to short-circuit into. See
+    /// <see cref="Analysis.PipelineBehaviorCaseFidelityAnalyzer"/>.
+    /// </summary>
+    public const string TimeoutRequestMarker = "Interlocutor.Abstractions.Markers.ITimeoutRequest";
+
+    /// <summary>
+    /// The case type <c>AuthorizationBehavior</c> constructs when <see cref="RequiresPolicyRequestMarker"/>'s
+    /// policy check fails, <c>Forbidden</c>.
+    /// </summary>
+    public const string ForbiddenCase = "Interlocutor.CommonKernel.ResultTypes.Forbidden";
+
+    /// <summary>
+    /// The case type <c>CancellationBehavior</c> constructs when a <see cref="CancellableRequestMarker"/>
+    /// request's ambient token is cancelled, <c>Cancelled</c>.
+    /// </summary>
+    public const string CancelledCase = "Interlocutor.CommonKernel.ResultTypes.Cancelled";
+
+    /// <summary>
+    /// The case type <c>RateLimitedBehavior</c> constructs when a <see cref="RateLimitedRequestMarker"/>
+    /// request's rate limit check disallows it, <c>RateLimited</c>.
+    /// </summary>
+    public const string RateLimitedCase = "Interlocutor.CommonKernel.ResultTypes.RateLimited";
+
+    /// <summary>
+    /// The case type <c>TimeoutBehavior</c> constructs when a <see cref="TimeoutRequestMarker"/> request's
+    /// time budget elapses, <c>Timeout</c>.
+    /// </summary>
+    public const string TimeoutCase = "Interlocutor.CommonKernel.ResultTypes.Timeout";
 }

@@ -1,21 +1,20 @@
 namespace Interlocutor.Abstractions.Pipeline.Cases;
 
 using System.Collections.Immutable;
+using System.Runtime.CompilerServices;
 using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
 /// Builds an immutable <see cref="IOutcomeCaseRegistry"/>, mirroring <see cref="Classifiers.OutcomeClassifierBuilder"/>'s
-/// shape: a consumer registers a custom factory and/or extractor for their own <see cref="IOutcome"/>
+/// shape: a consumer registers a custom factory and/or extractor for their own <see cref="IUnion"/>
 /// implementation, and anything left unregistered falls back to <see cref="DefaultOutcomeCaseRegistry"/>'s
 /// reflection-based union handling.
 /// </summary>
 /// <remarks>
 /// Registration is needed only for response types that are <b>not</b> compiler-generated <c>union</c>
-/// declarations - e.g. a hand-rolled <see cref="IOutcome"/> implementation with no case constructor
-/// for <see cref="Pipeline.UnionCaseFactory"/> to find reflectively, and no
-/// <see cref="System.Runtime.CompilerServices.IUnion"/> marker for
-/// <see cref="DefaultOutcomeCaseRegistry"/> to pattern-match. Response types that are compiler-generated
-/// unions work with the default registry unmodified.
+/// declarations - e.g. a hand-rolled <see cref="IUnion"/> implementation with
+/// no case constructor for <see cref="Pipeline.UnionCaseFactory"/> to find reflectively. Response types that
+/// are compiler-generated unions work with the default registry unmodified.
 /// </remarks>
 public sealed class OutcomeCaseRegistryBuilder
 {
@@ -26,12 +25,12 @@ public sealed class OutcomeCaseRegistryBuilder
     /// Registers a custom factory that constructs a <typeparamref name="TResponse"/> from a
     /// <typeparamref name="TCase"/> case value.
     /// </summary>
-    /// <typeparam name="TResponse">The <see cref="IOutcome"/> type the factory constructs.</typeparam>
+    /// <typeparam name="TResponse">The <see cref="IUnion"/> type the factory constructs.</typeparam>
     /// <typeparam name="TCase">The case type the factory accepts.</typeparam>
     /// <param name="factory">The factory to register.</param>
     /// <returns>This builder, for method chaining.</returns>
     public OutcomeCaseRegistryBuilder RegisterFactory<TResponse, TCase>(Func<TCase, TResponse> factory)
-        where TResponse : IOutcome
+        where TResponse : IUnion
     {
         ArgumentNullException.ThrowIfNull(factory);
         this._factories[(typeof(TResponse), typeof(TCase))] = factory;
@@ -42,11 +41,11 @@ public sealed class OutcomeCaseRegistryBuilder
     /// Registers a custom extractor that reads the active case type/value out of a
     /// <typeparamref name="TResponse"/>.
     /// </summary>
-    /// <typeparam name="TResponse">The <see cref="IOutcome"/> type the extractor handles.</typeparam>
+    /// <typeparam name="TResponse">The <see cref="IUnion"/> type the extractor handles.</typeparam>
     /// <param name="extractor">The extractor to register.</param>
     /// <returns>This builder, for method chaining.</returns>
     public OutcomeCaseRegistryBuilder RegisterExtractor<TResponse>(OutcomeCaseExtractor<TResponse> extractor)
-        where TResponse : IOutcome
+        where TResponse : IUnion
     {
         ArgumentNullException.ThrowIfNull(extractor);
         this._extractors[typeof(TResponse)] = extractor;
@@ -81,7 +80,7 @@ public sealed class OutcomeCaseRegistryBuilder
         }
 
         public TResponse Construct<TResponse, TCase>(TCase caseValue)
-            where TResponse : IOutcome
+            where TResponse : IUnion
         {
             if (this._factories.TryGetValue((typeof(TResponse), typeof(TCase)), out var factory))
             {
@@ -92,7 +91,7 @@ public sealed class OutcomeCaseRegistryBuilder
         }
 
         public bool TryGetActiveCase<TResponse>(TResponse response, out Type caseType, out object? caseValue)
-            where TResponse : IOutcome
+            where TResponse : IUnion
         {
             if (response is not null && this._extractors.TryGetValue(typeof(TResponse), out var extractor))
             {

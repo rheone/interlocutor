@@ -6,6 +6,12 @@ namespace Interlocutor.Abstractions.Pipeline;
 /// </summary>
 /// <typeparam name="TRequest">The request type.</typeparam>
 /// <typeparam name="TResponse">The response type.</typeparam>
+/// <remarks>
+/// If a hook needs to replace the response rather than only observe it, this class's after-hook cannot do
+/// that - reach for <see cref="PipelineBehaviorBase{TRequest, TResponse}"/>
+/// instead, whose exit hook returns <typeparamref name="TResponse"/> for exactly that purpose. See that
+/// class's remarks for the full trade-off between the two.
+/// </remarks>
 public abstract class PipelineStageBase<TRequest, TResponse> : IPipelineStage<TRequest, TResponse>
 {
     /// <summary>

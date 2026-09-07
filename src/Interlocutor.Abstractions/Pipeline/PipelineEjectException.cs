@@ -1,5 +1,6 @@
 namespace Interlocutor.Abstractions.Pipeline;
 
+using System.Runtime.CompilerServices;
 using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
@@ -7,7 +8,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// dispatch to end immediately with a developer-chosen <typeparamref name="TResponse"/>, from anywhere inside
 /// a handler's or pipeline behavior's own call graph.
 /// </summary>
-/// <typeparam name="TResponse">The <see cref="IOutcome"/> type the ejecting dispatch returns.</typeparam>
+/// <typeparam name="TResponse">The <see cref="IUnion"/> type the ejecting dispatch returns.</typeparam>
 /// <remarks>
 /// <para>
 /// <b>Not related to <see cref="CancellationBehavior{TRequest, TResponse}"/>/<see cref="Cancelled"/>.</b> This
@@ -21,7 +22,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// (handlers return <see cref="IOutcome"/> unions for expected failures; exceptions are reserved for
 /// bugs or infrastructure faults), this type must never be observed by a caller of
 /// <c>Interlocutor.Abstractions.Core.IMediator</c>. Every place that composes a pipeline behavior chain around
-/// a handler call (<c>CommandHandlerWrapper</c>, <c>VoidCommandHandlerWrapper</c>, <c>QueryHandlerWrapper</c>,
+/// a handler call (<c>CommandHandlerWrapper</c>, <c>BareCommandHandlerWrapper</c>, <c>QueryHandlerWrapper</c>,
 /// and the source-generator's emitted dispatch wrappers) catches this exception immediately at the call site
 /// that invoked the throwing <c>Handle</c> method, converting it back into an ordinary <see cref="Response"/>
 /// value one frame at a time - so every enclosing behavior's own post-<c>next()</c> logic (auditing, the
@@ -39,7 +40,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 // HandlerNotRegisteredException's identical rationale.
 #pragma warning disable RCS1194
 public sealed class PipelineEjectException<TResponse> : Exception
-    where TResponse : IOutcome
+    where TResponse : IUnion
 {
     /// <summary>Initializes a new instance of the <see cref="PipelineEjectException{TResponse}"/> class.</summary>
     /// <param name="response">The outcome the ejecting dispatch should return.</param>

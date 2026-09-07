@@ -13,7 +13,7 @@ Discriminates which of the mediator handler contracts a compile-time discovered 
 | `Command = 1` | An ICommandHandler<TCommand, TResponse> implementation. |
 | `Notification = 3` | An INotificationHandler<TNotification> implementation. |
 | `Query = 0` | An IQueryHandler<TQuery, TResponse> implementation. |
-| `VoidCommand = 2` | An IVoidCommandHandler<TCommand, TResult> implementation. |
+| `BareCommand = 2` | An IBareCommandHandler<TCommand, TResult> implementation. |
 
 ### `HandlerDiscovery` class
 
@@ -21,7 +21,7 @@ Scans assemblies for concrete implementations of the mediator's handler contract
 
 | Member | Summary |
 | --- | --- |
-| `public static IReadOnlyList<InterlocutorRegistration> Discover(IEnumerable<Assembly> assembliesToScan)` | Scans the given assemblies for concrete, non-abstract classes implementing any of the mediator's handler contracts (`IQueryHandler`, `ICommandHandler`, `IVoidCommandHandler`, or `INotificationHandler`). |
+| `public static IReadOnlyList<InterlocutorRegistration> Discover(IEnumerable<Assembly> assembliesToScan)` | Scans the given assemblies for concrete, non-abstract classes implementing any of the mediator's handler contracts (`IQueryHandler`, `ICommandHandler`, `IBareCommandHandler`, or `INotificationHandler`). |
 | `public static IReadOnlyList<InterlocutorRegistration> Discover(IEnumerable<(Assembly Assembly, RegistrationLifetime Lifetime)> assembliesToScan, IReadOnlyList<Type>? extraContracts = null, ICollection<TypeLoadFailure>? failures = null)` | Scans the given assemblies for concrete, non-abstract classes implementing any of the mediator's handler contracts, registering each assembly's matches at the lifetime paired with it - the overload `ScanAssembly` and its siblings use once a caller specifies a lifetime per Scan* call rather than accepting the blanket `Scoped` default. |
 
 ### `IRootScopeDetector` interface
@@ -58,7 +58,7 @@ Container-neutral fluent builder that is the single configuration surface for In
 | `public InterlocutorBuilder Eject(params Type[] implementationTypes)` | Removes one or more implementation types from `Handlers` entirely - the escape hatch for clearing a `AmbiguousClosure` conflict among candidates `ScanAssembly` (or its siblings) found, by dropping every losing candidate rather than picking a winner some other way. |
 | `public InterlocutorBuilder Eject<TImplementation>()` | Removes `TImplementation` from `Handlers` entirely. See `Eject`. |
 | `public InterlocutorBuilder OverrideRequestContextAccessor<TAccessor>(RegistrationLifetime lifetime = Scoped)` | Replaces the default `IRequestContextAccessor` implementation (`AmbientRequestContextAccessor`) seeded by the constructor. |
-| `public InterlocutorBuilder RequireUniqueClosure(Type openGenericContract)` | Opts a consumer-supplied open-generic contract into the same "at most one implementation per closed instantiation" expectation the three built-in mediator handler contracts (IQueryHandler<,>, ICommandHandler<,>, IVoidCommandHandler<,>) already carry - both `ValidateOnBuild`'s `AmbiguousClosure` check and `Eject`'s conflict-clearing escape hatch cover it from then on. |
+| `public InterlocutorBuilder RequireUniqueClosure(Type openGenericContract)` | Opts a consumer-supplied open-generic contract into the same "at most one implementation per closed instantiation" expectation the three built-in mediator handler contracts (IQueryHandler<,>, ICommandHandler<,>, IBareCommandHandler<,>) already carry - both `ValidateOnBuild`'s `AmbiguousClosure` check and `Eject`'s conflict-clearing escape hatch cover it from then on. |
 | `public InterlocutorBuilder ScanAssemblies(params Assembly[] assemblies)` | Adds one or more assemblies, all at the default scoped lifetime, to scan for handler implementations, in the given order. |
 | `public InterlocutorBuilder ScanAssemblies(RegistrationLifetime lifetime, params Assembly[] assemblies)` | Adds one or more assemblies to scan for handler implementations, in the given order. |
 | `public InterlocutorBuilder ScanAssembly(Assembly assembly, RegistrationLifetime lifetime = Scoped)` | Adds an assembly to scan for handler implementations. |
@@ -217,7 +217,7 @@ Discriminates what role an `InterlocutorRegistration` plays, so a translator can
 | `Behavior = 1` | A pipeline behavior registered against the request/response pipeline - one of the library's built-in behaviors (logging, auditing, authorization, validation, transaction) or a consumer's own, added via the builder's general AddBehavior escape hatch. Like `Handler` and `Stage`, a behavior carries no override precedence - it is translated with add, not try-add, semantics, and the same behavior type may be added more than once. |
 | `Default = 2` | A default implementation of a service a pipeline behavior depends on (for example, IAuditSink or IPolicyEvaluator) that a consumer's own registration may override. |
 | `Dispatcher = 4` | The generator-emitted IGeneratedRequestDispatcher implementation - a single, compilation-wide singleton registered alongside `Handler` entries whenever a compilation's generated registrations are added via InterlocutorBuilder.AddGeneratedRegistrations. Like `Handler` and `Stage`, it carries no override precedence. |
-| `Handler = 0` | A handler discovered by scanning one or more assemblies for implementations of the mediator's handler contracts (query, command, void command, or notification handler). |
+| `Handler = 0` | A handler discovered by scanning one or more assemblies for implementations of the mediator's handler contracts (query, command, bare command, or notification handler). |
 | `Stage = 3` | An IPipelineStage<,> implementation registered directly (not discovered by assembly scanning) via the builder's stage-registration methods. Like `Handler`, a stage carries no override precedence - it is translated with add, not try-add, semantics. |
 
 ### `RegistrationLifetime` enum
@@ -253,7 +253,7 @@ Discriminates what kind of issue a `RegistrationProblem` reports - every check `
 
 | Member | Summary |
 | --- | --- |
-| `AmbiguousClosure = 3` | More than one distinct implementation type closes the same instantiation of a single-winner open generic contract - one of IQueryHandler<,>, ICommandHandler<,>, IVoidCommandHandler<,>, or a contract a consumer opted in via `RequireUniqueClosure`. INotificationHandler<> is deliberately never checked - fan-out to many handlers per notification is its whole design. |
+| `AmbiguousClosure = 3` | More than one distinct implementation type closes the same instantiation of a single-winner open generic contract - one of IQueryHandler<,>, ICommandHandler<,>, IBareCommandHandler<,>, or a contract a consumer opted in via `RequireUniqueClosure`. INotificationHandler<> is deliberately never checked - fan-out to many handlers per notification is its whole design. |
 | `ConflictingLifetime = 2` | Two registrations of the same (service type, implementation type) pair were accumulated with different `RegistrationLifetime` values. |
 | `ConflictingPipelineOverride = 4` | Two or more Tier-1 pipeline override rules added via `OverridePipelineFor` matched the same request type - which one should win is never decided silently or by call order. There is no precedence-declaration escape hatch; resolve the conflict by narrowing one rule's match criteria so the two no longer overlap. |
 | `UnhandledRequestType = 0` | A request type discovered while scanning has no matching `Handler` registration. |

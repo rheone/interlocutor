@@ -557,7 +557,7 @@ public class InterlocutorBuilderTests
 
     private sealed class FirstBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     {
-        public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) => next();
+        public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) => next();
     }
 
     private sealed class CustomRequestContextAccessor : IRequestContextAccessor
@@ -586,7 +586,7 @@ public class InterlocutorBuilderTests
 
     private sealed class SampleQueryHandler : IQueryHandler<SampleQuery, Outcome>
     {
-        public Task<Outcome> Handle(SampleQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
+        public Task<Outcome> HandleAsync(SampleQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 
     // Deliberately empty: a negative-case marker that implements no handler interface, not a data holder.

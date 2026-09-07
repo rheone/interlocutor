@@ -39,7 +39,7 @@ public sealed class ListTodoTasksPagedHandlerTests
         var query = new ListTodoTasksPagedQuery(OwnerId: "owner-1", Page: 2, PageSize: 5);
 
         // Act
-        var result = await this.handler.Handle(query, CancellationToken.None);
+        var result = await this.handler.HandleAsync(query, CancellationToken.None);
 
         // Assert
         var dto = Assert.IsType<PagedTodoTasksDto>(result.Value);
@@ -74,7 +74,7 @@ public sealed class ListTodoTasksPagedHandlerTests
         var query = new ListTodoTasksPagedQuery(OwnerId: "owner-1", Page: 1, PageSize: 10);
 
         // Act
-        var result = await this.handler.Handle(query, CancellationToken.None);
+        var result = await this.handler.HandleAsync(query, CancellationToken.None);
 
         // Assert
         var dto = Assert.IsType<PagedTodoTasksDto>(result.Value);

@@ -16,7 +16,7 @@ public class AmbiguousClosureTests
 {
     private interface IClosureTestExportStrategy<T>
     {
-        Task Export(T item, CancellationToken ct);
+        Task ExportAsync(T item, CancellationToken ct);
     }
 
     [Fact]
@@ -347,12 +347,12 @@ public class AmbiguousClosureTests
 
     private sealed class ConflictedCommandHandlerA : ICommandHandler<ConflictedCommand, Outcome>
     {
-        public Task<Outcome> Handle(ConflictedCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
+        public Task<Outcome> HandleAsync(ConflictedCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 
     private sealed class ConflictedCommandHandlerB : ICommandHandler<ConflictedCommand, Outcome>
     {
-        public Task<Outcome> Handle(ConflictedCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
+        public Task<Outcome> HandleAsync(ConflictedCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 
     private sealed record ClosureTestNotification : INotification;
@@ -363,12 +363,12 @@ public class AmbiguousClosureTests
 #pragma warning disable S1144 // Resolved only via AddInterlocutor()'s assembly scanning, invisible to static analysis.
     private sealed class FirstClosureTestNotificationHandler : INotificationHandler<ClosureTestNotification>
     {
-        public Task Handle(ClosureTestNotification notification, CancellationToken ct) => Task.CompletedTask;
+        public Task HandleAsync(ClosureTestNotification notification, CancellationToken ct) => Task.CompletedTask;
     }
 
     private sealed class SecondClosureTestNotificationHandler : INotificationHandler<ClosureTestNotification>
     {
-        public Task Handle(ClosureTestNotification notification, CancellationToken ct) => Task.CompletedTask;
+        public Task HandleAsync(ClosureTestNotification notification, CancellationToken ct) => Task.CompletedTask;
     }
 #pragma warning restore S1144
 
@@ -379,7 +379,7 @@ public class AmbiguousClosureTests
 
     private sealed class SoleExportStrategy : IClosureTestExportStrategy<SoleExportItem>
     {
-        public Task Export(SoleExportItem item, CancellationToken ct) => Task.CompletedTask;
+        public Task ExportAsync(SoleExportItem item, CancellationToken ct) => Task.CompletedTask;
     }
 
 #pragma warning disable S2094
@@ -388,11 +388,11 @@ public class AmbiguousClosureTests
 
     private sealed class FirstConflictingExportStrategy : IClosureTestExportStrategy<ConflictingExportItem>
     {
-        public Task Export(ConflictingExportItem item, CancellationToken ct) => Task.CompletedTask;
+        public Task ExportAsync(ConflictingExportItem item, CancellationToken ct) => Task.CompletedTask;
     }
 
     private sealed class SecondConflictingExportStrategy : IClosureTestExportStrategy<ConflictingExportItem>
     {
-        public Task Export(ConflictingExportItem item, CancellationToken ct) => Task.CompletedTask;
+        public Task ExportAsync(ConflictingExportItem item, CancellationToken ct) => Task.CompletedTask;
     }
 }

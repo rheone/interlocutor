@@ -1,6 +1,7 @@
 namespace Interlocutor.Abstractions.Tests;
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Markers;
@@ -15,24 +16,47 @@ public record TestQuery(int Value) : IQuery<Outcome<int, Failure>>;
 
 public class TestQueryHandler : IQueryHandler<TestQuery, Outcome<int, Failure>>
 {
-    public Task<Outcome<int, Failure>> Handle(TestQuery query, CancellationToken ct) =>
+    public Task<Outcome<int, Failure>> HandleAsync(TestQuery query, CancellationToken ct) =>
         Task.FromResult(new Outcome<int, Failure>(query.Value * 2));
+}
+
+/// <summary>
+/// A genuinely infallible query that still produces a value - the real end-to-end proof that
+/// <see cref="Outcome{T}"/> (arity 1: <see cref="IUnion"/>-only, not <see cref="IOutcome"/>) is legal as a
+/// handler's <c>TResponse</c> and dispatches through the full pipeline exactly like every other arity.
+/// </summary>
+public record TestSinglePayloadQuery(int Value) : IQuery<Outcome<int>>;
+
+public class TestSinglePayloadQueryHandler : IQueryHandler<TestSinglePayloadQuery, Outcome<int>>
+{
+    public Task<Outcome<int>> HandleAsync(TestSinglePayloadQuery query, CancellationToken ct) =>
+        Task.FromResult(new Outcome<int>(query.Value * 2));
 }
 
 public record GreetCommand(string PersonName) : ICommand<Outcome<string, Failure>>;
 
 public class GreetCommandHandler : ICommandHandler<GreetCommand, Outcome<string, Failure>>
 {
-    public Task<Outcome<string, Failure>> Handle(GreetCommand command, CancellationToken ct) =>
+    public Task<Outcome<string, Failure>> HandleAsync(GreetCommand command, CancellationToken ct) =>
         Task.FromResult(new Outcome<string, Failure>($"Hello {command.PersonName}"));
 }
 
-public record TestVoidCommand(string Value) : ICommand;
+public record TestBareCommand(string Value) : ICommand;
 
-public class TestVoidHandler : IVoidCommandHandler<TestVoidCommand, Outcome>
+// IBareCommandHandler<,> has no HandleAsync member (known gap - ticket 01 never added one), so this fake
+// stays on Handle as-is.
+public class TestBareHandler : IBareCommandHandler<TestBareCommand, Outcome>
 {
-    public Task<Outcome> Handle(TestVoidCommand command, CancellationToken ct) =>
-        Task.FromResult(new Outcome(default(Success)));
+    public Task<Outcome> Handle(TestBareCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
+}
+
+/// <summary>A second <see cref="TestBareCommand"/> handler, registered against <see cref="Outcome{T1, T2}"/>
+/// (arity 2) rather than the case-less arity-0 <see cref="Outcome"/> - used only by the eject test, which needs
+/// a response shape an ejected value can be distinguished from.</summary>
+public class TestBareHandlerWithFailureCase : IBareCommandHandler<TestBareCommand, Outcome<Success, Failure>>
+{
+    public Task<Outcome<Success, Failure>> Handle(TestBareCommand command, CancellationToken ct) =>
+        Task.FromResult<Outcome<Success, Failure>>(default(Success));
 }
 
 public record TestNotification(string Message) : INotification;
@@ -47,7 +71,7 @@ public record AuditableTestQuery(int Value) : IQuery<Outcome<int, Failure>>, IAu
 
 public class AuditableTestQueryHandler : IQueryHandler<AuditableTestQuery, Outcome<int, Failure>>
 {
-    public Task<Outcome<int, Failure>> Handle(AuditableTestQuery query, CancellationToken ct) =>
+    public Task<Outcome<int, Failure>> HandleAsync(AuditableTestQuery query, CancellationToken ct) =>
         Task.FromResult(new Outcome<int, Failure>(query.Value));
 }
 
@@ -60,7 +84,7 @@ public class AuditableTestQueryHandler : IQueryHandler<AuditableTestQuery, Outco
 public class MarkerConstrainedTrackingBehavior<TRequest, TResponse>(Action track) : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IAuditableRequest
 {
-    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+    public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         track();
         return next();
@@ -69,7 +93,7 @@ public class MarkerConstrainedTrackingBehavior<TRequest, TResponse>(Action track
 
 public class TrackingBehavior<TRequest, TResponse>(Action track) : IPipelineBehavior<TRequest, TResponse>
 {
-    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+    public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         track();
         return next();
@@ -80,23 +104,23 @@ public class TrackingBehavior<TRequest, TResponse>(Action track) : IPipelineBeha
 /// <see cref="Eject"/> works without manually threading the chosen outcome back up through every frame.</summary>
 public class EjectingQueryHandler : IQueryHandler<TestQuery, Outcome<int, Failure>>
 {
-    public Task<Outcome<int, Failure>> Handle(TestQuery query, CancellationToken ct) => Inner(query);
+    public Task<Outcome<int, Failure>> HandleAsync(TestQuery query, CancellationToken ct) => InnerAsync(query);
 
-    private static Task<Outcome<int, Failure>> Inner(TestQuery query) => Deepest(query);
+    private static Task<Outcome<int, Failure>> InnerAsync(TestQuery query) => DeepestAsync(query);
 
-    private static Task<Outcome<int, Failure>> Deepest(TestQuery query) =>
+    private static Task<Outcome<int, Failure>> DeepestAsync(TestQuery query) =>
         Task.FromResult(Eject.With<Outcome<int, Failure>>(new Failure($"ejected for {query.Value}")));
 }
 
 /// <summary>A behavior that ejects before calling <c>next()</c> - the handler (and any behavior further in)
 /// must never run.</summary>
 /// <typeparam name="TRequest">The request type, unconstrained since this behavior never inspects it.</typeparam>
-/// <typeparam name="TResponse">The response type, constrained to <see cref="IOutcome"/> so
+/// <typeparam name="TResponse">The response type, constrained to <see cref="IUnion"/> so
 /// <paramref name="response"/> can be ejected via <see cref="Eject.With{TResult}(TResult)"/>.</typeparam>
 public class EjectingBeforeNextBehavior<TRequest, TResponse>(TResponse response) : IPipelineBehavior<TRequest, TResponse>
-    where TResponse : IOutcome
+    where TResponse : IUnion
 {
-    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
+    public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
         Task.FromResult(Eject.With(response));
 }
 
@@ -108,7 +132,7 @@ public class EjectingBeforeNextBehavior<TRequest, TResponse>(TResponse response)
 /// <typeparam name="TResponse">The response type, unconstrained since this behavior never produces one.</typeparam>
 public class ThrowingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
 {
-    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
+    public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
         throw new InvalidOperationException("not an eject");
 }
 
@@ -116,12 +140,12 @@ public class ThrowingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest,
 /// proving the eject is recovered at this behavior's own call site, not only when thrown straight from a
 /// handler.</summary>
 /// <typeparam name="TRequest">The request type, unconstrained since this behavior never inspects it.</typeparam>
-/// <typeparam name="TResponse">The response type, constrained to <see cref="IOutcome"/> so
+/// <typeparam name="TResponse">The response type, constrained to <see cref="IUnion"/> so
 /// <paramref name="response"/> can be ejected via <see cref="Eject.With{TResult}(TResult)"/>.</typeparam>
 public class EjectingAfterNextBehavior<TRequest, TResponse>(TResponse response) : IPipelineBehavior<TRequest, TResponse>
-    where TResponse : IOutcome
+    where TResponse : IUnion
 {
-    public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+    public async Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         _ = await next().ConfigureAwait(false);
         return Eject.With(response);
@@ -136,7 +160,7 @@ public class EjectingAfterNextBehavior<TRequest, TResponse>(TResponse response) 
 /// <typeparam name="TResponse">The response type flowing through this behavior unchanged.</typeparam>
 public class KeptTrackingBehavior<TRequest, TResponse>(Action<string> track) : IPipelineBehavior<TRequest, TResponse>
 {
-    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+    public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         track("kept");
         return next();
@@ -151,7 +175,7 @@ public class KeptTrackingBehavior<TRequest, TResponse>(Action<string> track) : I
 /// <typeparam name="TResponse">The response type flowing through this behavior unchanged.</typeparam>
 public class DroppedTrackingBehavior<TRequest, TResponse>(Action<string> track) : IPipelineBehavior<TRequest, TResponse>
 {
-    public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+    public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         track("dropped");
         return next();
@@ -181,7 +205,7 @@ public class MediatorTests
         var mediator = CreateMediator<TestQueryHandler>(_ => { });
 
         // Act
-        var result = await mediator.Send(new TestQuery(21), CancellationToken.None);
+        var result = await mediator.SendAsync(new TestQuery(21), CancellationToken.None);
 
         // Assert
         Assert.Equal(42, result.Value);
@@ -200,7 +224,7 @@ public class MediatorTests
         });
 
         // Act
-        await mediator.Send(new TestQuery(1), CancellationToken.None);
+        await mediator.SendAsync(new TestQuery(1), CancellationToken.None);
 
         // Assert
         Assert.True(invoked);
@@ -228,7 +252,7 @@ public class MediatorTests
         });
 
         // Act
-        await mediator.Send(new TestQuery(1), CancellationToken.None);
+        await mediator.SendAsync(new TestQuery(1), CancellationToken.None);
 
         // Assert
         Assert.Equal(["kept"], executed);
@@ -262,7 +286,7 @@ public class MediatorTests
         var mediator = provider.GetRequiredService<IMediator>();
 
         // Act
-        await mediator.Send(new AuditableTestQuery(1), CancellationToken.None);
+        await mediator.SendAsync(new AuditableTestQuery(1), CancellationToken.None);
 
         // Assert
         Assert.Equal(["kept"], executed);
@@ -275,7 +299,7 @@ public class MediatorTests
         var mediator = CreateMediator<EjectingQueryHandler>(_ => { });
 
         // Act
-        var result = await mediator.Send(new TestQuery(7), CancellationToken.None);
+        var result = await mediator.SendAsync(new TestQuery(7), CancellationToken.None);
 
         // Assert - the dispatch completes normally with the chosen outcome; Eject.With never surfaces as a
         // thrown exception to this caller.
@@ -300,7 +324,7 @@ public class MediatorTests
         });
 
         // Act
-        var result = await mediator.Send(new TestQuery(1), CancellationToken.None);
+        var result = await mediator.SendAsync(new TestQuery(1), CancellationToken.None);
 
         // Assert
         Assert.Equal(new Failure("dead end"), result.Value);
@@ -328,7 +352,7 @@ public class MediatorTests
         });
 
         // Act
-        var result = await mediator.Send(new TestQuery(1), CancellationToken.None);
+        var result = await mediator.SendAsync(new TestQuery(1), CancellationToken.None);
 
         // Assert
         Assert.Equal(new Failure("dead end after next"), result.Value);
@@ -348,7 +372,7 @@ public class MediatorTests
         });
 
         // Act
-        await mediator.Send(new GreetCommand("test"), CancellationToken.None);
+        await mediator.SendAsync(new GreetCommand("test"), CancellationToken.None);
 
         // Assert
         Assert.True(invoked);
@@ -368,44 +392,74 @@ public class MediatorTests
         });
 
         // Act
-        var result = await mediator.Send(new GreetCommand("test"), CancellationToken.None);
+        var result = await mediator.SendAsync(new GreetCommand("test"), CancellationToken.None);
 
         // Assert
         Assert.Equal(new Failure("dead end"), result.Value);
     }
 
     [Fact]
-    public async Task Send_VoidCommand_RunsPipelineBehaviors()
+    public async Task Send_BareCommand_RunsPipelineBehaviors()
     {
         // Arrange
         var invoked = false;
-        var mediator = CreateMediator<TestVoidHandler>(services =>
+        var mediator = CreateMediator<TestBareHandler>(services =>
         {
-            services.AddSingleton<IPipelineBehavior<TestVoidCommand, Outcome>>(
-                new TrackingBehavior<TestVoidCommand, Outcome>(() => invoked = true)
+            services.AddSingleton<IPipelineBehavior<TestBareCommand, Outcome>>(
+                new TrackingBehavior<TestBareCommand, Outcome>(() => invoked = true)
             );
         });
 
         // Act
-        await mediator.Send<Outcome>(new TestVoidCommand("test"), CancellationToken.None);
+        await mediator.SendAsync<Outcome>(new TestBareCommand("test"), CancellationToken.None);
 
         // Assert
         Assert.True(invoked);
     }
 
     [Fact]
-    public async Task Send_VoidCommand_BehaviorEjectsBeforeNext_ReturnsEjectedOutcomeWithoutThrowing()
+    public async Task Send_Query_WithSinglePayloadOutcome_RunsPipelineBehaviorsAndReturnsTheValue()
     {
-        // Arrange - covers VoidCommandHandlerWrapper's composition site, distinct from the other two wrappers.
-        var mediator = CreateMediator<TestVoidHandler>(services =>
+        // Arrange - Outcome<T> implements IUnion directly, never IOutcome (see its own remarks); this proves
+        // that constraint alone is enough for a genuinely infallible, single-payload response to dispatch
+        // through the full pipeline exactly like every other arity, not just compile against TResponse in
+        // isolation.
+        var invoked = false;
+        var mediator = CreateMediator<TestSinglePayloadQueryHandler>(services =>
         {
-            services.AddSingleton<IPipelineBehavior<TestVoidCommand, Outcome>>(
-                new EjectingBeforeNextBehavior<TestVoidCommand, Outcome>(new Outcome(new Failure("dead end")))
+            services.AddSingleton<IPipelineBehavior<TestSinglePayloadQuery, Outcome<int>>>(
+                new TrackingBehavior<TestSinglePayloadQuery, Outcome<int>>(() => invoked = true)
             );
         });
 
         // Act
-        var result = await mediator.Send<Outcome>(new TestVoidCommand("test"), CancellationToken.None);
+        var result = await mediator.SendAsync(new TestSinglePayloadQuery(21), CancellationToken.None);
+
+        // Assert
+        Assert.True(invoked);
+        Assert.Equal(42, result.Value);
+    }
+
+    [Fact]
+    public async Task Send_BareCommand_BehaviorEjectsBeforeNext_ReturnsEjectedOutcomeWithoutThrowing()
+    {
+        // Arrange - covers BareCommandHandlerWrapper's composition site, distinct from the other two wrappers.
+        // Uses Outcome<Success, Failure> rather than the case-less arity-0 Outcome the other tests in this
+        // class use: the ejected value needs to be distinguishable from whatever TestBareHandlerWithFailureCase
+        // itself would have returned, which a case-less Outcome (every instance equal to every other) can't be.
+        var services = new ServiceCollection();
+        services.AddSingleton<
+            IBareCommandHandler<TestBareCommand, Outcome<Success, Failure>>,
+            TestBareHandlerWithFailureCase
+        >();
+        services.AddSingleton<IPipelineBehavior<TestBareCommand, Outcome<Success, Failure>>>(
+            new EjectingBeforeNextBehavior<TestBareCommand, Outcome<Success, Failure>>(new Failure("dead end"))
+        );
+        services.AddSingleton<IMediator, Mediator>();
+        var mediator = services.BuildServiceProvider().GetRequiredService<IMediator>();
+
+        // Act
+        var result = await mediator.SendAsync<Outcome<Success, Failure>>(new TestBareCommand("test"), CancellationToken.None);
 
         // Assert
         Assert.Equal(new Failure("dead end"), result.Value);
@@ -424,26 +478,23 @@ public class MediatorTests
         });
 
         // Act & Assert
-        return Assert.ThrowsAsync<InvalidOperationException>(() => mediator.Send(new TestQuery(1), CancellationToken.None));
+        return Assert.ThrowsAsync<InvalidOperationException>(() =>
+            mediator.SendAsync(new TestQuery(1), CancellationToken.None)
+        );
     }
 
     [Fact]
-    public async Task Send_VoidCommand_ReturnsSuccess()
+    public async Task Send_BareCommand_ReturnsAcknowledgment()
     {
         // Arrange
-        var mediator = CreateMediator<TestVoidHandler>(_ => { });
+        var mediator = CreateMediator<TestBareHandler>(_ => { });
 
         // Act
-        var result = await mediator.Send<Outcome>(new TestVoidCommand("test"), CancellationToken.None);
+        var result = await mediator.SendAsync<Outcome>(new TestBareCommand("test"), CancellationToken.None);
 
-        // Assert
-        var isSuccess = result.Value switch
-        {
-            Success => true,
-            Failure => false,
-            _ => throw new UnreachableException(),
-        };
-        Assert.True(isSuccess);
+        // Assert - holding an Outcome instance is itself the acknowledgment that TestBareHandler ran; there is
+        // nothing further to inspect on it (see Outcome's own remarks).
+        Assert.Equal(default(Outcome), result);
     }
 
     [Fact]
@@ -458,7 +509,7 @@ public class MediatorTests
         var mediator = provider.GetRequiredService<IMediator>();
 
         // Act
-        await mediator.Publish(new TestNotification("hello"), CancellationToken.None);
+        await mediator.PublishAsync(new TestNotification("hello"), CancellationToken.None);
 
         // Assert
         Assert.True(invoked);
@@ -475,7 +526,7 @@ public class MediatorTests
 
         // Act - no handlers registered for TestNotification; publishing must not throw.
         var exception = await Record.ExceptionAsync(() =>
-            mediator.Publish(new TestNotification("hello"), CancellationToken.None)
+            mediator.PublishAsync(new TestNotification("hello"), CancellationToken.None)
         );
 
         // Assert
@@ -498,7 +549,7 @@ public class MediatorTests
 
         // Act
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            mediator.Publish(new TestNotification("hello"), CancellationToken.None)
+            mediator.PublishAsync(new TestNotification("hello"), CancellationToken.None)
         );
 
         // Assert
@@ -514,9 +565,9 @@ public class MediatorTests
         var mediator = CreateMediator<TestQueryHandler>(_ => { });
 
         // Act
-        var first = await mediator.Send(new TestQuery(1), CancellationToken.None);
-        var second = await mediator.Send(new TestQuery(2), CancellationToken.None);
-        var third = await mediator.Send(new TestQuery(3), CancellationToken.None);
+        var first = await mediator.SendAsync(new TestQuery(1), CancellationToken.None);
+        var second = await mediator.SendAsync(new TestQuery(2), CancellationToken.None);
+        var third = await mediator.SendAsync(new TestQuery(3), CancellationToken.None);
 
         // Assert
         Assert.Equal(2, first.Value);
@@ -552,6 +603,10 @@ public class MediatorTests
         {
             services.AddSingleton<IQueryHandler<TestQuery, Outcome<int, Failure>>, TestQueryHandler>();
         }
+        else if (typeof(THandler) == typeof(TestSinglePayloadQueryHandler))
+        {
+            services.AddSingleton<IQueryHandler<TestSinglePayloadQuery, Outcome<int>>, TestSinglePayloadQueryHandler>();
+        }
         else if (typeof(THandler) == typeof(EjectingQueryHandler))
         {
             services.AddSingleton<IQueryHandler<TestQuery, Outcome<int, Failure>>, EjectingQueryHandler>();
@@ -560,9 +615,9 @@ public class MediatorTests
         {
             services.AddSingleton<ICommandHandler<GreetCommand, Outcome<string, Failure>>, GreetCommandHandler>();
         }
-        else if (typeof(THandler) == typeof(TestVoidHandler))
+        else if (typeof(THandler) == typeof(TestBareHandler))
         {
-            services.AddSingleton<IVoidCommandHandler<TestVoidCommand, Outcome>, TestVoidHandler>();
+            services.AddSingleton<IBareCommandHandler<TestBareCommand, Outcome>, TestBareHandler>();
         }
 
         configure(services);
@@ -574,7 +629,7 @@ public class MediatorTests
 
 public class TestNotificationHandler(Action action) : INotificationHandler<TestNotification>
 {
-    public Task Handle(TestNotification notification, CancellationToken ct)
+    public Task HandleAsync(TestNotification notification, CancellationToken ct)
     {
         action();
         return Task.CompletedTask;

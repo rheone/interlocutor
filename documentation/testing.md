@@ -41,7 +41,7 @@ public async Task GetUserHandler_WithExistingUser_ReturnsUserDto()
     var result = await handler.Handle(new GetUser(1), CancellationToken.None);
 
     // Assert
-    Assert.True(result.IsSuccess);
+    Assert.True(result.TryGetValue(out UserDto _));
     var user = Assert.IsType<UserDto>(result.Value);  // .Value is object - narrow it before reading members
     Assert.Equal("Alice", user.Name);
 }
@@ -61,7 +61,7 @@ public async Task GetUserHandler_WithNoUser_ReturnsNotFound()
     var result = await handler.Handle(new GetUser(999), CancellationToken.None);
 
     // Assert
-    Assert.False(result.IsSuccess);
+    Assert.False(result.TryGetValue(out UserDto _));
     var notFound = Assert.IsType<NotFound>(result.Value);
     Assert.Contains("not found", notFound.Message);
 }
@@ -109,7 +109,6 @@ public async Task PipelineOrder_ValidationBeforeTransaction()
     var result = await mediator.Send(new CreateOrder("", new List<OrderItem>()));
 
     // Assert: validation fails before the handler runs, so no transaction starts
-    Assert.False(result.IsSuccess);
     var validation = Assert.IsType<ValidationError>(result.Value);
 
     // Database should be unchanged (transaction never started)
@@ -147,7 +146,6 @@ public async Task ShortCircuit_AuthorizationStopsTransaction()
     );
 
     // Assert: authorization short-circuits, transaction never starts
-    Assert.False(result.IsSuccess);
     var forbidden = Assert.IsType<Forbidden>(result.Value);
 
     // No side effects because transaction never started
@@ -240,7 +238,7 @@ For integration tests with real transactions, use an in-memory database:
 
 ```csharp
 [Fact]
-public async Task CreateOrder_WithTransaction_RollsBackOnFailure()
+public async Task CreateOrder_DuplicateId_NeverInsertsTheDuplicate()
 {
     // Arrange
     var services = new ServiceCollection();
@@ -277,10 +275,11 @@ public async Task CreateOrder_WithTransaction_RollsBackOnFailure()
     );
 
     // Assert
-    Assert.False(result2.IsSuccess);
     var conflict = Assert.IsType<Conflict>(result2.Value);
 
-    // Transaction rolled back - no duplicate order in database
+    // No duplicate order in the database - the handler's own uniqueness check prevented the insert
+    // before it ever staged one. Returning Conflict does not, on its own, roll anything back - see
+    // Transactions & Store Integration § Commit/Rollback Semantics.
     var db2 = scope2.ServiceProvider.GetRequiredService<AppDbContext>();
     Assert.Single(db2.Orders);  // Still just one order
 }

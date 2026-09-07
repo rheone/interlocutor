@@ -14,8 +14,8 @@ using TodoTasks.Api.Features.Tasks.DeleteTodoTask;
 /// <remarks>
 /// <para>
 /// <see cref="OwnsTaskPolicyName"/> is deliberately resource-specific, unlike a typical
-/// <c>IRequiresPolicy</c> policy (a coarse "can this caller attempt this kind of command at all" check
-/// with no resource in play yet - see <see cref="Interlocutor.Abstractions.Markers.IRequiresPolicy"/>'s
+/// <c>IRequiresPolicyRequest</c> policy (a coarse "can this caller attempt this kind of command at all" check
+/// with no resource in play yet - see <see cref="Interlocutor.Abstractions.Markers.IRequiresPolicyRequest"/>'s
 /// own remarks). This evaluator loads the <see cref="TodoTask"/> named by the request and compares its
 /// <see cref="TodoTask.OwnerId"/> against the authenticated caller, purely to demonstrate that
 /// <c>AuthorizationBehavior</c> *can* express an entity-level check when a team wants that decision made
@@ -37,7 +37,7 @@ using TodoTasks.Api.Features.Tasks.DeleteTodoTask;
 public sealed class TodoTasksPolicyEvaluator(IDomainRepository<TodoTask, int> tasks, IRequestContextAccessor contextAccessor)
     : IPolicyEvaluator
 {
-    /// <summary>The policy name <see cref="DeleteTodoTaskCommand"/> declares via <c>IRequiresPolicy</c>.</summary>
+    /// <summary>The policy name <see cref="DeleteTodoTaskCommand"/> declares via <c>IRequiresPolicyRequest</c>.</summary>
     public const string OwnsTaskPolicyName = "owns-task";
 
     /// <inheritdoc/>

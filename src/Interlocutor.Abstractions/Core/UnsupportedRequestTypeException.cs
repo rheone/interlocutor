@@ -1,7 +1,7 @@
 namespace Interlocutor.Abstractions.Core;
 
 /// <summary>
-/// Thrown by runtime-typed dispatch (<see cref="ISender.Send(object, CancellationToken)"/>) when the given
+/// Thrown by runtime-typed dispatch (<see cref="ISender.SendAsync(object, CancellationToken)"/>) when the given
 /// object does not implement any recognized request contract - it closes neither
 /// <c>IQuery&lt;TResponse&gt;</c> nor <c>ICommand&lt;TResponse&gt;</c>, and does not implement <c>ICommand</c>.
 /// </summary>

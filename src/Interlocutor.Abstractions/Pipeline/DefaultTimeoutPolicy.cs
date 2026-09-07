@@ -6,7 +6,7 @@ using Interlocutor.Abstractions.Markers;
 /// Default <see cref="ITimeoutPolicy"/> implementation that leaves each request's declared budget unchanged.
 /// </summary>
 /// <remarks>
-/// This implementation simply returns <see cref="IHasTimeout.Budget"/> as-is - suitable whenever requests
+/// This implementation simply returns <see cref="ITimeoutRequest.Budget"/> as-is - suitable whenever requests
 /// are trusted to declare their own correct budget and no centralized override (a tenant-wide ceiling, an
 /// environment-specific multiplier, etc.) is needed. Replace it with a custom <see cref="ITimeoutPolicy"/>
 /// (or a <see cref="DelegateTimeoutPolicy"/>) when that trust doesn't hold.
@@ -17,5 +17,5 @@ public sealed class DefaultTimeoutPolicy : ITimeoutPolicy
     public static readonly DefaultTimeoutPolicy Instance = new();
 
     /// <inheritdoc/>
-    public TimeSpan ResolveBudget(IHasTimeout request) => request.Budget;
+    public TimeSpan ResolveBudget(ITimeoutRequest request) => request.Budget;
 }

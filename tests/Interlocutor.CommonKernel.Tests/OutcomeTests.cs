@@ -1,86 +1,45 @@
 namespace Interlocutor.CommonKernel.Tests;
 
-using Interlocutor.CommonKernel.ResultTypes;
+using System.Runtime.CompilerServices;
 
 /// <summary>
-/// Covers the non-generic, two-case <see cref="Outcome"/> union: construction from each case type,
-/// implicit conversion from a bare case value, and exhaustive switch pattern matching.
+/// Covers the case-less, non-generic <see cref="Outcome"/>: it satisfies the <see cref="IUnion"/> response
+/// constraint, its <see cref="IUnion.Value"/> is always <see langword="null"/>, and its <c>ToString()</c> is a
+/// fixed literal. Its <c>IOutcomeCaseRegistry</c> behavior - <c>Construct</c> failing clearly for any case,
+/// <c>TryGetActiveCase</c> reporting no active case - is covered in <c>Interlocutor.Abstractions.Tests</c>,
+/// the package that owns that registry.
 /// </summary>
 public class OutcomeTests
 {
     [Fact]
-    public void Construct_FromSuccess_IsSuccessTrue()
+    public void Outcome_SatisfiesIUnionConstraint()
     {
         // Arrange & Act
-        var result = new Outcome(default(Success));
+        var result = default(Outcome);
 
-        // Assert
-        Assert.True(result.IsSuccess);
+        // Assert - the compile-time proof is the assignment itself: a type that didn't implement IUnion
+        // would fail to compile here.
+        Assert.IsAssignableFrom<IUnion>(result);
     }
 
     [Fact]
-    public void Construct_FromFailure_IsSuccessFalse()
+    public void Outcome_Value_IsAlwaysNull()
     {
-        // Arrange & Act
-        var result = new Outcome(new Failure("boom"));
+        // Arrange - default-initialized is no different from any other instance, since there is no state to
+        // initialize either way (see Outcome's own remarks).
+        IUnion result = default(Outcome);
 
-        // Assert
-        Assert.False(result.IsSuccess);
+        // Act & Assert
+        Assert.Null(result.Value);
     }
 
     [Fact]
-    public void ImplicitConversion_FromSuccess_ProducesSuccessOutcome()
-    {
-        // Arrange & Act
-        Outcome result = default(Success);
-
-        // Assert
-        Assert.True(result.IsSuccess);
-    }
-
-    [Fact]
-    public void ImplicitConversion_FromFailure_ProducesFailureOutcome()
-    {
-        // Arrange & Act
-        Outcome result = new Failure("boom");
-
-        // Assert
-        Assert.False(result.IsSuccess);
-    }
-
-    [Fact]
-    public void Switch_OverSuccess_MatchesSuccessCase()
+    public void ToString_ReturnsFixedLiteral()
     {
         // Arrange
-        Outcome result = default(Success);
+        var result = default(Outcome);
 
-        // Act
-        var message = result.Value switch
-        {
-            Success => "success",
-            Failure => "failure",
-            _ => throw new InvalidOperationException("Unreachable"),
-        };
-
-        // Assert
-        Assert.Equal("success", message);
-    }
-
-    [Fact]
-    public void Switch_OverFailure_MatchesFailureCase()
-    {
-        // Arrange
-        Outcome result = new Failure("boom");
-
-        // Act
-        var message = result.Value switch
-        {
-            Success => "success",
-            Failure failure => failure.Reason,
-            _ => throw new InvalidOperationException("Unreachable"),
-        };
-
-        // Assert
-        Assert.Equal("boom", message);
+        // Act & Assert
+        Assert.Equal("Outcome", result.ToString());
     }
 }

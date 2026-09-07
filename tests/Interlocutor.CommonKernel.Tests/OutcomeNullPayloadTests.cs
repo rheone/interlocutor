@@ -11,13 +11,14 @@ using Interlocutor.CommonKernel.ResultTypes;
 public class OutcomeNullPayloadTests
 {
     [Fact]
-    public void ImplicitConversion_FromNullSuccessValue_IsSuccessTrue()
+    public void ImplicitConversion_FromNullSuccessValue_TryGetValueSucceedsWithNullValue()
     {
         // Arrange & Act
         Outcome<string?, NotFound> result = (string?)null;
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out string? value));
+        Assert.Null(value);
     }
 
     [Fact]
@@ -92,12 +93,12 @@ public class OutcomeNullPayloadTests
     public void ImplicitConversion_FromNullableValueTypeFailureWithNoValue_IsFailure()
     {
         // Arrange & Act - Nullable<T> with HasValue == false boxes to a null Value, same ambiguity as a
-        // nullable reference type. TSuccessResult (NotFound) never accepts null, so the null payload
+        // nullable reference type. T1 (NotFound) never accepts null, so the null payload
         // unambiguously belongs to the failure case.
         Outcome<NotFound, int?> result = (int?)null;
 
         // Assert
-        Assert.False(result.IsSuccess);
+        Assert.False(result.TryGetValue(out NotFound _));
         Assert.True(result.TryGetValue(out int? failureValue));
         Assert.Null(failureValue);
         Assert.Equal(typeof(int?), ((IOutcomeCase)result).ActiveCaseType);
@@ -111,7 +112,6 @@ public class OutcomeNullPayloadTests
         var result = default(Outcome<Success, Failure>);
 
         // Assert
-        Assert.False(result.IsSuccess);
         Assert.False(result.TryGetValue(out Success _));
         Assert.False(result.TryGetValue(out Failure _));
         Assert.Null(((IOutcomeCase)result).ActiveCaseType);

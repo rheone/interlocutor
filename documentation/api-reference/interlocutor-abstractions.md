@@ -11,6 +11,7 @@ Provides startup validation that all handler types are properly registered in th
 | Member | Summary |
 | --- | --- |
 | `public static IServiceProvider ValidateHandlerRegistrations(IServiceProvider provider, params Assembly[] assembliesToScan)` | Validates that all handler types referenced by query and command types in the specified assemblies are registered in the DI container. |
+| `public static IServiceProvider ValidatePipelineCaseFidelity(IServiceProvider provider, params Assembly[] assembliesToScan)` | Validates that every scanned request type's response is shaped to satisfy the pipeline behaviors its marker interfaces (and, for FluentValidation, its actually-registered validators) opt it into. |
 
 ### `Mediator` sealed class
 
@@ -46,7 +47,7 @@ Handles a command that returns a typed response.
 | --- | --- |
 | `Task<TResponse> Handle(TCommand command, CancellationToken ct)` | Handles the specified command and returns a result containing the response or a failure. |
 
-### `IVoidCommandHandler<TCommand, TResult>` interface
+### `IBareCommandHandler<TCommand, TResult>` interface
 
 Handles a command that produces no data payload - only an outcome.
 
@@ -138,8 +139,8 @@ Send-only interface for request/response operations. Exposes Send overloads for 
 | --- | --- |
 | `Task<TResponse> Send<TResponse>(IQuery<TResponse> query, CancellationToken ct = default(CancellationToken))` | Dispatches a query to its registered handler, returning the result through all pipeline behaviors. |
 | `Task<TResponse> Send<TResponse>(ICommand<TResponse> command, CancellationToken ct = default(CancellationToken))` | Dispatches a value-returning command to its registered handler, returning the result through all pipeline behaviors. |
-| `Task<TResult> Send<TResult>(ICommand command, CancellationToken ct = default(CancellationToken))` | Dispatches a void command to its registered handler, returning the outcome through all pipeline behaviors. |
-| `Task<IOutcome> Send(object request, CancellationToken ct = default(CancellationToken))` | Dispatches a request whose static type is not known at the call site - a query, a value-returning command, or a unit command deserialized off a message - to its registered handler, returning the result through all pipeline behaviors as the library's base outcome interface. |
+| `Task<TResult> Send<TResult>(ICommand command, CancellationToken ct = default(CancellationToken))` | Dispatches a bare command to its registered handler, returning the outcome through all pipeline behaviors. |
+| `Task<IOutcome> Send(object request, CancellationToken ct = default(CancellationToken))` | Dispatches a request whose static type is not known at the call site - a query, a value-returning command, or a bare command deserialized off a message - to its registered handler, returning the result through all pipeline behaviors as the library's base outcome interface. |
 
 ### `MediatorResolvedFromRootScopeException` sealed class
 
@@ -369,13 +370,12 @@ Default `IRateLimiter` implementation suitable for development and testing.
 
 ### `DefaultResponseOutcomeDescriber` sealed class
 
-Default `IResponseOutcomeDescriber`. Uses an `IOutcomeClassifier` to determine failure/success classification and labels. Unwraps compiler-generated unions via `IUnion` before classification.
+Default `IResponseOutcomeDescriber`. Uses an `IOutcomeClassifier` to produce labels. Unwraps compiler-generated unions via `IUnion` before labeling.
 
 | Member | Summary |
 | --- | --- |
 | `public DefaultResponseOutcomeDescriber(IOutcomeClassifier classifier)` | Initializes a new instance of the `DefaultResponseOutcomeDescriber` class. Initializes a new instance with the given outcome classifier. |
 | `public string Describe(object? response)` |  |
-| `public bool IsFailure(object? response)` |  |
 
 ### `DefaultTimeoutPolicy` sealed class
 
@@ -474,12 +474,11 @@ Minimal rate-limiting abstraction that avoids coupling to any specific throttlin
 
 ### `IResponseOutcomeDescriber` interface
 
-Inspects a handler's response generically for cross-cutting concerns (logging, auditing, transaction commit/rollback) without requiring the response to be any specific type.
+Inspects a handler's response generically for cross-cutting concerns (logging, auditing) without requiring the response to be any specific type.
 
 | Member | Summary |
 | --- | --- |
 | `string Describe(object? response)` | Produces a short, human-readable label describing the response's outcome. |
-| `bool IsFailure(object? response)` | Determines whether the response represents a failure outcome. |
 
 ### `ITimeoutPolicy` interface
 
@@ -662,26 +661,24 @@ Convenience extensions over `IOutcomeCaseRegistry` for pipeline behaviors that s
 
 ### `IOutcomeClassifier` interface
 
-Classifies operation outcomes as success or failure, determining transaction disposition and logging/auditing behavior.
+Labels operation outcomes for logging/auditing, by registered type, predicate, or fallback.
 
 | Member | Summary |
 | --- | --- |
 | `string GetLabel(object? response)` | Gets a human-readable label for the outcome. |
-| `bool IsFailure(object? response)` | Determines whether the given response represents a failure outcome. |
 
 ### `OutcomeClassifierBuilder` sealed class
 
-Builds an immutable `IOutcomeClassifier` that classifies operation outcomes as success or failure. Seeded with all kernel types via open-generic matching; consumers may register additional custom types.
+Builds an immutable `IOutcomeClassifier` that labels operation outcomes for logging/auditing. Seeded with all kernel types via open-generic matching; consumers may register additional custom types.
 
 | Member | Summary |
 | --- | --- |
 | `public OutcomeClassifierBuilder()` | Initializes a new instance of the `OutcomeClassifierBuilder` class. Initializes a new builder, pre-seeded with all Interlocutor.CommonKernel case types. |
 | `public static IOutcomeClassifier DefaultClassifier` | Gets the shared default classifier instance, pre-seeded with all kernel types. |
 | `public IOutcomeClassifier Build()` | Builds an immutable classifier from the registrations. |
-| `public OutcomeClassifierBuilder RegisterFailureType<TFailure>(string label)` | Registers a type as a failure outcome. |
-| `public OutcomeClassifierBuilder RegisterFailureType(Type type, string label)` | Registers a type (by runtime Type) as a failure outcome. |
-| `public OutcomeClassifierBuilder RegisterPredicate(Func<object?, bool> predicate, string label, bool isFailure)` | Registers a predicate-based classifier for outcome types that cannot be expressed by type alone. |
-| `public OutcomeClassifierBuilder RegisterSuccessType<TSuccess>(string label)` | Registers a type as a success outcome. |
+| `public OutcomeClassifierBuilder RegisterPredicate(Func<object?, bool> predicate, string label)` | Registers a predicate-based label for outcome types that cannot be expressed by type alone. |
+| `public OutcomeClassifierBuilder RegisterType<T>(string label)` | Registers a type's display label. |
+| `public OutcomeClassifierBuilder RegisterType(Type type, string label)` | Registers a type's display label, by runtime `Type`. |
 
 ## Interlocutor.Abstractions.Pipeline.Mapping
 

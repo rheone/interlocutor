@@ -6,7 +6,9 @@ using Microsoft.CodeAnalysis;
 /// Snapshot tests proving the generator's emitted dispatch wrappers catch
 /// <c>Interlocutor.Abstractions.Pipeline.PipelineEjectException&lt;TResponse&gt;</c> around both the handler
 /// call and each behavior call, matching the hand-written wrappers' (<c>QueryHandlerWrapper</c>,
-/// <c>CommandHandlerWrapper</c>, <c>VoidCommandHandlerWrapper</c>) identical try/catch.
+/// <c>CommandHandlerWrapper</c>, <c>BareCommandHandlerWrapper</c>) identical try/catch - and that each catch
+/// also tags the ambient activity as ejected (ticket 05), matching those wrappers' identical
+/// <c>PipelineChainExecutor</c>-hosted tagging.
 /// </summary>
 public sealed class EjectEmissionTests
 {
@@ -24,7 +26,7 @@ public sealed class EjectEmissionTests
 
         public sealed class GetFooQueryHandler(ISomeDependency dependency) : IQueryHandler<GetFooQuery, Outcome>
         {
-            public Task<Outcome> Handle(GetFooQuery query, CancellationToken ct) => throw new System.NotImplementedException();
+            public Task<Outcome> HandleAsync(GetFooQuery query, CancellationToken ct) => throw new System.NotImplementedException();
         }
         """;
 
@@ -41,7 +43,7 @@ public sealed class EjectEmissionTests
 
         Assert.Contains("pipeline = async () =>", dispatchSource, StringComparison.Ordinal);
         Assert.Contains(
-            "return await handler.Handle(request, ct).ConfigureAwait(false);",
+            "return await handler.HandleAsync(request, ct).ConfigureAwait(false);",
             dispatchSource,
             StringComparison.Ordinal
         );
@@ -65,7 +67,7 @@ public sealed class EjectEmissionTests
         var dispatchSource = GetGeneratedSource(result, "InterlocutorGeneratedDispatch.g.cs");
 
         Assert.Contains(
-            "return await behavior.Handle(request, next, ct).ConfigureAwait(false);",
+            "return await behavior.HandleAsync(request, next, ct).ConfigureAwait(false);",
             dispatchSource,
             StringComparison.Ordinal
         );
@@ -74,6 +76,28 @@ public sealed class EjectEmissionTests
             dispatchSource,
             "catch (global::Interlocutor.Abstractions.Pipeline.PipelineEjectException<global::Interlocutor.CommonKernel.Outcome> eject)"
         );
+        Assert.Equal(2, occurrences); // one around the handler call, one around the behavior call
+    }
+
+    [Fact]
+    public void DispatchWrapper_EjectCatch_TagsActivityCurrentAsEjected_Test()
+    {
+        // Arrange
+        // (no separate setup; uses class fixtures or direct act/assert)
+        // Act
+        var result = GeneratorTestHarness.Run(SingleQueryHandlerSource);
+
+        // Assert - the emitted static wrapper has no Activity parameter of its own (adding one would be a
+        // breaking change to the public IGeneratedRequestDispatcher contract - see DispatchWrapperEmitter's
+        // remarks), so it tags System.Diagnostics.Activity.Current instead of a threaded parameter, matching
+        // ticket 05's tag name (MediatorActivitySource.EjectedTag) for both the handler-call and the
+        // per-behavior eject guards.
+        var dispatchSource = GetGeneratedSource(result, "InterlocutorGeneratedDispatch.g.cs");
+
+        const string expectedTag =
+            "global::System.Diagnostics.Activity.Current?.SetTag(global::Interlocutor.Abstractions.Diagnostics.MediatorActivitySource.EjectedTag, true);";
+
+        var occurrences = CountOccurrences(dispatchSource, expectedTag);
         Assert.Equal(2, occurrences); // one around the handler call, one around the behavior call
     }
 

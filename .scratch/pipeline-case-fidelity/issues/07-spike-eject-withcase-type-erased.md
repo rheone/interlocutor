@@ -6,7 +6,7 @@ This is a spike to size the actual blast radius before committing, not a design 
 
 **Blocked by:** None - can start immediately, but should follow issues 01-06 in priority per the PRD's ranking
 
-**Status:** open
+**Status:** done - implemented in `fcd5654`, merged in `d4d22ce`. Originally spiked unmerged on branch `spike/eject-withcase-case-fidelity` pending the "commit or drop" call the ticket describes as issue 08's job; that call was made directly (commit) rather than routed through issue 08, which remains excluded from this run (documentation-only, terminal). Blast-radius write-up at `.scratch/pipeline-case-fidelity/spike-07-blast-radius-writeup.md`.
 
 - [ ] A prototype `Eject.WithCase<TCase>`/`PipelineEjectCaseException<TCase>` (or equivalent) exists on a branch, with at least `AuthorizationBehavior` migrated to it as a worked example
 - [ ] The prototype's wrapper-side catch logic (in at least `QueryHandlerWrapper`) constructs the response via `IOutcomeCaseRegistry` exactly once per eject, and `AuthorizationBehavior` no longer takes an `IOutcomeCaseRegistry` dependency

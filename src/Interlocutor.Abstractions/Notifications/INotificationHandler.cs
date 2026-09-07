@@ -24,5 +24,5 @@ public interface INotificationHandler<in TNotification>
     /// <param name="notification">The notification to handle.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    Task Handle(TNotification notification, CancellationToken ct);
+    Task HandleAsync(TNotification notification, CancellationToken ct);
 }

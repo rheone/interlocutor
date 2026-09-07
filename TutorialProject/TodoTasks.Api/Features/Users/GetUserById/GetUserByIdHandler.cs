@@ -15,7 +15,7 @@ public sealed class GetUserByIdHandler(IDomainRepository<User, int> users)
     : IQueryHandler<GetUserByIdQuery, Outcome<UserDto, NotFound>>
 {
     /// <inheritdoc/>
-    public Task<Outcome<UserDto, NotFound>> Handle(GetUserByIdQuery query, CancellationToken ct) =>
+    public Task<Outcome<UserDto, NotFound>> HandleAsync(GetUserByIdQuery query, CancellationToken ct) =>
         Task.FromResult<Outcome<UserDto, NotFound>>(
             users.GetById(query.Id) is { } user ? UserDto.FromEntity(user) : new NotFound($"User {query.Id}")
         );

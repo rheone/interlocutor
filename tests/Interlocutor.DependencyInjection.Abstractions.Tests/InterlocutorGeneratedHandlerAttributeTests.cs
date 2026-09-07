@@ -4,7 +4,7 @@ namespace Interlocutor.DependencyInjection.Abstractions.Tests;
 // InterlocutorGeneratedHandlerAttribute had no direct test coverage - only exercised by the generator itself
 // (not part of this project) and referenced in doc comments elsewhere in this project's tests. Covers the
 // constructor's property assignment and its ArgumentNullException.ThrowIfNull(requestType) guard, since
-// ResponseType legitimately accepts null (void-command handlers) while RequestType does not.
+// ResponseType legitimately accepts null (bare-command handlers) while RequestType does not.
 public class InterlocutorGeneratedHandlerAttributeTests
 {
     [Fact]
@@ -24,18 +24,18 @@ public class InterlocutorGeneratedHandlerAttributeTests
     }
 
     [Fact]
-    public void Constructor_WithNullResponseType_IsAccepted_ForVoidCommandHandlers()
+    public void Constructor_WithNullResponseType_IsAccepted_ForBareCommandHandlers()
     {
         // Arrange & Act
         var attribute = new InterlocutorGeneratedHandlerAttribute(
             typeof(SampleRequest),
             null,
-            GeneratedHandlerKind.VoidCommand
+            GeneratedHandlerKind.BareCommand
         );
 
         // Assert
         Assert.Null(attribute.ResponseType);
-        Assert.Equal(GeneratedHandlerKind.VoidCommand, attribute.Kind);
+        Assert.Equal(GeneratedHandlerKind.BareCommand, attribute.Kind);
     }
 
     [Fact]

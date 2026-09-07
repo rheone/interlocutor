@@ -8,7 +8,7 @@ public enum RegistrationKind
 {
     /// <summary>
     /// A handler discovered by scanning one or more assemblies for implementations of the
-    /// mediator's handler contracts (query, command, void command, or notification handler).
+    /// mediator's handler contracts (query, command, bare command, or notification handler).
     /// </summary>
     Handler,
 

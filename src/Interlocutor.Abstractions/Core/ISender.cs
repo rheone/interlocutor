@@ -1,52 +1,60 @@
 namespace Interlocutor.Abstractions.Core;
 
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Queries;
-using Interlocutor.CommonKernel.ResultTypes;
 
-/// <summary>Send-only interface for request/response operations. Exposes Send overloads for queries and commands.</summary>
+/// <summary>Send-only interface for request/response operations. Exposes SendAsync overloads for queries and commands.</summary>
 /// <remarks>
 /// <para>
 /// Use <see cref="ISender"/> for synchronous request/response workflows (queries reading data, commands writing data
-/// and returning a result). Every Send call runs through the full pipeline behavior chain
+/// and returning a result). Every SendAsync call runs through the full pipeline behavior chain
 /// before returning a typed response to the caller.
 /// </para>
 /// <para>
 /// Three generic overloads handle different response patterns: queries returning typed data, commands returning
 /// typed data, and commands returning an operation outcome. A fourth, non-generic overload
-/// (<see cref="Send(object, CancellationToken)"/>) dispatches a request whose type is known only at runtime.
+/// (<see cref="SendAsync(object, CancellationToken)"/>) dispatches a request whose type is known only at runtime.
 /// </para>
 /// </remarks>
 public interface ISender
 {
-    /// <summary>Dispatches a query to its registered handler, returning the result through all pipeline behaviors.</summary>
+    /// <summary>
+    /// Dispatches a query to its registered handler, returning the result through all pipeline behaviors.
+    /// </summary>
     /// <typeparam name="TResponse">The query response type.</typeparam>
     /// <param name="query">The query to dispatch.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>A <see cref="Task{TResult}"/> representing the asynchronous operation.</returns>
-    Task<TResponse> Send<TResponse>(IQuery<TResponse> query, CancellationToken ct = default)
-        where TResponse : IOutcome;
+    Task<TResponse> SendAsync<TResponse>(IQuery<TResponse> query, CancellationToken ct = default)
+        where TResponse : IUnion;
 
-    /// <summary>Dispatches a value-returning command to its registered handler, returning the result through all pipeline behaviors.</summary>
+    /// <summary>
+    /// Dispatches a value-returning command to its registered handler, returning the result through all
+    /// pipeline behaviors.
+    /// </summary>
     /// <typeparam name="TResponse">The command response type.</typeparam>
     /// <param name="command">The command to dispatch.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>A <see cref="Task{TResult}"/> representing the asynchronous operation.</returns>
-    Task<TResponse> Send<TResponse>(ICommand<TResponse> command, CancellationToken ct = default)
-        where TResponse : IOutcome;
+    Task<TResponse> SendAsync<TResponse>(ICommand<TResponse> command, CancellationToken ct = default)
+        where TResponse : IUnion;
 
-    /// <summary>Dispatches a void command to its registered handler, returning the outcome through all pipeline behaviors.</summary>
-    /// <typeparam name="TResult">The <see cref="CommonKernel.ResultTypes.IOutcome"/>-shaped outcome type to resolve a handler for.</typeparam>
+    /// <summary>
+    /// Dispatches a bare command to its registered handler, returning the outcome through all pipeline
+    /// behaviors.
+    /// </summary>
+    /// <typeparam name="TResult">The <see cref="IUnion"/>-shaped outcome type to resolve a handler for.</typeparam>
     /// <param name="command">The command to dispatch.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>A <see cref="Task{TResult}"/> representing the asynchronous operation.</returns>
-    Task<TResult> Send<TResult>(ICommand command, CancellationToken ct = default)
-        where TResult : IOutcome;
+    Task<TResult> SendAsync<TResult>(ICommand command, CancellationToken ct = default)
+        where TResult : IUnion;
 
     /// <summary>
     /// Dispatches a request whose static type is not known at the call site - a query, a value-returning
-    /// command, or a unit command deserialized off a message - to its registered handler, returning the
+    /// command, or a bare command deserialized off a message - to its registered handler, returning the
     /// result through all pipeline behaviors as the library's base outcome interface.
     /// </summary>
     /// <param name="request">
@@ -56,15 +64,14 @@ public interface ISender
     /// <param name="ct">The cancellation token.</param>
     /// <returns>
     /// A <see cref="Task{TResult}"/> whose result is the handler's response as an
-    /// <see cref="CommonKernel.ResultTypes.IOutcome"/>. Callers can check
-    /// <c>IsSuccess</c>-shaped members or pattern-match the union's case value (via
-    /// <see cref="System.Runtime.CompilerServices.IUnion"/>) without knowing the concrete outcome type
-    /// statically.
+    /// <see cref="System.Runtime.CompilerServices.IUnion"/>. Callers can pattern-match the union's case value
+    /// directly, or use its generated <c>TryGetValue</c>/<c>TryGet{TypeName}</c> accessors, without knowing the
+    /// concrete outcome type statically.
     /// </returns>
     /// <remarks>
     /// <para>
     /// Intended for infrastructure callers - an outbox, an inbox, or a queue consumer - that deserialize a
-    /// message into an <see cref="object"/> with no static request type. The generic <c>Send</c> overloads
+    /// message into an <see cref="object"/> with no static request type. The generic <c>SendAsync</c> overloads
     /// infer their response type from the argument's static type, which a deserialized message doesn't have;
     /// this overload determines the response type reflectively from the request's runtime type instead.
     /// </para>
@@ -73,8 +80,8 @@ public interface ISender
     /// <c>InterlocutorBuilder.AddGeneratedRegistrations</c>, this overload dispatches through a compile-time
     /// generated type switch (<see cref="IGeneratedRequestDispatcher"/>) - no reflection runs on that path.
     /// Otherwise it falls back to locating the closed <c>IQuery{TResponse}</c> or <c>ICommand{TResponse}</c>
-    /// interface (or, for a unit command, the registered <c>IVoidCommandHandler{TCommand, TResult}</c>) on the
-    /// request's runtime type and invoking the matching generic <c>Send</c> overload via reflection - the
+    /// interface (or, for a bare command, the registered <c>IBareCommandHandler{TCommand, TResult}</c>) on the
+    /// request's runtime type and invoking the matching generic <c>SendAsync</c> overload via reflection - the
     /// explicitly opted-in runtime-scanning fallback. Either way this method's contract - exceptions included
     /// - is identical to the caller.
     /// </para>
@@ -96,5 +103,5 @@ public interface ISender
         "May run the runtime-typed dispatch fallback when no generated dispatcher is registered - see "
             + "documentation/trim-and-aot-support.md."
     )]
-    Task<IOutcome> Send(object request, CancellationToken ct = default);
+    Task<IUnion> SendAsync(object request, CancellationToken ct = default);
 }

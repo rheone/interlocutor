@@ -9,25 +9,25 @@ public class OutcomeClassifierBuilderTests
 {
     // Auto Generated, verify expected behavior:
     [Theory]
-    [InlineData(typeof(Success), false)]
-    [InlineData(typeof(NotFound), true)]
-    [InlineData(typeof(Forbidden), true)]
-    [InlineData(typeof(Conflict), true)]
-    [InlineData(typeof(Failure), true)]
-    [InlineData(typeof(Cancelled), true)]
-    [InlineData(typeof(Timeout), true)]
-    [InlineData(typeof(RateLimited), true)]
-    public void DefaultClassifier_KernelCaseTypes_ClassifiesEachAsExpected(Type caseType, bool expectedIsFailure)
+    [InlineData(typeof(Success), "Success")]
+    [InlineData(typeof(NotFound), "NotFound")]
+    [InlineData(typeof(Forbidden), "Forbidden")]
+    [InlineData(typeof(Conflict), "Conflict")]
+    [InlineData(typeof(Failure), "Failure")]
+    [InlineData(typeof(Cancelled), "Cancelled")]
+    [InlineData(typeof(Timeout), "Timeout")]
+    [InlineData(typeof(RateLimited), "RateLimited")]
+    public void DefaultClassifier_KernelCaseTypes_ReturnsEachTypesRegisteredLabel(Type caseType, string expectedLabel)
     {
         // Arrange
         var classifier = OutcomeClassifierBuilder.DefaultClassifier;
         var value = Activator.CreateInstance(caseType);
 
         // Act
-        var isFailure = classifier.IsFailure(value);
+        var label = classifier.GetLabel(value);
 
         // Assert
-        Assert.Equal(expectedIsFailure, isFailure);
+        Assert.Equal(expectedLabel, label);
     }
 
     // Auto Generated, verify expected behavior:
@@ -83,99 +83,64 @@ public class OutcomeClassifierBuilderTests
 
     // Auto Generated, verify expected behavior:
     [Fact]
-    public void IsFailure_UnregisteredType_FailsClosed()
-    {
-        // Arrange - fail-closed policy: consumers who forget to register a custom type see immediate loud
-        // rollbacks rather than silently committed writes.
-        var classifier = new OutcomeClassifierBuilder().Build();
-
-        // Act
-        var isFailure = classifier.IsFailure("unregistered string value");
-
-        // Assert
-        Assert.True(isFailure);
-    }
-
-    // Auto Generated, verify expected behavior:
-    [Fact]
-    public void IsFailure_GenericValidationErrorVariant_ClassifiedAsFailureViaPredicate()
+    public void GetLabel_GenericValidationErrorVariant_ReturnsItsPredicateLabel()
     {
         // Arrange - covers the seeded predicate that matches any type whose name starts with
         // "ValidationError", including generic variants the builder cannot enumerate by closed type.
         var classifier = OutcomeClassifierBuilder.DefaultClassifier;
 
         // Act
-        var isFailure = classifier.IsFailure(new ValidationErrors<string>([("required", "code")]));
+        var label = classifier.GetLabel(new ValidationErrors<string>([("required", "code")]));
 
         // Assert
-        Assert.True(isFailure);
+        Assert.Equal("ValidationError", label);
     }
 
     // Auto Generated, verify expected behavior:
     [Fact]
-    public void RegisterSuccessType_CustomType_ClassifiedAsSuccessWithGivenLabel()
+    public void RegisterType_Generic_ReturnsGivenLabel()
     {
         // Arrange
-        var classifier = new OutcomeClassifierBuilder().RegisterSuccessType<CustomFailure>("CustomOk").Build();
-        var value = new CustomFailure("n/a");
+        var classifier = new OutcomeClassifierBuilder().RegisterType<CustomCase>("CustomLabel").Build();
+        var value = new CustomCase("n/a");
 
         // Act & Assert
-        Assert.False(classifier.IsFailure(value));
-        Assert.Equal("CustomOk", classifier.GetLabel(value));
+        Assert.Equal("CustomLabel", classifier.GetLabel(value));
     }
 
     // Auto Generated, verify expected behavior:
     [Fact]
-    public void RegisterFailureType_Generic_ClassifiedAsFailureWithGivenLabel()
+    public void RegisterType_ByRuntimeType_ReturnsGivenLabel()
     {
         // Arrange
-        var classifier = new OutcomeClassifierBuilder().RegisterFailureType<CustomFailure>("CustomFail").Build();
-        var value = new CustomFailure("boom");
+        var classifier = new OutcomeClassifierBuilder().RegisterType(typeof(CustomCase), "CustomLabel").Build();
+        var value = new CustomCase("boom");
 
         // Act & Assert
-        Assert.True(classifier.IsFailure(value));
-        Assert.Equal("CustomFail", classifier.GetLabel(value));
+        Assert.Equal("CustomLabel", classifier.GetLabel(value));
     }
 
     // Auto Generated, verify expected behavior:
     [Fact]
-    public void RegisterFailureType_ByRuntimeType_ClassifiedAsFailureWithGivenLabel()
-    {
-        // Arrange
-        var classifier = new OutcomeClassifierBuilder().RegisterFailureType(typeof(CustomFailure), "CustomFail").Build();
-        var value = new CustomFailure("boom");
-
-        // Act & Assert
-        Assert.True(classifier.IsFailure(value));
-        Assert.Equal("CustomFail", classifier.GetLabel(value));
-    }
-
-    // Auto Generated, verify expected behavior:
-    [Fact]
-    public void RegisterFailureType_ByRuntimeType_NullType_ThrowsArgumentNullException()
+    public void RegisterType_ByRuntimeType_NullType_ThrowsArgumentNullException()
     {
         // Arrange
         var builder = new OutcomeClassifierBuilder();
 
         // Act & Assert
-        Assert.Throws<ArgumentNullException>(() => builder.RegisterFailureType(null!, "label"));
+        Assert.Throws<ArgumentNullException>(() => builder.RegisterType(null!, "label"));
     }
 
     // Auto Generated, verify expected behavior:
     [Fact]
-    public void RegisterPredicate_MatchingResponse_ClassifiedPerThePredicate()
+    public void RegisterPredicate_MatchingResponse_ReturnsRegisteredLabel()
     {
         // Arrange
         var classifier = new OutcomeClassifierBuilder()
-            .RegisterPredicate(
-                response => response is string s && s.StartsWith("err-", StringComparison.Ordinal),
-                "Custom",
-                isFailure: true
-            )
+            .RegisterPredicate(response => response is string s && s.StartsWith("err-", StringComparison.Ordinal), "Custom")
             .Build();
 
         // Act & Assert
-        Assert.True(classifier.IsFailure("err-boom"));
         Assert.Equal("Custom", classifier.GetLabel("err-boom"));
     }
 
@@ -187,7 +152,7 @@ public class OutcomeClassifierBuilderTests
         var builder = new OutcomeClassifierBuilder();
 
         // Act & Assert
-        Assert.Throws<ArgumentNullException>(() => builder.RegisterPredicate(null!, "label", isFailure: true));
+        Assert.Throws<ArgumentNullException>(() => builder.RegisterPredicate(null!, "label"));
     }
 
     // Auto Generated, verify expected behavior:
@@ -198,18 +163,18 @@ public class OutcomeClassifierBuilderTests
         var builder = new OutcomeClassifierBuilder();
 
         // Act & Assert
-        Assert.Throws<ArgumentNullException>(() => builder.RegisterPredicate(_ => true, null!, isFailure: true));
+        Assert.Throws<ArgumentNullException>(() => builder.RegisterPredicate(_ => true, null!));
     }
 
     // Auto Generated, verify expected behavior:
     [Fact]
-    public void RegisterSuccessType_ReturnsTheSameBuilderForChaining()
+    public void RegisterType_ReturnsTheSameBuilderForChaining()
     {
         // Arrange
         var builder = new OutcomeClassifierBuilder();
 
         // Act
-        var result = builder.RegisterSuccessType<CustomFailure>("label");
+        var result = builder.RegisterType<CustomCase>("label");
 
         // Assert
         Assert.Same(builder, result);
@@ -217,50 +182,34 @@ public class OutcomeClassifierBuilderTests
 
     // Auto Generated, verify expected behavior:
     [Fact]
-    public void IsFailure_CompilerGeneratedUnion_UnwrapsToTheActiveCaseBeforeClassifying()
+    public void GetLabel_CompilerGeneratedUnion_UnwrapsToTheActiveCaseBeforeLabeling()
     {
-        // Arrange - Outcome<TSuccess, TFailure> implements IUnion; the classifier must unwrap it to
-        // the active case value (a Failure here) rather than classifying the union wrapper's own type.
+        // Arrange - Outcome<T1, T2> implements IUnion; the classifier must unwrap it to
+        // the active case value (a Failure here) rather than labeling the union wrapper's own type.
         var classifier = OutcomeClassifierBuilder.DefaultClassifier;
         Outcome<string, Failure> response = new Failure("boom");
 
         // Act
-        var isFailure = classifier.IsFailure(response);
+        var label = classifier.GetLabel(response);
 
         // Assert
-        Assert.True(isFailure);
+        Assert.Equal("Failure", label);
     }
 
     // Auto Generated, verify expected behavior:
     [Fact]
-    public void IsFailure_NullPayloadSuccess_ConsultsTheUnionsOwnIsSuccessInsteadOfFailingClosed()
+    public void GetLabel_UnregisteredCustomTypeInUnion_FallsBackToRuntimeTypeName()
     {
-        // Arrange - a null Value alone can't say whether this is a legitimate null success payload or an
-        // unset union (see finding 01); the classifier must consult IOutcomeCase rather than fail-closed.
+        // Arrange - a custom case payload type nobody registered still labels via the runtime-type-name
+        // fallback, same as for a non-union response.
         var classifier = OutcomeClassifierBuilder.DefaultClassifier;
-        Outcome<string?, NotFound> response = (string?)null;
+        Outcome<CustomCase, NotFound> response = new CustomCase("unregistered payload type");
 
         // Act
-        var isFailure = classifier.IsFailure(response);
+        var label = classifier.GetLabel(response);
 
         // Assert
-        Assert.False(isFailure);
-    }
-
-    // Auto Generated, verify expected behavior:
-    [Fact]
-    public void IsFailure_UnregisteredCustomSuccessType_ConsultsTheUnionsOwnIsSuccess()
-    {
-        // Arrange - a custom success payload type nobody registered still classifies correctly as long as
-        // the response is a compiler-generated union, which already knows its own active case.
-        var classifier = OutcomeClassifierBuilder.DefaultClassifier;
-        Outcome<CustomFailure, NotFound> response = new CustomFailure("unregistered payload type");
-
-        // Act
-        var isFailure = classifier.IsFailure(response);
-
-        // Assert
-        Assert.False(isFailure);
+        Assert.Equal(nameof(CustomCase), label);
     }
 
     // Auto Generated, verify expected behavior:
@@ -280,19 +229,20 @@ public class OutcomeClassifierBuilderTests
 
     // Auto Generated, verify expected behavior:
     [Fact]
-    public void IsFailure_GenuinelyUnsetUnion_StaysFailClosed()
+    public void GetLabel_GenuinelyUnsetUnion_ReturnsNone()
     {
         // Arrange - neither case type of Outcome<Success, Failure> can ever be null, so a default (never
-        // constructed) union still fails closed rather than being mistaken for a null-payload success.
+        // constructed) union has no active case type to fall back to either, and labels as "None" - the
+        // same as any other genuinely null response.
         var classifier = OutcomeClassifierBuilder.DefaultClassifier;
         var response = default(Outcome<Success, Failure>);
 
         // Act
-        var isFailure = classifier.IsFailure(response);
+        var label = classifier.GetLabel(response);
 
         // Assert
-        Assert.True(isFailure);
+        Assert.Equal("None", label);
     }
 
-    private sealed record CustomFailure(string Reason);
+    private sealed record CustomCase(string Reason);
 }

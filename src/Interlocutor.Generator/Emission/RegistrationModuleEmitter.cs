@@ -125,7 +125,7 @@ internal static class RegistrationModuleEmitter
     /// Emits every assembly-level attribute identifying this compilation's generated module (as its own
     /// compilation unit - an assembly attribute must precede every other declaration in the file that
     /// contains it, so it cannot share a file with the module class itself): the module attribute itself,
-    /// plus one handler attribute per query, command, or void-command handler (ticket 12).
+    /// plus one handler attribute per query, command, or bare-command handler (ticket 12).
     /// </summary>
     /// <param name="handlers">Every handler discovered in the compilation.</param>
     /// <param name="assemblyNamespaceSegment">

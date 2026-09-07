@@ -13,10 +13,6 @@ using System;
 /// </summary>
 public interface IOutcomeCase
 {
-    /// <summary>Gets a value indicating whether the active case is the success case (the first declared case type).</summary>
-    /// <value><see langword="true"/> if the active case is the success case; otherwise, <see langword="false"/>.</value>
-    bool IsSuccess { get; }
-
     /// <summary>
     /// Gets the active case's declared type, or <see langword="null"/> if no case was ever set.
     /// </summary>

@@ -1,6 +1,6 @@
 # 02 - Custom IOutcome example: SendWelcomeEmail unit command
 
-Status: ready-for-agent
+Status: done - implemented in `1e95100`. Built against `IUnion` (the current extension point), not `IOutcome` as this ticket's title names - `documentation/messages-and-result-types.md` was rewritten in commit `62aaa87` (before this ticket was dispatched) to describe `IUnion` as the response-type constraint and `IOutcome`/`IOutcomeCase` as a separate, opt-in classification surface. Only a construction factory is registered with the outcome-case registry, not an extractor - extraction now works generically for any `IUnion` implementer, so the ticket's "factory + extractor" wording is stale on that point.
 
 ## Labels
 

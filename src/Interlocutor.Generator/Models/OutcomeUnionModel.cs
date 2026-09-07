@@ -34,7 +34,7 @@ using Microsoft.CodeAnalysis;
 /// <param name="ImplementsIOutcome">
 /// Whether the union's own declaration lists <c>IOutcome</c> in its base list (resolved semantically against
 /// <c>Interlocutor.CommonKernel.ResultTypes.IOutcome</c>, never by matching source text). Gates the
-/// classification surface - <c>IOutcomeCase</c>, <c>IsSuccess</c>, <c>ActiveCaseType</c> - which
+/// identity surface - <c>IOutcomeCase</c>, <c>ActiveCaseType</c> - which
 /// <see cref="OutcomeMemberEmitter"/> only emits when this is <see langword="true"/>. The sum-type members
 /// (<c>Match</c>, <c>Switch</c>, per-case <c>TryGetValue</c>, <c>ToString</c>, equality) are unconditional -
 /// a union declared without <c>: IOutcome</c> is a plain tagged union with no success/failure opinion, not a
@@ -47,7 +47,7 @@ using Microsoft.CodeAnalysis;
 /// union's own declared type parameters. <see cref="OutcomeMemberEmitter"/> emits a named
 /// <c>TryGet{Name}(out {Type} value)</c> accessor, additive alongside the anonymous <c>TryGetValue</c>
 /// overload, for every non-null entry - a type parameter's name carries no case-specific meaning (every case
-/// type at the shipped <c>Outcome&lt;TSuccessResult, TCase2, ...&gt;</c> family's declaration site *is* a type
+/// type at the shipped <c>Outcome&lt;T1, T2, ...&gt;</c> family's declaration site *is* a type
 /// parameter), so those stay reachable only through the anonymous, type-inferred overload.
 /// </param>
 [DebuggerDisplay("{DisplayName}")]

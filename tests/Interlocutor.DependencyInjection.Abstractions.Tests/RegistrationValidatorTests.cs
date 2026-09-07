@@ -212,13 +212,13 @@ public class RegistrationValidatorTests
 
     private sealed class HandledByValidateOnBuildTestQueryHandler : IQueryHandler<HandledByValidateOnBuildTestQuery, Outcome>
     {
-        public Task<Outcome> Handle(HandledByValidateOnBuildTestQuery query, CancellationToken ct) =>
+        public Task<Outcome> HandleAsync(HandledByValidateOnBuildTestQuery query, CancellationToken ct) =>
             Task.FromResult(default(Outcome));
     }
 
     private sealed class SampleQueryHandler : IQueryHandler<SampleQuery, Outcome>
     {
-        public Task<Outcome> Handle(SampleQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
+        public Task<Outcome> HandleAsync(SampleQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 
     private sealed record OverriddenQuery : IQuery<Outcome>;
@@ -226,17 +226,17 @@ public class RegistrationValidatorTests
 #pragma warning disable S1144 // Resolved only via AddInterlocutor()'s assembly scanning, invisible to static analysis.
     private sealed class OverriddenQueryHandler : IQueryHandler<OverriddenQuery, Outcome>
     {
-        public Task<Outcome> Handle(OverriddenQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
+        public Task<Outcome> HandleAsync(OverriddenQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 #pragma warning restore S1144
 
     private sealed class FirstOverrideBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     {
-        public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) => next();
+        public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) => next();
     }
 
     private sealed class SecondOverrideBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     {
-        public Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) => next();
+        public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) => next();
     }
 }

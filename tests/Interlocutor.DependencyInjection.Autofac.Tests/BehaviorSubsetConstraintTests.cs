@@ -139,13 +139,13 @@ public class BehaviorSubsetConstraintTests
         // Act
         var container = containerBuilder.Build();
 
-        // AuditableCommand: satisfies IAuditableRequest but not IRequiresPolicy -> logging + auditing only.
+        // AuditableCommand: satisfies IAuditableRequest but not IRequiresPolicyRequest -> logging + auditing only.
         var auditableChain = container
             .Resolve<IEnumerable<IPipelineBehavior<AuditableCommand, Outcome<string, Forbidden>>>>()
             .Select(b => b.GetType().Name)
             .ToList();
 
-        // PolicyCommand: satisfies IRequiresPolicy (and the Forbidden response shape) but not IAuditableRequest
+        // PolicyCommand: satisfies IRequiresPolicyRequest (and the Forbidden response shape) but not IAuditableRequest
         // -> logging + authorization only. Drawn from the exact same registration list as the other two chains.
         var policyChain = container
             .Resolve<IEnumerable<IPipelineBehavior<PolicyCommand, Outcome<string, Forbidden>>>>()
@@ -204,7 +204,7 @@ public class BehaviorSubsetConstraintTests
         public string ActionName => "Test.Audit";
     }
 
-    private sealed record PolicyCommand(string Name) : ICommand<Outcome<string, Forbidden>>, IRequiresPolicy
+    private sealed record PolicyCommand(string Name) : ICommand<Outcome<string, Forbidden>>, IRequiresPolicyRequest
     {
         public string PolicyName => "Test.Policy";
     }

@@ -121,14 +121,76 @@ public class OutcomeMapperBaseTests
         Assert.Equal(42, exitCode);
     }
 
+    [Fact]
+    public void Map_WithRegisteredCustomType_DispatchesToTheRegisteredMapping()
+    {
+        // Arrange - a registry hit maps a custom failure type distinctly from MapUnrecognized's catch-all.
+        var registry = new CustomFailureCaseRegistryBuilder<int>().RegisterType<StubCustomFailure>(_ => 99).Build();
+        var customMapper = new ExitCodeOutcomeMapper(registry);
+
+        // Act
+        var exitCode = customMapper.Map(new StubCustomFailure("throttled"));
+
+        // Assert
+        Assert.Equal(99, exitCode);
+    }
+
+    [Fact]
+    public void Map_WithRegistrySupplied_ButUnregisteredType_StillReachesMapUnrecognized()
+    {
+        // Arrange - a registry miss falls through to the subclass's own MapUnrecognized override, exactly as
+        // when no registry was supplied at all.
+        var registry = new CustomFailureCaseRegistryBuilder<int>().RegisterType<StubCustomFailure>(_ => 99).Build();
+        var customMapper = new ExitCodeOutcomeMapper(registry);
+        var unregisteredFailure = new StubOtherCustomFailure("unrelated");
+
+        // Act
+        var exitCode = customMapper.Map(unregisteredFailure);
+
+        // Assert
+        Assert.Equal(ExitCodeOutcomeMapper.UnknownExitCode, exitCode);
+    }
+
+    [Fact]
+    public void Map_WithNoRegistrySupplied_UnrecognizedTypeStillReachesMapUnrecognized()
+    {
+        // Arrange - omitting the registry entirely preserves today's exact fallback behavior.
+        var customMapper = new ExitCodeOutcomeMapper();
+
+        // Act
+        var exitCode = customMapper.Map(new StubCustomFailure("boom"));
+
+        // Assert
+        Assert.Equal(ExitCodeOutcomeMapper.UnknownExitCode, exitCode);
+    }
+
+    [Fact]
+    public void Map_WithRegistrySupplied_BuiltInCaseStillDispatchesToItsOwnAbstractMethod()
+    {
+        // Arrange - the registry is consulted only after every built-in case is exhausted, so supplying one
+        // must not change how a built-in case dispatches.
+        var registry = new CustomFailureCaseRegistryBuilder<int>().RegisterType<StubCustomFailure>(_ => 99).Build();
+        var customMapper = new ExitCodeOutcomeMapper(registry);
+
+        // Act
+        var exitCode = customMapper.Map(new NotFound("missing"));
+
+        // Assert
+        Assert.Equal(ExitCodeOutcomeMapper.NotFoundExitCode, exitCode);
+    }
+
     /// <summary>A hand-rolled <see cref="IValidationFailureCase"/> implementer, not one of the kernel's own types.</summary>
     private readonly record struct StubValidationFailureCase(IReadOnlyList<string> Messages) : IValidationFailureCase;
 
     /// <summary>A failure type this mapper was never taught about.</summary>
     private readonly record struct StubCustomFailure(string Reason);
 
+    /// <summary>A second, distinct unregistered failure type, to prove a registry miss still falls through.</summary>
+    private readonly record struct StubOtherCustomFailure(string Reason);
+
     /// <summary>A trivial <see cref="OutcomeMapperBase{TResult}"/> for a non-HTTP <c>TResult</c> - a process exit code.</summary>
-    private class ExitCodeOutcomeMapper : OutcomeMapperBase<int>
+    private class ExitCodeOutcomeMapper(ICustomFailureCaseRegistry<int>? customCaseRegistry = null)
+        : OutcomeMapperBase<int>(customCaseRegistry)
     {
         public const int NotFoundExitCode = 2;
         public const int ForbiddenExitCode = 3;

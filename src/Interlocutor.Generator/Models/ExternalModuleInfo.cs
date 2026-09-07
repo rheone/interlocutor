@@ -22,7 +22,7 @@ using Interlocutor.Generator.Analysis;
 /// <c>Registrations</c> property concatenates.
 /// </param>
 /// <param name="Handlers">
-/// Every query, command, or void-command handler the referenced assembly declared, restated from its
+/// Every query, command, or bare-command handler the referenced assembly declared, restated from its
 /// <c>InterlocutorGeneratedHandlerAttribute</c> metadata for the missing-handler diagnostic.
 /// </param>
 /// <remarks>

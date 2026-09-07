@@ -27,7 +27,7 @@ public class NotificationFanOutIntegrationTests
         var mediator = scope.Resolve<IMediator>();
 
         // Act
-        await mediator.Publish(new OrderCreated(1), TestContext.Current.CancellationToken);
+        await mediator.PublishAsync(new OrderCreated(1), TestContext.Current.CancellationToken);
 
         // Assert
         Assert.True(scope.Resolve<InvocationRecorder>().Invoked);
@@ -48,7 +48,7 @@ public class NotificationFanOutIntegrationTests
 #pragma warning disable S1144
     private sealed class DomainEventLogger(InvocationRecorder recorder) : INotificationHandler<DomainEvent>
     {
-        public Task Handle(DomainEvent notification, CancellationToken ct)
+        public Task HandleAsync(DomainEvent notification, CancellationToken ct)
         {
             recorder.Invoked = true;
             return Task.CompletedTask;

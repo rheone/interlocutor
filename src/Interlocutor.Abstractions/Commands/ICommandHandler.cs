@@ -1,5 +1,6 @@
 namespace Interlocutor.Abstractions.Commands;
 
+using System.Runtime.CompilerServices;
 using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
@@ -10,7 +11,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// <remarks>
 /// <para>
 /// Use this handler for commands that mutate state and return domain data (e.g., <c>CreateUserCommand → UserDto</c>).
-/// For commands that produce only success/failure outcomes (not domain data), use <see cref="IVoidCommandHandler{TCommand, TResult}"/>
+/// For commands that produce only success/failure outcomes (not domain data), use <see cref="IBareCommandHandler{TCommand, TResult}"/>
 /// instead, which returns an <see cref="CommonKernel.ResultTypes.IOutcome"/> union.
 /// </para>
 /// <para>
@@ -21,7 +22,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </remarks>
 public interface ICommandHandler<in TCommand, TResponse>
     where TCommand : ICommand<TResponse>
-    where TResponse : IOutcome
+    where TResponse : IUnion
 {
     /// <summary>
     /// Handles the specified command and returns a result containing the response or a failure.
@@ -29,5 +30,5 @@ public interface ICommandHandler<in TCommand, TResponse>
     /// <param name="command">The command to handle.</param>
     /// <param name="ct">Cancellation token to cancel the operation.</param>
     /// <returns>The response data, which may itself be a union type distinguishing success from failure.</returns>
-    Task<TResponse> Handle(TCommand command, CancellationToken ct);
+    Task<TResponse> HandleAsync(TCommand command, CancellationToken ct);
 }

@@ -49,6 +49,23 @@ public sealed class EntityFrameworkUnitOfWorkTests : IClassFixture<EntityFramewo
         Assert.Empty(verify.Widgets);
     }
 
+    [Fact]
+    public async Task CancelAsync_RollsBackOpenTransaction_AndClearsChangeTracker()
+    {
+        // Arrange
+        var unitOfWork = new EntityFrameworkUnitOfWork<TestDbContext>(new Lazy<TestDbContext>(() => this.context));
+        await this.context.Widgets.AddAsync(new Widget { Name = "cancelled" }, TestContext.Current.CancellationToken);
+        await unitOfWork.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        // Act
+        await unitOfWork.CancelAsync(TestContext.Current.CancellationToken);
+
+        // Assert - the transaction was rolled back and the tracker cleared, so nothing is pending or persisted.
+        Assert.Null(this.context.Database.CurrentTransaction);
+        await using var verify = this.CreateVerificationContext();
+        Assert.Empty(verify.Widgets);
+    }
+
     public void Dispose()
     {
         this.context.Dispose();

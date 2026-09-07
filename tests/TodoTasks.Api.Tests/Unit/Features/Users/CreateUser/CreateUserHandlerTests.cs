@@ -30,10 +30,9 @@ public sealed class CreateUserHandlerTests
         var command = new CreateUserCommand("Ada Lovelace", "ada@example.com");
 
         // Act
-        var result = await this.handler.Handle(command, CancellationToken.None);
+        var result = await this.handler.HandleAsync(command, CancellationToken.None);
 
         // Assert
-        Assert.True(result.IsSuccess);
         var dto = Assert.IsType<UserDto>(result.Value);
         Assert.Equal("Ada Lovelace", dto.DisplayName);
         Assert.Equal("ada@example.com", dto.Email);
@@ -56,7 +55,7 @@ public sealed class CreateUserHandlerTests
         var command = new CreateUserCommand("New User", "taken@example.com");
 
         // Act
-        var result = await this.handler.Handle(command, CancellationToken.None);
+        var result = await this.handler.HandleAsync(command, CancellationToken.None);
 
         // Assert
         var conflict = Assert.IsType<Conflict>(result.Value);

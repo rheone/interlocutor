@@ -12,7 +12,7 @@ using TodoTasks.Api.Infrastructure;
 /// </summary>
 /// <param name="Id">The task to delete.</param>
 /// <remarks>
-/// <see cref="IRequiresPolicy"/> is the coarse-grained authorization style: <c>AuthorizationBehavior</c>
+/// <see cref="IRequiresPolicyRequest"/> is the coarse-grained authorization style: <c>AuthorizationBehavior</c>
 /// evaluates <see cref="PolicyName"/> via <see cref="TodoTasksPolicyEvaluator"/> - which, for this
 /// policy, loads the task itself to compare its owner against the caller - *before* the pipeline ever
 /// reaches this command's own handler. Contrast with
@@ -26,7 +26,7 @@ using TodoTasks.Api.Infrastructure;
 /// </remarks>
 public sealed record DeleteTodoTaskCommand(int Id)
     : ICommand<Outcome<Success, NotFound, Forbidden>>,
-        IRequiresPolicy,
+        IRequiresPolicyRequest,
         IAuditableRequest
 {
     /// <inheritdoc/>

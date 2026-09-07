@@ -27,7 +27,7 @@ public sealed class GetUserByIdHandlerTests
         var query = new GetUserByIdQuery(42);
 
         // Act
-        var result = await this.handler.Handle(query, CancellationToken.None);
+        var result = await this.handler.HandleAsync(query, CancellationToken.None);
 
         // Assert
         var dto = Assert.IsType<UserDto>(result.Value);
@@ -42,7 +42,7 @@ public sealed class GetUserByIdHandlerTests
         var query = new GetUserByIdQuery(42);
 
         // Act
-        var result = await this.handler.Handle(query, CancellationToken.None);
+        var result = await this.handler.HandleAsync(query, CancellationToken.None);
 
         // Assert
         Assert.IsType<NotFound>(result.Value);

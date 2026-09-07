@@ -1,7 +1,7 @@
 namespace Interlocutor.DependencyInjection.Abstractions;
 
 /// <summary>
-/// Assembly-level marker describing one compile-time discovered query, command, or void-command handler's
+/// Assembly-level marker describing one compile-time discovered query, command, or bare-command handler's
 /// request/response shape (ticket 12). Applied once per matching handler by <c>Interlocutor.Generator</c> -
 /// never by hand.
 /// </summary>
@@ -19,16 +19,16 @@ namespace Interlocutor.DependencyInjection.Abstractions;
 /// IL evaluation and no runtime reflection.
 /// </para>
 /// <para>
-/// Only query, command, and void-command handlers get one of these - notification handlers never participate
+/// Only query, command, and bare-command handlers get one of these - notification handlers never participate
 /// in the missing-handler diagnostic (a notification may legally have zero handlers), so the generator does
 /// not emit this attribute for <see cref="GeneratedHandlerKind.Notification"/>.
 /// </para>
 /// </remarks>
 /// <param name="requestType">The handler's request type.</param>
 /// <param name="responseType">
-/// The handler's response type, or <see langword="null"/> for a void-command handler's request-matching
-/// purposes - a unit command's result type is chosen by the caller, not declared on the request, so matching
-/// ignores it (mirrors <c>Interlocutor.Generator.RequestKind.VoidCommand</c>).
+/// The handler's response type, or <see langword="null"/> for a bare-command handler's request-matching
+/// purposes - a bare command's result type is chosen by the caller, not declared on the request, so matching
+/// ignores it (mirrors <c>Interlocutor.Generator.RequestKind.BareCommand</c>).
 /// </param>
 /// <param name="kind">Which handler contract <paramref name="requestType"/> is handled by.</param>
 [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true, Inherited = false)]
@@ -39,8 +39,8 @@ public sealed class InterlocutorGeneratedHandlerAttribute(Type requestType, Type
     /// <value>The handler's request type.</value>
     public Type RequestType { get; } = requestType ?? throw new ArgumentNullException(nameof(requestType));
 
-    /// <summary>Gets the handler's response type, or <see langword="null"/> for a void-command handler.</summary>
-    /// <value>The handler's response type, or <see langword="null"/> for a void-command handler.</value>
+    /// <summary>Gets the handler's response type, or <see langword="null"/> for a bare-command handler.</summary>
+    /// <value>The handler's response type, or <see langword="null"/> for a bare-command handler.</value>
     public Type? ResponseType { get; } = responseType;
 
     /// <summary>Gets which handler contract <see cref="RequestType"/> is handled by.</summary>

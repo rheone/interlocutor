@@ -29,12 +29,12 @@ public class RootScopeGuardedMediatorTests
 
         // Act
         var ex = await Assert.ThrowsAsync<MediatorResolvedFromRootScopeException>(() =>
-            guarded.Send(query, CancellationToken.None)
+            guarded.SendAsync(query, CancellationToken.None)
         );
 
         // Assert
         Assert.Equal(typeof(SampleQuery), ex.RequestType);
-        await inner.DidNotReceive().Send(Arg.Any<IQuery<Outcome<int, Failure>>>(), Arg.Any<CancellationToken>());
+        await inner.DidNotReceive().SendAsync(Arg.Any<IQuery<Outcome<int, Failure>>>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -43,12 +43,12 @@ public class RootScopeGuardedMediatorTests
         // Arrange
         var inner = Substitute.For<IMediator>();
         var expected = new Outcome<int, Failure>(42);
-        inner.Send(Arg.Any<IQuery<Outcome<int, Failure>>>(), Arg.Any<CancellationToken>()).Returns(expected);
+        inner.SendAsync(Arg.Any<IQuery<Outcome<int, Failure>>>(), Arg.Any<CancellationToken>()).Returns(expected);
         var detector = StubDetector(isRootScope: false);
         var guarded = new RootScopeGuardedMediator(inner, detector);
 
         // Act
-        var result = await guarded.Send(new SampleQuery(), CancellationToken.None);
+        var result = await guarded.SendAsync(new SampleQuery(), CancellationToken.None);
 
         // Assert
         Assert.Equal(expected, result);
@@ -66,12 +66,12 @@ public class RootScopeGuardedMediatorTests
 
         // Act
         var ex = await Assert.ThrowsAsync<MediatorResolvedFromRootScopeException>(() =>
-            guarded.Send(command, CancellationToken.None)
+            guarded.SendAsync(command, CancellationToken.None)
         );
 
         // Assert
         Assert.Equal(typeof(SampleValueCommand), ex.RequestType);
-        await inner.DidNotReceive().Send(Arg.Any<ICommand<Outcome<int, Failure>>>(), Arg.Any<CancellationToken>());
+        await inner.DidNotReceive().SendAsync(Arg.Any<ICommand<Outcome<int, Failure>>>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -86,12 +86,12 @@ public class RootScopeGuardedMediatorTests
 
         // Act
         var ex = await Assert.ThrowsAsync<MediatorResolvedFromRootScopeException>(() =>
-            guarded.Send<Outcome>(command, CancellationToken.None)
+            guarded.SendAsync<Outcome>(command, CancellationToken.None)
         );
 
         // Assert
         Assert.Equal(typeof(SampleUnitCommand), ex.RequestType);
-        await inner.DidNotReceive().Send<Outcome>(Arg.Any<ICommand>(), Arg.Any<CancellationToken>());
+        await inner.DidNotReceive().SendAsync<Outcome>(Arg.Any<ICommand>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -106,12 +106,12 @@ public class RootScopeGuardedMediatorTests
 
         // Act
         var ex = await Assert.ThrowsAsync<MediatorResolvedFromRootScopeException>(() =>
-            guarded.Send(request, CancellationToken.None)
+            guarded.SendAsync(request, CancellationToken.None)
         );
 
         // Assert
         Assert.Equal(typeof(SampleQuery), ex.RequestType);
-        await inner.DidNotReceive().Send(Arg.Any<object>(), Arg.Any<CancellationToken>());
+        await inner.DidNotReceive().SendAsync(Arg.Any<object>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -123,7 +123,7 @@ public class RootScopeGuardedMediatorTests
         var guarded = new RootScopeGuardedMediator(inner, detector);
 
         // Act & Assert
-        await Assert.ThrowsAsync<ArgumentNullException>(() => guarded.Send(null!, CancellationToken.None));
+        await Assert.ThrowsAsync<ArgumentNullException>(() => guarded.SendAsync(null!, CancellationToken.None));
     }
 
     [Fact]
@@ -138,12 +138,12 @@ public class RootScopeGuardedMediatorTests
 
         // Act
         var ex = await Assert.ThrowsAsync<MediatorResolvedFromRootScopeException>(() =>
-            guarded.Publish(notification, CancellationToken.None)
+            guarded.PublishAsync(notification, CancellationToken.None)
         );
 
         // Assert
         Assert.Equal(typeof(SampleNotification), ex.RequestType);
-        await inner.DidNotReceive().Publish(Arg.Any<SampleNotification>(), Arg.Any<CancellationToken>());
+        await inner.DidNotReceive().PublishAsync(Arg.Any<SampleNotification>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -157,10 +157,10 @@ public class RootScopeGuardedMediatorTests
         var notification = new SampleNotification();
 
         // Act
-        await guarded.Publish(notification, CancellationToken.None);
+        await guarded.PublishAsync(notification, CancellationToken.None);
 
         // Assert
-        await inner.Received(1).Publish(notification, Arg.Any<CancellationToken>());
+        await inner.Received(1).PublishAsync(notification, Arg.Any<CancellationToken>());
     }
 
     private static IRootScopeDetector StubDetector(bool isRootScope)

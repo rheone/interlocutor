@@ -25,7 +25,9 @@ using Interlocutor.Abstractions.Pipeline.Cases;
 /// <para>
 /// <b>Order and duplicates.</b> <see cref="Behaviors"/> is a flat list in builder-call order. Adding the
 /// same behavior type more than once is legal - neither this type nor a container translator
-/// de-duplicates.
+/// de-duplicates. <see cref="BehaviorFactories"/> is the lambda-form counterpart holding entries added via
+/// the <c>AddBehavior</c> delegate overloads - a separate list, applied as its own step immediately after
+/// <see cref="Behaviors"/>, mirroring how <see cref="StageFactories"/> relates to <see cref="Stages"/>.
 /// </para>
 /// <para>
 /// <b>Override precedence.</b> Every entry in <see cref="Defaults"/> is translated with try-add
@@ -80,6 +82,7 @@ public sealed class InterlocutorPipelineBuilder
         [(typeof(IRateLimiter), typeof(DefaultRateLimiter)), (typeof(IOutcomeCaseRegistry), typeof(DefaultOutcomeCaseRegistry))]
     );
 
+    private readonly List<InterlocutorFactoryRegistration> _behaviorFactories = [];
     private readonly List<InterlocutorRegistration> _behaviors = [];
     private readonly Dictionary<Type, InterlocutorRegistration> _defaults;
     private readonly HashSet<Type> _overrideBehaviorTypesRegistered = [];
@@ -115,6 +118,13 @@ public sealed class InterlocutorPipelineBuilder
     /// </summary>
     /// <value>The flat, ordered list of pipeline behavior registrations, in builder-call order.</value>
     public IReadOnlyList<InterlocutorRegistration> Behaviors => this._behaviors;
+
+    /// <summary>
+    /// Gets the delegate-backed pipeline behavior registrations added via the <c>AddBehavior</c> delegate
+    /// overloads - the lambda-form counterpart to <see cref="Behaviors"/>.
+    /// </summary>
+    /// <value>The delegate-backed pipeline behavior registrations.</value>
+    public IReadOnlyList<InterlocutorFactoryRegistration> BehaviorFactories => this._behaviorFactories;
 
     /// <summary>
     /// Gets every Tier-1 pipeline override rule added via <see cref="OverridePipelineFor"/>, in call order.
@@ -184,6 +194,87 @@ public sealed class InterlocutorPipelineBuilder
     }
 
     /// <summary>
+    /// Registers a pipeline behavior as a pair of enter/exit delegates instead of a dedicated implementation
+    /// type - sugar over <see cref="DelegatePipelineBehavior{TRequest,TResponse}"/> for a behavior simple
+    /// enough not to need one. Either delegate may be omitted for a no-op hook. Legal alongside
+    /// <see cref="AddBehavior(Type, RegistrationLifetime)"/>; entries from both are resolved together
+    /// against the closed <see cref="IPipelineBehavior{TRequest,TResponse}"/> contract they both target.
+    /// </summary>
+    /// <typeparam name="TRequest">The request type the behavior participates in.</typeparam>
+    /// <typeparam name="TResponse">The response type the behavior participates in.</typeparam>
+    /// <param name="onEnter">
+    /// The enter-hook delegate backing <see cref="PipelineBehaviorBase{TRequest,TResponse}.OnEnterAsync"/>,
+    /// or <see langword="null"/> for a no-op (always-continue) enter-hook.
+    /// </param>
+    /// <param name="onExit">
+    /// The exit-hook delegate backing <see cref="PipelineBehaviorBase{TRequest,TResponse}.OnExitAsync"/>, or
+    /// <see langword="null"/> for a no-op (pass-through) exit-hook.
+    /// </param>
+    /// <param name="lifetime">
+    /// The service lifetime to register the behavior with. Defaults to singleton - the delegates already
+    /// capture whatever state they need.
+    /// </param>
+    /// <returns>This builder, for chaining.</returns>
+    public InterlocutorPipelineBuilder AddBehavior<TRequest, TResponse>(
+        Func<TRequest, CancellationToken, Task<StageResult<TResponse>>>? onEnter = null,
+        Func<TRequest, TResponse, CancellationToken, Task<TResponse>>? onExit = null,
+        RegistrationLifetime lifetime = RegistrationLifetime.Singleton
+    )
+    {
+        this._behaviorFactories.Add(
+            new InterlocutorFactoryRegistration(
+                typeof(IPipelineBehavior<TRequest, TResponse>),
+                _ => new DelegatePipelineBehavior<TRequest, TResponse>(onEnter, onExit),
+                lifetime,
+                RegistrationKind.Behavior
+            )
+        );
+        return this;
+    }
+
+    /// <summary>
+    /// Registers a pipeline behavior as a pair of enter/exit delegates that receive the container's
+    /// <see cref="IServiceProvider"/> - the overload for lambda-form behaviors that need to resolve services
+    /// (for example, a scoped dependency) rather than capturing them at builder-configuration time. See
+    /// <see cref="AddBehavior{TRequest,TResponse}(Func{TRequest,CancellationToken,Task{StageResult{TResponse}}},Func{TRequest,TResponse,CancellationToken,Task{TResponse}},RegistrationLifetime)"/>
+    /// for the simpler, service-free overload.
+    /// </summary>
+    /// <typeparam name="TRequest">The request type the behavior participates in.</typeparam>
+    /// <typeparam name="TResponse">The response type the behavior participates in.</typeparam>
+    /// <param name="onEnter">
+    /// The enter-hook delegate, receiving the resolving <see cref="IServiceProvider"/> first, or
+    /// <see langword="null"/> for a no-op (always-continue) enter-hook.
+    /// </param>
+    /// <param name="onExit">
+    /// The exit-hook delegate, receiving the resolving <see cref="IServiceProvider"/> first, or
+    /// <see langword="null"/> for a no-op (pass-through) exit-hook.
+    /// </param>
+    /// <param name="lifetime">
+    /// The service lifetime to register the behavior with. Defaults to scoped, since a service-resolving
+    /// behavior most often wants scoped dependencies resolved fresh per dispatch.
+    /// </param>
+    /// <returns>This builder, for chaining.</returns>
+    public InterlocutorPipelineBuilder AddBehavior<TRequest, TResponse>(
+        Func<IServiceProvider, TRequest, CancellationToken, Task<StageResult<TResponse>>>? onEnter,
+        Func<IServiceProvider, TRequest, TResponse, CancellationToken, Task<TResponse>>? onExit,
+        RegistrationLifetime lifetime = RegistrationLifetime.Scoped
+    )
+    {
+        this._behaviorFactories.Add(
+            new InterlocutorFactoryRegistration(
+                typeof(IPipelineBehavior<TRequest, TResponse>),
+                sp => new DelegatePipelineBehavior<TRequest, TResponse>(
+                    onEnter is null ? null : (request, ct) => onEnter(sp, request, ct),
+                    onExit is null ? null : (request, response, ct) => onExit(sp, request, response, ct)
+                ),
+                lifetime,
+                RegistrationKind.Behavior
+            )
+        );
+        return this;
+    }
+
+    /// <summary>
     /// Declares a Tier-1 pipeline override: a request type <paramref name="predicate"/> matches gets exactly
     /// <paramref name="behaviors"/>, in the given order, in place of the general-purpose baseline (Tier 2)
     /// entirely - a full, positively-declared replacement, never a merge with or modification of it. An
@@ -200,7 +291,7 @@ public sealed class InterlocutorPipelineBuilder
     /// </para>
     /// <para>
     /// A request matched by this rule that also structurally satisfies an existing marker interface
-    /// (<c>IAuditableRequest</c>, <c>IRequiresPolicy</c>, etc.) does not run that marker-constrained
+    /// (<c>IAuditableRequest</c>, <c>IRequiresPolicyRequest</c>, etc.) does not run that marker-constrained
     /// behavior unless <paramref name="behaviors"/> names it explicitly - the matched request's resolved
     /// pipeline is exactly and only <paramref name="behaviors"/>, enforced once, centrally, at the point
     /// each dispatch path builds its behavior chain (see <c>Interlocutor.Abstractions.Pipeline.PipelineChainResolver</c>),

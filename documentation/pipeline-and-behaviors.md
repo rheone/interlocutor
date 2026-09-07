@@ -215,7 +215,7 @@ Enforces policy-based, non-resource authorization. Short-circuits with `Forbidde
 - Constraint: `TResponse : IOutcome` (must be able to construct a `Forbidden` case)
 
 ```csharp
-public record DeleteAllUsers() : ICommand<Outcome>, IRequiresPolicy
+public record DeleteAllUsers() : ICommand<Outcome<Success, Forbidden>>, IRequiresPolicy
 {
     public string PolicyName => "AdminOnly";
 }
@@ -223,6 +223,10 @@ public record DeleteAllUsers() : ICommand<Outcome>, IRequiresPolicy
 // AuthorizationBehavior evaluates the AdminOnly policy and short-circuits with Forbidden if denied
 var result = await mediator.Send(new DeleteAllUsers());
 ```
+
+The response type must have a `Forbidden` case to short-circuit into - the case-less, non-generic
+`Outcome` has none, so pairing it with `IRequiresPolicy` throws the first time a policy check
+actually denies, rather than silently granting or swallowing the denial.
 
 > [!WARNING]
 > If no `IPolicyEvaluator` is registered, `AuthorizationBehavior` falls back to the try-added `DefaultPolicyEvaluator` - which **always returns `true`, granting every policy check unconditionally**. That default exists for development and testing, where authorization isn't implemented yet and shouldn't block work; it is not safe for production. Register your own `IPolicyEvaluator` (or `builder.Pipeline.OverridePolicyEvaluator<TEvaluator>()`) before deploying anything that uses `IRequiresPolicy`.
@@ -246,21 +250,22 @@ public record TransferFunds(int FromAccountId, int ToAccountId, decimal Amount)
 var result = await mediator.Send(new TransferFunds(1, 2, 100));
 ```
 
-## Outcome Description & Classification
+## Outcome Description
 
-`LoggingBehavior`, `AuditingBehavior`, and both store-specific `UnitOfWorkBehavior` implementations (EF Core and NHibernate) all need to answer the same two questions about a handler's response: *what should this be called in a log line or audit entry*, and *does this represent a failure that a transaction should roll back*. `IResponseOutcomeDescriber` is the shared abstraction that answers both, so the three behaviors classify responses consistently instead of each re-implementing their own success/failure detection.
+`LoggingBehavior` and `AuditingBehavior` both need to answer the same question about a handler's response: *what should this be called in a log line or audit entry*. `IResponseOutcomeDescriber` is the shared abstraction that answers it, so the two behaviors label responses consistently instead of each re-implementing their own labeling.
 
 ```csharp
 public interface IResponseOutcomeDescriber
 {
     string Describe(object? response);   // e.g. "Success", "NotFound", "ValidationError"
-    bool IsFailure(object? response);    // true => UnitOfWorkBehavior rolls back
 }
 ```
 
 - **`LoggingBehavior<TRequest, TResponse>`** calls `Describe()` to log the outcome alongside elapsed time.
 - **`AuditingBehavior<TRequest, TResponse>`** calls `Describe()` to record the outcome on each `AuditEntry`.
-- **`UnitOfWorkBehavior`** (both EF Core and NHibernate) calls `IsFailure()` to decide whether to commit or roll back.
+
+> [!IMPORTANT]
+> `UnitOfWorkBehavior` (both EF Core and NHibernate) commits whatever a dispatch left pending, regardless of the response's shape - no case type decides that. The only way to force a rollback is an explicit `IUnitOfWork.Cancel` call, or an unhandled exception; see [Transactions & Store Integration § Commit/Rollback Semantics](transactions-and-store-integration.md#commitrollback-semantics). `UnitOfWorkBehavior` still accepts an `IResponseOutcomeDescriber` (via an `IOutcomeClassifier`) purely to label its own commit debug log line, the same way `LoggingBehavior`/`AuditingBehavior` do.
 
 `LoggingBehavior`, `AuditingBehavior`, and both `UnitOfWorkBehavior` implementations accept `IResponseOutcomeDescriber` as an *optional* constructor parameter. When nothing is registered in DI, each falls back to its own `DefaultResponseOutcomeDescriber` instance backed by `OutcomeClassifierBuilder.DefaultClassifier` - the shared, pre-seeded classifier described below.
 
@@ -285,18 +290,17 @@ services.AddInterlocutor(builder =>
 
 ### OutcomeClassifierBuilder
 
-`OutcomeClassifierBuilder` is the fluent builder behind `DefaultResponseOutcomeDescriber` - it produces an immutable `IOutcomeClassifier` from a set of type and predicate registrations. `OutcomeClassifierBuilder.DefaultClassifier` is pre-seeded with every kernel result type, so a fresh builder only needs to add your own:
+`OutcomeClassifierBuilder` is the fluent builder behind `DefaultResponseOutcomeDescriber` - it produces an immutable `IOutcomeClassifier`, a pure label registry, from a set of type and predicate registrations. `OutcomeClassifierBuilder.DefaultClassifier` is pre-seeded with every kernel result type's label, so a fresh builder only needs to add your own:
 
-- **`RegisterSuccessType<TSuccess>(label)`** - registers a type as success, with the given label.
-- **`RegisterFailureType<TFailure>(label)`** - registers a type as failure, with the given label.
-- **`RegisterFailureType(Type, label)`** - the non-generic form, for registering a type known only at runtime.
-- **`RegisterPredicate(predicate, label, isFailure)`** - for shapes that can't be keyed by exact type (e.g. an open generic family). Predicates are evaluated in registration order, after the type table misses, and the first match wins.
+- **`RegisterType<T>(label)`** - registers a type's display label.
+- **`RegisterType(Type, label)`** - the non-generic form, for registering a type known only at runtime.
+- **`RegisterPredicate(predicate, label)`** - for shapes that can't be keyed by exact type (e.g. an open generic family). Predicates are evaluated in registration order, after the type table misses, and the first match wins.
 - **`.Build()`** - produces the immutable `IOutcomeClassifier`.
 
 > [!IMPORTANT]
-> Unregistered types are fail-closed: if neither the type table nor any predicate matches a response, `IsFailure()` returns `true`. A custom outcome type you forget to register surfaces as an immediate, loud rollback rather than a silently committed write.
+> Labeling never throws: if neither the type table nor any predicate matches a response, `GetLabel()` falls back to the response's runtime type name (or `"None"` for a null/unset response). A custom outcome type you forget to register just logs under its raw type name instead of a friendlier label - it has no effect on commit/rollback, which no longer depends on classification at all.
 
-#### Worked example: classifying a custom union type
+#### Worked example: labeling a custom union type
 
 Say your handlers return a hand-rolled payment outcome instead of `Outcome<...>`:
 
@@ -314,18 +318,16 @@ Build a classifier for it and wrap it in an `IResponseOutcomeDescriber`:
 public sealed class PaymentOutcomeDescriber : IResponseOutcomeDescriber
 {
     private static readonly IOutcomeClassifier Classifier = new OutcomeClassifierBuilder()
-        .RegisterSuccessType<PaymentApproved>("PaymentApproved")
-        .RegisterFailureType<PaymentDeclined>("PaymentDeclined")
-        .RegisterFailureType<PaymentGatewayError>("PaymentGatewayError")
+        .RegisterType<PaymentApproved>("PaymentApproved")
+        .RegisterType<PaymentDeclined>("PaymentDeclined")
+        .RegisterType<PaymentGatewayError>("PaymentGatewayError")
         .Build();
 
     public string Describe(object? response) => Classifier.GetLabel(response);
-
-    public bool IsFailure(object? response) => Classifier.IsFailure(response);
 }
 ```
 
-Then wire it in with `OverrideOutcomeDescriber<TDescriber>()` as shown above. `LoggingBehavior`, `AuditingBehavior`, and `UnitOfWorkBehavior` now describe and classify `PaymentApproved`/`PaymentDeclined`/`PaymentGatewayError` correctly instead of falling back to the fail-closed default - a response you never registered would otherwise log as its raw type name and force a rollback even when it's a genuine success.
+Then wire it in with `OverrideOutcomeDescriber<TDescriber>()` as shown above. `LoggingBehavior` and `AuditingBehavior` now describe `PaymentApproved`/`PaymentDeclined`/`PaymentGatewayError` with a friendly label instead of falling back to the raw type name.
 
 ## Cancellation, Timeout & Rate Limiting Behaviors
 

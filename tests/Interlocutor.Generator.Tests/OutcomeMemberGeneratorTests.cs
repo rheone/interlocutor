@@ -1,5 +1,6 @@
 namespace Interlocutor.Generator.Tests;
 
+using System.Collections.Generic;
 using System.Linq;
 using Interlocutor.Generator.Diagnostics;
 using Microsoft.CodeAnalysis;
@@ -47,7 +48,7 @@ public sealed class OutcomeMemberGeneratorTests
                 .SyntaxTrees.Where(static t => t.FilePath.Contains("OutcomeMembers", StringComparison.Ordinal))
                 .Select(static t => t.ToString())
         );
-        Assert.Contains("public bool IsSuccess", generatedText, StringComparison.Ordinal);
+        Assert.Contains("public global::System.Type? ActiveCaseType", generatedText, StringComparison.Ordinal);
         Assert.Contains("public bool TryGetValue(out", generatedText, StringComparison.Ordinal);
         Assert.Contains("public TResult Match<TResult>(", generatedText, StringComparison.Ordinal);
         Assert.Contains("public void Switch(", generatedText, StringComparison.Ordinal);
@@ -93,6 +94,89 @@ public sealed class OutcomeMemberGeneratorTests
     }
 
     [Fact]
+    public void OutcomeMemberGenerator_SixteenCaseUnion_EmitsExpectedMembers_Test()
+    {
+        // Arrange - exactly the BCL's Func<T1..T16, TResult>/Action<T1..T16> ceiling; must still succeed
+        const string source = """
+            namespace Test;
+
+            using Interlocutor.CommonKernel;
+            using Interlocutor.CommonKernel.ResultTypes;
+
+            [GenerateOutcomeMembers]
+            public readonly partial union SixteenCaseOutcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>(
+                T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16
+            ) : IOutcome
+            {
+            }
+            """;
+
+        // Act
+        var result = GeneratorTestHarness.RunAndUpdate(
+            new OutcomeMemberGenerator(),
+            source,
+            "OutcomeMemberGenerator.Tests.SixteenCase",
+            null,
+            LanguageVersion.Preview,
+            out var diagnostics
+        );
+
+        // Assert - sixteen is past the (default six) recommended maximum, so INTERLOC014 fires, but the
+        // style nudge never blocks emission the way the hard sixteen-case ceiling (INTERLOC013) would.
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("INTERLOC014", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+
+        var emitResult = result.GetDiagnostics(TestContext.Current.CancellationToken);
+        Assert.Empty(emitResult.Where(static d => d.Severity == DiagnosticSeverity.Error));
+
+        var generatedText = string.Join(
+            System.Environment.NewLine,
+            result
+                .SyntaxTrees.Where(static t => t.FilePath.Contains("OutcomeMembers", StringComparison.Ordinal))
+                .Select(static t => t.ToString())
+        );
+        Assert.Contains("public TResult Match<TResult>(", generatedText, StringComparison.Ordinal);
+        Assert.Contains("public void Switch(", generatedText, StringComparison.Ordinal);
+        Assert.Equal(16, CountOccurrences(generatedText, "public bool TryGetValue(out"));
+    }
+
+    [Fact]
+    public void OutcomeMemberGenerator_SeventeenCases_ReportsError_Test()
+    {
+        // Arrange - one past the BCL's Func<T1..T16, TResult>/Action<T1..T16> ceiling
+        const string source = """
+            namespace Test;
+
+            using Interlocutor.CommonKernel;
+            using Interlocutor.CommonKernel.ResultTypes;
+
+            [GenerateOutcomeMembers]
+            public readonly partial union SeventeenCaseOutcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17>(
+                T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17
+            ) : IOutcome
+            {
+            }
+            """;
+
+        // Act
+        _ = GeneratorTestHarness.RunAndUpdate(
+            new OutcomeMemberGenerator(),
+            source,
+            "OutcomeMemberGenerator.Tests.SeventeenCase",
+            null,
+            LanguageVersion.Preview,
+            out var diagnostics
+        );
+
+        // Assert
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("INTERLOC013", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Contains("Func<T1..T16,TResult>", diagnostic.GetMessage(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void OutcomeMemberGenerator_TwoCaseUnion_RuntimeBehavior_Test()
     {
         // Arrange
@@ -113,7 +197,8 @@ public sealed class OutcomeMemberGeneratorTests
 
                 public static TestOutcome<string, int> FailureCase(int value) => value;
 
-                public static bool IsSuccess(TestOutcome<string, int> outcome) => outcome.IsSuccess;
+                public static System.Type? GetActiveCaseType(TestOutcome<string, int> outcome) =>
+                    ((Interlocutor.CommonKernel.ResultTypes.IOutcomeCase)outcome).ActiveCaseType;
 
                 public static string ToText(TestOutcome<string, int> outcome) => outcome.ToString();
 
@@ -160,9 +245,9 @@ public sealed class OutcomeMemberGeneratorTests
         var success = factory.GetMethod("SuccessCase")!.Invoke(null, ["hello"]);
         var failure = factory.GetMethod("FailureCase")!.Invoke(null, [42]);
 
-        // Act & Assert - IsSuccess
-        Assert.True((bool)factory.GetMethod("IsSuccess")!.Invoke(null, [success])!);
-        Assert.False((bool)factory.GetMethod("IsSuccess")!.Invoke(null, [failure])!);
+        // Act & Assert - ActiveCaseType
+        Assert.Equal(typeof(string), (Type?)factory.GetMethod("GetActiveCaseType")!.Invoke(null, [success]));
+        Assert.Equal(typeof(int), (Type?)factory.GetMethod("GetActiveCaseType")!.Invoke(null, [failure]));
 
         // Act & Assert - ToString
         Assert.Equal("hello", factory.GetMethod("ToText")!.Invoke(null, [success]));
@@ -256,9 +341,8 @@ public sealed class OutcomeMemberGeneratorTests
         Assert.Contains("public override string ToString()", generatedText, StringComparison.Ordinal);
         Assert.Contains("public bool Equals(PlainUnion<TFirst, TSecond> other)", generatedText, StringComparison.Ordinal);
 
-        // The classification surface is opt-in via `: IOutcome` and must not appear here.
+        // The identity surface is opt-in via `: IOutcome` and must not appear here.
         Assert.DoesNotContain("IOutcomeCase", generatedText, StringComparison.Ordinal);
-        Assert.DoesNotContain("IsSuccess", generatedText, StringComparison.Ordinal);
         Assert.DoesNotContain("ActiveCaseType", generatedText, StringComparison.Ordinal);
     }
 
@@ -286,8 +370,8 @@ public sealed class OutcomeMemberGeneratorTests
             LanguageVersion.Preview
         );
 
-        // Assert - never enters OutcomeClassifierBuilder's positional-IsSuccess fallback, since that fallback
-        // is reached only through an IOutcomeCase cast (see OutcomeCaseExtensions.AsOutcomeCaseIsSuccess).
+        // Assert - never enters the outcome case registry's IOutcomeCase-based active-case lookup, since
+        // that path is reached only through an IOutcomeCase cast (see OutcomeCaseExtensions.AsOutcomeCaseActiveType).
         var plainUnionType = assembly.GetType("Test.PlainUnion`2", throwOnError: true)!;
         Assert.DoesNotContain(
             plainUnionType.GetInterfaces(),
@@ -389,7 +473,7 @@ public sealed class OutcomeMemberGeneratorTests
     [Fact]
     public void OutcomeMemberGenerator_ShippedFamilyShape_EveryCaseIsATypeParameter_EmitsNoNamedAccessors_Test()
     {
-        // Arrange - mirrors the shipped Outcome<TSuccessResult, TCase2, ...> family: every case type at the
+        // Arrange - mirrors the shipped Outcome<T1, T2, ...> family: every case type at the
         // declaration site is the union's own type parameter, so none should get a named accessor.
         // Act
         var result = GeneratorTestHarness.RunAndUpdate(
@@ -473,6 +557,184 @@ public sealed class OutcomeMemberGeneratorTests
 
         var successArgsOnSuccess = new object?[] { success, null };
         Assert.True((bool)factory.GetMethod("TryGetSuccess")!.Invoke(null, successArgsOnSuccess)!);
+    }
+
+    [Fact]
+    public void OutcomeMemberGenerator_SixCaseUnion_NoRecommendedArityWarning_Test()
+    {
+        // Arrange - exactly the default recommended maximum (six); must not warn
+        const string source = """
+            namespace Test;
+
+            using Interlocutor.CommonKernel;
+            using Interlocutor.CommonKernel.ResultTypes;
+
+            [GenerateOutcomeMembers]
+            public readonly partial union SixCaseOutcome(Success, NotFound, Forbidden, Conflict, ValidationError, RateLimited) : IOutcome
+            {
+            }
+            """;
+
+        // Act
+        _ = GeneratorTestHarness.RunAndUpdate(
+            new OutcomeMemberGenerator(),
+            source,
+            "OutcomeMemberGenerator.Tests.SixCase",
+            null,
+            LanguageVersion.Preview,
+            out var diagnostics
+        );
+
+        // Assert
+        Assert.Empty(diagnostics);
+    }
+
+    [Fact]
+    public void OutcomeMemberGenerator_SevenCaseUnion_ReportsRecommendedArityWarning_Test()
+    {
+        // Arrange - one past the default recommended maximum (six), well under the hard sixteen-case ceiling
+        const string source = """
+            namespace Test;
+
+            using Interlocutor.CommonKernel;
+            using Interlocutor.CommonKernel.ResultTypes;
+
+            [GenerateOutcomeMembers]
+            public readonly partial union SevenCaseOutcome(
+                Success, NotFound, Forbidden, Conflict, ValidationError, RateLimited, Timeout
+            ) : IOutcome
+            {
+            }
+            """;
+
+        // Act
+        var result = GeneratorTestHarness.RunAndUpdate(
+            new OutcomeMemberGenerator(),
+            source,
+            "OutcomeMemberGenerator.Tests.SevenCase",
+            null,
+            LanguageVersion.Preview,
+            out var diagnostics
+        );
+
+        // Assert - a non-blocking style nudge: the diagnostic fires, but generation still proceeds.
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("INTERLOC014", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+        Assert.Contains("SevenCaseOutcome", diagnostic.GetMessage(), StringComparison.Ordinal);
+        Assert.Contains("doing too much", diagnostic.GetMessage(), StringComparison.Ordinal);
+
+        var emitResult = result.GetDiagnostics(TestContext.Current.CancellationToken);
+        Assert.Empty(emitResult.Where(static d => d.Severity == DiagnosticSeverity.Error));
+        var generatedText = string.Join(
+            System.Environment.NewLine,
+            result
+                .SyntaxTrees.Where(static t => t.FilePath.Contains("OutcomeMembers", StringComparison.Ordinal))
+                .Select(static t => t.ToString())
+        );
+        Assert.Contains("public TResult Match<TResult>(", generatedText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void OutcomeMemberGenerator_ConfiguredThreshold_ChangesWhereRecommendedArityWarningFires_Test()
+    {
+        // Arrange - four cases, well under the default recommended maximum of six, but past a configured
+        // threshold of three.
+        const string source = """
+            namespace Test;
+
+            using Interlocutor.CommonKernel;
+            using Interlocutor.CommonKernel.ResultTypes;
+
+            [GenerateOutcomeMembers]
+            public readonly partial union FourCaseOutcome(Success, NotFound, Forbidden, Conflict) : IOutcome
+            {
+            }
+            """;
+
+        // Act
+        _ = GeneratorTestHarness.RunAndUpdateWithEditorConfigOptions(
+            new OutcomeMemberGenerator(),
+            source,
+            "OutcomeMemberGenerator.Tests.ConfiguredThreshold",
+            LanguageVersion.Preview,
+            new Dictionary<string, string> { ["interlocutor_max_recommended_outcome_arity"] = "3" },
+            out var diagnostics
+        );
+
+        // Assert
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("INTERLOC014", diagnostic.Id);
+        Assert.Contains("recommended maximum of 3", diagnostic.GetMessage(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void OutcomeMemberGenerator_ConfiguredThreshold_RaisingItSuppressesTheDefaultWarning_Test()
+    {
+        // Arrange - seven cases, which warns by default (see the sibling test above), but a configured
+        // threshold of ten raises the bar past it.
+        const string source = """
+            namespace Test;
+
+            using Interlocutor.CommonKernel;
+            using Interlocutor.CommonKernel.ResultTypes;
+
+            [GenerateOutcomeMembers]
+            public readonly partial union SevenCaseOutcome(
+                Success, NotFound, Forbidden, Conflict, ValidationError, RateLimited, Timeout
+            ) : IOutcome
+            {
+            }
+            """;
+
+        // Act
+        _ = GeneratorTestHarness.RunAndUpdateWithEditorConfigOptions(
+            new OutcomeMemberGenerator(),
+            source,
+            "OutcomeMemberGenerator.Tests.ConfiguredThresholdRaised",
+            LanguageVersion.Preview,
+            new Dictionary<string, string> { ["interlocutor_max_recommended_outcome_arity"] = "10" },
+            out var diagnostics
+        );
+
+        // Assert
+        Assert.Empty(diagnostics);
+    }
+
+    [Fact]
+    public void OutcomeMemberGenerator_PragmaDisable_SuppressesRecommendedArityWarning_Test()
+    {
+        // Arrange - the same seven-case shape as the warning test above, wrapped in a disable/restore pair.
+        const string source = """
+            namespace Test;
+
+            using Interlocutor.CommonKernel;
+            using Interlocutor.CommonKernel.ResultTypes;
+
+            #pragma warning disable INTERLOC014
+            [GenerateOutcomeMembers]
+            public readonly partial union SevenCaseOutcome(
+                Success, NotFound, Forbidden, Conflict, ValidationError, RateLimited, Timeout
+            ) : IOutcome
+            {
+            }
+            #pragma warning restore INTERLOC014
+            """;
+
+        // Act
+        var result = GeneratorTestHarness.RunAndUpdate(
+            new OutcomeMemberGenerator(),
+            source,
+            "OutcomeMemberGenerator.Tests.PragmaSuppressed",
+            null,
+            LanguageVersion.Preview,
+            out _
+        );
+
+        // Assert - the generator-reported diagnostic is subject to the same #pragma suppression as a
+        // compiler-reported one, since it flows through the normal diagnostic pipeline against the source tree.
+        var emitResult = result.GetDiagnostics(TestContext.Current.CancellationToken);
+        Assert.DoesNotContain(emitResult, static d => d.Id == "INTERLOC014");
     }
 
     /// <summary>Counts non-overlapping occurrences of <paramref name="value"/> in <paramref name="text"/>.</summary>

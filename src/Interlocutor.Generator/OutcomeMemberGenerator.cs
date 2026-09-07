@@ -1,5 +1,6 @@
 namespace Interlocutor.Generator;
 
+using System.Globalization;
 using System.Linq;
 using Interlocutor.Generator.Analysis;
 using Interlocutor.Generator.Diagnostics;
@@ -7,9 +8,10 @@ using Interlocutor.Generator.Emission;
 using Interlocutor.Generator.Models;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Diagnostics;
 
 /// <summary>
-/// Emits <c>Match</c>, <c>Switch</c>, per-case <c>TryGetValue</c>, <c>ToString</c>, and <c>IsSuccess</c> for
+/// Emits <c>Match</c>, <c>Switch</c>, per-case <c>TryGetValue</c>, and <c>ToString</c> for
 /// every <c>partial union</c> declaration attributed with <c>GenerateOutcomeMembersAttribute</c> (ticket 05/06).
 /// </summary>
 /// <remarks>
@@ -43,9 +45,12 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 /// this step touches Roslyn syntax or semantic types again.
 /// </description></item>
 /// <item><description>
-/// <see cref="InterlocutorDiagnostics"/> - the descriptor catalog both diagnostic checks below report from:
-/// <see cref="InterlocutorDiagnostics.TooFewOutcomeCaseTypes"/> for an under-arity union, and
-/// <see cref="InterlocutorDiagnostics.AccessorNameCollision"/> for a colliding named accessor.
+/// <see cref="InterlocutorDiagnostics"/> - the descriptor catalog all four diagnostic checks below report
+/// from: <see cref="InterlocutorDiagnostics.TooFewOutcomeCaseTypes"/> for an under-arity union,
+/// <see cref="InterlocutorDiagnostics.TooManyOutcomeCaseTypes"/> for an over-arity one,
+/// <see cref="InterlocutorDiagnostics.RecommendedOutcomeArityExceeded"/> for one past the configured
+/// recommended maximum (non-blocking), and <see cref="InterlocutorDiagnostics.AccessorNameCollision"/> for a
+/// colliding named accessor.
 /// </description></item>
 /// <item><description>
 /// <see cref="OutcomeAccessorCollisionAnalyzer"/> - once <see cref="Execute"/> has confirmed the union has at
@@ -57,18 +62,38 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 /// <see cref="OutcomeMemberEmitter"/> - once both checks pass, <see cref="Execute"/> hands the model to
 /// <see cref="OutcomeMemberEmitter.Emit"/>, which renders the generated partial declaration's full source text:
 /// <c>Match</c>, <c>Switch</c>, per-case <c>TryGetValue</c>, <c>ToString</c>, and equality unconditionally, plus
-/// <c>IsSuccess</c>/<c>ActiveCaseType</c> when the union implements <c>IOutcome</c>.
+/// <c>ActiveCaseType</c> when the union implements <c>IOutcome</c>.
 /// </description></item>
 /// <item><description>
 /// <see cref="OutcomeMemberGenerator"/> (this class) - the <c>[Generator]</c> entry point wiring the six
 /// collaborators above together: <see cref="Initialize"/> registers the incremental pipeline that builds the
-/// model, and <see cref="Execute"/> sequences the two diagnostic checks ahead of emission.
+/// model, and <see cref="Execute"/> sequences the four diagnostic checks ahead of emission.
 /// </description></item>
 /// </list>
 /// </remarks>
 [Generator(LanguageNames.CSharp)]
 public sealed class OutcomeMemberGenerator : IIncrementalGenerator
 {
+    /// <summary>
+    /// The most case types <c>Match&lt;TResult&gt;</c>/<c>Switch</c> can bind, one delegate parameter per case,
+    /// to the BCL's widest <c>System.Func&lt;T1..T16, TResult&gt;</c>/<c>System.Action&lt;T1..T16&gt;</c>
+    /// overload.
+    /// </summary>
+    private const int MaxCaseTypes = 16;
+
+    /// <summary>
+    /// The most case types an attributed union can declare before <see cref="InterlocutorDiagnostics.RecommendedOutcomeArityExceeded"/>
+    /// fires, absent an <c>interlocutor_max_recommended_outcome_arity</c> <c>.editorconfig</c> override - matches
+    /// the shipped <c>Outcome</c>/<c>Outcome&lt;...&gt;</c> family's own ceiling (arities 0 through 6).
+    /// </summary>
+    private const int DefaultMaxRecommendedCaseTypes = 6;
+
+    /// <summary>
+    /// The <c>.editorconfig</c>-style analyzer option key <see cref="ReadMaxRecommendedCaseTypes"/> reads to
+    /// override <see cref="DefaultMaxRecommendedCaseTypes"/>.
+    /// </summary>
+    private const string MaxRecommendedArityOptionName = "interlocutor_max_recommended_outcome_arity";
+
     /// <inheritdoc />
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -82,17 +107,33 @@ public sealed class OutcomeMemberGenerator : IIncrementalGenerator
             .Where(static model => model is not null)
             .Select(static (model, _) => model!);
 
-        context.RegisterSourceOutput(models, static (productionContext, model) => Execute(productionContext, model));
+        var modelsWithOptions = models.Combine(context.AnalyzerConfigOptionsProvider);
+
+        context.RegisterSourceOutput(
+            modelsWithOptions,
+            static (productionContext, pair) => Execute(productionContext, pair.Left, pair.Right)
+        );
     }
 
     /// <summary>
     /// Reports <see cref="InterlocutorDiagnostics.TooFewOutcomeCaseTypes"/> for an under-arity attributed
-    /// union, <see cref="InterlocutorDiagnostics.AccessorNameCollision"/> for a colliding named accessor, or
-    /// otherwise emits its generated partial declaration via <see cref="OutcomeMemberEmitter"/>.
+    /// union, <see cref="InterlocutorDiagnostics.TooManyOutcomeCaseTypes"/> for an over-arity one,
+    /// <see cref="InterlocutorDiagnostics.RecommendedOutcomeArityExceeded"/> when the case count exceeds the
+    /// configured recommended maximum (non-blocking), <see cref="InterlocutorDiagnostics.AccessorNameCollision"/>
+    /// for a colliding named accessor, or otherwise emits its generated partial declaration via
+    /// <see cref="OutcomeMemberEmitter"/>.
     /// </summary>
     /// <param name="context">The source production context to add the generated source (or diagnostics) to.</param>
     /// <param name="model">The attributed union to process.</param>
-    private static void Execute(SourceProductionContext context, OutcomeUnionModel model)
+    /// <param name="optionsProvider">
+    /// The compilation's <c>.editorconfig</c>-style analyzer options, consulted for
+    /// <see cref="MaxRecommendedArityOptionName"/>.
+    /// </param>
+    private static void Execute(
+        SourceProductionContext context,
+        OutcomeUnionModel model,
+        AnalyzerConfigOptionsProvider optionsProvider
+    )
     {
         if (model.CaseTypeDisplayStrings.Length < 2)
         {
@@ -107,6 +148,34 @@ public sealed class OutcomeMemberGenerator : IIncrementalGenerator
             return;
         }
 
+        if (model.CaseTypeDisplayStrings.Length > MaxCaseTypes)
+        {
+            context.ReportDiagnostic(
+                Diagnostic.Create(
+                    InterlocutorDiagnostics.TooManyOutcomeCaseTypes,
+                    model.Location,
+                    model.DisplayName,
+                    model.CaseTypeDisplayStrings.Length
+                )
+            );
+            return;
+        }
+
+        var maxRecommendedCaseTypes = ReadMaxRecommendedCaseTypes(optionsProvider, model.Location);
+        if (model.CaseTypeDisplayStrings.Length > maxRecommendedCaseTypes)
+        {
+            // A style nudge, not a structural limit - unlike the two checks above, this never gates emission.
+            context.ReportDiagnostic(
+                Diagnostic.Create(
+                    InterlocutorDiagnostics.RecommendedOutcomeArityExceeded,
+                    model.Location,
+                    model.DisplayName,
+                    model.CaseTypeDisplayStrings.Length,
+                    maxRecommendedCaseTypes
+                )
+            );
+        }
+
         // A colliding named accessor would emit an ambiguous or (for a reserved-name collision) outright
         // duplicate member - skip emission entirely rather than let the compiler's own error stand in for the
         // clearer, more actionable diagnostic already reported here.
@@ -116,5 +185,27 @@ public sealed class OutcomeMemberGenerator : IIncrementalGenerator
         }
 
         context.AddSource(model.HintName, OutcomeMemberEmitter.Emit(model));
+    }
+
+    /// <summary>
+    /// Reads <see cref="MaxRecommendedArityOptionName"/> from the <c>.editorconfig</c>-style options that apply
+    /// to <paramref name="location"/>'s own source file, falling back to <see cref="DefaultMaxRecommendedCaseTypes"/>
+    /// when the option is absent, not a valid positive integer, or the declaration's syntax tree is unavailable.
+    /// </summary>
+    /// <param name="optionsProvider">The compilation's analyzer config options.</param>
+    /// <param name="location">The attributed union declaration's location, used to select the applicable file's options.</param>
+    /// <returns>The configured (or default) recommended maximum case-type count.</returns>
+    private static int ReadMaxRecommendedCaseTypes(AnalyzerConfigOptionsProvider optionsProvider, Location location)
+    {
+        var options = location.SourceTree is { } sourceTree
+            ? optionsProvider.GetOptions(sourceTree)
+            : optionsProvider.GlobalOptions;
+
+        return
+            options.TryGetValue(MaxRecommendedArityOptionName, out var rawValue)
+            && int.TryParse(rawValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var configuredValue)
+            && configuredValue > 0
+            ? configuredValue
+            : DefaultMaxRecommendedCaseTypes;
     }
 }

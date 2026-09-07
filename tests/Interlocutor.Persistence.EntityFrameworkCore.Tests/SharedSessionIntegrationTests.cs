@@ -36,7 +36,7 @@ public sealed class SharedSessionIntegrationTests : IClassFixture<EntityFramewor
         var behavior = new UnitOfWorkBehavior<TransactionalRequest, Outcome<Success, Failure>, TestDbContext>(this.lazyContext);
 
         // Act
-        var result = await behavior.Handle(
+        var result = await behavior.HandleAsync(
             new TransactionalRequest(),
             async () =>
             {
@@ -52,7 +52,7 @@ public sealed class SharedSessionIntegrationTests : IClassFixture<EntityFramewor
         );
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out Success _));
 
         await using var verify = this.CreateVerificationContext();
         Assert.Equal(["shared-session"], verify.Widgets.Select(w => w.Name));

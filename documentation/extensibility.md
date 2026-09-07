@@ -4,7 +4,7 @@ A map of every point where a consumer plugs their own type into Interlocutor, an
 
 ## Marker interfaces: the general pattern
 
-A request opts into a cross-cutting pipeline behavior by implementing a marker interface - never by editing a central configuration list, and never by the behavior inspecting the request's concrete type. The shipped markers (`ITransactionalRequest`, `IExternalStoreRequest`, `IAuditableRequest`, `IRequiresPolicy`, `ICancellable`, `IHasTimeout`, `IRateLimited` - see [Glossary § Marker Interfaces](glossary.md#marker-interfaces)) are all built the same way, and your own pipeline behavior can follow the identical shape:
+A request opts into a cross-cutting pipeline behavior by implementing a marker interface - never by editing a central configuration list, and never by the behavior inspecting the request's concrete type. The shipped markers (`ITransactionalRequest`, `IExternalStoreRequest`, `IAuditableRequest`, `IRequiresPolicyRequest`, `ICancellableRequest`, `ITimeoutRequest`, `IRateLimitedRequest` - see [Glossary § Marker Interfaces](glossary.md#marker-interfaces)) are all built the same way, and your own pipeline behavior can follow the identical shape:
 
 ```csharp
 // 1. Declare the marker - a plain interface, no base type required
@@ -17,7 +17,7 @@ public interface IIdempotent
 public sealed class IdempotencyBehavior<TRequest, TResponse>(IIdempotencyStore store)
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IIdempotent
-    where TResponse : IOutcome
+    where TResponse : IUnion
 {
     public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
@@ -48,12 +48,12 @@ See [Pipeline & Behavior Composition](pipeline-and-behaviors.md) for the full be
 
 When a behavior only needs a before/after hook - no need to own the `next()` delegate - `IPipelineStage<TRequest, TResponse>` (via `PipelineStageBase<TRequest, TResponse>`) is the lighter alternative, registered via `builder.Pipeline.AddStage(...)`/`.AddStageHost()`. See [Pipeline & Behavior Composition § Pipeline Stages](pipeline-and-behaviors.md#pipeline-stages-ipipelinestage) for the full contract, including short-circuiting.
 
-## Custom `IOutcome` implementations
+## Custom `IUnion` implementations
 
-`IOutcome` is a bare marker - any type can implement it, not only the library's own compiler-generated `Outcome<...>` unions. A hand-rolled response type is legal anywhere a handler response is expected:
+`System.Runtime.CompilerServices.IUnion` - the interface the compiler generates for every `union` declaration - is all a response type needs to implement; any type can implement it, not only the library's own compiler-generated `Outcome<...>` unions. A hand-rolled response type is legal anywhere a handler response is expected:
 
 ```csharp
-public sealed class PaymentOutcome : IOutcome
+public sealed class PaymentOutcome : IUnion
 {
     private PaymentOutcome(Type caseType, object? caseValue) => (this.CaseType, this.CaseValue) = (caseType, caseValue);
 
@@ -61,41 +61,37 @@ public sealed class PaymentOutcome : IOutcome
 
     public object? CaseValue { get; }
 
+    object? IUnion.Value => this.CaseValue;
+
     public static PaymentOutcome FromSuccess(Receipt value) => new(typeof(Receipt), value);
 
     public static PaymentOutcome FromFailure<TFailure>(TFailure failure) where TFailure : notnull => new(typeof(TFailure), failure);
 }
 ```
 
-What makes this usable by the pipeline isn't implementing some richer interface - it's being teachable to `IOutcomeCaseRegistry`, the construction/extraction seam `AuthorizationBehavior`, `CancellationBehavior`, `TimeoutBehavior`, `RateLimitedBehavior`, and `Interlocutor.FluentValidation`'s `ValidationBehavior` all go through instead of constructing a case directly. `OverrideOutcomeCaseRegistry<TRegistry>()` takes a type, constructed through DI like any other service - not a pre-built instance - so wrap the `OutcomeCaseRegistryBuilder` output in a small class:
+`PaymentOutcome` doesn't need to implement `IOutcome` - the project-owned marker the shipped `Outcome`/`Outcome<...>` family also declares for its own, separate opt-in classification surface (see [Glossary § Result Types](glossary.md#result-types)). What makes it usable by the *pipeline* isn't implementing some richer interface either - it's being teachable to `IOutcomeCaseRegistry`, the construction/extraction seam `AuthorizationBehavior`, `CancellationBehavior`, `TimeoutBehavior`, `RateLimitedBehavior`, and `Interlocutor.FluentValidation`'s `ValidationBehavior` all go through instead of constructing a case directly. *Extracting* `PaymentOutcome`'s active case already works against the zero-config `DefaultOutcomeCaseRegistry`, since it reads any `IUnion`'s `Value` generically - only *constructing* one from a case value needs help, since `PaymentOutcome` has no compiler-generated case constructor for the default registry to find. `OverrideOutcomeCaseRegistry<TRegistry>()` takes a type, constructed through DI like any other service - not a pre-built instance - so wrap the `OutcomeCaseRegistryBuilder` output in a small class:
 
 ```csharp
 public sealed class PaymentOutcomeCaseRegistry : IOutcomeCaseRegistry
 {
     private static readonly IOutcomeCaseRegistry Inner = new OutcomeCaseRegistryBuilder()
         .RegisterFactory<PaymentOutcome, Forbidden>(PaymentOutcome.FromFailure)
-        .RegisterExtractor<PaymentOutcome>((PaymentOutcome response, out Type caseType, out object? caseValue) =>
-        {
-            caseType = response.CaseType;
-            caseValue = response.CaseValue;
-            return true;
-        })
         .Build();
 
-    public TResponse Construct<TResponse, TCase>(TCase caseValue) where TResponse : IOutcome =>
+    public TResponse Construct<TResponse, TCase>(TCase caseValue) where TResponse : IUnion =>
         Inner.Construct<TResponse, TCase>(caseValue);
 
     public bool TryGetActiveCase<TResponse>(TResponse response, out Type caseType, out object? caseValue)
-        where TResponse : IOutcome =>
+        where TResponse : IUnion =>
         Inner.TryGetActiveCase(response, out caseType, out caseValue);
 }
 
 builder.Pipeline.OverrideOutcomeCaseRegistry<PaymentOutcomeCaseRegistry>();
 ```
 
-Anything left unregistered still falls back to `DefaultOutcomeCaseRegistry`, so you only register the response types that aren't compiler-generated unions. See [Messages, Result Types & Variance § IOutcome as an Extension Point](messages-and-result-types.md#ioutcome-as-an-extension-point) for the full walkthrough.
+Anything left unregistered still falls back to `DefaultOutcomeCaseRegistry`, so you only register construction for the response types that aren't compiler-generated unions. See [Messages, Result Types & Variance § IUnion as an Extension Point](messages-and-result-types.md#iunion-as-an-extension-point) for the full walkthrough.
 
-A related but separate extension point: `LoggingBehavior`, `AuditingBehavior`, and both store-specific `UnitOfWorkBehavior` implementations need to describe a response for a log/audit line and classify it as success or failure, which is a different question from constructing/extracting a case. That's `IResponseOutcomeDescriber`, built on `OutcomeClassifierBuilder` - see [Pipeline & Behavior Composition § Outcome Description & Classification](pipeline-and-behaviors.md#outcome-description--classification) for the worked example. And at the HTTP boundary, `IOutcomeStatusMapper` maps a failure case to a status code and body - see [ASP.NET Core Integration § Custom HTTP Mapping](aspnetcore-integration.md#custom-http-mapping).
+A related but separate extension point: `LoggingBehavior` and `AuditingBehavior` need to describe a response for a log/audit line - a human-readable label, not a success/failure judgment - which is a different question from constructing/extracting a case. That's `IResponseOutcomeDescriber`, built on `OutcomeClassifierBuilder` - see [Pipeline & Behavior Composition § Outcome Description](pipeline-and-behaviors.md#outcome-description) for the worked example. And at the HTTP boundary, `IOutcomeStatusMapper` maps a failure case to a status code and body - see [ASP.NET Core Integration § Custom HTTP Mapping](aspnetcore-integration.md#custom-http-mapping).
 
 ### Duplicate case type detection (`INTERLOC009`)
 
@@ -107,11 +103,24 @@ dotnet_diagnostic.INTERLOC009.severity = error
 
 ### Custom-arity outcome unions: `GenerateOutcomeMembersAttribute`
 
-Every shipped `Outcome`/`Outcome<...>` arity gets its `Match`/`Switch`/`TryGetValue`/`ToString`/`IsSuccess`/equality (`Equals`, `GetHashCode`, `IEquatable<TSelf>`, `==`/`!=`) member set from `GenerateOutcomeMembersAttribute` (`Interlocutor.CommonKernel`, zero dependency) - not from anything the shipped family gets that a consumer's own union can't. Decorate your own `partial union` with the same attribute and it gets the identical generated surface, including for an arity the shipped family doesn't cover (2-6 only) or a non-default case ordering.
+Every shipped `Outcome`/`Outcome<...>` arity gets its `Match`/`Switch`/`TryGetValue`/`ToString`/equality (`Equals`, `GetHashCode`, `IEquatable<TSelf>`, `==`/`!=`) member set from `GenerateOutcomeMembersAttribute` (`Interlocutor.CommonKernel`, zero dependency) - not from anything the shipped family gets that a consumer's own union can't. Decorate your own `partial union` with the same attribute and it gets the identical generated surface, including for an arity the shipped family doesn't cover (2-6 only) or a non-default case ordering.
 
-This is an escape hatch for a genuine outlier, not a routine choice - see [Messages, Result Types & Variance § Choosing Arities](messages-and-result-types.md#choosing-arities): an operation needing more cases than the shipped family's six is usually a sign it's trying to do too much, not that the type needs to grow. A payment gateway integration is a plausible exception - one success case plus several genuinely independent decline/error reasons a caller needs to branch on individually:
+This is an escape hatch for a genuine outlier, not a routine choice - see [Messages, Result Types & Variance § Choosing Arities](messages-and-result-types.md#choosing-arities): an operation needing more cases than the shipped family's six is usually a sign it's trying to do too much, not that the type needs to grow. A build-time analyzer backs that guidance: any attributed union declaring more case types than a configurable recommended maximum (default six) gets a warning (`INTERLOC014`) naming the type and nudging toward splitting the operation, distinct from the hard sixteen-case ceiling (`INTERLOC013`) below - configurable the same two ways as any other diagnostic here, severity via `.editorconfig`:
+
+```
+dotnet_diagnostic.INTERLOC014.severity = error
+```
+
+and the recommended-maximum threshold itself, also via `.editorconfig`:
+
+```
+interlocutor_max_recommended_outcome_arity = 8
+```
+
+A payment gateway integration is a plausible exception to the six-case guideline - one success case plus several genuinely independent decline/error reasons a caller needs to branch on individually. Dismissing `INTERLOC014` for a specific, deliberate outlier like this one - rather than raising the threshold repository-wide - is a targeted `#pragma warning disable`/`restore` pair around the declaration, the same as any other warning:
 
 ```csharp
+#pragma warning disable INTERLOC014
 [GenerateOutcomeMembers]
 public readonly partial union PaymentOutcome(
     Receipt,
@@ -122,6 +131,7 @@ public readonly partial union PaymentOutcome(
     GatewayTimeout,
     NetworkError
 ) : IOutcome;
+#pragma warning restore INTERLOC014
 
 public readonly record struct Receipt(string TransactionId);
 public readonly record struct InsufficientFunds(decimal ShortfallAmount);
@@ -137,8 +147,8 @@ That single attribute is everything needed beyond referencing `Interlocutor.Comm
 ```csharp
 PaymentOutcome outcome = new CardDeclined("do_not_honor");
 
-// IsSuccess
-Assert.False(outcome.IsSuccess);
+// TryGetValue against the success case type - the surviving way to ask "is this the success case"
+Assert.False(outcome.TryGetValue(out Receipt _));
 
 // Match - one delegate per case, compiler-enforced exhaustive
 var message = outcome.Match(
@@ -159,7 +169,7 @@ if (outcome.TryGetValue(out CardDeclined declined))
 
 // TryGet{TypeName} - a named counterpart to TryGetValue, additive rather than a replacement, for every
 // concrete case type (skipped for a case type that is one of the union's own type parameters, since a type
-// parameter's name carries no case-specific meaning - the shipped Outcome<TSuccessResult, ...> family has no
+// parameter's name carries no case-specific meaning - the shipped Outcome<T1, ...> family has no
 // named accessors for exactly that reason). Same behavior as TryGetValue above, just self-documenting by name.
 if (outcome.TryGetCardDeclined(out CardDeclined sameByName))
 {
@@ -174,15 +184,27 @@ Assert.True(outcome == sameDecline);
 
 The duplicate case type analyzer above covers a custom-arity union identically to a shipped one. See `Interlocutor.CommonKernel.Tests.CustomArityOutcomeTests` (and its `PaymentOutcome` fixture) for this example compiled and exercised end to end.
 
-`: IOutcome` on the union declaration is opt-in, not required for `GenerateOutcomeMembersAttribute` to run: it gates only the classification surface (`IOutcomeCase`, `IsSuccess`, `ActiveCaseType`), never the sum-type surface above. A `[GenerateOutcomeMembers] partial union` declared *without* `: IOutcome` still gets `Match`/`Switch`/`TryGetValue`/`ToString`/equality in full - it's a plain tagged union with no success/failure opinion, useful when a type's cases genuinely aren't "one succeeded, the rest are alternatives" (a state machine's phases, say, where every case is equally valid and none is privileged as "the" success). Include `: IOutcome` - as `PaymentOutcome` above does - whenever the union *is* meant to be usable as a handler response: `AuthorizationBehavior`, `CancellationBehavior`, `TimeoutBehavior`, `RateLimitedBehavior`, and the FluentValidation `ValidationBehavior` all classify a response via `IOutcomeCaseRegistry`/the outcome classifier, and both fall back to `IOutcomeCase.IsSuccess` positionally for a response type they have no other registration for. A union that never implements `IOutcomeCase` in the first place never enters that fallback - it's excluded from ambiguous positional classification entirely rather than silently misclassified as if position implied meaning it never claimed.
+A custom arity has a hard ceiling: at most sixteen case types. `Match<TResult>`/`Switch` bind one delegate parameter per case type to the BCL's `System.Func<T1..T16, TResult>`/`System.Action<T1..T16>` delegate families, and neither family defines an overload past sixteen type parameters - there is no signature left for the generator to emit a case type past that point onto. Attributing a union with more than sixteen case types is a build error (`INTERLOC013`) naming that same reason, always an error, not escalated from a warning the way `INTERLOC009` is - there is no meaningful partial member set to fall back to, since `Match`/`Switch` themselves have no signature to be emitted with.
+
+`: IOutcome` on the union declaration is opt-in, not required for `GenerateOutcomeMembersAttribute` to run: it gates only the identity surface (`IOutcomeCase`, `ActiveCaseType`), never the sum-type surface above. A `[GenerateOutcomeMembers] partial union` declared *without* `: IOutcome` still gets `Match`/`Switch`/`TryGetValue`/`ToString`/equality in full - it's a plain tagged union with no success/failure opinion, useful when a type's cases genuinely aren't "one succeeded, the rest are alternatives" (a state machine's phases, say, where every case is equally valid and none is privileged as "the" success). Include `: IOutcome` - as `PaymentOutcome` above does - whenever the union *is* meant to be usable as a handler response: `AuthorizationBehavior`, `CancellationBehavior`, `TimeoutBehavior`, `RateLimitedBehavior`, and the FluentValidation `ValidationBehavior` all resolve a response's active case via `IOutcomeCaseRegistry`, which falls back to `IOutcomeCase.ActiveCaseType` for a response type it has no other registration for. A union that never implements `IOutcomeCase` in the first place never enters that fallback - it's excluded from reflective case resolution entirely rather than silently misresolved.
 
 ### Colliding accessor names (`INTERLOC012`)
 
-A named `TryGet{TypeName}` accessor is derived from each concrete case type's simple name, so two peer case types can end up wanting the same accessor. A build-time analyzer flags three shapes: two case types with the same simple name from different namespaces (`MyApp.Http.NotFound` and `MyApp.Domain.NotFound` as peer cases would both want `TryGetNotFound`); two closed instantiations of the same open generic case type as peer cases (`ValidationError<string>` and `ValidationError<int>` would both want `TryGetValidationError`); and a case type whose own name matches an already-reserved generated member name (`Value`, `Match`, `Switch`, `ToString`, `Equals`, `GetHashCode`, `TryGetValue`, `IsSuccess`, `ActiveCaseType`) - guarded uniformly even though only `Value` (whose accessor, `TryGetValue`, would literally duplicate the anonymous overload) can produce an outright compile error today; the other eight are reserved defensively, so a case type never claims a name the union's own vocabulary already owns. A case type that is one of the union's own type parameters never triggers this - it gets no named accessor in the first place. Unlike `INTERLOC009`, this defaults to an error - not a warning - since silently emitting the peer-name collision would mean an ambiguous overload set, unresolvable by `outcome.TryGetNotFound(out var x)` and only by spelling out the type explicitly, still configurable the same way:
+A named `TryGet{TypeName}` accessor is derived from each concrete case type's simple name, so two peer case types can end up wanting the same accessor. A build-time analyzer flags three shapes: two case types with the same simple name from different namespaces (`MyApp.Http.NotFound` and `MyApp.Domain.NotFound` as peer cases would both want `TryGetNotFound`); two closed instantiations of the same open generic case type as peer cases (`ValidationError<string>` and `ValidationError<int>` would both want `TryGetValidationError`); and a case type whose own name matches an already-reserved generated member name (`Value`, `Match`, `Switch`, `ToString`, `Equals`, `GetHashCode`, `TryGetValue`, `ActiveCaseType`) - guarded uniformly even though only `Value` (whose accessor, `TryGetValue`, would literally duplicate the anonymous overload) can produce an outright compile error today; the rest are reserved defensively, so a case type never claims a name the union's own vocabulary already owns. A case type that is one of the union's own type parameters never triggers this - it gets no named accessor in the first place. Unlike `INTERLOC009`, this defaults to an error - not a warning - since silently emitting the peer-name collision would mean an ambiguous overload set, unresolvable by `outcome.TryGetNotFound(out var x)` and only by spelling out the type explicitly, still configurable the same way:
 
 ```
 dotnet_diagnostic.INTERLOC012.severity = warning
 ```
+
+### Marker interface without a matching response case (`INTERLOC015`)
+
+`AuthorizationBehavior`, `CancellationBehavior`, `RateLimitedBehavior`, and `TimeoutBehavior` each construct a specific outcome case - `Forbidden`, `Cancelled`, `RateLimited`, `Timeout` respectively - via `IOutcomeCaseRegistry` when their gating marker interface (`IRequiresPolicyRequest`, `ICancellableRequest`, `IRateLimitedRequest`, `ITimeoutRequest`) is implemented by a request's `TRequest`. If the paired response type declares no case of that exact type, the behavior throws a named `InvalidOperationException` the first time it actually needs to short-circuit - correct, but previously silent until a real request triggered it. A build-time analyzer catches the same mismatch earlier, for any request implementing one of the four markers whose declared response arity has no matching case, naming the request, the marker, the response type, and the missing case - configurable the same way as every other diagnostic here:
+
+```
+dotnet_diagnostic.INTERLOC015.severity = error
+```
+
+This diagnostic is scoped to exactly these four marker-interface-gated behaviors. `ValidationBehavior` and `Interlocutor.FluentValidation.FluentValidationErrorsBehavior` are deliberately not covered: neither is gated by a marker interface on `TRequest` at all - both run for every request and short-circuit at runtime based on whether at least one `FluentValidation.IValidator<TRequest>` is actually registered in the built container, a DI-registration fact invisible to a compile-time analyzer working only from `TRequest`'s and `TResponse`'s declared shape. Those two behaviors keep the build-time coverage `INTERLOC010` above already gives them (a validator registered for a request whose response has no validation-shaped case at all) plus the same runtime fail-fast guarantee every one of these six behaviors shares - they simply don't get this diagnostic's earlier, marker-driven signal.
 
 ## Mapping failure cases to any output shape: `IOutcomeMapper<TResult>`
 
@@ -215,7 +237,7 @@ public sealed class GrpcOutcomeMapper : OutcomeMapperBase<Status>
 }
 ```
 
-Like `IOutcomeStatusMapper`, there's no DI registration to configure - construct an instance and call `Map` directly, the same way `ResultExtensions.ToActionResult` does internally, by pattern-matching `Outcome<TSuccess, TFailure>.Value`:
+Like `IOutcomeStatusMapper`, there's no DI registration to configure - construct an instance and call `Map` directly, the same way `ResultExtensions.ToActionResult` does internally, by pattern-matching `Outcome<T1, T2>.Value`:
 
 ```csharp
 private static readonly GrpcOutcomeMapper Mapper = new();
@@ -229,6 +251,26 @@ return result.Value switch
 ```
 
 `Interlocutor.AspNetCore.IOutcomeStatusMapper : IOutcomeMapper<OutcomeHttpMapping>` and `DefaultHttpOutcomeStatusMapper : OutcomeMapperBase<OutcomeHttpMapping>` (see [ASP.NET Core Integration § Custom HTTP Mapping](aspnetcore-integration.md#custom-http-mapping)) are themselves just one instantiation of this same shape - HTTP has no special status in `OutcomeMapperBase<TResult>` beyond being the first consumer.
+
+### Registering a custom failure type
+
+`GrpcOutcomeMapper` above still only teaches `OutcomeMapperBase<Status>` about the built-in cases; a consumer's own failure case type - one none of those override points recognizes - falls into the single `MapUnrecognized<TFailure>` catch-all by default, indistinguishable from any other unrecognized type. To give one of those types its own distinct mapping instead of extending `MapUnrecognized` with a type check, build a registry with [`CustomFailureCaseRegistryBuilder<TResult>`](glossary.md#outcome-mapping) - the same builder-then-immutable-lookup shape `OutcomeClassifierBuilder` and `OutcomeCaseRegistryBuilder` already use elsewhere - and pass it to the base constructor:
+
+```csharp
+public sealed record PaymentDeclined(string Reason);
+
+private static readonly ICustomFailureCaseRegistry<Status> CustomCases =
+    new CustomFailureCaseRegistryBuilder<Status>()
+        .RegisterType<PaymentDeclined>(declined => new Status(StatusCode.FailedPrecondition, declined.Reason))
+        .Build();
+
+public sealed class GrpcOutcomeMapper() : OutcomeMapperBase<Status>(CustomCases)
+{
+    // ... every built-in case override from the example above, unchanged
+}
+```
+
+`Mapper.Map(new PaymentDeclined("insufficient funds"))` now resolves through the registered rule instead of `MapUnrecognized` - the registry is consulted only after every built-in case (including the generic `NotFound<TId>`) has already missed, so nothing about built-in dispatch changes. Any other type the registry has no rule for still reaches `MapUnrecognized` exactly as it did before the registry existed - registering `PaymentDeclined` doesn't change how any other unrecognized type is handled. The registry is entirely optional: omit the constructor argument (or pass `null`) and `OutcomeMapperBase<TResult>` behaves exactly as it did before this constructor parameter existed.
 
 ## Full-fidelity failure cases: `IValidationFailureCase` and its siblings
 
@@ -250,7 +292,7 @@ projected away - while still implementing [`IValidationFailureCase`](glossary.md
 minimal interface `ValidationErrors` implements. A consumer that recognizes `IValidationFailureCase` - such as
 `DefaultHttpOutcomeStatusMapper` (see [ASP.NET Core Integration § Status Code Mapping](aspnetcore-integration.md#status-code-mapping))
 - handles either case type the same way, without needing to know which validation technology produced it.
-This is the same extension-point shape as a custom `IOutcome` implementation above: a minimal marker
+This is the same extension-point shape as a custom `IUnion` implementation above: a minimal marker
 interface a technology-specific case type implements, rather than a base type every case would need to
 inherit from - record structs can't be inherited from at all, which is exactly why this couldn't be modeled
 as `FluentValidationErrors : ValidationErrors`.

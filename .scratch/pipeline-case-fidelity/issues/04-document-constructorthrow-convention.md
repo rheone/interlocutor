@@ -4,7 +4,7 @@
 
 **Blocked by:** 02 (cross-references ADR-0022)
 
-**Status:** open
+**Status:** ready-for-agent
 
 - [ ] `documentation/extensibility.md` gains a subsection on the fail-fast case-construction convention, in the existing "Registering Custom Behaviors" area
 - [ ] Includes a compiling code example following `ConstructOrThrow`'s actual signature

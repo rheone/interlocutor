@@ -4,7 +4,7 @@
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `efef635`.
 
 - [ ] The EF Core unit-of-work behavior's internal pass-through orchestration helper, the pipeline chain's execution entry point, and the mediator's internal trace-wrapping helpers are renamed to end in `Async`.
 - [ ] Every call site of these renamed helpers is updated to the new name.

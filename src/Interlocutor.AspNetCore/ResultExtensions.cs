@@ -3,8 +3,8 @@ namespace Interlocutor.AspNetCore;
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Interlocutor.Abstractions.Pipeline.Cases;
-using Interlocutor.Abstractions.Pipeline.Classifiers;
 using Interlocutor.Abstractions.Pipeline.Mapping;
 using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
@@ -19,10 +19,10 @@ using Microsoft.AspNetCore.Mvc;
 /// <remarks>
 /// <para>
 /// The dedicated, per-case-arity <c>ToActionResult</c>/<c>ToMinimalApiResult</c> overloads (the non-generic
-/// <c>Outcome</c> and every <c>Outcome&lt;TSuccess, ...&gt;</c> arity) are source-generated into a second
+/// <c>Outcome</c> and every <c>Outcome&lt;T1, ...&gt;</c> arity) are source-generated into a second
 /// partial declaration by <c>Interlocutor.Generator</c>'s <c>ResultExtensionsGenerator</c>, marked via
 /// <see cref="GenerateResultExtensionsAttribute"/> above - see that attribute's remarks. This file keeps only
-/// the reflective catch-all overload (for a hand-rolled <see cref="IOutcome"/> implementation) and the
+/// the reflective catch-all overload (for a hand-rolled <see cref="IUnion"/> implementation) and the
 /// private <see cref="OutcomeHttpMapping"/> rendering helpers both partials share.
 /// </para>
 /// <para>
@@ -42,36 +42,36 @@ using Microsoft.AspNetCore.Mvc;
 public static partial class ResultExtensions
 {
     extension<TResponse>(TResponse response)
-        where TResponse : IOutcome
+        where TResponse : IUnion
     {
         /// <summary>
-        /// Converts an arbitrary <see cref="IOutcome"/> to an <see cref="IActionResult"/> with the
+        /// Converts an arbitrary <see cref="IUnion"/> to an <see cref="IActionResult"/> with the
         /// appropriate HTTP status code.
         /// </summary>
         /// <remarks>
         /// <para>
         /// Unlike the dedicated arity overloads above, this overload is constrained only to
-        /// <see cref="IOutcome"/>, so it works for a hand-rolled response type as well as any of the
+        /// <see cref="IUnion"/>, so it works for a hand-rolled response type as well as any of the
         /// built-in <c>Outcome</c> union arities. It uses <paramref name="caseRegistry"/> to extract the
         /// active case at runtime, then dispatches to <paramref name="mapper"/> reflectively for failures - the
         /// dedicated overloads above dispatch to the same mapper via a compile-time <c>switch</c> instead.
         /// </para>
         /// <para>
         /// The dedicated overloads distinguish success from failure at compile time, via a <c>switch</c> against
-        /// the statically known <c>TSuccess</c>/<c>TCaseN</c> type parameters. This overload has no such static
-        /// information, so it classifies the extracted case via
-        /// <see cref="Interlocutor.Abstractions.Pipeline.Classifiers.OutcomeClassifierBuilder.DefaultClassifier"/>
-        /// instead - the same classifier <c>AuditingBehavior</c>/<c>UnitOfWorkBehavior</c> use to decide
-        /// commit-vs-rollback. It is fail-closed: a case type it has no registration for is treated as a failure.
-        /// The built-in kernel failure types (<c>NotFound</c>, <c>Forbidden</c>, <c>Conflict</c>, ...) and the
-        /// bare <see cref="Success"/> marker are pre-registered, so a response built from those classifies
-        /// correctly with no extra setup; a hand-rolled response type whose success case carries a different,
-        /// unregistered payload type needs that type registered with a custom <c>IOutcomeClassifier</c> (built via
-        /// <c>OutcomeClassifierBuilder</c>) for this overload to classify it as success rather than failure.
+        /// the statically known <c>T1..TN</c> type parameters. This overload has no such static
+        /// information, so it classifies the extracted case against a small set of recognized shapes instead:
+        /// the bare <see cref="Success"/> marker (success), a resolved case whose payload is legitimately
+        /// <see langword="null"/> (success - see <see cref="ExtractCase{TResponse}"/>'s remarks), or one of the
+        /// built-in failure case types/interfaces <see cref="DefaultHttpOutcomeStatusMapper"/> recognizes
+        /// (failure). A case that matches none of those - notably a hand-rolled or generic response type whose
+        /// success case carries some other, unrecognized payload type - throws
+        /// <see cref="OutcomeCaseNotMappableException"/> rather than guessing: unlike a failure value the
+        /// mapper doesn't recognize (which always resolves to some status code via <c>MapUnrecognized</c>),
+        /// there is no default HTTP status for "don't know if this is even a failure."
         /// </para>
         /// <para>
         /// C# overload resolution always prefers a dedicated overload over this one for the six built-in union
-        /// arities: a constructed generic formal parameter (e.g. <c>Outcome&lt;TSuccess, TFailure&gt;</c>)
+        /// arities: a constructed generic formal parameter (e.g. <c>Outcome&lt;T1, T2&gt;</c>)
         /// is more specific than this overload's bare type-parameter formal parameter (<typeparamref name="TResponse"/>),
         /// so callers get the faster, compile-time-checked path automatically and only pay for reflection when
         /// this overload is genuinely the only option.
@@ -94,7 +94,7 @@ public static partial class ResultExtensions
         /// The registry used to extract <paramref name="response"/>'s active case. Pass
         /// <see langword="null"/> (or <see cref="DefaultOutcomeCaseRegistry.Instance"/> explicitly) to use the
         /// default registry, which handles any compiler-generated union but throws for a hand-rolled
-        /// <see cref="IOutcome"/> implementation unless a custom registry covering it is supplied.
+        /// <see cref="IUnion"/> implementation unless a custom registry covering it is supplied.
         /// </param>
         /// <param name="mapper">
         /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
@@ -110,7 +110,7 @@ public static partial class ResultExtensions
         }
 
         /// <summary>
-        /// Converts an arbitrary <see cref="IOutcome"/> to a minimal API result with the appropriate
+        /// Converts an arbitrary <see cref="IUnion"/> to a minimal API result with the appropriate
         /// HTTP status code.
         /// </summary>
         /// <remarks>
@@ -123,7 +123,7 @@ public static partial class ResultExtensions
         /// The registry used to extract <paramref name="response"/>'s active case. Pass
         /// <see langword="null"/> (or <see cref="DefaultOutcomeCaseRegistry.Instance"/> explicitly) to use the
         /// default registry, which handles any compiler-generated union but throws for a hand-rolled
-        /// <see cref="IOutcome"/> implementation unless a custom registry covering it is supplied.
+        /// <see cref="IUnion"/> implementation unless a custom registry covering it is supplied.
         /// </param>
         /// <param name="mapper">
         /// The failure-to-status-code mapper to use. When <see langword="null"/>, the library's built-in
@@ -190,34 +190,106 @@ public static partial class ResultExtensions
 
     /// <summary>
     /// Extracts <paramref name="response"/>'s active case via <paramref name="caseRegistry"/> (or the default
-    /// registry) and classifies it as success or failure via <see cref="OutcomeClassifierBuilder.DefaultClassifier"/>.
+    /// registry) and determines whether it should be mapped as a failure.
     /// </summary>
-    /// <typeparam name="TResponse">The <see cref="IOutcome"/> type to extract from.</typeparam>
+    /// <typeparam name="TResponse">The <see cref="IUnion"/> type to extract from.</typeparam>
     /// <param name="response">The response to extract the active case from.</param>
     /// <param name="caseRegistry">The registry to use, or <see langword="null"/> to use the default registry.</param>
     /// <returns>Whether the active case is a failure, its runtime type, and its value.</returns>
+    /// <exception cref="OutcomeCaseNotMappableException">
+    /// The active case is a non-<see langword="null"/> value that is neither the bare <see cref="Success"/>
+    /// marker nor one of the built-in failure case types/interfaces <see cref="DefaultHttpOutcomeStatusMapper"/>
+    /// recognizes (see <see cref="IsRecognizedFailureCase"/>) - there is no way to tell whether it represents
+    /// success or failure, so no HTTP status can be chosen for it without guessing.
+    /// </exception>
     private static (bool IsFailure, Type CaseType, object? CaseValue) ExtractCase<TResponse>(
         TResponse response,
         IOutcomeCaseRegistry? caseRegistry
     )
-        where TResponse : IOutcome
+        where TResponse : IUnion
     {
         var registry = caseRegistry ?? DefaultOutcomeCaseRegistry.Instance;
-        registry.TryGetActiveCase(response, out var caseType, out var caseValue);
+        var found = registry.TryGetActiveCase(response, out var caseType, out var caseValue);
 
-        // A null caseValue is ambiguous on its own (see finding 07) - a legitimate null case payload and "no
-        // case extracted" both look identical once extracted. When response is a compiler-generated union,
-        // ask it directly rather than routing a null value back through the classifier's type-based lookup,
-        // which can't recover the case identity a null value already lost. A non-null caseValue, or a null
-        // one from a hand-rolled IOutcome the registry decomposed via a custom extractor, keeps classifying
-        // through the registered types/predicates exactly as before.
-        var isFailure =
-            caseValue is null && response.AsOutcomeCaseIsSuccess() is { } isSuccess
-                ? !isSuccess
-                : OutcomeClassifierBuilder.DefaultClassifier.IsFailure(caseValue);
+        if (!found || caseValue is Success)
+        {
+            // !found: no case at all (TryGetActiveCase only returns false for a null response - see its own
+            // remarks) - fail-closed, same policy the retired outcome classifier applied, since there is
+            // nothing here to call a success. caseValue is Success: the bare marker is unambiguous.
+            return (!found, caseType, caseValue);
+        }
 
-        return (isFailure, caseType, caseValue);
+        if (caseValue is null)
+        {
+            // A *resolved* active case whose value is legitimately null is ambiguous on its own - a null
+            // success payload and a null failure payload look identical once extracted, and there is no
+            // per-instance success/failure signal left to ask (IOutcomeCase exposes only ActiveCaseType, not
+            // a success/failure judgment - see outcome-classifier-retirement). Defaults to success: the far
+            // more common shape in practice, and the one existing tests exercise (e.g. Outcome<string?, ...>
+            // with a null success payload).
+            return (false, caseType, caseValue);
+        }
+
+        if (IsRecognizedFailureCase(caseValue))
+        {
+            return (true, caseType, caseValue);
+        }
+
+        // Genuinely unmappable: caseType is neither Success nor a recognized failure shape. Unlike a
+        // recognized-but-untaught failure value (which DefaultHttpOutcomeStatusMapper still maps, to 500, via
+        // MapUnrecognized), this method cannot even tell whether the case represents success or failure, so
+        // guessing either way risks silently misreporting one for the other - see this method's own
+        // <exception> doc and OutcomeCaseNotMappableException's remarks for why that guess is refused rather
+        // than made fail-closed.
+        throw new OutcomeCaseNotMappableException(
+            typeof(TResponse),
+            caseType,
+            $"Cannot determine an HTTP status for {typeof(TResponse).Name}'s active case: {caseType.Name} is "
+                + $"neither the bare {nameof(Success)} marker nor one of the built-in failure case types/interfaces "
+                + $"{nameof(DefaultHttpOutcomeStatusMapper)} recognizes, so this reflective catch-all cannot tell "
+                + $"whether {caseType.Name} represents success or failure - unlike a *recognized* failure type this "
+                + $"mapper wasn't taught, {nameof(IOutcomeStatusMapper)} is never even consulted here, since that "
+                + $"question is settled before any mapper (default or custom) is selected. Call the dedicated "
+                + $"Outcome<...> overload against the concrete type instead: it resolves success-versus-failure at "
+                + $"compile time, so {caseType.Name} reaches {nameof(IOutcomeStatusMapper)}.Map directly whenever "
+                + $"it is the failure case - customizable there via a custom mapper's MapUnrecognized override, "
+                + $"with no classification ambiguity to hit in the first place."
+        );
     }
+
+    /// <summary>
+    /// Reports whether <paramref name="caseValue"/> is one of the failure case types/interfaces
+    /// <see cref="DefaultHttpOutcomeStatusMapper"/> recognizes by name (mirroring
+    /// <see cref="Interlocutor.Abstractions.Pipeline.Mapping.OutcomeMapperBase{TResult}.Map{TFailure}"/>'s own
+    /// dispatch branches, minus its always-succeeding <c>MapUnrecognized</c> fallback - that fallback is exactly
+    /// the guess <see cref="ExtractCase{TResponse}"/> refuses to make on <paramref name="caseValue"/>'s behalf).
+    /// </summary>
+    /// <remarks>
+    /// This list is necessarily separate from <c>OutcomeMapperBase.Map{TFailure}</c>'s own switch, not merely
+    /// duplicated by oversight: that switch's job is "map this already-known failure to a status", and it always
+    /// succeeds (falling through to <c>MapUnrecognized</c>) - it has no way to answer "would you actually
+    /// recognize this, or just shrug and return your generic default", which is the question this method exists
+    /// to answer instead, before any mapper is even selected. Adding a new built-in failure case (or a new
+    /// recognized <c>I*FailureCase</c> interface) to <c>OutcomeMapperBase</c> should add the matching branch
+    /// here too, or this reflective catch-all starts throwing <see cref="OutcomeCaseNotMappableException"/> for a
+    /// type the dedicated arity overloads already map correctly.
+    /// </remarks>
+    /// <param name="caseValue">The non-<see langword="null"/> case value to check.</param>
+    /// <returns><see langword="true"/> if <paramref name="caseValue"/> is a recognized failure shape.</returns>
+    private static bool IsRecognizedFailureCase(object caseValue) =>
+        caseValue switch
+        {
+            ValidationErrors or IValidationFailureCase => true,
+            Forbidden or IForbiddenFailureCase => true,
+            Conflict => true,
+            Failures or Failure => true,
+            NotFound => true,
+            Cancelled => true,
+            Timeout or ITimeoutFailureCase => true,
+            RateLimited or IRateLimitedFailureCase => true,
+            _ => caseValue.GetType() is { IsGenericType: true } caseType
+                && caseType.GetGenericTypeDefinition() == typeof(NotFound<>),
+        };
 
     /// <summary>
     /// Invokes <see cref="IOutcomeMapper{TResult}.Map{TFailure}"/> reflectively for a failure value whose static

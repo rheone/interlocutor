@@ -6,7 +6,7 @@ Add a new build error, `INTERLOC013`, raised by `OutcomeMemberGenerator` when an
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `6eb5ad5`.
 
 - [ ] `OutcomeMemberGenerator` reports `INTERLOC013` (build error) for any attributed union with more than 16 case types, mirroring `INTERLOC011`'s shape in `InterlocutorDiagnostics.cs`.
 - [ ] The diagnostic's message/description names the actual reason (`Func<T1..T16,TResult>`/`Action<T1..T16>`'s 16-parameter ceiling), not just "too many cases."

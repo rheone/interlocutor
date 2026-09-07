@@ -38,7 +38,7 @@ public class HandlerDiscoveryTests
     }
 
     [Fact]
-    public void Discover_FindsVoidCommandHandler_AndNotificationHandler()
+    public void Discover_FindsBareCommandHandler_AndNotificationHandler()
     {
         // Act
         var registrations = HandlerDiscovery.Discover([typeof(HandlerDiscoveryTests).Assembly]);
@@ -47,8 +47,8 @@ public class HandlerDiscoveryTests
         Assert.Contains(
             registrations,
             r =>
-                r.ImplementationType == typeof(SampleVoidCommandHandler)
-                && r.ServiceType == typeof(IVoidCommandHandler<SampleCommand, Outcome>)
+                r.ImplementationType == typeof(SampleBareCommandHandler)
+                && r.ServiceType == typeof(IBareCommandHandler<SampleCommand, Outcome>)
                 && r.Kind == RegistrationKind.Handler
         );
 
@@ -174,46 +174,48 @@ public class HandlerDiscoveryTests
 
     private sealed class SampleQueryHandler : IQueryHandler<SampleQuery, Outcome>
     {
-        public Task<Outcome> Handle(SampleQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
+        public Task<Outcome> HandleAsync(SampleQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 
-    private sealed class SampleVoidCommandHandler : IVoidCommandHandler<SampleCommand, Outcome>
+    // IBareCommandHandler<,> has no HandleAsync member (deliberately unsuffixed - see that interface's own
+    // remarks), so this fake stays on Handle as-is.
+    private sealed class SampleBareCommandHandler : IBareCommandHandler<SampleCommand, Outcome>
     {
         public Task<Outcome> Handle(SampleCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 
     private sealed class SampleCommandHandler : ICommandHandler<SampleCommandWithResponse, Outcome>
     {
-        public Task<Outcome> Handle(SampleCommandWithResponse command, CancellationToken ct) =>
+        public Task<Outcome> HandleAsync(SampleCommandWithResponse command, CancellationToken ct) =>
             Task.FromResult(default(Outcome));
     }
 
     private sealed class SampleNotificationHandler : INotificationHandler<SampleNotification>
     {
-        public Task Handle(SampleNotification notification, CancellationToken ct) => Task.CompletedTask;
+        public Task HandleAsync(SampleNotification notification, CancellationToken ct) => Task.CompletedTask;
     }
 
     private sealed class MultiContractHandler
         : IQueryHandler<MultiContractQuery, Outcome>,
             INotificationHandler<MultiContractNotification>
     {
-        public Task<Outcome> Handle(MultiContractQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
+        public Task<Outcome> HandleAsync(MultiContractQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
 
-        public Task Handle(MultiContractNotification notification, CancellationToken ct) => Task.CompletedTask;
+        public Task HandleAsync(MultiContractNotification notification, CancellationToken ct) => Task.CompletedTask;
     }
 
     private sealed class FirstSharedNotificationHandler : INotificationHandler<SharedNotification>
     {
-        public Task Handle(SharedNotification notification, CancellationToken ct) => Task.CompletedTask;
+        public Task HandleAsync(SharedNotification notification, CancellationToken ct) => Task.CompletedTask;
     }
 
     private sealed class SecondSharedNotificationHandler : INotificationHandler<SharedNotification>
     {
-        public Task Handle(SharedNotification notification, CancellationToken ct) => Task.CompletedTask;
+        public Task HandleAsync(SharedNotification notification, CancellationToken ct) => Task.CompletedTask;
     }
 
     private sealed class OpenGenericQueryHandler<T> : IQueryHandler<GenericQuery<T>, Outcome>
     {
-        public Task<Outcome> Handle(GenericQuery<T> query, CancellationToken ct) => Task.FromResult(default(Outcome));
+        public Task<Outcome> HandleAsync(GenericQuery<T> query, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 }

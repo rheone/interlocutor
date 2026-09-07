@@ -4,7 +4,7 @@
 
 **Blocked by:** 01 - Expand: add Async-suffixed dispatch members with forwarding defaults.
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `454cb03`.
 
 - [ ] Every one of TutorialProject's feature handlers implements the new `*Async` member instead of the old one.
 - [ ] TutorialProject builds and its tests pass; the app still runs end-to-end as documented.

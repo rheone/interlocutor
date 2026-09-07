@@ -17,7 +17,7 @@ public sealed class DeleteTodoTaskHandler(IDomainRepository<TodoTask, int> tasks
     : ICommandHandler<DeleteTodoTaskCommand, Outcome<Success, NotFound, Forbidden>>
 {
     /// <inheritdoc/>
-    public async Task<Outcome<Success, NotFound, Forbidden>> Handle(DeleteTodoTaskCommand command, CancellationToken ct)
+    public async Task<Outcome<Success, NotFound, Forbidden>> HandleAsync(DeleteTodoTaskCommand command, CancellationToken ct)
     {
         if (tasks.GetById(command.Id) is not { } task)
         {

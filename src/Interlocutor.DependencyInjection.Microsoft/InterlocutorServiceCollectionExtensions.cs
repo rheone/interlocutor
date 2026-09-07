@@ -21,7 +21,7 @@ using Interlocutor.DependencyInjection.Abstractions;
 /// register the mediator, discovered handlers, and stages, and to configure any pipeline behaviors via the
 /// container-neutral <see cref="InterlocutorBuilder"/>. Assembly scanning discovers implementations of
 /// <see cref="IQueryHandler{TQuery, TResponse}"/>, <see cref="ICommandHandler{TCommand, TResponse}"/>,
-/// <see cref="IVoidCommandHandler{TCommand, TResult}"/>, and <see cref="INotificationHandler{TNotification}"/>
+/// <see cref="IBareCommandHandler{TCommand, TResult}"/>, and <see cref="INotificationHandler{TNotification}"/>
 /// without requiring explicit registrations for each handler.
 /// </para>
 /// <para>

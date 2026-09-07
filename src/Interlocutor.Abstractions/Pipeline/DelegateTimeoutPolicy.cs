@@ -11,11 +11,11 @@ using Interlocutor.Abstractions.Markers;
 /// every declared budget during a load test, or to clamp it to a tenant-wide ceiling. Useful for testing,
 /// prototyping, or one-off overrides that don't warrant a named type.
 /// </remarks>
-public sealed class DelegateTimeoutPolicy(Func<IHasTimeout, TimeSpan> resolveBudget) : ITimeoutPolicy
+public sealed class DelegateTimeoutPolicy(Func<ITimeoutRequest, TimeSpan> resolveBudget) : ITimeoutPolicy
 {
-    private readonly Func<IHasTimeout, TimeSpan> _resolveBudget =
+    private readonly Func<ITimeoutRequest, TimeSpan> _resolveBudget =
         resolveBudget ?? throw new ArgumentNullException(nameof(resolveBudget));
 
     /// <inheritdoc/>
-    public TimeSpan ResolveBudget(IHasTimeout request) => this._resolveBudget(request);
+    public TimeSpan ResolveBudget(ITimeoutRequest request) => this._resolveBudget(request);
 }

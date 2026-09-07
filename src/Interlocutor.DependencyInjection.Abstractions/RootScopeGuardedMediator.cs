@@ -1,6 +1,7 @@
 namespace Interlocutor.DependencyInjection.Abstractions;
 
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using Interlocutor.Abstractions;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
@@ -10,7 +11,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
 /// Decorates the library's real <see cref="Mediator"/> with the root-scope guard from ADR-0011: every
-/// dispatch method (<c>Send</c>, <c>Publish</c>) checks <see cref="IRootScopeDetector.IsRootScope"/> first,
+/// dispatch method (<c>SendAsync</c>, <c>PublishAsync</c>) checks <see cref="IRootScopeDetector.IsRootScope"/> first,
 /// throwing <see cref="MediatorResolvedFromRootScopeException"/> - naming the request/notification type being
 /// dispatched - instead of silently running the request against services resolved from the root
 /// provider/container.
@@ -35,30 +36,30 @@ using Interlocutor.CommonKernel.ResultTypes;
 public sealed class RootScopeGuardedMediator(IMediator inner, IRootScopeDetector rootScopeDetector) : IMediator
 {
     /// <inheritdoc/>
-    public Task<TResponse> Send<TResponse>(IQuery<TResponse> query, CancellationToken ct = default)
-        where TResponse : IOutcome
+    public Task<TResponse> SendAsync<TResponse>(IQuery<TResponse> query, CancellationToken ct = default)
+        where TResponse : IUnion
     {
         ArgumentNullException.ThrowIfNull(query);
         this.EnsureNotRootScope(query.GetType());
-        return inner.Send(query, ct);
+        return inner.SendAsync(query, ct);
     }
 
     /// <inheritdoc/>
-    public Task<TResponse> Send<TResponse>(ICommand<TResponse> command, CancellationToken ct = default)
-        where TResponse : IOutcome
+    public Task<TResponse> SendAsync<TResponse>(ICommand<TResponse> command, CancellationToken ct = default)
+        where TResponse : IUnion
     {
         ArgumentNullException.ThrowIfNull(command);
         this.EnsureNotRootScope(command.GetType());
-        return inner.Send(command, ct);
+        return inner.SendAsync(command, ct);
     }
 
     /// <inheritdoc/>
-    public Task<TResult> Send<TResult>(ICommand command, CancellationToken ct = default)
-        where TResult : IOutcome
+    public Task<TResult> SendAsync<TResult>(ICommand command, CancellationToken ct = default)
+        where TResult : IUnion
     {
         ArgumentNullException.ThrowIfNull(command);
         this.EnsureNotRootScope(command.GetType());
-        return inner.Send<TResult>(command, ct);
+        return inner.SendAsync<TResult>(command, ct);
     }
 
     /// <inheritdoc/>
@@ -70,29 +71,33 @@ public sealed class RootScopeGuardedMediator(IMediator inner, IRootScopeDetector
         "May run the runtime-typed dispatch fallback when no generated dispatcher is registered - see "
             + "documentation/trim-and-aot-support.md."
     )]
-    public Task<IOutcome> Send(object request, CancellationToken ct = default)
+    public Task<IUnion> SendAsync(object request, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(request);
         this.EnsureNotRootScope(request.GetType());
-        return inner.Send(request, ct);
+        return inner.SendAsync(request, ct);
     }
 
     /// <inheritdoc/>
-    public Task Publish<TNotification>(TNotification notification, CancellationToken ct = default)
+    public Task PublishAsync<TNotification>(TNotification notification, CancellationToken ct = default)
         where TNotification : INotification
     {
         ArgumentNullException.ThrowIfNull(notification);
         this.EnsureNotRootScope(notification.GetType());
-        return inner.Publish(notification, ct);
+        return inner.PublishAsync(notification, ct);
     }
 
     /// <inheritdoc/>
-    public Task Publish<TNotification>(TNotification notification, PublishStrategy strategy, CancellationToken ct = default)
+    public Task PublishAsync<TNotification>(
+        TNotification notification,
+        PublishStrategy strategy,
+        CancellationToken ct = default
+    )
         where TNotification : INotification
     {
         ArgumentNullException.ThrowIfNull(notification);
         this.EnsureNotRootScope(notification.GetType());
-        return inner.Publish(notification, strategy, ct);
+        return inner.PublishAsync(notification, strategy, ct);
     }
 
     /// <summary>

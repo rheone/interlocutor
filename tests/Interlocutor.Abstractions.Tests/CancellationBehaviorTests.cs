@@ -1,5 +1,6 @@
 namespace Interlocutor.Abstractions.Tests;
 
+using System.Runtime.CompilerServices;
 using Interlocutor.Abstractions.Markers;
 using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Pipeline.Cases;
@@ -7,9 +8,9 @@ using Interlocutor.Abstractions.Queries;
 using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 
-// CancellationBehavior<TRequest, TResponse> constrains TRequest : ICancellable, so a request that doesn't
+// CancellationBehavior<TRequest, TResponse> constrains TRequest : ICancellableRequest, so a request that doesn't
 // opt in cannot close this generic at all - there is no runtime "skip" branch left to unit test here, matching
-// AuthorizationBehaviorTests' treatment of IRequiresPolicy. TResponse is the whole outcome type directly, not
+// AuthorizationBehaviorTests' treatment of IRequiresPolicyRequest. TResponse is the whole outcome type directly, not
 // decomposed into a success-type parameter, for the same open-generic-resolution reason documented on
 // AuthorizationBehavior.
 public class CancellationBehaviorTests
@@ -26,13 +27,13 @@ public class CancellationBehaviorTests
         await cts.CancelAsync();
         var ct = cts.Token;
 
-        Task<Outcome<string, Cancelled>> Next()
+        Task<Outcome<string, Cancelled>> NextAsync()
         {
             throw new OperationCanceledException(ct);
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, ct);
+        var result = await behavior.HandleAsync(request, NextAsync, ct);
 
         // Assert
         Assert.IsType<Cancelled>(result.Value);
@@ -46,13 +47,13 @@ public class CancellationBehaviorTests
             DefaultOutcomeCaseRegistry.Instance
         );
         var request = new CancellableQuery("test");
-        static Task<Outcome<string, Cancelled>> Next()
+        static Task<Outcome<string, Cancelled>> NextAsync()
         {
             return Task.FromResult<Outcome<string, Cancelled>>(new Outcome<string, Cancelled>("success"));
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
 
         // Assert
         Assert.Equal("success", result.Value);
@@ -70,14 +71,14 @@ public class CancellationBehaviorTests
         await cts.CancelAsync();
         var ct = cts.Token;
 
-        static Task<Outcome<string, Cancelled>> Next()
+        static Task<Outcome<string, Cancelled>> NextAsync()
         {
             throw new InvalidOperationException("boom");
         }
 
         // Act / Assert - a non-cancellation exception is not converted, even though the ambient token is
         // cancelled.
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => behavior.Handle(request, Next, ct));
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => behavior.HandleAsync(request, NextAsync, ct));
         Assert.Equal("boom", ex.Message);
     }
 
@@ -96,14 +97,16 @@ public class CancellationBehaviorTests
         await unrelatedCts.CancelAsync();
         var unrelatedToken = unrelatedCts.Token;
 
-        Task<Outcome<string, Cancelled>> Next()
+        Task<Outcome<string, Cancelled>> NextAsync()
         {
             throw new OperationCanceledException(unrelatedToken);
         }
 
         // Act / Assert
         var ambientCt = CancellationToken.None;
-        var ex = await Assert.ThrowsAsync<OperationCanceledException>(() => behavior.Handle(request, Next, ambientCt));
+        var ex = await Assert.ThrowsAsync<OperationCanceledException>(() =>
+            behavior.HandleAsync(request, NextAsync, ambientCt)
+        );
         Assert.Equal(unrelatedToken, ex.CancellationToken);
     }
 
@@ -124,13 +127,39 @@ public class CancellationBehaviorTests
         await cts.CancelAsync();
         var ct = cts.Token;
 
-        Task<Outcome<string, NotFound>> Next()
+        Task<Outcome<string, NotFound>> NextAsync()
         {
             throw new OperationCanceledException(ct);
         }
 
         // Act
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => behavior.Handle(request, Next, ct));
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => behavior.HandleAsync(request, NextAsync, ct));
+
+        // Assert
+        Assert.Contains("Cancelled", ex.Message);
+    }
+
+    [Fact]
+    public async Task Handle_WithCaseLessOutcomeResponse_ThrowsNamedExceptionOnCancellation()
+    {
+        // The case-less, non-generic Outcome (see its own remarks) is the specific incompatibility this
+        // ticket calls out: pairing ICancellableRequest with a response that has no case to construct into at all
+        // is a configuration mistake, surfaced loudly the first time cancellation is actually observed -
+        // not a silent no-op - via the same mechanism the misshapen-generic-union test above exercises.
+        // Arrange
+        var behavior = new CancellationBehavior<CaseLessCancellableQuery, Outcome>(DefaultOutcomeCaseRegistry.Instance);
+        var request = new CaseLessCancellableQuery();
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+        var ct = cts.Token;
+
+        Task<Outcome> NextAsync()
+        {
+            throw new OperationCanceledException(ct);
+        }
+
+        // Act
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => behavior.HandleAsync(request, NextAsync, ct));
 
         // Assert
         Assert.Contains("Cancelled", ex.Message);
@@ -152,33 +181,38 @@ public class CancellationBehaviorTests
         await cts.CancelAsync();
         var ct = cts.Token;
 
-        Task<HandRolledOutcome> Next()
+        Task<HandRolledOutcome> NextAsync()
         {
             throw new OperationCanceledException(ct);
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, ct);
+        var result = await behavior.HandleAsync(request, NextAsync, ct);
 
         // Assert
         Assert.Equal(typeof(Cancelled), result.CaseType);
         Assert.IsType<Cancelled>(result.CaseValue);
     }
 
-    public record CancellableQuery(string Name) : IQuery<Outcome<string, Cancelled>>, ICancellable;
+    public record CancellableQuery(string Name) : IQuery<Outcome<string, Cancelled>>, ICancellableRequest;
 
-    /// <summary>A request implementing <see cref="ICancellable"/> whose response has no <see cref="Cancelled"/> case at all.</summary>
+    /// <summary>A request implementing <see cref="ICancellableRequest"/> whose response has no <see cref="Cancelled"/> case at all.</summary>
     public record MisshapenCancellableQuery
         : IQuery<Outcome<string, Interlocutor.CommonKernel.ResultTypes.NotFound>>,
-            ICancellable;
+            ICancellableRequest;
+
+    /// <summary>A request implementing <see cref="ICancellableRequest"/> whose response is the case-less <see cref="Outcome"/>.</summary>
+    public record CaseLessCancellableQuery : IQuery<Outcome>, ICancellableRequest;
 
     /// <summary>A request whose response type is a hand-rolled, non-union <see cref="IOutcome"/>.</summary>
-    public record CancellableHandRolledQuery : ICancellable;
+    public record CancellableHandRolledQuery : ICancellableRequest;
 
-    /// <summary>A hand-rolled, non-union <see cref="IOutcome"/> implementation - no compiler-generated
-    /// case constructor, so it can only participate in <see cref="CancellationBehavior{TRequest, TResponse}"/>
-    /// via a custom <see cref="IOutcomeCaseRegistry"/> registration.</summary>
-    public sealed class HandRolledOutcome : IOutcome
+    /// <summary>A hand-rolled <see cref="IOutcome"/>/<see cref="IUnion"/> implementation that is not a
+    /// compiler-generated <c>union</c> - it has no case constructor for <see cref="Interlocutor.Abstractions.Pipeline.UnionCaseFactory"/>
+    /// to find reflectively, so it can only be constructed via a custom <see cref="IOutcomeCaseRegistry"/>
+    /// registration even though <see cref="DefaultOutcomeCaseRegistry"/> can read its active case back out
+    /// through <see cref="IUnion.Value"/> alone.</summary>
+    public sealed class HandRolledOutcome : IOutcome, IUnion
     {
         private HandRolledOutcome(Type caseType, object? caseValue)
         {
@@ -189,6 +223,8 @@ public class CancellationBehaviorTests
         public Type CaseType { get; }
 
         public object? CaseValue { get; }
+
+        object? IUnion.Value => this.CaseValue;
 
         public static HandRolledOutcome FromCancelled(Cancelled cancelled) => new(typeof(Cancelled), cancelled);
     }

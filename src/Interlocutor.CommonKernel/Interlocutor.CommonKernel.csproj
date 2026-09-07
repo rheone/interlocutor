@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <!-- Analyzer-only reference: OutcomeMemberGenerator must run over this project's own compilation, since
-       Outcome/Outcome<...>'s generated Match/Switch/TryGetValue/ToString/IsSuccess members have to exist in
+       Outcome/Outcome<...>'s generated Match/Switch/TryGetValue/ToString members have to exist in
        the shipped Interlocutor.CommonKernel.dll itself, not merely in some downstream consumer that happens to
        reference the generator. ReferenceOutputAssembly="false" means this adds no actual assembly dependency -
        DependencyTests.cs's zero-dependency check inspects compiled IL, which never references

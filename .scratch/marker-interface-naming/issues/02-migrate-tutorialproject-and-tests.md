@@ -4,7 +4,7 @@
 
 **Blocked by:** 01.
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `ebdd4cd`.
 
 - [ ] All references in `tests/Interlocutor.Abstractions.Tests`, `tests/Interlocutor.DependencyInjection.Abstractions.Tests`, `tests/Interlocutor.DependencyInjection.Autofac.Tests`, and `tests/Interlocutor.DependencyInjection.Microsoft.Tests` are updated to the new names.
 - [ ] Any `TutorialProject/TodoTasks.Api` command/query implementing one of the four old markers, and its corresponding `tests/TodoTasks.Api.Tests` coverage, is updated to the new name.

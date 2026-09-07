@@ -21,7 +21,7 @@ public sealed class CrossAssemblyAggregationTests
 
         public sealed class GetBarQueryHandler : IQueryHandler<GetBarQuery, Outcome>
         {
-            public Task<Outcome> Handle(GetBarQuery query, CancellationToken ct) => throw new System.NotImplementedException();
+            public Task<Outcome> HandleAsync(GetBarQuery query, CancellationToken ct) => throw new System.NotImplementedException();
         }
         """;
 
@@ -37,7 +37,7 @@ public sealed class CrossAssemblyAggregationTests
 
         public sealed class GetFooQueryHandler : IQueryHandler<GetFooQuery, Outcome>
         {
-            public Task<Outcome> Handle(GetFooQuery query, CancellationToken ct) => throw new System.NotImplementedException();
+            public Task<Outcome> HandleAsync(GetFooQuery query, CancellationToken ct) => throw new System.NotImplementedException();
         }
         """;
 

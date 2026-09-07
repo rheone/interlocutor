@@ -17,7 +17,7 @@ namespace Interlocutor.Abstractions.Markers;
 /// implementation interprets it.
 /// </para>
 /// </remarks>
-public interface IRateLimited
+public interface IRateLimitedRequest
 {
     /// <summary>
     /// Gets the key identifying which rate limiter/bucket applies to this request.

@@ -4,7 +4,7 @@
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `bf00353`.
 
 - [ ] `ICommandHandler<,>`, `IQueryHandler<,>`, `INotificationHandler<>`, and `IPipelineBehavior<,>` each gain a `HandleAsync` member; `ISender` gains `SendAsync` (all existing overloads); `IPublisher` gains `PublishAsync` (all existing overloads); `IUnitOfWork` gains `CancelAsync`; the two internal dispatch-wrapper interfaces gain `HandleAsync`.
 - [ ] Each new member is a default interface implementation whose body forwards to the corresponding existing (unchanged) member - no implementer anywhere in the solution needs to change, and the solution builds and all existing tests pass exactly as before this ticket.

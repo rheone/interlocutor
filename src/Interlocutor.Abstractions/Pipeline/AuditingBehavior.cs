@@ -35,7 +35,7 @@ public class AuditingBehavior<TRequest, TResponse>(
     /// <param name="next">The next behavior in the pipeline.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>The result from the next behavior or handler.</returns>
-    public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+    public async Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         // Execute the handler first, capturing the result. This ensures we audit both success and failure outcomes.
         var result = await next().ConfigureAwait(false);

@@ -26,8 +26,8 @@ internal enum HandlerKind
     /// <summary>An <c>ICommandHandler&lt;TCommand, TResponse&gt;</c> implementation.</summary>
     Command,
 
-    /// <summary>An <c>IVoidCommandHandler&lt;TCommand, TResult&gt;</c> implementation.</summary>
-    VoidCommand,
+    /// <summary>An <c>IBareCommandHandler&lt;TCommand, TResult&gt;</c> implementation.</summary>
+    BareCommand,
 
     /// <summary>An <c>INotificationHandler&lt;TNotification&gt;</c> implementation.</summary>
     Notification,

@@ -24,13 +24,13 @@ public class RateLimitedBehaviorTests
             DefaultOutcomeCaseRegistry.Instance
         );
         var request = new ThrottledQuery("test");
-        static Task<Outcome<string, RateLimited>> Next()
+        static Task<Outcome<string, RateLimited>> NextAsync()
         {
             return Task.FromResult<Outcome<string, RateLimited>>(new Outcome<string, RateLimited>("success"));
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
 
         // Assert
         Assert.Equal("success", result.Value);
@@ -51,13 +51,13 @@ public class RateLimitedBehaviorTests
             DefaultOutcomeCaseRegistry.Instance
         );
         var request = new ThrottledQuery("test");
-        static Task<Outcome<string, RateLimited>> Next()
+        static Task<Outcome<string, RateLimited>> NextAsync()
         {
             throw new InvalidOperationException("Handler should not be called");
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
 
         // Assert - Should return RateLimited instead of calling next
         var rateLimited = Assert.IsType<RateLimited>(result.Value);
@@ -80,13 +80,13 @@ public class RateLimitedBehaviorTests
             DefaultOutcomeCaseRegistry.Instance
         );
         var request = new ThrottledQuery("test");
-        static Task<Outcome<string, RateLimited>> Next()
+        static Task<Outcome<string, RateLimited>> NextAsync()
         {
             throw new InvalidOperationException("Should not be called");
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
 
         // Assert
         var rateLimited = Assert.IsType<RateLimited>(result.Value);
@@ -109,14 +109,14 @@ public class RateLimitedBehaviorTests
         var request = new ThrottledQuery("test");
         var nextCalled = false;
 
-        Task<Outcome<string, RateLimited>> Next()
+        Task<Outcome<string, RateLimited>> NextAsync()
         {
             nextCalled = true;
             return Task.FromResult<Outcome<string, RateLimited>>(new Outcome<string, RateLimited>("success"));
         }
 
         // Act
-        await behavior.Handle(request, Next, CancellationToken.None);
+        await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
 
         // Assert - next should not be called
         Assert.False(nextCalled);
@@ -140,14 +140,46 @@ public class RateLimitedBehaviorTests
             DefaultOutcomeCaseRegistry.Instance
         );
         var request = new MisshapenThrottledQuery();
-        static Task<Outcome<string, NotFound>> Next()
+        static Task<Outcome<string, NotFound>> NextAsync()
         {
             throw new InvalidOperationException("Should not be called");
         }
 
         // Act
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            behavior.Handle(request, Next, CancellationToken.None)
+            behavior.HandleAsync(request, NextAsync, CancellationToken.None)
+        );
+
+        // Assert
+        Assert.Contains("RateLimited", ex.Message);
+    }
+
+    [Fact]
+    public async Task Handle_WithCaseLessOutcomeResponse_ThrowsNamedExceptionOnThrottle()
+    {
+        // The case-less, non-generic Outcome (see its own remarks) is the specific incompatibility this
+        // ticket calls out: pairing IRateLimitedRequest with a response that has no RateLimited case to construct
+        // into at all is a configuration mistake, surfaced loudly the moment the limiter actually throttles -
+        // not a silent no-op.
+        // Arrange
+        var rateLimiter = Substitute.For<IRateLimiter>();
+        rateLimiter
+            .CheckAsync(Arg.Any<string>(), Arg.Any<object>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(new RateLimitResult(IsAllowed: false)));
+
+        var behavior = new RateLimitedBehavior<CaseLessThrottledQuery, Outcome>(
+            rateLimiter,
+            DefaultOutcomeCaseRegistry.Instance
+        );
+        var request = new CaseLessThrottledQuery();
+        static Task<Outcome> NextAsync()
+        {
+            throw new InvalidOperationException("Should not be called");
+        }
+
+        // Act
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            behavior.HandleAsync(request, NextAsync, CancellationToken.None)
         );
 
         // Assert
@@ -163,13 +195,13 @@ public class RateLimitedBehaviorTests
             DefaultOutcomeCaseRegistry.Instance
         );
         var request = new ThrottledQuery("test");
-        static Task<Outcome<string, RateLimited>> Next()
+        static Task<Outcome<string, RateLimited>> NextAsync()
         {
             return Task.FromResult<Outcome<string, RateLimited>>(new Outcome<string, RateLimited>("success"));
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
 
         // Assert
         Assert.Equal("success", result.Value);
@@ -193,13 +225,13 @@ public class RateLimitedBehaviorTests
             DefaultOutcomeCaseRegistry.Instance
         );
         var request = new ThrottledQuery("test");
-        static Task<Outcome<string, RateLimited>> Next()
+        static Task<Outcome<string, RateLimited>> NextAsync()
         {
             throw new InvalidOperationException("Should not be called");
         }
 
         // Act
-        var result = await behavior.Handle(request, Next, CancellationToken.None);
+        var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
 
         // Assert
         Assert.True(delegateCalled);
@@ -207,13 +239,19 @@ public class RateLimitedBehaviorTests
         Assert.Equal(TimeSpan.FromSeconds(5), rateLimited.RetryAfter);
     }
 
-    public record ThrottledQuery(string Name) : IQuery<Outcome<string, RateLimited>>, IRateLimited
+    public record ThrottledQuery(string Name) : IQuery<Outcome<string, RateLimited>>, IRateLimitedRequest
     {
         public string LimitKey => "per-user";
     }
 
     /// <summary>A request declaring a limit key whose response has no <see cref="RateLimited"/> case at all.</summary>
-    public record MisshapenThrottledQuery : IQuery<Outcome<string, NotFound>>, IRateLimited
+    public record MisshapenThrottledQuery : IQuery<Outcome<string, NotFound>>, IRateLimitedRequest
+    {
+        public string LimitKey => "per-user";
+    }
+
+    /// <summary>A request implementing <see cref="IRateLimitedRequest"/> whose response is the case-less <see cref="Outcome"/>.</summary>
+    public record CaseLessThrottledQuery : IQuery<Outcome>, IRateLimitedRequest
     {
         public string LimitKey => "per-user";
     }

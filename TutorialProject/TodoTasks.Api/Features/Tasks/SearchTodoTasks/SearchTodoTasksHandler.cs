@@ -29,7 +29,10 @@ public sealed class SearchTodoTasksHandler(Lazy<TodoTasksDbContext> context)
     : IQueryHandler<SearchTodoTasksQuery, Outcome<IReadOnlyList<TodoTaskDto>, Failure>>
 {
     /// <inheritdoc/>
-    public async Task<Outcome<IReadOnlyList<TodoTaskDto>, Failure>> Handle(SearchTodoTasksQuery query, CancellationToken ct)
+    public async Task<Outcome<IReadOnlyList<TodoTaskDto>, Failure>> HandleAsync(
+        SearchTodoTasksQuery query,
+        CancellationToken ct
+    )
     {
         var pattern = $"%{query.TitleContains}%";
 

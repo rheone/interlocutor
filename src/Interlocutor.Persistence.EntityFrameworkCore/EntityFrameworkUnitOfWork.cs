@@ -52,7 +52,7 @@ public sealed class EntityFrameworkUnitOfWork<TContext>(Lazy<TContext> context) 
     /// commit-gate behavior's end-of-pipeline check finds no open transaction and no pending changes, and
     /// does nothing further. A no-op if no transaction is open.
     /// </remarks>
-    public async Task Cancel(CancellationToken cancellationToken = default)
+    public async Task CancelAsync(CancellationToken cancellationToken = default)
     {
         var db = context.Value;
         if (db.Database.CurrentTransaction is { } transaction)

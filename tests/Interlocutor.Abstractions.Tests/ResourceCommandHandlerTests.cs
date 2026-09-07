@@ -55,10 +55,10 @@ public class ResourceCommandHandlerTests
         var handler = new TestResourceCommandHandler(entity, null, expectedResult);
 
         // Act
-        var result = await handler.Handle(new TestCommand(1), CancellationToken.None);
+        var result = await handler.HandleAsync(new TestCommand(1), CancellationToken.None);
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out string _));
         Assert.Equal("Success", (string)result.Value);
     }
 
@@ -69,10 +69,10 @@ public class ResourceCommandHandlerTests
         var handler = new TestResourceCommandHandler(null, null, new Outcome<string, NotFound, Forbidden>("unused"));
 
         // Act
-        var result = await handler.Handle(new TestCommand(999), CancellationToken.None);
+        var result = await handler.HandleAsync(new TestCommand(999), CancellationToken.None);
 
         // Assert
-        Assert.False(result.IsSuccess);
+        Assert.False(result.TryGetValue(out string _));
         var notFound = Assert.IsType<NotFound>(result.Value);
         Assert.Contains("TestEntity", notFound.Message);
         Assert.Contains("not found", notFound.Message);
@@ -87,10 +87,10 @@ public class ResourceCommandHandlerTests
         var handler = new TestResourceCommandHandler(entity, denial, new Outcome<string, NotFound, Forbidden>("unused"));
 
         // Act
-        var result = await handler.Handle(new TestCommand(1), CancellationToken.None);
+        var result = await handler.HandleAsync(new TestCommand(1), CancellationToken.None);
 
         // Assert
-        Assert.False(result.IsSuccess);
+        Assert.False(result.TryGetValue(out string _));
         var forbidden = Assert.IsType<Forbidden>(result.Value);
         Assert.Equal("Access denied", forbidden.Reason);
     }
@@ -104,7 +104,7 @@ public class ResourceCommandHandlerTests
         var handler = new DescribeKeyOverridingHandler();
 
         // Act
-        var result = await handler.Handle(new TestCommand(42), CancellationToken.None);
+        var result = await handler.HandleAsync(new TestCommand(42), CancellationToken.None);
 
         // Assert
         var notFound = Assert.IsType<NotFound>(result.Value);

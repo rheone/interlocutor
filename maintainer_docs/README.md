@@ -7,6 +7,7 @@ This directory contains internal documentation for people building and maintaini
 - [Start here](#start-here) - the current spec and open questions
 - [Architecture Decision Records](#architecture-decision-records-adr) - why the library is shaped the way it is, grouped by theme
 - [Agent process docs](#agent-process-docs-agents) - how agents work this repo's issue tracker and triage
+- [Repo tooling](#repo-tooling) - devcontainer/CI operational notes that aren't ADRs
 - [Historical: bootstrapreference/](#historical-bootstrapreference) - superseded, context only
 
 ## Start here
@@ -27,6 +28,7 @@ Immutable once accepted - a changed decision gets a new ADR that supersedes the 
 **Pipeline & behaviors** - how cross-cutting concerns compose around a handler
 - [ADR-0002](adr/0002-pipeline-behavior-onion-model.md) - Pipeline Behavior Onion/Russian-Doll Model: one `IPipelineBehavior<TRequest,TResponse>` wraps pre/post logic around a single `next()` call.
 - [ADR-0009](adr/0009-no-default-pipeline.md) - No Default Pipeline - Flat Ordered Filtered Behavior List: the pipeline is empty until the consumer composes it; nothing runs unless explicitly added.
+- [ADR-0023](adr/0023-pipeline-behavior-case-construction-fail-fast.md) - Pipeline Behavior Case Construction Fails Fast, Never Degrades or Reshapes: a behavior that can't construct the case it needs from a handler's `TResponse` throws a named exception rather than returning a silent outcome or forcing an incompatible case; response arity stays a domain decision, and a compile-time analyzer is a later, earlier-feedback layer on top of the same runtime guarantee.
 
 **Handler discovery & dispatch** - how a request finds its handler
 - [ADR-0003](adr/0003-mediator-as-service-locator.md) - Mediator as Service Locator - No Internal Handler Registry: *(superseded by [ADR-0008](adr/0008-compile-time-handler-discovery.md))* the original runtime-resolution design.
@@ -56,6 +58,10 @@ Immutable once accepted - a changed decision gets a new ADR that supersedes the 
 - [issue-tracker.md](agents/issue-tracker.md) - the local `.scratch/` markdown issue tracker: file layout, ticket format, numbering convention.
 - [triage-labels.md](agents/triage-labels.md) - triage role → label mapping used across `.scratch/` tickets.
 - [documentation-maintenance.md](agents/documentation-maintenance.md) - keeping `documentation/` and `maintainer_docs/` in sync with each code change, instead of batching documentation into a separate pass.
+
+## Repo tooling
+
+- [pre-commit-devcontainer-provisioning.md](pre-commit-devcontainer-provisioning.md) - why `pre-commit` wasn't running in the devcontainer, whether CI covers the same checks (it doesn't - notably `gitleaks`), and what was provisioned to fix it.
 
 ## Historical: bootstrapreference/
 

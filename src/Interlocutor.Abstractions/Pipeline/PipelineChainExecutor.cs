@@ -1,5 +1,9 @@
 namespace Interlocutor.Abstractions.Pipeline;
 
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using Interlocutor.Abstractions.Diagnostics;
+using Interlocutor.Abstractions.Pipeline.Cases;
 using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
@@ -8,12 +12,31 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// <remarks>
 /// <para>
 /// Extracted from the identical ~70-line chain-build/eject-guard logic every handler wrapper
-/// (<c>QueryHandlerWrapper</c>, <c>CommandHandlerWrapper</c>, <c>VoidCommandHandlerWrapper</c>) used to carry
+/// (<c>QueryHandlerWrapper</c>, <c>CommandHandlerWrapper</c>, <c>BareCommandHandlerWrapper</c>) used to carry
 /// its own copy of. Each wrapper still resolves its own handler type from DI and tags the dispatch
 /// <see cref="System.Diagnostics.Activity"/> itself - only the part identical across all three (composing
 /// <see cref="PipelineChainResolver.ResolveChain{TRequest,TResponse}"/>'s behaviors around the handler, with a
 /// <see cref="PipelineEjectException{TResponse}"/> guard at every layer) lives here now. A prefactor: no
 /// observable change to dispatch, pipeline ordering, or ejection.
+/// </para>
+/// <para>
+/// Every <see cref="PipelineEjectException{TResponse}"/> guard also tags the dispatch's
+/// <see cref="System.Diagnostics.Activity"/> with <see cref="MediatorActivitySource.EjectedTag"/> as it
+/// converts the caught signal back into a response - exactly one guard ever fires per eject (the exception is
+/// caught, not re-thrown, so it never reaches an outer guard), so this tags the activity once, at whichever
+/// layer actually ejected. A dispatch that returns normally never sets the tag at all.
+/// </para>
+/// <para>
+/// <b>PROTOTYPE (spike/eject-withcase-case-fidelity):</b> every guard also catches
+/// <see cref="PipelineEjectCaseException"/> - the type-erased eject signal a behavior with no
+/// <see cref="IOutcomeCaseRegistry"/> dependency of its own throws via <see cref="Eject.WithCase{TCase}(TCase)"/>
+/// (today, only <see cref="AuthorizationBehavior{TRequest, TResponse}"/>) - resolving
+/// <see cref="IOutcomeCaseRegistry"/> from the ambient <see cref="IServiceProvider"/> and performing the
+/// single construct-and-return call this exists to centralize, once per eject, at the layer that actually
+/// caught it.
+/// This is the only file this spike needed to touch to give <c>QueryHandlerWrapper</c>,
+/// <c>CommandHandlerWrapper</c>, and <c>BareCommandHandlerWrapper</c> the new catch logic all at once - none of
+/// the three wrappers guards for either exception type itself; they all delegate to this shared executor.
 /// </para>
 /// </remarks>
 internal static class PipelineChainExecutor
@@ -24,23 +47,34 @@ internal static class PipelineChainExecutor
     /// <typeparamref name="TRequest"/>/<typeparamref name="TResponse"/>, and runs the resulting chain.
     /// </summary>
     /// <typeparam name="TRequest">The request type being dispatched.</typeparam>
-    /// <typeparam name="TResponse">The <see cref="IOutcome"/>-shaped response type the handler and every behavior produce.</typeparam>
+    /// <typeparam name="TResponse">The <see cref="IUnion"/>-shaped response type the handler and every behavior produce.</typeparam>
     /// <param name="request">The request to pass to the handler and every behavior.</param>
-    /// <param name="handle">The resolved handler's own <c>Handle</c> method, already bound to its instance.</param>
+    /// <param name="handle">The resolved handler's own <c>HandleAsync</c> method, already bound to its instance.</param>
     /// <param name="services">The service provider to resolve the behavior chain from.</param>
     /// <param name="ct">The cancellation token.</param>
+    /// <param name="activity">
+    /// The dispatch's activity, tagged with <see cref="MediatorActivitySource.EjectedTag"/> if the chain ends via
+    /// <c>Eject.With</c>, or <see langword="null"/> when nothing is listening.
+    /// </param>
     /// <returns>The response from running the composed chain.</returns>
-    public static Task<TResponse> Execute<TRequest, TResponse>(
+    public static Task<TResponse> ExecuteAsync<TRequest, TResponse>(
         TRequest request,
         Func<TRequest, CancellationToken, Task<TResponse>> handle,
         IServiceProvider services,
-        CancellationToken ct
+        CancellationToken ct,
+        Activity? activity = null
     )
-        where TResponse : IOutcome
+        where TResponse : IUnion
     {
         // Start with the innermost pipeline delegate pointing to the handler itself. Wrapped in a try/catch
         // for PipelineEjectException so a handler that calls Eject.With deep in its own call graph returns an
         // ordinary response here - nothing further out in the chain ever observes a thrown exception.
+        //
+        // PROTOTYPE (spike/eject-withcase-case-fidelity): also catches PipelineEjectCaseException, the
+        // type-erased eject signal Eject.WithCase throws. Unlike PipelineEjectException<TResponse>, that
+        // signal carries only a boxed case value - constructing the actual TResponse from it is deferred to
+        // here, the one place that already knows TResponse concretely, via IOutcomeCaseRegistry resolved
+        // lazily from services (only ejects that actually take this path ever need it resolved).
         Func<Task<TResponse>> pipeline = async () =>
         {
             try
@@ -49,15 +83,22 @@ internal static class PipelineChainExecutor
             }
             catch (PipelineEjectException<TResponse> eject)
             {
+                activity?.SetTag(MediatorActivitySource.EjectedTag, true);
                 return eject.Response;
+            }
+            catch (PipelineEjectCaseException eject)
+            {
+                activity?.SetTag(MediatorActivitySource.EjectedTag, true);
+                return services.GetRequiredService<IOutcomeCaseRegistry>().ConstructOrThrow<TResponse>(eject);
             }
         };
 
         // Wrap the handler with each behavior in reverse order (baseline registration order, or a matched
         // override's declared order - see PipelineChainResolver) so the first entry runs first (inbound) and
         // last (outbound), creating an onion-like structure. Each behavior wraps the previous pipeline,
-        // capturing it in a closure. Each wrap gets the same PipelineEjectException catch, so a behavior that
-        // ejects - before or after calling next() - unwinds no further than its own caller in this chain.
+        // capturing it in a closure. Each wrap gets the same PipelineEjectException/PipelineEjectCaseException
+        // catches, so a behavior that ejects either way - before or after calling next() - unwinds no further
+        // than its own caller in this chain.
         foreach (var behavior in PipelineChainResolver.ResolveChain<TRequest, TResponse>(services).Reverse())
         {
             var next = pipeline;
@@ -65,11 +106,17 @@ internal static class PipelineChainExecutor
             {
                 try
                 {
-                    return await behavior.Handle(request, next, ct).ConfigureAwait(false);
+                    return await behavior.HandleAsync(request, next, ct).ConfigureAwait(false);
                 }
                 catch (PipelineEjectException<TResponse> eject)
                 {
+                    activity?.SetTag(MediatorActivitySource.EjectedTag, true);
                     return eject.Response;
+                }
+                catch (PipelineEjectCaseException eject)
+                {
+                    activity?.SetTag(MediatorActivitySource.EjectedTag, true);
+                    return services.GetRequiredService<IOutcomeCaseRegistry>().ConstructOrThrow<TResponse>(eject);
                 }
             };
         }

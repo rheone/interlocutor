@@ -56,4 +56,22 @@ public sealed class NHibernateUnitOfWorkTests : IClassFixture<RealSessionFixture
         // Assert
         Assert.Null(exception);
     }
+
+    [Fact]
+    public async Task CancelAsync_RollsBackActiveTransaction_AndClearsSession()
+    {
+        // Arrange
+        using var session = this.fixture.OpenSession();
+        var unitOfWork = new NHibernateUnitOfWork(new Lazy<ISession>(() => session));
+        var widget = new Widget();
+        await session.SaveAsync(widget, TestContext.Current.CancellationToken);
+        await unitOfWork.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        // Act
+        await unitOfWork.CancelAsync(TestContext.Current.CancellationToken);
+
+        // Assert - the transaction was rolled back and the session cleared, so nothing is pending or persisted.
+        Assert.False(session.GetCurrentTransaction() is { IsActive: true });
+        Assert.False(session.Contains(widget));
+    }
 }

@@ -4,46 +4,46 @@ using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Queries;
-using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
 /// The runtime-typed dispatch fallback <see cref="Mediator"/> delegates to when no
 /// <see cref="IGeneratedRequestDispatcher"/> is registered - the explicitly opted-in runtime-scanning path used
 /// when the generator never ran over the compilation, or its output was never passed to
 /// <c>InterlocutorBuilder.AddGeneratedRegistrations</c>. Resolves and invokes the correct strongly-typed
-/// <c>Send</c> overload for a request's runtime type, via reflection, rather than duplicating the
+/// <c>SendAsync</c> overload for a request's runtime type, via reflection, rather than duplicating the
 /// pipeline-composition logic each overload already carries.
 /// </summary>
 /// <remarks>
 /// Kept as its own internal type, separate from <see cref="Mediator"/>'s typed dispatch, activity tracing, and
 /// generated-dispatcher routing, since a future generator-backed implementation replaces this fallback entirely
-/// (see <see cref="ResolveVoidCommandResultType"/>'s remarks) without touching any of those other concerns.
+/// (see <see cref="ResolveBareCommandResultType"/>'s remarks) without touching any of those other concerns.
 /// </remarks>
 internal static class ReflectionRequestDispatcher
 {
-    // Reuses the strongly-typed Send<TResponse> overloads on ISender via reflection, rather than duplicating
+    // Reuses the strongly-typed SendAsync<TResponse> overloads on ISender via reflection, rather than duplicating
     // pipeline-composition logic. These MethodInfo handles are resolved once (each generic method definition is
     // found by matching its first parameter's open generic shape) and reused for every call, since
     // MakeGenericMethod on an already-resolved MethodInfo is cheap relative to re-scanning the type's methods.
     private static readonly MethodInfo QuerySendMethod = ResolveSendMethod(typeof(IQuery<>));
     private static readonly MethodInfo CommandSendMethod = ResolveSendMethod(typeof(ICommand<>));
-    private static readonly MethodInfo VoidCommandSendMethod = ResolveSendMethod(typeof(ICommand));
+    private static readonly MethodInfo BareCommandSendMethod = ResolveSendMethod(typeof(ICommand));
 
-    // A unit command (ICommand) does not declare its own response type - the caller picks it via Send<TResult>'s
+    // A bare command (ICommand) does not declare its own response type - the caller picks it via Send<TResult>'s
     // type argument. Runtime-typed dispatch has no caller-supplied type argument, so it discovers the response
-    // type by scanning loaded assemblies for a registered IVoidCommandHandler<TCommand, TResult> closing over the
+    // type by scanning loaded assemblies for a registered IBareCommandHandler<TCommand, TResult> closing over the
     // concrete command type. This is the expensive part of the reflection fallback; results are cached per command
     // type since the answer cannot change without reloading assemblies.
-    private static readonly ConcurrentDictionary<Type, Type?> VoidCommandResultTypes = new();
+    private static readonly ConcurrentDictionary<Type, Type?> BareCommandResultTypes = new();
 
     /// <summary>
-    /// Resolves and invokes the correct strongly-typed <c>Send</c> overload for <paramref name="request"/>'s
+    /// Resolves and invokes the correct strongly-typed <c>SendAsync</c> overload for <paramref name="request"/>'s
     /// runtime type, via reflection.
     /// </summary>
-    /// <param name="mediator">The mediator instance to invoke the resolved <c>Send</c> overload on.</param>
+    /// <param name="mediator">The mediator instance to invoke the resolved <c>SendAsync</c> overload on.</param>
     /// <param name="services">The service provider used to check handler registration before dispatching.</param>
     /// <param name="request">The request to dispatch, by its runtime type.</param>
     /// <param name="ct">A token that may be used to cancel the operation.</param>
@@ -56,7 +56,7 @@ internal static class ReflectionRequestDispatcher
     [RequiresDynamicCode(
         "The runtime-typed dispatch fallback closes generic types/methods reflectively - see documentation/trim-and-aot-support.md."
     )]
-    public static async Task<IOutcome> DispatchAsync(
+    public static async Task<IUnion> DispatchAsync(
         Mediator mediator,
         IServiceProvider services,
         object request,
@@ -87,11 +87,11 @@ internal static class ReflectionRequestDispatcher
 
         if (request is ICommand)
         {
-            // A unit command doesn't declare its own response type - Send<TResult>'s caller-supplied type
+            // A bare command doesn't declare its own response type - Send<TResult>'s caller-supplied type
             // argument picks it. Runtime-typed dispatch has no caller-supplied type argument, so the response
-            // type is discovered by scanning loaded assemblies for a registered IVoidCommandHandler<TCommand,
+            // type is discovered by scanning loaded assemblies for a registered IBareCommandHandler<TCommand,
             // TResult> closing over this concrete command type (cached per command type - see the field doc).
-            var resultType = VoidCommandResultTypes.GetOrAdd(requestType, ResolveVoidCommandResultType);
+            var resultType = BareCommandResultTypes.GetOrAdd(requestType, ResolveBareCommandResultType);
             if (resultType is null)
             {
                 throw new HandlerNotRegisteredException(requestType);
@@ -100,17 +100,17 @@ internal static class ReflectionRequestDispatcher
             EnsureHandlerRegistered(
                 services,
                 requestType,
-                typeof(IVoidCommandHandler<,>).MakeGenericType(requestType, resultType)
+                typeof(IBareCommandHandler<,>).MakeGenericType(requestType, resultType)
             );
-            return await InvokeSendAsync(VoidCommandSendMethod, mediator, resultType, request, ct).ConfigureAwait(false);
+            return await InvokeSendAsync(BareCommandSendMethod, mediator, resultType, request, ct).ConfigureAwait(false);
         }
 
         throw new UnsupportedRequestTypeException(requestType);
     }
 
     /// <summary>
-    /// Resolves the <see cref="MethodInfo"/> for one of <see cref="ISender"/>'s generic <c>Send</c> overloads by
-    /// matching its first parameter's shape, so runtime-typed dispatch can invoke it reflectively without
+    /// Resolves the <see cref="MethodInfo"/> for one of <see cref="ISender"/>'s generic <c>SendAsync</c> overloads
+    /// by matching its first parameter's shape, so runtime-typed dispatch can invoke it reflectively without
     /// duplicating the pipeline-composition logic each overload already carries.
     /// </summary>
     /// <param name="requestParameterType">
@@ -121,15 +121,23 @@ internal static class ReflectionRequestDispatcher
         "Trimming",
         "IL2026:RequiresUnreferencedCode",
         Justification = "Enumerating ISender's own methods to find one by signature shape is not itself a call "
-            + "to the RequiresUnreferencedCode-annotated Mediator.Send(object,...) overload; the resolved MethodInfo "
-            + "is only ever the strongly-typed Send<TResponse> overloads DispatchAsync invokes, which carries its "
-            + "own matching annotation. See documentation/trim-and-aot-support.md."
+            + "to the RequiresUnreferencedCode-annotated Mediator.SendAsync(object,...) overload; the resolved "
+            + "MethodInfo is only ever the strongly-typed SendAsync<TResponse> overloads DispatchAsync invokes, "
+            + "which carries its own matching annotation. See documentation/trim-and-aot-support.md."
     )]
     private static MethodInfo ResolveSendMethod(Type requestParameterType) =>
         typeof(ISender)
             .GetMethods()
             .Single(method =>
             {
+                // The non-generic SendAsync(object, CancellationToken) overload never matches any of the three
+                // shapes this method is called with (IQuery<>, ICommand<>, ICommand), so name alone is enough
+                // to select among the three generic overloads without an explicit parameter-count check first.
+                if (method.Name != nameof(ISender.SendAsync))
+                {
+                    return false;
+                }
+
                 var parameters = method.GetParameters();
                 if (parameters.Length == 0)
                 {
@@ -143,8 +151,8 @@ internal static class ReflectionRequestDispatcher
             });
 
     /// <summary>
-    /// Invokes a resolved generic <c>Send&lt;TResponse&gt;</c> overload reflectively, awaits it, and returns its
-    /// result as the base outcome interface - the reflection stand-in for the compile-time generic type
+    /// Invokes a resolved generic <c>SendAsync&lt;TResponse&gt;</c> overload reflectively, awaits it, and returns
+    /// its result as the base outcome interface - the reflection stand-in for the compile-time generic type
     /// argument a static caller would normally supply.
     /// </summary>
     [RequiresUnreferencedCode(
@@ -155,7 +163,7 @@ internal static class ReflectionRequestDispatcher
     [RequiresDynamicCode(
         "The runtime-typed dispatch fallback closes generic types/methods reflectively - see documentation/trim-and-aot-support.md."
     )]
-    private static async Task<IOutcome> InvokeSendAsync(
+    private static async Task<IUnion> InvokeSendAsync(
         MethodInfo openGenericSendMethod,
         Mediator mediator,
         Type responseType,
@@ -172,7 +180,7 @@ internal static class ReflectionRequestDispatcher
         // is safe to read unconditionally here: the preceding await already completed (or faulted/threw out of)
         // the task, so a completed Task<T> always has a non-null Result property to reflect.
         var resultProperty = task.GetType().GetProperty("Result")!;
-        return (IOutcome)resultProperty.GetValue(task)!;
+        return (IUnion)resultProperty.GetValue(task)!;
     }
 
     /// <summary>
@@ -208,14 +216,14 @@ internal static class ReflectionRequestDispatcher
     }
 
     /// <summary>
-    /// Scans loaded assemblies for a concrete type implementing <c>IVoidCommandHandler&lt;TCommand, TResult&gt;</c>
+    /// Scans loaded assemblies for a concrete type implementing <c>IBareCommandHandler&lt;TCommand, TResult&gt;</c>
     /// closed over <paramref name="commandType"/>, returning the <c>TResult</c> it was implemented against, or
     /// <see langword="null"/> if no such implementation is loaded.
     /// </summary>
     /// <remarks>
-    /// This is the expensive part of the reflection-based fallback (see the <see cref="VoidCommandResultTypes"/>
+    /// This is the expensive part of the reflection-based fallback (see the <see cref="BareCommandResultTypes"/>
     /// field doc) - a future generator-backed implementation replaces it with a compiled lookup, without
-    /// changing <see cref="Mediator.Send(object, CancellationToken)"/>'s contract.
+    /// changing <see cref="Mediator.SendAsync(object, CancellationToken)"/>'s contract.
     /// </remarks>
     [RequiresUnreferencedCode(
         "The runtime-typed dispatch fallback reflects over runtime types and is only reached when no IGeneratedRequestDispatcher "
@@ -225,7 +233,7 @@ internal static class ReflectionRequestDispatcher
     [RequiresDynamicCode(
         "The runtime-typed dispatch fallback closes generic types/methods reflectively - see documentation/trim-and-aot-support.md."
     )]
-    private static Type? ResolveVoidCommandResultType(Type commandType)
+    private static Type? ResolveBareCommandResultType(Type commandType)
     {
         foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
         {
@@ -250,7 +258,7 @@ internal static class ReflectionRequestDispatcher
                 {
                     if (
                         !candidateInterface.IsGenericType
-                        || candidateInterface.GetGenericTypeDefinition() != typeof(IVoidCommandHandler<,>)
+                        || candidateInterface.GetGenericTypeDefinition() != typeof(IBareCommandHandler<,>)
                     )
                     {
                         continue;

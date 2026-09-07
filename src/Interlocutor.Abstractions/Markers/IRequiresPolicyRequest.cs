@@ -16,7 +16,7 @@ namespace Interlocutor.Abstractions.Markers;
 /// Authorization) recognizes. Example: <c>"CanEditUsers"</c>, <c>"IsAdmin"</c>.
 /// </para>
 /// </remarks>
-public interface IRequiresPolicy
+public interface IRequiresPolicyRequest
 {
     /// <summary>
     /// Gets the name of the authorization policy to enforce.

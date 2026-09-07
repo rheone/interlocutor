@@ -6,7 +6,7 @@ Update `documentation/extensibility.md`'s existing seven-case `PaymentOutcome` c
 
 **Blocked by:** Ticket 09 (same diagnostics-file area - sequencing avoids collision, not a hard technical dependency).
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `837d8bc`.
 
 - [ ] `OutcomeMemberGenerator` reports `INTERLOC014` (warning, enabled by default) for any attributed union whose case count exceeds the configured threshold (default 6).
 - [ ] The threshold is readable from an `.editorconfig` analyzer option; changing it changes the point at which the warning fires, verified by a test.

@@ -4,44 +4,44 @@ using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
 /// Covers the six-case generic
-/// <see cref="Outcome{TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6}"/> union: construction from
+/// <see cref="Outcome{T1, T2, T3, T4, T5, T6}"/> union: construction from
 /// each case type, implicit conversion from a bare case value, exhaustive switch pattern matching, and the
 /// generated <c>Match</c>/<c>Switch</c>/<c>TryGetValue</c>/<c>ToString</c> member set.
 /// </summary>
 public class OutcomeOfSixCasesTests
 {
     [Fact]
-    public void Construct_FromSuccess_IsSuccessTrue()
+    public void Construct_FromSuccess_TryGetValueSucceeds()
     {
         // Arrange & Act
         var result = new Outcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure>("hello");
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out string _));
     }
 
     [Fact]
-    public void Construct_FromCase2_IsSuccessFalse()
+    public void Construct_FromCase2_TryGetValueFails()
     {
         // Arrange & Act
         var result = new Outcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure>(new NotFound("missing"));
 
         // Assert
-        Assert.False(result.IsSuccess);
+        Assert.False(result.TryGetValue(out string _));
     }
 
     [Fact]
-    public void Construct_FromCase3_IsSuccessFalse()
+    public void Construct_FromCase3_TryGetValueFails()
     {
         // Arrange & Act
         var result = new Outcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure>(new Forbidden("denied"));
 
         // Assert
-        Assert.False(result.IsSuccess);
+        Assert.False(result.TryGetValue(out string _));
     }
 
     [Fact]
-    public void Construct_FromCase4_IsSuccessFalse()
+    public void Construct_FromCase4_TryGetValueFails()
     {
         // Arrange & Act
         var result = new Outcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure>(
@@ -49,11 +49,11 @@ public class OutcomeOfSixCasesTests
         );
 
         // Assert
-        Assert.False(result.IsSuccess);
+        Assert.False(result.TryGetValue(out string _));
     }
 
     [Fact]
-    public void Construct_FromCase5_IsSuccessFalse()
+    public void Construct_FromCase5_TryGetValueFails()
     {
         // Arrange & Act
         var result = new Outcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure>(
@@ -61,17 +61,17 @@ public class OutcomeOfSixCasesTests
         );
 
         // Assert
-        Assert.False(result.IsSuccess);
+        Assert.False(result.TryGetValue(out string _));
     }
 
     [Fact]
-    public void Construct_FromCase6_IsSuccessFalse()
+    public void Construct_FromCase6_TryGetValueFails()
     {
         // Arrange & Act
         var result = new Outcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure>(new Failure("boom"));
 
         // Assert
-        Assert.False(result.IsSuccess);
+        Assert.False(result.TryGetValue(out string _));
     }
 
     [Fact]
@@ -81,7 +81,7 @@ public class OutcomeOfSixCasesTests
         Outcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure> result = "hello";
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out string _));
     }
 
     [Fact]
@@ -91,7 +91,7 @@ public class OutcomeOfSixCasesTests
         Outcome<string, NotFound, Forbidden, Conflict, ValidationError, Failure> result = new Failure("boom");
 
         // Assert
-        Assert.False(result.IsSuccess);
+        Assert.False(result.TryGetValue(out string _));
     }
 
     [Fact]

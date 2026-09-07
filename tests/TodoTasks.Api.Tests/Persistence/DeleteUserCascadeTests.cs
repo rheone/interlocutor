@@ -76,12 +76,12 @@ public sealed class DeleteUserCascadeTests : IClassFixture<TodoTasksApiFactory>
             var commitGate = new UnitOfWorkBehavior<DeleteUserCommand, Outcome<Success, NotFound>, TodoTasksDbContext>(context);
             var command = new DeleteUserCommand(deletedUserId);
 
-            var result = await commitGate.Handle(
+            var result = await commitGate.HandleAsync(
                 command,
-                () => handler.Handle(command, TestContext.Current.CancellationToken),
+                () => handler.HandleAsync(command, TestContext.Current.CancellationToken),
                 TestContext.Current.CancellationToken
             );
-            Assert.True(result.IsSuccess);
+            Assert.True(result.TryGetValue(out Success _));
         }
 
         // Assert - a brand new scope sees the committed state.
@@ -117,7 +117,7 @@ public sealed class DeleteUserCascadeTests : IClassFixture<TodoTasksApiFactory>
         }
 
         // Act - wrapped in the real commit-gate behavior; see the previous test's remarks for why a bare
-        // handler.Handle call alone would never actually commit the delete.
+        // handler.HandleAsync call alone would never actually commit the delete.
         using (var actScope = this.factory.Services.CreateScope())
         {
             var context = actScope.ServiceProvider.GetRequiredService<Lazy<TodoTasksDbContext>>();
@@ -128,12 +128,12 @@ public sealed class DeleteUserCascadeTests : IClassFixture<TodoTasksApiFactory>
             var commitGate = new UnitOfWorkBehavior<DeleteUserCommand, Outcome<Success, NotFound>, TodoTasksDbContext>(context);
             var command = new DeleteUserCommand(userId);
 
-            var result = await commitGate.Handle(
+            var result = await commitGate.HandleAsync(
                 command,
-                () => handler.Handle(command, TestContext.Current.CancellationToken),
+                () => handler.HandleAsync(command, TestContext.Current.CancellationToken),
                 TestContext.Current.CancellationToken
             );
-            Assert.True(result.IsSuccess);
+            Assert.True(result.TryGetValue(out Success _));
         }
 
         // Assert
@@ -153,7 +153,7 @@ public sealed class DeleteUserCascadeTests : IClassFixture<TodoTasksApiFactory>
         var handler = new DeleteUserHandler(users, tasks, unitOfWork);
 
         // Act
-        var result = await handler.Handle(new DeleteUserCommand(999_999), TestContext.Current.CancellationToken);
+        var result = await handler.HandleAsync(new DeleteUserCommand(999_999), TestContext.Current.CancellationToken);
 
         // Assert
         Assert.IsType<NotFound>(result.Value);
@@ -162,8 +162,11 @@ public sealed class DeleteUserCascadeTests : IClassFixture<TodoTasksApiFactory>
     /// <summary>
     /// The load-bearing test: proves a failure discovered only *after* the cascade's deletes have
     /// already been flushed to the database - not merely staged in memory - still leaves nothing
-    /// committed, because <see cref="UnitOfWorkBehavior{TRequest,TResponse,TContext}"/> rolls back the
-    /// still-open transaction that flush happened inside of.
+    /// committed, because <see cref="DeleteUserThenFailHandler"/> explicitly cancels via
+    /// <see cref="IUnitOfWork.CancelAsync"/>, which rolls back the still-open transaction that flush
+    /// happened inside of. No case type - <see cref="Conflict"/> included - decides commit vs. rollback
+    /// on its own any more; see <see cref="Handle_AFailureDiscoveredAfterTheCascadesFlush_WithoutCancel_StillCommits_Test"/>
+    /// for the companion proof that a returned <see cref="Conflict"/> alone no longer rolls anything back.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -180,16 +183,17 @@ public sealed class DeleteUserCascadeTests : IClassFixture<TodoTasksApiFactory>
     /// user, call <see cref="IUnitOfWork.SaveChangesAsync"/> - and only *after* that call (which, per
     /// <see cref="EntityFrameworkUnitOfWork{TContext}"/>'s own remarks, begins a transaction if none is
     /// open and then forwards to <c>DbContext.SaveChangesAsync</c>, physically executing the DELETE
-    /// statements against SQLite inside that still-uncommitted transaction) returns a forced
-    /// <see cref="Conflict"/> instead of <see cref="Success"/>. That handler is driven directly through
+    /// statements against SQLite inside that still-uncommitted transaction) calls
+    /// <see cref="IUnitOfWork.CancelAsync"/> and returns a forced <see cref="Conflict"/> instead of
+    /// <see cref="Success"/>. That handler is driven directly through
     /// <see cref="UnitOfWorkBehavior{TRequest,TResponse,TContext}"/> - the exact base class
     /// <c>TodoTasksUnitOfWorkBehavior&lt;,&gt;</c> (registered in <c>Program.cs</c> ahead of every real
     /// pipeline dispatch) closes over - so this exercises real, unmodified commit-gate production code,
-    /// not a reimplementation of it. <see cref="Conflict"/> is one of the outcome cases
-    /// <c>OutcomeClassifierBuilder</c>'s default classifier treats as a failure, so
-    /// <see cref="Interlocutor.Persistence.Abstractions.CommitGateDriver"/> takes its rollback branch:
-    /// it calls <c>RollbackAsync</c> on the transaction that already had the DELETEs executed against it,
-    /// physically undoing them at the database engine level rather than merely never having sent them.
+    /// not a reimplementation of it. The explicit <see cref="IUnitOfWork.CancelAsync"/> call rolls back
+    /// the transaction that already had the DELETEs executed against it immediately, so
+    /// <see cref="Interlocutor.Persistence.Abstractions.CommitGateDriver"/>'s own end-of-pipeline check
+    /// finds nothing left pending and never re-commits - physically undoing the DELETEs at the database
+    /// engine level rather than merely never having sent them.
     /// </para>
     /// <para>
     /// A brand new scope afterward proves the point: both the user row and both task rows are still
@@ -236,14 +240,14 @@ public sealed class DeleteUserCascadeTests : IClassFixture<TodoTasksApiFactory>
             >(context);
             var command = new DeleteUserThenFailCommand(userId);
 
-            var result = await commitGate.Handle(
+            var result = await commitGate.HandleAsync(
                 command,
-                () => handler.Handle(command, TestContext.Current.CancellationToken),
+                () => handler.HandleAsync(command, TestContext.Current.CancellationToken),
                 TestContext.Current.CancellationToken
             );
 
             // The handler's own forced failure came through unchanged - the commit gate never rewrites
-            // outcomes, only decides commit vs. rollback based on them.
+            // outcomes, and no longer inspects them either; the explicit Cancel above is what rolled back.
             Assert.IsType<Conflict>(result.Value);
         }
 
@@ -258,5 +262,66 @@ public sealed class DeleteUserCascadeTests : IClassFixture<TodoTasksApiFactory>
             .Tasks.Where(t => t.OwnerId == userId.ToString(CultureInfo.InvariantCulture))
             .ToListAsync(TestContext.Current.CancellationToken);
         Assert.Equal(2, remainingTasks.Count);
+    }
+
+    /// <summary>
+    /// The companion to the test above: without the explicit <see cref="IUnitOfWork.CancelAsync"/> call,
+    /// the exact same flushed-then-<see cref="Conflict"/> cascade now commits instead of rolling back - no
+    /// case type, <see cref="Conflict"/> included, decides commit vs. rollback on its own any more.
+    /// </summary>
+    /// <returns>A task representing the asynchronous test.</returns>
+    [Fact]
+    public async Task Handle_AFailureDiscoveredAfterTheCascadesFlush_WithoutCancel_StillCommits_Test()
+    {
+        // Arrange - seed exactly like the rollback test above.
+        int userId;
+        using (var seedScope = this.factory.Services.CreateScope())
+        {
+            var seedContext = seedScope.ServiceProvider.GetRequiredService<TodoTasksDbContext>();
+            var user = new User("Ada Lovelace", $"ada-{Guid.NewGuid():N}@example.com");
+            await seedContext.Users.AddAsync(user, TestContext.Current.CancellationToken);
+            await seedContext.SaveChangesAsync(TestContext.Current.CancellationToken);
+            userId = user.Id;
+
+            await seedContext.Tasks.AddRangeAsync(
+                [new TodoTask("Buy milk", userId.ToString(CultureInfo.InvariantCulture), null)],
+                TestContext.Current.CancellationToken
+            );
+            await seedContext.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        // Act - same cascade-then-forced-Conflict handler, but constructed with cancelBeforeReturning: false.
+        using (var actScope = this.factory.Services.CreateScope())
+        {
+            var context = actScope.ServiceProvider.GetRequiredService<Lazy<TodoTasksDbContext>>();
+            var users = actScope.ServiceProvider.GetRequiredService<IDomainRepository<User, int>>();
+            var tasks = actScope.ServiceProvider.GetRequiredService<IDomainRepository<TodoTask, int>>();
+            var unitOfWork = actScope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+            var handler = new DeleteUserThenFailHandler(users, tasks, unitOfWork, cancelBeforeReturning: false);
+            var commitGate = new UnitOfWorkBehavior<
+                DeleteUserThenFailCommand,
+                Outcome<Success, NotFound, Conflict>,
+                TodoTasksDbContext
+            >(context);
+            var command = new DeleteUserThenFailCommand(userId);
+
+            var result = await commitGate.HandleAsync(
+                command,
+                () => handler.HandleAsync(command, TestContext.Current.CancellationToken),
+                TestContext.Current.CancellationToken
+            );
+
+            Assert.IsType<Conflict>(result.Value);
+        }
+
+        // Assert - the DELETEs that ran mid-dispatch are now durable: commit-by-default means a
+        // Conflict-shaped outcome, with no explicit Cancel, still commits.
+        using var verifyScope = this.factory.Services.CreateScope();
+        var verifyContext = verifyScope.ServiceProvider.GetRequiredService<TodoTasksDbContext>();
+        Assert.Null(await verifyContext.Users.FirstOrDefaultAsync(u => u.Id == userId, TestContext.Current.CancellationToken));
+        var remainingTasks = await verifyContext
+            .Tasks.Where(t => t.OwnerId == userId.ToString(CultureInfo.InvariantCulture))
+            .ToListAsync(TestContext.Current.CancellationToken);
+        Assert.Empty(remainingTasks);
     }
 }

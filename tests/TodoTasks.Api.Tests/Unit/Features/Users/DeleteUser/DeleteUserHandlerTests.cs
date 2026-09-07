@@ -34,7 +34,7 @@ public sealed class DeleteUserHandlerTests
             .Returns([task1, task2]);
 
         // Act
-        var result = await this.handler.Handle(new DeleteUserCommand(42), CancellationToken.None);
+        var result = await this.handler.HandleAsync(new DeleteUserCommand(42), CancellationToken.None);
 
         // Assert
         Assert.IsType<Success>(result.Value);
@@ -55,7 +55,7 @@ public sealed class DeleteUserHandlerTests
             .Returns([]);
 
         // Act
-        var result = await this.handler.Handle(new DeleteUserCommand(42), CancellationToken.None);
+        var result = await this.handler.HandleAsync(new DeleteUserCommand(42), CancellationToken.None);
 
         // Assert
         Assert.IsType<Success>(result.Value);
@@ -71,7 +71,7 @@ public sealed class DeleteUserHandlerTests
         this.users.GetById(42).Returns((User?)null);
 
         // Act
-        var result = await this.handler.Handle(new DeleteUserCommand(42), CancellationToken.None);
+        var result = await this.handler.HandleAsync(new DeleteUserCommand(42), CancellationToken.None);
 
         // Assert
         Assert.IsType<NotFound>(result.Value);

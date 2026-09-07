@@ -30,7 +30,7 @@ public sealed class SlowHandlerWarningBehavior<TRequest, TResponse>(
     private static readonly TimeSpan Threshold = TimeSpan.FromMilliseconds(250);
 
     /// <inheritdoc/>
-    public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+    public async Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         var stopwatch = Stopwatch.StartNew(); // Ingress - runs after whatever's registered ahead of this one.
         var response = await next().ConfigureAwait(false);

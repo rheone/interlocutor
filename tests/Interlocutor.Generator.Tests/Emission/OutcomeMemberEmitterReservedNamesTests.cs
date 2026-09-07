@@ -21,7 +21,7 @@ public sealed class OutcomeMemberEmitterReservedNamesTests
     /// <summary>
     /// A union declared <c>: IOutcome</c>, so the emitter writes both the unconditional sum-type surface
     /// (<c>Match</c>, <c>Switch</c>, <c>TryGetValue</c>, <c>ToString</c>, equality) and the IOutcome-gated
-    /// classification surface (<c>IsSuccess</c>, <c>ActiveCaseType</c>). Case types are built-in ones whose
+    /// identity surface (<c>ActiveCaseType</c>). Case types are built-in ones whose
     /// simple names ("Success", "NotFound", "Conflict") don't collide with any fixed member name, so their
     /// generated <c>TryGet{Name}</c> accessors stay trivially distinguishable from the fixed names this test
     /// checks against the reserved set.

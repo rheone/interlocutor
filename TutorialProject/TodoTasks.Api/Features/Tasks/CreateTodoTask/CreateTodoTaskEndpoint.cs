@@ -28,7 +28,7 @@ public static class CreateTodoTaskEndpoint
                     var ownerId = contextAccessor.RequireUserId();
 
                     var result = await sender
-                        .Send(new CreateTodoTaskCommand(request.Title, request.Notes, ownerId), ct)
+                        .SendAsync(new CreateTodoTaskCommand(request.Title, request.Notes, ownerId), ct)
                         .ConfigureAwait(false);
                     return result.ToMinimalApiResult();
                 }

@@ -1,6 +1,6 @@
 # Messages, Result Types & Variance
 
-Request types (queries and commands) and their response type constraints. Result types are C# 15 discriminated unions, and every response is constrained to implement `IOutcome` - a bare DTO response type fails to compile.
+Request types (queries and commands) and their response type constraints. Result types are C# 15 discriminated unions, and every response is constrained to implement `System.Runtime.CompilerServices.IUnion` - a bare DTO response type fails to compile.
 
 ## Request Types (Messages)
 
@@ -8,7 +8,7 @@ Requests are marked with a carrier interface:
 
 ### IQuery<TResponse>
 
-Marks a read request. Never writes data. Always returns `TResponse : IOutcome`.
+Marks a read request. Never writes data. Always returns `TResponse : IUnion`.
 
 ```csharp
 public record GetUser(int UserId) : IQuery<Outcome<UserDto, NotFound>>;
@@ -24,7 +24,7 @@ var result = await mediator.Send(new GetUser(42));  // Outcome<UserDto, NotFound
 
 ### ICommand<TResponse>
 
-Marks a write request that returns a value. Returns `TResponse : IOutcome`.
+Marks a write request that returns a value. Returns `TResponse : IUnion`.
 
 ```csharp
 public record CreateUser(string Name, string Email)
@@ -41,7 +41,7 @@ var result = await mediator.Send(new CreateUser("Alice", "alice@example.com"));
 // result is Outcome<int, ValidationError> with new user ID or validation errors
 ```
 
-### ICommand (Unit Command)
+### Bare Command
 
 Marks a write request with no domain data payload - only an outcome. Unlike `ICommand<TResponse>`, the outcome type isn't declared on the command itself - it's chosen **at the call site** via `Send<TResult>`'s type argument, so the same command can be handled differently depending on what outcome information a given caller needs:
 
@@ -51,15 +51,15 @@ public record DeleteAllUsers() : ICommand;
 public record ClearCache() : ICommand;
 ```
 
-A handler is `IVoidCommandHandler<TCommand, TResult>`, pairing the command with whichever `IOutcome`-shaped result that handler produces - most commonly the non-generic `Outcome` (`Success | Failure`), but any union is legal:
+A handler is `IBareCommandHandler<TCommand, TResult>`, pairing the command with whichever `IUnion`-shaped result that handler produces - any union is legal, including the case-less, non-generic `Outcome` for an operation that is genuinely infallible:
 
 ```csharp
-public class ClearCacheHandler : IVoidCommandHandler<ClearCache, Outcome>
+public class ClearCacheHandler : IBareCommandHandler<ClearCache, Outcome>
 {
     public async Task<Outcome> Handle(ClearCache command, CancellationToken ct)
     {
         await this.cache.ClearAsync(ct);
-        return new Success();
+        return new Outcome();
     }
 }
 ```
@@ -67,22 +67,22 @@ public class ClearCacheHandler : IVoidCommandHandler<ClearCache, Outcome>
 Dispatch:
 
 ```csharp
-var result = await mediator.Send<Outcome>(new DeleteAllUsers());
-// result is Outcome (Success or Failure)
+var result = await mediator.Send<Outcome>(new ClearCache());
+// result confirms ClearCache ran - there is nothing further to inspect (see Result Types § Outcome below)
 ```
 
-## IOutcome Constraint
+## IUnion Constraint
 
-Every handler's `TResponse` must implement `IOutcome`:
+Every handler's `TResponse` must implement `System.Runtime.CompilerServices.IUnion` - the interface the compiler generates for every `union` declaration:
 
 ```csharp
 public interface IQuery<TResponse>
-    where TResponse : IOutcome
+    where TResponse : IUnion
 {
 }
 
 public interface ICommand<TResponse>
-    where TResponse : IOutcome
+    where TResponse : IUnion
 {
 }
 ```
@@ -90,7 +90,7 @@ public interface ICommand<TResponse>
 This constraint is **compiler-enforced**. A bare DTO response type fails to compile:
 
 ```csharp
-// ❌ Compile error - UserDto doesn't implement IOutcome
+// ❌ Compile error - UserDto doesn't implement IUnion
 public record GetUser(int UserId) : IQuery<UserDto>;
 
 // ✅ Correct
@@ -99,12 +99,12 @@ public record GetUser(int UserId) : IQuery<Outcome<UserDto, NotFound>>;
 
 The constraint enables runtime-typed dispatch (see [runtime-typed-dispatch.md](runtime-typed-dispatch.md)) and ensures callers can pattern-match on success/failure without knowing the concrete outcome shape.
 
-## IOutcome as an Extension Point
+## IUnion as an Extension Point
 
-`IOutcome` is the real extension surface, not an implementation detail of the built-in unions. The compiler-generated `Outcome<...>` unions documented throughout this page are the library's own built-in implementation of that marker interface - not the only legal one. Any type that implements `IOutcome` can stand in as a handler's response, including a hand-rolled class that isn't a compiler-generated `union` at all:
+`IUnion` is the real extension surface, not an implementation detail of the built-in unions. The compiler-generated `Outcome<...>` unions documented throughout this page are the library's own built-in implementation of that interface - not the only legal one. Any type that implements `IUnion` can stand in as a handler's response, including a hand-rolled class that isn't a compiler-generated `union` at all:
 
 ```csharp
-public sealed class CustomOutcome : IOutcome
+public sealed class CustomOutcome : IUnion
 {
     private CustomOutcome(Type caseType, object? caseValue)
     {
@@ -116,6 +116,8 @@ public sealed class CustomOutcome : IOutcome
 
     public object? CaseValue { get; }
 
+    object? IUnion.Value => this.CaseValue;
+
     public static CustomOutcome FromSuccess(Success value) => new(typeof(Success), value);
 
     public static CustomOutcome FromFailure<TFailure>(TFailure failure)
@@ -123,25 +125,19 @@ public sealed class CustomOutcome : IOutcome
 }
 ```
 
-What makes a response type usable by the pipeline isn't a `union` declaration - it's being teachable to `IOutcomeCaseRegistry`, the construction/extraction seam behaviors use to build and inspect a response's active case without knowing its concrete shape. `AuthorizationBehavior`, `CancellationBehavior`, `TimeoutBehavior`, `RateLimitedBehavior`, and the FluentValidation `ValidationBehavior` all go through this registry rather than constructing a case directly, which is what lets them work against both compiler-generated unions and a consumer's own `IOutcome` implementation.
+A hand-rolled `IUnion` implementer needs nothing beyond that one interface to be a legal `TResponse` - it does **not** need to implement `IOutcome`, the project-owned marker the shipped `Outcome`/`Outcome<...>` family also declares. `IOutcome` and its companion `IOutcomeCase` still exist in `Interlocutor.CommonKernel.ResultTypes`, but they're a separate, opt-in classification surface now, not what makes a type legal as `TResponse`: the shipped family declares `: IOutcome` to expose it, and your own hand-rolled type may declare `IOutcomeCase` too if it wants the same surface - see [Glossary § Result Types](glossary.md#result-types) for what that surface actually gives you.
 
-`DefaultOutcomeCaseRegistry` is the zero-config default: it handles any `IOutcome` that is a compiler-generated `union`, via reflection over the union's case constructors and its compiler-generated `IUnion` marker. A response type that isn't a `union` - like `CustomOutcome` above - has no case constructor for the default registry to find, so it needs a custom factory/extractor pair registered via `OutcomeCaseRegistryBuilder`:
+What makes a response type usable by the *pipeline*, though, isn't a `union` declaration either - it's being teachable to `IOutcomeCaseRegistry`, the construction/extraction seam behaviors use to build and inspect a response's active case without knowing its concrete shape. `AuthorizationBehavior`, `CancellationBehavior`, `TimeoutBehavior`, `RateLimitedBehavior`, and the FluentValidation `ValidationBehavior` all go through this registry rather than constructing a case directly, which is what lets them work against both compiler-generated unions and a consumer's own `IUnion` implementation.
+
+`DefaultOutcomeCaseRegistry` is the zero-config default, and it splits into two halves that aren't equally permissive. *Extracting* a response's active case works for any `IUnion` implementer generically - it just reads `Value` - so `CustomOutcome` above needs no custom extractor registered at all. *Constructing* one from a case value is narrower: the default registry finds a case constructor only for a compiler-generated `union`, so a hand-rolled type like `CustomOutcome`, which has no case constructor to find, still needs a custom factory registered via `OutcomeCaseRegistryBuilder`:
 
 ```csharp
 var registry = new OutcomeCaseRegistryBuilder()
     .RegisterFactory<CustomOutcome, Forbidden>(CustomOutcome.FromFailure)
-    .RegisterExtractor<CustomOutcome>(
-        (CustomOutcome response, out Type caseType, out object? caseValue) =>
-        {
-            caseType = response.CaseType;
-            caseValue = response.CaseValue;
-            return true;
-        }
-    )
     .Build();
 ```
 
-Anything left unregistered still falls back to `DefaultOutcomeCaseRegistry`, so a consumer only needs to register the response types that aren't unions - every `Outcome<...>` shape keeps working unmodified. Register a custom registry via `InterlocutorPipelineBuilder.OverrideOutcomeCaseRegistry<TRegistry>()` (reachable via `builder.Pipeline`); see [pipeline-and-behaviors.md](pipeline-and-behaviors.md) for how the behaviors that depend on it are wired.
+Anything left unregistered still falls back to `DefaultOutcomeCaseRegistry`, so a consumer only needs to register construction for the response types that aren't unions - every `Outcome<...>` shape keeps working unmodified. Register a custom registry via `InterlocutorPipelineBuilder.OverrideOutcomeCaseRegistry<TRegistry>()` (reachable via `builder.Pipeline`); see [pipeline-and-behaviors.md](pipeline-and-behaviors.md) for how the behaviors that depend on it are wired.
 
 ## Result Types
 
@@ -152,24 +148,23 @@ Anything left unregistered still falls back to `DefaultOutcomeCaseRegistry`, so 
 >
 > - **Singular default** (`Conflict`, `NotFound`, `Failure`, `ValidationError`, ...) - one occurrence of that failure.
 > - **Plural aggregate** (`Conflicts`, `Failures`, `ValidationErrors`, ...) - a collection of one or more occurrences of the same singular case, for a handler that can fail for more than one independent reason in a single response. Reach for the plural aggregate instead of collecting your own `List<T>` of the singular: it de-duplicates, is safe at its default value, and exposes the same `.Items`-plus-semantic-projection shape (`.Reasons`, `.Messages`, `.ErrorCodes`, ...) across every aggregate, so callers pattern-match one familiar shape regardless of which aggregate they're holding.
-> - **`I<Concept>FailureCase` marker** (`IForbiddenFailureCase`, `IRateLimitedFailureCase`, `ITimeoutFailureCase`, `IValidationFailureCase`, `IFieldValidationFailureCase`) - a minimal interface the matching built-in case type implements, naming just enough shape (a `Message`, or `Messages`) for a consumer to recognize *any* implementer of that concept generically. Implementing one on your own case type buys substitutability: `OutcomeMapperBase` (and anything built on it, like `DefaultHttpOutcomeStatusMapper`) already recognizes the marker rather than the concrete built-in type, so a domain-specific replacement - a richer `Forbidden`, a technology-specific `RateLimited` - maps correctly with zero mapper changes. This mirrors the [`IOutcome`](#ioutcome-constraint) extension-point shape one level down: `IOutcome` lets you substitute the whole union, an `I<Concept>FailureCase` marker lets you substitute one of its cases.
+> - **`I<Concept>FailureCase` marker** (`IForbiddenFailureCase`, `IRateLimitedFailureCase`, `ITimeoutFailureCase`, `IValidationFailureCase`, `IFieldValidationFailureCase`) - a minimal interface the matching built-in case type implements, naming just enough shape (a `Message`, or `Messages`) for a consumer to recognize *any* implementer of that concept generically. Implementing one on your own case type buys substitutability: `OutcomeMapperBase` (and anything built on it, like `DefaultHttpOutcomeStatusMapper`) already recognizes the marker rather than the concrete built-in type, so a domain-specific replacement - a richer `Forbidden`, a technology-specific `RateLimited` - maps correctly with zero mapper changes. This mirrors the [`IUnion`](#iunion-as-an-extension-point) extension-point shape one level down: `IUnion` lets you substitute the whole union, an `I<Concept>FailureCase` marker lets you substitute one of its cases.
 
 ### Success
 
-Marker type for unit command success - carries no payload:
+Marker type for an operation that succeeds with no payload - one ordinary case among an arity's others, for an operation that genuinely can fail (an infallible operation uses the case-less, non-generic `Outcome` instead - see [Bare Command](#bare-command) above):
 
 ```csharp
 public readonly record struct Success;
 
-// Use in unit commands
-public record ClearCache() : ICommand;
+public record ArchiveOldOrders() : ICommand<Outcome<Success, Failure>>;
 
-public class ClearCacheHandler : ICommandHandler<ClearCache>
+public class ArchiveOldOrdersHandler : ICommandHandler<ArchiveOldOrders, Outcome<Success, Failure>>
 {
-    public async Task<Outcome> Handle(ClearCache command, CancellationToken ct)
+    public async Task<Outcome<Success, Failure>> Handle(ArchiveOldOrders command, CancellationToken ct)
     {
-        await this.cache.ClearAsync(ct);
-        return new Success();
+        var archived = await this.orders.ArchiveOlderThanAsync(TimeSpan.FromDays(90), ct);
+        return archived > 0 ? new Success() : new Failure("No orders were old enough to archive.");
     }
 }
 ```
@@ -288,21 +283,28 @@ None of these three participate unless the request opts in via the matching mark
 
 ## Outcome Unions
 
-Results are C# 15 discriminated unions:
+Every generic arity from two cases up is a C# 15 discriminated union - arity 0 and arity 1 are deliberately not unions at all, since neither has more than one case to discriminate between:
 
 ```csharp
-// Two-case union: success or generic failure
-public readonly union Outcome(Success, Failure);
+// Arity 0: case-less acknowledgment - no cases, no payload, no success/failure judgment
+public readonly record struct Outcome : IUnion;
+
+// Arity 1: single always-succeeding payload - one case, so nothing to discriminate either
+public readonly record struct Outcome<T>(T Value) : IUnion;
 
 // Generic union: success + specific failure cases
-public readonly union Outcome<TSuccess, TFailure>(TSuccess, TFailure);
+public readonly union Outcome<T1, T2>(T1, T2);
 
 // Wider arities (2 to 6 cases)
-public readonly union Outcome<TSuccess, TCase2, TCase3>(
-    TSuccess, TCase2, TCase3);
+public readonly union Outcome<T1, T2, T3>(
+    T1, T2, T3);
 ```
 
-Every shipped arity - the non-generic `Outcome` and every generic form from two cases through six - carries the identical generated member set: `Match`, `Switch`, a per-case `TryGetValue`, `ToString`, `IsSuccess`, and value equality (`Equals`, `GetHashCode`, `IEquatable<TSelf>`, `==`/`!=`). None of it is hand-written; each arity is declared as a `partial union` attributed with `GenerateOutcomeMembersAttribute`, and a source generator emits the second partial declaration - see [Pattern Matching](#pattern-matching) below for how to use the generated surface, [Value Equality](#value-equality) for how the generated equality members behave, and [Extensibility § Duplicate case type detection](extensibility.md#duplicate-case-type-detection-interloc009) for the companion analyzer that keeps every arity's case types distinct.
+The non-generic `Outcome` is a small, hand-written type - not generator-emitted, since it declares no case types at all. Holding an instance of it is itself the acknowledgment that an operation ran; it has no `Match`, `Switch`, or `TryGetValue` members, since there is nothing to dispatch over. Reserve it for a request that is genuinely infallible and opts into none of `ICancellable`/`IHasTimeout`/`IRateLimited` - see [Choosing Arities](#choosing-arities) below.
+
+`Outcome<T>` is a small, hand-written generic type sitting between arity 0 and the generic union family: unlike `Outcome`, it does carry a payload, but that payload is the only thing it can ever hold, so it's a "fake union" with nothing to distinguish - not generator-emitted either. It hand-declares the same `Match`/`Switch`/`TryGetValue`/`ToString`/equality member shape every generic arity carries (one-delegate `Match`/`Switch`, an always-succeeding `TryGetValue`), so a caller never has to special-case it: `Value` is a strongly-typed `T` rather than the boxed `object?` a real union exposes, with an explicit `IUnion.Value` implementation forwarding to it to satisfy the constraint. Reserve it for an operation that always succeeds but still needs to hand back exactly one value - an operation with a real failure mode should declare an explicit `Outcome<T, Failure>` (or whichever richer arity matches its real failure modes) instead.
+
+Every generic form from two cases through six carries the identical generated member set: `Match`, `Switch`, a per-case `TryGetValue`, `ToString`, and value equality (`Equals`, `GetHashCode`, `IEquatable<TSelf>`, `==`/`!=`). None of it is hand-written; each arity is declared as a `partial union` attributed with `GenerateOutcomeMembersAttribute`, and a source generator emits the second partial declaration - see [Pattern Matching](#pattern-matching) below for how to use the generated surface, [Value Equality](#value-equality) for how the generated equality members behave, and [Extensibility § Duplicate case type detection](extensibility.md#duplicate-case-type-detection-interloc009) for the companion analyzer that keeps every arity's case types distinct.
 
 ### Pattern Matching
 
@@ -383,7 +385,7 @@ left.GetHashCode() == right.GetHashCode(); // true
 Two semantics are load-bearing here:
 
 - **Union-type identity matters.** `Equals(object?)` checks `obj is TSelf` before delegating, so two different case types boxed into the same union never compare equal by coincidence, and a value boxed into one union arity never equals the "same" value boxed into a different arity - `Outcome<string, NotFound>` and `Outcome<string, NotFound, Forbidden>` are different runtime types even when both hold the success string `"hello"`.
-- **Item order never matters for a collection-bearing case.** `Failures`, `Conflicts`, `ValidationErrors`, and their `<TErrorCode>`/FluentValidation counterparts already compare equal for the same distinct items regardless of the order those items were collected in - a result assembled from concurrent/async work that completes in a different order is still the same result. Because the union's own equality just delegates to `Value.Equals(other.Value)`, this order-independence carries straight through an `Outcome<TSuccess, Failures>` (or any arity pairing one of these aggregate types) with no extra work:
+- **Item order never matters for a collection-bearing case.** `Failures`, `Conflicts`, `ValidationErrors`, and their `<TErrorCode>`/FluentValidation counterparts already compare equal for the same distinct items regardless of the order those items were collected in - a result assembled from concurrent/async work that completes in a different order is still the same result. Because the union's own equality just delegates to `Value.Equals(other.Value)`, this order-independence carries straight through an `Outcome<T1, Failures>` (or any arity pairing one of these aggregate types) with no extra work:
 
 ```csharp
 var failureA = new Failure("a");
@@ -395,9 +397,11 @@ Outcome<Success, Failures> collectedBThenA = new Failures([failureB, failureA]);
 collectedAThenB == collectedBThenA; // true - same distinct items, different collection order
 ```
 
+The case-less, non-generic `Outcome` carries a different, trivial equality: every instance equals every other, since there is no state to differ on. `Outcome<T>` carries the same shape of equality as the generic arities above (`Equals`, `GetHashCode`, `IEquatable<Outcome<T>>`, `==`/`!=`), just delegated to its strongly-typed `Value` directly rather than through a boxed `object?`.
+
 ## Choosing Arities
 
-Don't route every failure through a single `Failure`. Pick the arity that an operation can actually produce:
+Before picking among failure cases, first ask whether the operation can fail at all. A genuinely infallible operation - one with no not-found/conflict/validation/business-rule case it could ever hit - is arity 0 or arity 1, never an `Outcome<Success, Failure>` whose `Failure` arm can never actually construct: the case-less arity 0 (`Outcome`) when there's no payload either, or `Outcome<T>` when the operation still hands back exactly one value. Reach for a generic arity only once there's a real failure mode to report, and then don't route every failure through a single `Failure` - pick the arity that an operation can actually produce:
 
 ```csharp
 // ✅ Specific - only NotFound and Failure are possible
@@ -416,6 +420,10 @@ public record UpdateProduct(int Id, string Name, int Version)
 ```
 
 When a handler's response arity is specific (only the cases it can produce), the compiler forces callers to handle exactly those cases - no more, no less.
+
+The shipped family stops at six cases, and even a consumer's own [custom-arity union](extensibility.md#custom-arity-outcome-unions-generateoutcomemembersattribute) has a hard ceiling above that: at most sixteen case types. `Match<TResult>`/`Switch` bind one delegate parameter per case type to the BCL's `System.Func<T1..T16, TResult>`/`System.Action<T1..T16>` delegate families, and neither family defines an overload wider than sixteen type parameters - there is no signature past that point for the source generator to emit. A `GenerateOutcomeMembersAttribute`-attributed union declaring more than sixteen case types is a build error naming the same reason. In practice this ceiling is never a real constraint: an operation needing that many independently-branchable outcomes is a stronger sign the request is trying to do too much than that the arity needs to grow further.
+
+A build-time warning backs that "usually a sign it's doing too much" guidance directly, rather than leaving it as prose alone: any `GenerateOutcomeMembersAttribute`-attributed union declaring more case types than a configurable recommended maximum (default six, matching the shipped family's own ceiling) gets a warning naming the type, well below the hard sixteen-case ceiling above. See [Extensibility § Custom-arity outcome unions](extensibility.md#custom-arity-outcome-unions-generateoutcomemembersattribute) for the diagnostic, its `.editorconfig`-configurable threshold, and how to dismiss it for a deliberate outlier.
 
 ## Marker Interfaces
 
@@ -462,7 +470,7 @@ public interface IPipelineBehavior<TRequest, TResponse>
     // AND inside Func<Task<TResponse>> - an argument position (contravariance)
 }
 
-public interface IQueryHandler<TQuery, TResponse> where TResponse : IOutcome
+public interface IQueryHandler<TQuery, TResponse> where TResponse : IUnion
 {
     Task<TResponse> Handle(TQuery query, CancellationToken ct);
     // TResponse is in return position (covariance wanted here)
@@ -496,7 +504,7 @@ Polymorphism is request-side only. Queries and commands can inherit from a base 
 
 There is no `IAsyncEnumerable<T>` / streaming response type - streaming and "commit/rollback as one unit" don't compose, so it's deliberately kept out permanently, not a gap waiting to be filled.
 
-The constraint (all responses must be `IOutcome`) ensures:
+The constraint (all responses must be `IUnion`) ensures:
 
 - A caller can inspect success/failure without knowing the concrete outcome shape (enables runtime-typed dispatch).
 - Transactions can guarantee "all or nothing" - a single commit/rollback boundary.

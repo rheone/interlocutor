@@ -4,7 +4,7 @@
 
 **Blocked by:** 02 (cites ADR-0022's documented scope split between compile-time and runtime coverage)
 
-**Status:** open
+**Status:** done - implemented in `b9b9c05`. Cites ADR-0023, not ADR-0022 as this ticket's text names (renumbered - see ticket 02's status note).
 
 - [ ] New opt-in validation method added alongside `ValidateHandlerRegistrations`, following its existing signature/chaining style (`this IServiceProvider`, returns the same provider)
 - [ ] Covers the four marker-interface behaviors (mirroring issue 03's analyzer logic)

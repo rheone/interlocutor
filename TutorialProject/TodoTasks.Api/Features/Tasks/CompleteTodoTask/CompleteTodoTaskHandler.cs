@@ -28,7 +28,7 @@ public sealed class CompleteTodoTaskHandler(
     /// <remarks>
     /// Persist first, publish second - but publishing from inside this method still runs
     /// <see cref="TodoTaskCompletedNotification"/>'s subscribers *before* the completion actually
-    /// commits, not after: <c>UnitOfWorkBehavior</c> only commits once this <c>Handle</c> method
+    /// commits, not after: <c>UnitOfWorkBehavior</c> only commits once this <c>HandleAsync</c> method
     /// returns to the pipeline, so a subscriber that throws here unwinds past that commit entirely,
     /// leaving the completion rolled back rather than safely decoupled from it. See
     /// <c>documentation/transactions-and-store-integration.md</c> "Transactions with Notifications" for
@@ -38,7 +38,7 @@ public sealed class CompleteTodoTaskHandler(
     /// 8's own example - this is the guide's own worked example of that trade-off, not a fix applied
     /// only to this project.
     /// </remarks>
-    public async Task<Outcome<TodoTaskDto, NotFound, Forbidden, Conflict>> Handle(
+    public async Task<Outcome<TodoTaskDto, NotFound, Forbidden, Conflict>> HandleAsync(
         CompleteTodoTaskCommand command,
         CancellationToken ct
     )
@@ -61,7 +61,9 @@ public sealed class CompleteTodoTaskHandler(
         task.IsCompleted = true;
         await unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
 
-        await publisher.Publish(new TodoTaskCompletedNotification(task.Id, task.OwnerId, task.Title), ct).ConfigureAwait(false);
+        await publisher
+            .PublishAsync(new TodoTaskCompletedNotification(task.Id, task.OwnerId, task.Title), ct)
+            .ConfigureAwait(false);
 
         return TodoTaskDto.FromEntity(task);
     }

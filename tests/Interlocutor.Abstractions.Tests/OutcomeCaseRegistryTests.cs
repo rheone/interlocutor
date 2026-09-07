@@ -1,5 +1,6 @@
 namespace Interlocutor.Abstractions.Tests;
 
+using System.Runtime.CompilerServices;
 using Interlocutor.Abstractions.Pipeline.Cases;
 using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
@@ -125,18 +126,64 @@ public class OutcomeCaseRegistryTests
     }
 
     [Fact]
-    public void TryGetActiveCase_NonUnionResponse_ThrowsOutcomeCaseNotSupportedException()
+    public void TryGetActiveCase_HandRolledIUnionImplementation_ExtractsActiveCaseWithoutRegistration()
     {
+        // DefaultOutcomeCaseRegistry recognizes any IUnion implementer generically, even a hand-rolled one
+        // with no compiler-generated case constructor - extraction reads HandRolledOutcome's own
+        // IUnion.Value directly, needing no custom extractor registered via OutcomeCaseRegistryBuilder.
         // Arrange
         var registry = DefaultOutcomeCaseRegistry.Instance;
         var response = HandRolledOutcome.FromSuccess("ok");
 
         // Act
-        var ex = Assert.Throws<OutcomeCaseNotSupportedException>(() => registry.TryGetActiveCase(response, out _, out _));
+        var found = registry.TryGetActiveCase(response, out var caseType, out var caseValue);
 
         // Assert
-        Assert.Equal(typeof(HandRolledOutcome), ex.ResponseType);
-        Assert.Null(ex.CaseType);
+        Assert.True(found);
+        Assert.Equal(typeof(string), caseType);
+        Assert.Equal("ok", caseValue);
+    }
+
+    // --- DefaultOutcomeCaseRegistry against the case-less, non-generic Outcome ---
+
+    [Fact]
+    public void Construct_CaseLessOutcome_AnyCase_ThrowsClearlyRatherThanSilently()
+    {
+        // Arrange - Outcome declares no case types at all (see its own remarks), so there is no case
+        // constructor for UnionCaseFactory to find for any TCase - the same failure mode a generic union hits
+        // for a case it doesn't declare (Construct_RealUnion_MissingCase_ThrowsOutcomeCaseNotSupportedException
+        // above), just for every case rather than one in particular. Cancelled is the case CancellationBehavior
+        // would try to construct into if a request implementing ICancellableRequest chose Outcome as its response
+        // type - this is exactly the incompatibility that produces a clear, documented-runtime signal instead
+        // of a silent no-op the first time such a request actually observes cancellation.
+        var registry = DefaultOutcomeCaseRegistry.Instance;
+
+        // Act
+        var ex = Assert.Throws<OutcomeCaseNotSupportedException>(() =>
+            registry.Construct<Outcome, Cancelled>(new Cancelled("cancelled"))
+        );
+
+        // Assert
+        Assert.Equal(typeof(Outcome), ex.ResponseType);
+        Assert.Equal(typeof(Cancelled), ex.CaseType);
+    }
+
+    [Fact]
+    public void TryGetActiveCase_CaseLessOutcome_ReportsNoActiveCase()
+    {
+        // Arrange - Outcome doesn't implement IOutcomeCase, so a null Value can't be resolved to a declared
+        // case type the way a generic union's ActiveCaseType fallback would; it reports the container type
+        // itself, exactly like a genuinely unset generic union.
+        var registry = DefaultOutcomeCaseRegistry.Instance;
+        var response = default(Outcome);
+
+        // Act
+        var found = registry.TryGetActiveCase(response, out var caseType, out var caseValue);
+
+        // Assert
+        Assert.False(found);
+        Assert.Equal(typeof(Outcome), caseType);
+        Assert.Null(caseValue);
     }
 
     // --- OutcomeCaseRegistryBuilder against a hand-rolled, non-union IOutcome ---
@@ -212,11 +259,12 @@ public class OutcomeCaseRegistryTests
         Assert.Equal("boom", failure.Reason);
     }
 
-    /// <summary>A hand-rolled, non-union <see cref="IOutcome"/> implementation - the shape
-    /// <see cref="DefaultOutcomeCaseRegistry"/> cannot handle reflectively (no compiler-generated case
-    /// constructor, no <c>IUnion</c> marker), and so must be covered by a custom factory/extractor
-    /// registered via <see cref="OutcomeCaseRegistryBuilder"/>.</summary>
-    public sealed class HandRolledOutcome : IOutcome
+    /// <summary>A hand-rolled <see cref="IOutcome"/>/<see cref="IUnion"/> implementation that is not a
+    /// compiler-generated <c>union</c> - <see cref="DefaultOutcomeCaseRegistry"/> can extract its active case
+    /// via <see cref="IUnion.Value"/> alone, but construction still needs a case constructor
+    /// <see cref="Interlocutor.Abstractions.Pipeline.UnionCaseFactory"/> can find reflectively, which this type has none of, so a custom
+    /// factory registered via <see cref="OutcomeCaseRegistryBuilder"/> is required to construct one.</summary>
+    public sealed class HandRolledOutcome : IOutcome, IUnion
     {
         private HandRolledOutcome(Type caseType, object? caseValue)
         {
@@ -227,6 +275,8 @@ public class OutcomeCaseRegistryTests
         public Type CaseType { get; }
 
         public object? CaseValue { get; }
+
+        object? IUnion.Value => this.CaseValue;
 
         public static HandRolledOutcome FromSuccess(string value) => new(typeof(string), value);
 

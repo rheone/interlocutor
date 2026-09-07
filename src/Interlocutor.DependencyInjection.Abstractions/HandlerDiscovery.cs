@@ -25,14 +25,14 @@ public static class HandlerDiscovery
     [
         typeof(IQueryHandler<,>),
         typeof(ICommandHandler<,>),
-        typeof(IVoidCommandHandler<,>),
+        typeof(IBareCommandHandler<,>),
         typeof(INotificationHandler<>),
     ];
 
     /// <summary>
     /// Scans the given assemblies for concrete, non-abstract classes implementing any of the
     /// mediator's handler contracts (<see cref="IQueryHandler{TQuery,TResponse}"/>,
-    /// <see cref="ICommandHandler{TCommand,TResponse}"/>, <see cref="IVoidCommandHandler{TCommand,TResult}"/>,
+    /// <see cref="ICommandHandler{TCommand,TResponse}"/>, <see cref="IBareCommandHandler{TCommand,TResult}"/>,
     /// or <see cref="INotificationHandler{TNotification}"/>).
     /// </summary>
     /// <param name="assembliesToScan">The assemblies to scan for handler types, each at <see cref="RegistrationLifetime.Scoped"/>.</param>

@@ -32,7 +32,7 @@ public sealed class ValidationShapeMismatchAnalyzerTests
                 """;
 
         // Act
-        var diagnostics = await GeneratorTestHarness.RunAnalyzer(new ValidationShapeMismatchAnalyzer(), source);
+        var diagnostics = await GeneratorTestHarness.RunAnalyzerAsync(new ValidationShapeMismatchAnalyzer(), source);
 
         // Assert
         var diagnostic = Assert.Single(diagnostics);
@@ -54,7 +54,7 @@ public sealed class ValidationShapeMismatchAnalyzerTests
                 """;
 
         // Act
-        var diagnostics = await GeneratorTestHarness.RunAnalyzer(new ValidationShapeMismatchAnalyzer(), source);
+        var diagnostics = await GeneratorTestHarness.RunAnalyzerAsync(new ValidationShapeMismatchAnalyzer(), source);
 
         // Assert
         Assert.Empty(diagnostics);
@@ -71,7 +71,7 @@ public sealed class ValidationShapeMismatchAnalyzerTests
                 """;
 
         // Act
-        var diagnostics = await GeneratorTestHarness.RunAnalyzer(new ValidationShapeMismatchAnalyzer(), source);
+        var diagnostics = await GeneratorTestHarness.RunAnalyzerAsync(new ValidationShapeMismatchAnalyzer(), source);
 
         // Assert
         Assert.Empty(diagnostics);
@@ -90,7 +90,7 @@ public sealed class ValidationShapeMismatchAnalyzerTests
                 """;
 
         // Act
-        var diagnostics = await GeneratorTestHarness.RunAnalyzer(new ValidationShapeMismatchAnalyzer(), source);
+        var diagnostics = await GeneratorTestHarness.RunAnalyzerAsync(new ValidationShapeMismatchAnalyzer(), source);
 
         // Assert
         var diagnostic = Assert.Single(diagnostics);
@@ -111,7 +111,7 @@ public sealed class ValidationShapeMismatchAnalyzerTests
                 """;
 
         // Act
-        var diagnostics = await GeneratorTestHarness.RunAnalyzer(new ValidationShapeMismatchAnalyzer(), source);
+        var diagnostics = await GeneratorTestHarness.RunAnalyzerAsync(new ValidationShapeMismatchAnalyzer(), source);
 
         // Assert
         var diagnostic = Assert.Single(diagnostics);
@@ -135,7 +135,7 @@ public sealed class ValidationShapeMismatchAnalyzerTests
                 """;
 
         // Act
-        var diagnostics = await GeneratorTestHarness.RunAnalyzer(new ValidationShapeMismatchAnalyzer(), source);
+        var diagnostics = await GeneratorTestHarness.RunAnalyzerAsync(new ValidationShapeMismatchAnalyzer(), source);
 
         // Assert
         Assert.Empty(diagnostics);

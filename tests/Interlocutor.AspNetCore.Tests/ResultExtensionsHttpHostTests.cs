@@ -1,6 +1,7 @@
 namespace Interlocutor.AspNetCore.Tests;
 
 using System.Net;
+using System.Runtime.CompilerServices;
 using Interlocutor.Abstractions.Pipeline.Cases;
 using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
@@ -10,7 +11,7 @@ using Microsoft.AspNetCore.TestHost;
 /// <summary>
 /// Manual sanity check: a minimal, in-memory ASP.NET Core test host with one endpoint returning a built-in
 /// arity-4 union (bound to its dedicated <see cref="ResultExtensions"/> overload) and one endpoint returning
-/// a hand-rolled, non-union <see cref="IOutcome"/> (bound to the generic catch-all overload), hit
+/// a hand-rolled, non-union <see cref="IUnion"/> (bound to the generic catch-all overload), hit
 /// with a real <see cref="HttpClient"/> to confirm both produce the expected response shape and status code
 /// over an actual HTTP round trip - not just against the in-process <see cref="Microsoft.AspNetCore.Http.IResult"/>/
 /// <see cref="Microsoft.AspNetCore.Mvc.IActionResult"/> objects the other tests in this project assert against
@@ -18,17 +19,6 @@ using Microsoft.AspNetCore.TestHost;
 /// </summary>
 public sealed class ResultExtensionsHttpHostTests : IAsyncLifetime
 {
-    private static readonly IOutcomeCaseRegistry Registry = new OutcomeCaseRegistryBuilder()
-        .RegisterExtractor<CustomOutcome>(
-            (CustomOutcome response, out Type caseType, out object? caseValue) =>
-            {
-                caseType = response.CaseType;
-                caseValue = response.CaseValue;
-                return true;
-            }
-        )
-        .Build();
-
     private WebApplication _app = null!;
     private HttpClient _client = null!;
 
@@ -63,7 +53,7 @@ public sealed class ResultExtensionsHttpHostTests : IAsyncLifetime
             () =>
             {
                 var result = CustomOutcome.FromSuccess(default(Success));
-                return result.ToMinimalApiResult(caseRegistry: Registry);
+                return result.ToMinimalApiResult(caseRegistry: null);
             }
         );
         this._app.MapGet(
@@ -71,7 +61,7 @@ public sealed class ResultExtensionsHttpHostTests : IAsyncLifetime
             () =>
             {
                 var result = CustomOutcome.FromFailure(new Conflict("Data changed", "stale.data"));
-                return result.ToMinimalApiResult(caseRegistry: Registry);
+                return result.ToMinimalApiResult(caseRegistry: null);
             }
         );
 

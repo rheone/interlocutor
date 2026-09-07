@@ -23,9 +23,9 @@ internal static class HandlerDiagnosticAnalyzer
     /// <summary>
     /// Reports <see cref="InterlocutorDiagnostics.MissingHandler"/> for every request with no matching handler
     /// among <paramref name="handlers"/> or any upstream <paramref name="externalModules"/>'s own handlers. A
-    /// query or command request matches a handler with the same request and response type; a void command
-    /// matches any void-command handler for the same request type regardless of the handler's chosen result
-    /// type (see <see cref="RequestKind.VoidCommand"/>).
+    /// query or command request matches a handler with the same request and response type; a bare command
+    /// matches any bare-command handler for the same request type regardless of the handler's chosen result
+    /// type (see <see cref="RequestKind.BareCommand"/>).
     /// </summary>
     /// <param name="handlers">Every handler discovered in this compilation.</param>
     /// <param name="externalModules">Every upstream referenced assembly's own discovered module and handlers.</param>
@@ -108,12 +108,12 @@ internal static class HandlerDiagnosticAnalyzer
     /// <summary>
     /// Builds the (request type, response type) lookup sets <see cref="ReportMissingHandlers"/> and
     /// <see cref="ReportUnresolvedGenericRequestUsages"/> both check against - every query, command, and
-    /// void-command request type a handler exists for, whether declared in this compilation or an upstream
+    /// bare-command request type a handler exists for, whether declared in this compilation or an upstream
     /// referenced assembly's generated module.
     /// </summary>
     /// <param name="handlers">Every handler discovered in this compilation.</param>
     /// <param name="externalModules">Every upstream referenced assembly's own discovered module and handlers.</param>
-    /// <returns>The three lookup sets, keyed by (request type, response type) for query/command, request type alone for void command.</returns>
+    /// <returns>The three lookup sets, keyed by (request type, response type) for query/command, request type alone for bare command.</returns>
     private static HandlerRequestTypeSets BuildHandlerRequestTypeSets(
         ImmutableArray<HandlerModel> handlers,
         ImmutableArray<ExternalModuleInfo> externalModules
@@ -127,8 +127,8 @@ internal static class HandlerDiagnosticAnalyzer
                 .Where(static h => h.Kind == HandlerKind.Command)
                 .Select(static h => (h.RequestTypeName, h.ResponseTypeName))
         );
-        var voidCommandHandlerRequestTypes = new HashSet<string>(
-            handlers.Where(static h => h.Kind == HandlerKind.VoidCommand).Select(static h => h.RequestTypeName)
+        var bareCommandHandlerRequestTypes = new HashSet<string>(
+            handlers.Where(static h => h.Kind == HandlerKind.BareCommand).Select(static h => h.RequestTypeName)
         );
 
         foreach (var externalHandler in externalModules.SelectMany(static m => m.Handlers))
@@ -141,8 +141,8 @@ internal static class HandlerDiagnosticAnalyzer
                 case HandlerKind.Command:
                     commandHandlerRequestTypes.Add((externalHandler.RequestTypeName, externalHandler.ResponseTypeName));
                     break;
-                case HandlerKind.VoidCommand:
-                    voidCommandHandlerRequestTypes.Add(externalHandler.RequestTypeName);
+                case HandlerKind.BareCommand:
+                    bareCommandHandlerRequestTypes.Add(externalHandler.RequestTypeName);
                     break;
                 case HandlerKind.Notification:
                 default:
@@ -151,14 +151,14 @@ internal static class HandlerDiagnosticAnalyzer
             }
         }
 
-        return new HandlerRequestTypeSets(queryHandlerRequestTypes, commandHandlerRequestTypes, voidCommandHandlerRequestTypes);
+        return new HandlerRequestTypeSets(queryHandlerRequestTypes, commandHandlerRequestTypes, bareCommandHandlerRequestTypes);
     }
 
     /// <summary>
     /// Reports <see cref="InterlocutorDiagnostics.DuplicateHandler"/> whenever more than one query or command
     /// handler is found for the same closed request/response pair. A notification's zero-or-many arity (see
-    /// <see cref="HandlerKind.Notification"/>) and a void command's caller-chosen result type (see
-    /// <see cref="RequestKind.VoidCommand"/>) both make "more than one handler" the expected, valid shape for
+    /// <see cref="HandlerKind.Notification"/>) and a bare command's caller-chosen result type (see
+    /// <see cref="RequestKind.BareCommand"/>) both make "more than one handler" the expected, valid shape for
     /// those kinds, so only <see cref="HandlerKind.Query"/> and <see cref="HandlerKind.Command"/> are checked.
     /// </summary>
     /// <param name="handlers">Every handler discovered in this compilation.</param>
@@ -223,28 +223,28 @@ internal static class HandlerDiagnosticAnalyzer
     /// The three (request type, response type) lookup sets <see cref="BuildHandlerRequestTypeSets"/> builds
     /// once and both <see cref="ReportMissingHandlers"/> and <see cref="ReportUnresolvedGenericRequestUsages"/>
     /// query via <see cref="HasHandler"/> - bundled into one type instead of three fields travelling together,
-    /// and carrying the query/command/void-command dispatch each caller previously repeated its own copy of.
+    /// and carrying the query/command/bare-command dispatch each caller previously repeated its own copy of.
     /// </summary>
     /// <param name="QueryHandlerRequestTypes">Every (request type, response type) pair with a query handler.</param>
     /// <param name="CommandHandlerRequestTypes">Every (request type, response type) pair with a command handler.</param>
-    /// <param name="VoidCommandHandlerRequestTypes">Every request type with at least one void-command handler, for any result type.</param>
+    /// <param name="BareCommandHandlerRequestTypes">Every request type with at least one bare-command handler, for any result type.</param>
     private sealed record HandlerRequestTypeSets(
         HashSet<(string, string?)> QueryHandlerRequestTypes,
         HashSet<(string, string?)> CommandHandlerRequestTypes,
-        HashSet<string> VoidCommandHandlerRequestTypes
+        HashSet<string> BareCommandHandlerRequestTypes
     )
     {
         /// <summary>Whether a handler exists for <paramref name="requestTypeName"/> (and, for query/command, <paramref name="responseTypeName"/>) at the given <paramref name="kind"/>.</summary>
         /// <param name="kind">The request's kind - determines which lookup set and key shape is checked.</param>
         /// <param name="requestTypeName">The request type to check.</param>
-        /// <param name="responseTypeName">The response type to check, for <see cref="RequestKind.Query"/>/<see cref="RequestKind.Command"/>; ignored for <see cref="RequestKind.VoidCommand"/>.</param>
+        /// <param name="responseTypeName">The response type to check, for <see cref="RequestKind.Query"/>/<see cref="RequestKind.Command"/>; ignored for <see cref="RequestKind.BareCommand"/>.</param>
         /// <returns><see langword="true"/> if a matching handler exists.</returns>
         public bool HasHandler(RequestKind kind, string requestTypeName, string? responseTypeName) =>
             kind switch
             {
                 RequestKind.Query => this.QueryHandlerRequestTypes.Contains((requestTypeName, responseTypeName)),
                 RequestKind.Command => this.CommandHandlerRequestTypes.Contains((requestTypeName, responseTypeName)),
-                RequestKind.VoidCommand => this.VoidCommandHandlerRequestTypes.Contains(requestTypeName),
+                RequestKind.BareCommand => this.BareCommandHandlerRequestTypes.Contains(requestTypeName),
                 _ => true,
             };
     }

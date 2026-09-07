@@ -13,7 +13,7 @@ using NSubstitute;
 /// Proves that <see cref="AuditingBehavior{TRequest,TResponse}"/> resolves <see cref="AuditEntry.UserId"/>
 /// through the real <see cref="AspNetCoreRequestContextAccessor"/> - not a hand-rolled test double for
 /// <see cref="Interlocutor.Abstractions.Core.IRequestContextAccessor"/> - end to end through a
-/// <see cref="AuditingBehavior{TRequest,TResponse}.Handle"/> call.
+/// <see cref="AuditingBehavior{TRequest,TResponse}.HandleAsync"/> call.
 /// </summary>
 public class AuditingBehaviorAspNetCoreIntegrationTests
 {
@@ -35,7 +35,7 @@ public class AuditingBehaviorAspNetCoreIntegrationTests
         var request = new AuditableQuery("test");
 
         // Act
-        await behavior.Handle(request, () => Task.FromResult("response"), CancellationToken.None);
+        await behavior.HandleAsync(request, () => Task.FromResult("response"), CancellationToken.None);
 
         // Assert
         await sink.Received(1).RecordAsync(Arg.Is<AuditEntry>(e => e.UserId == "alice"), CancellationToken.None);
@@ -56,7 +56,7 @@ public class AuditingBehaviorAspNetCoreIntegrationTests
         var request = new AuditableQuery("test");
 
         // Act
-        var result = await behavior.Handle(request, () => Task.FromResult("response"), CancellationToken.None);
+        var result = await behavior.HandleAsync(request, () => Task.FromResult("response"), CancellationToken.None);
 
         // Assert - no exception, auditing still succeeds, UserId stays null.
         Assert.Equal("response", result);

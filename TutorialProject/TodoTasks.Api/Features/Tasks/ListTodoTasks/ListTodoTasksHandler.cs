@@ -29,7 +29,7 @@ public sealed class ListTodoTasksHandler(IDomainRepository<TodoTask, int> tasks)
     : IQueryHandler<ListTodoTasksQuery, Outcome<IReadOnlyList<TodoTaskDto>, Failure>>
 {
     /// <inheritdoc/>
-    public async Task<Outcome<IReadOnlyList<TodoTaskDto>, Failure>> Handle(ListTodoTasksQuery query, CancellationToken ct)
+    public async Task<Outcome<IReadOnlyList<TodoTaskDto>, Failure>> HandleAsync(ListTodoTasksQuery query, CancellationToken ct)
     {
         var matches = await tasks
             .GetManyAsync(

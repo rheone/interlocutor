@@ -6,14 +6,14 @@ using System.Runtime.CompilerServices;
 using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
-/// Zero-config <see cref="IOutcomeCaseRegistry"/> that handles any <see cref="IOutcome"/> which is a
+/// Zero-config <see cref="IOutcomeCaseRegistry"/> that handles any <see cref="IUnion"/> response which is a
 /// compiler-generated <c>union</c>: construction via <see cref="UnionCaseFactory"/>'s case-constructor
 /// reflection, extraction via pattern-matching the compiler-generated <see cref="IUnion"/> marker interface.
 /// </summary>
 /// <remarks>
 /// This is what <see cref="OutcomeCaseRegistryBuilder"/> falls back to for any response type a consumer has
 /// not registered a custom factory or extractor for - use <see cref="Instance"/> directly when no custom
-/// <see cref="IOutcome"/> implementations are in play.
+/// <see cref="IUnion"/> implementations are in play.
 /// </remarks>
 public sealed class DefaultOutcomeCaseRegistry : IOutcomeCaseRegistry
 {
@@ -29,7 +29,7 @@ public sealed class DefaultOutcomeCaseRegistry : IOutcomeCaseRegistry
 
     /// <inheritdoc/>
     public TResponse Construct<TResponse, TCase>(TCase caseValue)
-        where TResponse : IOutcome
+        where TResponse : IUnion
     {
         var constructor = ConstructorCache.GetOrAdd(
             (typeof(TResponse), typeof(TCase)),
@@ -53,7 +53,7 @@ public sealed class DefaultOutcomeCaseRegistry : IOutcomeCaseRegistry
 
     /// <inheritdoc/>
     public bool TryGetActiveCase<TResponse>(TResponse response, out Type caseType, out object? caseValue)
-        where TResponse : IOutcome
+        where TResponse : IUnion
     {
         if (response is null)
         {
@@ -85,6 +85,11 @@ public sealed class DefaultOutcomeCaseRegistry : IOutcomeCaseRegistry
             return false;
         }
 
+        // Unreachable for any TResponse resolved through the ordinary generic API: the IOutcomeCaseRegistry
+        // constraint on TResponse is IUnion itself, so a legally-typed, non-null response already satisfied
+        // the check above. Left in place (unchanged in behavior, per this ticket) as a defense against a
+        // TResponse resolved outside that compile-time check - e.g. this method closed reflectively over a
+        // mismatched runtime type.
         throw new OutcomeCaseNotSupportedException(
             typeof(TResponse),
             null,

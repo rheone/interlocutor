@@ -2,36 +2,45 @@
 
 Worked examples for choosing an `Outcome` arity for a given command or query. Assumes [Messages, Result Types & Variance](messages-and-result-types.md)'s vocabulary - read that first if `Outcome`, arities, and marker interfaces are new.
 
-`Interlocutor.CommonKernel` declares a family of `IOutcome`-implementing unions, distinguished purely
+`Interlocutor.CommonKernel` declares a family of `Outcome` types, distinguished purely
 by how many outcome shapes ("arms") they carry:
 
 | Type | Arms | Declared as |
 |---|---|---|
-| `Outcome` | 2, fixed | `union Outcome(Success, Failure)` |
-| `Outcome<TSuccessResult, TFailureResult>` | 2, generic | `union Outcome<TSuccessResult, TFailureResult>(TSuccessResult, TFailureResult)` |
-| `Outcome<TSuccessResult, TCase2, TCase3>` | 3, generic | `union Outcome<TSuccessResult, TCase2, TCase3>(TSuccessResult, TCase2, TCase3)` |
-| `Outcome<TSuccessResult, TCase2, TCase3, TCase4>` | 4, generic | `union Outcome<TSuccessResult, TCase2, TCase3, TCase4>(TSuccessResult, TCase2, TCase3, TCase4)` |
-| `Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>` | 5, generic | `union Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>(TSuccessResult, TCase2, TCase3, TCase4, TCase5)` |
+| `Outcome` | 0, case-less | `record struct Outcome : IUnion` |
+| `Outcome<T>` | 1, always-succeeding | `record struct Outcome<T>(T Value) : IUnion` |
+| `Outcome<T1, T2>` | 2, generic | `union Outcome<T1, T2>(T1, T2)` |
+| `Outcome<T1, T2, T3>` | 3, generic | `union Outcome<T1, T2, T3>(T1, T2, T3)` |
+| `Outcome<T1, T2, T3, T4>` | 4, generic | `union Outcome<T1, T2, T3, T4>(T1, T2, T3, T4)` |
+| `Outcome<T1, T2, T3, T4, T5>` | 5, generic | `union Outcome<T1, T2, T3, T4, T5>(T1, T2, T3, T4, T5)` |
 
-They coexist by arity, the same way `Action`/`Action<T>`/`Action<T1,TCase2>` coexist in the BCL -
-`Outcome` is not a special case of `Outcome<T1,TCase2>`, it's a sibling declaration with its own fixed
-two cases (`Success`/`Failure`).
+They coexist by arity, the same way `Action`/`Action<T>`/`Action<T1,T2>` coexist in the BCL -
+the case-less `Outcome` is not a special case of `Outcome<T1,T2>`, and `Outcome<T>` is not a
+one-case union either, it's a hand-written "fake union" with nothing to discriminate. Both sit
+below the generic union family, reserved for a genuinely infallible operation - `Outcome` when
+there's no payload to report, `Outcome<T>` when there's exactly one (see Example 1 below for the
+boundary between the case-less form and the generic family).
 
 Nothing in the mediator, the pipeline, or the DI wiring is hardcoded to one arity.
 `ICommandHandler<TCommand,TResponse>`, `IQueryHandler<TQuery,TResponse>`,
-`IVoidCommandHandler<TCommand,TResult>`, and `IPipelineBehavior<TRequest,TResponse>` are all
-generic over `TResponse`/`TResult` - that type parameter can be `Outcome`, `Outcome<A,B>`,
-`Outcome<A,B,C,D,E>`, or a plain non-`Outcome` type. `IResponseOutcomeDescriber` (used by
+`IBareCommandHandler<TCommand,TResult>`, and `IPipelineBehavior<TRequest,TResponse>` are all
+generic over `TResponse`/`TResult` - that type parameter can be `Outcome`, `Outcome<T>`,
+`Outcome<A,B>`, `Outcome<A,B,C,D,E>`, or a plain non-`Outcome` type. `IResponseOutcomeDescriber` (used by
 `LoggingBehavior`, `AuditingBehavior`, and `UnitOfWorkBehavior`) never inspects which arity
 produced a response either - it unwraps the union via `IUnion.Value` and pattern-matches on the
 *case type* (`NotFound`, `Forbidden`, `Conflict`, `ValidationError`, `Failure`), so those three
 behaviors work identically no matter which arity you choose.
 
 The three examples below build a full vertical slice - a command, a query, their handlers, and
-the DI composition root - for `Outcome`, `Outcome<TSuccessResult, TFailureResult>`, and
-`Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>` respectively, so the differences show up in real code
-rather than in isolated type signatures. (The 3- and 4-arm forms sit between examples 2 and 3 on
-the same spectrum - same mechanics, just more or fewer arms.)
+the DI composition root - for `Outcome<T1, T2>`, `Outcome<T1, T2>` again with a different
+failure case, and `Outcome<T1, T2, T3, T4, T5>` respectively, so the differences show up in real
+code rather than in isolated type signatures. (The 3- and 4-arm forms sit between examples 2 and 3
+on the same spectrum - same mechanics, just more or fewer arms. Neither the case-less `Outcome`
+nor the single-payload `Outcome<T>` has a worked example of its own here - there's no vertical
+slice to build around a type with nothing to project or branch on for `Outcome`, or nothing to
+branch on (only ever one case) for `Outcome<T>` - see [Messages, Result Types & Variance § Bare Command](messages-and-result-types.md#bare-command)
+for `Outcome`'s one worked example, `ClearCache`, and [Messages, Result Types & Variance § Outcome Unions](messages-and-result-types.md#outcome-unions)
+for `Outcome<T>`'s member shape.)
 
 Shared plumbing referenced by every example:
 
@@ -70,11 +79,17 @@ public sealed class AppDbUnitOfWorkBehavior<TRequest, TResponse>(Lazy<AppDbConte
 
 ---
 
-## Example 1 - `Outcome` (Success, Failure): "Deactivate User"
+## Example 1 - `Outcome<Success, Failure>`: "Deactivate User"
 
-Use the fixed `Outcome` when a command or query has **no meaningful success payload and exactly
-one failure shape** - the caller only needs to know whether it worked. `IsSuccess` is the only
-member: there's no data to project out of either arm.
+Use the 2-arm generic form, with `Success`/`Failure` as ordinary case types a consumer names
+explicitly, when a command or query has **no meaningful success payload and exactly one failure
+shape** - the caller only needs to know whether it worked, via `TryGetValue`/`Match`/`Switch`
+pattern matching; there's no data to project out of either arm. This is *not* a job for the
+case-less, non-generic `Outcome` - deactivating a user has two real failure modes below (not
+found, already inactive), and a response type that can't express them would silently swallow that
+distinction. Reach for `Outcome` only once an operation truly has no failure mode to report at all
+(`ClearCache` in [Messages, Result Types & Variance](messages-and-result-types.md#bare-command)
+is that case).
 
 ```csharp
 public sealed class User
@@ -91,9 +106,10 @@ public sealed record DeactivateUserCommand(Guid UserId) : ICommand, IAuditableRe
     public string ActionName => "User.Deactivate";
 }
 
-public sealed class DeactivateUserCommandHandler(AppDbContext db) : IVoidCommandHandler<DeactivateUserCommand, Outcome>
+public sealed class DeactivateUserCommandHandler(AppDbContext db)
+    : IBareCommandHandler<DeactivateUserCommand, Outcome<Success, Failure>>
 {
-    public async Task<Outcome> Handle(DeactivateUserCommand command, CancellationToken ct)
+    public async Task<Outcome<Success, Failure>> Handle(DeactivateUserCommand command, CancellationToken ct)
     {
         // Step 1 - load
         var user = await db.Users.FirstOrDefaultAsync(u => u.Id == command.UserId, ct);
@@ -118,11 +134,12 @@ public sealed class DeactivateUserCommandHandler(AppDbContext db) : IVoidCommand
 
 // --- Query: no payload, plain outcome ---------------------------------------
 
-public sealed record CheckUsernameAvailableQuery(string Username) : IQuery<Outcome>;
+public sealed record CheckUsernameAvailableQuery(string Username) : IQuery<Outcome<Success, Failure>>;
 
-public sealed class CheckUsernameAvailableQueryHandler(AppDbContext db) : IQueryHandler<CheckUsernameAvailableQuery, Outcome>
+public sealed class CheckUsernameAvailableQueryHandler(AppDbContext db)
+    : IQueryHandler<CheckUsernameAvailableQuery, Outcome<Success, Failure>>
 {
-    public async Task<Outcome> Handle(CheckUsernameAvailableQuery query, CancellationToken ct)
+    public async Task<Outcome<Success, Failure>> Handle(CheckUsernameAvailableQuery query, CancellationToken ct)
     {
         var normalized = query.Username.Trim().ToLowerInvariant();
         var taken = await db.Users.AnyAsync(u => u.Username.ToLower() == normalized, ct);
@@ -135,8 +152,8 @@ public sealed class CheckUsernameAvailableQueryHandler(AppDbContext db) : IQuery
 **Composition root:**
 
 ```csharp
-services.AddScoped<IVoidCommandHandler<DeactivateUserCommand, Outcome>, DeactivateUserCommandHandler>();
-services.AddScoped<IQueryHandler<CheckUsernameAvailableQuery, Outcome>, CheckUsernameAvailableQueryHandler>();
+services.AddScoped<IBareCommandHandler<DeactivateUserCommand, Outcome<Success, Failure>>, DeactivateUserCommandHandler>();
+services.AddScoped<IQueryHandler<CheckUsernameAvailableQuery, Outcome<Success, Failure>>, CheckUsernameAvailableQueryHandler>();
 
 // Open-generic - applies to every request in the app, regardless of arity:
 services.AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
@@ -147,7 +164,7 @@ services.AddScoped(typeof(IPipelineBehavior<,>), typeof(AppDbUnitOfWorkBehavior<
 **Call site:**
 
 ```csharp
-var result = await sender.Send<Outcome>(new DeactivateUserCommand(userId), ct);
+var result = await sender.Send<Outcome<Success, Failure>>(new DeactivateUserCommand(userId), ct);
 
 var response = result.Value switch
 {
@@ -157,18 +174,18 @@ var response = result.Value switch
 };
 ```
 
-Note the explicit `Send<Outcome>(...)` type argument - `ICommand` (non-generic) carries no
-information about which `IOutcome` its handler returns, so the caller must say which one it wants
-resolved. Compare this to the query call (`sender.Send(new CheckUsernameAvailableQuery(...), ct)`)
+Note the explicit `Send<Outcome<Success, Failure>>(...)` type argument - `ICommand` (non-generic)
+carries no information about which `IUnion` its handler returns, so the caller must say which one
+it wants resolved. Compare this to the query call (`sender.Send(new CheckUsernameAvailableQuery(...), ct)`)
 which needs no type argument at all, because `IQuery<TResponse>` declares its response type
 directly on the query itself.
 
 ---
 
-## Example 2 - `Outcome<TSuccessResult, TFailureResult>`: "Approve Time-Off Request"
+## Example 2 - `Outcome<T1, T2>`: "Approve Time-Off Request"
 
 Use the 2-arm generic form when there **is** a success payload, but only **one** distinguishable
-failure shape. Picking a well-known `ResultTypes` case as `TFailureResult` - here, `Forbidden` -
+failure shape. Picking a well-known `ResultTypes` case as `T2` - here, `Forbidden` -
 lets `AuthorizationBehavior<TRequest, TResponse>` short-circuit the pipeline generically, before
 the handler ever runs, for a request implementing `IRequiresPolicy`.
 
@@ -200,10 +217,10 @@ public sealed class ApproveTimeOffRequestCommandHandler(AppDbContext db)
         // Forbidden before this method is ever called if the policy fails) - so the only step
         // left here is the operation itself.
         //
-        // Note what this shape *can't* express: there's no NotFound arm. A 2-arm Outcome<TSuccess,
-        // TFailure> assumes the entity exists by the time the handler runs. If "the request might
+        // Note what this shape *can't* express: there's no NotFound arm. A 2-arm Outcome<T1,
+        // T2> assumes the entity exists by the time the handler runs. If "the request might
         // not exist" is a real case you need to report distinctly from "forbidden", reach for
-        // Outcome<TSuccess, NotFound, Forbidden> (3 arms) instead - see Example 3 for the pattern.
+        // Outcome<T1, NotFound, Forbidden> (3 arms) instead - see Example 3 for the pattern.
         var request = await db.TimeOffRequests.FirstAsync(r => r.Id == command.RequestId, ct);
         request.Status = "Approved";
 
@@ -268,7 +285,7 @@ on the command itself, so it's inferred.
 
 ---
 
-## Example 3 - `Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>`: "Submit Payment"
+## Example 3 - `Outcome<T1, T2, T3, T4, T5>`: "Submit Payment"
 
 Use the widest generic form for operations with several genuinely distinct outcomes that callers
 need to handle differently. The ownership check below can't move into `AuthorizationBehavior`
@@ -400,7 +417,7 @@ services.AddScoped<
 
 // Nothing new needed here - LoggingBehavior, AuditingBehavior, and AppDbUnitOfWorkBehavior are
 // already registered open-generic from Example 1 and apply to this 5-arm shape exactly as they
-// do to Outcome and Outcome<TSuccess,TFailure>, with zero changes.
+// do to Outcome and Outcome<T1,T2>, with zero changes.
 ```
 
 **Call site:**
@@ -418,7 +435,7 @@ var response = result.Value switch
     _ => throw new UnreachableException(),
 };
 
-// Outcome<T1..TCase5>.GetValue() is also available for callers that just need an untyped peek
+// Outcome<T1..T5>.GetValue() is also available for callers that just need an untyped peek
 // at whichever arm is present, without an exhaustive switch - e.g. generic logging:
 object? arm = result.GetValue();
 ```
@@ -427,13 +444,20 @@ object? arm = result.GetValue();
 
 ## Summary
 
-| | `Outcome` | `Outcome<TSuccessResult, TFailureResult>` | `Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5>` |
+| | `Outcome<Success, Failure>` | `Outcome<T1, T2>` | `Outcome<T1, T2, T3, T4, T5>` |
 |---|---|---|---|
-| Success payload | none | `TSuccessResult` | `TSuccessResult` |
-| Distinguishable failure shapes | 1 (`Failure`, fixed) | 1 (`TFailureResult`, your choice) | up to 4 (`TCase2`..`TCase5`, your choice) |
-| Failure detail available | `Failure.Reason` / `Failure.ErrorCode` | whatever `TFailureResult` carries | whatever each of `TCase2..TCase5` carries |
-| Dispatch path | `ICommand` + `IVoidCommandHandler<,>`, or `IQuery<Outcome>` | `ICommand<TResponse>` / `IQuery<TResponse>` with `TResponse = Outcome<...>` | same, just a wider `TResponse` |
+| Success payload | none | `T1` | `T1` |
+| Distinguishable failure shapes | 1 (`Failure`, your choice of case type) | 1 (`T2`, your choice) | up to 4 (`T2`..`T5`, your choice) |
+| Failure detail available | `Failure.Reason` / `Failure.ErrorCode` | whatever `T2` carries | whatever each of `T2..T5` carries |
+| Dispatch path | `ICommand` + `IBareCommandHandler<,>`, or `IQuery<Outcome<Success, Failure>>` | `ICommand<TResponse>` / `IQuery<TResponse>` with `TResponse = Outcome<...>` | same, just a wider `TResponse` |
 | Works with Logging / Auditing / Transaction behaviors | yes, unmodified | yes, unmodified | yes, unmodified |
-| Works with `AuthorizationBehavior<TRequest, TResponse>` for non-resource (`IRequiresPolicy`) checks | no - `Outcome` has no `Forbidden` case to construct | yes, when `TFailureResult = Forbidden` | yes, if one of `TCase2..TCase5` is `Forbidden` - arity never limits it, only whether a `Forbidden` case exists |
+| Works with `AuthorizationBehavior<TRequest, TResponse>` for non-resource (`IRequiresPolicy`) checks | no - this arm's `Failure` case can't hold `Forbidden` too, without collapsing two distinct failure reasons into one | yes, when `T2 = Forbidden` | yes, if one of `T2..T5` is `Forbidden` - arity never limits it, only whether a `Forbidden` case exists |
 | Works for resource-dependent checks (ownership, entity state) | n/a | n/a | no, at any arity - always needs `ResourceCommandHandler` or an inline check after loading, never a pre-handler behavior |
-| Best for | outcome-only operations, no payload | one payload, one well-known failure mode | rich operations with several distinguishable outcomes |
+| Best for | one payload, one well-known failure mode, no distinguishable success payload worth naming | one payload, one well-known failure mode | rich operations with several distinguishable outcomes |
+
+The case-less, non-generic `Outcome` (0 arms, no payload, no failure case at all) and the
+single-payload `Outcome<T>` (1 arm, always succeeds) both sit outside this table entirely - neither
+is one more point on this spectrum, since there's no failure mode here for either to compare
+against. They're reserved for the narrower case where an operation is genuinely infallible: `Outcome`
+when it has no payload either (see `ClearCache` in [Messages, Result Types & Variance](messages-and-result-types.md#bare-command)),
+`Outcome<T>` when it still hands back exactly one value (see [Messages, Result Types & Variance § Outcome Unions](messages-and-result-types.md#outcome-unions)).

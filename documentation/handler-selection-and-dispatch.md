@@ -315,7 +315,7 @@ var request = JsonSerializer.Deserialize(message.Payload, requestType);
 // Runtime-typed dispatch - no generic parameter
 var result = await mediator.Send(request);  // request is object
 
-// Result is IOutcome (the base interface all outcomes implement)
+// Result is IUnion (the base interface all outcomes implement)
 // You can inspect success/failure without knowing the concrete outcome shape
 ```
 

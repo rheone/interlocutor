@@ -4,6 +4,7 @@ using global::Autofac;
 using global::Microsoft.Extensions.Logging;
 using global::Microsoft.Extensions.Logging.Abstractions;
 using Interlocutor.Abstractions;
+using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Markers;
 using Interlocutor.Abstractions.Pipeline;
@@ -28,6 +29,20 @@ public class InterlocutorBuilderIntegrationTests
         Assert.NotNull(container.ResolveOptional<IMediator>());
         Assert.NotNull(container.ResolveOptional<IQueryHandler<SampleQuery, Outcome>>());
         Assert.Empty(container.Resolve<IEnumerable<IPipelineBehavior<SampleQuery, Outcome>>>());
+    }
+
+    [Fact]
+    public void AddInterlocutor_ScansAndRegisters_BareCommandHandler()
+    {
+        // Arrange
+        var containerBuilder = new ContainerBuilder();
+        containerBuilder.AddInterlocutor(builder => builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly));
+
+        // Act
+        var container = containerBuilder.Build();
+
+        // Assert
+        Assert.IsType<SampleBareCommandHandler>(container.Resolve<IBareCommandHandler<SampleBareCommand, Outcome>>());
     }
 
     [Fact]
@@ -179,7 +194,7 @@ public class InterlocutorBuilderIntegrationTests
         var mediator = scope.Resolve<IMediator>();
 
         // Act
-        await mediator.Send(new SampleQuery(), TestContext.Current.CancellationToken);
+        await mediator.SendAsync(new SampleQuery(), TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(["first-before", "second-before", "second-after", "first-after"], executionLog);
@@ -206,7 +221,7 @@ public class InterlocutorBuilderIntegrationTests
         var mediator = scope.Resolve<IMediator>();
 
         // Act
-        await mediator.Send(new SampleQuery(), TestContext.Current.CancellationToken);
+        await mediator.SendAsync(new SampleQuery(), TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(["first-before", "first-before", "first-after", "first-after"], executionLog);
@@ -230,7 +245,7 @@ public class InterlocutorBuilderIntegrationTests
         // shaped Outcome<TSuccess, Forbidden> (it needs a Forbidden case to construct on denial), so
         // it's resolved against AuthorizableQuery (not the plain-Outcome SampleQuery every other test
         // here uses) to genuinely exercise closed-generic resolution rather than only the open-generic
-        // registration list. AuthorizableQuery also implements IAuditableRequest and IRequiresPolicy so that,
+        // registration list. AuthorizableQuery also implements IAuditableRequest and IRequiresPolicyRequest so that,
         // now that AuditingBehavior/AuthorizationBehavior constrain TRequest to those markers, this query still
         // draws all three behaviors from the recommended chain instead of being filtered down to just logging.
         var behaviors = container
@@ -254,7 +269,9 @@ public class InterlocutorBuilderIntegrationTests
         var handlerRan = false;
         containerBuilder.RegisterInstance(new HandlerRanFlag(() => handlerRan = true)).SingleInstance();
 
-        var declined = new Outcome(new Failure("declined by stage"));
+        // Case-less, so there's no payload to carry the "declined by stage" reason - the real proof this stage
+        // short-circuited is handlerRan staying false below, not the value's own (trivially-equal) identity.
+        var declined = default(Outcome);
 
         containerBuilder.AddInterlocutor(builder =>
             builder
@@ -273,7 +290,7 @@ public class InterlocutorBuilderIntegrationTests
 
         // Act: the response flows out of the mediator exactly as a handled response would -- nothing
         // observing it from outside the stage host can tell it was short-circuited.
-        var result = await mediator.Send(new ShortCircuitQuery(), TestContext.Current.CancellationToken);
+        var result = await mediator.SendAsync(new ShortCircuitQuery(), TestContext.Current.CancellationToken);
 
         // Assert
         Assert.Equal(declined, result);
@@ -350,43 +367,52 @@ public class InterlocutorBuilderIntegrationTests
 #pragma warning disable S1144
     private sealed class SampleQueryHandler : IQueryHandler<SampleQuery, Outcome>
     {
-        public Task<Outcome> Handle(SampleQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
+        public Task<Outcome> HandleAsync(SampleQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
+    }
+
+    private sealed record SampleBareCommand : ICommand;
+
+    // IBareCommandHandler<,> has no HandleAsync member (deliberately unsuffixed - see that interface's own
+    // remarks), so this fake stays on Handle as-is.
+    private sealed class SampleBareCommandHandler : IBareCommandHandler<SampleBareCommand, Outcome>
+    {
+        public Task<Outcome> Handle(SampleBareCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 
     /// <summary>Deliberately has no handler, so ValidateOnBuild() tests have a deterministic problem to find.</summary>
     private sealed record UnhandledValidationQuery : IQuery<Outcome>;
 
-    private sealed record CancellableQuery : IQuery<Outcome<string, Cancelled>>, ICancellable;
+    private sealed record CancellableQuery : IQuery<Outcome<string, Cancelled>>, ICancellableRequest;
 
     private sealed class CancellableQueryHandler : IQueryHandler<CancellableQuery, Outcome<string, Cancelled>>
     {
-        public Task<Outcome<string, Cancelled>> Handle(CancellableQuery query, CancellationToken ct) =>
+        public Task<Outcome<string, Cancelled>> HandleAsync(CancellableQuery query, CancellationToken ct) =>
             Task.FromResult<Outcome<string, Cancelled>>("ok");
     }
 
-    private sealed record TimeBoundQuery : IQuery<Outcome<string, Timeout>>, IHasTimeout
+    private sealed record TimeBoundQuery : IQuery<Outcome<string, Timeout>>, ITimeoutRequest
     {
         public TimeSpan Budget => TimeSpan.FromSeconds(30);
     }
 
     private sealed class TimeBoundQueryHandler : IQueryHandler<TimeBoundQuery, Outcome<string, Timeout>>
     {
-        public Task<Outcome<string, Timeout>> Handle(TimeBoundQuery query, CancellationToken ct) =>
+        public Task<Outcome<string, Timeout>> HandleAsync(TimeBoundQuery query, CancellationToken ct) =>
             Task.FromResult<Outcome<string, Timeout>>("ok");
     }
 
-    private sealed record ThrottledQuery : IQuery<Outcome<string, RateLimited>>, IRateLimited
+    private sealed record ThrottledQuery : IQuery<Outcome<string, RateLimited>>, IRateLimitedRequest
     {
         public string LimitKey => "test-limit";
     }
 
     private sealed class ThrottledQueryHandler : IQueryHandler<ThrottledQuery, Outcome<string, RateLimited>>
     {
-        public Task<Outcome<string, RateLimited>> Handle(ThrottledQuery query, CancellationToken ct) =>
+        public Task<Outcome<string, RateLimited>> HandleAsync(ThrottledQuery query, CancellationToken ct) =>
             Task.FromResult<Outcome<string, RateLimited>>("ok");
     }
 
-    private sealed record AuthorizableQuery : IQuery<Outcome<string, Forbidden>>, IAuditableRequest, IRequiresPolicy
+    private sealed record AuthorizableQuery : IQuery<Outcome<string, Forbidden>>, IAuditableRequest, IRequiresPolicyRequest
     {
         public string ActionName => "Query.Authorizable";
 
@@ -395,7 +421,7 @@ public class InterlocutorBuilderIntegrationTests
 
     private sealed class AuthorizableQueryHandler : IQueryHandler<AuthorizableQuery, Outcome<string, Forbidden>>
     {
-        public Task<Outcome<string, Forbidden>> Handle(AuthorizableQuery query, CancellationToken ct) =>
+        public Task<Outcome<string, Forbidden>> HandleAsync(AuthorizableQuery query, CancellationToken ct) =>
             Task.FromResult<Outcome<string, Forbidden>>("ok");
     }
 
@@ -408,7 +434,7 @@ public class InterlocutorBuilderIntegrationTests
 
     private sealed class ShortCircuitQueryHandler(HandlerRanFlag flag) : IQueryHandler<ShortCircuitQuery, Outcome>
     {
-        public Task<Outcome> Handle(ShortCircuitQuery query, CancellationToken ct)
+        public Task<Outcome> HandleAsync(ShortCircuitQuery query, CancellationToken ct)
         {
             flag.MarkHandled();
             return Task.FromResult(default(Outcome));
@@ -426,7 +452,7 @@ public class InterlocutorBuilderIntegrationTests
     {
         public sealed class First(List<string> log) : IPipelineBehavior<TRequest, TResponse>
         {
-            public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+            public async Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
             {
                 log.Add("first-before");
                 var result = await next().ConfigureAwait(false);
@@ -437,7 +463,7 @@ public class InterlocutorBuilderIntegrationTests
 
         public sealed class Second(List<string> log) : IPipelineBehavior<TRequest, TResponse>
         {
-            public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+            public async Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
             {
                 log.Add("second-before");
                 var result = await next().ConfigureAwait(false);

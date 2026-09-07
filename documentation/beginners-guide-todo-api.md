@@ -6,7 +6,7 @@ This guide is deliberately hands-on rather than a reference - it builds one proj
 
 ## What you'll build
 
-- A Minimal API-first ASP.NET Core API (an MVC controller equivalent is shown too) over one `TodoTask` resource: full CRUD, a bare-`ICommand` unit command, a raw-`DbContext` query, and a paged query.
+- A Minimal API-first ASP.NET Core API (an MVC controller equivalent is shown too) over one `TodoTask` resource: full CRUD, a bare `ICommand`, a raw-`DbContext` query, and a paged query.
 - A pipeline built up behavior by behavior: logging, auditing, policy-based authorization, FluentValidation, and EF Core-backed transactions - plus how to see exactly what order they run in, and how to add one of your own.
 - Two authorization styles: a coarse policy check (`IRequiresPolicy`) and a fine-grained, entity-based ownership check (`ResourceCommandHandler`).
 - A notification with two independent subscribers, and the subtlety in exactly when "after" a command actually means once it's published from inside the handler.
@@ -617,7 +617,7 @@ public sealed record CreateTodoTaskCommand(string Title, string? Notes, string O
 ```
 
 > [!NOTE]
-> `Outcome<...>` here is the library's own built-in implementation of `IOutcome` - the actual compiler constraint every `IQuery<TResponse>`/`ICommand<TResponse>` response type must satisfy, and the thing `ValidationBehavior`, `AuthorizationBehavior`, and the rest of the pipeline genuinely depend on. It isn't the only legal implementation: a hand-rolled class implementing `IOutcome` directly works too, once it's teachable to `IOutcomeCaseRegistry` (the seam the pipeline uses to build and inspect a response's active case without knowing its concrete shape). This guide uses `Outcome<...>` throughout because it's the batteries-included default, not because anything requires it - see [Messages, Result Types & Variance § IOutcome as an Extension Point](messages-and-result-types.md#ioutcome-as-an-extension-point) for a worked example of a fully custom outcome type (useful for, say, wrapping a third-party SDK's own result shape instead of translating it).
+> `Outcome<...>` here is the library's own built-in implementation of `IUnion` - the actual compiler constraint every `IQuery<TResponse>`/`ICommand<TResponse>` response type must satisfy, and the thing `ValidationBehavior`, `AuthorizationBehavior`, and the rest of the pipeline genuinely depend on. It isn't the only legal implementation: a hand-rolled class implementing `IUnion` directly works too, once it's teachable to `IOutcomeCaseRegistry` (the seam the pipeline uses to build and inspect a response's active case without knowing its concrete shape). This guide uses `Outcome<...>` throughout because it's the batteries-included default, not because anything requires it - see [Messages, Result Types & Variance § IUnion as an Extension Point](messages-and-result-types.md#iunion-as-an-extension-point) for a worked example of a fully custom outcome type (useful for, say, wrapping a third-party SDK's own result shape instead of translating it).
 
 > [!IMPORTANT]
 > FYI: if you do reach for a custom outcome type, also register a matching `IResponseOutcomeDescriber` (via `interlocutor.Pipeline.OverrideOutcomeDescriber<TDescriber>()`). `LoggingBehavior`, `AuditingBehavior`, and `UnitOfWorkBehavior` all use it to decide what to log and whether a response counts as a failure worth rolling back - and the default classifier is fail-closed, so a response type it's never seen is treated as a failure, silently rolling back a genuine success. Every type this guide actually uses (`Outcome<...>` and its case types) is already pre-seeded, so this only matters if you go custom.
@@ -1591,9 +1591,9 @@ That's all five recommended-chain behaviors exercised: Logging and Auditing from
 
 ### One more command: no payload, caller-chosen outcome type
 
-Every command so far implements `ICommand<TResponse>` - a response type fixed in the command's own declaration. The bare `ICommand` marker (no type parameter) works differently: its handler contract is `IVoidCommandHandler<TCommand, TResult>`, where `TResult` - any `IOutcome`-implementing type - is chosen by the *caller*, via the type argument on `ISender.Send<TResult>(ICommand, CancellationToken)`, not fixed by the command or baked into the handler's registration.
+Every command so far implements `ICommand<TResponse>` - a response type fixed in the command's own declaration. The bare `ICommand` marker (no type parameter) works differently: its handler contract is `IBareCommandHandler<TCommand, TResult>`, where `TResult` - any `IUnion`-implementing type - is chosen by the *caller*, via the type argument on `ISender.Send<TResult>(ICommand, CancellationToken)`, not fixed by the command or baked into the handler's registration.
 
-Clearing every completed task for a caller is a natural fit for this - there's no domain data to hand back, only whether it worked:
+Clearing every completed task for a caller is a natural fit for this - there's no domain data to hand back, and no failure mode this operation can actually hit:
 
 **`Application/TodoTasks/ClearCompletedTodoTasksCommand.cs`**
 
@@ -1616,15 +1616,16 @@ public sealed record ClearCompletedTodoTasksCommand(string OwnerId) : ICommand, 
 ```csharp
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.CommonKernel;
-using Interlocutor.CommonKernel.ResultTypes;
 using Interlocutor.Persistence.Abstractions;
 
 namespace TodoTasks.Api.Application.TodoTasks;
 
-// IVoidCommandHandler<TCommand, TResult> is the contract for a bare ICommand - registered against
-// the specific TResult this handler produces. This one only ever needs Success or Failure.
+// IBareCommandHandler<TCommand, TResult> is the contract for a bare ICommand - registered against
+// the specific TResult this handler produces. Clearing completed tasks is genuinely infallible (no
+// not-found/conflict case it can hit), so it uses the case-less, non-generic Outcome acknowledgment
+// rather than naming a failure case that could never actually construct.
 public sealed class ClearCompletedTodoTasksHandler(IDomainRepository<TodoTask, int> repository, IUnitOfWork unitOfWork)
-    : IVoidCommandHandler<ClearCompletedTodoTasksCommand, Outcome>
+    : IBareCommandHandler<ClearCompletedTodoTasksCommand, Outcome>
 {
     public async Task<Outcome> Handle(ClearCompletedTodoTasksCommand command, CancellationToken ct)
     {
@@ -1637,7 +1638,7 @@ public sealed class ClearCompletedTodoTasksHandler(IDomainRepository<TodoTask, i
         }
 
         await unitOfWork.SaveChangesAsync(ct);
-        return new Success();
+        return new Outcome();
     }
 }
 ```
@@ -1657,7 +1658,7 @@ app.MapPost("/todo-tasks/clear-completed", async (
 ```
 
 > [!TIP]
-> Because `TResult` is chosen by the caller rather than fixed by the command, a second `IVoidCommandHandler<ClearCompletedTodoTasksCommand, Outcome<int, Failure>>` could exist alongside this one and report how many tasks were cleared - a different call site (or a v2 endpoint) opts into the richer outcome without changing this handler or the command itself.
+> Because `TResult` is chosen by the caller rather than fixed by the command, a second `IBareCommandHandler<ClearCompletedTodoTasksCommand, Outcome<int, Failure>>` could exist alongside this one and report how many tasks were cleared - a different call site (or a v2 endpoint) opts into the richer outcome without changing this handler or the command itself.
 
 ## Step 10: Putting it together
 
@@ -1791,7 +1792,7 @@ The whole request/response surface, for reference:
 | `CompleteTodoTaskCommand` | Command | `Outcome<TodoTaskDto, NotFound, Conflict>` | `IAuditableRequest` |
 | `ReopenTodoTaskCommand` | Command | `Outcome<TodoTaskDto, NotFound, Conflict>` | `IAuditableRequest` |
 | `DeleteTodoTaskCommand` | Command | `Outcome<Success, NotFound, Forbidden>` | `IRequiresPolicy`, `IAuditableRequest` |
-| `ClearCompletedTodoTasksCommand` | Command (bare `ICommand`, via `IVoidCommandHandler<,>`) | `Outcome` (chosen by the caller) | `IAuditableRequest` |
+| `ClearCompletedTodoTasksCommand` | Command (bare `ICommand`, via `IBareCommandHandler<,>`) | `Outcome` (chosen by the caller) | `IAuditableRequest` |
 
 Each row's arity is exactly what that operation can produce - no request routes an outcome it can't actually reach through a generic catch-all `Failure`, per [Choosing Arities](messages-and-result-types.md#choosing-arities). The "Bonus" sections throughout (manual response mapping, a raw-context/search example, a paged query, a custom pipeline behavior) are deliberately left out of this table and out of `Program.cs` above - they're optional deep-dives, not part of the finished project.
 

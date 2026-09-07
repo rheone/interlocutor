@@ -125,7 +125,7 @@ internal static class RegistrationValidator
         }
 
         // More than one distinct implementation type closing the same instantiation of a single-winner
-        // contract - the built-in query/command/void-command handler contracts, plus any consumer contract
+        // contract - the built-in query/command/bare-command handler contracts, plus any consumer contract
         // opted in via InterlocutorBuilder.RequireUniqueClosure. INotificationHandler<> is never in
         // uniqueClosureContracts, so fan-out to many notification handlers is never flagged here.
         foreach (
@@ -159,7 +159,7 @@ internal static class RegistrationValidator
         }
 
         // Two or more override rules whose predicates both match the same request type - checked only
-        // against candidates that are actually a query, value-returning command, or void command, the same
+        // against candidates that are actually a query, value-returning command, or bare command, the same
         // request-type scope OverridePipelineFor's rules are ever tested against at dispatch time.
         if (overrideRules.Count > 1)
         {
@@ -184,10 +184,10 @@ internal static class RegistrationValidator
 
     /// <summary>
     /// Tests whether <paramref name="candidate"/> is a request type - a query, a value-returning command, or
-    /// a void command - the same scope a <see cref="PipelineOverrideRule"/> is ever matched against at
+    /// a bare command - the same scope a <see cref="PipelineOverrideRule"/> is ever matched against at
     /// dispatch time. Unlike the narrower <see cref="RegistrationProblemKind.UnhandledRequestType"/> check
-    /// above, this includes the non-generic <see cref="ICommand"/> (void commands): an override rule matches
-    /// on the request's runtime type alone, independent of any declared response type, so a void command is
+    /// above, this includes the non-generic <see cref="ICommand"/> (bare commands): an override rule matches
+    /// on the request's runtime type alone, independent of any declared response type, so a bare command is
     /// just as eligible to be matched - and to conflict - as a query or value-returning command.
     /// </summary>
     [UnconditionalSuppressMessage(

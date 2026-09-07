@@ -4,7 +4,7 @@
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `ef3ea61`.
 
 - [ ] The four interface declaration files under `src/Interlocutor.Abstractions/Markers/` are renamed (filename matches type name) and their type names updated: `IRequiresPolicy.cs` → `IRequiresPolicyRequest.cs`, `ICancellable.cs` → `ICancellableRequest.cs`, `IHasTimeout.cs` → `ITimeoutRequest.cs`, `IRateLimited.cs` → `IRateLimitedRequest.cs`. Each interface's XML doc summary/remarks are reworded only as needed to keep reading naturally under the new name (no content changes beyond the name).
 - [ ] Every generic constraint and `is`/pattern-match check against the old names is updated: `AuthorizationBehavior<TRequest,_>`'s `where TRequest : IRequiresPolicy` constraint, `CancellationBehavior`'s constraint/checks, `TimeoutBehavior`'s constraint/checks (including `ITimeoutPolicy.ResolveBudget(IHasTimeout)`), `RateLimitedBehavior`'s constraint/checks.

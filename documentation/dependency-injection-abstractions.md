@@ -147,6 +147,18 @@ An explicit, opt-in runtime check against a live container - see the per-package
 provider.ValidateHandlerRegistrations(typeof(Program).Assembly);
 ```
 
+### `IServiceProvider.ValidatePipelineCaseFidelity` - checked once the container is built
+
+A second, separate opt-in runtime check, alongside `ValidateHandlerRegistrations` rather than part of it: for each scanned request type, whether its response type has a matching case for every [pipeline behavior](pipeline-and-behaviors.md) its [marker interfaces](glossary.md#marker-interfaces) opt it into (`Forbidden` for a policy-gated request, `Cancelled` for a cancellable one, and so on), and - the one fact only a live container can see - whether a request with at least one `FluentValidation.IValidator<TRequest>` actually registered declares a matching validation-errors case too. Both checks reuse the same [outcome case registry](glossary.md#outcome-case-registry) the runtime behaviors themselves construct their case from, so a custom registry or factory is honored rather than assumed unsupported. This is the primary safety net for a consumer on the reflection/`ScanAssembly` discovery path: a consumer using compile-time handler discovery gets the equivalent of this check earlier, as a build warning, from the source generator instead.
+
+```csharp
+// For each scanned request type, checks that its response can express every
+// case its marker interfaces and actually-registered validators require, and
+// throws InvalidOperationException - naming every mismatch in one message -
+// if any response shape can't.
+provider.ValidatePipelineCaseFidelity(typeof(Program).Assembly);
+```
+
 ### Build-time diagnostic - `INTERLOC001`
 
 The source generator emits `INTERLOC001` as a compiler warning when a request type has no matching handler *in the same compilation* - default severity `Warning`, escalatable to a build error via `.editorconfig`:
@@ -202,7 +214,7 @@ Two assembly-level attributes make cross-assembly discovery work without runtime
 | Type | Purpose |
 | :-- | :-- |
 | `InterlocutorGeneratedModuleAttribute` | Names the compiling assembly's generated registration module type (a static class exposing `IReadOnlyList<InterlocutorRegistration> Registrations`). Read by a referencing project's own generator run via Roslyn symbol inspection - never runtime reflection - to aggregate an upstream library's handlers into the application's own generated module. |
-| `InterlocutorGeneratedHandlerAttribute` | Restates one discovered handler's `(requestType, responseType, kind)` as plain constructor-argument metadata, so the missing-handler diagnostic can answer "does some referenced assembly already handle this?" purely from attribute metadata, without evaluating `Registrations` itself. `kind` is a `GeneratedHandlerKind` (`Query`, `Command`, `VoidCommand`, `Notification`) - notification handlers never receive one, since a notification may legally have zero handlers. |
+| `InterlocutorGeneratedHandlerAttribute` | Restates one discovered handler's `(requestType, responseType, kind)` as plain constructor-argument metadata, so the missing-handler diagnostic can answer "does some referenced assembly already handle this?" purely from attribute metadata, without evaluating `Registrations` itself. `kind` is a `GeneratedHandlerKind` (`Query`, `Command`, `BareCommand`, `Notification`) - notification handlers never receive one, since a notification may legally have zero handlers. |
 
 See [Builder & Registration § Cross-Assembly Aggregation](builder-and-registration.md#cross-assembly-aggregation) for the consumer-facing usage, and [Trim & AOT Support](trim-and-aot-support.md) for why generated registrations avoid the runtime-scanning trim cost.
 

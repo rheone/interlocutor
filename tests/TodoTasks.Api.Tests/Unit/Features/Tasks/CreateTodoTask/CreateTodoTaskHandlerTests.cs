@@ -30,10 +30,9 @@ public sealed class CreateTodoTaskHandlerTests
         var command = new CreateTodoTaskCommand("Buy milk", "2%, please", "owner-1");
 
         // Act
-        var result = await this.handler.Handle(command, CancellationToken.None);
+        var result = await this.handler.HandleAsync(command, CancellationToken.None);
 
         // Assert
-        Assert.True(result.IsSuccess);
         var dto = Assert.IsType<TodoTaskDto>(result.Value);
         Assert.Equal("Buy milk", dto.Title);
         Assert.Equal("2%, please", dto.Notes);
@@ -57,7 +56,7 @@ public sealed class CreateTodoTaskHandlerTests
         var command = new CreateTodoTaskCommand("Buy milk", "Oat milk this time", "owner-1");
 
         // Act
-        var result = await this.handler.Handle(command, CancellationToken.None);
+        var result = await this.handler.HandleAsync(command, CancellationToken.None);
 
         // Assert
         var conflict = Assert.IsType<Conflict>(result.Value);
@@ -77,10 +76,10 @@ public sealed class CreateTodoTaskHandlerTests
         var command = new CreateTodoTaskCommand("Buy milk", null, "owner-2");
 
         // Act
-        var result = await this.handler.Handle(command, CancellationToken.None);
+        var result = await this.handler.HandleAsync(command, CancellationToken.None);
 
         // Assert
-        Assert.True(result.IsSuccess);
+        Assert.True(result.TryGetValue(out TodoTaskDto _));
         await this.tasks.Received(1).InsertAsync(Arg.Is<TodoTask>(t => t.OwnerId == "owner-2"), Arg.Any<CancellationToken>());
     }
 }

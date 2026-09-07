@@ -72,14 +72,14 @@ app.MapDelete("/api/orders/{id}", async (int id, ISender mediator, CancellationT
 
 ## Status Code Mapping
 
-Each outcome case maps to an HTTP status code via `IOutcomeStatusMapper.Map<TFailure>(failure)`, which both `ToActionResult()` and `ToMinimalApiResult()` delegate to for every failure case - the success case never reaches the mapper, since `ToActionResult`/`ToMinimalApiResult` handle it directly. The dedicated arity-specific overloads (`Outcome<TSuccess, TFailure>`, `<TSuccess, TCase2, TCase3>`, ...) resolve which case is active via an ordinary `switch` at compile time; only the base-`IOutcome` overload used for runtime-typed dispatch needs `IOutcomeCaseRegistry`'s reflective lookup:
+Each outcome case maps to an HTTP status code via `IOutcomeStatusMapper.Map<TFailure>(failure)`, which both `ToActionResult()` and `ToMinimalApiResult()` delegate to for every failure case - the success case never reaches the mapper, since `ToActionResult`/`ToMinimalApiResult` handle it directly. The dedicated arity-specific overloads (`Outcome<T1, T2>`, `<T1, T2, T3>`, ...) resolve which case is active via an ordinary `switch` at compile time; only the base-`IOutcome` overload used for runtime-typed dispatch needs `IOutcomeCaseRegistry`'s reflective lookup:
 
 ```mermaid
 flowchart TD
-    Outcome["Outcome&lt;...&gt; from mediator.Send()"] --> IsSuccess{"Active case?"}
-    IsSuccess -->|"success, has payload"| Ok200["200 OK<br/>body: success payload (JSON)"]
-    IsSuccess -->|"success, unit Success"| NoContent204["204 No Content"]
-    IsSuccess -->|"failure - IOutcomeStatusMapper.Map(failure)"| CaseType{"Failure case type"}
+    Outcome["Outcome&lt;...&gt; from mediator.Send()"] --> ActiveCase{"Active case?"}
+    ActiveCase -->|"success, has payload"| Ok200["200 OK<br/>body: success payload (JSON)"]
+    ActiveCase -->|"success, unit Success"| NoContent204["204 No Content"]
+    ActiveCase -->|"failure - IOutcomeStatusMapper.Map(failure)"| CaseType{"Failure case type"}
     CaseType -->|"ValidationErrors"| Bad400Validation["400 Bad Request<br/>ProblemDetails"]
     CaseType -->|"IValidationFailureCase, no field data"| Bad400Validation
     CaseType -->|"IFieldValidationFailureCase<br/>(e.g. FluentValidationErrors)"| Bad400FieldValidation["400 Bad Request<br/>ValidationProblemDetails (field-keyed)"]
@@ -98,8 +98,8 @@ flowchart TD
 
 | Outcome Case | HTTP Status | Body | Details |
 |--------------|-------------|------|---------|
-| Success (payload) | 200 OK | The success payload (JSON) | For `Outcome<TSuccess, ...>`, `TSuccess` is serialized. |
-| Success (unit) | 204 No Content | None | For the non-generic `Outcome`. |
+| Success (payload) | 200 OK | The success payload (JSON) | For `Outcome<T1, ...>`, `T1` is serialized. |
+| Success (unit) | 204 No Content | None | For the non-generic `Outcome`, whose dedicated overload always maps this way unconditionally - it has no failure case to map. |
 | ValidationErrors | 400 Bad Request | `ProblemDetails` | `Detail` is every message joined with `"; "` - no per-field errors dictionary, since `ValidationError` carries a message and optional code, not a field name. |
 | Any other [`IValidationFailureCase`](glossary.md#result-types) implementer with no field data | 400 Bad Request | `ProblemDetails` | Recognized via the interface, not a type-specific branch - a consumer's own validation-shaped failure case maps the same way without a mapper override. `Detail` is every `Messages` entry joined with `"; "`. |
 | [`IFieldValidationFailureCase`](glossary.md#outcome-mapping) implementer (e.g. `FluentValidationErrors`) | 400 Bad Request | `ValidationProblemDetails` | `Errors` is `FieldMessages` grouped by property name (empty-string key for an entry with no property) - see [Field-Keyed Validation Errors](#field-keyed-validation-errors) below. |
@@ -115,6 +115,12 @@ flowchart TD
 | RateLimited | 429 Too Many Requests | `ProblemDetails` | `Detail` is the message, or the `LimitKey`. Does not set a `Retry-After` header - override `MapRateLimited` to add one. |
 | Any other `IRateLimitedFailureCase` implementer | 429 Too Many Requests | `ProblemDetails` | Recognized via the interface - a consumer's own `IRateLimiter`-specific failure case maps the same way without a mapper override. `Detail` is the message verbatim (no `LimitKey` fallback - the interface guarantees only the message). |
 | Anything else (a custom failure type) | 500 Internal Server Error | The failure value itself | The default mapper doesn't know this type - supply your own `IOutcomeStatusMapper`, or override `MapUnrecognized`, to map it precisely. |
+
+### Runtime-Typed Dispatch and Unmappable Cases
+
+The base-`IOutcome` overload (the one reached only when a caller has no concrete `Outcome<...>` type to dispatch on at compile time - a hand-rolled `IOutcome` implementation, or generic code constrained only to `IOutcome`) has no static `T1`/`T2` to switch over, so it classifies the active case at runtime instead: the bare `Success` marker is success, a resolved case whose payload is legitimately `null` is success, and any of the failure case types/interfaces listed in the table above is a failure dispatched to the status mapper as usual.
+
+A case matching none of those - most commonly a hand-rolled or generically-dispatched response whose success case carries some payload type other than `Success` - throws `OutcomeCaseNotMappableException` rather than guessing. This is deliberate: an HTTP response must carry *some* status code, and a wrong guess here (misreporting a custom success payload as a failure, or vice versa) is worse than an immediate, loud failure. Fix it by calling the dedicated `Outcome<T1, ...>` overload against the concrete type instead of the reflective one - it resolves success-versus-failure at compile time and cannot hit this ambiguity - or, for a hand-rolled `IOutcome`, use `Success` as the success payload the way the built-in unions do.
 
 ## Custom HTTP Mapping
 

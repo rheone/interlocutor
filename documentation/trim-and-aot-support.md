@@ -11,7 +11,7 @@
 
 ## Why ahead-of-time compilation doesn't work yet
 
-A response is a compiler-generated union type (`Outcome<TSuccess, ...>` and its arities), which is
+A response is a compiler-generated union type (`Outcome<T1, ...>` and its arities), which is
 always a value type. Pipeline behaviors are registered as open generics
 (`IPipelineBehavior<TRequest, TResponse>`) and closed over the concrete request/response pair by the
 container the first time a matching request is dispatched.
@@ -47,11 +47,11 @@ reachable through the application's own ordinary use of it.
 ## The runtime scanning fallback, and what it costs
 
 `ScanAssembly`/`ScanAssemblies`/`ScanAssemblyContaining<TMarker>`/`ScanEntryAssembly`, `AddTypeMatch`, and
-`InterlocutorStartupValidation.ValidateHandlerRegistrations` are the one part of the library that is
-genuinely unsafe to trim, because they exist specifically to discover types reflectively - the point of
-calling them. Every one of these methods carries a `RequiresUnreferencedCode` annotation, so a trimmed
-publish that actually calls one produces a build warning naming exactly which call is at risk, rather than a
-silent trim that might remove the very handler the scan was supposed to find.
+`InterlocutorStartupValidation.ValidateHandlerRegistrations`/`ValidatePipelineCaseFidelity` are the one part
+of the library that is genuinely unsafe to trim, because they exist specifically to discover types
+reflectively - the point of calling them. Every one of these methods carries a `RequiresUnreferencedCode`
+annotation, so a trimmed publish that actually calls one produces a build warning naming exactly which call
+is at risk, rather than a silent trim that might remove the very handler the scan was supposed to find.
 
 None of these methods run unless a consumer explicitly calls one. A bare `AddInterlocutor()` with only
 `AddGeneratedRegistrations()` and explicit `AddHandler`/`AddBehavior` calls never reflects at all, and
