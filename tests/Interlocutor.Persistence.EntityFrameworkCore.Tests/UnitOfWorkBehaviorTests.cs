@@ -359,7 +359,7 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<EntityFrameworkTestF
 
     /// <summary>Loads/authorizes trivially, writes a <see cref="Widget"/>, and succeeds with a null payload.</summary>
     private sealed class NullableSuccessResourceCommandHandler(TestDbContext context)
-        : ResourceCommandHandler<NullableSuccessResourceCommand, Widget, string?>
+        : ResourceCommandHandler<NullableSuccessResourceCommand, Widget, Outcome<string?, NotFound, Forbidden>>
     {
         protected override Task<Widget?> LoadAsync(NullableSuccessResourceCommand command, CancellationToken ct) =>
             Task.FromResult<Widget?>(new Widget());

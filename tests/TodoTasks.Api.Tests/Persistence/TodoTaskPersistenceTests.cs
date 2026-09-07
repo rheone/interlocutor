@@ -330,19 +330,21 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
     {
         // Arrange - proves the owner-scoping in UpdateTodoTaskHandler.Authorize holds against a real
         // repository/database, and that a denied update never reaches SaveChangesAsync at all (the row
-        // reloaded below still has its original title).
+        // reloaded below still has its original title). Dispatched through ISender rather than constructing
+        // UpdateTodoTaskHandler directly: ResourceCommandHandler{TCommand,TEntity,TResponse} now ejects
+        // NotFound/Forbidden via Eject.WithCase rather than constructing them itself, and only the mediator's
+        // own dispatch machinery (reached through a real ISender.SendAsync call) catches that eject and
+        // converts it back into an ordinary response - see ResourceCommandHandler's own remarks.
         using var writeScope = this.factory.Services.CreateScope();
         var writeContext = writeScope.ServiceProvider.GetRequiredService<TodoTasksDbContext>();
         var owner = $"owner-{Guid.NewGuid():N}";
         var task = new TodoTask("Buy milk", owner, null);
         await writeContext.Tasks.AddAsync(task, TestContext.Current.CancellationToken);
         await writeContext.SaveChangesAsync(TestContext.Current.CancellationToken);
-        var tasks = writeScope.ServiceProvider.GetRequiredService<IDomainRepository<TodoTask, int>>();
-        var unitOfWork = writeScope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        var handler = new UpdateTodoTaskHandler(tasks, unitOfWork);
+        var sender = writeScope.ServiceProvider.GetRequiredService<ISender>();
 
         // Act
-        var result = await handler.HandleAsync(
+        var result = await sender.SendAsync(
             new UpdateTodoTaskCommand(task.Id, "Hijacked title", null, $"someone-else-{Guid.NewGuid():N}"),
             TestContext.Current.CancellationToken
         );
@@ -359,14 +361,13 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
     [Fact]
     public async Task UpdateTodoTaskHandler_NoTaskWithThatId_ReturnsNotFound_AgainstARealDatabase_Test()
     {
-        // Arrange
+        // Arrange - dispatched through ISender rather than constructing UpdateTodoTaskHandler directly; see
+        // the Forbidden test above for why.
         using var scope = this.factory.Services.CreateScope();
-        var tasks = scope.ServiceProvider.GetRequiredService<IDomainRepository<TodoTask, int>>();
-        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        var handler = new UpdateTodoTaskHandler(tasks, unitOfWork);
+        var sender = scope.ServiceProvider.GetRequiredService<ISender>();
 
         // Act
-        var result = await handler.HandleAsync(
+        var result = await sender.SendAsync(
             new UpdateTodoTaskCommand(999_999, "Doesn't matter", null, $"owner-{Guid.NewGuid():N}"),
             TestContext.Current.CancellationToken
         );
