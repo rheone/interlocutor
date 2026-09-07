@@ -26,7 +26,7 @@ A to-do list API with two features: **Tasks** (create, look up by id, list, list
 | `TodoTasksUnitOfWorkBehavior<,>` | The Microsoft DI + EF Core arity workaround the guide's Step 4 describes, made real |
 | `ToMinimalApiResult()` at each endpoint | Transport conversion at the edge |
 
-Two things a reader coming from the guide might expect are deliberately absent. There's no MVC-controller transport alongside the minimal-API one, and no `Cancel`-without-failure rollback demo (`IUnitOfWork.Cancel`) - both are illustrative content the guide itself covers inline (see its "Bonus: managing the response manually" and "Bonus: forcing a rollback without a failure outcome" sections) rather than something this project also has to carry. Describing only what this project actually does, rather than carrying those claims forward, is deliberate.
+Two things a reader coming from the guide might expect are deliberately absent. There's no MVC-controller transport alongside the minimal-API one, and no `CancelAsync`-without-failure rollback demo (`IUnitOfWork.CancelAsync`) - both are illustrative content the guide itself covers inline (see its "Bonus: managing the response manually" and "Bonus: forcing a rollback without a failure outcome" sections) rather than something this project also has to carry. Describing only what this project actually does, rather than carrying those claims forward, is deliberate.
 
 ## Project structure
 
@@ -83,7 +83,7 @@ public sealed record CreateTodoTaskCommand(string Title, string? Notes, string O
 }
 ```
 
-Three cases: `TodoTaskDto` on success, `ValidationErrors` from [`CreateTodoTaskValidator`](../TutorialProject/TodoTasks.Api/Features/Tasks/CreateTodoTask/CreateTodoTaskValidator.cs) for an empty or overlong title, `Conflict` for a title the caller already has (scoped per-owner: two different callers can each have their own "Buy milk"). `CreateTodoTaskHandler` checks the duplicate itself, as an ordinary read at the top of `Handle` - `ITransactionalRequest` is what keeps that read and the insert that follows it inside one transaction, eagerly begun at pipeline start, so two concurrent requests for the same title can't both pass the check before either commits. `IAuditableRequest`'s `ActionName` records the action via `AuditingBehavior` (see [Pipeline & Behaviors](pipeline-and-behaviors.md)). The handler never commits itself - that's `UnitOfWorkBehavior`'s job, once the handler returns a success outcome.
+Three cases: `TodoTaskDto` on success, `ValidationErrors` from [`CreateTodoTaskValidator`](../TutorialProject/TodoTasks.Api/Features/Tasks/CreateTodoTask/CreateTodoTaskValidator.cs) for an empty or overlong title, `Conflict` for a title the caller already has (scoped per-owner: two different callers can each have their own "Buy milk"). `CreateTodoTaskHandler` checks the duplicate itself, as an ordinary read at the top of `HandleAsync` - `ITransactionalRequest` is what keeps that read and the insert that follows it inside one transaction, eagerly begun at pipeline start, so two concurrent requests for the same title can't both pass the check before either commits. `IAuditableRequest`'s `ActionName` records the action via `AuditingBehavior` (see [Pipeline & Behaviors](pipeline-and-behaviors.md)). The handler never commits itself - that's `UnitOfWorkBehavior`'s job, once the handler returns a success outcome.
 
 Putting the duplicate check here rather than in `CreateTodoTaskValidator` is what makes the eager transaction actually cover it: the recommended chain runs `ValidationBehavior` before `UnitOfWorkBehavior` opens anything, so the same read performed as a validator rule wouldn't be inside the transaction `ITransactionalRequest` begins at all under that default ordering - see [Transactions & Store Integration § Where to register the behavior, relative to pipeline stages](transactions-and-store-integration.md#where-to-register-the-behavior-relative-to-pipeline-stages) for the general fix (registering `UnitOfWorkBehavior` outside `ValidationBehavior`) if a validator rule ever needs this same protection.
 
@@ -147,7 +147,7 @@ public sealed class UpdateTodoTaskHandler(IDomainRepository<TodoTask, int> tasks
 ```
 
 > [!IMPORTANT]
-> `ResourceCommandHandler<TCommand, TEntity, TSuccess>` does not itself implement `ICommandHandler<TCommand, TResponse>` - a plain subclass is invisible to handler discovery. The explicit interface declaration above is required, not decorative; the base class's own `Handle` method already satisfies it, so no override body is needed.
+> `ResourceCommandHandler<TCommand, TEntity, TSuccess>` does not itself implement `ICommandHandler<TCommand, TResponse>` - a plain subclass is invisible to handler discovery. The explicit interface declaration above is required, not decorative; the base class's own `HandleAsync` method already satisfies it, so no override body is needed.
 
 `LoadAsync` returning `null` short-circuits with `NotFound` before `Authorize` ever runs; `Authorize` returning non-null short-circuits with that `Forbidden` before `HandleAsync` ever runs. Neither `NotFound` nor the ownership `Forbidden` reaches `HandleAsync` - it only ever sees an entity that was both found and authorized.
 
@@ -230,7 +230,7 @@ public sealed class SearchTodoTasksHandler(Lazy<TodoTasksDbContext> context)
 task.IsCompleted = true;
 await unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
 
-await publisher.Publish(new TodoTaskCompletedNotification(task.Id, task.OwnerId, task.Title), ct).ConfigureAwait(false);
+await publisher.PublishAsync(new TodoTaskCompletedNotification(task.Id, task.OwnerId, task.Title), ct).ConfigureAwait(false);
 ```
 
 Two independent handlers subscribe to it, neither aware of the other: [`TodoTaskCompletionCounterHandler`](../TutorialProject/TodoTasks.Api/Features/Tasks/CompleteTodoTask/TodoTaskCompletionCounterHandler.cs) increments an in-process per-owner completion count, and [`TodoTaskCompletionAuditLogHandler`](../TutorialProject/TodoTasks.Api/Features/Tasks/CompleteTodoTask/TodoTaskCompletionAuditLogHandler.cs) writes a log entry. See [Notifications & Fan-out](notifications-and-fan-out.md) for execution order guarantees (unspecified) and the Sequential/Parallel publish strategies, and [Transactions & Store Integration](transactions-and-store-integration.md)'s "Transactions with Notifications" section for how a command's transaction and its published notification relate - publishing from inside the handler here, before `UnitOfWorkBehavior` has actually committed, is the guide's own worked example of that trade-off (see its Step 8), not a fix applied only to this project.
@@ -415,7 +415,7 @@ app.MapGet(
     async (int id, ISender sender, IRequestContextAccessor contextAccessor, CancellationToken ct) =>
     {
         var ownerId = contextAccessor.RequireUserId();
-        var result = await sender.Send(new GetTodoTaskByIdQuery(id, ownerId), ct).ConfigureAwait(false);
+        var result = await sender.SendAsync(new GetTodoTaskByIdQuery(id, ownerId), ct).ConfigureAwait(false);
         return result.ToMinimalApiResult();
     }
 ).RequireAuthorization();
