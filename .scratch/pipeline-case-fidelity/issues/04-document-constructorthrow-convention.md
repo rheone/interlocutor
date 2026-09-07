@@ -4,9 +4,9 @@
 
 **Blocked by:** 02 (cross-references ADR-0022)
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `66b3853`. Two corrections to this ticket's own stale premises: cross-references **ADR-0023** ("Pipeline Behavior Case Construction Fails Fast, Never Degrades or Reshapes"), not ADR-0022 - that number was claimed by the unrelated outcome-classifier-retirement PRD first, bumping this ADR to 0023. Uses `CancellationBehavior` as the worked example, not `AuthorizationBehavior` - the latter has since migrated to a separate `Eject.WithCase` mechanism and no longer calls `ConstructOrThrow` directly (the new subsection notes this explicitly so a reader checking that source isn't confused).
 
-- [ ] `documentation/extensibility.md` gains a subsection on the fail-fast case-construction convention, in the existing "Registering Custom Behaviors" area
-- [ ] Includes a compiling code example following `ConstructOrThrow`'s actual signature
-- [ ] Cross-references ADR-0022 per the house style (no citation of `maintainer_docs/` needed for the rationale itself - state the reasoning in the doc, per `documentation/`'s own house style rule)
-- [ ] Follows `documentation/`'s house style (no enumerated counts, glossary linking on first mention, no HTTP status codes outside `aspnetcore-integration.md`)
+- [x] `documentation/extensibility.md` gains a subsection on the fail-fast case-construction convention, placed near the existing custom-behavior material (see status note - `extensibility.md` itself has no literal "Registering Custom Behaviors" heading; that section lives in `pipeline-and-behaviors.md`, which `extensibility.md` links to)
+- [x] Includes a compiling code example following `ConstructOrThrow`'s actual signature (verified verbatim against `src/Interlocutor.Abstractions/Pipeline/Cases/OutcomeCaseRegistryExtensions.cs` and `CancellationBehavior.cs`)
+- [x] Cross-references the correct current ADR (0023, not the ticket's stale 0022) per house style - no citation of `maintainer_docs/`, reasoning stated as fact in the doc
+- [x] Follows `documentation/`'s house style (no enumerated counts, glossary linking on first mention, no HTTP status codes outside `aspnetcore-integration.md`)
