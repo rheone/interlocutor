@@ -55,10 +55,13 @@ control-flow requirement on the real `ITimeoutPolicy`/`TimeoutBehavior` integrat
 
 ## Prototype
 
-Captured as a primary source on the throwaway branch `prototype/failure-case-shapes`, commit `1dc9e50`:
+Captured as a primary source on the throwaway branch
+`prototype/failure-case-shapes-keep-pending-tickets-09-11`, commit `6dbc7b9` (also anchored by the annotated
+tag `adr-0020-failure-case-shapes-prototype`, so the commit survives even if the branch ref is ever lost):
 `.scratch/validation-failure-fidelity/PROTOTYPE-failure-case-shapes.html` (single-file HTML demo covering
-RateLimited/Timeout/Forbidden together). Not present on this branch by design - check out that branch or
-commit to view/run it.
+RateLimited/Timeout/Forbidden together). Not present on this branch by design - check out that branch, tag,
+or commit to view/run it. Keep the branch until this ticket and its 09-11 siblings close - see the commit
+message for why.
 
 ## Related
 
