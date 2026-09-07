@@ -1,13 +1,27 @@
-# 06 - Guard against a FluentValidation rule reading the DB outside the transaction boundary
+# 06 - Document that a DB-touching validation rule needs `AddUnitOfWorkBehavior` registered outside `AddValidationBehavior`
 
-**Status:** needs-triage
+**Status:** ready-for-agent
 
-**What to build:** `AddValidationBehavior` runs before `AddUnitOfWorkBehavior` deliberately - "Validation before transaction so malformed input never opens a transaction that would only be rolled back" ([InterlocutorPipelineBuilder.cs:491](../../../src/Interlocutor.DependencyInjection.Abstractions/InterlocutorPipelineBuilder.cs#L491)). FluentValidation natively supports a rule resolving an injected dependency and querying it (`MustAsync`/`CustomAsync` against an injected `DbContext`, say) - nothing today stops a consumer from writing exactly that kind of rule, and if they do, it runs entirely outside any transaction, silently reintroducing the same check-then-act race `ITransactionalRequest` exists to close. `CreateTodoTaskCommand`/`CreateTodoTaskHandler` already avoid this by convention - the duplicate-title uniqueness check lives in the handler, not in `CreateTodoTaskValidator` - but nothing enforces that convention or warns a consumer away from the natural-looking alternative.
+**What to build:** `AddValidationBehavior` runs before `AddUnitOfWorkBehavior` in the library's recommended chain - "Validation before transaction so malformed input never opens a transaction that would only be rolled back." FluentValidation natively supports a rule resolving an injected dependency and querying it (`MustAsync`/`CustomAsync` against an injected `DbContext`, say); under the recommended ordering, that rule's read runs before the transaction opens, leaving a window for the same check-then-act race `ITransactionalRequest` otherwise closes.
 
-Needs triage before scoping: at minimum, a documentation warning next to `AddValidationBehavior`'s existing ordering rationale and in the `CreateTodoTaskCommand`/`CreateTodoTaskHandler` worked example explaining *why* the check lives where it does. Whether this also warrants a generator/analyzer diagnostic (flagging a validator that resolves a DB-touching dependency) is an open question - the difficulty of reliably detecting "this dependency touches the database" at compile time, versus the value of catching this before it reaches production, needs a real design pass rather than being assumed here.
+This ticket started out asking whether that gap needed a documentation fix, an analyzer, or both. It doesn't need an analyzer: [ADR-0018](../../../maintainer_docs/adr/0018-unit-of-work-as-transaction-owner.md) already gives every pipeline behavior - `ValidationBehavior` included - a fully general way to share the transaction with an earlier read, by registering the unit-of-work behavior *outside* whichever behavior performs that read instead of at the innermost recommended position. That mechanism is already documented in the abstract (see the transactions/store-integration doc's coverage of where to register the unit-of-work behavior relative to pipeline stages); what's missing is calling it out specifically for `ValidationBehavior`, at the exact point a reader is told the recommended default puts validation *before* the transaction.
+
+Add that callout: at the "Validation before transactions" rationale in the pipeline-ordering documentation, note that this default ordering leaves a DB-touching validation rule's read unprotected, and cross-reference the existing reordering mechanism as the fix for anyone who needs one. Give the worked TodoTask example's explanation of why its uniqueness check lives in the handler rather than the validator the same cross-reference, if it doesn't already carry one.
 
 **Blocked by:** None - can start immediately, independent of the rest of this PRD
 
-- [ ] Scope decided: documentation-only, or documentation plus an analyzer
-- [ ] `documentation/pipeline-and-behaviors.md`'s (or wherever `AddValidationBehavior`'s ordering is documented) rationale gains an explicit warning against DB-touching validation rules, naming the race it would reintroduce
-- [ ] `documentation/sample-app-walkthrough.md`'s discussion of `CreateTodoTaskCommand` explains why the uniqueness check is in the handler, not the validator, if it doesn't already
+**Acceptance criteria:**
+- [ ] The pipeline-ordering documentation's rationale for placing validation before the transaction now also states that this default leaves a DB-touching validation rule's read unprotected from the check-then-act race, and cross-references the existing mechanism (reordering the unit-of-work behavior outside the behavior whose read needs protecting) as the resolution
+- [ ] The worked example explaining why the sample app's uniqueness check lives in the handler rather than in a validator rule carries the same cross-reference, if it doesn't already
+- [ ] No new analyzer, diagnostic, or runtime guard is added - this ticket is documentation-only, per the finding above that the underlying mechanism already exists and is already general
+- [ ] Follows `documentation/`'s house style (no enumerated counts, glossary linking on first mention, no HTTP status codes outside `aspnetcore-integration.md`, no citation of `maintainer_docs/` to justify the rationale - state it as fact and link sideways to the sibling doc that already covers the reordering mechanism)
+
+**Out of scope:**
+- Building a compile-time or analyzer-based guard against a validator resolving a DB-touching dependency (considered and rejected - see Comments)
+- Any change to `ValidationBehavior`, `AddValidationBehavior`, or the recommended chain's default ordering itself
+
+## Comments
+
+> *This was generated by AI during triage.*
+
+Re-scoped and moved to `ready-for-agent` during triage. The original ticket asked whether this needed "documentation-only, or documentation plus an analyzer" and left that as an open design question. It doesn't: [ADR-0018](../../../maintainer_docs/adr/0018-unit-of-work-as-transaction-owner.md) (shipped after this ticket was filed) already gives every pipeline behavior a general, already-documented way to share the transaction with an earlier read - reordering which behavior wraps which. That closes the "should we build an analyzer" question outright; no bespoke detection of "does this validator touch the database" is needed. What remains is a small, concrete doc gap: the recommended-ordering rationale doesn't mention that its default leaves a DB-touching validation rule unprotected, or point at the reordering escape hatch. Scoped this ticket down to exactly that. See issue 07's closure for the fuller ADR-0018 cross-reference.
