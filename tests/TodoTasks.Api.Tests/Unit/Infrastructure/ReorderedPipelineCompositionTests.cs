@@ -33,10 +33,7 @@ public sealed class ReorderedPipelineCompositionTests
         var policyEvaluator = Substitute.For<IPolicyEvaluator>();
         policyEvaluator.EvaluateAsync(Arg.Any<string>(), Arg.Any<object>(), Arg.Any<CancellationToken>()).Returns(false);
         var validator = new RejectEverythingValidator();
-        var authorization = new AuthorizationBehavior<GuardedRequest, GuardedResponse>(
-            policyEvaluator,
-            DefaultOutcomeCaseRegistry.Instance
-        );
+        var authorization = new AuthorizationBehavior<GuardedRequest, GuardedResponse>(policyEvaluator);
         var validation = new ValidationBehavior<GuardedRequest, GuardedResponse>(
             [validator],
             DefaultOutcomeCaseRegistry.Instance
@@ -50,11 +47,23 @@ public sealed class ReorderedPipelineCompositionTests
         }
 
         // Act - Authorization registered first -> outermost, so its ingress runs before Validation's ever does.
-        var result = await authorization.HandleAsync(
-            request,
-            () => validation.HandleAsync(request, HandlerAsync, TestContext.Current.CancellationToken),
-            TestContext.Current.CancellationToken
-        );
+        // PROTOTYPE (spike/eject-withcase-case-fidelity): AuthorizationBehavior now ejects Forbidden via
+        // Eject.WithCase/PipelineEjectCaseException rather than constructing GuardedResponse itself, so this
+        // direct (no-pipeline-wrapper) call must catch it and construct the response the same way
+        // PipelineChainExecutor would in production.
+        GuardedResponse result;
+        try
+        {
+            result = await authorization.HandleAsync(
+                request,
+                () => validation.HandleAsync(request, HandlerAsync, TestContext.Current.CancellationToken),
+                TestContext.Current.CancellationToken
+            );
+        }
+        catch (PipelineEjectCaseException eject)
+        {
+            result = DefaultOutcomeCaseRegistry.Instance.ConstructOrThrow<GuardedResponse>(eject);
+        }
 
         // Assert
         Assert.IsType<Forbidden>(result.Value);
@@ -69,10 +78,7 @@ public sealed class ReorderedPipelineCompositionTests
         var policyEvaluator = Substitute.For<IPolicyEvaluator>();
         policyEvaluator.EvaluateAsync(Arg.Any<string>(), Arg.Any<object>(), Arg.Any<CancellationToken>()).Returns(false);
         var validator = new RejectEverythingValidator();
-        var authorization = new AuthorizationBehavior<GuardedRequest, GuardedResponse>(
-            policyEvaluator,
-            DefaultOutcomeCaseRegistry.Instance
-        );
+        var authorization = new AuthorizationBehavior<GuardedRequest, GuardedResponse>(policyEvaluator);
         var validation = new ValidationBehavior<GuardedRequest, GuardedResponse>(
             [validator],
             DefaultOutcomeCaseRegistry.Instance
@@ -86,6 +92,8 @@ public sealed class ReorderedPipelineCompositionTests
         }
 
         // Act - Validation registered first this time -> outermost, so its ingress runs before Authorization's.
+        // Validation rejects before Authorization's ingress ever runs, so AuthorizationBehavior's new
+        // Eject.WithCase path is never exercised here - no catch needed, unlike the recommended-order test above.
         var result = await validation.HandleAsync(
             request,
             () => authorization.HandleAsync(request, HandlerAsync, TestContext.Current.CancellationToken),

@@ -25,8 +25,35 @@ using NSubstitute;
 // every request, unconditionally, the moment that shape is registered. Autofac's RegisterGeneric performs
 // real structural unification and would have tolerated the old shape, which is why this went uncaught until
 // a real Microsoft DI resolution was attempted (see BehaviorSubsetConstraintTests).
+// PROTOTYPE (spike/eject-withcase-case-fidelity): AuthorizationBehavior no longer constructs its own
+// Forbidden response and takes no IOutcomeCaseRegistry dependency - it ejects the bare Forbidden case value
+// via Eject.WithCase and throws PipelineEjectCaseException, leaving construction to whichever catch site
+// already knows TResponse concretely (PipelineChainExecutor, in production). These tests call the behavior
+// directly with no pipeline around it, so RunBehaviorAsync below stands in for that catch site - it is not a
+// reimplementation, it calls the exact same OutcomeCaseRegistryExtensions.ConstructOrThrow<TResponse> the
+// production catch site calls, so a passing test here is genuine evidence the production catch site would
+// produce the same observed result.
 public class AuthorizationBehaviorTests
 {
+    private static async Task<TResponse> RunBehaviorAsync<TRequest, TResponse>(
+        AuthorizationBehavior<TRequest, TResponse> behavior,
+        TRequest request,
+        Func<Task<TResponse>> next,
+        IOutcomeCaseRegistry caseRegistry
+    )
+        where TRequest : IRequiresPolicyRequest
+        where TResponse : IUnion
+    {
+        try
+        {
+            return await behavior.HandleAsync(request, next, CancellationToken.None);
+        }
+        catch (PipelineEjectCaseException eject)
+        {
+            return caseRegistry.ConstructOrThrow<TResponse>(eject);
+        }
+    }
+
     [Fact]
     public async Task Handle_AllowsAccessWhenPolicyEvaluatesTrue()
     {
@@ -36,10 +63,7 @@ public class AuthorizationBehaviorTests
             .EvaluateAsync(Arg.Any<string>(), Arg.Any<object>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(true));
 
-        var behavior = new AuthorizationBehavior<ProtectedQuery, Outcome<string, Forbidden>>(
-            policyEvaluator,
-            DefaultOutcomeCaseRegistry.Instance
-        );
+        var behavior = new AuthorizationBehavior<ProtectedQuery, Outcome<string, Forbidden>>(policyEvaluator);
         var request = new ProtectedQuery("test");
         static Task<Outcome<string, Forbidden>> NextAsync()
         {
@@ -47,7 +71,7 @@ public class AuthorizationBehaviorTests
         }
 
         // Act
-        var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
+        var result = await RunBehaviorAsync(behavior, request, NextAsync, DefaultOutcomeCaseRegistry.Instance);
 
         // Assert
         Assert.Equal("success", result.Value);
@@ -63,10 +87,7 @@ public class AuthorizationBehaviorTests
             .EvaluateAsync(Arg.Any<string>(), Arg.Any<object>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(false));
 
-        var behavior = new AuthorizationBehavior<ProtectedQuery, Outcome<string, Forbidden>>(
-            policyEvaluator,
-            DefaultOutcomeCaseRegistry.Instance
-        );
+        var behavior = new AuthorizationBehavior<ProtectedQuery, Outcome<string, Forbidden>>(policyEvaluator);
         var request = new ProtectedQuery("test");
         static Task<Outcome<string, Forbidden>> NextAsync()
         {
@@ -74,7 +95,7 @@ public class AuthorizationBehaviorTests
         }
 
         // Act
-        var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
+        var result = await RunBehaviorAsync(behavior, request, NextAsync, DefaultOutcomeCaseRegistry.Instance);
 
         // Assert - Should return Forbidden instead of calling next
         Assert.IsType<Forbidden>(result.Value);
@@ -90,10 +111,7 @@ public class AuthorizationBehaviorTests
             .EvaluateAsync(Arg.Any<string>(), Arg.Any<object>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(false));
 
-        var behavior = new AuthorizationBehavior<ProtectedQuery, Outcome<string, Forbidden>>(
-            policyEvaluator,
-            DefaultOutcomeCaseRegistry.Instance
-        );
+        var behavior = new AuthorizationBehavior<ProtectedQuery, Outcome<string, Forbidden>>(policyEvaluator);
         var request = new ProtectedQuery("test");
         static Task<Outcome<string, Forbidden>> NextAsync()
         {
@@ -101,7 +119,7 @@ public class AuthorizationBehaviorTests
         }
 
         // Act
-        var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
+        var result = await RunBehaviorAsync(behavior, request, NextAsync, DefaultOutcomeCaseRegistry.Instance);
 
         // Assert
         var forbidden = Assert.IsType<Forbidden>(result.Value);
@@ -117,10 +135,7 @@ public class AuthorizationBehaviorTests
             .EvaluateAsync(Arg.Any<string>(), Arg.Any<object>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(false));
 
-        var behavior = new AuthorizationBehavior<ProtectedQuery, Outcome<string, Forbidden>>(
-            policyEvaluator,
-            DefaultOutcomeCaseRegistry.Instance
-        );
+        var behavior = new AuthorizationBehavior<ProtectedQuery, Outcome<string, Forbidden>>(policyEvaluator);
         var request = new ProtectedQuery("test");
         var nextCalled = false;
 
@@ -131,7 +146,7 @@ public class AuthorizationBehaviorTests
         }
 
         // Act
-        await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
+        await RunBehaviorAsync(behavior, request, NextAsync, DefaultOutcomeCaseRegistry.Instance);
 
         // Assert - next should not be called
         Assert.False(nextCalled);
@@ -146,10 +161,7 @@ public class AuthorizationBehaviorTests
             .EvaluateAsync(Arg.Any<string>(), Arg.Any<object>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(true));
 
-        var behavior = new AuthorizationBehavior<ProtectedQuery, Outcome<string, Forbidden>>(
-            policyEvaluator,
-            DefaultOutcomeCaseRegistry.Instance
-        );
+        var behavior = new AuthorizationBehavior<ProtectedQuery, Outcome<string, Forbidden>>(policyEvaluator);
         var request = new ProtectedQuery("test-value");
         static Task<Outcome<string, Forbidden>> NextAsync()
         {
@@ -157,7 +169,7 @@ public class AuthorizationBehaviorTests
         }
 
         // Act
-        await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
+        await RunBehaviorAsync(behavior, request, NextAsync, DefaultOutcomeCaseRegistry.Instance);
 
         // Assert - the exact request instance should be passed to the evaluator, not merely an equal copy.
         await policyEvaluator
@@ -172,7 +184,9 @@ public class AuthorizationBehaviorTests
         // pinned as the failure case - it's an arbitrary IOutcome the caller chose, constructed
         // reflectively from a Forbidden case constructor when authorization is denied. A response shape with
         // no such case (like Outcome<string, NotFound> here) can't express "denied" at all, so
-        // denial must fail loudly and specifically rather than silently succeeding or crashing obscurely.
+        // denial must fail loudly and specifically rather than silently succeeding or crashing obscurely -
+        // now at the catch site that attempts construction (RunBehaviorAsync, standing in for
+        // PipelineChainExecutor) rather than inside the behavior itself.
         // Arrange
         var policyEvaluator = Substitute.For<IPolicyEvaluator>();
         policyEvaluator
@@ -182,7 +196,7 @@ public class AuthorizationBehaviorTests
         var behavior = new AuthorizationBehavior<
             MisshapenProtectedQuery,
             Outcome<string, Interlocutor.CommonKernel.ResultTypes.NotFound>
-        >(policyEvaluator, DefaultOutcomeCaseRegistry.Instance);
+        >(policyEvaluator);
         var request = new MisshapenProtectedQuery();
         static Task<Outcome<string, NotFound>> NextAsync()
         {
@@ -191,7 +205,7 @@ public class AuthorizationBehaviorTests
 
         // Act
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            behavior.HandleAsync(request, NextAsync, CancellationToken.None)
+            RunBehaviorAsync(behavior, request, NextAsync, DefaultOutcomeCaseRegistry.Instance)
         );
 
         // Assert
@@ -204,7 +218,9 @@ public class AuthorizationBehaviorTests
         // Proves IOutcomeCaseRegistry is a genuine drop-in for UnionCaseFactory, not just for compiler
         // unions: HandRolledOutcome has no case constructor for UnionCaseFactory to find reflectively, so
         // DefaultOutcomeCaseRegistry alone could never construct it - it only works here because a custom
-        // factory is registered.
+        // factory is registered. The behavior itself no longer knows which registry (if any) will end up
+        // constructing its response - RunBehaviorAsync supplies the custom one, standing in for whichever
+        // registry a real dispatch's DI container would resolve.
         // Arrange
         var policyEvaluator = Substitute.For<IPolicyEvaluator>();
         policyEvaluator
@@ -215,7 +231,7 @@ public class AuthorizationBehaviorTests
             .RegisterFactory<HandRolledOutcome, Forbidden>(HandRolledOutcome.FromForbidden)
             .Build();
 
-        var behavior = new AuthorizationBehavior<ProtectedHandRolledQuery, HandRolledOutcome>(policyEvaluator, caseRegistry);
+        var behavior = new AuthorizationBehavior<ProtectedHandRolledQuery, HandRolledOutcome>(policyEvaluator);
         var request = new ProtectedHandRolledQuery();
         static Task<HandRolledOutcome> NextAsync()
         {
@@ -223,7 +239,7 @@ public class AuthorizationBehaviorTests
         }
 
         // Act
-        var result = await behavior.HandleAsync(request, NextAsync, CancellationToken.None);
+        var result = await RunBehaviorAsync(behavior, request, NextAsync, caseRegistry);
 
         // Assert
         Assert.Equal(typeof(Forbidden), result.CaseType);
