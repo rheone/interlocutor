@@ -37,6 +37,6 @@ internal sealed class BareCommandHandlerWrapper<TCommand, TResult> : IBareHandle
         var handler = services.GetRequiredService<IBareCommandHandler<TCommand, TResult>>();
         activity?.SetTag(MediatorActivitySource.HandlerTypeTag, handler.GetType().FullName);
 
-        return PipelineChainExecutor.ExecuteAsync(typedRequest, handler.Handle, services, ct, activity);
+        return PipelineChainExecutor.ExecuteAsync(typedRequest, handler.HandleAsync, services, ct, activity);
     }
 }

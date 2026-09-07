@@ -133,15 +133,11 @@ internal static class DispatchWrapperEmitter
         // change to the public IGeneratedRequestDispatcher contract), so it passes
         // System.Diagnostics.Activity.Current, which Mediator's dispatch already keeps current for the whole
         // nested call (see Mediator.SendAsync(object, CancellationToken)'s remarks on nested-activity parenting).
-        // IBareCommandHandler<,> still has no HandleAsync member (a known, deliberate open gap - see
-        // .scratch/async-method-naming) - ICommandHandler<,> and IQueryHandler<,> no longer have Handle at
-        // all, so the emitted call must branch by handler kind rather than use one member name uniformly.
-        var handlerCallMember = handler.Kind == HandlerKind.BareCommand ? "Handle" : "HandleAsync";
         builder.AppendLine(
             $"            return global::Interlocutor.Abstractions.Pipeline.PipelineChainExecutor.ExecuteAsync<{requestType}, {responseType}>("
         );
         builder.AppendLine("                request,");
-        builder.AppendLine($"                handler.{handlerCallMember},");
+        builder.AppendLine("                handler.HandleAsync,");
         builder.AppendLine("                services,");
         builder.AppendLine("                ct,");
         builder.AppendLine("                global::System.Diagnostics.Activity.Current);");

@@ -159,7 +159,7 @@ public sealed class RequestDispatchSwitchEmissionTests
 
             public sealed class DeleteFooCommandHandler : IBareCommandHandler<DeleteFooCommand, Outcome>
             {
-                public Task<Outcome> Handle(DeleteFooCommand command, CancellationToken ct) => throw new System.NotImplementedException();
+                public Task<Outcome> HandleAsync(DeleteFooCommand command, CancellationToken ct) => throw new System.NotImplementedException();
             }
             """;
 

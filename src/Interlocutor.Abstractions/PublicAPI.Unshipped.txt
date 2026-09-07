@@ -12,7 +12,7 @@ Interlocutor.Abstractions.Commands.ICommand<TResponse>
 Interlocutor.Abstractions.Commands.ICommandHandler<TCommand, TResponse>
 Interlocutor.Abstractions.Commands.ICommandHandler<TCommand, TResponse>.HandleAsync(TCommand command, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResponse>!
 Interlocutor.Abstractions.Commands.IBareCommandHandler<TCommand, TResult>
-Interlocutor.Abstractions.Commands.IBareCommandHandler<TCommand, TResult>.Handle(TCommand command, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResult>!
+Interlocutor.Abstractions.Commands.IBareCommandHandler<TCommand, TResult>.HandleAsync(TCommand command, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<TResult>!
 Interlocutor.Abstractions.Commands.ResourceCommandHandler<TCommand, TEntity, TResponse>
 Interlocutor.Abstractions.Commands.ResourceCommandHandler<TCommand, TEntity, TResponse>.ResourceCommandHandler() -> void
 Interlocutor.Abstractions.Core.AmbientRequestContextAccessor

@@ -124,7 +124,7 @@ public sealed class MissingHandlerDiagnosticTests
 
             public sealed class DeleteFooCommandHandler : IBareCommandHandler<DeleteFooCommand, Outcome<int, string>>
             {
-                public Task<Outcome<int, string>> Handle(DeleteFooCommand command, CancellationToken ct) =>
+                public Task<Outcome<int, string>> HandleAsync(DeleteFooCommand command, CancellationToken ct) =>
                     throw new System.NotImplementedException();
             }
             """;

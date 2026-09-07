@@ -24,11 +24,9 @@ public record UnregisteredBareCommand : ICommand;
 /// unchanged by ticket 03's ambiguity check.</summary>
 public record UnambiguousBareCommand : ICommand;
 
-// IBareCommandHandler<,> has no HandleAsync member (known gap - ticket 01 never added one), so this fake
-// stays on Handle as-is, same as TestBareHandler in MediatorTests.cs.
 public class UnambiguousBareCommandHandler : IBareCommandHandler<UnambiguousBareCommand, Outcome>
 {
-    public Task<Outcome> Handle(UnambiguousBareCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
+    public Task<Outcome> HandleAsync(UnambiguousBareCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
 }
 
 /// <summary>A query whose handler always returns the failure case, used to prove the runtime-dispatched

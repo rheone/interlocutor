@@ -624,13 +624,12 @@ public class InterlocutorBuilderIntegrationTests
 
     private sealed record SampleBareCommand : ICommand;
 
-    // IBareCommandHandler<,> has no HandleAsync member (deliberately unsuffixed - see that interface's own
-    // remarks), so this fake stays on Handle as-is. Resolved only via AddInterlocutor()'s assembly-scanning DI
-    // registration - never new'd or typeof'd directly, so this constructor is invisible to static analysis.
+    // Resolved only via AddInterlocutor()'s assembly-scanning DI registration - never new'd or typeof'd
+    // directly, so this constructor is invisible to static analysis.
 #pragma warning disable S1144
     private sealed class SampleBareCommandHandler : IBareCommandHandler<SampleBareCommand, Outcome>
     {
-        public Task<Outcome> Handle(SampleBareCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
+        public Task<Outcome> HandleAsync(SampleBareCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 #pragma warning restore S1144
 

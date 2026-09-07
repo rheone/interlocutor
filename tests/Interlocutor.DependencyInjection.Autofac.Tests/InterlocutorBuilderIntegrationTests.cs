@@ -372,11 +372,9 @@ public class InterlocutorBuilderIntegrationTests
 
     private sealed record SampleBareCommand : ICommand;
 
-    // IBareCommandHandler<,> has no HandleAsync member (deliberately unsuffixed - see that interface's own
-    // remarks), so this fake stays on Handle as-is.
     private sealed class SampleBareCommandHandler : IBareCommandHandler<SampleBareCommand, Outcome>
     {
-        public Task<Outcome> Handle(SampleBareCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
+        public Task<Outcome> HandleAsync(SampleBareCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 
     /// <summary>Deliberately has no handler, so ValidateOnBuild() tests have a deterministic problem to find.</summary>

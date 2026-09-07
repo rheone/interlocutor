@@ -38,15 +38,5 @@ public interface IBareCommandHandler<in TCommand, TResult>
     /// <param name="command">The command to handle.</param>
     /// <param name="ct">Cancellation token to cancel the operation.</param>
     /// <returns>The outcome of handling the command.</returns>
-    /// <remarks>
-    /// <para>
-    /// Deliberately unsuffixed - see this interface's own summary and the neighboring <c>HandleAsync</c>
-    /// members on the other handler contracts for why a suffixed member was never added here (ticket 01 of
-    /// the async-naming rename left this contract alone by design). VSTHRD200 is suppressed on the
-    /// declaration below for exactly that reason, not disabled for the type or the assembly.
-    /// </para>
-    /// </remarks>
-#pragma warning disable VSTHRD200 // see remarks above
-    Task<TResult> Handle(TCommand command, CancellationToken ct);
-#pragma warning restore VSTHRD200
+    Task<TResult> HandleAsync(TCommand command, CancellationToken ct);
 }

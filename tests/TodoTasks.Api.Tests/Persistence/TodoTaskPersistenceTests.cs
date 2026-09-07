@@ -570,7 +570,10 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
         var handler = new ClearCompletedTodoTasksHandler(tasks, unitOfWork);
 
         // Act
-        var result = await handler.Handle(new ClearCompletedTodoTasksCommand(owner), TestContext.Current.CancellationToken);
+        var result = await handler.HandleAsync(
+            new ClearCompletedTodoTasksCommand(owner),
+            TestContext.Current.CancellationToken
+        );
 
         // Assert - Outcome is case-less; reaching this line without throwing already is the acknowledgment
         // (see Outcome's own remarks). What's worth proving is the database state below.
@@ -609,7 +612,10 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
         var handler = new ClearCompletedTodoTasksHandler(tasks, unitOfWork);
 
         // Act
-        var result = await handler.Handle(new ClearCompletedTodoTasksCommand(owner), TestContext.Current.CancellationToken);
+        var result = await handler.HandleAsync(
+            new ClearCompletedTodoTasksCommand(owner),
+            TestContext.Current.CancellationToken
+        );
 
         // Assert - Outcome is case-less; reaching this line without throwing already is the acknowledgment
         // (see Outcome's own remarks). What's worth proving is the database state below.
