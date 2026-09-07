@@ -1,6 +1,6 @@
 # PRD: Validation Failure-Case Fidelity
 
-Status: done - issues 01-04 and 08 implemented in 8a7ca91, recorded as ADR-0020. Issues 05-07 split by triage: each ticket's generic-mapper-recognition half is now also done (see its own file); the concrete-second-implementation half stays parked as needs-triage by design (no second implementation driving it yet).
+Status: done - issues 01-04 and 08 implemented in 8a7ca91, recorded as ADR-0020. Issues 05-07 split by triage: each ticket's generic-mapper-recognition half is now also done (see its own file); the concrete-second-implementation half stays parked as needs-triage by design (no second implementation driving it yet). Issues 09-11 hold candidate shapes for that parked half, sanity-checked via a throwaway prototype (branch `prototype/failure-case-shapes`, commit `1dc9e50`) - also held at needs-triage, each pending its own maintainer decision (a named real implementation, plus a design call on `Timeout`'s `Elapsed` ambiguity and `Forbidden`'s `EvaluationOrder` question).
 
 ## Problem
 
