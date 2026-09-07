@@ -95,6 +95,9 @@ builder.Pipeline.AddUnitOfWorkBehavior();        // 5. Innermost
 - **Validation before transactions** - don't open a database transaction to discover the input was invalid. Catch input errors first.
 - **Transaction innermost** - it wraps only the handler's persistence work. It commits on success and rolls back on any `Failure` outcome, but not when an outer behavior short-circuits (e.g., when authorization denies the request - the caller shouldn't see a rolled-back transaction when they were never authorized to run the command).
 
+> [!NOTE]
+> "Validation before transactions" leaves a DB-touching validation rule's own read unprotected. FluentValidation supports a rule that resolves an injected dependency and queries it directly (`MustAsync`/`CustomAsync` against an injected `DbContext`, for instance) - under this default ordering, that read still runs before `UnitOfWorkBehavior` opens a transaction, leaving the same check-then-act race window open that `ITransactionalRequest` closes for a read performed inside the handler. The fix is the same one that protects any other earlier read: register `UnitOfWorkBehavior` outside `ValidationBehavior` instead of at the innermost recommended position, so the validator's read and the handler's write share one transaction; see [Transactions & Store Integration § Where to register the behavior, relative to pipeline stages](transactions-and-store-integration.md#where-to-register-the-behavior-relative-to-pipeline-stages).
+
 ## Per-Request-Type Pipeline Overrides
 
 The recommended chain - or whatever chain you compose in its place - is a general-purpose baseline: every request type draws from it unless you declare an override. `OverridePipelineFor` lets a specific request type, or a predicate matching a set of request types, run an independent, explicitly-ordered pipeline **instead of** the baseline entirely - a full, positively-declared replacement, never a merge with or modification of it.
