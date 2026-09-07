@@ -38,8 +38,18 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// <c>CommandHandlerWrapper</c>, and <c>BareCommandHandlerWrapper</c> the new catch logic all at once - none of
 /// the three wrappers guards for either exception type itself; they all delegate to this shared executor.
 /// </para>
+/// <para>
+/// <b>Public, and called from a consuming assembly's own generated code.</b>
+/// <c>Interlocutor.Generator</c>'s <c>DispatchWrapperEmitter</c> emits a call into
+/// <see cref="ExecuteAsync{TRequest,TResponse}"/> from every compile-time dispatch wrapper it produces,
+/// rather than re-deriving this same fold/eject-catch logic as string-templated source - the two dispatch
+/// paths (hand-written wrappers here, generator-emitted wrappers in an arbitrary consuming assembly) share
+/// this one implementation, so a fix or behavior change to the fold/eject-catch algorithm only needs to be
+/// made here to take effect on both. This type's static surface is otherwise unremarkable to widen: it
+/// already took only an <see cref="IServiceProvider"/> plus delegates, nothing internal-only.
+/// </para>
 /// </remarks>
-internal static class PipelineChainExecutor
+public static class PipelineChainExecutor
 {
     /// <summary>
     /// Composes <paramref name="handle"/> with every behavior

@@ -16,12 +16,15 @@ using Interlocutor.Generator.Models;
 /// <c>Interlocutor.Abstractions.Core.HandlerWrapper&lt;TResponse&gt;</c> (that type is <c>internal</c> to
 /// <c>Interlocutor.Abstractions</c>, so generated code in an arbitrary consuming assembly cannot subclass it
 /// without a solution-wide <c>InternalsVisibleTo</c> that would have to name every possible consumer assembly
-/// up front). Instead each wrapper reproduces the same behavior-chain composition
-/// <c>QueryHandlerWrapper{TQuery,TResponse}.Handle</c> performs: resolve the handler, resolve the applicable
-/// behavior list via <c>Interlocutor.Abstractions.Pipeline.PipelineChainResolver.ResolveChain</c> - the same
-/// call the hand-written wrappers make, so a per-request-type pipeline override resolves identically on
-/// both dispatch paths - and fold it around the handler call in reverse order, using only compile-time-known
-/// closed types, never a <c>MakeGenericType</c>/<c>Activator.CreateInstance</c> call.
+/// up front). Instead each wrapper resolves the handler from <c>services</c> and hands its bound call to the
+/// public <c>Interlocutor.Abstractions.Pipeline.PipelineChainExecutor.ExecuteAsync</c> - the same entry point
+/// <c>QueryHandlerWrapper{TQuery,TResponse}.HandleAsync</c> and its siblings call - which resolves the
+/// applicable behavior list via <c>PipelineChainResolver.ResolveChain</c> (so a per-request-type pipeline
+/// override resolves identically on both dispatch paths) and folds it around the handler call, using only
+/// compile-time-known closed types, never a <c>MakeGenericType</c>/<c>Activator.CreateInstance</c> call. This
+/// wrapper does not re-derive that fold or its eject-catch guards itself - see
+/// <c>PipelineChainExecutor.ExecuteAsync</c>'s remarks for why both dispatch paths now share one
+/// implementation.
 /// </para>
 /// <para>
 /// <b>Notification handlers are intentionally not given a dispatch wrapper here.</b> Unlike queries and
@@ -108,7 +111,7 @@ internal static class DispatchWrapperEmitter
             "        /// <returns>The handler's response, after passing through every applicable pipeline behavior.</returns>"
         );
         builder.AppendLine(
-            $"        public static async global::System.Threading.Tasks.Task<{responseType}> HandleAsync({requestType} request, global::System.IServiceProvider services, global::System.Threading.CancellationToken ct)"
+            $"        public static global::System.Threading.Tasks.Task<{responseType}> HandleAsync({requestType} request, global::System.IServiceProvider services, global::System.Threading.CancellationToken ct)"
         );
         builder.AppendLine("        {");
         builder.AppendLine(
@@ -119,69 +122,29 @@ internal static class DispatchWrapperEmitter
         );
         builder.AppendLine();
 
-        // Each closure below is wrapped in a try/catch for PipelineEjectException<TResponse>, mirroring the
-        // hand-written wrappers (QueryHandlerWrapper/CommandHandlerWrapper/BareCommandHandlerWrapper): a
-        // handler or behavior that calls Eject.With deep in its own call graph returns an ordinary response
-        // at the nearest enclosing HandleAsync/Handle call, so nothing further out in the chain ever observes
-        // a thrown exception. Each catch also tags MediatorActivitySource.EjectedTag on the ambient activity,
-        // matching PipelineChainExecutor's identical tagging for the hand-written wrappers - this static
-        // wrapper has no Activity parameter of its own (adding one would be a breaking change to the public
-        // IGeneratedRequestDispatcher contract), so it reads System.Diagnostics.Activity.Current instead, which
-        // Mediator's dispatch already keeps current for the whole nested call (see Mediator.SendAsync(object,
-        // CancellationToken)'s remarks on nested-activity parenting).
-        builder.AppendLine(
-            $"            global::System.Func<global::System.Threading.Tasks.Task<{responseType}>> pipeline = async () =>"
-        );
-        builder.AppendLine("            {");
-        builder.AppendLine("                try");
-        builder.AppendLine("                {");
+        // Delegates the fold-and-eject-catch logic entirely to the same PipelineChainExecutor.ExecuteAsync
+        // the hand-written wrappers (QueryHandlerWrapper/CommandHandlerWrapper/BareCommandHandlerWrapper) call
+        // - see that method's remarks. This wrapper's only remaining job is resolving the handler above and
+        // handing its bound call over as the innermost pipeline delegate; PipelineChainExecutor composes the
+        // behavior chain around it and catches both PipelineEjectException<TResponse> and
+        // PipelineEjectCaseException at every layer, so a request ejected via Eject.With/Eject.WithCase
+        // recovers here exactly as it does on the hand-written path - one algorithm, not two kept in sync by
+        // hand. This static wrapper has no Activity parameter of its own (adding one would be a breaking
+        // change to the public IGeneratedRequestDispatcher contract), so it passes
+        // System.Diagnostics.Activity.Current, which Mediator's dispatch already keeps current for the whole
+        // nested call (see Mediator.SendAsync(object, CancellationToken)'s remarks on nested-activity parenting).
         // IBareCommandHandler<,> still has no HandleAsync member (a known, deliberate open gap - see
         // .scratch/async-method-naming) - ICommandHandler<,> and IQueryHandler<,> no longer have Handle at
         // all, so the emitted call must branch by handler kind rather than use one member name uniformly.
         var handlerCallMember = handler.Kind == HandlerKind.BareCommand ? "Handle" : "HandleAsync";
-        builder.AppendLine($"                    return await handler.{handlerCallMember}(request, ct).ConfigureAwait(false);");
-        builder.AppendLine("                }");
         builder.AppendLine(
-            $"                catch (global::Interlocutor.Abstractions.Pipeline.PipelineEjectException<{responseType}> eject)"
+            $"            return global::Interlocutor.Abstractions.Pipeline.PipelineChainExecutor.ExecuteAsync<{requestType}, {responseType}>("
         );
-        builder.AppendLine("                {");
-        builder.AppendLine(
-            "                    global::System.Diagnostics.Activity.Current?.SetTag(global::Interlocutor.Abstractions.Diagnostics.MediatorActivitySource.EjectedTag, true);"
-        );
-        builder.AppendLine("                    return eject.Response;");
-        builder.AppendLine("                }");
-        builder.AppendLine("            };");
-        builder.AppendLine();
-        builder.AppendLine(
-            $"            var behaviorChain = global::Interlocutor.Abstractions.Pipeline.PipelineChainResolver.ResolveChain<{requestType}, {responseType}>(services);"
-        );
-        builder.AppendLine("            for (var i = behaviorChain.Count - 1; i >= 0; i--)");
-        builder.AppendLine("            {");
-        builder.AppendLine("                var next = pipeline;");
-        builder.AppendLine("                {");
-        builder.AppendLine("                    var behavior = behaviorChain[i];");
-        builder.AppendLine("                    pipeline = async () =>");
-        builder.AppendLine("                    {");
-        builder.AppendLine("                        try");
-        builder.AppendLine("                        {");
-        builder.AppendLine(
-            "                            return await behavior.HandleAsync(request, next, ct).ConfigureAwait(false);"
-        );
-        builder.AppendLine("                        }");
-        builder.AppendLine(
-            $"                        catch (global::Interlocutor.Abstractions.Pipeline.PipelineEjectException<{responseType}> eject)"
-        );
-        builder.AppendLine("                        {");
-        builder.AppendLine(
-            "                            global::System.Diagnostics.Activity.Current?.SetTag(global::Interlocutor.Abstractions.Diagnostics.MediatorActivitySource.EjectedTag, true);"
-        );
-        builder.AppendLine("                            return eject.Response;");
-        builder.AppendLine("                        }");
-        builder.AppendLine("                    };");
-        builder.AppendLine("                }");
-        builder.AppendLine("            }");
-        builder.AppendLine();
-        builder.AppendLine("            return await pipeline().ConfigureAwait(false);");
+        builder.AppendLine("                request,");
+        builder.AppendLine($"                handler.{handlerCallMember},");
+        builder.AppendLine("                services,");
+        builder.AppendLine("                ct,");
+        builder.AppendLine("                global::System.Diagnostics.Activity.Current);");
         builder.AppendLine("        }");
         builder.AppendLine("    }");
         builder.AppendLine();

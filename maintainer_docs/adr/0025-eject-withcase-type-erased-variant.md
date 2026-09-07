@@ -85,33 +85,28 @@ and throws `Eject.WithCase(new Forbidden(...))` on denial. `CancellationBehavior
 `RateLimitedBehavior`, `ValidationBehavior`, and `FluentValidationErrorsBehavior` are **unchanged** - each still
 takes `IOutcomeCaseRegistry` in its constructor and still calls
 `caseRegistry.ConstructOrThrow<TResponse, TCase>(value, behaviorName, eventPhrase, requirementClause)` directly,
-exactly as ADR-0023 describes. `Interlocutor.Generator`'s `DispatchWrapperEmitter`
-(`src/Interlocutor.Generator/Emission/DispatchWrapperEmitter.cs`) is also **unchanged** - it emits only a
-`catch (global::Interlocutor.Abstractions.Pipeline.PipelineEjectException<{responseType}> eject)` block at each
-of its two catch sites, with no corresponding `PipelineEjectCaseException` clause. A consumer using compile-time
-discovery ([ADR-0008](0008-compile-time-handler-discovery.md)) who registers `AuthorizationBehavior` today would
-see `PipelineEjectCaseException` propagate unhandled out through `IGeneratedRequestDispatcher.DispatchAsync` and
-past `IMediator`, violating the "never observed by a caller of the mediator" contract both `Eject` variants
-exist to uphold - **until the emitter is updated to match, compile-time-discovery consumers must not register
-`AuthorizationBehavior` (or any future behavior migrated to `Eject.WithCase`) unless they are certain their
-own `TResponse` never actually reaches the denial path**, since the failure mode is an unhandled internal
-exception, not a graceful `InvalidOperationException`. This gap is accepted, costed follow-on work (see
-Consequences), not an oversight.
+exactly as ADR-0023 describes.
+
+The generator-side gap this section originally recorded - `Interlocutor.Generator`'s `DispatchWrapperEmitter`
+emitting only a `catch (PipelineEjectException<TResponse> eject)` block, with no corresponding
+`PipelineEjectCaseException` clause, so a compile-time-discovery consumer registering `AuthorizationBehavior`
+would see the exception propagate unhandled - is now closed, not by mirroring a second generated catch block as
+the "Follow-on work" section below originally called for, but by a deeper fix: `DispatchWrapperEmitter` no
+longer emits fold/eject-catch logic as string-templated source at all. It now emits a single call into the
+same public `PipelineChainExecutor.ExecuteAsync` the hand-written wrappers already called, so both dispatch
+paths run through the one implementation and gain any future eject-catch change (this one included) together,
+with nothing left to keep in sync by hand.
 
 ### The measured blast radius: uniform, mechanical, and already fully sized
 
-The spike measured, rather than estimated, the cost of extending this to the remaining five behaviors and the
-generator: all six behaviors that short-circuit via `ConstructOrThrow` share the *exact same shape* (an
-`IOutcomeCaseRegistry` constructor dependency, one `ConstructOrThrow` call at the single short-circuit point),
-so migrating each of the remaining five is drop the dependency, replace the `ConstructOrThrow` call with
-`throw Eject.WithCase(value)`, and delete the now-dead private `Construct*Response` helper three of them have.
-No behavior-specific wrinkle turned up among the six. The hand-written-wrapper side of this work is already
-fully done regardless of how many behaviors migrate, because `PipelineChainExecutor` is shared and not
-per-behavior. The one piece of real, not-yet-sized-in-code follow-on work is `DispatchWrapperEmitter`: it needs
-a second generated `catch (global::Interlocutor.Abstractions.Pipeline.PipelineEjectCaseException eject) { ... }`
-block at each of its two existing catch sites, mirroring the existing `PipelineEjectException<TResponse>` block
-line-for-line and calling the same `ConstructOrThrow<TResponse>` bridge - a bounded, mechanical addition to an
-existing pattern, not open-ended, but genuinely unimplemented today.
+The spike measured, rather than estimated, the cost of extending this to the remaining five behaviors: all six
+behaviors that short-circuit via `ConstructOrThrow` share the *exact same shape* (an `IOutcomeCaseRegistry`
+constructor dependency, one `ConstructOrThrow` call at the single short-circuit point), so migrating each of
+the remaining five is drop the dependency, replace the `ConstructOrThrow` call with `throw Eject.WithCase(value)`,
+and delete the now-dead private `Construct*Response` helper three of them have. No behavior-specific wrinkle
+turned up among the six. Both the hand-written-wrapper side of this work and the generator-emitter side are
+fully done regardless of how many behaviors migrate, because `PipelineChainExecutor` is shared by both dispatch
+paths and not per-behavior - see "Current shipped scope" above.
 
 ### Consistency with ADR-0023 and ADR-0020
 
@@ -161,16 +156,14 @@ resolver's positional-substitution constraint ADR-0020 and ADR-0023 both already
   path [ADR-0023](0023-pipeline-behavior-case-construction-fail-fast.md) commits to as a permanent guarantee -
   the guarantee that a mismatch fails loudly is preserved; the guarantee that the message identifies *which
   behavior* is not.
-- **Negative, accepted, not yet done: five behaviors and the generator emitter remain outstanding.**
-  `CancellationBehavior`, `TimeoutBehavior`, `RateLimitedBehavior`, `ValidationBehavior`, and
-  `FluentValidationErrorsBehavior` still take `IOutcomeCaseRegistry` and call `ConstructOrThrow` directly; no
-  behavior change or bug, but a real inconsistency in mechanism across otherwise-identical behaviors. Migrating
-  any of them - and `AuthorizationBehavior` as it stands today - remains unsafe for a compile-time-discovery
-  consumer's build until `DispatchWrapperEmitter` gains the mirrored `PipelineEjectCaseException` catch block;
-  until then, a consumer on that path who registers `AuthorizationBehavior` risks an unhandled
-  `PipelineEjectCaseException` reaching a caller of the mediator on denial, rather than the graceful
-  `InvalidOperationException` the hand-written-wrapper path already gets. Both remain open, explicitly-scoped
-  follow-on work, not silently deferred gaps.
+- **Negative, accepted, not yet done: five behaviors remain outstanding.** `CancellationBehavior`,
+  `TimeoutBehavior`, `RateLimitedBehavior`, `ValidationBehavior`, and `FluentValidationErrorsBehavior` still take
+  `IOutcomeCaseRegistry` and call `ConstructOrThrow` directly; no behavior change or bug, but a real
+  inconsistency in mechanism across otherwise-identical behaviors. This remains open, explicitly-scoped
+  follow-on work, not a silently deferred gap. The generator-emitter gap this bullet originally paired with it
+  is closed (see "Current shipped scope" above) - migrating any of the remaining five behaviors is now equally
+  safe on both dispatch paths, since `DispatchWrapperEmitter` no longer has a mechanism of its own to keep in
+  sync.
 - **Negative:** `OutcomeCaseRegistryExtensions.ConstructOrThrow<TResponse>(IOutcomeCaseRegistry, PipelineEjectCaseException)`
   adds a second, distinct reflection call per eject (`MethodInfo.MakeGenericMethod`, alongside the existing
   `UnionCaseFactory.FindCaseConstructor` lookup `Construct<TResponse, TCase>` already performs) and a
@@ -210,12 +203,15 @@ resolver's positional-substitution constraint ADR-0020 and ADR-0023 both already
 - Migrate `CancellationBehavior`, `TimeoutBehavior`, `RateLimitedBehavior`, `ValidationBehavior`, and
   `FluentValidationErrorsBehavior` to `Eject.WithCase`, each a mechanical repeat of the
   `AuthorizationBehavior` migration.
-- Update `Interlocutor.Generator`'s `DispatchWrapperEmitter` to emit a `PipelineEjectCaseException` catch block
-  alongside its existing `PipelineEjectException<TResponse>` block at both emitted catch sites, so a
-  compile-time-discovery consumer gets the same graceful `InvalidOperationException` fail-fast behavior the
-  hand-written-wrapper path already has.
-- Neither is required for `AuthorizationBehavior`'s current migration to be correct for a consumer on the
-  reflection/`ScanAssembly` discovery path ([ADR-0008](0008-compile-time-handler-discovery.md)), since that path
-  dispatches through the hand-written wrappers and `PipelineChainExecutor` already covers it; both are required
-  before a compile-time-discovery consumer can safely register `AuthorizationBehavior` (or any future behavior
-  migrated the same way).
+- ~~Update `Interlocutor.Generator`'s `DispatchWrapperEmitter` to emit a `PipelineEjectCaseException` catch
+  block alongside its existing `PipelineEjectException<TResponse>` block at both emitted catch sites~~ - **done**,
+  by a deeper fix than this bullet originally called for: `DispatchWrapperEmitter` now emits a single call into
+  the shared `PipelineChainExecutor.ExecuteAsync` instead of re-deriving the fold/eject-catch logic as
+  string-templated source at all, so a compile-time-discovery consumer gets the same graceful
+  `InvalidOperationException` fail-fast behavior the hand-written-wrapper path already has, with no
+  generator-side catch clause left to keep in sync by hand.
+- This closed item was not required for `AuthorizationBehavior`'s current migration to be correct for a
+  consumer on the reflection/`ScanAssembly` discovery path ([ADR-0008](0008-compile-time-handler-discovery.md)),
+  since that path dispatches through the hand-written wrappers and `PipelineChainExecutor` already covered it;
+  it was required before a compile-time-discovery consumer could safely register `AuthorizationBehavior` (or
+  any future behavior migrated the same way) - that condition is now satisfied.
