@@ -2,8 +2,9 @@ namespace TodoTasks.Api.Infrastructure;
 
 /// <summary>
 /// Tracks how many <see cref="Domain.TodoTask"/>s each caller has completed - a small in-memory
-/// stand-in so <see cref="TodoTasks.Api.Features.Tasks.CompleteTodoTask.TodoTaskCompletionCounterHandler"/>
-/// has something real to do, per <c>documentation/beginners-guide-todo-api.md</c> Step 8.
+/// stand-in so
+/// <see cref="TodoTasks.Api.Features.Tasks.CompleteTodoTask.TodoTaskCompletionCounterHandler"/> has
+/// something real to do, per <c>documentation/beginners-guide-todo-api.md</c> Step 8.
 /// </summary>
 public interface ICompletionCounter
 {

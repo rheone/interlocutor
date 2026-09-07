@@ -7,15 +7,16 @@ namespace Interlocutor.Abstractions.Pipeline;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Both the hand-written handler wrappers (<c>QueryHandlerWrapper</c>, <c>CommandHandlerWrapper</c>,
-/// <c>VoidCommandHandlerWrapper</c>) and the source-generator's emitted dispatch wrappers call
-/// <see cref="ResolveChain{TRequest,TResponse}"/> instead of resolving
-/// <see cref="IPipelineBehavior{TRequest,TResponse}"/> themselves, so this is the one place either dispatch
-/// path's chain-building logic changes to add override support - not a per-behavior check every behavior
-/// (including a consumer's own) would otherwise have to remember to perform. A request matched by an
-/// override rule that also structurally satisfies an existing marker interface (<c>IAuditableRequest</c>,
-/// <c>IRequiresPolicy</c>, etc.) never runs that marker-constrained behavior unless the override rule names
-/// it explicitly - the returned list is the override's declared set and nothing else.
+/// Both <see cref="PipelineChainExecutor"/> - shared by every hand-written handler wrapper
+/// (<c>QueryHandlerWrapper</c>, <c>CommandHandlerWrapper</c>, <c>VoidCommandHandlerWrapper</c>) - and the
+/// source-generator's emitted dispatch wrappers call <see cref="ResolveChain{TRequest,TResponse}"/> instead
+/// of resolving <see cref="IPipelineBehavior{TRequest,TResponse}"/> themselves, so this is the one place
+/// either dispatch path's chain-building logic changes to add override support - not a per-behavior check
+/// every behavior (including a consumer's own) would otherwise have to remember to perform. A request
+/// matched by an override rule that also structurally satisfies an existing marker interface
+/// (<c>IAuditableRequest</c>, <c>IRequiresPolicy</c>, etc.) never runs that marker-constrained behavior
+/// unless the override rule names it explicitly - the returned list is the override's declared set and
+/// nothing else.
 /// </para>
 /// <para>
 /// Callers fold the returned list in reverse, exactly as they always have, so its first entry - baseline

@@ -529,7 +529,7 @@ dotnet_diagnostic.IDE0009.severity = Warning # Add 'this.' qualification
 # See <https://github.com/dotnet/roslyn/blob/main/src/RoslynAnalyzers/PublicApiAnalyzers/PublicApiAnalyzers.Help.md>
 dotnet_diagnostic.RS0026.severity = None # "Do not add multiple overloads with optional parameters" -
 # this library's core pattern is exactly that: ISender/IPublisher/Mediator/ResultExtensions
-# deliberately expose several generic overloads (one per OperationOutcome arity/shape) that all
+# deliberately expose several generic overloads (one per Outcome arity/shape) that all
 # happen to carry the same optional CancellationToken parameter, disambiguated by the required
 # parameter's constrained type, not by arity. RS0026 cannot tell that apart from a genuine
 # ambiguous-overload mistake, so it fires on every one of them (see ISender.cs, IPublisher.cs).

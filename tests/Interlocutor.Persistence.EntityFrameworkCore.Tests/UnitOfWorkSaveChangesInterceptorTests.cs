@@ -10,12 +10,14 @@ using Microsoft.EntityFrameworkCore;
 /// <see cref="EntityFrameworkUnitOfWork{TContext}"/> ever sees - unless suppressed for an
 /// <c>IExternalStoreRequest</c> dispatch.
 /// </summary>
-public sealed class UnitOfWorkSaveChangesInterceptorTests : IDisposable
+public sealed class UnitOfWorkSaveChangesInterceptorTests : IClassFixture<EntityFrameworkTestFixture>, IDisposable
 {
+    private readonly EntityFrameworkTestFixture fixture;
     private readonly SqliteConnection connection;
 
-    public UnitOfWorkSaveChangesInterceptorTests()
+    public UnitOfWorkSaveChangesInterceptorTests(EntityFrameworkTestFixture fixture)
     {
+        this.fixture = fixture;
         this.connection = new SqliteConnection("DataSource=:memory:");
         this.connection.Open();
     }
@@ -70,30 +72,6 @@ public sealed class UnitOfWorkSaveChangesInterceptorTests : IDisposable
 
     public void Dispose() => this.connection.Dispose();
 
-    private TestDbContext CreateContext()
-    {
-        var options = new DbContextOptionsBuilder<TestDbContext>()
-            .UseSqlite(this.connection)
-            .AddInterceptors(new UnitOfWorkSaveChangesInterceptor())
-            .Options;
-        return new TestDbContext(options);
-    }
-
-    private sealed class TestDbContext(DbContextOptions<TestDbContext> options) : DbContext(options)
-    {
-        public DbSet<Widget> Widgets => this.Set<Widget>();
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder) => modelBuilder.Entity<Widget>();
-    }
-
-    private sealed class Widget
-    {
-        // Never read directly by this test's assertions, but EF Core's key-by-convention requires an
-        // Id property to treat this type as having a primary key at all - it's structural, not dead.
-#pragma warning disable S1144
-        public int Id { get; set; }
-#pragma warning restore S1144
-
-        public string Name { get; set; } = string.Empty;
-    }
+    private TestDbContext CreateContext() =>
+        this.fixture.CreateContext(this.connection, new UnitOfWorkSaveChangesInterceptor());
 }

@@ -2,8 +2,9 @@ namespace TodoTasks.Api.Features.Tasks.GetTodoTaskById;
 
 using Interlocutor.Abstractions.Core;
 using Interlocutor.AspNetCore;
+using TodoTasks.Api.Infrastructure;
 
-/// <summary>Maps <c>GET /todo-tasks/{id}</c>. Unauthenticated - a plain read, matching the guide's own running example.</summary>
+/// <summary>Maps <c>GET /todo-tasks/{id}</c> - authenticated, and scoped to the caller's own tasks.</summary>
 public static class GetTodoTaskByIdEndpoint
 {
     /// <summary>Registers the get-task-by-id endpoint on <paramref name="app"/>.</summary>
@@ -12,13 +13,20 @@ public static class GetTodoTaskByIdEndpoint
     public static WebApplication MapGetTodoTaskByIdEndpoint(this WebApplication app)
     {
         app.MapGet(
-            "/todo-tasks/{id:int}",
-            async (int id, ISender sender, CancellationToken ct) =>
-            {
-                var result = await sender.Send(new GetTodoTaskByIdQuery(id), ct).ConfigureAwait(false);
-                return result.ToMinimalApiResult();
-            }
-        );
+                "/todo-tasks/{id:int}",
+                async (int id, ISender sender, IRequestContextAccessor contextAccessor, CancellationToken ct) =>
+                {
+                    // See CreateTodoTaskEndpoint's own remarks on RequireUserId() - a missing authenticated
+                    // caller here is a bug, not an outcome the caller can trigger, since RequireAuthorization()
+                    // below means this endpoint is never reachable without one.
+                    var ownerId = contextAccessor.RequireUserId();
+
+                    var result = await sender.Send(new GetTodoTaskByIdQuery(id, ownerId), ct).ConfigureAwait(false);
+
+                    return result.ToMinimalApiResult();
+                }
+            )
+            .RequireAuthorization();
 
         return app;
     }

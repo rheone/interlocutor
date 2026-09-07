@@ -39,9 +39,6 @@ internal static class WellKnownTypeNames
     public const string NotificationHandlerRunBefore =
         "Interlocutor.Abstractions.Notifications.NotificationHandlerRunBeforeAttribute";
 
-    /// <summary>The open generic pipeline-behavior contract, <c>IPipelineBehavior&lt;TRequest, TResponse&gt;</c>.</summary>
-    public const string PipelineBehavior = "Interlocutor.Abstractions.Pipeline.IPipelineBehavior`2";
-
     /// <summary>
     /// The base outcome marker interface, <c>IOutcome</c> - not to be confused with
     /// <see cref="ConcreteNonGenericOutcome"/>, the concrete non-generic <c>Outcome</c> union that implements it.
@@ -85,9 +82,6 @@ internal static class WellKnownTypeNames
     /// <summary>The error-code-carrying single validation failure case type, <c>ValidationError&lt;TErrorCode&gt;</c>.</summary>
     public const string ValidationErrorOfErrorCode = "Interlocutor.CommonKernel.ResultTypes.ValidationError`1";
 
-    /// <summary>The aggregate validation failure case type, <c>ValidationErrors</c> - implements <see cref="ValidationFailureCase"/> directly.</summary>
-    public const string ValidationErrors = "Interlocutor.CommonKernel.ResultTypes.ValidationErrors";
-
     /// <summary>
     /// The library's own non-generic, fixed-shape <c>Outcome</c> union (<c>Success | Failure</c>) - unlike
     /// every generic arity, its case set can never include a validation-shaped case, so it is recognized by
@@ -100,4 +94,10 @@ internal static class WellKnownTypeNames
     /// <see cref="OutcomeMemberGenerator"/>.
     /// </summary>
     public const string GenerateOutcomeMembersAttribute = "Interlocutor.CommonKernel.GenerateOutcomeMembersAttribute";
+
+    /// <summary>
+    /// The HTTP-result-overload-generation marker attribute, <c>GenerateResultExtensionsAttribute</c> - see
+    /// <see cref="ResultExtensionsGenerator"/>.
+    /// </summary>
+    public const string GenerateResultExtensionsAttribute = "Interlocutor.AspNetCore.GenerateResultExtensionsAttribute";
 }

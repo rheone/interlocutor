@@ -1,0 +1,12 @@
+# 07 - Research: keeping a lazy session available across a handler's whole pipeline, not just the handler
+
+**Status:** needs-triage (research - no implementation, no design decision yet)
+
+**What to build:** Not an implementation ticket. `ITransactionalRequest` stays for now (see this PRD's "Explicitly rejected / deferred" section) specifically because a validator needing a DB-backed check-then-act read runs before the handler, outside the transaction boundary, and a handler-local "begin eagerly" call cannot retroactively protect a read that already happened in an earlier pipeline stage. That constraint only holds because the scoped store session/transaction is currently something the *handler* (and behaviors positioned at or after `AddUnitOfWorkBehavior`) can see, not something available uniformly across the *whole* pipeline from `AddValidationBehavior` onward.
+
+Research whether - and how - a lazy, scoped session could be made cleanly available for the lifetime of a whole dispatch (handler *and* every pipeline behavior, including validation), such that a DB-touching validation rule could safely participate in the same eventual transaction without requiring `ITransactionalRequest`'s current eager-begin-at-the-transaction-behavior's-position approach. Write up findings the way `.scratch/unit-of-work/research.md` did for the original persistence-abstraction question: primary sources read, options considered, hard requirements, and an explicit recommendation or explicit non-recommendation - not a decision made here. This should inform, not presuppose, a future revisit of whether `ITransactionalRequest` can eventually be retired (issue scope for that revisit is deliberately not filed yet - it depends entirely on what this research finds).
+
+**Blocked by:** None - can start immediately, independent of the rest of this PRD
+
+- [ ] Written findings under `.scratch/outcome-classifier-retirement/` (or promoted to its own `.scratch/<slug>/research.md` if the scope grows beyond this PRD), covering at minimum: what "available across the pipeline" would require of DI scoping/lifetime today, how `Lazy<TContext>`/`Lazy<ISession>` registration interacts with pipeline behavior construction order, and whether EF Core's/NHibernate's session models both support this without diverging into two different consumer-facing shapes
+- [ ] Explicit recommendation (or explicit statement that none of the researched options are worth pursuing) - not a design decision made unilaterally by whoever researches this

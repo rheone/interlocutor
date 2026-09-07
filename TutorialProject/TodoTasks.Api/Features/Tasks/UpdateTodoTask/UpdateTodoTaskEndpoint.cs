@@ -2,6 +2,7 @@ namespace TodoTasks.Api.Features.Tasks.UpdateTodoTask;
 
 using Interlocutor.Abstractions.Core;
 using Interlocutor.AspNetCore;
+using TodoTasks.Api.Infrastructure;
 
 /// <summary>Maps <c>PUT /todo-tasks/{id}</c>.</summary>
 public static class UpdateTodoTaskEndpoint
@@ -21,9 +22,10 @@ public static class UpdateTodoTaskEndpoint
                     CancellationToken ct
                 ) =>
                 {
-                    var requestedBy =
-                        contextAccessor.Context?.UserId
-                        ?? throw new InvalidOperationException("This endpoint requires an authenticated caller.");
+                    // See CreateTodoTaskEndpoint's own remarks on RequireUserId() - a missing authenticated
+                    // caller here is a bug, not an outcome the caller can trigger, since RequireAuthorization()
+                    // below means this endpoint is never reachable without one.
+                    var requestedBy = contextAccessor.RequireUserId();
 
                     var result = await sender
                         .Send(new UpdateTodoTaskCommand(id, request.Title, request.Notes, requestedBy), ct)

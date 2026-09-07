@@ -10,10 +10,10 @@ using TodoTasks.Api.Domain;
 /// <summary>
 /// Handles <see cref="DeleteUserCommand"/>. This project's own worked example of a single
 /// <see cref="IUnitOfWork"/> spanning two repositories - see
-/// <c>documentation/beginners-guide-todo-api.md</c> Step 8's "Bonus: multiple repositories, one unit
-/// of work" for the fuller explanation this handler makes real: the user and every task they own are
-/// deleted together or not at all, because both repositories below are built over the same scoped
-/// session that one <see cref="IUnitOfWork.SaveChangesAsync"/> call commits.
+/// <c>documentation/beginners-guide-todo-api.md</c>'s "Bonus: multiple repositories, one unit of work"
+/// section for the fuller explanation this handler makes real: the user and every task they own are
+/// deleted together or not at all, because both repositories below are built over the same scoped EF
+/// Core context that one <see cref="IUnitOfWork.SaveChangesAsync"/> call commits.
 /// </summary>
 public sealed class DeleteUserHandler(
     IDomainRepository<User, int> users,
@@ -42,7 +42,10 @@ public sealed class DeleteUserHandler(
 
         await users.DeleteAsync(user, ct).ConfigureAwait(false);
 
-        // One commit for both repositories' staged deletes - the actual point of this handler.
+        // One commit for both repositories' staged deletes - the actual point of this handler, and of
+        // "one unit of work, many repositories": UnitOfWorkBehavior either commits every delete staged
+        // above or, if this dispatch's outcome ends up classified as a failure, rolls all of them back
+        // together (see tests/TodoTasks.Api.Tests/Persistence/DeleteUserCascadeTests for the proof).
         await unitOfWork.SaveChangesAsync(ct).ConfigureAwait(false);
 
         return default(Success);

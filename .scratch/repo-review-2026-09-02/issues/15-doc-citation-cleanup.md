@@ -6,8 +6,12 @@ Full technical detail: [findings/14-glossary-adr-citation.md](../findings/14-glo
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The `Interlocutor.Generator` glossary entry no longer cites "(ADR-0008)"
-- [ ] `rg -rn "ADR-" documentation/` returns no hits
-- [ ] `maintainer_docs/README.md`'s bootstrapreference note links to `PRD.md`'s real, current section-15 heading
+- [x] The `Interlocutor.Generator` glossary entry no longer cites "(ADR-0008)"
+- [x] `rg -rn "ADR-" documentation/` returns no hits
+- [x] `maintainer_docs/README.md`'s bootstrapreference note links to `PRD.md`'s real, current section-15 heading
+
+## Comments
+
+**2026-09-04** - Re-triaged while working the frontier: already implemented in commit `6a3f9ce`. glossary.md no longer cites ADR-0008 (rg -rn "ADR-" documentation/ returns no hits); maintainer_docs/README.md's bootstrapreference note now links to PRD.md's real, current §15 heading. No source changes were needed this session.

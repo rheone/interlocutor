@@ -6,7 +6,11 @@ Full technical detail: [findings/09-unitofwork-cancel-disposal-asymmetry.md](../
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Either `NHibernateUnitOfWork.Cancel()` explicitly disposes the `ITransaction` it rolled back (mirroring `EntityFrameworkUnitOfWork.Cancel()`), or a comment explains why it's intentionally left to the owning `ISession`'s disposal
-- [ ] The chosen behavior is consistent with `IUnitOfWork`'s XML doc claim of a uniform unit-of-work-owned transaction model across stores
+- [x] Either `NHibernateUnitOfWork.Cancel()` explicitly disposes the `ITransaction` it rolled back (mirroring `EntityFrameworkUnitOfWork.Cancel()`), or a comment explains why it's intentionally left to the owning `ISession`'s disposal
+- [x] The chosen behavior is consistent with `IUnitOfWork`'s XML doc claim of a uniform unit-of-work-owned transaction model across stores
+
+## Comments
+
+**2026-09-04** - Re-triaged while working the frontier: already implemented in commit `6a3f9ce`. NHibernateUnitOfWork.Cancel() now explicitly disposes the rolled-back ITransaction, mirroring EntityFrameworkUnitOfWork.Cancel()'s explicit disposal. No source changes were needed this session.

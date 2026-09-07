@@ -71,18 +71,18 @@ public class GenericCatchAllResultExtensionsTests
     }
 
     [Fact]
-    public void ToActionResult_ArityFiveOverload_BindsDedicatedOverloadNotCatchAll()
+    public void ToActionResult_ArityMaxOverload_BindsDedicatedOverloadNotCatchAll()
     {
         // Arrange
-        Expression<Func<Outcome<string, NotFound, Forbidden, Conflict, ValidationErrors>, IActionResult>> expression = result =>
-            result.ToActionResult();
+        Expression<Func<Outcome<string, NotFound, Forbidden, Cancelled, Timeout, RateLimited>, IActionResult>> expression =
+            result => result.ToActionResult();
 
         // Act
         var method = ((MethodCallExpression)expression.Body).Method;
 
-        // Assert - five type arguments (TSuccess + four case types) is only possible on the dedicated arity-5
+        // Assert - six type arguments (TSuccess + five case types) is only possible on the dedicated arity-6
         // overload - the catch-all always has exactly one type argument (TResponse).
-        Assert.Equal(5, method.GetGenericArguments().Length);
+        Assert.Equal(6, method.GetGenericArguments().Length);
         Assert.Equal(2, method.GetParameters().Length);
     }
 

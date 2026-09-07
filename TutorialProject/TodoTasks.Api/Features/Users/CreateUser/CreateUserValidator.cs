@@ -5,7 +5,7 @@ using FluentValidation;
 /// <summary>
 /// Validates <see cref="CreateUserCommand"/> before <see cref="CreateUserHandler"/> ever runs -
 /// registered automatically by <c>ScanAssembly</c> in <c>Program.cs</c>, applied by
-/// <c>ValidationBehavior</c> (part of <c>UseRecommendedChain()</c>).
+/// <c>ValidationBehavior</c>.
 /// </summary>
 public sealed class CreateUserValidator : AbstractValidator<CreateUserCommand>
 {

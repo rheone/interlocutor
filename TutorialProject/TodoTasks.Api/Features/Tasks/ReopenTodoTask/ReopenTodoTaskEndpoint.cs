@@ -2,8 +2,9 @@ namespace TodoTasks.Api.Features.Tasks.ReopenTodoTask;
 
 using Interlocutor.Abstractions.Core;
 using Interlocutor.AspNetCore;
+using TodoTasks.Api.Infrastructure;
 
-/// <summary>Maps <c>POST /todo-tasks/{id}/reopen</c>. Unauthenticated, matching the guide's own running example - see <c>CompleteTodoTaskEndpoint</c>'s equivalent note.</summary>
+/// <summary>Maps <c>POST /todo-tasks/{id}/reopen</c>.</summary>
 public static class ReopenTodoTaskEndpoint
 {
     /// <summary>Registers the reopen-task endpoint on <paramref name="app"/>.</summary>
@@ -12,13 +13,17 @@ public static class ReopenTodoTaskEndpoint
     public static WebApplication MapReopenTodoTaskEndpoint(this WebApplication app)
     {
         app.MapPost(
-            "/todo-tasks/{id:int}/reopen",
-            async (int id, ISender sender, CancellationToken ct) =>
-            {
-                var result = await sender.Send(new ReopenTodoTaskCommand(id), ct).ConfigureAwait(false);
-                return result.ToMinimalApiResult();
-            }
-        );
+                "/todo-tasks/{id:int}/reopen",
+                async (int id, ISender sender, IRequestContextAccessor contextAccessor, CancellationToken ct) =>
+                {
+                    // See CreateTodoTaskEndpoint's own remarks on RequireUserId().
+                    var requestedBy = contextAccessor.RequireUserId();
+
+                    var result = await sender.Send(new ReopenTodoTaskCommand(id, requestedBy), ct).ConfigureAwait(false);
+                    return result.ToMinimalApiResult();
+                }
+            )
+            .RequireAuthorization();
 
         return app;
     }

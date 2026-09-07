@@ -12,15 +12,19 @@ internal `DistinctItemSet<TItem>` type.
 **Blocked by:** Ticket 01, Ticket 03 (needs both the aggregate-type semantics and the fully-migrated generator to
 describe truthfully).
 
-**Status:** ready-for-agent
+**Status:** done (already implemented)
 
-- [ ] `documentation/messages-and-result-types.md`'s generated-member list (currently "`Match`, `Switch`,
+- [x] `documentation/messages-and-result-types.md`'s generated-member list (currently "`Match`, `Switch`,
       per-case `TryGetValue`, `ToString`, and `IsSuccess`") is updated to include the new equality members, with
       a short explanation of the delegation and order-independence semantics above.
-- [ ] `documentation/glossary.md`'s `GenerateOutcomeMembersAttribute` entry is updated to mention the new members.
-- [ ] `documentation/extensibility.md`'s consumer custom-arity worked example (added in the prior
+- [x] `documentation/glossary.md`'s `GenerateOutcomeMembersAttribute` entry is updated to mention the new members.
+- [x] `documentation/extensibility.md`'s consumer custom-arity worked example (added in the prior
       `outcome-naming-and-arity-refactor` effort's Ticket 07) is updated to show the new members are part of the
       same generated surface a consumer's own attributed arity receives.
-- [ ] Every code example touched compiles against the shipped API, per this repo's documentation truthfulness
+- [x] Every code example touched compiles against the shipped API, per this repo's documentation truthfulness
       rule.
-- [ ] `dotnet build` and `dotnet test` pass for the whole solution.
+- [x] `dotnet build` and `dotnet test` pass for the whole solution.
+
+## Comments
+
+**2026-09-04** - Re-triaged while working the frontier: already implemented. `documentation/messages-and-result-types.md`'s `## Outcome Unions` section lists the generated member set including "value equality (`Equals`, `GetHashCode`, `IEquatable<TSelf>`, `==`/`!=`)". `documentation/glossary.md`'s `GenerateOutcomeMembersAttribute` entry and `documentation/extensibility.md`'s custom-arity (`PaymentOutcome`) worked example both mention the same equality member set as part of the identical generated surface. No source changes were needed - Status flipped without a code commit.

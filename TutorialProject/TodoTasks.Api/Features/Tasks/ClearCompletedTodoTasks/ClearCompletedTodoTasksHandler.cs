@@ -9,7 +9,7 @@ using TodoTasks.Api.Domain;
 /// <summary>
 /// Handles <see cref="ClearCompletedTodoTasksCommand"/>. Registered against the specific
 /// <c>TResult</c> this handler produces - this one only ever needs <see cref="Success"/> or
-/// <see cref="Failure"/>, which <see cref="Outcome"/> (the non-generic union) covers.
+/// <see cref="Failure"/>, which the non-generic <see cref="Outcome"/> union covers.
 /// </summary>
 public sealed class ClearCompletedTodoTasksHandler(IDomainRepository<TodoTask, int> tasks, IUnitOfWork unitOfWork)
     : IVoidCommandHandler<ClearCompletedTodoTasksCommand, Outcome>

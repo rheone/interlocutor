@@ -2,9 +2,9 @@ namespace TodoTasks.Api.Domain;
 
 /// <summary>
 /// The shape of a <see cref="User"/> returned to callers - deliberately narrower than the entity itself,
-/// the same way <c>TodoTaskDto</c> (an upcoming ticket) stands in front of <c>TodoTask</c>. Today the two
-/// shapes happen to match member-for-member, but keeping them as separate types means the API's response
-/// shape never accidentally changes just because the persistence model does.
+/// the same way a future <c>TodoTaskDto</c> stands in front of <c>TodoTask</c>. Today the two shapes
+/// happen to match member-for-member, but keeping them as separate types means the API's response shape
+/// never accidentally changes just because the persistence model does.
 /// </summary>
 /// <param name="Id">The user's identifier.</param>
 /// <param name="DisplayName">The user's display name.</param>

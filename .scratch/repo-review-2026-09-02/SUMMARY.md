@@ -1,6 +1,6 @@
 # Full-repository review — 2026-09-02
 
-Status: ready-for-agent (all 17 tickets in `issues/`)
+Status: done (all 17 tickets in `issues/`) - implemented in commit `6a3f9ce` ("fix: resolve Outcome null-payload discriminator and 16 follow-on tickets"). Re-verified against current source/docs/tests on 2026-09-04 while working the frontier; all 17 ticket files updated individually.
 
 **Start here:** [issues/](issues/) holds 17 ready-for-agent tickets, numbered in dependency order, converted from the findings below via `/to-tickets`. The frontier (no blockers) is everything except 03 and 04, which are blocked by 01. Raw review findings with full file:line evidence live in `findings/` — each ticket links back to its source finding(s) for detail.
 

@@ -4,8 +4,9 @@ using Interlocutor.Abstractions.Core;
 using Interlocutor.AspNetCore;
 
 /// <summary>
-/// Maps <c>DELETE /users/{id}</c>. Unauthenticated, matching the rest of the Users feature (ticket 03) -
-/// User management itself isn't gated behind caller identity in this proof of concept.
+/// Maps <c>DELETE /users/{id}</c>. Unauthenticated, matching the rest of the Users feature
+/// (<c>Features/Users/CreateUser</c>, <c>Features/Users/GetUserById</c>) - user management itself isn't
+/// gated behind caller identity in this proof of concept.
 /// </summary>
 public static class DeleteUserEndpoint
 {

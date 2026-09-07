@@ -49,19 +49,19 @@ public sealed class DevHeaderAuthenticationHandler(
     /// request unauthenticated - letting <c>RequireAuthorization()</c> reject it with a 401 the normal
     /// way, rather than this handler special-casing "invalid" differently from "absent."
     /// </remarks>
-    protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
+    protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         if (
             !this.Request.Headers.TryGetValue(HeaderName, out var headerValues)
             || !int.TryParse(headerValues.ToString(), out var userId)
         )
         {
-            return AuthenticateResult.NoResult();
+            return Task.FromResult(AuthenticateResult.NoResult());
         }
 
         if (users.GetById(userId) is not { } user)
         {
-            return AuthenticateResult.NoResult();
+            return Task.FromResult(AuthenticateResult.NoResult());
         }
 
         var identity = new ClaimsIdentity(
@@ -69,6 +69,6 @@ public sealed class DevHeaderAuthenticationHandler(
             this.Scheme.Name
         );
         var ticket = new AuthenticationTicket(new ClaimsPrincipal(identity), this.Scheme.Name);
-        return await Task.FromResult(AuthenticateResult.Success(ticket)).ConfigureAwait(false);
+        return Task.FromResult(AuthenticateResult.Success(ticket));
     }
 }

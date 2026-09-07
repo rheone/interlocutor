@@ -6,8 +6,12 @@ Full technical detail: [findings/16-csharpier-union-parse-gap.md](../findings/16
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `.github/workflows/ci.yml` runs `dotnet csharpier check .` (or an equivalent scoped invocation) as a CI step
-- [ ] The three files using `union`/`partial union` syntax don't fail the build due to the known csharpier parser gap
-- [ ] A tracking note records that a csharpier version bump should remove the carve-out once upstream union-syntax support lands
+- [x] `.github/workflows/ci.yml` runs `dotnet csharpier check .` (or an equivalent scoped invocation) as a CI step
+- [x] The three files using `union`/`partial union` syntax don't fail the build due to the known csharpier parser gap
+- [x] A tracking note records that a csharpier version bump should remove the carve-out once upstream union-syntax support lands
+
+## Comments
+
+**2026-09-04** - Re-triaged while working the frontier: already implemented in commit `6a3f9ce`. .github/workflows/ci.yml runs `dotnet csharpier check . --syntax-errors-as-warnings`, tolerating the three preview-union-syntax files without failing the build. No source changes were needed this session.

@@ -12,8 +12,8 @@ using TodoTasks.Api.Domain;
 /// <param name="Title">The new task's title - must be unique among the caller's own tasks.</param>
 /// <param name="Notes">Optional free-text notes.</param>
 /// <param name="OwnerId">
-/// The authenticated caller's id - filled in by the endpoint from <c>IRequestContextAccessor</c>,
-/// never trusted from the request body.
+/// The authenticated caller's id - filled in by the endpoint from <c>IRequestContextAccessor</c>, never
+/// trusted from the request body.
 /// </param>
 /// <remarks>
 /// <see cref="ITransactionalRequest"/> is here for the same reason

@@ -1,27 +1,26 @@
 namespace TodoTasks.Api.Domain;
 
 /// <summary>
-/// A registered caller of this API. Backs two things at once: the identity <c>TodoTask.OwnerId</c> refers
-/// to (an upcoming ticket - see that type's own remarks for why that reference stays an opaque string
-/// rather than a database foreign key), and the record the development-only authentication handler
-/// (<c>Infrastructure/DevHeaderAuthenticationHandler</c>, added in a later ticket) checks an incoming
-/// caller's claimed id against.
+/// A registered caller of this API. Backs two things at once: the identity a future <c>TodoTask.OwnerId</c>
+/// refers to, and the record a future development-only authentication handler checks an incoming caller's
+/// claimed id against.
 /// </summary>
 /// <remarks>
-/// Mirrors the NHibernate-mapping conventions <c>documentation/beginners-guide-todo-api.md</c> Step 3
-/// establishes for its own <c>TodoTask</c> entity - a protected parameterless constructor for lazy-loading
-/// proxies, every mapped member virtual for change tracking. Mapped by <c>Persistence/UserMap.cs</c>. This
-/// entire feature is this project's own addition, not part of the guide - the guide only models
-/// <c>TodoTask</c>.
+/// Mirrors the EF Core mapping conventions <c>documentation/beginners-guide-todo-api.md</c> Step 3
+/// establishes for its own <c>TodoTask</c> entity - a private parameterless constructor for EF Core's own
+/// materialization, plain (non-virtual) auto-properties since EF Core's default snapshot-based change
+/// tracking, unlike NHibernate, needs no lazy-loading proxy generation. Mapped by
+/// <c>Persistence/TodoTasksDbContext.OnModelCreating</c>. This entire feature is this project's own
+/// addition, not part of the guide - the guide only models <c>TodoTask</c>.
 /// </remarks>
 public class User
 {
     /// <summary>
-    /// Initializes a new instance of the <see cref="User"/> class. NHibernate needs a parameterless
-    /// constructor to build lazy-loading proxies from query results - it never calls this directly for
+    /// Initializes a new instance of the <see cref="User"/> class. EF Core needs a parameterless
+    /// constructor to materialize entities from query results - it never calls this directly for
     /// entities constructed by application code.
     /// </summary>
-    protected User()
+    private User()
     {
         this.DisplayName = string.Empty;
         this.Email = string.Empty;
@@ -37,18 +36,15 @@ public class User
         this.Email = email;
     }
 
-    // Virtual because NHibernate proxies override every mapped member for lazy loading and change
-    // tracking - a non-virtual property here would silently never get tracked.
-
     /// <summary>Gets or sets the user's identifier.</summary>
     /// <value>The identifier assigned by the database on insert.</value>
-    public virtual int Id { get; protected set; }
+    public int Id { get; set; }
 
     /// <summary>Gets or sets the user's display name.</summary>
     /// <value>The user's display name.</value>
-    public virtual string DisplayName { get; set; }
+    public string DisplayName { get; set; }
 
     /// <summary>Gets or sets the user's email address.</summary>
     /// <value>The user's email address.</value>
-    public virtual string Email { get; set; }
+    public string Email { get; set; }
 }

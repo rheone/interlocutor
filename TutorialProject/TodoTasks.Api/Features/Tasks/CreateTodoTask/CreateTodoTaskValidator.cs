@@ -4,8 +4,8 @@ using FluentValidation;
 
 /// <summary>
 /// Validates <see cref="CreateTodoTaskCommand"/> before <see cref="CreateTodoTaskHandler"/> ever runs -
-/// registered automatically via <c>RegisterAssemblyTypes(...).AsClosedTypesOf(typeof(IValidator&lt;&gt;))</c>
-/// in <c>Program.cs</c>, applied by <c>ValidationBehavior</c> (part of <c>UseRecommendedChain()</c>).
+/// registered automatically by <c>AddValidatorsFromAssembly</c> in <c>Program.cs</c>, applied by
+/// <c>ValidationBehavior</c>.
 /// </summary>
 public sealed class CreateTodoTaskValidator : AbstractValidator<CreateTodoTaskCommand>
 {

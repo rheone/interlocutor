@@ -70,8 +70,7 @@ public sealed class DevHeaderAuthenticationHandlerTests
     public async Task AuthenticateAsync_HeaderMatchesARealUser_IsAuthenticated_WithUserIdAsTheIdentityName_Test()
     {
         // Arrange
-        var user = new User("Ada Lovelace", "ada@example.com");
-        typeof(User).GetProperty(nameof(User.Id))!.SetValue(user, 42); // Id has a protected setter - only NHibernate sets it normally.
+        var user = new User("Ada Lovelace", "ada@example.com") { Id = 42 };
         this.users.GetById(42).Returns(user);
         var httpContext = new DefaultHttpContext();
         httpContext.Request.Headers[DevHeaderAuthenticationHandler.HeaderName] = "42";

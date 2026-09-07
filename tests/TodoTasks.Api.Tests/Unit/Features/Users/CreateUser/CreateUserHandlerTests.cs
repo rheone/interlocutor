@@ -10,7 +10,7 @@ using TodoTasks.Api.Features.Users.CreateUser;
 /// <summary>
 /// Unit tests for <see cref="CreateUserHandler"/> - the handler logic in isolation, with
 /// <see cref="IDomainRepository{TEntity,TKey}"/> and <see cref="IUnitOfWork"/> both NSubstitute-mocked. No
-/// database involved; see <c>Persistence/UserMapTests</c> for the real-mapping round-trip and
+/// database involved; see <c>Persistence/UserPersistenceTests</c> for the real-mapping round-trip and
 /// <c>Http/UsersEndpointTests</c> for the full HTTP path.
 /// </summary>
 public sealed class CreateUserHandlerTests

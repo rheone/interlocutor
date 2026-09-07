@@ -2,6 +2,7 @@ namespace TodoTasks.Api.Features.Tasks.SearchTodoTasks;
 
 using Interlocutor.Abstractions.Core;
 using Interlocutor.AspNetCore;
+using TodoTasks.Api.Infrastructure;
 
 /// <summary>Maps <c>GET /todo-tasks/search</c> - authenticated, scoped to the caller's own tasks.</summary>
 public static class SearchTodoTasksEndpoint
@@ -15,9 +16,8 @@ public static class SearchTodoTasksEndpoint
                 "/todo-tasks/search",
                 async (string titleContains, ISender sender, IRequestContextAccessor contextAccessor, CancellationToken ct) =>
                 {
-                    var ownerId =
-                        contextAccessor.Context?.UserId
-                        ?? throw new InvalidOperationException("This endpoint requires an authenticated caller.");
+                    // See CreateTodoTaskEndpoint's own remarks on RequireUserId().
+                    var ownerId = contextAccessor.RequireUserId();
 
                     var result = await sender.Send(new SearchTodoTasksQuery(ownerId, titleContains), ct).ConfigureAwait(false);
                     return result.ToMinimalApiResult();

@@ -1,7 +1,6 @@
 namespace Interlocutor.Persistence.EntityFrameworkCore.Tests;
 
 using Microsoft.Data.Sqlite;
-using Microsoft.EntityFrameworkCore;
 
 /// <summary>
 /// Covers <see cref="EntityFrameworkUnitOfWork{TContext}"/> in isolation from
@@ -9,19 +8,16 @@ using Microsoft.EntityFrameworkCore;
 /// </summary>
 // Auto Generated, verify expected behavior: closes the missing-test-file gap for EntityFrameworkUnitOfWork -
 // its SaveChangesAsync was previously exercised only incidentally inside repository/shared-session tests.
-public sealed class EntityFrameworkUnitOfWorkTests : IDisposable
+public sealed class EntityFrameworkUnitOfWorkTests : IClassFixture<EntityFrameworkTestFixture>, IDisposable
 {
+    private readonly EntityFrameworkTestFixture fixture;
     private readonly SqliteConnection connection;
     private readonly TestDbContext context;
 
-    public EntityFrameworkUnitOfWorkTests()
+    public EntityFrameworkUnitOfWorkTests(EntityFrameworkTestFixture fixture)
     {
-        this.connection = new SqliteConnection("DataSource=:memory:");
-        this.connection.Open();
-
-        var options = new DbContextOptionsBuilder<TestDbContext>().UseSqlite(this.connection).Options;
-        this.context = new TestDbContext(options);
-        this.context.Database.EnsureCreated();
+        this.fixture = fixture;
+        (this.connection, this.context) = fixture.CreateDatabase();
     }
 
     [Fact]
@@ -59,23 +55,5 @@ public sealed class EntityFrameworkUnitOfWorkTests : IDisposable
         this.connection.Dispose();
     }
 
-    private TestDbContext CreateVerificationContext()
-    {
-        var options = new DbContextOptionsBuilder<TestDbContext>().UseSqlite(this.connection).Options;
-        return new TestDbContext(options);
-    }
-
-    public sealed class Widget
-    {
-        public int Id { get; set; }
-
-        public string Name { get; set; } = string.Empty;
-    }
-
-    public sealed class TestDbContext(DbContextOptions<TestDbContext> options) : DbContext(options)
-    {
-        public DbSet<Widget> Widgets => this.Set<Widget>();
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder) => modelBuilder.Entity<Widget>();
-    }
+    private TestDbContext CreateVerificationContext() => this.fixture.CreateContext(this.connection);
 }

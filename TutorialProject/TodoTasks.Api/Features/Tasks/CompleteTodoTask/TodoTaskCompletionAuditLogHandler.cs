@@ -2,7 +2,10 @@ namespace TodoTasks.Api.Features.Tasks.CompleteTodoTask;
 
 using Interlocutor.Abstractions.Notifications;
 
-/// <summary>The other of two independent subscribers to <see cref="TodoTaskCompletedNotification"/> - writes a log entry.</summary>
+/// <summary>
+/// The other of two independent subscribers to <see cref="TodoTaskCompletedNotification"/> - writes a
+/// log entry.
+/// </summary>
 public sealed class TodoTaskCompletionAuditLogHandler(ILogger<TodoTaskCompletionAuditLogHandler> logger)
     : INotificationHandler<TodoTaskCompletedNotification>
 {

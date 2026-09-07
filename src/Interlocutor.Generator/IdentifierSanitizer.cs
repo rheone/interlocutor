@@ -1,6 +1,8 @@
 namespace Interlocutor.Generator;
 
 using System.Text;
+using Interlocutor.Generator.Emission;
+using Interlocutor.Generator.Models;
 
 /// <summary>
 /// Turns a fully-qualified, <c>global::</c>-prefixed type name into a syntactically valid, unique-enough

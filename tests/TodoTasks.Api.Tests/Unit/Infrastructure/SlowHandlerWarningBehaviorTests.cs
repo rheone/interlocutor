@@ -5,10 +5,10 @@ using NSubstitute;
 using TodoTasks.Api.Infrastructure;
 
 /// <summary>
-/// Unit tests for <see cref="SlowHandlerWarningBehavior{TRequest, TResponse}"/> - proves it measures only
-/// the handler's own time, isolated from whatever ran ahead of it in the chain, exactly as
-/// <c>documentation/beginners-guide-todo-api.md</c> Step 11 explains a custom behavior registered
-/// innermost should.
+/// Unit tests for <see cref="SlowHandlerWarningBehavior{TRequest, TResponse}"/> - proves it warns above
+/// its threshold and not below it, and that it measures only the handler's own time, isolated from
+/// whatever ran ahead of it in the chain, exactly as that type's own remarks explain a behavior
+/// registered innermost should.
 /// </summary>
 public sealed class SlowHandlerWarningBehaviorTests
 {

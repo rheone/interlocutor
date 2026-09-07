@@ -3,7 +3,7 @@ namespace Interlocutor.CommonKernel.ResultTypes;
 using System.Diagnostics;
 using Interlocutor.CommonKernel.ResultTypes.Internal;
 
-#pragma warning disable SA1402 // Allowing multiple types of same name with differet arity
+#pragma warning disable SA1402 // Allowing multiple types of same name with different arity
 
 /// <summary>
 /// Represents an immutable collection of one or more generic failure reasons, with no associated error codes.
@@ -80,8 +80,7 @@ public readonly record struct Failures
     /// An unmodifiable collection of the distinct, non-<see langword="null"/> reasons found in <see cref="Items"/>,
     /// or an empty collection if this instance is the default value.
     /// </value>
-    public IReadOnlyList<string> Reasons =>
-        this.Items.Count == 0 ? [] : [.. this.Items.Where(f => f.Reason is not null).Select(f => f.Reason!).Distinct()];
+    public IReadOnlyList<string> Reasons => this._failures.DistinctProjectionWhereNotNull(f => f.Reason);
 
     /// <summary>
     /// Returns a human-readable representation of this failure set.
@@ -92,7 +91,7 @@ public readonly record struct Failures
     /// Joins <see cref="Reasons"/> rather than each item's own <see cref="Failure.ToString"/>, to avoid a doubled
     /// "Failures: Failure: ..." prefix.
     /// </returns>
-    public override string ToString() => this.Reasons.Count == 0 ? "Failures" : $"Failures: {string.Join(", ", this.Reasons)}";
+    public override string ToString() => DistinctItemSetExtensions.ToDisplayString("Failures", this.Reasons);
 }
 
 /// <summary>
@@ -176,8 +175,7 @@ public readonly record struct Failures<TErrorCode>
     /// An unmodifiable collection of the distinct, non-<see langword="null"/> reasons found in <see cref="Items"/>,
     /// or an empty collection if this instance is the default value.
     /// </value>
-    public IReadOnlyList<string> Reasons =>
-        this.Items.Count == 0 ? [] : [.. this.Items.Where(f => f.Reason is not null).Select(f => f.Reason!).Distinct()];
+    public IReadOnlyList<string> Reasons => this._failures.DistinctProjectionWhereNotNull(f => f.Reason);
 
     /// <summary>
     /// Gets the distinct set of error codes present in the original failures, in the order they were
@@ -203,7 +201,7 @@ public readonly record struct Failures<TErrorCode>
     /// Joins <see cref="Reasons"/> rather than each item's own <see cref="Failure{TErrorCode}.ToString"/>, to avoid
     /// a doubled "Failures: Failure: ..." prefix.
     /// </returns>
-    public override string ToString() => this.Reasons.Count == 0 ? "Failures" : $"Failures: {string.Join(", ", this.Reasons)}";
+    public override string ToString() => DistinctItemSetExtensions.ToDisplayString("Failures", this.Reasons);
 }
 
 #pragma warning restore SA1402

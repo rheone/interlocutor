@@ -14,7 +14,9 @@ public sealed class CreateUserHandler(IDomainRepository<User, int> users, IUnitO
     public async Task<Outcome<UserDto, ValidationErrors, Conflict>> Handle(CreateUserCommand command, CancellationToken ct)
     {
         // Shares CreateUserCommand's ITransactionalRequest-eager transaction with the insert below - see
-        // that command's own remarks for why this specific ordering needs one.
+        // that command's own remarks for why this specific ordering needs one. TodoTasksDbContext also
+        // declares a unique index on Email as a schema-level backstop, but the outcome the caller sees
+        // comes from this pre-check, not from catching and translating a constraint-violation exception.
         var emailAlreadyTaken =
             (await users.GetManyAsync(u => u.Email == command.Email, cancellationToken: ct).ConfigureAwait(false)).Count > 0;
 

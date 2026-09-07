@@ -8,10 +8,10 @@ using TodoTasks.Api.Domain;
 using TodoTasks.Api.Features.Users.DeleteUser;
 
 /// <summary>
-/// Unit tests for <see cref="DeleteUserHandler"/> - this project's worked example of one
-/// <see cref="IUnitOfWork"/> spanning two repositories (<see cref="User"/> and <see cref="TodoTask"/>),
-/// per <c>documentation/beginners-guide-todo-api.md</c>'s "Bonus: multiple repositories, one unit of
-/// work" section.
+/// Unit tests for <see cref="DeleteUserHandler"/> - the handler logic in isolation, with
+/// <see cref="IDomainRepository{TEntity,TKey}"/> and <see cref="IUnitOfWork"/> both NSubstitute-mocked. No
+/// database involved; see <c>Persistence/DeleteUserCascadeTests</c> for the real-database proof that the
+/// cascade actually persists, and that a mid-flight failure actually rolls everything back.
 /// </summary>
 public sealed class DeleteUserHandlerTests
 {
@@ -26,7 +26,7 @@ public sealed class DeleteUserHandlerTests
     public async Task Handle_AUserWithTasks_DeletesEveryOwnedTaskAndTheUser_ViaOneSaveChangesCall_Test()
     {
         // Arrange
-        var user = WithId(new User("Ada Lovelace", "ada@example.com"), 42);
+        var user = new User("Ada Lovelace", "ada@example.com") { Id = 42 };
         var task1 = new TodoTask("Buy milk", "42", null);
         var task2 = new TodoTask("Walk the dog", "42", null);
         this.users.GetById(42).Returns(user);
@@ -49,7 +49,7 @@ public sealed class DeleteUserHandlerTests
     public async Task Handle_AUserWithNoTasks_StillDeletesTheUserSuccessfully_Test()
     {
         // Arrange
-        var user = WithId(new User("Ada Lovelace", "ada@example.com"), 42);
+        var user = new User("Ada Lovelace", "ada@example.com") { Id = 42 };
         this.users.GetById(42).Returns(user);
         this.tasks.GetManyAsync(Arg.Any<Expression<Func<TodoTask, bool>>?>(), cancellationToken: Arg.Any<CancellationToken>())
             .Returns([]);
@@ -79,12 +79,5 @@ public sealed class DeleteUserHandlerTests
         await this.tasks.DidNotReceive().DeleteAsync(Arg.Any<TodoTask>(), Arg.Any<CancellationToken>());
         await this.users.DidNotReceive().DeleteAsync(Arg.Any<User>(), Arg.Any<CancellationToken>());
         await this.unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    /// <summary>Sets an entity's normally-protected <c>Id</c> - only NHibernate does this in real use; needed here since these are hand-built, never-persisted mock entities.</summary>
-    private static User WithId(User user, int id)
-    {
-        typeof(User).GetProperty(nameof(User.Id))!.SetValue(user, id);
-        return user;
     }
 }

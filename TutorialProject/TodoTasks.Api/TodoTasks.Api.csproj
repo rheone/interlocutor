@@ -2,8 +2,9 @@
   <PropertyGroup>
     <Description>
       Proof-of-concept ASP.NET Core minimal API that fully implements documentation/beginners-guide-todo-api.md
-      end to end - NHibernate, FluentValidation, and Autofac, exactly as the guide uses. Vertical slices
-      by directory under Features/. Never published, never released - see .scratch/tutorial-project/PRD.md.
+      end to end - Microsoft.Extensions.DependencyInjection, Entity Framework Core, and FluentValidation, the
+      common .NET stack. Vertical slices by directory under Features/. Never published, never released - see
+      .scratch/tutorial-project-common-stack/PRD.md.
     </Description>
     <!-- Overrides Directory.Build.props' repo-wide default: this project is never packaged or shipped. -->
     <IsPackable>false</IsPackable>
@@ -13,15 +14,13 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Interlocutor.Abstractions\Interlocutor.Abstractions.csproj" />
     <ProjectReference Include="..\..\src\Interlocutor.AspNetCore\Interlocutor.AspNetCore.csproj" />
-    <ProjectReference Include="..\..\src\Interlocutor.DependencyInjection.Autofac\Interlocutor.DependencyInjection.Autofac.csproj" />
+    <ProjectReference Include="..\..\src\Interlocutor.DependencyInjection.Microsoft\Interlocutor.DependencyInjection.Microsoft.csproj" />
     <ProjectReference Include="..\..\src\Interlocutor.FluentValidation\Interlocutor.FluentValidation.csproj" />
-    <ProjectReference Include="..\..\src\Interlocutor.Persistence.NHibernate\Interlocutor.Persistence.NHibernate.csproj" />
+    <ProjectReference Include="..\..\src\Interlocutor.Persistence.EntityFrameworkCore\Interlocutor.Persistence.EntityFrameworkCore.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Autofac.Extensions.DependencyInjection" />
-    <PackageReference Include="FluentNHibernate" />
-    <PackageReference Include="NHibernate" />
-    <PackageReference Include="System.Data.SQLite.Core" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
   </ItemGroup>
 </Project>

@@ -1,6 +1,7 @@
 namespace Interlocutor.Generator.Tests;
 
 using System.Linq;
+using Interlocutor.Generator.Diagnostics;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
@@ -209,5 +210,439 @@ public sealed class OutcomeMemberGeneratorTests
 
         // Act & Assert - Equals(object?) against an unrelated type is false, never throws
         Assert.False((bool)factory.GetMethod("ObjectEquals")!.Invoke(null, [success, "not an outcome"])!);
+    }
+
+    [Fact]
+    public void OutcomeMemberGenerator_UnionWithoutIOutcome_OmitsClassificationSurface_Test()
+    {
+        // Arrange - no `: IOutcome` in the base list, unlike AttributedTwoCaseUnion above
+        const string source = """
+            namespace Test;
+
+            using Interlocutor.CommonKernel;
+
+            [GenerateOutcomeMembers]
+            public readonly partial union PlainUnion<TFirst, TSecond>(TFirst, TSecond)
+            {
+            }
+            """;
+
+        // Act
+        var result = GeneratorTestHarness.RunAndUpdate(
+            new OutcomeMemberGenerator(),
+            source,
+            "OutcomeMemberGenerator.Tests.PlainUnion",
+            null,
+            LanguageVersion.Preview,
+            out var diagnostics
+        );
+
+        // Assert
+        Assert.Empty(diagnostics);
+        var emitResult = result.GetDiagnostics(TestContext.Current.CancellationToken);
+        Assert.Empty(emitResult.Where(static d => d.Severity == DiagnosticSeverity.Error));
+
+        var generatedText = string.Join(
+            System.Environment.NewLine,
+            result
+                .SyntaxTrees.Where(static t => t.FilePath.Contains("OutcomeMembers", StringComparison.Ordinal))
+                .Select(static t => t.ToString())
+        );
+
+        // The sum-type surface is unconditional.
+        Assert.Contains("public bool TryGetValue(out", generatedText, StringComparison.Ordinal);
+        Assert.Contains("public TResult Match<TResult>(", generatedText, StringComparison.Ordinal);
+        Assert.Contains("public void Switch(", generatedText, StringComparison.Ordinal);
+        Assert.Contains("public override string ToString()", generatedText, StringComparison.Ordinal);
+        Assert.Contains("public bool Equals(PlainUnion<TFirst, TSecond> other)", generatedText, StringComparison.Ordinal);
+
+        // The classification surface is opt-in via `: IOutcome` and must not appear here.
+        Assert.DoesNotContain("IOutcomeCase", generatedText, StringComparison.Ordinal);
+        Assert.DoesNotContain("IsSuccess", generatedText, StringComparison.Ordinal);
+        Assert.DoesNotContain("ActiveCaseType", generatedText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void OutcomeMemberGenerator_UnionWithoutIOutcome_NeverImplementsIOutcomeCase_AtRuntime_Test()
+    {
+        // Arrange
+        const string source = """
+            namespace Test;
+
+            using Interlocutor.CommonKernel;
+
+            [GenerateOutcomeMembers]
+            public readonly partial union PlainUnion<TFirst, TSecond>(TFirst, TSecond)
+            {
+            }
+            """;
+
+        // Act
+        var (assembly, _) = GeneratorTestHarness.EmitAndLoadAssembly(
+            new OutcomeMemberGenerator(),
+            source,
+            "OutcomeMemberGenerator.Tests.PlainUnionRuntime",
+            null,
+            LanguageVersion.Preview
+        );
+
+        // Assert - never enters OutcomeClassifierBuilder's positional-IsSuccess fallback, since that fallback
+        // is reached only through an IOutcomeCase cast (see OutcomeCaseExtensions.AsOutcomeCaseIsSuccess).
+        var plainUnionType = assembly.GetType("Test.PlainUnion`2", throwOnError: true)!;
+        Assert.DoesNotContain(
+            plainUnionType.GetInterfaces(),
+            i => i.FullName == "Interlocutor.CommonKernel.ResultTypes.IOutcomeCase"
+        );
+    }
+
+    [Fact]
+    public void OutcomeMemberGenerator_ConcreteCaseTypes_EmitsNamedAccessorsAlongsideAnonymousOverload_Test()
+    {
+        // Arrange - every case type is concrete, none is the union's own type parameter
+        const string source = """
+            namespace Test;
+
+            using Interlocutor.CommonKernel;
+            using Interlocutor.CommonKernel.ResultTypes;
+
+            [GenerateOutcomeMembers]
+            public readonly partial union ConcreteCasesOutcome(Success, NotFound, Conflict) : IOutcome
+            {
+            }
+            """;
+
+        // Act
+        var result = GeneratorTestHarness.RunAndUpdate(
+            new OutcomeMemberGenerator(),
+            source,
+            "OutcomeMemberGenerator.Tests.ConcreteCases",
+            null,
+            LanguageVersion.Preview,
+            out var diagnostics
+        );
+
+        // Assert
+        Assert.Empty(diagnostics);
+        var emitResult = result.GetDiagnostics(TestContext.Current.CancellationToken);
+        Assert.Empty(emitResult.Where(static d => d.Severity == DiagnosticSeverity.Error));
+
+        var generatedText = string.Join(
+            System.Environment.NewLine,
+            result
+                .SyntaxTrees.Where(static t => t.FilePath.Contains("OutcomeMembers", StringComparison.Ordinal))
+                .Select(static t => t.ToString())
+        );
+
+        // Named accessors, additive alongside the anonymous overload, for every concrete case.
+        Assert.Contains("public bool TryGetSuccess(out", generatedText, StringComparison.Ordinal);
+        Assert.Contains("public bool TryGetNotFound(out", generatedText, StringComparison.Ordinal);
+        Assert.Contains("public bool TryGetConflict(out", generatedText, StringComparison.Ordinal);
+        Assert.Equal(3, CountOccurrences(generatedText, "public bool TryGetValue(out"));
+    }
+
+    [Fact]
+    public void OutcomeMemberGenerator_MixedTypeParameterAndConcreteCases_NamesOnlyTheConcreteOnes_Test()
+    {
+        // Arrange - TSuccess is the union's own type parameter; NotFound/Conflict are concrete
+        const string source = """
+            namespace Test;
+
+            using Interlocutor.CommonKernel;
+            using Interlocutor.CommonKernel.ResultTypes;
+
+            [GenerateOutcomeMembers]
+            public readonly partial union MixedResult<TSuccess>(TSuccess, NotFound, Conflict) : IOutcome
+            {
+            }
+            """;
+
+        // Act
+        var result = GeneratorTestHarness.RunAndUpdate(
+            new OutcomeMemberGenerator(),
+            source,
+            "OutcomeMemberGenerator.Tests.MixedCases",
+            null,
+            LanguageVersion.Preview,
+            out var diagnostics
+        );
+
+        // Assert
+        Assert.Empty(diagnostics);
+        var emitResult = result.GetDiagnostics(TestContext.Current.CancellationToken);
+        Assert.Empty(emitResult.Where(static d => d.Severity == DiagnosticSeverity.Error));
+
+        var generatedText = string.Join(
+            System.Environment.NewLine,
+            result
+                .SyntaxTrees.Where(static t => t.FilePath.Contains("OutcomeMembers", StringComparison.Ordinal))
+                .Select(static t => t.ToString())
+        );
+
+        Assert.Contains("public bool TryGetNotFound(out", generatedText, StringComparison.Ordinal);
+        Assert.Contains("public bool TryGetConflict(out", generatedText, StringComparison.Ordinal);
+        Assert.DoesNotContain("TryGetTSuccess(", generatedText, StringComparison.Ordinal);
+
+        // Every case still gets the anonymous overload, including the type-parameter case.
+        Assert.Equal(3, CountOccurrences(generatedText, "public bool TryGetValue(out"));
+    }
+
+    [Fact]
+    public void OutcomeMemberGenerator_ShippedFamilyShape_EveryCaseIsATypeParameter_EmitsNoNamedAccessors_Test()
+    {
+        // Arrange - mirrors the shipped Outcome<TSuccessResult, TCase2, ...> family: every case type at the
+        // declaration site is the union's own type parameter, so none should get a named accessor.
+        // Act
+        var result = GeneratorTestHarness.RunAndUpdate(
+            new OutcomeMemberGenerator(),
+            AttributedTwoCaseUnion,
+            "OutcomeMemberGenerator.Tests.ShippedFamilyShape",
+            null,
+            LanguageVersion.Preview,
+            out var diagnostics
+        );
+
+        // Assert
+        Assert.Empty(diagnostics);
+
+        var generatedText = string.Join(
+            System.Environment.NewLine,
+            result
+                .SyntaxTrees.Where(static t => t.FilePath.Contains("OutcomeMembers", StringComparison.Ordinal))
+                .Select(static t => t.ToString())
+        );
+
+        Assert.DoesNotContain("TryGetTSuccess(", generatedText, StringComparison.Ordinal);
+        Assert.DoesNotContain("TryGetTFailure(", generatedText, StringComparison.Ordinal);
+        Assert.Equal(2, CountOccurrences(generatedText, "public bool TryGetValue(out"));
+    }
+
+    [Fact]
+    public void OutcomeMemberGenerator_NamedAccessor_RuntimeBehavior_Test()
+    {
+        // Arrange
+        const string source = """
+            namespace Test;
+
+            using Interlocutor.CommonKernel;
+            using Interlocutor.CommonKernel.ResultTypes;
+
+            [GenerateOutcomeMembers]
+            public readonly partial union ConcreteCasesOutcome(Success, NotFound, Conflict) : IOutcome
+            {
+            }
+
+            public static class ConcreteCasesOutcomeFactory
+            {
+                public static ConcreteCasesOutcome SuccessCase() => new Success();
+
+                public static ConcreteCasesOutcome NotFoundCase() => new NotFound("missing");
+
+                public static bool TryGetNotFound(ConcreteCasesOutcome outcome, out NotFound value) =>
+                    outcome.TryGetNotFound(out value);
+
+                public static bool TryGetSuccess(ConcreteCasesOutcome outcome, out Success value) =>
+                    outcome.TryGetSuccess(out value);
+            }
+            """;
+
+        var (assembly, _) = GeneratorTestHarness.EmitAndLoadAssembly(
+            new OutcomeMemberGenerator(),
+            source,
+            "OutcomeMemberGenerator.Tests.NamedAccessorRuntime",
+            null,
+            LanguageVersion.Preview
+        );
+
+        var factory = assembly.GetType("Test.ConcreteCasesOutcomeFactory", throwOnError: true)!;
+        var success = factory.GetMethod("SuccessCase")!.Invoke(null, null);
+        var notFound = factory.GetMethod("NotFoundCase")!.Invoke(null, null);
+
+        // Act & Assert - the named accessor hits, and populates the case value, only when its own case is
+        // active. NotFound/Success are both value types, so a "miss" out value is a default struct, not null -
+        // the Message field distinguishes a real hit from that default.
+        var notFoundArgsOnNotFound = new object?[] { notFound, null };
+        Assert.True((bool)factory.GetMethod("TryGetNotFound")!.Invoke(null, notFoundArgsOnNotFound)!);
+        Assert.Equal(
+            "missing",
+            notFoundArgsOnNotFound[1]!.GetType().GetProperty("Message")!.GetValue(notFoundArgsOnNotFound[1])
+        );
+
+        var notFoundArgsOnSuccess = new object?[] { success, null };
+        Assert.False((bool)factory.GetMethod("TryGetNotFound")!.Invoke(null, notFoundArgsOnSuccess)!);
+        Assert.Null(notFoundArgsOnSuccess[1]!.GetType().GetProperty("Message")!.GetValue(notFoundArgsOnSuccess[1]));
+
+        var successArgsOnSuccess = new object?[] { success, null };
+        Assert.True((bool)factory.GetMethod("TryGetSuccess")!.Invoke(null, successArgsOnSuccess)!);
+    }
+
+    /// <summary>Counts non-overlapping occurrences of <paramref name="value"/> in <paramref name="text"/>.</summary>
+    private static int CountOccurrences(string text, string value)
+    {
+        var count = 0;
+        var index = 0;
+        while ((index = text.IndexOf(value, index, StringComparison.Ordinal)) >= 0)
+        {
+            count++;
+            index += value.Length;
+        }
+
+        return count;
+    }
+
+    [Fact]
+    public void OutcomeMemberGenerator_PeerCaseTypesWithSameSimpleName_ReportsAccessorCollision_Test()
+    {
+        // Arrange - Http.NotFound and Domain.NotFound would both want TryGetNotFound
+        const string source = """
+            namespace Test.Http
+            {
+                public readonly record struct NotFound;
+            }
+
+            namespace Test.Domain
+            {
+                public readonly record struct NotFound;
+            }
+
+            namespace Test
+            {
+                using Interlocutor.CommonKernel;
+                using Interlocutor.CommonKernel.ResultTypes;
+
+                [GenerateOutcomeMembers]
+                public readonly partial union ConfusingOutcome(Success, Http.NotFound, Domain.NotFound) : IOutcome
+                {
+                }
+            }
+            """;
+
+        // Act
+        _ = GeneratorTestHarness.RunAndUpdate(
+            new OutcomeMemberGenerator(),
+            source,
+            "OutcomeMemberGenerator.Tests.SameSimpleNameCollision",
+            null,
+            LanguageVersion.Preview,
+            out var diagnostics
+        );
+
+        // Assert
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("INTERLOC012", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Contains("TryGetNotFound", diagnostic.GetMessage(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void OutcomeMemberGenerator_ClosedGenericCaseTypesOfTheSameOpenGeneric_ReportsAccessorCollision_Test()
+    {
+        // Arrange - ValidationError<string> and ValidationError<int> would both want TryGetValidationError
+        const string source = """
+            namespace Test;
+
+            using Interlocutor.CommonKernel;
+            using Interlocutor.CommonKernel.ResultTypes;
+
+            [GenerateOutcomeMembers]
+            public readonly partial union ConfusingOutcome(Success, ValidationError<string>, ValidationError<int>) : IOutcome
+            {
+            }
+            """;
+
+        // Act
+        _ = GeneratorTestHarness.RunAndUpdate(
+            new OutcomeMemberGenerator(),
+            source,
+            "OutcomeMemberGenerator.Tests.ClosedGenericCollision",
+            null,
+            LanguageVersion.Preview,
+            out var diagnostics
+        );
+
+        // Assert
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("INTERLOC012", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Contains("TryGetValidationError", diagnostic.GetMessage(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void OutcomeMemberGenerator_CaseTypeNameCollidesWithReservedMemberName_ReportsAccessorCollision_Test()
+    {
+        // Arrange - a case type literally named "Match" is flagged defensively: its own bare name matches an
+        // already-reserved generated member name, even though the TryGet-prefixed accessor scheme this
+        // specific case would produce ("TryGetMatch") wouldn't itself collide with the real Match<TResult>
+        // method - see InterlocutorDiagnostics.AccessorNameCollision's remarks for why all nine reserved names
+        // are guarded uniformly rather than only the one ("Value" -> "TryGetValue") that literally can collide.
+        const string source = """
+            namespace Test;
+
+            using Interlocutor.CommonKernel;
+            using Interlocutor.CommonKernel.ResultTypes;
+
+            public readonly record struct Match;
+
+            [GenerateOutcomeMembers]
+            public readonly partial union ConfusingOutcome(Success, Match) : IOutcome
+            {
+            }
+            """;
+
+        // Act
+        _ = GeneratorTestHarness.RunAndUpdate(
+            new OutcomeMemberGenerator(),
+            source,
+            "OutcomeMemberGenerator.Tests.ReservedNameCollision",
+            null,
+            LanguageVersion.Preview,
+            out var diagnostics
+        );
+
+        // Assert
+        var diagnostic = Assert.Single(diagnostics);
+        Assert.Equal("INTERLOC012", diagnostic.Id);
+        Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+        Assert.Contains("reserved generated member", diagnostic.GetMessage(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void OutcomeMemberGenerator_NoCollidingAccessorNames_ReportsNoDiagnosticAndKeepsNamedAccessors_Test()
+    {
+        // Arrange - PaymentOutcome's own shape: seven distinct concrete case types, no collision
+        const string source = """
+            namespace Test;
+
+            using Interlocutor.CommonKernel;
+            using Interlocutor.CommonKernel.ResultTypes;
+
+            [GenerateOutcomeMembers]
+            public readonly partial union PaymentLikeOutcome(Success, NotFound, Conflict) : IOutcome
+            {
+            }
+            """;
+
+        // Act
+        var result = GeneratorTestHarness.RunAndUpdate(
+            new OutcomeMemberGenerator(),
+            source,
+            "OutcomeMemberGenerator.Tests.NoCollision",
+            null,
+            LanguageVersion.Preview,
+            out var diagnostics
+        );
+
+        // Assert
+        Assert.Empty(diagnostics);
+        var emitResult = result.GetDiagnostics(TestContext.Current.CancellationToken);
+        Assert.Empty(emitResult.Where(static d => d.Severity == DiagnosticSeverity.Error));
+
+        var generatedText = string.Join(
+            System.Environment.NewLine,
+            result
+                .SyntaxTrees.Where(static t => t.FilePath.Contains("OutcomeMembers", StringComparison.Ordinal))
+                .Select(static t => t.ToString())
+        );
+        Assert.Contains("public bool TryGetNotFound(out", generatedText, StringComparison.Ordinal);
+        Assert.Contains("public bool TryGetConflict(out", generatedText, StringComparison.Ordinal);
     }
 }

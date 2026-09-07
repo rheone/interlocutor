@@ -40,13 +40,46 @@ using Interlocutor.Abstractions.Pipeline.Cases;
 /// <b>Per-request-type overrides (Tier 1) vs. the general-purpose baseline (Tier 2).</b>
 /// <see cref="Behaviors"/> is the general-purpose baseline every request type draws from unless
 /// <see cref="OverridePipelineFor"/> declares an override rule matching it - a full, positively-declared
-/// replacement of the baseline for matched requests, never a merge with or modification of it. See
-/// <see href="../../../maintainer_docs/adr/0019-per-request-type-pipeline-overrides.md">ADR-0019</see> for the full
-/// rationale.
+/// replacement of the baseline for matched requests, never a merge with or modification of it. A full
+/// replacement sidesteps ever needing to identify and negate an individual behavior from an ambient list -
+/// there is only ever something to register, never something to remove.
 /// </para>
 /// </remarks>
 public sealed class InterlocutorPipelineBuilder
 {
+    private static readonly BehaviorDescriptor LoggingBehaviorDescriptor = new(typeof(LoggingBehavior<,>), []);
+
+    private static readonly BehaviorDescriptor AuditingBehaviorDescriptor = new(
+        typeof(AuditingBehavior<,>),
+        [(typeof(IAuditSink), typeof(LoggingAuditSink))]
+    );
+
+    private static readonly BehaviorDescriptor AuthorizationBehaviorDescriptor = new(
+        typeof(AuthorizationBehavior<,>),
+        [
+            (typeof(IPolicyEvaluator), typeof(DefaultPolicyEvaluator)),
+            (typeof(IOutcomeCaseRegistry), typeof(DefaultOutcomeCaseRegistry)),
+        ]
+    );
+
+    private static readonly BehaviorDescriptor CancellationBehaviorDescriptor = new(
+        typeof(CancellationBehavior<,>),
+        [(typeof(IOutcomeCaseRegistry), typeof(DefaultOutcomeCaseRegistry))]
+    );
+
+    private static readonly BehaviorDescriptor TimeoutBehaviorDescriptor = new(
+        typeof(TimeoutBehavior<,>),
+        [
+            (typeof(ITimeoutPolicy), typeof(DefaultTimeoutPolicy)),
+            (typeof(IOutcomeCaseRegistry), typeof(DefaultOutcomeCaseRegistry)),
+        ]
+    );
+
+    private static readonly BehaviorDescriptor RateLimitedBehaviorDescriptor = new(
+        typeof(RateLimitedBehavior<,>),
+        [(typeof(IRateLimiter), typeof(DefaultRateLimiter)), (typeof(IOutcomeCaseRegistry), typeof(DefaultOutcomeCaseRegistry))]
+    );
+
     private readonly List<InterlocutorRegistration> _behaviors = [];
     private readonly Dictionary<Type, InterlocutorRegistration> _defaults;
     private readonly HashSet<Type> _overrideBehaviorTypesRegistered = [];
@@ -251,7 +284,7 @@ public sealed class InterlocutorPipelineBuilder
     /// to opt into a specific implementation instead.
     /// </remarks>
     /// <returns>This builder, for chaining.</returns>
-    public InterlocutorPipelineBuilder AddLoggingBehavior() => this.AddBehavior(typeof(LoggingBehavior<,>));
+    public InterlocutorPipelineBuilder AddLoggingBehavior() => this.AddFromDescriptor(LoggingBehaviorDescriptor);
 
     /// <summary>
     /// Adds <see cref="AuditingBehavior{TRequest,TResponse}"/> at the current position in the chain, and
@@ -260,12 +293,7 @@ public sealed class InterlocutorPipelineBuilder
     /// <see cref="IResponseOutcomeDescriber"/> default is registered here either.
     /// </summary>
     /// <returns>This builder, for chaining.</returns>
-    public InterlocutorPipelineBuilder AddAuditingBehavior()
-    {
-        this.AddBehavior(typeof(AuditingBehavior<,>));
-        this.TryAddDefault(typeof(IAuditSink), typeof(LoggingAuditSink));
-        return this;
-    }
+    public InterlocutorPipelineBuilder AddAuditingBehavior() => this.AddFromDescriptor(AuditingBehaviorDescriptor);
 
     /// <summary>
     /// Adds <see cref="AuthorizationBehavior{TRequest,TResponse}"/> at the current position in the chain,
@@ -274,13 +302,7 @@ public sealed class InterlocutorPipelineBuilder
     /// has already been set for either.
     /// </summary>
     /// <returns>This builder, for chaining.</returns>
-    public InterlocutorPipelineBuilder AddAuthorizationBehavior()
-    {
-        this.AddBehavior(typeof(AuthorizationBehavior<,>));
-        this.TryAddDefault(typeof(IPolicyEvaluator), typeof(DefaultPolicyEvaluator));
-        this.TryAddDefault(typeof(IOutcomeCaseRegistry), typeof(DefaultOutcomeCaseRegistry));
-        return this;
-    }
+    public InterlocutorPipelineBuilder AddAuthorizationBehavior() => this.AddFromDescriptor(AuthorizationBehaviorDescriptor);
 
     /// <summary>
     /// Adds <c>Interlocutor.FluentValidation.ValidationBehavior&lt;,&gt;</c> at the current position in
@@ -330,11 +352,10 @@ public sealed class InterlocutorPipelineBuilder
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Per <see href="../../../maintainer_docs/adr/0018-unit-of-work-as-transaction-owner.md">ADR-0018</see>, this
-    /// behavior applies to every request once registered - no marker is required to participate. It opens a
-    /// transaction lazily the first time anything writes (or eagerly, at pipeline start, for a request
-    /// implementing <c>ITransactionalRequest</c>) and commits or rolls it back automatically based on the
-    /// outcome classifier's verdict.
+    /// This behavior applies to every request once registered - no marker is required to participate, unlike
+    /// the retired <c>TransactionBehavior</c> it supersedes. It opens a transaction lazily the first time
+    /// anything writes (or eagerly, at pipeline start, for a request implementing <c>ITransactionalRequest</c>)
+    /// and commits or rolls it back automatically based on the outcome classifier's verdict.
     /// </para>
     /// <para>
     /// EF Core's <c>UnitOfWorkBehavior&lt;TRequest,TResponse,TContext&gt;</c> is generic over the
@@ -421,12 +442,7 @@ public sealed class InterlocutorPipelineBuilder
     /// <c>Add*Behavior</c> calls.
     /// </remarks>
     /// <returns>This builder, for chaining.</returns>
-    public InterlocutorPipelineBuilder AddCancellationBehavior()
-    {
-        this.AddBehavior(typeof(CancellationBehavior<,>));
-        this.TryAddDefault(typeof(IOutcomeCaseRegistry), typeof(DefaultOutcomeCaseRegistry));
-        return this;
-    }
+    public InterlocutorPipelineBuilder AddCancellationBehavior() => this.AddFromDescriptor(CancellationBehaviorDescriptor);
 
     /// <summary>
     /// Adds <see cref="TimeoutBehavior{TRequest,TResponse}"/> at the current position in the chain, and
@@ -441,13 +457,7 @@ public sealed class InterlocutorPipelineBuilder
     /// <c>Add*Behavior</c> calls.
     /// </remarks>
     /// <returns>This builder, for chaining.</returns>
-    public InterlocutorPipelineBuilder AddTimeoutBehavior()
-    {
-        this.AddBehavior(typeof(TimeoutBehavior<,>));
-        this.TryAddDefault(typeof(ITimeoutPolicy), typeof(DefaultTimeoutPolicy));
-        this.TryAddDefault(typeof(IOutcomeCaseRegistry), typeof(DefaultOutcomeCaseRegistry));
-        return this;
-    }
+    public InterlocutorPipelineBuilder AddTimeoutBehavior() => this.AddFromDescriptor(TimeoutBehaviorDescriptor);
 
     /// <summary>
     /// Adds <see cref="RateLimitedBehavior{TRequest,TResponse}"/> at the current position in the chain,
@@ -462,13 +472,7 @@ public sealed class InterlocutorPipelineBuilder
     /// <c>Add*Behavior</c> calls.
     /// </remarks>
     /// <returns>This builder, for chaining.</returns>
-    public InterlocutorPipelineBuilder AddRateLimitedBehavior()
-    {
-        this.AddBehavior(typeof(RateLimitedBehavior<,>));
-        this.TryAddDefault(typeof(IRateLimiter), typeof(DefaultRateLimiter));
-        this.TryAddDefault(typeof(IOutcomeCaseRegistry), typeof(DefaultOutcomeCaseRegistry));
-        return this;
-    }
+    public InterlocutorPipelineBuilder AddRateLimitedBehavior() => this.AddFromDescriptor(RateLimitedBehaviorDescriptor);
 
     /// <summary>
     /// Applies the library's documented recommended pipeline chain - logging, then auditing, then
@@ -729,6 +733,34 @@ public sealed class InterlocutorPipelineBuilder
         this.AddBehavior(typeof(PipelineStageBehavior<,>), lifetime);
 
     /// <summary>
+    /// Applies a <see cref="BehaviorDescriptor"/>: adds its behavior type via <see cref="AddBehavior"/>,
+    /// then try-adds each of its default dependency pairs via <see cref="TryAddDefault"/>, in order - the
+    /// shared body every built-in <c>Add*Behavior</c> convenience method whose registration fits this
+    /// (behavior type, defaults) shape delegates to.
+    /// </summary>
+    /// <param name="descriptor">The behavior registration to apply.</param>
+    /// <returns>This builder, for chaining.</returns>
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2072:DynamicallyAccessedMembers",
+        Justification = "Every BehaviorDescriptor this method is called with is one of this type's own "
+            + "private static readonly fields, built from compile-time typeof(...) tokens - the same shape "
+            + "AddBehavior's and TryAddDefault's own DynamicallyAccessedMembers-annotated parameters expect "
+            + "directly. The tuple-typed Defaults array cannot itself carry that per-element annotation, so "
+            + "it is re-asserted here rather than on the descriptor's field types."
+    )]
+    private InterlocutorPipelineBuilder AddFromDescriptor(BehaviorDescriptor descriptor)
+    {
+        this.AddBehavior(descriptor.BehaviorType);
+        foreach (var (serviceType, implementationType) in descriptor.Defaults)
+        {
+            this.TryAddDefault(serviceType, implementationType);
+        }
+
+        return this;
+    }
+
+    /// <summary>
     /// Sets or replaces this builder's own internal default entry for <paramref name="serviceType"/>,
     /// unconditionally - the mechanism behind every <c>Override*</c> method, guaranteeing it wins
     /// regardless of call order relative to the corresponding <c>Add*Behavior</c> call. Internal rather
@@ -796,4 +828,17 @@ public sealed class InterlocutorPipelineBuilder
             return null;
         }
     }
+
+    /// <summary>
+    /// The registration shape shared by every built-in <c>Add*Behavior</c> convenience method whose body
+    /// is exactly "add this behavior type, then try-add these default dependency pairs" - the behavior
+    /// type plus its zero or more <c>(ServiceType, ImplementationType)</c> default dependency pairs, in
+    /// the order <see cref="AddFromDescriptor"/> applies them.
+    /// </summary>
+    /// <param name="BehaviorType">The behavior's open-generic implementation type.</param>
+    /// <param name="Defaults">The default dependency pairs to try-add alongside the behavior, in order.</param>
+    private readonly record struct BehaviorDescriptor(
+        Type BehaviorType,
+        (Type ServiceType, Type ImplementationType)[] Defaults
+    );
 }

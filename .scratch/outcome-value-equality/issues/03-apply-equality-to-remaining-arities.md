@@ -12,12 +12,16 @@ correctly through a collection-bearing nested case, not just a flat one.
 
 **Blocked by:** Ticket 02.
 
-**Status:** ready-for-agent
+**Status:** done (already implemented)
 
-- [ ] `Outcome<TSuccessResult, TCase2, TCase3>` through `Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>`
+- [x] `Outcome<TSuccessResult, TCase2, TCase3>` through `Outcome<TSuccessResult, TCase2, TCase3, TCase4, TCase5, TCase6>`
       all carry the generated equality members with no hand-written exceptions.
-- [ ] At least one test demonstrates the end-to-end composition: an `Outcome<TSuccess, Failures>` (or another
+- [x] At least one test demonstrates the end-to-end composition: an `Outcome<TSuccess, Failures>` (or another
       arity paired with `Conflicts`/`ValidationErrors`) is equal to another instance built from the same distinct
       items in a different order, and unequal to one built from different items.
-- [ ] `PublicAPI.Unshipped.txt` is updated for the new members on every arity from three through six.
-- [ ] `dotnet build` and `dotnet test` pass for the whole solution.
+- [x] `PublicAPI.Unshipped.txt` is updated for the new members on every arity from three through six.
+- [x] `dotnet build` and `dotnet test` pass for the whole solution.
+
+## Comments
+
+**2026-09-04** - Re-triaged while working the frontier: already implemented. Every arity three through six in `src/Interlocutor.CommonKernel/Outcome.cs` is an attributed `partial union` (see Ticket 06 of `outcome-naming-and-arity-refactor`), so the generated equality surface applies uniformly with no hand-written exceptions. `OutcomeEqualityTests.cs` includes the integration proof: `Outcome<string, Failures>` built from `[failureA, failureB]` vs `[failureB, failureA]` compares equal, and a differing-items instance compares unequal - proving the union's `Value.Equals(other.Value)` delegation cascades through `Failures`' order-independent equality. `PublicAPI.Unshipped.txt` carries `Equals`/`GetHashCode` entries for arities three through six. No source changes were needed - Status flipped without a code commit.

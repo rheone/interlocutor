@@ -9,6 +9,8 @@ using System.Reflection;
 using Interlocutor.Abstractions.Queries;
 using Interlocutor.CommonKernel.ResultTypes;
 using Interlocutor.DependencyInjection.Abstractions;
+using Interlocutor.Generator.Analysis;
+using Interlocutor.Generator.Models;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;

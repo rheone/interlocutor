@@ -15,12 +15,14 @@ using GuardedResponse = Interlocutor.CommonKernel.Outcome<
 >;
 
 /// <summary>
-/// Proves the mechanical consequence of swapping <c>AuthorizationBehavior</c> and
-/// <c>ValidationBehavior</c>'s registration order, per <c>documentation/beginners-guide-todo-api.md</c>
-/// Step 11's "When the recommended order doesn't fit" section. Not wired into this project's own
-/// <c>Program.cs</c> pipeline - an isolated composition of the two real behaviors, in both orders,
-/// against a request whose validator and policy would both reject it, so which one short-circuits first
-/// is unambiguous.
+/// Proves the mechanical consequence of swapping <see cref="AuthorizationBehavior{TRequest,TResponse}"/> and
+/// <see cref="ValidationBehavior{TRequest,TResponse}"/>'s registration order, per
+/// <c>documentation/beginners-guide-todo-api.md</c>'s "When the recommended order doesn't fit" section. Not
+/// wired into this project's own <c>Program.cs</c> pipeline - <c>Program.cs</c> keeps the recommended
+/// Authorization-before-Validation order for every real endpoint, since reordering there would silently
+/// change every other feature's behavior. This is an isolated composition of the two real behaviors, in both
+/// orders, against a request whose validator and policy would both reject it, so which one short-circuits
+/// first is unambiguous.
 /// </summary>
 public sealed class ReorderedPipelineCompositionTests
 {
@@ -90,17 +92,16 @@ public sealed class ReorderedPipelineCompositionTests
             TestContext.Current.CancellationToken
         );
 
-        // Assert - the mechanical consequence the guide states directly: a validation failure now
-        // short-circuits before authorization's ingress ever runs, cheap or not. The trade-off this
-        // buys, per the guide's own reasoning: the recommended order (proven above) saves the
-        // validator's work for a request the caller wasn't allowed to make at all, at the cost of
-        // always paying for authorization's check - which the guide assumes is the expensive step (e.g.
-        // a network call to a permissions service) - even on input that was never well-formed to begin
+        // Assert - the mechanical consequence stated directly: a validation failure now short-circuits
+        // before authorization's ingress ever runs, cheap or not. The trade-off this buys: the recommended
+        // order (proven above) saves the validator's work for a request the caller wasn't allowed to make at
+        // all, at the cost of always paying for authorization's check - typically the more expensive step
+        // (e.g. a network call to a permissions service) - even on input that was never well-formed to begin
         // with. This reordering gives that saving up in exchange for the opposite: authorization's check
-        // (here, `policyEvaluator.EvaluateAsync`) never runs for a request that fails validation, but
-        // every well-formed request now pays for validation *and* authorization in sequence, where the
-        // recommended order could have skipped validation's cost entirely for a request authorization
-        // was always going to deny.
+        // (here, `policyEvaluator.EvaluateAsync`) never runs for a request that fails validation, but every
+        // well-formed request now pays for validation *and* authorization in sequence, where the recommended
+        // order could have skipped validation's cost entirely for a request authorization was always going
+        // to deny.
         Assert.IsType<ValidationErrors>(result.Value);
         Assert.False(handlerInvoked);
         await policyEvaluator.DidNotReceive().EvaluateAsync(Arg.Any<string>(), Arg.Any<object>(), Arg.Any<CancellationToken>());

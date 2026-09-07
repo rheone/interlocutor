@@ -14,20 +14,17 @@ using Microsoft.EntityFrameworkCore;
 /// sees for the same dispatch - the "same transaction and session" guarantee this package's <see cref="IUnitOfWork"/>
 /// façade relies on rather than re-implementing.
 /// </summary>
-public sealed class SharedSessionIntegrationTests : IDisposable
+public sealed class SharedSessionIntegrationTests : IClassFixture<EntityFrameworkTestFixture>, IDisposable
 {
+    private readonly EntityFrameworkTestFixture fixture;
     private readonly SqliteConnection connection;
     private readonly TestDbContext context;
     private readonly Lazy<TestDbContext> lazyContext;
 
-    public SharedSessionIntegrationTests()
+    public SharedSessionIntegrationTests(EntityFrameworkTestFixture fixture)
     {
-        this.connection = new SqliteConnection("DataSource=:memory:");
-        this.connection.Open();
-
-        var options = new DbContextOptionsBuilder<TestDbContext>().UseSqlite(this.connection).Options;
-        this.context = new TestDbContext(options);
-        this.context.Database.EnsureCreated();
+        this.fixture = fixture;
+        (this.connection, this.context) = fixture.CreateDatabase();
         this.lazyContext = new Lazy<TestDbContext>(() => this.context);
     }
 
@@ -88,25 +85,7 @@ public sealed class SharedSessionIntegrationTests : IDisposable
         this.connection.Dispose();
     }
 
-    private TestDbContext CreateVerificationContext()
-    {
-        var options = new DbContextOptionsBuilder<TestDbContext>().UseSqlite(this.connection).Options;
-        return new TestDbContext(options);
-    }
+    private TestDbContext CreateVerificationContext() => this.fixture.CreateContext(this.connection);
 
     private sealed record TransactionalRequest : ICommand<Outcome<Success, Failure>>;
-
-    public sealed class Widget
-    {
-        public int Id { get; set; }
-
-        public string Name { get; set; } = string.Empty;
-    }
-
-    public sealed class TestDbContext(DbContextOptions<TestDbContext> options) : DbContext(options)
-    {
-        public DbSet<Widget> Widgets => this.Set<Widget>();
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder) => modelBuilder.Entity<Widget>();
-    }
 }

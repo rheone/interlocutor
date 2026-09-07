@@ -8,9 +8,13 @@ Full technical detail: [findings/04-generator-wiring-docs-mismatch.md](../findin
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] CLAUDE.md's description of `Interlocutor.Generator`'s wiring matches the actual project graph
-- [ ] README.md's equivalent claim (around the Interlocutor.Generator mention) is corrected the same way
-- [ ] `documentation/glossary.md`'s `Interlocutor.Generator` entry is corrected the same way
-- [ ] A `DependencyTests.cs` assertion pins the real behavior (no `Interlocutor.Generator` reference on `Interlocutor.Abstractions`) so this can't silently drift again
+- [x] CLAUDE.md's description of `Interlocutor.Generator`'s wiring matches the actual project graph
+- [x] README.md's equivalent claim (around the Interlocutor.Generator mention) is corrected the same way
+- [x] `documentation/glossary.md`'s `Interlocutor.Generator` entry is corrected the same way
+- [x] A `DependencyTests.cs` assertion pins the real behavior (no `Interlocutor.Generator` reference on `Interlocutor.Abstractions`) so this can't silently drift again
+
+## Comments
+
+**2026-09-04** - Re-triaged while working the frontier: already implemented in commit `6a3f9ce`. CLAUDE.md, README.md, and documentation/glossary.md all now describe Interlocutor.Generator as opt-in, not an analyzer Abstractions pulls in transitively. tests/Interlocutor.Architecture.Tests/DependencyTests.cs's Abstractions_ReferencedAssembly_HasNoDependencyOnGenerator_Test pins the real behavior. No source changes were needed this session.

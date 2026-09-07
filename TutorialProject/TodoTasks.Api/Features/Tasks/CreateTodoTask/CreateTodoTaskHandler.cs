@@ -16,8 +16,13 @@ public sealed class CreateTodoTaskHandler(IDomainRepository<TodoTask, int> tasks
         CancellationToken ct
     )
     {
-        // Shares CreateTodoTaskCommand's ITransactionalRequest-eager transaction with the insert below
-        // - see that command's own remarks for why this specific ordering needs one.
+        // Shares CreateTodoTaskCommand's ITransactionalRequest-eager transaction with the insert below -
+        // see that command's own remarks for why this specific ordering needs one. Scoped per-owner
+        // (OwnerId and Title both), not globally - the same caller can't have two tasks with the same
+        // title, but two different callers can each have their own "Buy milk", matching the shelved
+        // NHibernate build's own semantics for this check. TodoTasksDbContext also declares a unique
+        // index on (OwnerId, Title) as a schema-level backstop - the outcome the caller sees comes from
+        // this pre-check, not from catching and translating a constraint-violation exception.
         var hasDuplicateTitle =
             (
                 await tasks
@@ -27,8 +32,6 @@ public sealed class CreateTodoTaskHandler(IDomainRepository<TodoTask, int> tasks
 
         if (hasDuplicateTitle)
         {
-            // Named arguments deliberately: Conflict's constructor is (Message, Code), not (Code, Message)
-            // - see this ticket's own notes for the mix-up this avoids.
             return new Conflict(Message: $"You already have a task titled '{command.Title}'.", Code: "duplicate_title");
         }
 

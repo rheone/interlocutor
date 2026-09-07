@@ -6,7 +6,11 @@ Full technical detail: [findings/13-externalstorerequest-doc-ambiguity.md](../fi
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The first remarks paragraph either rules out the local-transactional-outbox use case explicitly, or drops the "outbox" example entirely in favor of examples where the request has no local write to protect
-- [ ] The doc cross-references `ITransactionalRequest` and `UnitOfWorkBehavior`'s own remarks so the relationship between the markers reads unambiguously
+- [x] The first remarks paragraph either rules out the local-transactional-outbox use case explicitly, or drops the "outbox" example entirely in favor of examples where the request has no local write to protect
+- [x] The doc cross-references `ITransactionalRequest` and `UnitOfWorkBehavior`'s own remarks so the relationship between the markers reads unambiguously
+
+## Comments
+
+**2026-09-04** - Re-triaged while working the frontier: already implemented in commit `6a3f9ce`. IExternalStoreRequest's XML doc now explicitly rules out the local-transactional-outbox use case and cross-references ITransactionalRequest and UnitOfWorkBehavior's own remarks. No source changes were needed this session.

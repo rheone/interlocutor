@@ -1,6 +1,7 @@
 namespace Interlocutor.Generator.Tests;
 
 using System.Linq;
+using Interlocutor.Generator.Models;
 
 /// <summary>
 /// Covers the incremental-pipeline caching claim in <see cref="CompilationInfo"/>'s remarks: the

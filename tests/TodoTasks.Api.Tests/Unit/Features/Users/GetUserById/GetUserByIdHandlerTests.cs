@@ -7,9 +7,9 @@ using TodoTasks.Api.Domain;
 using TodoTasks.Api.Features.Users.GetUserById;
 
 /// <summary>
-/// Unit tests for <see cref="GetUserByIdHandler"/> - mirrors <c>GetTodoTaskByIdHandler</c>'s
-/// (an upcoming ticket) plain read-only shape exactly, per
-/// <c>documentation/beginners-guide-todo-api.md</c> Step 6.
+/// Unit tests for <see cref="GetUserByIdHandler"/> - mirrors
+/// <c>documentation/beginners-guide-todo-api.md</c> Step 6's <c>GetTodoTaskByIdHandler</c>'s plain
+/// read-only shape exactly.
 /// </summary>
 public sealed class GetUserByIdHandlerTests
 {

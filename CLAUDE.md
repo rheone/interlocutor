@@ -4,7 +4,7 @@
 
 Interlocutor is a mediator/CQRS pipeline library for .NET, built on C# (`.NET 11` preview, `EnablePreviewFeatures`). It uses Handlers than return `IOutcome` outcomes which may be compiler-checked unions rather than throwing for expected failures - exceptions are reserved for bugs/infra faults.
 
-See [README.md](README.md) for the full API walkthrough (result-type composition, pipeline behavior ordering rationale, interface segregation) and [documentation/](documentation/) for the domain glossary and reference docs - read both before making result-type or pipeline-behavior changes, since the terminology and ordering rules there are load-bearing design decisions, not incidental. `TutorialProject/` is a runnable worked example - a full implementation of the Beginner's Guide (vertical slices by directory, NHibernate/FluentValidation/Autofac, a multi-repository unit-of-work example, a multi-subscriber notification) - see `documentation/sample-app-walkthrough.md` before changing it, since its shape is what that doc walks a reader through.
+See [README.md](README.md) for the full API walkthrough (result-type composition, pipeline behavior ordering rationale, interface segregation) and [documentation/](documentation/) for the domain glossary and reference docs - read both before making result-type or pipeline-behavior changes, since the terminology and ordering rules there are load-bearing design decisions, not incidental. `TutorialProject/` is a runnable worked example - a full implementation of the Beginner's Guide (vertical slices by directory, Microsoft.Extensions.DependencyInjection/EF Core/FluentValidation, a multi-repository unit-of-work example, a multi-subscriber notification) - see `documentation/sample-app-walkthrough.md` before changing it, since its shape is what that doc walks a reader through. An earlier Autofac/NHibernate version is preserved via the `tutorial-project-nhibernate-autofac` git tag rather than kept in-tree - see that doc's own note before assuming it's still there.
 
 ## Commands
 
@@ -39,7 +39,7 @@ Each `src/*` project has a matching `tests/*.Tests` project (xunit.v3, NSubstitu
 
 **Pipeline behaviors execute onion-style**: first `services.AddScoped(typeof(IPipelineBehavior<,>), ...)` registered runs first inbound / last outbound. The canonical order (Logging → Auditing → Authorization → Validation → Transaction) and the reasoning behind it is documented in README.md - preserve that ordering rationale when adding a new behavior rather than re-deriving it.
 
-**Result-type convention**: don't route every handler failure through a single generic `Failure`. Pick the specific `Outcome<TSuccess, ...>` arity/case types that operation can actually produce, so the compiler forces callers to handle exactly those cases (see README.md § "Result Types Are Building Blocks").
+**Result-type convention**: don't route every handler failure through a single generic `Failure`. Pick the specific `Outcome<TSuccess, ...>` arity/case types that operation can actually produce, so the compiler forces callers to handle exactly those cases (see `documentation/messages-and-result-types.md` § "Choosing Arities").
 
 ## Conventions
 
@@ -62,7 +62,7 @@ Local markdown - issues live as files under `.scratch/<feature>/`. No PR triage.
 
 ### Triage labels
 
-Default labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `maintainer_docs/agents/triage-labels.md`.
+Default labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `maintainer_docs/agents/triage-labels.md` - this also lists the terminal states (`done`, `wontfix`, `superseded`, etc.) and ADR lifecycle words (`Accepted`, `Superseded by`) that round out the accepted set. A `Status:` value outside that set on any ADR, PRD, or ticket is never written silently - see that file's "Rejecting an unrecognized status" section.
 
 ### Domain docs
 

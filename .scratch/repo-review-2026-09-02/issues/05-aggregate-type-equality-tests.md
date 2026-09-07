@@ -6,8 +6,12 @@ Full technical detail: [findings/05-missing-direct-equality-tests-aggregate-type
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `Conflicts`, `ValidationErrors`, `ValidationErrors<TErrorCode>`, `Failures<TErrorCode>` each have a direct order-independent-equality test with agreeing hash codes
-- [ ] Each has an inverse test proving extra/missing/differing items make instances unequal
-- [ ] Each has a default-vs-default (equal) and default-vs-explicit (unequal) test
+- [x] `Conflicts`, `ValidationErrors`, `ValidationErrors<TErrorCode>`, `Failures<TErrorCode>` each have a direct order-independent-equality test with agreeing hash codes
+- [x] Each has an inverse test proving extra/missing/differing items make instances unequal
+- [x] Each has a default-vs-default (equal) and default-vs-explicit (unequal) test
+
+## Comments
+
+**2026-09-04** - Re-triaged while working the frontier: already implemented in commit `6a3f9ce`. tests/Interlocutor.CommonKernel.Tests/AggregateResultTypesEqualityTests.cs gives Conflicts, ValidationErrors, ValidationErrors<TErrorCode>, and Failures<TErrorCode> the same order-independent-equality/hash-code-agreement/inequality/default-vs-explicit coverage OutcomeEqualityTests already gave Failures. No source changes were needed this session.

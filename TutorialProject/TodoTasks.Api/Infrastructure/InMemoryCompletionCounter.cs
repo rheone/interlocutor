@@ -1,8 +1,10 @@
 namespace TodoTasks.Api.Infrastructure;
 
-using System.Collections.Concurrent;
-
-/// <summary>The default, process-lifetime, in-memory <see cref="ICompletionCounter"/> implementation.</summary>
+/// <summary>
+/// The default, process-lifetime, in-memory <see cref="ICompletionCounter"/> implementation. Registered
+/// as a singleton in <c>Program.cs</c> so counts persist across requests rather than being reset per
+/// scope.
+/// </summary>
 public sealed class InMemoryCompletionCounter : ICompletionCounter
 {
     private readonly ConcurrentDictionary<string, int> counts = new();

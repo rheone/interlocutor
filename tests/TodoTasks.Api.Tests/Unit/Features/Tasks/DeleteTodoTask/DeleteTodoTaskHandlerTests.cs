@@ -5,8 +5,17 @@ using Interlocutor.Persistence.Abstractions;
 using NSubstitute;
 using TodoTasks.Api.Domain;
 using TodoTasks.Api.Features.Tasks.DeleteTodoTask;
+using TodoTasks.Api.Infrastructure;
 
-/// <summary>Unit tests for <see cref="DeleteTodoTaskHandler"/>.</summary>
+/// <summary>
+/// Unit tests for <see cref="DeleteTodoTaskHandler"/> - the handler logic in isolation, with
+/// <see cref="IDomainRepository{TEntity,TKey}"/> and <see cref="IUnitOfWork"/> both NSubstitute-mocked.
+/// The pipeline's own ownership enforcement (<see cref="TodoTasksPolicyEvaluator"/>, run by
+/// <c>AuthorizationBehavior</c> before this handler ever runs) is covered separately in
+/// <c>Unit/Infrastructure/TodoTasksPolicyEvaluatorTests</c> and end-to-end in
+/// <c>Http/DeleteTodoTaskEndpointTests</c> - this class only exercises what the handler itself still
+/// needs to check once authorization has already passed.
+/// </summary>
 public sealed class DeleteTodoTaskHandlerTests
 {
     private readonly IDomainRepository<TodoTask, int> tasks = Substitute.For<IDomainRepository<TodoTask, int>>();
@@ -19,9 +28,9 @@ public sealed class DeleteTodoTaskHandlerTests
     public async Task Handle_AnExistingTask_DeletesItAndReturnsSuccess_Test()
     {
         // Arrange
-        var task = new TodoTask("Buy milk", "owner-1", null);
-        this.tasks.GetById(1).Returns(task);
-        var command = new DeleteTodoTaskCommand(1);
+        var task = new TodoTask("Buy milk", "owner-1", null) { Id = 42 };
+        this.tasks.GetById(42).Returns(task);
+        var command = new DeleteTodoTaskCommand(42);
 
         // Act
         var result = await this.handler.Handle(command, CancellationToken.None);
@@ -36,8 +45,8 @@ public sealed class DeleteTodoTaskHandlerTests
     public async Task Handle_NoTaskWithThatId_ReturnsNotFound_WithoutDeletingOrSaving_Test()
     {
         // Arrange
-        this.tasks.GetById(1).Returns((TodoTask?)null);
-        var command = new DeleteTodoTaskCommand(1);
+        this.tasks.GetById(42).Returns((TodoTask?)null);
+        var command = new DeleteTodoTaskCommand(42);
 
         // Act
         var result = await this.handler.Handle(command, CancellationToken.None);

@@ -24,8 +24,7 @@ public sealed class DefaultResponseOutcomeDescriber : IResponseOutcomeDescriber
     private readonly IOutcomeClassifier _classifier;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="DefaultResponseOutcomeDescriber"/> class.
-    /// Initializes a new instance with the given outcome classifier.
+    /// Initializes a new instance of the <see cref="DefaultResponseOutcomeDescriber"/> class with the given outcome classifier.
     /// </summary>
     /// <param name="classifier">The classifier used to determine success/failure and labels.</param>
     public DefaultResponseOutcomeDescriber(IOutcomeClassifier classifier)

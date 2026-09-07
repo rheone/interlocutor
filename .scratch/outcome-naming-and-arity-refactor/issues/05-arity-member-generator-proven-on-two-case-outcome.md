@@ -15,13 +15,17 @@ Prove the whole mechanism end-to-end by converting the library's own most common
 
 **Blocked by:** Ticket 01 (needs the renamed `IOutcome`/`Outcome` in place first).
 
-**Status:** ready-for-agent
+**Status:** done (already implemented)
 
-- [ ] The new attribute type exists in `Interlocutor.CommonKernel`, fully XML-documented, with no dependency added to that project.
-- [ ] The new `IIncrementalGenerator` exists in `Interlocutor.Generator` and emits `Match<TResult>`, `Switch`, per-case `TryGetValue`, `ToString()`, and `IsSuccess` for an attributed two-case `partial union`.
-- [ ] `Outcome<TSuccess, TFailure>` in `Interlocutor.CommonKernel` is converted to use the attribute; its hand-written `IsSuccess` is deleted (now generated); no other hand-written member is duplicated by the generator.
-- [ ] The generator emits a build error (not a silent no-op) when applied to an attributed union with fewer than two case types.
-- [ ] New tests in `Interlocutor.CommonKernel.Tests` (or a new generator-focused test project, whichever this repo's existing generator test coverage pattern uses) exercise `Match`, `Switch`, `TryGetValue` (both the hit and miss case per case type), and `ToString()` on `Outcome<TSuccess, TFailure>` for both the success and failure case.
-- [ ] `documentation/messages-and-result-types.md`'s `### Pattern Matching` section gains coverage of `Match`/`Switch`/`TryGetValue` alongside the existing raw-`switch`-on-`.Value` guidance (not a replacement for it - both remain valid).
-- [ ] `dotnet build` and `dotnet test` pass for the whole solution; `dotnet csharpier .` produces no diff.
+- [x] The new attribute type exists in `Interlocutor.CommonKernel`, fully XML-documented, with no dependency added to that project.
+- [x] The new `IIncrementalGenerator` exists in `Interlocutor.Generator` and emits `Match<TResult>`, `Switch`, per-case `TryGetValue`, `ToString()`, and `IsSuccess` for an attributed two-case `partial union`.
+- [x] `Outcome<TSuccess, TFailure>` in `Interlocutor.CommonKernel` is converted to use the attribute; its hand-written `IsSuccess` is deleted (now generated); no other hand-written member is duplicated by the generator.
+- [x] The generator emits a build error (not a silent no-op) when applied to an attributed union with fewer than two case types.
+- [x] New tests in `Interlocutor.CommonKernel.Tests` (or a new generator-focused test project, whichever this repo's existing generator test coverage pattern uses) exercise `Match`, `Switch`, `TryGetValue` (both the hit and miss case per case type), and `ToString()` on `Outcome<TSuccess, TFailure>` for both the success and failure case.
+- [x] `documentation/messages-and-result-types.md`'s `### Pattern Matching` section gains coverage of `Match`/`Switch`/`TryGetValue` alongside the existing raw-`switch`-on-`.Value` guidance (not a replacement for it - both remain valid).
+- [x] `dotnet build` and `dotnet test` pass for the whole solution; `dotnet csharpier .` produces no diff.
+
+## Comments
+
+**2026-09-04** - Re-triaged while working the frontier: already implemented, and folded straight into the full-family form (Ticket 06's scope) rather than landing on just the two-case shape first - `GenerateOutcomeMembersAttribute` lives in `Interlocutor.CommonKernel` with no added dependency, `OutcomeMemberGenerator`/`OutcomeMemberEmitter` in `Interlocutor.Generator` emit the full member set, `INTERLOC011` fires as a build error for an attributed union with fewer than two cases, `OutcomeOfTwoCasesTests.cs` covers `Match`/`Switch`/`TryGetValue`/`ToString`, and `documentation/messages-and-result-types.md`'s Pattern Matching section documents all three alongside raw `switch`-on-`.Value`. No source changes were needed - Status flipped without a code commit.
 

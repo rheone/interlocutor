@@ -34,15 +34,15 @@ using Interlocutor.Persistence.Abstractions;
 /// </para>
 /// </remarks>
 public sealed class NHibernateRepository<TEntity, TKey>(Lazy<ISession> session, Expression<Func<TEntity, TKey>> idSelector)
-    : IDomainRepository<TEntity, TKey>
+    : DomainRepositoryBase<TEntity, TKey>
     where TEntity : class
 {
     /// <inheritdoc/>
     /// <remarks>Backed by NHibernate's LINQ provider via <c>ISession.Query&lt;TEntity&gt;()</c>.</remarks>
-    public IQueryable<TEntity> Query => session.Value.Query<TEntity>();
+    public override IQueryable<TEntity> Query => session.Value.Query<TEntity>();
 
     /// <inheritdoc/>
-    public Expression<Func<TEntity, TKey>> IdSelector { get; } = idSelector;
+    public override Expression<Func<TEntity, TKey>> IdSelector { get; } = idSelector;
 
     /// <inheritdoc/>
     /// <remarks>
@@ -50,7 +50,7 @@ public sealed class NHibernateRepository<TEntity, TKey>(Lazy<ISession> session, 
     /// it to the database on transaction commit (or an explicit <see cref="IUnitOfWork.SaveChangesAsync"/>),
     /// not immediately.
     /// </remarks>
-    public async Task InsertAsync(TEntity entity, CancellationToken cancellationToken = default) =>
+    public override async Task InsertAsync(TEntity entity, CancellationToken cancellationToken = default) =>
         await session.Value.SaveAsync(entity, cancellationToken).ConfigureAwait(false);
 
     /// <inheritdoc/>
@@ -59,7 +59,7 @@ public sealed class NHibernateRepository<TEntity, TKey>(Lazy<ISession> session, 
     /// flushes it to the database on transaction commit (or an explicit <see cref="IUnitOfWork.SaveChangesAsync"/>),
     /// not immediately.
     /// </remarks>
-    public Task UpdateAsync(TEntity entity, CancellationToken cancellationToken = default) =>
+    public override Task UpdateAsync(TEntity entity, CancellationToken cancellationToken = default) =>
         session.Value.UpdateAsync(entity, cancellationToken);
 
     /// <inheritdoc/>
@@ -68,44 +68,18 @@ public sealed class NHibernateRepository<TEntity, TKey>(Lazy<ISession> session, 
     /// flushes it to the database on transaction commit (or an explicit <see cref="IUnitOfWork.SaveChangesAsync"/>),
     /// not immediately.
     /// </remarks>
-    public Task DeleteAsync(TEntity entity, CancellationToken cancellationToken = default) =>
+    public override Task DeleteAsync(TEntity entity, CancellationToken cancellationToken = default) =>
         session.Value.DeleteAsync(entity, cancellationToken);
 
     /// <inheritdoc/>
-    /// <remarks>
-    /// <paramref name="filter"/> and <paramref name="sort"/> are composed onto <see cref="Query"/> via
-    /// <see cref="DomainRepositoryQueryableExtensions"/> before NHibernate's LINQ provider translates and
-    /// executes the query, so filtering and ordering happen in the database, not in memory.
-    /// </remarks>
-    public async Task<IReadOnlyList<TEntity>> GetManyAsync(
-        Expression<Func<TEntity, bool>>? filter = null,
-        IReadOnlyList<SortCriterion<TEntity>>? sort = null,
-        CancellationToken cancellationToken = default
-    ) => await this.Query.ApplyFilter(filter).ApplySort(sort).ToListAsync(cancellationToken).ConfigureAwait(false);
+    /// <remarks>Delegates to NHibernate's own <c>IQueryable{TEntity}.ToListAsync</c> LINQ provider extension.</remarks>
+    protected override async Task<IReadOnlyList<TEntity>> ToListAsync(
+        IQueryable<TEntity> query,
+        CancellationToken cancellationToken
+    ) => await query.ToListAsync(cancellationToken).ConfigureAwait(false);
 
     /// <inheritdoc/>
-    /// <remarks>
-    /// <paramref name="filter"/> is applied once and reused for both the <see cref="Page{T}.TotalCount"/>
-    /// count query and the page's item query, so both agree on the same predicate. Sorting and paging are
-    /// composed onto the query via <see cref="DomainRepositoryQueryableExtensions"/> before materialization,
-    /// so the database performs the ordering and row-limiting, not this method.
-    /// </remarks>
-    public async Task<Page<TEntity>> GetPagedAsync(
-        int pageNumber,
-        int pageSize,
-        Expression<Func<TEntity, bool>>? filter = null,
-        IReadOnlyList<SortCriterion<TEntity>>? sort = null,
-        CancellationToken cancellationToken = default
-    )
-    {
-        var filtered = this.Query.ApplyFilter(filter);
-        var totalCount = await filtered.CountAsync(cancellationToken).ConfigureAwait(false);
-        var items = await filtered
-            .ApplySort(sort)
-            .ApplyPaging(pageNumber, pageSize)
-            .ToListAsync(cancellationToken)
-            .ConfigureAwait(false);
-
-        return new Page<TEntity>(items, pageNumber, pageSize, totalCount);
-    }
+    /// <remarks>Delegates to NHibernate's own <c>IQueryable{TEntity}.CountAsync</c> LINQ provider extension.</remarks>
+    protected override Task<int> CountAsync(IQueryable<TEntity> query, CancellationToken cancellationToken) =>
+        query.CountAsync(cancellationToken);
 }

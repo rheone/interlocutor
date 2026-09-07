@@ -2,8 +2,11 @@ namespace TodoTasks.Api.Features.Tasks.ListTodoTasks;
 
 using Interlocutor.Abstractions.Core;
 using Interlocutor.AspNetCore;
+using TodoTasks.Api.Infrastructure;
 
-/// <summary>Maps <c>GET /todo-tasks?onlyIncomplete=...</c>. Unauthenticated - a plain read, matching the guide's own running example.</summary>
+/// <summary>
+/// Maps <c>GET /todo-tasks?onlyIncomplete=...</c> - authenticated, and scoped to the caller's own tasks.
+/// </summary>
 public static class ListTodoTasksEndpoint
 {
     /// <summary>Registers the list-tasks endpoint on <paramref name="app"/>.</summary>
@@ -12,13 +15,22 @@ public static class ListTodoTasksEndpoint
     public static WebApplication MapListTodoTasksEndpoint(this WebApplication app)
     {
         app.MapGet(
-            "/todo-tasks",
-            async (bool onlyIncomplete, ISender sender, CancellationToken ct) =>
-            {
-                var result = await sender.Send(new ListTodoTasksQuery(onlyIncomplete), ct).ConfigureAwait(false);
-                return result.ToMinimalApiResult();
-            }
-        );
+                "/todo-tasks",
+                async (
+                    ISender sender,
+                    IRequestContextAccessor contextAccessor,
+                    CancellationToken ct,
+                    bool onlyIncomplete = false
+                ) =>
+                {
+                    // See CreateTodoTaskEndpoint's own remarks on RequireUserId().
+                    var ownerId = contextAccessor.RequireUserId();
+
+                    var result = await sender.Send(new ListTodoTasksQuery(onlyIncomplete, ownerId), ct).ConfigureAwait(false);
+                    return result.ToMinimalApiResult();
+                }
+            )
+            .RequireAuthorization();
 
         return app;
     }

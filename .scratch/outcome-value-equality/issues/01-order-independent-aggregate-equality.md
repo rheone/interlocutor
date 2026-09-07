@@ -15,18 +15,22 @@ comparison, they impose it themselves over `Items`.
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done (already implemented)
 
-- [ ] `DistinctItemSet<TItem>` has a content-based, order-independent `Equals`/`GetHashCode` (not the
+- [x] `DistinctItemSet<TItem>` has a content-based, order-independent `Equals`/`GetHashCode` (not the
       compiler-synthesized reference-based-on-backing-array version).
-- [ ] Two instances of each of the six composing types (`Failures`, `Failures<TErrorCode>`, `Conflicts`,
+- [x] Two instances of each of the six composing types (`Failures`, `Failures<TErrorCode>`, `Conflicts`,
       `ValidationErrors`, `ValidationErrors<TErrorCode>`, `FluentValidationErrors`) built from the same distinct
       items in different orders are equal and produce equal hash codes, with no changes made to any of the six
       wrapper types themselves.
-  - [ ] Test coverage proves this (order-independent equality + hash-code agreement) for at least `Failures`
+  - [x] Test coverage proves this (order-independent equality + hash-code agreement) for at least `Failures`
       and one of the generic (`<TErrorCode>`) variants.
-- [ ] Test coverage proves the inverse: instances with extra items, missing items, or differing items are
+- [x] Test coverage proves the inverse: instances with extra items, missing items, or differing items are
       unequal.
-- [ ] Default (zero-initialized) instances remain equal to each other and unequal to any explicitly-constructed
+- [x] Default (zero-initialized) instances remain equal to each other and unequal to any explicitly-constructed
       instance, consistent with the existing "default value is inert" contract on `Count`/`Items`.
-- [ ] `dotnet build` and `dotnet test` pass for the whole solution.
+- [x] `dotnet build` and `dotnet test` pass for the whole solution.
+
+## Comments
+
+**2026-09-04** - Re-triaged while working the frontier: already implemented. `DistinctItemSet<TItem>` (`src/Interlocutor.CommonKernel/ResultTypes/Internal/`) overrides `Equals`/`GetHashCode` with content-based, order-independent comparison (`Items.ToHashSet().SetEquals(...)`, XOR-combined hash), documented inline as deliberately overriding the compiler-synthesized reference-based version. `tests/Interlocutor.CommonKernel.Tests/AggregateResultTypesEqualityTests.cs` covers order-independence, hash-code agreement, the unequal cases, and default-instance behavior. 30/30 equality tests pass. No source changes were needed - Status flipped without a code commit.

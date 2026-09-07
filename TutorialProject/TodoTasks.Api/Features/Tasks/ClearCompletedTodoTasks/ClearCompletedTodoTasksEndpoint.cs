@@ -3,13 +3,14 @@ namespace TodoTasks.Api.Features.Tasks.ClearCompletedTodoTasks;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.AspNetCore;
 using Interlocutor.CommonKernel;
+using TodoTasks.Api.Infrastructure;
 
 /// <summary>
-/// Maps <c>POST /todo-tasks/clear-completed</c>. Unlike every other endpoint in this project, this
-/// one has to state which outcome type it wants back explicitly
-/// (<c>sender.Send&lt;Outcome&gt;(...)</c>) - it can't be inferred from a bare
-/// <see cref="Interlocutor.Abstractions.Commands.ICommand"/> the way it can from
-/// <see cref="Interlocutor.Abstractions.Commands.ICommand{TResponse}"/>'s fixed response type.
+/// Maps <c>POST /todo-tasks/clear-completed</c>. Unlike every other endpoint in this project, this one
+/// has to state which outcome type it wants back explicitly (<c>sender.Send&lt;Outcome&gt;(...)</c>) -
+/// it can't be inferred from a bare <see cref="Interlocutor.Abstractions.Commands.ICommand"/> the way
+/// it can from <see cref="Interlocutor.Abstractions.Commands.ICommand{TResponse}"/>'s fixed response
+/// type.
 /// </summary>
 public static class ClearCompletedTodoTasksEndpoint
 {
@@ -22,9 +23,8 @@ public static class ClearCompletedTodoTasksEndpoint
                 "/todo-tasks/clear-completed",
                 async (ISender sender, IRequestContextAccessor contextAccessor, CancellationToken ct) =>
                 {
-                    var ownerId =
-                        contextAccessor.Context?.UserId
-                        ?? throw new InvalidOperationException("This endpoint requires an authenticated caller.");
+                    // See CreateTodoTaskEndpoint's own remarks on RequireUserId().
+                    var ownerId = contextAccessor.RequireUserId();
 
                     var result = await sender
                         .Send<Outcome>(new ClearCompletedTodoTasksCommand(ownerId), ct)

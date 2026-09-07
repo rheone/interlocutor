@@ -1,6 +1,7 @@
 namespace Interlocutor.Generator.Tests;
 
 using System.Linq;
+using Interlocutor.Generator.Models;
 
 /// <summary>
 /// Covers ticket 53's acceptance criteria: the pipeline's final, fully-combined step - the one feeding

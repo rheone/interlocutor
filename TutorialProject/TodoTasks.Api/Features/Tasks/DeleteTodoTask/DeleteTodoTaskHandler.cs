@@ -6,7 +6,13 @@ using Interlocutor.CommonKernel.ResultTypes;
 using Interlocutor.Persistence.Abstractions;
 using TodoTasks.Api.Domain;
 
-/// <summary>Handles <see cref="DeleteTodoTaskCommand"/>. By the time this runs, <c>AuthorizationBehavior</c> has already confirmed the caller satisfies the <c>"DeleteTodoTask"</c> policy - this handler only needs to worry about whether the task exists.</summary>
+/// <summary>
+/// Handles <see cref="DeleteTodoTaskCommand"/>. By the time this runs, <c>AuthorizationBehavior</c> has
+/// already evaluated <see cref="Infrastructure.TodoTasksPolicyEvaluator"/> and confirmed the caller owns
+/// the task (or the task didn't exist, in which case the policy evaluator lets the request through so
+/// this handler - not the policy check - produces <see cref="NotFound"/>). This handler therefore only
+/// needs to worry about whether the task still exists by the time it runs.
+/// </summary>
 public sealed class DeleteTodoTaskHandler(IDomainRepository<TodoTask, int> tasks, IUnitOfWork unitOfWork)
     : ICommandHandler<DeleteTodoTaskCommand, Outcome<Success, NotFound, Forbidden>>
 {

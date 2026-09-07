@@ -16,6 +16,19 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
+  <!-- Analyzer-only reference: ResultExtensionsGenerator must run over this project's own compilation, since
+       ResultExtensions's generated per-arity ToActionResult/ToMinimalApiResult overloads have to exist in the
+       shipped Interlocutor.AspNetCore.dll itself, not merely in some downstream consumer that happens to
+       reference the generator. ReferenceOutputAssembly="false" means this adds no actual assembly dependency -
+       mirrors Interlocutor.CommonKernel's own reference for its self-generated Outcome members. -->
+  <ItemGroup>
+    <ProjectReference
+      Include="..\Interlocutor.Generator\Interlocutor.Generator.csproj"
+      OutputItemType="Analyzer"
+      ReferenceOutputAssembly="false"
+    />
+  </ItemGroup>
+
   <!-- Public API surface tracking: fails the build if a public member changes without
        being recorded in PublicAPI.Shipped.txt/PublicAPI.Unshipped.txt. -->
   <ItemGroup>

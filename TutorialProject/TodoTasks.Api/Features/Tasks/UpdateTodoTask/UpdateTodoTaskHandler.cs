@@ -9,19 +9,23 @@ using TodoTasks.Api.Domain;
 /// <summary>
 /// Handles <see cref="UpdateTodoTaskCommand"/> via the load/authorize/handle template
 /// (<c>ResourceCommandHandler{TCommand,TEntity,TSuccess}</c>). Contrast this with
-/// <c>Features/Tasks/DeleteTodoTask/DeleteTodoTaskHandler</c>'s coarse, non-resource
-/// <c>IRequiresPolicy</c> check (ticket 09) - that runs *before* anything is loaded and asks "can
-/// this caller attempt this kind of command at all"; this one runs *after* loading and asks "is this
-/// specific task theirs."
+/// <c>Features/Tasks/GetTodoTaskById/GetTodoTaskByIdHandler</c>'s owner check, which folds a non-owned
+/// task into the same <see cref="NotFound"/> as a nonexistent one so a non-owner can't distinguish "no
+/// such task" from "not yours" purely from the response shape: that trick only works for a plain read,
+/// where nothing ever needs a case to say "this exists, and you may not touch it." A write needs that
+/// distinction because <c>ResourceCommandHandler</c>'s own template fixes the shape to
+/// <c>Outcome{TSuccess,NotFound,Forbidden}</c> - <see cref="Authorize"/> runs only after
+/// <see cref="LoadAsync"/> has already found the row, so the existence question is already settled by
+/// the time ownership is checked, and a non-owned task's own remaining question - "may this caller act
+/// on it" - is exactly what <see cref="Forbidden"/> means.
 /// </summary>
 /// <remarks>
 /// The explicit <see cref="ICommandHandler{TCommand,TResponse}"/> declaration below is required, not
-/// decorative: <c>ResourceCommandHandler{TCommand,TEntity,TSuccess}</c> does not implement it itself
-/// (confirmed against the shipped source, not assumed), so <c>ScanAssembly</c>'s handler discovery
-/// never finds a plain <c>ResourceCommandHandler</c> subclass on its own - every dispatch to
-/// <see cref="UpdateTodoTaskCommand"/> would throw "service not registered" without this. The base
-/// class's own public <c>Handle</c> method already matches the interface's signature exactly, so no
-/// override body is needed here - the declaration alone is enough.
+/// decorative: <c>ResourceCommandHandler{TCommand,TEntity,TSuccess}</c> does not implement it itself, so
+/// <c>ScanAssembly</c>'s handler discovery never finds a plain <c>ResourceCommandHandler</c> subclass on
+/// its own - every dispatch to <see cref="UpdateTodoTaskCommand"/> would throw "service not registered"
+/// without this. The base class's own public <c>Handle</c> method already matches the interface's
+/// signature exactly, so no override body is needed here - the declaration alone is enough.
 /// </remarks>
 public sealed class UpdateTodoTaskHandler(IDomainRepository<TodoTask, int> tasks, IUnitOfWork unitOfWork)
     : ResourceCommandHandler<UpdateTodoTaskCommand, TodoTask, TodoTaskDto>,

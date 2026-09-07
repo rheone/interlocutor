@@ -8,6 +8,14 @@
          already uses to emit and load real assemblies. -->
     <ProjectReference Include="..\..\src\Interlocutor.DependencyInjection.Microsoft\Interlocutor.DependencyInjection.Microsoft.csproj" />
     <ProjectReference Include="..\..\src\Interlocutor.DependencyInjection.Autofac\Interlocutor.DependencyInjection.Autofac.csproj" />
+    <!-- Referenced (rather than analyzer-only) so ResultExtensionsEmitterTests can compile the emitted
+         ToActionResult/ToMinimalApiResult overload text against the real Interlocutor.AspNetCore API surface
+         (IOutcomeStatusMapper, DefaultHttpOutcomeStatusMapper, IActionResult, IResult) - mirrors
+         Interlocutor.DependencyInjection.Microsoft/.Autofac above. Also pulls in the Microsoft.AspNetCore.App
+         FrameworkReference transitively, which GeneratorTestHarness's own BuildReferences() (driven by the test
+         host's TRUSTED_PLATFORM_ASSEMBLIES) needs so a compiled-and-loaded synthetic assembly can resolve those
+         ASP.NET Core types at runtime too. -->
+    <ProjectReference Include="..\..\src\Interlocutor.AspNetCore\Interlocutor.AspNetCore.csproj" />
     <ProjectReference Include="..\Interlocutor.TestSupport\Interlocutor.TestSupport.csproj" />
   </ItemGroup>
 

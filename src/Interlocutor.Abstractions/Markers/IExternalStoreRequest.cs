@@ -19,9 +19,8 @@ namespace Interlocutor.Abstractions.Markers;
 /// A request implementing <see cref="IExternalStoreRequest"/> never has a local transaction opened around it
 /// by the store-specific commit-gate behavior, regardless of whether it happens to touch the scoped
 /// session and regardless of whether it also implements <see cref="ITransactionalRequest"/> (see that marker's
-/// own remarks for the eager-begin behavior this suppresses) - this marker's meaning and mechanism are
-/// unchanged by
-/// <see href="../../../maintainer_docs/adr/0018-unit-of-work-as-transaction-owner.md">ADR-0018</see>. A raw
+/// own remarks for the eager-begin behavior this suppresses) - this marker's meaning and mechanism did not
+/// change when <c>IUnitOfWork</c> became the transaction owner rather than a pure façade. A raw
 /// <c>SaveChangesAsync</c>/<c>FlushAsync</c> call inside such a handler still executes against the scoped
 /// session, but with no ambient transaction the commit-gate behavior would otherwise finalize, it auto-commits
 /// immediately per the store's own default behavior - there is no local atomicity to opt back into by adding

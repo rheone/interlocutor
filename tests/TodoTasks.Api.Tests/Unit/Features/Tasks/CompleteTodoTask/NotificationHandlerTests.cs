@@ -7,7 +7,9 @@ using TodoTasks.Api.Infrastructure;
 
 /// <summary>
 /// Unit tests for <see cref="TodoTaskCompletedNotification"/>'s two independent subscribers - proves
-/// each reacts on its own, without knowing the other exists.
+/// each reacts on its own, without knowing the other exists. See
+/// <c>Http/CompleteReopenTodoTaskEndpointTests</c> for proof that both actually run together when
+/// dispatched through the real, DI-wired <c>IPublisher</c>.
 /// </summary>
 public sealed class NotificationHandlerTests
 {
@@ -34,12 +36,19 @@ public sealed class NotificationHandlerTests
         var handler = new TodoTaskCompletionAuditLogHandler(logger);
         var notification = new TodoTaskCompletedNotification(1, "owner-1", "Buy milk");
 
-        // Act - the log call itself is the behavior under test, and ILogger's extension methods aren't
-        // meaningfully mockable beyond "did it throw."
-        var exception = await Record.ExceptionAsync(() => handler.Handle(notification, CancellationToken.None));
+        // Act
+        await handler.Handle(notification, CancellationToken.None);
 
-        // Assert
-        Assert.Null(exception);
+        // Assert - matches the pattern LoggingBehaviorTests uses to assert an ILogger call occurred.
+        logger
+            .Received(1)
+            .Log(
+                Arg.Is(LogLevel.Information),
+                Arg.Any<EventId>(),
+                Arg.Any<object>(),
+                Arg.Any<Exception>(),
+                Arg.Any<Func<object, Exception?, string>>()
+            );
     }
 
     [Fact]

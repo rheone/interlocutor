@@ -75,6 +75,7 @@ Custom skills for Interlocutor development:
 - **`interlocutor:code-review`** - Standards + Spec review (Standards enforcement, PR compliance)
 - **`codebase-design`** - Deep module design patterns
 - **`csharp-docs-and-comments`** - XML doc and comment improvements
+- **`dispatch-tasks`** - Run tasks on sub-agents, serially or in parallel, with status relayed back
 - **`grilling`** - Stress-test ideas and decisions
 - **`mermaid-diagram-generator`** - Generate diagrams (flowcharts, sequences, ERD, etc.)
 - **`research`** - Topic research against primary sources
