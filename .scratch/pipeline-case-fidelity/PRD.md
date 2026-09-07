@@ -1,6 +1,6 @@
 # PRD: Pipeline Behavior Case Fidelity
 
-Status: open - issues 01-06 not yet started.
+Status: issues 01-07 done. Issue 07's spike (`Eject.WithCase<TCase>`) was committed rather than dropped - decision made directly, recorded in [ADR-0025](../../maintainer_docs/adr/0025-eject-withcase-type-erased-variant.md) by issue 08. Current shipped state is partial adoption: only `AuthorizationBehavior` is migrated to `Eject.WithCase`; `CancellationBehavior`, `TimeoutBehavior`, `RateLimitedBehavior`, `ValidationBehavior`, and `FluentValidationErrorsBehavior` still construct their case via `IOutcomeCaseRegistry.ConstructOrThrow` directly, and `Interlocutor.Generator`'s `DispatchWrapperEmitter` has not been updated to catch `PipelineEjectCaseException` - both tracked as follow-on work in the ADR, not yet ticketed. Issue 08 (this ADR) is the last ticket; the PRD is otherwise complete.
 
 ## Problem
 
