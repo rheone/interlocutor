@@ -1,6 +1,6 @@
 # 01 - Query vs. command vs. unit-command vs. messaging decision guide
 
-Status: ready-for-agent
+Status: done - implemented in `c66f524`. Uses "bare command" throughout, not "unit command" as this ticket's title/body name - `documentation/glossary.md`'s CQRS section retired both "void command" and "unit command" in favor of "bare command" (the latter for colliding with the unrelated `IUnitOfWork`) since this ticket was filed; `IBareCommandHandler<TCommand, TResult>` is the only such interface in `src/` today, not `IVoidCommandHandler`.
 
 ## Labels
 
@@ -19,12 +19,12 @@ Frame it as a decision guide (a short table or a "use X when Y" passage per shap
 
 ## Acceptance criteria
 
-- [ ] A reader can tell, from this section alone, which of the four shapes to pick for a new feature and why
-- [ ] Every example cited already exists in `TutorialProject` today - no new handlers introduced by this ticket
-- [ ] Uses "unit command" consistently, never "void command"
-- [ ] No enumerated counts in prose beyond the closed-set exception (house style)
-- [ ] No citations to `maintainer_docs/` paths to justify the guidance (house style) - state the rationale as fact
-- [ ] Glossary terms (`Query`, `Command`, `Unit command`, `INotification`) linked on first mention only, skipped if the file already explains the term inline
+- [x] A reader can tell, from this section alone, which of the four shapes to pick for a new feature and why
+- [x] Every example cited already exists in `TutorialProject` today - no new handlers introduced by this ticket
+- [x] Uses "bare command" consistently (see status note above for why, not "unit"/"void command")
+- [x] No enumerated counts in prose beyond the closed-set exception (house style)
+- [x] No citations to `maintainer_docs/` paths to justify the guidance (house style) - state the rationale as fact
+- [x] Glossary terms (`bare command`, `INotification`) linked on first mention only; `Query`/`Command` skipped since the file already explains both inline earlier
 
 ## Blocked by
 
