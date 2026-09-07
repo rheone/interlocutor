@@ -14,9 +14,9 @@ Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.BehaviorFactor
 Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.Behaviors.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration>!
 Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.Defaults.get -> System.Collections.Generic.IReadOnlyCollection<Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration>!
 Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.DescribeRegistrations() -> Interlocutor.DependencyInjection.Abstractions.RegistrationReport!
-Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.Eject(params System.Type![]! implementationTypes) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder!
-Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.Eject<TImplementation>() -> Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder!
-Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.EjectedImplementationTypes.get -> System.Collections.Generic.IReadOnlyList<System.Type!>!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.Exclude(params System.Type![]! implementationTypes) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.Exclude<TImplementation>() -> Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.ExcludedImplementationTypes.get -> System.Collections.Generic.IReadOnlyList<System.Type!>!
 Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.GeneratedRegistrations.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration>!
 Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.Handlers.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration>!
 Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.InterlocutorBuilder() -> void

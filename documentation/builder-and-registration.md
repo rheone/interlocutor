@@ -1,6 +1,6 @@
 # Builder & Registration
 
-How to register Interlocutor with dependency injection. Handlers can be discovered two ways - by scanning assemblies at runtime (`ScanAssembly` and friends), or additively by consuming compile-time source-generator output (`AddGeneratedRegistrations`) - and the pipeline is empty until you explicitly compose it; nothing runs by default. See [Extensibility](extensibility.md) for how `AddTypeMatch`, `RequireUniqueClosure`/`Eject`, and the other hooks here fit into the library's broader extension points.
+How to register Interlocutor with dependency injection. Handlers can be discovered two ways - by scanning assemblies at runtime (`ScanAssembly` and friends), or additively by consuming compile-time source-generator output (`AddGeneratedRegistrations`) - and the pipeline is empty until you explicitly compose it; nothing runs by default. See [Extensibility](extensibility.md) for how `AddTypeMatch`, `RequireUniqueClosure`/`Exclude`, and the other hooks here fit into the library's broader extension points.
 
 ## The Builder
 
@@ -118,14 +118,14 @@ builder.RequireUniqueClosure(typeof(IExportFormatter<>));
 builder.ValidateOnBuild();  // now also reports a conflict if two IExportFormatter<Invoice> implementations exist
 ```
 
-Every closed implementation of the given open-generic contract found while scanning is registered the same way `AddHandler` registers a handler. If a genuine conflict shows up - two implementations closing over the same type - `Eject` (or its generic form `Eject<TImplementation>()`) removes specific implementation types from consideration entirely, for both the built-in contracts and anything added via `RequireUniqueClosure`:
+Every closed implementation of the given open-generic contract found while scanning is registered the same way `AddHandler` registers a handler. If a genuine conflict shows up - two implementations closing over the same type - `Exclude` (or its generic form `Exclude<TImplementation>()`) removes specific implementation types from consideration entirely, for both the built-in contracts and anything added via `RequireUniqueClosure`:
 
 ```csharp
 builder.RequireUniqueClosure(typeof(IExportFormatter<>));
-builder.Eject<LegacyInvoiceFormatter>();  // drop the losing candidate rather than picking a winner some other way
+builder.Exclude<LegacyInvoiceFormatter>();  // drop the losing candidate rather than picking a winner some other way
 ```
 
-`Eject` is additive and callable any number of times; an ejected type disappears from `Handlers` for every uniqueness-checked contract, not merely from the validation message.
+`Exclude` is additive and callable any number of times; an excluded type disappears from `Handlers` for every uniqueness-checked contract, not merely from the validation message.
 
 ## Pipeline Behaviors
 

@@ -174,7 +174,7 @@ None of these run by default - the pipeline is empty until a builder call adds a
 | **RegistrationLifetime** | Container-neutral lifetime enum (`Singleton`, `Scoped`, `Transient`) used by every builder registration method in place of a container-specific lifetime type. |
 | **RegistrationKind** | Classifies an accumulated registration as `Handler`, `Behavior`, `Stage`, `Dispatcher` (the generator-emitted `IGeneratedRequestDispatcher`, added alongside `Handler` entries when `AddGeneratedRegistrations` is used), or `Default`. Only `Default`-kind registrations use try-add precedence; the rest are always-add - duplicates are legal. |
 | **RequireUniqueClosure** | Opts a consumer-supplied open-generic contract into the same "at most one implementation per closed instantiation" check the three built-in handler contracts already carry, so `ValidateOnBuild` also reports a conflict for it. |
-| **Eject** | Removes one or more implementation types from consideration entirely - the escape hatch for clearing an ambiguous-closure conflict by dropping the losing candidate(s), for both built-in handler contracts and anything added via `RequireUniqueClosure`. |
+| **Exclude** | `InterlocutorBuilder.Exclude`/`Exclude<TImplementation>()` - a build-time operation, unrelated to the "Pipeline Behaviors (built-in)" section's `Eject`, that removes one or more implementation types from consideration entirely. The escape hatch for clearing an ambiguous-closure conflict by dropping the losing candidate(s), for both built-in handler contracts and anything added via `RequireUniqueClosure`. |
 
 ## Pagination
 

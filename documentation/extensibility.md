@@ -355,7 +355,7 @@ This is strictly additive to marker-interface-based scoping - both mechanisms wo
 
 ## Extending ambiguity checking to your own contracts
 
-The "at most one implementation per closed instantiation" check the three built-in mediator handler contracts get automatically can be opted into for your own open-generic contract, with `Eject` as the escape hatch for a genuine conflict. See [Builder & Registration § Extending Ambiguity Checking to Your Own Contracts](builder-and-registration.md#extending-ambiguity-checking-to-your-own-contracts) - this is the mechanism to reach for if your application defines its own "exactly one implementation" open-generic contract (a formatter, a strategy resolver, anything with the same shape as a handler) and wants the same build-time guarantee.
+The "at most one implementation per closed instantiation" check the three built-in mediator handler contracts get automatically can be opted into for your own open-generic contract, with `Exclude` as the escape hatch for a genuine conflict. See [Builder & Registration § Extending Ambiguity Checking to Your Own Contracts](builder-and-registration.md#extending-ambiguity-checking-to-your-own-contracts) - this is the mechanism to reach for if your application defines its own "exactly one implementation" open-generic contract (a formatter, a strategy resolver, anything with the same shape as a handler) and wants the same build-time guarantee.
 
 ## Replacing the pipeline entirely for specific request types
 
@@ -381,7 +381,7 @@ For tracing the mechanism rather than copying an example:
 | `IOutcomeClassifier` / `IResponseOutcomeDescriber` | `Interlocutor.Abstractions.Pipeline.Classifiers` | `LoggingBehavior`, `AuditingBehavior`, both `UnitOfWorkBehavior` implementations |
 | `IOutcomeMapper<TResult>` / `OutcomeMapperBase<TResult>` | `Interlocutor.Abstractions.Pipeline.Mapping` | Invoked directly by consuming code - no Interlocutor behavior calls it itself |
 | `IOutcomeStatusMapper` | `Interlocutor.AspNetCore` (specializes `IOutcomeMapper<OutcomeHttpMapping>`) | `ResultExtensions.ToActionResult`/`ToMinimalApiResult` |
-| `InterlocutorBuilder.AddTypeMatch` / `RequireUniqueClosure` / `Eject` | `Interlocutor.DependencyInjection.Abstractions` | Resolved when `AddInterlocutor` translates the accumulated registration list; checked by `ValidateOnBuild()` |
+| `InterlocutorBuilder.AddTypeMatch` / `RequireUniqueClosure` / `Exclude` | `Interlocutor.DependencyInjection.Abstractions` | Resolved when `AddInterlocutor` translates the accumulated registration list; checked by `ValidateOnBuild()` |
 | `InterlocutorPipelineBuilder.OverridePipelineFor` | `Interlocutor.DependencyInjection.Abstractions` | `PipelineChainResolver`, at the point each dispatch path builds its behavior chain |
 
 `IOutcomeClassifier` only ever produces a display label for a log or audit line, never a success/failure judgment - no case type carries a universal success/failure meaning, since a result like `ValidationErrors` is a failure to one caller and a legitimate "persist and report" outcome to another. Both `UnitOfWorkBehavior` implementations reflect this directly: they commit whatever a dispatch left pending regardless of which case a handler returns, and roll back only on an explicit signal (`IUnitOfWork.CancelAsync`, `NoCommit.With`/`NoCommit.AndEject`, or an unhandled exception) - never by asking a classifier to decide. See [Transactions & Store Integration § Commit/Rollback Semantics](transactions-and-store-integration.md#commitrollback-semantics) for the full model.
