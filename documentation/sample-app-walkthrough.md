@@ -15,7 +15,7 @@ A to-do list API with two features: **Tasks** (create, look up by id, list, list
 | --- | --- |
 | `GetTodoTaskByIdHandler` | A plain query handler - read-only, never transactional |
 | `CreateTodoTaskCommand` / `CreateTodoTaskHandler` | A value-returning command handler, with `ITransactionalRequest` protecting a duplicate-title check against a concurrent insert |
-| `DeleteTodoTaskCommand` | `IRequiresPolicy`, evaluated before the entity ever loads for the handler's own use |
+| `DeleteTodoTaskCommand` | `IRequiresPolicyRequest`, evaluated before the entity ever loads for the handler's own use |
 | `UpdateTodoTaskHandler` | `ResourceCommandHandler`'s load/authorize/handle template - fine-grained, entity-based authorization |
 | `DeleteUserHandler` | One `IUnitOfWork` spanning two repositories - a user and every task they own deleted together or not at all |
 | `SendWelcomeEmailResult` | A hand-rolled `IUnion` response type (not a compiler-generated `Outcome<...>`), constructed via a factory registered against `OutcomeCaseRegistryBuilder`/`OverrideOutcomeCaseRegistry` |
@@ -89,7 +89,7 @@ Three cases: `TodoTaskDto` on success, `ValidationErrors` from [`CreateTodoTaskV
 
 ## Authorization: a policy check that's still entity-aware, and a fine-grained check inside the handler
 
-[`DeleteTodoTaskCommand`](../TutorialProject/TodoTasks.Api/Features/Tasks/DeleteTodoTask/DeleteTodoTaskCommand.cs) uses `IRequiresPolicy` - `AuthorizationBehavior` evaluates its `PolicyName` (`"owns-task"`) via [`TodoTasksPolicyEvaluator`](../TutorialProject/TodoTasks.Api/Infrastructure/TodoTasksPolicyEvaluator.cs) *before* the pipeline ever reaches `DeleteTodoTaskHandler`:
+[`DeleteTodoTaskCommand`](../TutorialProject/TodoTasks.Api/Features/Tasks/DeleteTodoTask/DeleteTodoTaskCommand.cs) uses `IRequiresPolicyRequest` - `AuthorizationBehavior` evaluates its `PolicyName` (`"owns-task"`) via [`TodoTasksPolicyEvaluator`](../TutorialProject/TodoTasks.Api/Infrastructure/TodoTasksPolicyEvaluator.cs) *before* the pipeline ever reaches `DeleteTodoTaskHandler`:
 
 ```csharp
 public sealed class TodoTasksPolicyEvaluator(IDomainRepository<TodoTask, int> tasks, IRequestContextAccessor contextAccessor)
@@ -118,7 +118,7 @@ public sealed class TodoTasksPolicyEvaluator(IDomainRepository<TodoTask, int> ta
 }
 ```
 
-This evaluator loads the task named by the request and compares its owner against the caller - deliberately, to demonstrate that `AuthorizationBehavior` *can* express an entity-level check when a team wants that decision made before the pipeline ever reaches a handler, even though `IRequiresPolicy` checks are typically coarser ("can this caller attempt this kind of command at all," with no resource in play yet). A task id that doesn't exist is treated as *authorized* here, not denied - whether the task exists at all is left to `DeleteTodoTaskHandler` to answer, so a missing task still produces `NotFound` rather than being masked as `Forbidden` by a policy check that never had an entity to compare ownership against. A non-owner's delete on an existing task is rejected before `DeleteTodoTaskHandler` ever runs; a delete on a nonexistent id is let through by the policy and produces `NotFound` from the handler instead - two different outcomes that are the concrete proof policy enforcement is a separate, earlier pipeline stage from the handler itself.
+This evaluator loads the task named by the request and compares its owner against the caller - deliberately, to demonstrate that `AuthorizationBehavior` *can* express an entity-level check when a team wants that decision made before the pipeline ever reaches a handler, even though `IRequiresPolicyRequest` checks are typically coarser ("can this caller attempt this kind of command at all," with no resource in play yet). A task id that doesn't exist is treated as *authorized* here, not denied - whether the task exists at all is left to `DeleteTodoTaskHandler` to answer, so a missing task still produces `NotFound` rather than being masked as `Forbidden` by a policy check that never had an entity to compare ownership against. A non-owner's delete on an existing task is rejected before `DeleteTodoTaskHandler` ever runs; a delete on a nonexistent id is let through by the policy and produces `NotFound` from the handler instead - two different outcomes that are the concrete proof policy enforcement is a separate, earlier pipeline stage from the handler itself.
 
 [`UpdateTodoTaskCommand`](../TutorialProject/TodoTasks.Api/Features/Tasks/UpdateTodoTask/UpdateTodoTaskCommand.cs) makes the identical ownership decision the other, more common way - inside the handler's own template, after the entity is already loaded for the handler's own use:
 

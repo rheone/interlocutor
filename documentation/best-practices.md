@@ -8,7 +8,7 @@ Don't route every handler failure through a single generic `Failure`. Pick the s
 
 ## Opt into pipeline behavior with marker interfaces
 
-A request opts into a cross-cutting [pipeline behavior](glossary.md#pipeline) by implementing a [marker interface](glossary.md#marker-interfaces) (`IAuditableRequest`, `IRequiresPolicy`, `ITransactionalRequest`, and the rest) - never by editing a central configuration list, and never by a behavior inspecting the request's concrete type. This keeps a request's opted-in behaviors visible on the request type itself. See [Messages, Result Types & Variance § Marker Interfaces](messages-and-result-types.md#marker-interfaces) for the full list and a worked example.
+A request opts into a cross-cutting [pipeline behavior](glossary.md#pipeline) by implementing a [marker interface](glossary.md#marker-interfaces) (`IAuditableRequest`, `IRequiresPolicyRequest`, `ITransactionalRequest`, and the rest) - never by editing a central configuration list, and never by a behavior inspecting the request's concrete type. This keeps a request's opted-in behaviors visible on the request type itself. See [Messages, Result Types & Variance § Marker Interfaces](messages-and-result-types.md#marker-interfaces) for the full list and a worked example.
 
 ## Start from the recommended pipeline order
 

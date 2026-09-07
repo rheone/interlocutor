@@ -91,10 +91,10 @@ All behaviors implement `IPipelineBehavior<TRequest, TResponse>` and compose via
 |---|---|---|---|
 | `LoggingBehavior` | `Interlocutor.Abstractions` | - | Explicit registration; no marker |
 | `AuditingBehavior` | `Interlocutor.Abstractions` | - | `IAuditableRequest` + `IAuditSink` |
-| `AuthorizationBehavior` | `Interlocutor.Abstractions` | `Forbidden` | `IRequiresPolicy` + `IPolicyEvaluator` |
-| `CancellationBehavior` | `Interlocutor.Abstractions` | `Cancelled` | `ICancellable` |
-| `TimeoutBehavior` | `Interlocutor.Abstractions` | `Timeout` | `IHasTimeout` + `ITimeoutPolicy` |
-| `RateLimitedBehavior` | `Interlocutor.Abstractions` | `RateLimited` | `IRateLimited` + `IRateLimiter` |
+| `AuthorizationBehavior` | `Interlocutor.Abstractions` | `Forbidden` | `IRequiresPolicyRequest` + `IPolicyEvaluator` |
+| `CancellationBehavior` | `Interlocutor.Abstractions` | `Cancelled` | `ICancellableRequest` |
+| `TimeoutBehavior` | `Interlocutor.Abstractions` | `Timeout` | `ITimeoutRequest` + `ITimeoutPolicy` |
+| `RateLimitedBehavior` | `Interlocutor.Abstractions` | `RateLimited` | `IRateLimitedRequest` + `IRateLimiter` |
 | `PipelineStageBehavior` | `Interlocutor.Abstractions` | - | Aggregates registered `IPipelineStage<,>` pre/post hooks |
 | `ValidationBehavior` | `Interlocutor.FluentValidation` | `ValidationError(s)` | No marker - validates every request, if referenced |
 | `UnitOfWorkBehavior<,,>` | `Interlocutor.Persistence.EntityFrameworkCore` / `.NHibernate` | - | No marker required; `ITransactionalRequest`/`IExternalStoreRequest` narrow it |
@@ -121,10 +121,10 @@ Nothing runs by default (ADR-0009) - registration order is execution order. The 
 | `ITransactionalRequest` | Eager transaction begin (every write already gets one automatically) | - |
 | `IExternalStoreRequest` | Declares no SQL session needed | - |
 | `IAuditableRequest` | `AuditingBehavior` | `ActionName` |
-| `IRequiresPolicy` | `AuthorizationBehavior` | `PolicyName` |
-| `ICancellable` | `CancellationBehavior` | - |
-| `IHasTimeout` | `TimeoutBehavior` | `Budget` |
-| `IRateLimited` | `RateLimitedBehavior` | `LimitKey` |
+| `IRequiresPolicyRequest` | `AuthorizationBehavior` | `PolicyName` |
+| `ICancellableRequest` | `CancellationBehavior` | - |
+| `ITimeoutRequest` | `TimeoutBehavior` | `Budget` |
+| `IRateLimitedRequest` | `RateLimitedBehavior` | `LimitKey` |
 
 ### 9.5 Resource-based authorization
 

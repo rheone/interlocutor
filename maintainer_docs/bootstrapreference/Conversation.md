@@ -297,7 +297,7 @@ Tracing/telemetry span
 
 - Validation before transaction - don't open a transaction for a request that fails shape validation.
 - Auditing and transactions are write-path concerns - use marker interfaces (`IAuditableRequest`, `ITransactionalRequest`) rather than type-checking every request, so behaviors no-op cleanly for queries.
-- Non-resource authorization is genuinely allowed to be a no-op - an `IRequiresPolicy` marker, checked only if present.
+- Non-resource authorization is genuinely allowed to be a no-op - an `IRequiresPolicyRequest` marker, checked only if present.
 - Resource-based authorization stays inside the handler's template method, not a behavior - same reasoning as before.
 
 ### Exceptions don't belong in the pipeline
@@ -592,7 +592,7 @@ Also caught and fixed a real defect while compiling this: `ResourceCommandHandle
 | `ITransactionalRequest` | Opts a command into the SQL unit-of-work (`TransactionBehavior` resolves the session). |
 | `IExternalStoreRequest` | Declares a command deliberately has no SQL session - paired with the above. |
 | `IAuditableRequest` | Opts a request into audit logging; exposes `ActionName`. |
-| `IRequiresPolicy` | Opts a request into a named, non-resource authorization check; exposes `PolicyName`. |
+| `IRequiresPolicyRequest` | Opts a request into a named, non-resource authorization check; exposes `PolicyName`. |
 | `IQueryHandler<TQuery,TResponse>` | Contract for a query's handler. |
 | `ICommandHandler<TCommand,TResponse>` | Contract for a value-returning command's handler. |
 | `ICommandHandler<TCommand>` | Contract for a no-payload command's handler. |
@@ -610,7 +610,7 @@ Also caught and fixed a real defect while compiling this: `ResourceCommandHandle
 | `PipelineStage<TRequest,TResponse>` | `IPipelineBehavior<TRequest,TResponse>` | Abstract base offering always-called, default-no-op `OnIngress`/`OnEgress` hooks for purely observational behaviors. |
 | `LoggingBehavior<TRequest,TResponse>` | `PipelineStage<...>` | Logs entry/duration/outcome for every request. |
 | `AuditingBehavior<TRequest,TResponse>` | `PipelineStage<...>` | Records an audit entry for `IAuditableRequest` requests via `IAuditSink`. |
-| `AuthorizationBehavior<TRequest,TResponse>` | `IPipelineBehavior<...>` | Evaluates `IRequiresPolicy` requests via `IPolicyEvaluator`; can short-circuit, so it can't use `PipelineStage`. |
+| `AuthorizationBehavior<TRequest,TResponse>` | `IPipelineBehavior<...>` | Evaluates `IRequiresPolicyRequest` requests via `IPolicyEvaluator`; can short-circuit, so it can't use `PipelineStage`. |
 | `PagingValidationBehavior<TRequest,TItem>` | `IPipelineBehavior<...>` | Validates `Page`/`PageSize` bounds for any `IPagedQuery<TItem>`. |
 | `TransactionBehavior<TRequest,TResponse,TContext>` | `IPipelineBehavior<...>` | Lazily opens/commits/rolls back a SQL transaction for `ITransactionalRequest` commands. |
 | `ValidationBehavior<TRequest,TResponse>` | `IPipelineBehavior<...>` | Runs registered FluentValidation `IValidator<TRequest>`s, short-circuits with `ValidationFailed`. |

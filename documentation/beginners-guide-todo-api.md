@@ -8,7 +8,7 @@ This guide is deliberately hands-on rather than a reference - it builds one proj
 
 - A Minimal API-first ASP.NET Core API (an MVC controller equivalent is shown too) over one `TodoTask` resource: full CRUD, a bare `ICommand`, a raw-`DbContext` query, and a paged query.
 - A pipeline built up behavior by behavior: logging, auditing, policy-based authorization, FluentValidation, and EF Core-backed transactions - plus how to see exactly what order they run in, and how to add one of your own.
-- Two authorization styles: a coarse policy check (`IRequiresPolicy`) and a fine-grained, entity-based ownership check (`ResourceCommandHandler`).
+- Two authorization styles: a coarse policy check (`IRequiresPolicyRequest`) and a fine-grained, entity-based ownership check (`ResourceCommandHandler`).
 - A notification with two independent subscribers, and the subtlety in exactly when "after" a command actually means once it's published from inside the handler.
 - Registration wired through Microsoft.Extensions.DependencyInjection, with callouts showing the Autofac equivalent at each step.
 
@@ -1130,7 +1130,7 @@ app.MapPut("/todo-tasks/{id:int}", async (
 public sealed record UpdateTodoTaskRequest(string Title, string? Notes);
 ```
 
-Contrast this with Step 9's `DeleteTodoTaskCommand`, which uses the other authorization style - a policy check via `IRequiresPolicy`. See [Handler Selection & Dispatch § Contrast: Resource vs. Non-Resource Authorization](handler-selection-and-dispatch.md#contrast-resource-vs-non-resource-authorization) for when to reach for which.
+Contrast this with Step 9's `DeleteTodoTaskCommand`, which uses the other authorization style - a policy check via `IRequiresPolicyRequest`. See [Handler Selection & Dispatch § Contrast: Resource vs. Non-Resource Authorization](handler-selection-and-dispatch.md#contrast-resource-vs-non-resource-authorization) for when to reach for which.
 
 ## Step 8: State transitions and a notification
 
@@ -1490,7 +1490,7 @@ app.MapPost("/todo-tasks/{id:int}/reopen", async (int id, ISender sender, Cancel
 
 ## Step 9: Coarse-grained authorization - deleting a task
 
-Delete uses the last of the five recommended-chain behaviors: `AuthorizationBehavior`, gated by `IRequiresPolicy`. This runs *before* the entity is loaded for the handler's own use - `AuthorizationBehavior` itself is invoked ahead of the handler regardless of what the policy checks, in contrast with Step 7's `ResourceCommandHandler`, whose ownership check can only run *inside* the handler's own load/authorize/handle template, after `LoadAsync` has already fetched the entity for the handler to use.
+Delete uses the last of the five recommended-chain behaviors: `AuthorizationBehavior`, gated by `IRequiresPolicyRequest`. This runs *before* the entity is loaded for the handler's own use - `AuthorizationBehavior` itself is invoked ahead of the handler regardless of what the policy checks, in contrast with Step 7's `ResourceCommandHandler`, whose ownership check can only run *inside* the handler's own load/authorize/handle template, after `LoadAsync` has already fetched the entity for the handler to use.
 
 **`Application/TodoTasks/DeleteTodoTaskCommand.cs`** and its handler:
 
@@ -1504,7 +1504,7 @@ using Interlocutor.Persistence.Abstractions;
 namespace TodoTasks.Api.Application.TodoTasks;
 
 public sealed record DeleteTodoTaskCommand(int Id)
-    : ICommand<Outcome<Success, NotFound, Forbidden>>, IRequiresPolicy, IAuditableRequest
+    : ICommand<Outcome<Success, NotFound, Forbidden>>, IRequiresPolicyRequest, IAuditableRequest
 {
     public string PolicyName => TodoTaskPolicyEvaluator.OwnsTaskPolicyName;
 
@@ -1534,7 +1534,7 @@ public sealed class DeleteTodoTaskHandler(IDomainRepository<TodoTask, int> repos
 }
 ```
 
-`AuthorizationBehavior` needs an `IPolicyEvaluator` to ask - there's no default. Nothing about `IRequiresPolicy` forbids the evaluator from loading an entity to decide - it's still a policy check running ahead of dispatch, just one that happens to be resource-aware, in contrast with Step 7's ownership check, which is resource-aware because it runs *inside* the handler's own template instead:
+`AuthorizationBehavior` needs an `IPolicyEvaluator` to ask - there's no default. Nothing about `IRequiresPolicyRequest` forbids the evaluator from loading an entity to decide - it's still a policy check running ahead of dispatch, just one that happens to be resource-aware, in contrast with Step 7's ownership check, which is resource-aware because it runs *inside* the handler's own template instead:
 
 **`Infrastructure/TodoTaskPolicyEvaluator.cs`**
 
@@ -1793,7 +1793,7 @@ The whole request/response surface, for reference:
 | `UpdateTodoTaskCommand` | Command (`ResourceCommandHandler`) | `Outcome<TodoTaskDto, NotFound, Forbidden>` | `IAuditableRequest` |
 | `CompleteTodoTaskCommand` | Command | `Outcome<TodoTaskDto, NotFound, Conflict>` | `IAuditableRequest` |
 | `ReopenTodoTaskCommand` | Command | `Outcome<TodoTaskDto, NotFound, Conflict>` | `IAuditableRequest` |
-| `DeleteTodoTaskCommand` | Command | `Outcome<Success, NotFound, Forbidden>` | `IRequiresPolicy`, `IAuditableRequest` |
+| `DeleteTodoTaskCommand` | Command | `Outcome<Success, NotFound, Forbidden>` | `IRequiresPolicyRequest`, `IAuditableRequest` |
 | `ClearCompletedTodoTasksCommand` | Command (bare `ICommand`, via `IBareCommandHandler<,>`) | `Outcome` (chosen by the caller) | `IAuditableRequest` |
 
 Each row's arity is exactly what that operation can produce - no request routes an outcome it can't actually reach through a generic catch-all `Failure`, per [Choosing Arities](messages-and-result-types.md#choosing-arities). The "Bonus" sections throughout (manual response mapping, a raw-context/search example, a paged query, a custom pipeline behavior) are deliberately left out of this table and out of `Program.cs` above - they're optional deep-dives, not part of the finished project.

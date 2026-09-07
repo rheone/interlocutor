@@ -187,7 +187,7 @@ directly on the query itself.
 Use the 2-arm generic form when there **is** a success payload, but only **one** distinguishable
 failure shape. Picking a well-known `ResultTypes` case as `T2` - here, `Forbidden` -
 lets `AuthorizationBehavior<TRequest, TResponse>` short-circuit the pipeline generically, before
-the handler ever runs, for a request implementing `IRequiresPolicy`.
+the handler ever runs, for a request implementing `IRequiresPolicyRequest`.
 
 ```csharp
 public sealed class TimeOffRequest
@@ -202,7 +202,7 @@ public sealed record TimeOffRequestDto(Guid Id, string Status);
 // --- Command -----------------------------------------------------------------
 
 public sealed record ApproveTimeOffRequestCommand(Guid RequestId)
-    : ICommand<Outcome<TimeOffRequestDto, Forbidden>>, IRequiresPolicy, ITransactionalRequest, IAuditableRequest
+    : ICommand<Outcome<TimeOffRequestDto, Forbidden>>, IRequiresPolicyRequest, ITransactionalRequest, IAuditableRequest
 {
     public string PolicyName => "timeoff.approve"; // <-- checked by AuthorizationBehavior, below
     public string ActionName => "TimeOff.Approve";
@@ -232,7 +232,7 @@ public sealed class ApproveTimeOffRequestCommandHandler(AppDbContext db)
 // --- Query: same shape, same policy ------------------------------------------
 
 public sealed record GetTimeOffRequestByIdQuery(Guid RequestId)
-    : IQuery<Outcome<TimeOffRequestDto, Forbidden>>, IRequiresPolicy
+    : IQuery<Outcome<TimeOffRequestDto, Forbidden>>, IRequiresPolicyRequest
 {
     public string PolicyName => "timeoff.view";
 }
@@ -255,14 +255,14 @@ services.AddScoped<ICommandHandler<ApproveTimeOffRequestCommand, Outcome<TimeOff
 services.AddScoped<IQueryHandler<GetTimeOffRequestByIdQuery, Outcome<TimeOffRequestDto, Forbidden>>, GetTimeOffRequestByIdQueryHandler>();
 
 // AuthorizationBehavior<TRequest, TResponse> is an ordinary open-generic behavior, constrained to
-// TRequest : IRequiresPolicy and TResponse : IOutcome - nothing pins TResponse to any
+// TRequest : IRequiresPolicyRequest and TResponse : IOutcome - nothing pins TResponse to any
 // particular arity. It constructs its Forbidden short-circuit generically via IOutcomeCaseRegistry,
-// so one open-generic registration covers every request/response shape that implements IRequiresPolicy
+// so one open-generic registration covers every request/response shape that implements IRequiresPolicyRequest
 // and has a Forbidden case, regardless of arity:
 services.AddScoped(typeof(IPipelineBehavior<,>), typeof(AuthorizationBehavior<,>));
 
 // Both container packages skip constructing this behavior for a request that doesn't implement
-// IRequiresPolicy, so this single line is all Example 2 needs - no per-command/query registration.
+// IRequiresPolicyRequest, so this single line is all Example 2 needs - no per-command/query registration.
 // Logging, Auditing, and the transaction behavior were already registered open-generic in
 // Example 1 - nothing more to add here for those either.
 ```
@@ -342,7 +342,7 @@ public sealed class SubmitPaymentCommandHandler(AppDbContext db, ICurrentUser cu
             return new NotFound($"Order {command.OrderId} was not found.");
         }
 
-        // Step 3 - ownership. No IRequiresPolicy/AuthorizationBehavior here: that's non-resource
+        // Step 3 - ownership. No IRequiresPolicyRequest/AuthorizationBehavior here: that's non-resource
         // authorization, which runs before the handler and can't see the loaded order. Ownership
         // is a resource-authorization check - depends on the entity above - so it belongs here or
         // in a ResourceCommandHandler, never in a pre-handler behavior, regardless of arity.
@@ -451,7 +451,7 @@ object? arm = result.GetValue();
 | Failure detail available | `Failure.Reason` / `Failure.ErrorCode` | whatever `T2` carries | whatever each of `T2..T5` carries |
 | Dispatch path | `ICommand` + `IBareCommandHandler<,>`, or `IQuery<Outcome<Success, Failure>>` | `ICommand<TResponse>` / `IQuery<TResponse>` with `TResponse = Outcome<...>` | same, just a wider `TResponse` |
 | Works with Logging / Auditing / Transaction behaviors | yes, unmodified | yes, unmodified | yes, unmodified |
-| Works with `AuthorizationBehavior<TRequest, TResponse>` for non-resource (`IRequiresPolicy`) checks | no - this arm's `Failure` case can't hold `Forbidden` too, without collapsing two distinct failure reasons into one | yes, when `T2 = Forbidden` | yes, if one of `T2..T5` is `Forbidden` - arity never limits it, only whether a `Forbidden` case exists |
+| Works with `AuthorizationBehavior<TRequest, TResponse>` for non-resource (`IRequiresPolicyRequest`) checks | no - this arm's `Failure` case can't hold `Forbidden` too, without collapsing two distinct failure reasons into one | yes, when `T2 = Forbidden` | yes, if one of `T2..T5` is `Forbidden` - arity never limits it, only whether a `Forbidden` case exists |
 | Works for resource-dependent checks (ownership, entity state) | n/a | n/a | no, at any arity - always needs `ResourceCommandHandler` or an inline check after loading, never a pre-handler behavior |
 | Best for | one payload, one well-known failure mode, no distinguishable success payload worth naming | one payload, one well-known failure mode | rich operations with several distinguishable outcomes |
 

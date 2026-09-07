@@ -15,7 +15,7 @@ Use marker/capability interfaces declared on the request type itself. Each corre
 | `ITransactionalRequest` | TransactionBehavior (EF Core / NHibernate) | - |
 | `IExternalStoreRequest` | Declares "deliberately no SQL session" | - |
 | `IAuditableRequest` | AuditingBehavior | `ActionName` (string) |
-| `IRequiresPolicy` | AuthorizationBehavior | `PolicyName` (string) |
+| `IRequiresPolicyRequest` | AuthorizationBehavior | `PolicyName` (string) |
 
 `ITransactionalRequest` and `IExternalStoreRequest` form a required pair - every `ICommand` should implement exactly one of them. `IExternalStoreRequest` exists as a positive declaration rather than relying on absence of `ITransactionalRequest`, which would be indistinguishable from "forgot to add the marker."
 

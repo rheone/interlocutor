@@ -60,7 +60,7 @@ null returns, some as boolean flags), which made:
 | **Result / Railway-Oriented Programming**, realized via **C# 15 union types** | `Result<T>`, `Result`, `Failure` | Expected outcomes are values, not control flow. Compiler enforces exhaustive handling. |
 | **Chain of Responsibility / Onion (Russian-doll) middleware** | `IPipelineBehavior<TRequest,TResponse>` | Cross-cutting concerns wrap the handler; each layer sees both the "in" and "out" side of the call around a single `next()` invocation. |
 | **Template Method** | `ResourceCommandHandler<TCommand,TEntity,TResponse>` | Fixes the sequence (load → authorize → handle) while letting concrete handlers fill in the steps - avoids sharing fetched state through a mutable context. |
-| **Marker Interface** | `ITransactionalRequest`, `IAuditableRequest`, `IRequiresPolicy` | Opt a request into a cross-cutting concern via its declared type, not pipeline configuration - visible at the request-type definition site. |
+| **Marker Interface** | `ITransactionalRequest`, `IAuditableRequest`, `IRequiresPolicyRequest` | Opt a request into a cross-cutting concern via its declared type, not pipeline configuration - visible at the request-type definition site. |
 | **Unit of Work** | Scoped `DbContext`/session shared by `TransactionBehavior` and handlers | One transactional boundary per request, guaranteed by DI scope lifetime. |
 
 ## 6. Functional requirements
@@ -91,7 +91,7 @@ null returns, some as boolean flags), which made:
   state to pass the entity forward, which we're explicitly avoiding.
 - Non-resource authorization (e.g. "does the caller have role X at all") is
   a pipeline behavior and is frequently a no-op (request doesn't declare
-  `IRequiresPolicy`).
+  `IRequiresPolicyRequest`).
 
 ### 6.4 Transactional scope
 - A `ITransactionalRequest` command executes its lookup and its write

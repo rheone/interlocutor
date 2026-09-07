@@ -31,7 +31,7 @@ dependency-free abstraction package, N adapter packages.
 | Package | Contains | Depends on |
 |---|---|---|
 | **`Interlocutor`** | `Result<T>`, `Result`, `Failure`, `Success`, `ValidationFailed`, `RuleViolation`, `NotFound`, `Forbidden`, `Conflict`, `PagedResult<T>` | .NET BCL only |
-| **`Interlocutor.Mediation`** | `IQuery<T>`, `ICommand<T>`, `ICommand`, `IPagedQuery<T>`, `IBulkCommand<TItem,TResponseItem>`, marker interfaces (`ITransactionalRequest`, `IExternalStoreRequest`, `IAuditableRequest`, `IRequiresPolicy`), `IPipelineBehavior<,>`, `IMediator`, the concrete `Mediator`, `ResourceCommandHandler<,,>`, and generic behaviors that need no *external* infrastructure (`LoggingBehavior`, `AuditingBehavior`, `AuthorizationBehavior`, `PagingValidationBehavior` - the last validates `IPagedQuery<T>.Page`/`PageSize` with plain bounds checks, no validation library needed) | `Interlocutor` |
+| **`Interlocutor.Mediation`** | `IQuery<T>`, `ICommand<T>`, `ICommand`, `IPagedQuery<T>`, `IBulkCommand<TItem,TResponseItem>`, marker interfaces (`ITransactionalRequest`, `IExternalStoreRequest`, `IAuditableRequest`, `IRequiresPolicyRequest`), `IPipelineBehavior<,>`, `IMediator`, the concrete `Mediator`, `ResourceCommandHandler<,,>`, and generic behaviors that need no *external* infrastructure (`LoggingBehavior`, `AuditingBehavior`, `AuthorizationBehavior`, `PagingValidationBehavior` - the last validates `IPagedQuery<T>.Page`/`PageSize` with plain bounds checks, no validation library needed) | `Interlocutor` |
 | **`Interlocutor.Mediation.EntityFrameworkCore`** | `TransactionBehavior<TRequest,TResponse>` bound to `DbContext` | `Interlocutor.Mediation`, `Microsoft.EntityFrameworkCore` |
 | **`Interlocutor.Mediation.FluentValidation`** | `ValidationBehavior<TRequest,TResponse>` bound to `IValidator<T>`, and `BulkItemValidationBehavior<TRequest,TItem,TResponseItem>` for `IBulkCommand<,>` (both need FluentValidation's `IValidator<T>`, so both live here rather than in the dependency-free mediation package) | `Interlocutor.Mediation`, `FluentValidation` |
 | **`Interlocutor.AspNetCore`** | `ResultExtensions.ToActionResult(...)`, `ProblemDetails` mapping, minimal-API `TypedResults` mapping | `Interlocutor`, `Microsoft.AspNetCore.*` |
@@ -94,7 +94,7 @@ occupies this design's specific position:
    opinion on "how do I authorize against an entity I haven't loaded yet."
 5. **Opt-in via marker interfaces the request declares on itself**
    (`ITransactionalRequest`, `IExternalStoreRequest`, `IAuditableRequest`,
-   `IRequiresPolicy`, `IPagedQuery<T>`, `IBulkCommand<,>`), never a central
+   `IRequiresPolicyRequest`, `IPagedQuery<T>`, `IBulkCommand<,>`), never a central
    configuration list mapping request types to behaviors. This is a
    deliberate, consistent design rule across every satellite package, not
    just the core.

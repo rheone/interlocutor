@@ -106,7 +106,7 @@ builder.AddTypeMatch(
 );
 ```
 
-Matching zero types is legal and silent by default; pass `require: true` to record that this rule must match at least one type - `ValidateOnBuild()` (below) is what actually enforces it. This is strictly additive to marker-interface-based behavior scoping (`ITransactionalRequest`, `IAuditableRequest`, `IRequiresPolicy`, `IExternalStoreRequest`) - both mechanisms work independently and simultaneously.
+Matching zero types is legal and silent by default; pass `require: true` to record that this rule must match at least one type - `ValidateOnBuild()` (below) is what actually enforces it. This is strictly additive to marker-interface-based behavior scoping (`ITransactionalRequest`, `IAuditableRequest`, `IRequiresPolicyRequest`, `IExternalStoreRequest`) - both mechanisms work independently and simultaneously.
 
 ## Extending Ambiguity Checking to Your Own Contracts
 
