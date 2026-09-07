@@ -248,6 +248,80 @@ The sections above cover the request and message shapes this project reaches for
 
 `TodoTaskCompletedNotification` is the messaging case: `CompleteTodoTaskHandler` doesn't need its subscribers' work to succeed, or even to finish, before it returns - `TodoTaskCompletionCounterHandler`'s counter increment and `TodoTaskCompletionAuditLogHandler`'s log entry are bystanders to the command's own outcome, not something its caller is waiting on. That's the test worth applying to a new feature: if a side effect has to succeed for the response to be correct, or the caller needs its result, it belongs in the command's own handler (or another repository call inside the same unit of work), not behind a published notification whose subscribers may run sequentially or in parallel and whose own failures the triggering command never sees. See [Notifications & Fan-out](notifications-and-fan-out.md) for the mechanics behind that isolation.
 
+## A hand-rolled `IUnion` response: `SendWelcomeEmail`
+
+Every feature covered so far returns a compiler-generated `Outcome<...>` union. [`SendWelcomeEmailCommand`](../TutorialProject/TodoTasks.Api/Features/Users/SendWelcomeEmail/SendWelcomeEmailCommand.cs) is the deliberate exception - a standalone feature, not wired into `CreateUser` or any other flow, that exists to be a real, working example of the other legal shape: a handler response that implements `IUnion` directly instead of being one of the shipped `Outcome<...>` arities. See [Messages, Result Types & Variance § IUnion as an Extension Point](messages-and-result-types.md#iunion-as-an-extension-point) for the mechanism this section makes concrete - the hand-rolled implementer, `OutcomeCaseRegistryBuilder`, and all; this section doesn't re-derive that explanation, just walks the one place in this project's code that actually uses it.
+
+The feature exists to adapt a fake third-party SDK's own result vocabulary. [`IWelcomeMailerClient`](../TutorialProject/TodoTasks.Api/Infrastructure/IWelcomeMailerClient.cs) stands in for a real transactional-email provider's client, and its [`WelcomeMailerSendResult`](../TutorialProject/TodoTasks.Api/Infrastructure/WelcomeMailerSendResult.cs) return shape - an `Accepted` flag, a provider-assigned `MessageId`, a `RejectionReason` - has no notion of `Outcome` or `IUnion` at all, the way a real SDK's own result type wouldn't either. [`InMemoryWelcomeMailerClient`](../TutorialProject/TodoTasks.Api/Infrastructure/InMemoryWelcomeMailerClient.cs) is the registered stand-in behind it - it never calls a real mailer, rejecting only addresses at the `.invalid` top-level domain (reserved by RFC 2606 for exactly this purpose) and accepting everything else.
+
+[`SendWelcomeEmailHandler`](../TutorialProject/TodoTasks.Api/Features/Users/SendWelcomeEmail/SendWelcomeEmailHandler.cs) is where that adaptation happens:
+
+```csharp
+public async Task<SendWelcomeEmailResult> HandleAsync(SendWelcomeEmailCommand command, CancellationToken ct)
+{
+    if (users.GetById(command.UserId) is not { } user)
+    {
+        return SendWelcomeEmailResult.FromFailure(new NotFound($"User {command.UserId}"));
+    }
+
+    var sendResult = await mailer.SendAsync(user.Email, user.DisplayName, ct).ConfigureAwait(false);
+
+    return sendResult.Accepted
+        ? SendWelcomeEmailResult.FromSuccess(default)
+        : SendWelcomeEmailResult.FromFailure(new Failure(sendResult.RejectionReason));
+}
+```
+
+A missing user becomes `NotFound`; a mailer rejection becomes a `Failure` carrying the provider's own rejection reason; an accepted send becomes a bare `Success`. The provider-assigned `MessageId` never makes it into the response - `FromSuccess` takes the bare `Success` marker rather than a payload type that could carry it, deliberately: [ASP.NET Core Integration & HTTP Mapping](aspnetcore-integration.md) is explicit that a hand-rolled, non-`Outcome` response type's success case is only recognized by its reflective mapping path when the active case is that bare `Success` marker - any other success payload type throws rather than guessing.
+
+[`SendWelcomeEmailResult`](../TutorialProject/TodoTasks.Api/Features/Users/SendWelcomeEmail/SendWelcomeEmailResult.cs) is the hand-rolled union itself - a sealed class implementing `IUnion` directly, never a `union` declaration the generator ever sees:
+
+```csharp
+public sealed class SendWelcomeEmailResult : IUnion
+{
+    private SendWelcomeEmailResult(Type caseType, object? caseValue)
+    {
+        this.CaseType = caseType;
+        this.CaseValue = caseValue;
+    }
+
+    public Type CaseType { get; }
+
+    public object? CaseValue { get; }
+
+    object? IUnion.Value => this.CaseValue;
+
+    public static SendWelcomeEmailResult FromSuccess(Success value) => new(typeof(Success), value);
+
+    public static SendWelcomeEmailResult FromFailure<TFailure>(TFailure failure)
+        where TFailure : notnull => new(typeof(TFailure), failure);
+}
+```
+
+That shape mirrors the extension-point section's own `CustomOutcome` example, because it's the same pattern: a private constructor, a `Type`/`object?` pair backing `IUnion.Value`, and static factories the handler calls instead of a `union`'s compiler-generated case constructors.
+
+A hand-rolled `IUnion` implementer like this one needs no help to be *extracted* - reading `Value` generically already works against the zero-config default registry. *Constructing* one is the half that needs teaching, since the default registry only finds a case constructor for a compiler-generated union. [`SendWelcomeEmailResultCaseRegistry`](../TutorialProject/TodoTasks.Api/Features/Users/SendWelcomeEmail/SendWelcomeEmailResultCaseRegistry.cs) supplies that, registering a factory for each failure case the handler above can actually produce and delegating everything else to an inner `DefaultOutcomeCaseRegistry`:
+
+```csharp
+private static readonly IOutcomeCaseRegistry Inner = new OutcomeCaseRegistryBuilder()
+    .RegisterFactory<SendWelcomeEmailResult, NotFound>(SendWelcomeEmailResult.FromFailure)
+    .RegisterFactory<SendWelcomeEmailResult, Failure>(SendWelcomeEmailResult.FromFailure)
+    .Build();
+```
+
+`Program.cs` installs it pipeline-wide - `interlocutor.Pipeline.OverrideOutcomeCaseRegistry<SendWelcomeEmailResultCaseRegistry>()`, chained onto the same call that registers this project's pipeline behaviors - which is a single override, not a per-response-type registration. Every other feature's compiler-generated `Outcome<...>` response still resolves against the untouched `DefaultOutcomeCaseRegistry` fallback underneath it, so overriding the pipeline-wide default this way doesn't disturb any of them.
+
+[`SendWelcomeEmailEndpoint`](../TutorialProject/TodoTasks.Api/Features/Users/SendWelcomeEmail/SendWelcomeEmailEndpoint.cs) is where that difference surfaces at the transport edge. `SendWelcomeEmailResult` isn't one of the compiler-generated `Outcome<...>` arities `ToMinimalApiResult()` has a dedicated overload for, so the endpoint calls its reflective catch-all overload instead, passing the `IOutcomeCaseRegistry` resolved from DI:
+
+```csharp
+var result = await sender.SendAsync(new SendWelcomeEmailCommand(id), ct).ConfigureAwait(false);
+return result.ToMinimalApiResult(caseRegistry);
+```
+
+Every other endpoint in this project calls the parameterless `ToMinimalApiResult()` overload, because every other response is a compiler-generated union that overload's compile-time `switch` already knows how to read.
+
+`SendWelcomeEmailResult` is what this project can point to when the question is "does a handler response have to be `Outcome<...>`": the compiler-generated union used everywhere else in this tutorial is the library's built-in default - the batteries-included choice, reached for because it's convenient, not because the pipeline requires it - and this feature is the worked counter-example proving the alternative actually runs.
+
 ## Development authentication
 
 The guide's own "Before you start" section assumes real authentication middleware already exists and deliberately doesn't teach it. This project needs *something* to populate an authenticated caller, so [`DevHeaderAuthenticationHandler`](../TutorialProject/TodoTasks.Api/Infrastructure/DevHeaderAuthenticationHandler.cs) fills that gap - never a pattern to carry into a real application:
