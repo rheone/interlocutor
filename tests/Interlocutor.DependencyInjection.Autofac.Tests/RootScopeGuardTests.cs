@@ -52,7 +52,7 @@ public class RootScopeGuardTests
     {
         // Arrange
         var containerBuilder = new ContainerBuilder();
-        containerBuilder.RegisterType<ScopedThing>().AsSelf().InstancePerLifetimeScope();
+        containerBuilder.RegisterType<ScopedProbe>().AsSelf().InstancePerLifetimeScope();
         containerBuilder.RegisterType<ScopedDependencyRecorder>().AsSelf().InstancePerLifetimeScope();
 
         containerBuilder.AddInterlocutor(builder =>
@@ -75,12 +75,12 @@ public class RootScopeGuardTests
 
     /// <summary>A scoped service whose identity (<see cref="Id"/>) proves whether two resolutions within the
     /// same dispatch shared one instance or received two different ones.</summary>
-    private sealed class ScopedThing
+    private sealed class ScopedProbe
     {
         public Guid Id { get; } = Guid.NewGuid();
     }
 
-    /// <summary>Records the <see cref="ScopedThing.Id"/> observed by each participant in a dispatch - the
+    /// <summary>Records the <see cref="ScopedProbe.Id"/> observed by each participant in a dispatch - the
     /// pipeline behavior and the handler - so the test can assert they match.</summary>
     private sealed class ScopedDependencyRecorder
     {
@@ -92,25 +92,25 @@ public class RootScopeGuardTests
     // Resolved only via AddInterlocutor()'s assembly-scanning DI registration - never new'd or
     // typeof'd directly, so this constructor is invisible to static analysis.
 #pragma warning disable S1144
-    private sealed class SharedScopeQueryHandler(ScopedThing scopedThing, ScopedDependencyRecorder recorder)
+    private sealed class SharedScopeQueryHandler(ScopedProbe scopedProbe, ScopedDependencyRecorder recorder)
         : IQueryHandler<SharedScopeQuery, Outcome<Guid, Failure>>
     {
         public Task<Outcome<Guid, Failure>> HandleAsync(SharedScopeQuery query, CancellationToken ct)
         {
-            recorder.RecordedIds.Add(scopedThing.Id);
-            return Task.FromResult<Outcome<Guid, Failure>>(scopedThing.Id);
+            recorder.RecordedIds.Add(scopedProbe.Id);
+            return Task.FromResult<Outcome<Guid, Failure>>(scopedProbe.Id);
         }
     }
 #pragma warning restore S1144
 
     private sealed class RecordingScopedBehavior<TRequest, TResponse>(
-        ScopedThing scopedThing,
+        ScopedProbe scopedProbe,
         ScopedDependencyRecorder recorder
     ) : IPipelineBehavior<TRequest, TResponse>
     {
         public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
         {
-            recorder.RecordedIds.Add(scopedThing.Id);
+            recorder.RecordedIds.Add(scopedProbe.Id);
             return next();
         }
     }
