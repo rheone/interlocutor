@@ -727,8 +727,10 @@ app.MapGet("/todo-tasks/{id:int}/manual", async (int id, ISender sender, Cancell
 {
     var result = await sender.Send(new GetTodoTaskByIdQuery(id), ct);
 
-    // The compiler enforces exhaustiveness here exactly like any other union switch - add a case
-    // to GetTodoTaskByIdQuery's arity later and this stops compiling until you handle it too.
+    // The compiler flags a missing case here exactly like any other union switch, but only as a
+    // CS8509 build warning by default, not a hard stop - add a case to GetTodoTaskByIdQuery's
+    // arity later and this keeps compiling, just with a new warning, unless the project
+    // escalates CS8509 to an error.
     return result.Value switch
     {
         TodoTaskDto dto => Results.Ok(dto),

@@ -322,10 +322,13 @@ var message = result.Value switch
 };
 ```
 
-The compiler enforces that all cases are handled:
+The compiler flags a switch that omits a case - by default as a warning, not a hard stop:
 
 ```csharp
-// ❌ Compile error - Forbidden case not handled
+// ⚠️ CS8509 warning - "the switch expression does not handle all possible values of its
+// input type" - Forbidden case not handled. This compiles; it does not fail the build
+// unless the project escalates CS8509 (TreatWarningsAsErrors, or
+// dotnet_diagnostic.CS8509.severity = error in .editorconfig).
 var message = result.Value switch
 {
     Success => "User deleted",
@@ -341,6 +344,9 @@ var message = result.Value switch
     _ => throw new InvalidOperationException(),  // Exhaustive fallback
 };
 ```
+
+> [!NOTE]
+> The IDE's built-in "Populate switch" quick fix (`IDE0072` for switch expressions, `IDE0010` for switch statements) doesn't yet recognize `union` types as of this SDK preview, so it won't offer to fill in the missing `Forbidden` arm above the way it already does for an enum or a sealed hierarchy - add missing cases by hand until that fixer catches up, or reach for `Match`/`Switch` below, which are exhaustive by construction (a missing case is a missing constructor/method argument, not a warning to overlook).
 
 A raw `switch` on `.Value` always works and needs nothing beyond the union itself, but every shipped arity also carries a generated `Match`/`Switch`/`TryGetValue` surface as an alternative, not a replacement:
 
