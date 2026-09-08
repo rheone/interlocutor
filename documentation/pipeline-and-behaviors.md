@@ -68,7 +68,7 @@ public record GetSetting(string Key)
 
 ## Recommended Chain (Opt-in Sugar)
 
-The library documents a recommended order with its rationale. Use it with `builder.Pipeline.UseRecommendedChain()`, or compose your own:
+The library documents a recommended chain, a deliberately minimal default. Use it with `builder.Pipeline.UseRecommendedChain()`, or compose your own:
 
 ```csharp
 builder.Pipeline.UseRecommendedChain();  // Sugar for the sequence below
@@ -78,22 +78,40 @@ Or explicitly:
 
 ```csharp
 builder.Pipeline.AddLoggingBehavior();           // 1. Outermost
-builder.Pipeline.AddAuditingBehavior();          // 2.
-builder.Pipeline.AddAuthorizationBehavior();     // 3.
-builder.Pipeline.AddValidationBehavior();        // 4.
-builder.Pipeline.AddUnitOfWorkBehavior();        // 5. Innermost
+builder.Pipeline.AddValidationBehavior();        // 2.
+builder.Pipeline.AddUnitOfWorkBehavior();        // 3. Innermost
 ```
+
+`AddAuditingBehavior()` and `AddAuthorizationBehavior()` are deliberately not part of this default - see "Adding Auditing and Authorization Back" below for when to reach for either, and where they fit in the order.
 
 ### Why This Order
 
 > [!IMPORTANT]
-> This is the documented recommendation, not a default. The reasoning below is why you might compose this order. If your application has different needs, compose what serves you.
+> This is the documented recommendation, not a default the library imposes. The reasoning below is why you might compose this order - including where Auditing/Authorization fit if you add them back. If your application has different needs, compose what serves you.
 
 - **Logging outermost** - times and logs the *entire* request lifecycle. If it sat closer to the handler, a request denied by authorization would be timed/logged as if it ran the handler (misleading).
-- **Auditing after logging** - an audit trail should record authorization denials and validation failures, not just successful handler runs. Placing it outside authorization captures the full story.
-- **Authorization before validation** - there's no reason to validate the shape of a request the caller isn't authorized to make. Failing fast on authorization saves the validator's work.
+- **Auditing (if added) after logging** - an audit trail should record authorization denials and validation failures, not just successful handler runs. Placing it outside authorization captures the full story.
+- **Authorization (if added) before validation** - there's no reason to validate the shape of a request the caller isn't authorized to make. Failing fast on authorization saves the validator's work.
 - **Validation before transactions** - don't open a database transaction to discover the input was invalid. Catch input errors first.
 - **Transaction innermost** - it wraps only the handler's persistence work. It commits on success and rolls back on any `Failure` outcome, but not when an outer behavior short-circuits (e.g., when authorization denies the request - the caller shouldn't see a rolled-back transaction when they were never authorized to run the command).
+
+### Adding Auditing and Authorization Back
+
+`UseRecommendedChain()`'s minimal default drops `AuditingBehavior` and `AuthorizationBehavior`, for different reasons:
+
+- **Authorization** - most consumers already enforce it earlier in the request path: ASP.NET Core's own authentication/authorization middleware, or an upstream policy engine, running before the mediator is ever invoked. A second in-pipeline pass is redundant there, or even conflicting. That reasoning doesn't hold for a host with nothing HTTP-shaped in front of it - a message-bus consumer, a background worker, a scheduled job - where the mediator itself is the first place authorization can be enforced. Reach for `AddAuthorizationBehavior()` in that case, or when you want defense-in-depth against a fine-grained, resource-level check the upstream layer can't see, even alongside upstream authorization.
+- **Auditing** - where an audit trail should go is an application-specific decision (a dedicated audit store, a compliance pipeline, a plain log), so the library doesn't presume every consumer wants one. Reach for `AddAuditingBehavior()` when your application needs that trail.
+
+To restore the full five-behavior chain in its documented order, compose every step individually rather than calling `UseRecommendedChain()` and appending `AddAuditingBehavior()`/`AddAuthorizationBehavior()` afterward - appending after the fact puts both innermost, past Validation and the transaction, not in their documented position:
+
+```csharp
+builder.Pipeline
+    .AddLoggingBehavior()           // 1. Outermost
+    .AddAuditingBehavior()          // 2.
+    .AddAuthorizationBehavior()     // 3.
+    .AddValidationBehavior()        // 4.
+    .AddUnitOfWorkBehavior();       // 5. Innermost
+```
 
 > [!NOTE]
 > "Validation before transactions" leaves a DB-touching validation rule's own read unprotected. FluentValidation supports a rule that resolves an injected dependency and queries it directly (`MustAsync`/`CustomAsync` against an injected `DbContext`, for instance) - under this default ordering, that read still runs before `UnitOfWorkBehavior` opens a transaction, leaving the same check-then-act race window open that `ITransactionalRequest` closes for a read performed inside the handler. The fix is the same one that protects any other earlier read: register `UnitOfWorkBehavior` outside `ValidationBehavior` instead of at the innermost recommended position, so the validator's read and the handler's write share one transaction; see [Transactions & Store Integration § Where to register the behavior, relative to pipeline stages](transactions-and-store-integration.md#where-to-register-the-behavior-relative-to-pipeline-stages).
@@ -129,7 +147,7 @@ builder.Pipeline
     .OverridePipelineFor<ArchiveOrder>("archive-order-pipeline", typeof(ArchivalAuditBehavior<,>));
 ```
 
-`ArchiveOrder` now resolves exactly `ArchivalAuditBehavior<,>` - never `LoggingBehavior`, `AuthorizationBehavior`, `ValidationBehavior`, or the unit-of-work behavior the recommended chain also registers, even though `UseRecommendedChain()` ran first. Every other request type keeps drawing from the recommended chain unaffected.
+`ArchiveOrder` now resolves exactly `ArchivalAuditBehavior<,>` - never `LoggingBehavior`, `ValidationBehavior`, or the unit-of-work behavior the recommended chain also registers, even though `UseRecommendedChain()` ran first. Every other request type keeps drawing from the recommended chain unaffected.
 
 The `IArchivalRequest` constraint on `ArchivalAuditBehavior<,>` matters beyond `ArchiveOrder`: because `OverridePipelineFor` registers each declared behavior type with the container exactly as an ordinary `AddBehavior` call would, an *unconstrained* override behavior would resolve for every other request type too, via the container's ordinary open-generic resolution - not only the request type(s) the override rule names. Scope an override-specific behavior with a marker interface or a `where TRequest : ...` constraint the same way any unconstrained `AddBehavior` registration already requires.
 
@@ -211,6 +229,9 @@ var result = await mediator.Send(new CreateUser("", "bad-email"));
 Enforces policy-based, non-resource authorization. Short-circuits with `Forbidden` if the policy fails.
 
 > [!NOTE]
+> Not part of `UseRecommendedChain()`'s default composition. Reach for `AddAuthorizationBehavior()` when the mediator itself is the first place authorization can be enforced - a message-bus consumer, a background worker, a scheduled job, or any host with nothing HTTP-shaped in front of it - or for defense-in-depth via a fine-grained, resource-level check upstream middleware can't see, even alongside upstream authorization. See [Adding Auditing and Authorization Back](#adding-auditing-and-authorization-back) for the full rationale.
+
+> [!NOTE]
 > Resource-based authorization (needing the loaded entity) is *not* a behavior - it's handled by `ResourceCommandHandler`'s template method. See [handler-selection-and-dispatch.md](handler-selection-and-dispatch.md) for the full picture.
 
 - Requires: nothing beyond the try-added `IOutcomeCaseRegistry` default (`DefaultOutcomeCaseRegistry`) and `IPolicyEvaluator` default (see the warning below)
@@ -237,6 +258,9 @@ actually denies, rather than silently granting or swallowing the denial.
 ### AuditingBehavior
 
 Records an audit trail of what ran and its outcome.
+
+> [!NOTE]
+> Not part of `UseRecommendedChain()`'s default composition - where an audit trail should go is an application-specific decision, so the library doesn't presume every consumer wants one. Reach for `AddAuditingBehavior()` when your application needs that trail. See [Adding Auditing and Authorization Back](#adding-auditing-and-authorization-back).
 
 - Requires: nothing - falls back to the try-added `LoggingAuditSink` (records via `ILogger`) if you don't register your own `IAuditSink`
 - Marker: `IAuditableRequest` (carries the `ActionName` to record)
@@ -339,7 +363,7 @@ Then wire it in with `OverrideOutcomeDescriber<TDescriber>()` as shown above. `L
 These three behaviors are additive, opt-in cross-cutting concerns shipped alongside the recommended chain, but **not part of it**.
 
 > [!IMPORTANT]
-> `CancellationBehavior`, `TimeoutBehavior`, and `RateLimitedBehavior` have no prescribed position in the pipeline. They are ordinary `Add*Behavior()` calls - the consumer composes them wherever they choose in their own chain, exactly like any behavior outside `UseRecommendedChain()`. `UseRecommendedChain()` itself is unchanged: it still applies only the five behaviors documented above, in the same order.
+> `CancellationBehavior`, `TimeoutBehavior`, and `RateLimitedBehavior` have no prescribed position in the pipeline. They are ordinary `Add*Behavior()` calls - the consumer composes them wherever they choose in their own chain, exactly like any behavior outside `UseRecommendedChain()`. `UseRecommendedChain()` itself is unaffected by them: it still applies only its own documented chain, in the same order.
 
 ### CancellationBehavior
 

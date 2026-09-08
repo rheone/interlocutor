@@ -15,8 +15,10 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// <summary>
 /// Proves the canonical pipeline order documented on <see cref="DependencyInjection.Abstractions.InterlocutorPipelineBuilder.UseRecommendedChain"/>
 /// (Logging → Auditing → Authorization → Validation → Transaction) by registering the five real behaviors
-/// together through that exact method and sending an actual request through the composed pipeline - not by
-/// inspecting the registration list, which only proves presence, not order.
+/// together - via the individual <c>Add*Behavior</c> calls <see cref="DependencyInjection.Abstractions.InterlocutorPipelineBuilder.UseRecommendedChain"/>
+/// itself no longer composes in full, since its own minimal default drops Auditing and Authorization - and
+/// sending an actual request through the composed pipeline - not by inspecting the registration list, which
+/// only proves presence, not order.
 /// </summary>
 /// <remarks>
 /// No test double stands in for any of the five behaviors: each one's only externally observable side effect
@@ -30,7 +32,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 public sealed class PipelineOrderingIntegrationTests
 {
     [Fact]
-    public async Task UseRecommendedChain_ObservedExecutionOrder_MatchesLoggingAuditingAuthorizationValidationTransaction()
+    public async Task ExplicitFiveBehaviorChain_ObservedExecutionOrder_MatchesLoggingAuditingAuthorizationValidationTransaction()
     {
         // Arrange
         var log = new List<string>();
@@ -40,7 +42,14 @@ public sealed class PipelineOrderingIntegrationTests
         services.AddInterlocutor(builder =>
             builder
                 .ScanAssembly(typeof(PipelineOrderingIntegrationTests).Assembly)
-                .Pipeline.UseRecommendedChain()
+                // UseRecommendedChain()'s own default no longer includes Auditing/Authorization, so the full
+                // canonical order this test proves is reconstructed explicitly instead - see the migration
+                // note on UseRecommendedChain()'s own XML docs.
+                .Pipeline.AddLoggingBehavior()
+                .AddAuditingBehavior()
+                .AddAuthorizationBehavior()
+                .AddValidationBehavior()
+                .AddUnitOfWorkBehavior()
                 .OverrideAuditSink<RecordingAuditSink>()
                 .OverridePolicyEvaluator<RecordingPolicyEvaluator>()
         );
@@ -89,7 +98,7 @@ public sealed class PipelineOrderingIntegrationTests
                 .ScanAssembly(typeof(PipelineOrderingIntegrationTests).Assembly)
                 .Pipeline.AddLoggingBehavior()
                 .AddAuditingBehavior()
-                // Swapped: Validation before Authorization, the reverse of UseRecommendedChain's order.
+                // Swapped: Validation before Authorization, the reverse of the canonical documented order.
                 .AddValidationBehavior()
                 .AddAuthorizationBehavior()
                 .AddUnitOfWorkBehavior()

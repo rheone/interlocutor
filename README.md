@@ -34,9 +34,10 @@ services.AddInterlocutor(builder =>
     builder.ScanAssembly(typeof(Program).Assembly);
 
     // The pipeline is empty by default - compose exactly the behaviors you need.
-    // This example uses the library's documented recommended chain:
-    // Logging → Auditing → Authorization → Validation → Transaction
-    // (See documentation/pipeline-and-behaviors.md for the full rationale.)
+    // This example uses the library's documented recommended chain, a minimal default:
+    // Logging → Validation → Transaction
+    // (See documentation/pipeline-and-behaviors.md for the full rationale, including when to
+    // add Auditing/Authorization back explicitly.)
     builder.Pipeline.UseRecommendedChain();
 });
 ```

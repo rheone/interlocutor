@@ -152,7 +152,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IRequestContextAccessor, AspNetCoreRequestContextAccessor>();
 
 // The call that actually registers handlers and the pipeline - interlocutor.ScanAssembly(...) and
-// the five recommended-chain behaviors - is finished in Step 4, once TodoTasksDbContext exists. See
+// this project's five pipeline behaviors - is finished in Step 4, once TodoTasksDbContext exists. See
 // the [!WARNING] there for why that call can't be split into an early skeleton here the way it can
 // under a different DI container (shown in the callout below).
 
@@ -170,7 +170,7 @@ app.Run();
 
 <summary>Using Autofac instead?</summary>
 
-Point the host at Autofac, then configure Interlocutor inside that container. Autofac's generic registration has no such arity restriction, so the whole pipeline - including the transaction behavior - can be registered in one `UseRecommendedChain()` call right here, before the store even exists:
+Point the host at Autofac, then configure Interlocutor inside that container. Autofac's generic registration has no such arity restriction, so the whole pipeline - including the transaction behavior - can be registered right here, before the store even exists:
 
 ```csharp
 using Autofac;
@@ -198,11 +198,19 @@ builder.Host.ConfigureContainer<ContainerBuilder>(containerBuilder =>
     {
         interlocutor.ScanAssembly(typeof(Program).Assembly);
 
-        // The pipeline is empty until you ask for something - this adds the five behaviors
-        // documented in pipeline-and-behaviors.md, in the order that matters:
-        // Logging -> Auditing -> Authorization -> Validation -> Transaction. We meet each one
-        // as its marker interface first shows up, starting in Step 5.
-        interlocutor.Pipeline.UseRecommendedChain();
+        // The pipeline is empty until you ask for something. UseRecommendedChain()'s own minimal
+        // default is just Logging -> Validation -> Transaction; this guide also wants Auditing and
+        // Authorization, in their documented position rather than tacked on at the end, so the full
+        // five-behavior chain is spelled out explicitly instead of calling that sugar method:
+        // Logging -> Auditing -> Authorization -> Validation -> Transaction, per
+        // pipeline-and-behaviors.md. We meet each one as its marker interface first shows up,
+        // starting in Step 5.
+        interlocutor.Pipeline
+            .AddLoggingBehavior()
+            .AddAuditingBehavior()
+            .AddAuthorizationBehavior()
+            .AddValidationBehavior()
+            .AddUnitOfWorkBehavior();
     });
 
     // NHibernate or EF Core session/context and the store-specific behaviors they need - Step 4.
@@ -506,9 +514,10 @@ builder.Services.AddInterlocutor(interlocutor =>
 
     // Logging -> Auditing -> Authorization -> Validation -> Transaction, in that order - see
     // documentation/pipeline-and-behaviors.md for the reasoning behind this specific order. Spelled
-    // out as the individual Add*Behavior calls UseRecommendedChain() is sugar for, rather than
-    // calling UseRecommendedChain() itself, because its last step (AddUnitOfWorkBehavior()) is
-    // exactly the call the arity problem above rules out under this container.
+    // out as individual Add*Behavior calls rather than calling UseRecommendedChain() itself, both
+    // because that sugar method's own minimal default no longer includes Auditing/Authorization, and
+    // because its last step (AddUnitOfWorkBehavior()) is exactly the call the arity problem above
+    // rules out under this container.
     interlocutor.Pipeline
         .AddLoggingBehavior()
         .AddAuditingBehavior()
@@ -583,7 +592,16 @@ builder.Services.AddInterlocutorRepository<TodoTask, int, NHibernateRepository<T
 builder.Services.AddInterlocutor(interlocutor =>
 {
     interlocutor.ScanAssembly(typeof(Program).Assembly);
-    interlocutor.Pipeline.UseRecommendedChain(); // No arity problem here - ISession isn't generic.
+    // No arity problem here - ISession isn't generic - but this guide wants Auditing and
+    // Authorization too, in their documented position, so the full five-behavior chain is spelled
+    // out rather than calling UseRecommendedChain() (whose own default is just Logging ->
+    // Validation -> Transaction) alone.
+    interlocutor.Pipeline
+        .AddLoggingBehavior()
+        .AddAuditingBehavior()
+        .AddAuthorizationBehavior()
+        .AddValidationBehavior()
+        .AddUnitOfWorkBehavior();
 });
 ```
 
@@ -593,7 +611,7 @@ Because there's no arity problem to work around, this whole block - handlers, pi
 
 ## Step 5: Your first command - creating a task
 
-This is the first place four of the five recommended-chain behaviors actually do something: `ITransactionalRequest`, `IAuditableRequest`, FluentValidation, and the transaction itself.
+This is the first place four of this guide's five pipeline behaviors actually do something: `ITransactionalRequest`, `IAuditableRequest`, FluentValidation, and the transaction itself.
 
 **`Application/TodoTasks/CreateTodoTaskCommand.cs`**
 
@@ -1490,7 +1508,7 @@ app.MapPost("/todo-tasks/{id:int}/reopen", async (int id, ISender sender, Cancel
 
 ## Step 9: Coarse-grained authorization - deleting a task
 
-Delete uses the last of the five recommended-chain behaviors: `AuthorizationBehavior`, gated by `IRequiresPolicyRequest`. This runs *before* the entity is loaded for the handler's own use - `AuthorizationBehavior` itself is invoked ahead of the handler regardless of what the policy checks, in contrast with Step 7's `ResourceCommandHandler`, whose ownership check can only run *inside* the handler's own load/authorize/handle template, after `LoadAsync` has already fetched the entity for the handler to use.
+Delete uses the last of this project's five pipeline behaviors: `AuthorizationBehavior`, gated by `IRequiresPolicyRequest`. This runs *before* the entity is loaded for the handler's own use - `AuthorizationBehavior` itself is invoked ahead of the handler regardless of what the policy checks, in contrast with Step 7's `ResourceCommandHandler`, whose ownership check can only run *inside* the handler's own load/authorize/handle template, after `LoadAsync` has already fetched the entity for the handler to use.
 
 **`Application/TodoTasks/DeleteTodoTaskCommand.cs`** and its handler:
 
@@ -1800,7 +1818,7 @@ Each row's arity is exactly what that operation can produce - no request routes 
 
 ## Step 11: Understanding pipeline nesting - a custom chain, explicitly
 
-`interlocutor.Pipeline.UseRecommendedChain()` (available under Autofac; spelled out as its five individual steps here under Microsoft DI + EF Core, per Step 4's own `[!WARNING]`) is sugar for a fixed order. It's worth seeing what it expands to and exactly why that order is unavoidable, before adding anything of your own to it - none of what follows changes the finished project from Step 10; it's here for when you need to go beyond the recommended chain.
+This project's own pipeline - Logging, Auditing, Authorization, Validation, then the transaction behavior - is spelled out as individual `Add*Behavior` calls in `Program.cs` rather than `interlocutor.Pipeline.UseRecommendedChain()` alone, both because that sugar method's own minimal default is just Logging → Validation → Transaction (Auditing/Authorization are opt-in, chained on explicitly here) and, under Microsoft DI + EF Core specifically, because its last step (`AddUnitOfWorkBehavior()`) is the call Step 4's own `[!WARNING]` rules out under this container. It's worth seeing what a fixed, spelled-out order like this expands to and exactly why that order is unavoidable, before adding anything of your own to it - none of what follows changes the finished project from Step 10; it's here for when you need to go beyond this project's own chain.
 
 <details>
 
@@ -1808,7 +1826,7 @@ Each row's arity is exactly what that operation can produce - no request routes 
 
 ### Registration order is nesting order
 
-Every `Add*Behavior()`/`AddBehavior()` call appends one entry to a flat, ordered list - nothing more. There's no priority number, no "insert before X"; the list's order *is* the pipeline's structure. `UseRecommendedChain()` is exactly this, spelled out:
+Every `Add*Behavior()`/`AddBehavior()` call appends one entry to a flat, ordered list - nothing more. There's no priority number, no "insert before X"; the list's order *is* the pipeline's structure. This project's own pipeline is exactly this, spelled out (only the `AddLoggingBehavior()`/`AddValidationBehavior()`/`AddUnitOfWorkBehavior()` steps come from `UseRecommendedChain()`'s own sugar - `AddAuditingBehavior()`/`AddAuthorizationBehavior()` are chained on explicitly):
 
 ```csharp
 interlocutor.Pipeline
@@ -1933,7 +1951,7 @@ Registered anywhere else in the list, it would measure something else entirely: 
 
 ### When the recommended order doesn't fit
 
-`UseRecommendedChain()` is opt-in sugar for one documented order - not a constraint the library enforces. Nothing stops you from composing the same five behaviors, a subset of them, or your own alongside them, in whatever order an actual need in your application justifies.
+`UseRecommendedChain()` is opt-in sugar for one documented order - not a constraint the library enforces. Nothing stops you from composing this project's own five behaviors, a subset of them, or your own alongside them, in whatever order an actual need in your application justifies.
 
 Take `DeleteTodoTaskCommand` (Step 9): its `AuthorizationBehavior` check runs `TodoTaskPolicyEvaluator`, which loads the task itself to compare ownership - in a real app, a policy check like this might delegate to an external permissions service over the network besides, while `ValidationBehavior`'s FluentValidation rules are pure in-memory checks. The recommended order puts Authorization before Validation specifically so a request the caller isn't allowed to make never pays for validation - but that reasoning assumes authorization is the *cheap* step. If it's actually the expensive one, some teams deliberately invert the two: reject cheap-to-detect bad input first, and only pay for the network call once the input was well-formed to begin with.
 

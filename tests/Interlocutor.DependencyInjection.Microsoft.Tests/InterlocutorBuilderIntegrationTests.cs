@@ -286,7 +286,7 @@ public class InterlocutorBuilderIntegrationTests
     }
 
     [Fact]
-    public void UseRecommendedChain_RegistersLoggingAuditingAndAuthorizationBehaviors()
+    public void UseRecommendedChain_RegistersLoggingButNotAuditingOrAuthorization()
     {
         // Arrange
         var services = new ServiceCollection();
@@ -300,22 +300,23 @@ public class InterlocutorBuilderIntegrationTests
             .Select(s => s.ImplementationType)
             .ToList();
 
-        // Assert
+        // Assert - the minimal default: Auditing/Authorization are opt-in, not automatic.
         Assert.Contains(typeof(LoggingBehavior<,>), behaviorImplementationTypes);
-        Assert.Contains(typeof(AuditingBehavior<,>), behaviorImplementationTypes);
-        Assert.Contains(typeof(AuthorizationBehavior<,>), behaviorImplementationTypes);
+        Assert.DoesNotContain(typeof(AuditingBehavior<,>), behaviorImplementationTypes);
+        Assert.DoesNotContain(typeof(AuthorizationBehavior<,>), behaviorImplementationTypes);
     }
 
     [Fact]
-    public async Task UseRecommendedChain_DispatchesSuccessfully_ThroughARealMediator()
+    public async Task UseRecommendedChain_WithAuditingAndAuthorizationAddedBack_DispatchesSuccessfully_ThroughARealMediator()
     {
         // The decisive end-to-end proof: AuthorizationBehavior and ValidationBehavior both had a structural
         // shape that made Microsoft DI throw ArgumentException on every single dispatch the instant either
         // was registered (see both types' XML remarks) - a registration-list check, like the test above,
         // could never have caught that; only an actual dispatch through a built container can. This request
-        // satisfies every marker in the recommended chain (IAuditableRequest, IRequiresPolicyRequest) and carries no
-        // FluentValidation validators, so it exercises every fixed behavior on the real send path and must
-        // complete without throwing.
+        // satisfies every marker in the restored five-behavior chain (IAuditableRequest, IRequiresPolicyRequest)
+        // and carries no FluentValidation validators, so it exercises every fixed behavior on the real send
+        // path and must complete without throwing. AddAuditingBehavior()/AddAuthorizationBehavior() are chained
+        // on explicitly since UseRecommendedChain() no longer composes them by default.
         // Arrange
         var services = new ServiceCollection();
         services.AddLogging();
@@ -325,7 +326,11 @@ public class InterlocutorBuilderIntegrationTests
         services.AddScoped(_ => new Lazy<global::NHibernate.ISession>(RealNHibernateSession.Open));
 
         services.AddInterlocutor(builder =>
-            builder.ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly).Pipeline.UseRecommendedChain()
+            builder
+                .ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly)
+                .Pipeline.UseRecommendedChain()
+                .AddAuditingBehavior()
+                .AddAuthorizationBehavior()
         );
 
         var provider = services.BuildServiceProvider();

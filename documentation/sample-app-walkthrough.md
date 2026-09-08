@@ -372,7 +372,7 @@ A missing user id here is a bug, not an outcome the caller can trigger - every e
 
 ## A second custom pipeline behavior
 
-[`SlowHandlerWarningBehavior<TRequest, TResponse>`](../TutorialProject/TodoTasks.Api/Infrastructure/SlowHandlerWarningBehavior.cs) is the guide's own Step 11 worked example, wired in for real: it times the inner `next()` call and logs a warning once a handler alone takes longer than 250ms. It's registered *innermost* - the last `AddBehavior` call in `Program.cs`, after the recommended chain and the unit-of-work workaround below - so its stopwatch starts only after logging, auditing, authorization, validation, and the transaction's own begin have already run, and stops before any of their egress work. Registered anywhere else in the chain, it would measure that surrounding overhead too, not just the handler; `SlowHandlerWarningBehaviorTests` proves this isolation directly, including the case of a slow *ingress* elsewhere in the chain paired with a fast handler, which still doesn't fire this behavior's warning.
+[`SlowHandlerWarningBehavior<TRequest, TResponse>`](../TutorialProject/TodoTasks.Api/Infrastructure/SlowHandlerWarningBehavior.cs) is the guide's own Step 11 worked example, wired in for real: it times the inner `next()` call and logs a warning once a handler alone takes longer than 250ms. It's registered *innermost* - the last `AddBehavior` call in `Program.cs`, after this project's own five-behavior pipeline and the unit-of-work workaround below - so its stopwatch starts only after logging, auditing, authorization, validation, and the transaction's own begin have already run, and stops before any of their egress work. Registered anywhere else in the chain, it would measure that surrounding overhead too, not just the handler; `SlowHandlerWarningBehaviorTests` proves this isolation directly, including the case of a slow *ingress* elsewhere in the chain paired with a fast handler, which still doesn't fire this behavior's warning.
 
 ## The Microsoft DI + EF Core unit-of-work workaround, made real
 
@@ -387,7 +387,7 @@ internal sealed class TodoTasksUnitOfWorkBehavior<TRequest, TResponse>(
 ) : UnitOfWorkBehavior<TRequest, TResponse, TodoTasksDbContext>(context, classifier, describer, logger);
 ```
 
-`Program.cs` registers the pipeline as `UseRecommendedChain()`'s five individual steps, spelled out, rather than calling that sugar method itself, with this subclass taking `AddUnitOfWorkBehavior()`'s place via the general-purpose `AddBehavior` escape hatch:
+`Program.cs` registers the pipeline as the individual `Add*Behavior` calls, spelled out, rather than calling `UseRecommendedChain()` itself - both because its last step (`AddUnitOfWorkBehavior()`) is exactly the call the arity problem above rules out under this container, and because this project wants `AddAuditingBehavior()`/`AddAuthorizationBehavior()` too, which `UseRecommendedChain()`'s own minimal default no longer includes - with this subclass taking `AddUnitOfWorkBehavior()`'s place via the general-purpose `AddBehavior` escape hatch:
 
 ```csharp
 interlocutor

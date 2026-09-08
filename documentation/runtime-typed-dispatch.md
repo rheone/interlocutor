@@ -45,7 +45,7 @@ public interface IUnion
 That means runtime-typed `Send(object request)`'s `IUnion` result exposes only its boxed `Value` directly - not enough on its own to know the active case's type, since a `null` `Value` can mean either a legitimate null payload or a genuinely unset union. Resolving that fully, without knowing the concrete union type, is exactly what [`IOutcomeCaseRegistry`](messages-and-result-types.md#iunion-as-an-extension-point) is for - inject it and call `TryGetActiveCase(response, out caseType, out caseValue)`. The Outbox Pattern example below shows the full pattern.
 
 > [!NOTE]
-> `IOutcomeCaseRegistry` is try-added by several `Pipeline.Add*Behavior()` calls (`AddAuthorizationBehavior`, `AddCancellationBehavior`, `AddTimeoutBehavior`, `AddRateLimitedBehavior`) and by `UseRecommendedChain()`, which includes `AddAuthorizationBehavior`. If your pipeline uses none of those, register `DefaultOutcomeCaseRegistry` yourself, or supply a custom `IOutcomeCaseRegistry` per [messages-and-result-types.md](messages-and-result-types.md#iunion-as-an-extension-point).
+> `IOutcomeCaseRegistry` is try-added by several `Pipeline.Add*Behavior()` calls (`AddAuthorizationBehavior`, `AddCancellationBehavior`, `AddTimeoutBehavior`, `AddRateLimitedBehavior`, and FluentValidation's `AddValidationBehavior`) and by `UseRecommendedChain()`, which includes `AddValidationBehavior`. If your pipeline uses none of those, register `DefaultOutcomeCaseRegistry` yourself, or supply a custom `IOutcomeCaseRegistry` per [messages-and-result-types.md](messages-and-result-types.md#iunion-as-an-extension-point).
 
 ## Outbox Pattern Example
 

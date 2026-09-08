@@ -278,12 +278,10 @@ public class InterlocutorPipelineBuilderTests
         // Act
         builder.UseRecommendedChain();
 
-        // Assert
+        // Assert - the minimal default: Auditing/Authorization are opt-in, not automatic.
         Assert.Equal(
             [
                 typeof(LoggingBehavior<,>),
-                typeof(AuditingBehavior<,>),
-                typeof(AuthorizationBehavior<,>),
                 typeof(Interlocutor.FluentValidation.ValidationBehavior<,>),
                 typeof(Interlocutor.Persistence.NHibernate.UnitOfWorkBehavior<,>),
             ],
@@ -299,6 +297,34 @@ public class InterlocutorPipelineBuilderTests
 
         // Assert
         Assert.Empty(bare.Behaviors);
+    }
+
+    [Fact]
+    public void PriorFiveBehaviorChain_StillFullyReconstructableByExplicitChaining()
+    {
+        // Arrange
+        var builder = new InterlocutorPipelineBuilder();
+
+        // Act - the chain UseRecommendedChain() composed before Auditing/Authorization were dropped
+        // from its default, restored explicitly in the same relative order.
+        builder
+            .AddLoggingBehavior()
+            .AddAuditingBehavior()
+            .AddAuthorizationBehavior()
+            .AddValidationBehavior()
+            .AddUnitOfWorkBehavior();
+
+        // Assert
+        Assert.Equal(
+            [
+                typeof(LoggingBehavior<,>),
+                typeof(AuditingBehavior<,>),
+                typeof(AuthorizationBehavior<,>),
+                typeof(Interlocutor.FluentValidation.ValidationBehavior<,>),
+                typeof(Interlocutor.Persistence.NHibernate.UnitOfWorkBehavior<,>),
+            ],
+            builder.Behaviors.Select(r => r.ImplementationType)
+        );
     }
 
     [Fact]

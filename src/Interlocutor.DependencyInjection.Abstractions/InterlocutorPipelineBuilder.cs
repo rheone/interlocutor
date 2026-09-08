@@ -383,6 +383,10 @@ public sealed class InterlocutorPipelineBuilder
     /// a default has already been set. See <see cref="AddLoggingBehavior"/> for why no
     /// <see cref="IResponseOutcomeDescriber"/> default is registered here either.
     /// </summary>
+    /// <remarks>
+    /// Not part of <see cref="UseRecommendedChain"/>'s default composition - where an audit trail should
+    /// go is an application-specific decision, so add this explicitly when your application wants one.
+    /// </remarks>
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorPipelineBuilder AddAuditingBehavior() => this.AddFromDescriptor(AuditingBehaviorDescriptor);
 
@@ -392,6 +396,16 @@ public sealed class InterlocutorPipelineBuilder
     /// and <see cref="IOutcomeCaseRegistry"/> (<see cref="DefaultOutcomeCaseRegistry"/>), unless a default
     /// has already been set for either.
     /// </summary>
+    /// <remarks>
+    /// Not part of <see cref="UseRecommendedChain"/>'s default composition - most consumers already
+    /// enforce authorization earlier in the request path (ASP.NET Core's own authentication/authorization
+    /// middleware, or an upstream policy engine, running before the mediator is ever invoked), which makes
+    /// a second in-pipeline pass redundant. Add this explicitly when the mediator itself is the first
+    /// place authorization can be enforced - a message-bus consumer, a background worker, a scheduled
+    /// job, or anything else dispatching a request with nothing HTTP-shaped in front of it - or when you
+    /// want defense-in-depth via a fine-grained, resource-level check that upstream middleware can't see,
+    /// even alongside upstream authorization.
+    /// </remarks>
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorPipelineBuilder AddAuthorizationBehavior() => this.AddFromDescriptor(AuthorizationBehaviorDescriptor);
 
@@ -527,7 +541,7 @@ public sealed class InterlocutorPipelineBuilder
     /// (<see cref="DefaultOutcomeCaseRegistry"/>), unless a default has already been set.
     /// </summary>
     /// <remarks>
-    /// This behavior has no prescribed position in the pipeline - unlike the five behaviors composed by
+    /// This behavior has no prescribed position in the pipeline - unlike the behaviors composed by
     /// <see cref="UseRecommendedChain"/>, it is not part of that documented ordering. The caller chooses
     /// where it lands in their own chain by where they call this method relative to their other
     /// <c>Add*Behavior</c> calls.
@@ -542,7 +556,7 @@ public sealed class InterlocutorPipelineBuilder
     /// has already been set for either.
     /// </summary>
     /// <remarks>
-    /// This behavior has no prescribed position in the pipeline - unlike the five behaviors composed by
+    /// This behavior has no prescribed position in the pipeline - unlike the behaviors composed by
     /// <see cref="UseRecommendedChain"/>, it is not part of that documented ordering. The caller chooses
     /// where it lands in their own chain by where they call this method relative to their other
     /// <c>Add*Behavior</c> calls.
@@ -557,7 +571,7 @@ public sealed class InterlocutorPipelineBuilder
     /// has already been set for either.
     /// </summary>
     /// <remarks>
-    /// This behavior has no prescribed position in the pipeline - unlike the five behaviors composed by
+    /// This behavior has no prescribed position in the pipeline - unlike the behaviors composed by
     /// <see cref="UseRecommendedChain"/>, it is not part of that documented ordering. The caller chooses
     /// where it lands in their own chain by where they call this method relative to their other
     /// <c>Add*Behavior</c> calls.
@@ -566,30 +580,42 @@ public sealed class InterlocutorPipelineBuilder
     public InterlocutorPipelineBuilder AddRateLimitedBehavior() => this.AddFromDescriptor(RateLimitedBehaviorDescriptor);
 
     /// <summary>
-    /// Applies the library's documented recommended pipeline chain - logging, then auditing, then
-    /// authorization, then validation, then transaction - in that order, as sugar over the individual
-    /// <c>Add*Behavior</c> calls. Never applied automatically; a consumer opts in explicitly.
+    /// Applies the library's documented recommended pipeline chain - logging, then validation, then
+    /// transaction - in that order, as sugar over the individual <c>Add*Behavior</c> calls. Never applied
+    /// automatically; a consumer opts in explicitly.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// The order protects specific concerns, documented here because a developer composing their own
-    /// chain instead of using this method needs the reasoning, not just the sequence:
+    /// This is a deliberately minimal default: <see cref="AddAuditingBehavior"/> and
+    /// <see cref="AddAuthorizationBehavior"/> are not part of it. Most consumers don't want an audit trail
+    /// at all, and most who need authorization already enforce it earlier in the request path - ASP.NET
+    /// Core's own authentication/authorization middleware, or an upstream policy engine, running before
+    /// the mediator is ever invoked - which makes a second in-pipeline pass redundant, or even
+    /// conflicting. See <see cref="AddAuditingBehavior"/>'s and <see cref="AddAuthorizationBehavior"/>'s
+    /// own remarks for when it's still worth adding either back explicitly.
+    /// </para>
+    /// <para>
+    /// The order below still applies to whichever of them you add back, documented here because a
+    /// developer composing their own chain needs the reasoning, not just the sequence:
     /// </para>
     /// <list type="bullet">
     /// <item><description>Logging outermost so every request's timing and outcome is captured regardless of what happens inside.</description></item>
-    /// <item><description>Auditing outside authorization so a request that gets denied is still recorded - a rejected attempt is itself an auditable event.</description></item>
-    /// <item><description>Authorization before validation so an unauthorized caller never learns validation details about a request they cannot perform.</description></item>
+    /// <item><description>Auditing, if added, outside authorization so a request that gets denied is still recorded - a rejected attempt is itself an auditable event.</description></item>
+    /// <item><description>Authorization, if added, before validation so an unauthorized caller never learns validation details about a request they cannot perform.</description></item>
     /// <item><description>Validation before transaction so malformed input never opens a transaction that would only be rolled back.</description></item>
     /// <item><description>Transaction innermost so only the handler's own work - not cross-cutting concerns - participates in the unit of work.</description></item>
     /// </list>
+    /// <para>
+    /// To restore the full chain this method composed before auditing/authorization were dropped from the
+    /// default, compose every step individually rather than calling this method and appending
+    /// <see cref="AddAuditingBehavior"/>/<see cref="AddAuthorizationBehavior"/> afterward - appending after
+    /// the fact puts both innermost, past validation and the transaction, not in their documented position:
+    /// <c>.AddLoggingBehavior().AddAuditingBehavior().AddAuthorizationBehavior().AddValidationBehavior().AddUnitOfWorkBehavior()</c>.
+    /// </para>
     /// </remarks>
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorPipelineBuilder UseRecommendedChain() =>
-        this.AddLoggingBehavior()
-            .AddAuditingBehavior()
-            .AddAuthorizationBehavior()
-            .AddValidationBehavior()
-            .AddUnitOfWorkBehavior();
+        this.AddLoggingBehavior().AddValidationBehavior().AddUnitOfWorkBehavior();
 
     /// <summary>
     /// Replaces the default <see cref="IAuditSink"/> implementation <see cref="AuditingBehavior{TRequest,TResponse}"/>

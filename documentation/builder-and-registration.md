@@ -138,12 +138,14 @@ services.AddInterlocutor(builder =>
 
     // Explicitly compose your pipeline
     builder.Pipeline.AddLoggingBehavior();
-    builder.Pipeline.AddAuditingBehavior();
     builder.Pipeline.AddValidationBehavior();     // no-op if Interlocutor.FluentValidation isn't referenced
     builder.Pipeline.AddUnitOfWorkBehavior();    // no-op if neither store package is referenced
 
-    // Or use the documented recommended chain as sugar - it calls exactly these five, in this order
+    // Or use the documented recommended chain as sugar - it calls exactly these three, in this order
     // builder.Pipeline.UseRecommendedChain();
+    // Auditing/Authorization are opt-in, not part of this default - add them explicitly if you want them:
+    // builder.Pipeline.AddAuditingBehavior();
+    // builder.Pipeline.AddAuthorizationBehavior();
 });
 ```
 

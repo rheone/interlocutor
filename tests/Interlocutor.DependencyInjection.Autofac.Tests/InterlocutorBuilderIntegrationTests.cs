@@ -228,7 +228,7 @@ public class InterlocutorBuilderIntegrationTests
     }
 
     [Fact]
-    public void UseRecommendedChain_RegistersLoggingAuditingAndAuthorizationBehaviors()
+    public void UseRecommendedChain_RegistersLoggingButNotAuditingOrAuthorizationBehaviors()
     {
         // Arrange
         var containerBuilder = new ContainerBuilder();
@@ -241,13 +241,39 @@ public class InterlocutorBuilderIntegrationTests
         var container = containerBuilder.Build();
 
         // Act
-        // AuthorizationBehavior<TRequest,TResponse> only ever short-circuits meaningfully for a response
-        // shaped Outcome<TSuccess, Forbidden> (it needs a Forbidden case to construct on denial), so
-        // it's resolved against AuthorizableQuery (not the plain-Outcome SampleQuery every other test
-        // here uses) to genuinely exercise closed-generic resolution rather than only the open-generic
-        // registration list. AuthorizableQuery also implements IAuditableRequest and IRequiresPolicyRequest so that,
-        // now that AuditingBehavior/AuthorizationBehavior constrain TRequest to those markers, this query still
-        // draws all three behaviors from the recommended chain instead of being filtered down to just logging.
+        // AuthorizableQuery implements both IAuditableRequest and IRequiresPolicyRequest, so it would draw
+        // Auditing/Authorization behaviors were either registered - proving their absence here proves
+        // UseRecommendedChain()'s minimal default, not merely that this query happens not to opt in.
+        var behaviors = container
+            .Resolve<IEnumerable<IPipelineBehavior<AuthorizableQuery, Outcome<string, Forbidden>>>>()
+            .Select(b => b.GetType())
+            .ToList();
+
+        // Assert
+        Assert.Contains(behaviors, t => t.Name.StartsWith("LoggingBehavior"));
+        Assert.DoesNotContain(behaviors, t => t.Name.StartsWith("AuditingBehavior"));
+        Assert.DoesNotContain(behaviors, t => t.Name.StartsWith("AuthorizationBehavior"));
+    }
+
+    [Fact]
+    public void UseRecommendedChain_WithAuditingAndAuthorizationAddedBack_RegistersAllThree()
+    {
+        // Arrange - proves the migration line from ADR-0026: chaining AddAuditingBehavior()/
+        // AddAuthorizationBehavior() after UseRecommendedChain() restores prior behavior.
+        var containerBuilder = new ContainerBuilder();
+        containerBuilder.RegisterGeneric(typeof(NullLogger<>)).As(typeof(ILogger<>));
+
+        containerBuilder.AddInterlocutor(builder =>
+            builder
+                .ScanAssembly(typeof(InterlocutorBuilderIntegrationTests).Assembly)
+                .Pipeline.UseRecommendedChain()
+                .AddAuditingBehavior()
+                .AddAuthorizationBehavior()
+        );
+
+        var container = containerBuilder.Build();
+
+        // Act
         var behaviors = container
             .Resolve<IEnumerable<IPipelineBehavior<AuthorizableQuery, Outcome<string, Forbidden>>>>()
             .Select(b => b.GetType())
