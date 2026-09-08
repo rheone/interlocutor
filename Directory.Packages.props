@@ -41,6 +41,9 @@
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="11.0.0-preview.6.26359.118" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="11.0.0-preview.7.26381.103" />
     <PackageVersion Include="Microsoft.Extensions.Logging" Version="11.0.0-preview.7.26381.103" />
+    <!-- IPipelineExplainer's Microsoft-DI-specific "an application's own IOptions/IOptionsMonitor
+         registration wins over the builder-supplied PipelineExplainerOptions" precedence. -->
+    <PackageVersion Include="Microsoft.Extensions.Options" Version="11.0.0-preview.7.26381.103" />
     <!-- Test-only: in-memory ASP.NET Core test host for AspNetCore.Tests' manual sanity-check host. -->
     <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="11.0.0-preview.7.26381.103" />
   </ItemGroup>

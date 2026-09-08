@@ -44,6 +44,16 @@ is its only shipped consumer today) that dispatches on a failure's runtime type 
 under trimming specifically because every type they close over is a reference type, which the trimmer keeps
 reachable through the application's own ordinary use of it.
 
+`IPipelineExplainer`'s default implementation is reflective for a different reason: it exists specifically to
+close `PipelineChainResolver.ResolveChain<TRequest,TResponse>` over a request/response pair known only at run
+time (typically from a bug report or a configuration file), via `MethodInfo.MakeGenericMethod`. This is
+trim-safe - the closed method it looks up is reachable the same way every other dispatch path's direct call
+to it already keeps it reachable - but carries the identical JIT-closure requirement ordinary dispatch already
+has for a request/response pair the runtime hasn't seen before (see "Why ahead-of-time compilation doesn't
+work yet" above), so it does not work under `PublishAot=true` any more than ordinary dispatch does. It is also
+opt-in and disabled by default independent of trim/AOT concerns entirely - see
+[Pipeline & Behavior Composition § Runtime Pipeline Explainer](pipeline-and-behaviors.md#runtime-pipeline-explainer).
+
 ## The runtime scanning fallback, and what it costs
 
 `ScanAssembly`/`ScanAssemblies`/`ScanAssemblyContaining<TMarker>`/`ScanEntryAssembly`, `AddTypeMatch`, and

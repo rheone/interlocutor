@@ -10,6 +10,7 @@ using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Notifications;
 using Interlocutor.Abstractions.Pipeline;
+using Interlocutor.Abstractions.Pipeline.Diagnostics;
 using Interlocutor.Abstractions.Queries;
 using Interlocutor.DependencyInjection.Abstractions;
 
@@ -95,6 +96,15 @@ public static class InterlocutorAutofacExtensions
         builder
             .RegisterInstance(new PipelineOverrideRegistry(interlocutorBuilder.Pipeline.OverrideRules))
             .As<IPipelineOverrideRegistry>();
+
+        // Opt-in: only registered at all when AddPipelineExplainer was called (see that method's remarks).
+        // Autofac has no IOptions-precedence layer the way Microsoft DI does - the POCO passed to
+        // AddPipelineExplainer (or a fresh, disabled instance if none was passed) is the only source of
+        // configuration.
+        if (interlocutorBuilder.Pipeline.PipelineExplainerConfiguration is { } explainerOptions)
+        {
+            builder.RegisterInstance(new PipelineExplainer(explainerOptions)).As<IPipelineExplainer>();
+        }
 
         // Deferred to a build callback (rather than resolved eagerly here) since only the fully-built
         // container can answer whether the application actually registered an ILoggerFactory - Autofac's

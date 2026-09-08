@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Pipeline.Cases;
+using Interlocutor.Abstractions.Pipeline.Diagnostics;
 
 /// <summary>
 /// Container-neutral fluent builder for pipeline composition alone - behaviors, stages, the
@@ -131,6 +132,17 @@ public sealed class InterlocutorPipelineBuilder
     /// </summary>
     /// <value>Every pipeline override rule added so far.</value>
     public IReadOnlyList<PipelineOverrideRule> OverrideRules => this._overrideRules;
+
+    /// <summary>
+    /// Gets the configuration <see cref="AddPipelineExplainer"/> was called with, or <see langword="null"/>
+    /// if it was never called - the signal both <c>Interlocutor.DependencyInjection.Microsoft</c> and
+    /// <c>Interlocutor.DependencyInjection.Autofac</c> use to decide whether to register
+    /// <c>IPipelineExplainer</c> at all. <c>IPipelineExplainer</c> is opt-in at the registration level (this
+    /// property stays <see langword="null"/> unless <see cref="AddPipelineExplainer"/> is called) as well as
+    /// at the <see cref="Interlocutor.Abstractions.Pipeline.Diagnostics.PipelineExplainerOptions.Enabled"/> level.
+    /// </summary>
+    /// <value>The configuration <see cref="AddPipelineExplainer"/> was called with, or <see langword="null"/>.</value>
+    public PipelineExplainerOptions? PipelineExplainerConfiguration { get; private set; }
 
     /// <summary>
     /// Gets the try-add-able default registrations this builder has set, one per service type. When
@@ -578,6 +590,46 @@ public sealed class InterlocutorPipelineBuilder
     /// </remarks>
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorPipelineBuilder AddRateLimitedBehavior() => this.AddFromDescriptor(RateLimitedBehaviorDescriptor);
+
+    /// <summary>
+    /// Registers the diagnostic <see cref="IPipelineExplainer"/> - the runtime counterpart to
+    /// <see cref="InterlocutorBuilder.DescribeRegistrations"/> that answers which pipeline behaviors resolve
+    /// for a request/response type pair known only at run time (typically from a bug report or a
+    /// configuration file, not a compile-time generic argument).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="IPipelineExplainer"/> is opt-in at two independent levels: it is registered at all only
+    /// when this method is called (<see cref="PipelineExplainerConfiguration"/> stays <see langword="null"/>
+    /// otherwise, and neither container translator registers it), and even then it stays disabled - calling
+    /// <see cref="IPipelineExplainer.Explain"/> throws - until <see cref="PipelineExplainerOptions.Enabled"/>
+    /// is <see langword="true"/>. This double gate reflects that the explainer resolves live instances from
+    /// the container and reveals internal wiring, which is not something to run unexamined against a
+    /// production container.
+    /// </para>
+    /// <para>
+    /// Under Microsoft DI, an application registration of <c>IOptions&lt;PipelineExplainerOptions&gt;</c> or
+    /// <c>IOptionsMonitor&lt;PipelineExplainerOptions&gt;</c> - typically via
+    /// <c>services.Configure&lt;PipelineExplainerOptions&gt;(configuration.GetSection(...))</c> - wins over
+    /// <paramref name="options"/>, consistent with how <see cref="Defaults"/> entries already let a
+    /// consumer's own registration win. Autofac has no such precedence layer: it always registers
+    /// <paramref name="options"/> (or a fresh, disabled instance when <paramref name="options"/> is
+    /// <see langword="null"/>) directly, with no <c>IOptions</c> dependency at all.
+    /// </para>
+    /// </remarks>
+    /// <param name="options">
+    /// The explainer's configuration, or <see langword="null"/> to register it with a fresh, disabled
+    /// <see cref="PipelineExplainerOptions"/> (<see cref="PipelineExplainerOptions.Enabled"/> defaults to
+    /// <see langword="false"/>) until a consumer enables it - by passing an instance with
+    /// <see langword="true"/> here, or, under Microsoft DI, via an <c>IOptions</c>/<c>IOptionsMonitor</c>
+    /// registration that wins over this value.
+    /// </param>
+    /// <returns>This builder, for chaining.</returns>
+    public InterlocutorPipelineBuilder AddPipelineExplainer(PipelineExplainerOptions? options = null)
+    {
+        this.PipelineExplainerConfiguration = options ?? new PipelineExplainerOptions();
+        return this;
+    }
 
     /// <summary>
     /// Applies the library's documented recommended pipeline chain - logging, then validation, then

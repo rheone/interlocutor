@@ -445,7 +445,17 @@ Resolves which explicitly-declared, per-request-type override pipeline - if any 
 
 | Member | Summary |
 | --- | --- |
-| `bool TryGetOverride(Type requestType, out IReadOnlyList<Type> behaviorTypes)` | Attempts to find the override rule that applies to `requestType`. |
+| `PipelineOverrideMatch? TryGetOverride(Type requestType)` | Attempts to find the override rule that applies to `requestType`. |
+
+### `PipelineOverrideMatch` sealed class
+
+The Tier-1 override rule that matched a request type, returned by `IPipelineOverrideRegistry.TryGetOverride`.
+
+| Member | Summary |
+| --- | --- |
+| `public PipelineOverrideMatch(IReadOnlyList<Type> BehaviorTypes, string RuleName)` |  |
+| `public IReadOnlyList<Type> BehaviorTypes` | The matched rule's complete, explicitly-ordered behavior list. |
+| `public string RuleName` | The matched rule's own name, as declared via `InterlocutorPipelineBuilder.OverridePipelineFor`. |
 
 ### `IPipelineStage<TRequest, TResponse>` interface
 
@@ -679,6 +689,46 @@ Builds an immutable `IOutcomeClassifier` that labels operation outcomes for logg
 | `public OutcomeClassifierBuilder RegisterPredicate(Func<object?, bool> predicate, string label)` | Registers a predicate-based label for outcome types that cannot be expressed by type alone. |
 | `public OutcomeClassifierBuilder RegisterType<T>(string label)` | Registers a type's display label. |
 | `public OutcomeClassifierBuilder RegisterType(Type type, string label)` | Registers a type's display label, by runtime `Type`. |
+
+## Interlocutor.Abstractions.Pipeline.Diagnostics
+
+### `IPipelineExplainer` interface
+
+A diagnostic entry point that answers, against a live, already-built `IServiceProvider`, which pipeline behaviors resolve for a given request/response type pair - the runtime counterpart to `InterlocutorBuilder.DescribeRegistrations()`.
+
+| Member | Summary |
+| --- | --- |
+| `PipelineExplanation Explain(Type requestType, Type responseType, IServiceProvider services)` | Resolves and describes the pipeline behavior chain `requestType`/`responseType` would actually resolve from `services`. |
+
+### `PipelineExplainer` sealed class
+
+The default `IPipelineExplainer` implementation - resolves `PipelineChainResolver.ResolveChain` reflectively via `MethodInfo.MakeGenericMethod` for a request/response `Type` pair known only at run time.
+
+| Member | Summary |
+| --- | --- |
+| `public PipelineExplainer(PipelineExplainerOptions options)` |  |
+| `public PipelineExplanation Explain(Type requestType, Type responseType, IServiceProvider services)` | Resolves and describes the pipeline behavior chain `requestType`/`responseType` would actually resolve from `services`. |
+
+### `PipelineExplainerOptions` sealed class
+
+Configures `IPipelineExplainer` - opt-in and disabled by default.
+
+| Member | Summary |
+| --- | --- |
+| `public PipelineExplainerOptions()` |  |
+| `public bool Enabled` | Gets or sets a value indicating whether `IPipelineExplainer.Explain` is permitted to run. Defaults to `false`. |
+
+### `PipelineExplanation` sealed class
+
+The result of `IPipelineExplainer.Explain` - the resolved pipeline behavior chain for one request/response type pair, plus which Tier-1 override rule (if any) produced it.
+
+| Member | Summary |
+| --- | --- |
+| `public PipelineExplanation(Type RequestType, Type ResponseType, IReadOnlyList<Type> ResolvedBehaviorTypes, string? MatchedOverrideRuleName)` |  |
+| `public Type RequestType` | The request type `IPipelineExplainer.Explain` was asked about. |
+| `public Type ResponseType` | The response type `IPipelineExplainer.Explain` was asked about. |
+| `public IReadOnlyList<Type> ResolvedBehaviorTypes` | The resolved behaviors' concrete runtime types, in the same order `PipelineChainResolver.ResolveChain` returned their instances. |
+| `public string? MatchedOverrideRuleName` | The name of the Tier-1 `OverridePipelineFor` rule that matched `RequestType`, or `null` when no override rule matched. |
 
 ## Interlocutor.Abstractions.Pipeline.Mapping
 

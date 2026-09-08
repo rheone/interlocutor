@@ -186,11 +186,10 @@ public class DroppedTrackingBehavior<TRequest, TResponse>(Action<string> track) 
 /// <c>Interlocutor.DependencyInjection.Abstractions</c>.</summary>
 public class FakeOverrideRegistry(Func<Type, IReadOnlyList<Type>?> lookup) : IPipelineOverrideRegistry
 {
-    public bool TryGetOverride(Type requestType, out IReadOnlyList<Type> behaviorTypes)
+    public PipelineOverrideMatch? TryGetOverride(Type requestType)
     {
         var found = lookup(requestType);
-        behaviorTypes = found ?? [];
-        return found is not null;
+        return found is null ? null : new PipelineOverrideMatch(found, "fake-rule");
     }
 }
 

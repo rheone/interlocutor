@@ -5,6 +5,7 @@ using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Markers;
 using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Pipeline.Cases;
+using Interlocutor.Abstractions.Pipeline.Diagnostics;
 using Interlocutor.CommonKernel.ResultTypes;
 using NSubstitute;
 
@@ -381,6 +382,44 @@ public class InterlocutorPipelineBuilderTests
         // Assert
         var registration = Assert.Single(builder.Defaults, r => r.ServiceType == typeof(IOutcomeCaseRegistry));
         Assert.Equal(typeof(CustomOutcomeCaseRegistry), registration.ImplementationType);
+    }
+
+    [Fact]
+    public void AddPipelineExplainer_NotCalled_ConfigurationStaysNull()
+    {
+        // Arrange & Act
+        var builder = new InterlocutorPipelineBuilder();
+
+        // Assert
+        Assert.Null(builder.PipelineExplainerConfiguration);
+    }
+
+    [Fact]
+    public void AddPipelineExplainer_NoArgument_RecordsFreshDisabledOptions()
+    {
+        // Arrange
+        var builder = new InterlocutorPipelineBuilder();
+
+        // Act
+        builder.AddPipelineExplainer();
+
+        // Assert
+        var configuration = Assert.IsType<PipelineExplainerOptions>(builder.PipelineExplainerConfiguration);
+        Assert.False(configuration.Enabled);
+    }
+
+    [Fact]
+    public void AddPipelineExplainer_WithOptions_RecordsThoseOptions()
+    {
+        // Arrange
+        var builder = new InterlocutorPipelineBuilder();
+        var options = new PipelineExplainerOptions { Enabled = true };
+
+        // Act
+        builder.AddPipelineExplainer(options);
+
+        // Assert
+        Assert.Same(options, builder.PipelineExplainerConfiguration);
     }
 
     [Fact]

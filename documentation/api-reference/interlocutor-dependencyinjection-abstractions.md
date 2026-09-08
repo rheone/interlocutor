@@ -115,6 +115,7 @@ Container-neutral fluent builder for pipeline composition alone - behaviors, sta
 | `public IReadOnlyList<InterlocutorRegistration> Behaviors` | Gets the flat, ordered list of pipeline behavior registrations, in builder-call order. Empty on a bare builder. May contain the same implementation type more than once. |
 | `public IReadOnlyCollection<InterlocutorRegistration> Defaults` | Gets the try-add-able default registrations this builder has set, one per service type. When constructed standalone, this is exactly the set of pipeline-behavior dependency defaults added by this builder's own calls. When constructed as part of an `InterlocutorBuilder`, this is the same shared dictionary `Defaults` exposes. |
 | `public IReadOnlyList<PipelineOverrideRule> OverrideRules` | Gets every Tier-1 pipeline override rule added via `OverridePipelineFor`, in call order. |
+| `public PipelineExplainerOptions? PipelineExplainerConfiguration` | Gets the configuration `AddPipelineExplainer` was called with, or `null` if it was never called. |
 | `public IReadOnlyList<SkippedRegistration> Skipped` | Gets every registration this builder deliberately did not make, and why - currently only the silent optional-package probes behind `AddValidationBehavior` and `AddUnitOfWorkBehavior` when the corresponding package is not referenced. |
 | `public IReadOnlyList<InterlocutorFactoryRegistration> StageFactories` | Gets the delegate-backed pipeline stage registrations added via the AddStage delegate overloads - the lambda-form counterpart to `Stages`. |
 | `public IReadOnlyList<InterlocutorRegistration> Stages` | Gets the pipeline stage registrations added via `AddStage`, each keyed to the closed `IPipelineStage` interface it implements. |
@@ -123,6 +124,7 @@ Container-neutral fluent builder for pipeline composition alone - behaviors, sta
 | `public InterlocutorPipelineBuilder AddBehavior(Type behaviorImplementationType, RegistrationLifetime lifetime = Scoped)` | Adds a pipeline behavior implementation at the current position in the chain. This is the general escape hatch every named Add*Behavior convenience method is sugar over - use it directly for a custom or third-party `IPipelineBehavior` implementation this builder has no dedicated method for. |
 | `public InterlocutorPipelineBuilder AddCancellationBehavior()` | Adds `CancellationBehavior` at the current position in the chain, and try-adds its default dependency, `IOutcomeCaseRegistry` (`DefaultOutcomeCaseRegistry`), unless a default has already been set. |
 | `public InterlocutorPipelineBuilder AddLoggingBehavior()` | Adds `LoggingBehavior` at the current position in the chain. |
+| `public InterlocutorPipelineBuilder AddPipelineExplainer(PipelineExplainerOptions? options = null)` | Registers the diagnostic `IPipelineExplainer` - the runtime counterpart to `InterlocutorBuilder.DescribeRegistrations` that answers which pipeline behaviors resolve for a request/response type pair known only at run time. Opt-in at two independent levels: registered at all only when this method is called, and disabled (`Explain` throws) until `PipelineExplainerOptions.Enabled` is `true`. |
 | `public InterlocutorPipelineBuilder AddRateLimitedBehavior()` | Adds `RateLimitedBehavior` at the current position in the chain, and try-adds its default dependencies, `IRateLimiter` (`DefaultRateLimiter`) and `IOutcomeCaseRegistry` (`DefaultOutcomeCaseRegistry`), unless a default has already been set for either. |
 | `public InterlocutorPipelineBuilder AddStage(Type stageImplementationType, RegistrationLifetime lifetime = Scoped)` | Registers a pipeline stage implementation directly, without assembly scanning. Reflects over the type's implemented interfaces and registers one `Stage` entry per closed `IPipelineStage` interface it implements - mirroring how `HandlerDiscovery` registers a handler per closed contract interface. |
 | `public InterlocutorPipelineBuilder AddStage<TStage>(RegistrationLifetime lifetime = Scoped)` | Registers a pipeline stage implementation directly, without assembly scanning. See `AddStage`. |
@@ -179,7 +181,7 @@ The container-neutral `IPipelineOverrideRegistry` implementation both Microsoft 
 | Member | Summary |
 | --- | --- |
 | `public PipelineOverrideRegistry(IReadOnlyList<PipelineOverrideRule> rules)` |  |
-| `public bool TryGetOverride(Type requestType, out IReadOnlyList<Type> behaviorTypes)` |  |
+| `public PipelineOverrideMatch? TryGetOverride(Type requestType)` |  |
 
 ### `PipelineOverrideRule` record
 

@@ -28,15 +28,10 @@ public interface IPipelineOverrideRegistry
     /// Attempts to find the override rule that applies to <paramref name="requestType"/>.
     /// </summary>
     /// <param name="requestType">The request's runtime type.</param>
-    /// <param name="behaviorTypes">
-    /// When this method returns <see langword="true"/>, the matched rule's declared behavior types, in
-    /// declared order. Each entry is either an open generic type definition (for example
-    /// <c>typeof(MyBehavior&lt;,&gt;)</c>) or a closed implementation type - the same shape
-    /// <c>InterlocutorPipelineBuilder.AddBehavior</c> accepts.
-    /// </param>
     /// <returns>
-    /// <see langword="true"/> if exactly one override rule matches <paramref name="requestType"/>;
-    /// otherwise <see langword="false"/>.
+    /// The matched rule's <see cref="PipelineOverrideMatch"/> - its declared behavior types and its own
+    /// name - if exactly one override rule matches <paramref name="requestType"/>; otherwise
+    /// <see langword="null"/>.
     /// </returns>
-    bool TryGetOverride(Type requestType, out IReadOnlyList<Type> behaviorTypes);
+    PipelineOverrideMatch? TryGetOverride(Type requestType);
 }

@@ -169,6 +169,43 @@ Two override rules whose predicates both match the same request type are a build
 
 Both dispatch paths - the ordinary typed `Send` API and the runtime-typed path used for scenarios like outbox replay - resolve an override identically; see [Runtime-Typed Dispatch](runtime-typed-dispatch.md).
 
+## Runtime Pipeline Explainer
+
+`InterlocutorBuilder.DescribeRegistrations()` (see [Inspecting What Was Registered](builder-and-registration.md#inspecting-what-was-registered)) reports the builder's own pre-container-build configuration - what was *asked for*. `IPipelineExplainer` answers a different, runtime question: against a live, already-built `IServiceProvider`, which pipeline behaviors actually resolve for a given request/response pair - the general-purpose baseline, or a matched Tier-1 override rule, and if so which one.
+
+It exists for a human who has a `Type` in hand rather than a compile-time generic argument - typically from a bug report or a configuration file - and wants a formatted answer without writing a throwaway console app that closes `PipelineChainResolver.ResolveChain` reflectively:
+
+```csharp
+public interface IPipelineExplainer
+{
+    PipelineExplanation Explain(Type requestType, Type responseType, IServiceProvider services);
+}
+
+public sealed record PipelineExplanation(
+    Type RequestType,
+    Type ResponseType,
+    IReadOnlyList<Type> ResolvedBehaviorTypes,
+    string? MatchedOverrideRuleName);
+```
+
+`MatchedOverrideRuleName` is `null` when the request drew from the general-purpose baseline; otherwise it names the `OverridePipelineFor` rule that matched.
+
+### Opt-In and Disabled by Default
+
+Resolving `IPipelineExplainer` requires an explicit registration call - `builder.Pipeline.AddPipelineExplainer(options)` - and even then it stays disabled until `PipelineExplainerOptions.Enabled` is `true`:
+
+```csharp
+builder.Pipeline.AddPipelineExplainer(new PipelineExplainerOptions { Enabled = true });
+```
+
+Calling `Explain` while disabled throws `InvalidOperationException` naming the option to set, rather than silently no-op-ing. This double gate - registered only when asked for, and disabled even then unless told otherwise - reflects that the explainer resolves live behavior instances from the container and reveals internal wiring, which isn't something to run unexamined against a production container.
+
+Under Microsoft DI, an application's own `IOptions<PipelineExplainerOptions>`/`IOptionsMonitor<PipelineExplainerOptions>` registration - typically `services.Configure<PipelineExplainerOptions>(configuration.GetSection("Interlocutor:PipelineExplainer"))` - wins over the value passed to `AddPipelineExplainer`, the same "a consumer's own registration wins" precedence [Dependency Defaults](builder-and-registration.md#dependency-defaults) already documents for other pipeline-behavior dependencies. This lets an operator flip the explainer on or off via configuration without a redeploy. Autofac has no such precedence layer - it always uses the `PipelineExplainerOptions` instance passed to `AddPipelineExplainer` directly.
+
+### Reflection, Trim & AOT
+
+`IPipelineExplainer`'s default implementation closes `PipelineChainResolver.ResolveChain<TRequest,TResponse>` reflectively via `MethodInfo.MakeGenericMethod`, since `requestType`/`responseType` are only known at run time. This is an explicitly opt-in diagnostic path, not the hot dispatch path, so the cost is acceptable there in a way it wouldn't be for ordinary dispatch - see [Trim & AOT Support](trim-and-aot-support.md) for the same JIT-closure requirement every dispatch path already has for a request/response pair the runtime hasn't seen before.
+
 ## Validation, Authorization & Auditing Behaviors
 
 These three are the main cross-cutting concerns:

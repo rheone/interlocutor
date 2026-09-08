@@ -48,18 +48,19 @@ public static class PipelineChainResolver
         var baseline = services.GetServices<IPipelineBehavior<TRequest, TResponse>>().ToList();
 
         var registry = (IPipelineOverrideRegistry?)services.GetService(typeof(IPipelineOverrideRegistry));
-        if (registry is null || !registry.TryGetOverride(typeof(TRequest), out var behaviorTypes))
+        var match = registry?.TryGetOverride(typeof(TRequest));
+        if (match is null)
         {
             return baseline;
         }
 
-        var ordered = new List<IPipelineBehavior<TRequest, TResponse>>(behaviorTypes.Count);
-        foreach (var declaredType in behaviorTypes)
+        var ordered = new List<IPipelineBehavior<TRequest, TResponse>>(match.BehaviorTypes.Count);
+        foreach (var declaredType in match.BehaviorTypes)
         {
-            var match = baseline.Find(behavior => IsInstanceOf(behavior.GetType(), declaredType));
-            if (match is not null)
+            var resolvedInstance = baseline.Find(behavior => IsInstanceOf(behavior.GetType(), declaredType));
+            if (resolvedInstance is not null)
             {
-                ordered.Add(match);
+                ordered.Add(resolvedInstance);
             }
         }
 
