@@ -1,9 +1,9 @@
 namespace Interlocutor.DependencyInjection.Microsoft.Tests;
 
 using global::FluentValidation;
-using global::NHibernate;
 using global::Microsoft.Extensions.DependencyInjection;
 using global::Microsoft.Extensions.Logging;
+using global::NHibernate;
 using Interlocutor.Abstractions;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
