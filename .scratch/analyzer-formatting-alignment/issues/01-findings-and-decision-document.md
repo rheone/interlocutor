@@ -4,7 +4,7 @@
 
 **Blocked by:** None — can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `61ae224`
 
 - [x] The document covers using-directive ordering/placement: the tension between the requested "alphabetical order, System usings first, separated by a blank line" rule and the currently-configured setting that disables blank-line separation between import groups; the currently-unset (default) state of the StyleCop rules governing System-directives-first and alphabetical ordering; and the already-acknowledged `src/`-vs-`tests/` split on using-directive placement relative to the namespace.
 - [x] The document covers missing-XML-comment enforcement: where the missing-doc-comment diagnostics currently apply at warning severity and where they're relaxed, and what tightening that would mean for `src/` vs. `tests/`.
