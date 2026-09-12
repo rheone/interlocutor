@@ -197,6 +197,15 @@ public static partial class ResultExtensions
     /// Extracts <paramref name="response"/>'s active case via <paramref name="caseRegistry"/> (or the default
     /// registry) and determines whether it should be mapped as a failure.
     /// </summary>
+    /// <remarks>
+    /// Deliberately takes no <see cref="IOutcomeStatusMapper"/> parameter, unlike
+    /// <see cref="ClassifyFailureCaseForActionResult{TFailure}"/>'s equivalent "unrecognized" gate on the
+    /// dedicated arity path: an explicitly supplied mapper there can be trusted to bypass the throw because the
+    /// only open question is which status a value <em>already known</em> to be a failure deserves. Here, the
+    /// open question is whether the active case is success or failure in the first place - a mapper's
+    /// <see cref="IOutcomeMapper{TResult}.Map{TFailure}"/> has no way to answer that (it only renders a value
+    /// already known to be a failure) - so no mapper, however permissive, ever bypasses this method's throw.
+    /// </remarks>
     /// <typeparam name="TResponse">The <see cref="IUnion"/> type to extract from.</typeparam>
     /// <param name="response">The response to extract the active case from.</param>
     /// <param name="caseRegistry">The registry to use, or <see langword="null"/> to use the default registry.</param>
@@ -305,6 +314,17 @@ public static partial class ResultExtensions
     /// application-defined success payload that matches none of the recognized failure shapes, renders as an
     /// HTTP 200 with that value as the body. Called only from the source-generated dedicated arity overloads.
     /// </summary>
+    /// <remarks>
+    /// This never throws <see cref="OutcomeCaseNotMappableException"/> for an unrecognized <paramref name="value"/>,
+    /// unlike its <see cref="ClassifyFailureCaseForActionResult{TFailure}"/> counterpart for a declared-failure
+    /// slot. That asymmetry is deliberate, not an oversight: a declared-failure slot's "known mapping set" is the
+    /// closed set of recognized failure shapes, so a type outside it is genuinely unrecognized. The success slot
+    /// has no equivalent closed set to be outside of - <em>any</em> type is a legitimate success payload
+    /// (`Outcome&lt;string, Failure&gt;`'s plain <see langword="string"/> success value is the ordinary case, not
+    /// an edge case), so "unrecognized type" is not a coherent concept for it the way it is for a failure slot.
+    /// The only thing worth checking here is the opposite mistake: a value that is <em>recognized as failure-shaped</em>
+    /// despite occupying the success slot, which this method still catches and reroutes.
+    /// </remarks>
     /// <typeparam name="TSuccess">The success case's static type for this arity.</typeparam>
     /// <param name="value">The success case's active value.</param>
     /// <param name="mapper">The mapper to use if <paramref name="value"/> turns out to be failure-shaped, or <see langword="null"/> for <see cref="DefaultMapper"/>.</param>

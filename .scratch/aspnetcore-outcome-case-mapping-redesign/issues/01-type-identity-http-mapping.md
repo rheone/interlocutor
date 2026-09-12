@@ -39,6 +39,47 @@ type, via the one shared `IsRecognizedFailureCase` table in `Interlocutor.AspNet
   new tests cover a failure-shaped value correctly mapping when it occupies the success slot, and a custom
   mapper still being trusted for an otherwise-unrecognized failure-slot type.
 
+### Why the success slot (`T1`) doesn't throw for an unrecognized type
+
+Bullet 3 above says an unrecognized case value throws "regardless of which generic-parameter slot it
+occupies," and the shipped behavior deliberately narrows that: only a declared-failure-slot (`T2..Tn`) value
+throws for being unrecognized. A success-slot value never does, whatever its type - this is not an oversight,
+it's because "unrecognized type" isn't a coherent concept for the success slot in the first place. A
+declared-failure slot has a real closed set to be outside of: the built-in failure case types/interfaces
+`DefaultHttpOutcomeStatusMapper` recognizes. The success slot has no equivalent closed set - every one of the
+arity family's existing tests relies on an arbitrary application-defined payload (a plain `string`, in
+`Outcome<string, Failure>("hello")`) being the *ordinary*, expected shape of a success value, not an edge case
+to guess about. Treating an arbitrary success payload as "unrecognized" and throwing for it would not fix a
+silent-guessing bug the way it does for a failure slot - it would break the feature's basic case (the shipped
+implementation reflects this: it was checked directly against the existing `ToActionResult_WithSuccessValue_ReturnsOkObjectResult`-style
+tests, which assert 200 with the payload as the body, not a thrown exception). The one thing genuinely worth
+checking for the success slot - and what the shipped `ClassifySuccessCaseForActionResult`/`ForMinimalApiResult`
+helpers do check - is the *opposite* mistake bullet 1 is actually about: a value that **is** recognized as
+failure-shaped despite occupying the success slot, which still gets rerouted to the mapper instead of being
+blindly rendered as 200.
+
+### Why an explicit mapper bypasses the throw on the dedicated arity path but not on the reflective catch-all
+
+The dedicated per-arity path and the reflective catch-all path both throw `OutcomeCaseNotMappableException` for
+an unrecognized type, but only the former lets an explicitly supplied `IOutcomeStatusMapper` bypass that throw
+(see `ClassifyFailureCaseForActionResult`/`ForMinimalApiResult` vs. `ExtractCase`). This is a deliberate,
+documented (in both methods' own doc comments) asymmetry, not an inconsistency to fix, because the two paths
+face different kinds of uncertainty:
+
+- On the dedicated arity path, `Match` already tells the code with certainty whether a declared-failure-slot
+  case is active - there is no success-or-failure ambiguity left, only "which status does this specific,
+  unrecognized failure type deserve." A caller-supplied mapper can answer that (its `Map<TFailure>` always
+  returns *some* status for *any* type it's handed), so trusting it there is sound - it's exactly the same
+  contract `TeapotOutcomeStatusMapper`'s tests already rely on for a marker-interface-free custom failure type
+  like `CustomRateLimited`.
+- On the reflective catch-all, the open question is whether the active case represents success or failure at
+  all - there is no compile-time case-position information to settle that first. A mapper cannot help answer
+  it: `IOutcomeStatusMapper.Map<TFailure>` only knows how to *render* a value already known to be a failure: it
+  has no operation for "is this a failure in the first place?" So no mapper, however permissive, can bypass
+  `ExtractCase`'s throw - there being one supplied doesn't change what is fundamentally unknowable at that
+  point. `GenericCatchAllResultExtensionsTests.ToActionResult_CatchAll_HandRolledOutcome_WithUnrecognizedTypeAndExplicitMapper_StillThrowsOutcomeCaseNotMappableException`
+  pins this down against a regression.
+
 **Follow-up opportunity (not built here):** because classification now happens *before* any mapper (default or
 custom-but-implicit) is consulted, a consumer-defined failure type that implements none of the recognized
 `I*FailureCase` marker interfaces is no longer reachable via the existing `OutcomeMapperBase`/
