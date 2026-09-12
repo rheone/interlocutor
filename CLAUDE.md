@@ -34,6 +34,7 @@ Prefer the use of ripgrep (`rg`) over grep
 - `Interlocutor.FluentValidation` - `ValidationBehavior`; `DependencyTests.cs` asserts it depends on Abstractions.
 - `Interlocutor.Persistence.Abstractions` - optional, opt-in persistence abstraction (`IUnitOfWork`, `IDomainRepository<TEntity, TKey>`, `Page<T>`, `SortCriterion<TEntity>`). Zero ORM dependency; depends only on Abstractions.
 - `Interlocutor.Persistence.EntityFrameworkCore` / `Interlocutor.Persistence.NHibernate` - store-specific implementations of the persistence abstraction, and each store's `UnitOfWorkBehavior` - the unit-of-work-owned transaction commit/rollback gate that supersedes the retired `Interlocutor.EntityFrameworkCore`/`Interlocutor.NHibernate` packages' `TransactionBehavior`; each must depend on `Interlocutor.Persistence.Abstractions` and must not depend on each other.
+- `Interlocutor.Testing` - `FakeSender`/`FakePublisher`, fake `ISender`/`IPublisher` implementations for a consumer's own unit tests, with no real pipeline, container, or handler registration involved. Depends only on CommonKernel + Abstractions; `DependencyTests.cs` asserts it depends on nothing else.
 
 Each `src/*` project has a matching `tests/*.Tests` project (xunit.v3, NSubstitute for mocking). `tests/Interlocutor.Architecture.Tests` is not per-package - it asserts the cross-package dependency rules above; add to it, not a per-package test project, when introducing a new package or changing what depends on what.
 
