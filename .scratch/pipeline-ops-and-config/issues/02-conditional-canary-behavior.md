@@ -1,6 +1,6 @@
 # 03 - Conditional (canary/percentage-rollout) behavior wrapper
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `4262e1b`
 
 **What to build:** A way to gate an existing `IPipelineBehavior<TRequest,TResponse>` behind a runtime predicate, so a new or risky behavior (a stricter validation rule, a new authorization policy) can be turned on for a fraction of traffic and ramped up without a redeploy, instead of the current all-or-nothing "it's in the chain or it isn't" choice every `Add*Behavior` call makes today.
 
