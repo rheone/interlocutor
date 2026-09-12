@@ -4,7 +4,7 @@
 
 **Blocked by:** None — this is a behavior fix against the currently-shipped arity range and does not require the arity extension.
 
-**Status:** done - implemented in `<pending-final-sha>`
+**Status:** done - implemented in `942f799` (review fixes in `03f73ce`)
 
 - [x] The generated per-arity `ToActionResult`/`ToMinimalApiResult` extension methods no longer treat the first generic-parameter position as the success/200 case; they resolve the active case's status by its runtime type, via the same mapping logic the reflective catch-all already uses.
 - [x] The generated per-arity extensions and the reflective catch-all extension both delegate to one shared implementation of the type-to-status mapping rules — the mapping table exists in exactly one place, not duplicated between the two paths.
