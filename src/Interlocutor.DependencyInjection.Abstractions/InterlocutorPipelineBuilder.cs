@@ -287,6 +287,92 @@ public sealed class InterlocutorPipelineBuilder
     }
 
     /// <summary>
+    /// Adds <typeparamref name="TBehavior"/> to the chain wrapped in
+    /// <see cref="ConditionalBehavior{TRequest,TResponse}"/>, so it only runs when <paramref name="shouldRun"/>
+    /// returns <see langword="true"/> for the dispatched request - otherwise the chain proceeds straight to
+    /// <c>next()</c>, as if <typeparamref name="TBehavior"/> had never been registered. Lets a new or risky
+    /// behavior (a stricter validation rule, a new authorization policy) be turned on for a fraction of
+    /// traffic and ramped up without a redeploy, instead of the all-or-nothing choice every other
+    /// <c>Add*Behavior</c> call makes.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Built from the same primitives as the service-resolving
+    /// <see cref="AddBehavior{TRequest,TResponse}(Func{IServiceProvider,TRequest,CancellationToken,Task{StageResult{TResponse}}},Func{IServiceProvider,TRequest,TResponse,CancellationToken,Task{TResponse}},RegistrationLifetime)"/>
+    /// overload: this method is a factory-form registration under the hood, so it lands in
+    /// <see cref="BehaviorFactories"/> rather than <see cref="Behaviors"/> and, per that property's own
+    /// remarks, resolves after every type-based <see cref="Behaviors"/> entry regardless of interleaved call
+    /// order.
+    /// </para>
+    /// <para>
+    /// <typeparamref name="TBehavior"/> is resolved from the container as the wrapper's inner behavior via a
+    /// try-add default registration of <typeparamref name="TBehavior"/> against its own concrete type - the
+    /// same "a consumer's own registration wins" precedent every other pipeline-behavior dependency default
+    /// in <see cref="Defaults"/> already carries. <typeparamref name="TBehavior"/> is registered scoped by
+    /// default, the same as <see cref="AddBehavior(Type, RegistrationLifetime)"/>; <paramref name="lifetime"/>
+    /// governs the <see cref="ConditionalBehavior{TRequest,TResponse}"/> wrapper itself, not
+    /// <typeparamref name="TBehavior"/>'s own registration. Because <see cref="ConditionalBehavior{TRequest,TResponse}"/>
+    /// wraps an already-constructed inner instance rather than a per-request factory, <typeparamref name="TBehavior"/>
+    /// is constructed whenever the wrapper itself is - once per resolution of the chain, the same as every
+    /// other registered behavior - not lazily deferred until <paramref name="shouldRun"/> is evaluated against
+    /// a specific request. <paramref name="shouldRun"/> only gates whether the already-constructed
+    /// <typeparamref name="TBehavior"/> instance's <c>HandleAsync</c> runs for a given dispatch, not whether it
+    /// gets constructed at all.
+    /// </para>
+    /// <para>
+    /// Ships one built-in gate, a percentage rollout - see <see cref="RolloutOptions"/> and the
+    /// Microsoft-DI/Autofac-specific <c>AddRolloutBehavior</c> sugar each container package builds on top of
+    /// this method - but <paramref name="shouldRun"/> accepts any predicate, so a consumer can gate on a
+    /// feature flag, a tenant allowlist, or anything else a runtime decision can be made from.
+    /// </para>
+    /// </remarks>
+    /// <typeparam name="TBehavior">The concrete <see cref="IPipelineBehavior{TRequest,TResponse}"/> implementation to gate.</typeparam>
+    /// <typeparam name="TRequest">The request type the behavior participates in.</typeparam>
+    /// <typeparam name="TResponse">The response type the behavior participates in.</typeparam>
+    /// <param name="shouldRun">
+    /// Evaluated once per dispatch, given the resolving <see cref="IServiceProvider"/> and the request
+    /// instance - <see langword="true"/> runs <typeparamref name="TBehavior"/>, <see langword="false"/> skips
+    /// straight to <c>next()</c>.
+    /// </param>
+    /// <param name="lifetime">
+    /// The service lifetime to register the <see cref="ConditionalBehavior{TRequest,TResponse}"/> wrapper
+    /// with. Defaults to scoped.
+    /// </param>
+    /// <returns>This builder, for chaining.</returns>
+    public InterlocutorPipelineBuilder AddConditionalBehavior<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TBehavior,
+        TRequest,
+        TResponse
+    >(Func<IServiceProvider, TRequest, bool> shouldRun, RegistrationLifetime lifetime = RegistrationLifetime.Scoped)
+        where TBehavior : class, IPipelineBehavior<TRequest, TResponse>
+    {
+        ArgumentNullException.ThrowIfNull(shouldRun);
+
+        this.TryAddDefault(typeof(TBehavior), typeof(TBehavior));
+        this._behaviorFactories.Add(
+            new InterlocutorFactoryRegistration(
+                typeof(IPipelineBehavior<TRequest, TResponse>),
+                sp => new ConditionalBehavior<TRequest, TResponse>(
+                    (IPipelineBehavior<TRequest, TResponse>)(
+                        sp.GetService(typeof(TBehavior))
+                        ?? throw new InvalidOperationException(
+                            $"'{typeof(TBehavior)}' could not be resolved from the container. "
+                                + $"AddConditionalBehavior<{typeof(TBehavior).Name},...> registers it as a "
+                                + "try-add default against its own concrete type - check that its constructor "
+                                + "dependencies are themselves resolvable."
+                        )
+                    ),
+                    request => shouldRun(sp, request)
+                ),
+                lifetime,
+                RegistrationKind.Behavior
+            )
+        );
+
+        return this;
+    }
+
+    /// <summary>
     /// Declares a Tier-1 pipeline override: a request type <paramref name="predicate"/> matches gets exactly
     /// <paramref name="behaviors"/>, in the given order, in place of the general-purpose baseline (Tier 2)
     /// entirely - a full, positively-declared replacement, never a merge with or modification of it. An

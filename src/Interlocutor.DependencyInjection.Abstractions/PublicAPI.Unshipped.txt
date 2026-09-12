@@ -251,3 +251,4 @@ static Interlocutor.DependencyInjection.Abstractions.TypeMatchRule.operator ==(I
 ~override Interlocutor.DependencyInjection.Abstractions.SkippedRegistration.ToString() -> string
 ~override Interlocutor.DependencyInjection.Abstractions.TypeLoadFailure.Equals(object obj) -> bool
 ~override Interlocutor.DependencyInjection.Abstractions.TypeLoadFailure.ToString() -> string
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.AddConditionalBehavior<TBehavior, TRequest, TResponse>(System.Func<System.IServiceProvider!, TRequest, bool>! shouldRun, Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime lifetime = Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Scoped) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder!

@@ -206,6 +206,81 @@ Under Microsoft DI, an application's own `IOptions<PipelineExplainerOptions>`/`I
 
 `IPipelineExplainer`'s default implementation closes `PipelineChainResolver.ResolveChain<TRequest,TResponse>` reflectively via `MethodInfo.MakeGenericMethod`, since `requestType`/`responseType` are only known at run time. This is an explicitly opt-in diagnostic path, not the hot dispatch path, so the cost is acceptable there in a way it wouldn't be for ordinary dispatch - see [Trim & AOT Support](trim-and-aot-support.md) for the same JIT-closure requirement every dispatch path already has for a request/response pair the runtime hasn't seen before.
 
+## Conditional (Canary) Behaviors
+
+Every `Add*Behavior` call so far is all-or-nothing: once registered, a behavior runs for every dispatch. `ConditionalBehavior<TRequest,TResponse>` wraps an existing `IPipelineBehavior<TRequest,TResponse>` behind a runtime predicate instead, so a new or risky behavior - a stricter validation rule, a new authorization policy - can be turned on for a fraction of traffic and ramped up without a redeploy:
+
+```csharp
+public sealed class ConditionalBehavior<TRequest, TResponse>(
+    IPipelineBehavior<TRequest, TResponse> inner,
+    Func<TRequest, bool> shouldRun
+) : IPipelineBehavior<TRequest, TResponse>
+{
+    public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
+        shouldRun(request) ? inner.HandleAsync(request, next, ct) : next();
+}
+```
+
+`shouldRun` is evaluated once per dispatch, against the request instance only - `false` skips `inner` entirely, as if it had never been registered. This is an on/off gate, not shadow/observe-only execution: a gated behavior either fully participates in a given dispatch or is entirely absent from it. Running `inner` but discarding its effect on the outcome has no generic semantics for a behavior that short-circuits or transforms the response, so it isn't offered.
+
+### AddConditionalBehavior
+
+`InterlocutorPipelineBuilder.AddConditionalBehavior<TBehavior,TRequest,TResponse>` builds the wrapper for you, resolving `TBehavior` from the container as a try-add default against its own concrete type:
+
+```csharp
+builder.Pipeline.AddConditionalBehavior<StricterOrderValidationBehavior, CreateOrderCommand, Outcome<OrderId, ValidationErrors>>(
+    (services, request) => FeatureFlags.IsEnabledFor(request));
+```
+
+Like the delegate-form `AddBehavior` overloads, this is a factory-backed registration - it lands in `BehaviorFactories`, which is applied as its own step immediately after every type-based `Behaviors` entry, regardless of interleaved call order. `TBehavior` itself is constructed whenever the wrapper is - once per resolution of the chain, the same as any other registered behavior - so `shouldRun` only gates whether its `HandleAsync` runs for a given dispatch, not whether it gets constructed at all.
+
+### The shipped percentage-rollout gate
+
+`RolloutOptions` is a plain, container-neutral POCO:
+
+```csharp
+public sealed class RolloutOptions
+{
+    public double PercentageEnabled { get; set; } // 0-100
+}
+```
+
+`RolloutGate.ShouldRun(RolloutOptions)` draws once per call - never at `0`, always at `100`, and approximately the configured fraction of the time in between. There is no sticky-by-key assignment (the same logical caller can draw differently from one dispatch to the next) - a fast-follow, not required for this first version.
+
+#### Worked example: ramping a new validation rule from 0% to 100%
+
+Under Microsoft DI, `AddRolloutBehavior` binds the gate to a *named* `IOptionsMonitor<RolloutOptions>` registration, so more than one canary can run concurrently and the percentage is adjustable via configuration reload, live, without a redeploy:
+
+```csharp
+services.Configure<RolloutOptions>(
+    "StricterOrderValidation",
+    configuration.GetSection("Rollouts:StricterOrderValidation"));
+
+services.AddInterlocutor(builder =>
+{
+    builder.Pipeline.AddRolloutBehavior<StricterOrderValidationBehavior, CreateOrderCommand, Outcome<OrderId, ValidationErrors>>(
+        "StricterOrderValidation");
+});
+```
+
+```json
+{ "Rollouts": { "StricterOrderValidation": { "PercentageEnabled": 0 } } }
+```
+
+Editing `PercentageEnabled` in configuration - 0, then 10, then 50, then 100 - ramps `StricterOrderValidationBehavior` up from off to fully on without restarting the application, as long as the configuration source itself supports reload (a JSON file provider watching for changes, for example). The name (`"StricterOrderValidation"` above) is what lets a second, unrelated canary run at the same time under its own independently-configured percentage.
+
+Autofac has no `IOptionsMonitor` equivalent, so its `AddRolloutBehavior` overload takes a `RolloutOptions` value instead, copied at configuration time rather than bound to a live source:
+
+```csharp
+containerBuilder.AddInterlocutor(interlocutorBuilder =>
+{
+    interlocutorBuilder.Pipeline.AddRolloutBehavior<StricterOrderValidationBehavior, CreateOrderCommand, Outcome<OrderId, ValidationErrors>>(
+        new RolloutOptions { PercentageEnabled = 0 });
+});
+```
+
+This is a genuine capability difference, not a silent degrade: ramping the percentage further under Autofac means rebuilding the container with a new value, not editing a configuration file live. Choose the container package accordingly when live reload matters to your rollout process.
+
 ## Validation, Authorization & Auditing Behaviors
 
 These three are the main cross-cutting concerns:
