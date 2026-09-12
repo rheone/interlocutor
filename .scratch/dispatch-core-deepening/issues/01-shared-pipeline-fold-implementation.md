@@ -6,10 +6,10 @@ After this ticket, both dispatch paths execute through the one `PipelineChainExe
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `bf40384`
 
-- [ ] `PipelineChainExecutor.ExecuteAsync` is a public, documented entry point usable by code emitted into a consuming assembly (it already takes only an `IServiceProvider` plus delegates — no other internal surface needs to widen)
-- [ ] `DispatchWrapperEmitter` emits a call into `PipelineChainExecutor.ExecuteAsync` instead of re-deriving the fold/eject-catch logic as string-templated source
-- [ ] A request dispatched through generator-emitted code that throws via `Eject.WithCase` recovers correctly (previously this propagated unhandled)
-- [ ] Existing `EjectEmissionTests`, `AuthorizationBehaviorEjectCaseEndToEndTests`, and the generator's dispatch-switch integration tests all pass
-- [ ] `.scratch/pipeline-case-fidelity/issues/08-write-adr-eject-withcase.md` is left untouched — this ticket does not write that ADR, it only produces the fix that ADR should weigh as an option
+- [x] `PipelineChainExecutor.ExecuteAsync` is a public, documented entry point usable by code emitted into a consuming assembly (it already takes only an `IServiceProvider` plus delegates — no other internal surface needs to widen)
+- [x] `DispatchWrapperEmitter` emits a call into `PipelineChainExecutor.ExecuteAsync` instead of re-deriving the fold/eject-catch logic as string-templated source
+- [x] A request dispatched through generator-emitted code that throws via `Eject.WithCase` recovers correctly (previously this propagated unhandled)
+- [x] Existing `EjectEmissionTests`, `AuthorizationBehaviorEjectCaseEndToEndTests`, and the generator's dispatch-switch integration tests all pass
+- [x] `.scratch/pipeline-case-fidelity/issues/08-write-adr-eject-withcase.md` is left untouched — this ticket does not write that ADR, it only produces the fix that ADR should weigh as an option
