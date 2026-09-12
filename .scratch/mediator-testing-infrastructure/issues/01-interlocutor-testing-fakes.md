@@ -4,7 +4,7 @@
 
 **Blocked by:** None — can start immediately
 
-**Status:** done - implemented in `pending` (see final commit note below)
+**Status:** done - implemented in `29ae6c0` (review fixes in `4ef7899`)
 
 - [x] `Interlocutor.Testing` package exists under `src/`, packaged the same way as the other shipped packages, with its own `tests/Interlocutor.Testing.Tests` project covering both fakes
 - [x] `FakeSender` implements `ISender`, lets a test stub a response per request type, and exposes the requests it received for assertion
