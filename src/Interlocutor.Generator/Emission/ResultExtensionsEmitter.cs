@@ -90,7 +90,11 @@ internal static class ResultExtensionsEmitter
 
     /// <summary>
     /// Emits the <c>extension&lt;T1, ...&gt;(Outcome&lt;T1, ...&gt; result)</c> block for one
-    /// case-arity.
+    /// case-arity. Both members delegate every case's classification to the shared, hand-written
+    /// <c>Classify*</c> helpers on <c>ResultExtensions</c>'s other partial declaration - the active case's
+    /// runtime type decides its HTTP status there, not which arm of this <c>Match</c> call happened to fire (see
+    /// that partial's own remarks for why the success-slot arm still needs its own type check rather than being
+    /// an unconditional 200).
     /// </summary>
     /// <param name="builder">The source being built.</param>
     /// <param name="arity">The union's case count (success case plus every alternative case).</param>
@@ -111,10 +115,10 @@ internal static class ResultExtensionsEmitter
         builder
             .Append("                ")
             .Append(valueParameterNames[0])
-            .Append(" => new global::Microsoft.AspNetCore.Mvc.OkObjectResult(")
+            .Append(" => ClassifySuccessCaseForActionResult(")
             .Append(valueParameterNames[0])
-            .AppendLine("),");
-        EmitFailureMatchArms(builder, valueParameterNames, "ToActionResult");
+            .AppendLine(", mapper),");
+        EmitFailureMatchArms(builder, valueParameterNames, outcomeType, "ClassifyFailureCaseForActionResult");
         builder.AppendLine("            );");
         builder.AppendLine();
 
@@ -125,24 +129,25 @@ internal static class ResultExtensionsEmitter
         builder
             .Append("                ")
             .Append(valueParameterNames[0])
-            .Append(" => global::Microsoft.AspNetCore.Http.Results.Ok(")
+            .Append(" => ClassifySuccessCaseForMinimalApiResult(")
             .Append(valueParameterNames[0])
-            .AppendLine("),");
-        EmitFailureMatchArms(builder, valueParameterNames, "ToMinimalApiResult");
+            .AppendLine(", mapper),");
+        EmitFailureMatchArms(builder, valueParameterNames, outcomeType, "ClassifyFailureCaseForMinimalApiResult");
         builder.AppendLine("            );");
 
         builder.AppendLine("    }");
     }
 
     /// <summary>
-    /// Emits one <c>caseN => (mapper ?? DefaultMapper).Map(caseN).&lt;renderMethod&gt;()</c> match arm per
+    /// Emits one <c>caseN => &lt;classifyMethod&gt;(caseN, mapper, typeof(&lt;outcomeType&gt;))</c> match arm per
     /// failure case (every entry in <paramref name="valueParameterNames"/> after the success case), the last
     /// with no trailing comma.
     /// </summary>
     private static void EmitFailureMatchArms(
         StringBuilder builder,
         IReadOnlyList<string> valueParameterNames,
-        string renderMethod
+        string outcomeType,
+        string classifyMethod
     )
     {
         for (var i = 1; i < valueParameterNames.Count; i++)
@@ -151,11 +156,13 @@ internal static class ResultExtensionsEmitter
             builder
                 .Append("                ")
                 .Append(valueParameterNames[i])
-                .Append(" => (mapper ?? DefaultMapper).Map(")
+                .Append(" => ")
+                .Append(classifyMethod)
+                .Append('(')
                 .Append(valueParameterNames[i])
-                .Append(").")
-                .Append(renderMethod)
-                .Append("()")
+                .Append(", mapper, typeof(")
+                .Append(outcomeType)
+                .Append("))")
                 .AppendLine(isLast ? string.Empty : ",");
         }
     }

@@ -130,16 +130,32 @@ public class MinimalApiResultExtensionsTests
     }
 
     [Fact]
-    public void ToMinimalApiResult_WithUnknownFailureType_Returns500()
+    public void ToMinimalApiResult_WithUnrecognizedFailureSlotTypeAndNoMapper_ThrowsOutcomeCaseNotMappableException()
     {
-        // Arrange
+        // Arrange - see ResultExtensionsTests.ToActionResult_WithUnrecognizedFailureSlotTypeAndNoMapper_ThrowsOutcomeCaseNotMappableException
+        // for why int, unrecognized and with no mapper supplied to take responsibility for it, now throws
+        // instead of silently falling to DefaultHttpOutcomeStatusMapper.MapUnrecognized (500) by virtue of
+        // occupying a non-first slot alone.
         var result = new Outcome<string, int>(42);
+
+        // Act & Assert
+        var exception = Assert.Throws<OutcomeCaseNotMappableException>(() => result.ToMinimalApiResult());
+        Assert.Equal(typeof(Outcome<string, int>), exception.ResponseType);
+        Assert.Equal(typeof(int), exception.CaseType);
+    }
+
+    [Fact]
+    public void ToMinimalApiResult_WithFailureShapedValueInSuccessSlot_MapsAsFailureNotAsOk()
+    {
+        // Arrange - see ResultExtensionsTests.ToActionResult_WithFailureShapedValueInSuccessSlot_MapsAsFailureNotAsOk
+        // for the same fix exercised through the minimal-API path.
+        Outcome<NotFound, string> result = new(new NotFound("Widget not found"));
 
         // Act
         var minimalResult = result.ToMinimalApiResult();
 
         // Assert
-        Assert.Equal(StatusCodes.Status500InternalServerError, GetStatusCode(minimalResult));
+        Assert.Equal(StatusCodes.Status404NotFound, GetStatusCode(minimalResult));
     }
 
     [Fact]

@@ -188,18 +188,55 @@ public class ResultExtensionsTests
     }
 
     [Fact]
-    public void ToActionResult_WithUnknownFailureType_Returns500()
+    public void ToActionResult_WithUnrecognizedFailureSlotTypeAndNoMapper_ThrowsOutcomeCaseNotMappableException()
     {
-        // Arrange
+        // Arrange - int occupies the failure slot (T2), but is neither the bare Success marker nor one of the
+        // built-in failure case types/interfaces DefaultHttpOutcomeStatusMapper recognizes. Under the old,
+        // position-based dispatch this silently fell to DefaultHttpOutcomeStatusMapper.MapUnrecognized (500) by
+        // virtue of occupying a non-first slot alone; now that classification is by runtime type instead, and
+        // no explicit mapper was supplied to take responsibility for it, this throws exactly as the reflective
+        // catch-all already does for the equivalent unrecognized-type scenario (see
+        // GenericCatchAllResultExtensionsTests) rather than guessing a status.
         var result = new Outcome<string, int>(42);
+
+        // Act & Assert
+        var exception = Assert.Throws<OutcomeCaseNotMappableException>(() => result.ToActionResult());
+        Assert.Equal(typeof(Outcome<string, int>), exception.ResponseType);
+        Assert.Equal(typeof(int), exception.CaseType);
+    }
+
+    [Fact]
+    public void ToActionResult_WithUnrecognizedFailureSlotTypeAndExplicitMapper_UsesThatMapper()
+    {
+        // Arrange - an explicitly supplied mapper is always trusted for whatever type it is handed (its Map has
+        // no "I don't know this type" signal of its own), so supplying one - even for a type the library's own
+        // default recognition rules don't know - avoids the throw the previous test exercises.
+        var result = new Outcome<string, int>(42);
+
+        // Act
+        var actionResult = result.ToActionResult(new TeapotOutcomeStatusMapper());
+
+        // Assert
+        var statusCodeResult = Assert.IsType<StatusCodeResult>(actionResult);
+        Assert.Equal(StatusCodes.Status418ImATeapot, statusCodeResult.StatusCode);
+    }
+
+    [Fact]
+    public void ToActionResult_WithFailureShapedValueInSuccessSlot_MapsAsFailureNotAsOk()
+    {
+        // Arrange - NotFound occupies the success slot (T1), an unusual but legal instantiation. The fix for
+        // the "first generic-parameter position always means 200" bug: the success arm now checks the active
+        // value's runtime type too, so a failure-shaped value there is still mapped as a failure instead of
+        // being wrapped in an OkObjectResult just because it happened to be T1.
+        Outcome<NotFound, string> result = new(new NotFound("Widget not found"));
 
         // Act
         var actionResult = result.ToActionResult();
 
         // Assert
         var objectResult = Assert.IsType<ObjectResult>(actionResult);
-        Assert.Equal(StatusCodes.Status500InternalServerError, objectResult.StatusCode);
-        Assert.Equal(42, objectResult.Value);
+        Assert.Equal(StatusCodes.Status404NotFound, objectResult.StatusCode);
+        Assert.Equal("Widget not found", objectResult.Value);
     }
 
     [Fact]

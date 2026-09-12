@@ -18,13 +18,17 @@ namespace Interlocutor.AspNetCore;
 /// not yet known whether the active case is a failure at all.
 /// </para>
 /// <para>
-/// Only the reflective catch-all overloads can throw this - the dedicated, per-arity overloads (source-generated
-/// for the six built-in <c>Outcome</c>/<c>Outcome&lt;...&gt;</c> arities) resolve success-versus-failure with an
-/// ordinary compile-time <c>switch</c> over the statically known case types, so the ambiguity this exception
-/// represents cannot arise there. A caller who hits this exception for a real union with a custom success
-/// payload type should prefer the dedicated overload (calling it against the concrete <c>Outcome&lt;...&gt;</c>
-/// type rather than through a bare <see cref="Interlocutor.CommonKernel.ResultTypes.IOutcome"/>-constrained
-/// generic) instead of working around the reflective path.
+/// Both the reflective catch-all overloads and the dedicated, per-arity overloads (source-generated for the
+/// built-in <c>Outcome</c>/<c>Outcome&lt;...&gt;</c> arities) can throw this, though for different reasons. The
+/// catch-all has no compile-time case-position information at all, so it cannot even tell whether the active
+/// case represents success or failure once it is neither the bare
+/// <see cref="Interlocutor.CommonKernel.ResultTypes.Success"/> marker nor a recognized failure shape. The
+/// dedicated overloads always know that much - their own <c>Match</c> tells them definitively which case is
+/// active - but a case value that is failure-shaped despite occupying the success slot, or a declared-failure-slot
+/// value that matches none of the recognized failure shapes with no explicit mapper supplied to take
+/// responsibility for it, is still not a case either path can assign a principled HTTP status to without
+/// guessing. Passing an explicit <see cref="Interlocutor.AspNetCore.IOutcomeStatusMapper"/> to a dedicated
+/// overload avoids the latter: such a mapper is always trusted for whatever type it is handed.
 /// </para>
 /// </remarks>
 // RCS1194 wants the standard parameterless/message/message+innerException/serialization constructor set. This

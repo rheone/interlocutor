@@ -33,11 +33,11 @@ using Microsoft.CodeAnalysis.CSharp;
 /// The compiled-behavior check below feeds the one piece of emitted text <see cref="GeneratedSource"/> (which
 /// always contains every arity, exactly like the real generator always emits the full boilerplate for its one
 /// attributed target) into <see cref="GeneratorTestHarness.EmitAndLoadAssembly(IIncrementalGenerator, string, string, System.Collections.Generic.IEnumerable{MetadataReference}?, LanguageVersion)"/>
-/// alongside a small hand-written scaffold (a second partial declaration supplying the <c>DefaultMapper</c>
-/// field the hand-written half of the real <see cref="Interlocutor.AspNetCore.ResultExtensions"/> normally provides, plus probe
-/// factory methods) - proving the emitted overloads are not just textually plausible but real, type-checked C#
-/// that dispatches correctly against the real <see cref="Interlocutor.CommonKernel.Outcome{T1,T2}"/>
-/// family and <see cref="DefaultHttpOutcomeStatusMapper"/>.
+/// alongside a small hand-written scaffold reproducing the private helpers the real, hand-written half of
+/// <see cref="Interlocutor.AspNetCore.ResultExtensions"/> normally supplies - the emitted <c>Match</c> arms call
+/// these by name (see that partial's own remarks) - proving the emitted overloads are not just textually
+/// plausible but real, type-checked C# that dispatches correctly against the real
+/// <see cref="Interlocutor.CommonKernel.Outcome{T1,T2}"/> family and <see cref="DefaultHttpOutcomeStatusMapper"/>.
 /// </para>
 /// </remarks>
 public sealed class ResultExtensionsEmitterTests
@@ -53,16 +53,15 @@ public sealed class ResultExtensionsEmitterTests
     private static readonly string GeneratedSource = Emit();
 
     /// <summary>
-    /// The hand-written half a real <c>[GenerateResultExtensions]</c> target normally supplies (here, just the
-    /// <c>DefaultMapper</c> field the emitted overloads' <c>mapper ?? DefaultMapper</c> reference needs - see
-    /// <see cref="Interlocutor.AspNetCore.ResultExtensions"/>'s own remarks), plus a probe factory that calls the emitted overloads with
-    /// known case values and known case positions and hands the results back as ordinary typed return values.
-    /// The arity-2 and arity-6 probes' case types are pairwise distinct (<see cref="string"/>/<see cref="int"/>/
-    /// <see cref="bool"/>/<see cref="double"/>/<see cref="char"/>/<see cref="long"/>) so each probe method's
-    /// literal argument selects its case unambiguously, and none of these types are recognized by
-    /// <see cref="DefaultHttpOutcomeStatusMapper"/>, so those failure probes deterministically render as
-    /// <see cref="StatusCodes.Status500InternalServerError"/> with the failure value itself as the body - the
-    /// same "unrecognized failure type" fallback <c>ResultExtensionsTests.ToActionResult_WithUnknownFailureType_Returns500</c>
+    /// The hand-written half a real <c>[GenerateResultExtensions]</c> target normally supplies: the
+    /// <c>DefaultMapper</c> field and the <c>Classify*</c>/<c>IsRecognizedFailureCase</c> helpers the emitted
+    /// <c>Match</c> arms call by name (mirroring <see cref="Interlocutor.AspNetCore.ResultExtensions"/>'s own
+    /// hand-written partial - see its remarks), plus a probe factory that calls the emitted overloads with known
+    /// case values and known case positions and hands the results back as ordinary typed return values. The
+    /// arity-2 and arity-6 probes use <c>NotFound</c>/<c>Forbidden</c> (recognized failure shapes)
+    /// for their failure cases, and a plain <see cref="int"/> for the one probe exercising the "unrecognized
+    /// failure-slot type with no mapper" throw - the same "unrecognized failure type" scenario
+    /// <c>ResultExtensionsTests.ToActionResult_WithUnrecognizedFailureSlotTypeAndNoMapper_ThrowsOutcomeCaseNotMappableException</c>
     /// exercises against the real, shipped <see cref="Interlocutor.AspNetCore.ResultExtensions"/>. The void
     /// probe has no failure case at all - the case-less <c>Outcome</c> acknowledgment always renders 204,
     /// unconditionally, with no mapper involved.
@@ -70,10 +69,9 @@ public sealed class ResultExtensionsEmitterTests
     private const string Scaffold = """
         public static partial class GeneratedResultExtensions
         {
-            // Every emitted failure arm calls .ToActionResult()/.ToMinimalApiResult() on the OutcomeHttpMapping
-            // (mapper ?? DefaultMapper).Map(...) returns - the real ResultExtensions provides these two private
-            // rendering members in its own hand-written partial (see its own remarks); reproduced verbatim here
-            // since the emitted text alone has nothing to dispatch those calls to.
+            // Every emitted Match arm calls one of these by name - the real ResultExtensions provides them in
+            // its own hand-written partial (see its own remarks); reproduced verbatim here since the emitted
+            // text alone has nothing to dispatch those calls to.
             extension(global::Interlocutor.AspNetCore.OutcomeHttpMapping mapping)
             {
                 private global::Microsoft.AspNetCore.Mvc.IActionResult ToActionResult() =>
@@ -89,6 +87,67 @@ public sealed class ResultExtensionsEmitterTests
 
             private static readonly global::Interlocutor.AspNetCore.IOutcomeStatusMapper DefaultMapper =
                 new global::Interlocutor.AspNetCore.DefaultHttpOutcomeStatusMapper();
+
+            private static bool IsRecognizedFailureCase(object caseValue) =>
+                caseValue switch
+                {
+                    global::Interlocutor.CommonKernel.ResultTypes.ValidationErrors
+                    or global::Interlocutor.CommonKernel.ResultTypes.IValidationFailureCase => true,
+                    global::Interlocutor.CommonKernel.ResultTypes.Forbidden
+                    or global::Interlocutor.CommonKernel.ResultTypes.IForbiddenFailureCase => true,
+                    global::Interlocutor.CommonKernel.ResultTypes.Conflict => true,
+                    global::Interlocutor.CommonKernel.ResultTypes.Failures
+                    or global::Interlocutor.CommonKernel.ResultTypes.Failure => true,
+                    global::Interlocutor.CommonKernel.ResultTypes.NotFound => true,
+                    global::Interlocutor.CommonKernel.ResultTypes.Cancelled => true,
+                    global::Interlocutor.CommonKernel.ResultTypes.Timeout
+                    or global::Interlocutor.CommonKernel.ResultTypes.ITimeoutFailureCase => true,
+                    global::Interlocutor.CommonKernel.ResultTypes.RateLimited
+                    or global::Interlocutor.CommonKernel.ResultTypes.IRateLimitedFailureCase => true,
+                    _ => false,
+                };
+
+            private static global::Microsoft.AspNetCore.Mvc.IActionResult ClassifySuccessCaseForActionResult<TSuccess>(
+                TSuccess value,
+                global::Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper
+            ) =>
+                value is not null && IsRecognizedFailureCase(value)
+                    ? (mapper ?? DefaultMapper).Map(value).ToActionResult()
+                    : new global::Microsoft.AspNetCore.Mvc.OkObjectResult(value);
+
+            private static global::Microsoft.AspNetCore.Http.IResult ClassifySuccessCaseForMinimalApiResult<TSuccess>(
+                TSuccess value,
+                global::Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper
+            ) =>
+                value is not null && IsRecognizedFailureCase(value)
+                    ? (mapper ?? DefaultMapper).Map(value).ToMinimalApiResult()
+                    : global::Microsoft.AspNetCore.Http.Results.Ok(value);
+
+            private static global::Microsoft.AspNetCore.Mvc.IActionResult ClassifyFailureCaseForActionResult<TFailure>(
+                TFailure value,
+                global::Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper,
+                global::System.Type responseType
+            ) =>
+                mapper is not null || (value is not null && IsRecognizedFailureCase(value))
+                    ? (mapper ?? DefaultMapper).Map(value).ToActionResult()
+                    : throw new global::Interlocutor.AspNetCore.OutcomeCaseNotMappableException(
+                        responseType,
+                        value?.GetType() ?? typeof(TFailure),
+                        "unmappable"
+                    );
+
+            private static global::Microsoft.AspNetCore.Http.IResult ClassifyFailureCaseForMinimalApiResult<TFailure>(
+                TFailure value,
+                global::Interlocutor.AspNetCore.IOutcomeStatusMapper? mapper,
+                global::System.Type responseType
+            ) =>
+                mapper is not null || (value is not null && IsRecognizedFailureCase(value))
+                    ? (mapper ?? DefaultMapper).Map(value).ToMinimalApiResult()
+                    : throw new global::Interlocutor.AspNetCore.OutcomeCaseNotMappableException(
+                        responseType,
+                        value?.GetType() ?? typeof(TFailure),
+                        "unmappable"
+                    );
         }
 
         public static class ResultExtensionsEmitterProbe
@@ -100,28 +159,68 @@ public sealed class ResultExtensionsEmitterTests
                 new global::Interlocutor.CommonKernel.Outcome().ToMinimalApiResult();
 
             public static global::Microsoft.AspNetCore.Mvc.IActionResult Arity2SuccessAction() =>
-                new global::Interlocutor.CommonKernel.Outcome<string, int>("ok").ToActionResult();
+                new global::Interlocutor.CommonKernel.Outcome<string, global::Interlocutor.CommonKernel.ResultTypes.NotFound>(
+                    "ok"
+                ).ToActionResult();
 
             public static global::Microsoft.AspNetCore.Mvc.IActionResult Arity2FailureAction() =>
-                new global::Interlocutor.CommonKernel.Outcome<string, int>(2).ToActionResult();
+                new global::Interlocutor.CommonKernel.Outcome<string, global::Interlocutor.CommonKernel.ResultTypes.NotFound>(
+                    new global::Interlocutor.CommonKernel.ResultTypes.NotFound("missing")
+                ).ToActionResult();
 
             public static global::Microsoft.AspNetCore.Http.IResult Arity2SuccessMinimal() =>
-                new global::Interlocutor.CommonKernel.Outcome<string, int>("ok").ToMinimalApiResult();
+                new global::Interlocutor.CommonKernel.Outcome<string, global::Interlocutor.CommonKernel.ResultTypes.NotFound>(
+                    "ok"
+                ).ToMinimalApiResult();
 
             public static global::Microsoft.AspNetCore.Http.IResult Arity2FailureMinimal() =>
-                new global::Interlocutor.CommonKernel.Outcome<string, int>(2).ToMinimalApiResult();
+                new global::Interlocutor.CommonKernel.Outcome<string, global::Interlocutor.CommonKernel.ResultTypes.NotFound>(
+                    new global::Interlocutor.CommonKernel.ResultTypes.NotFound("missing")
+                ).ToMinimalApiResult();
+
+            public static global::Microsoft.AspNetCore.Mvc.IActionResult Arity2UnrecognizedFailureNoMapperAction() =>
+                new global::Interlocutor.CommonKernel.Outcome<string, int>(2).ToActionResult();
 
             public static global::Microsoft.AspNetCore.Mvc.IActionResult Arity6SuccessAction() =>
-                new global::Interlocutor.CommonKernel.Outcome<string, int, bool, double, char, long>("ok").ToActionResult();
+                new global::Interlocutor.CommonKernel.Outcome<
+                    string,
+                    global::Interlocutor.CommonKernel.ResultTypes.NotFound,
+                    global::Interlocutor.CommonKernel.ResultTypes.Forbidden,
+                    global::Interlocutor.CommonKernel.ResultTypes.Conflict,
+                    global::Interlocutor.CommonKernel.ResultTypes.Failure,
+                    global::Interlocutor.CommonKernel.ResultTypes.RateLimited
+                >("ok").ToActionResult();
 
             public static global::Microsoft.AspNetCore.Mvc.IActionResult Arity6FirstFailureAction() =>
-                new global::Interlocutor.CommonKernel.Outcome<string, int, bool, double, char, long>(2).ToActionResult();
+                new global::Interlocutor.CommonKernel.Outcome<
+                    string,
+                    global::Interlocutor.CommonKernel.ResultTypes.NotFound,
+                    global::Interlocutor.CommonKernel.ResultTypes.Forbidden,
+                    global::Interlocutor.CommonKernel.ResultTypes.Conflict,
+                    global::Interlocutor.CommonKernel.ResultTypes.Failure,
+                    global::Interlocutor.CommonKernel.ResultTypes.RateLimited
+                >(new global::Interlocutor.CommonKernel.ResultTypes.NotFound("missing")).ToActionResult();
 
             public static global::Microsoft.AspNetCore.Mvc.IActionResult Arity6LastFailureAction() =>
-                new global::Interlocutor.CommonKernel.Outcome<string, int, bool, double, char, long>(600L).ToActionResult();
+                new global::Interlocutor.CommonKernel.Outcome<
+                    string,
+                    global::Interlocutor.CommonKernel.ResultTypes.NotFound,
+                    global::Interlocutor.CommonKernel.ResultTypes.Forbidden,
+                    global::Interlocutor.CommonKernel.ResultTypes.Conflict,
+                    global::Interlocutor.CommonKernel.ResultTypes.Failure,
+                    global::Interlocutor.CommonKernel.ResultTypes.RateLimited
+                >(new global::Interlocutor.CommonKernel.ResultTypes.RateLimited("per-user", global::System.TimeSpan.FromSeconds(1), null)).ToActionResult();
 
             public static global::Microsoft.AspNetCore.Http.IResult Arity6LastFailureMinimal() =>
-                new global::Interlocutor.CommonKernel.Outcome<string, int, bool, double, char, long>(600L).ToMinimalApiResult();
+                new global::Interlocutor.CommonKernel.Outcome<
+                    string,
+                    global::Interlocutor.CommonKernel.ResultTypes.NotFound,
+                    global::Interlocutor.CommonKernel.ResultTypes.Forbidden,
+                    global::Interlocutor.CommonKernel.ResultTypes.Conflict,
+                    global::Interlocutor.CommonKernel.ResultTypes.Failure,
+                    global::Interlocutor.CommonKernel.ResultTypes.RateLimited
+                >(new global::Interlocutor.CommonKernel.ResultTypes.RateLimited("per-user", global::System.TimeSpan.FromSeconds(1), null))
+                    .ToMinimalApiResult();
         }
         """;
 
@@ -156,7 +255,7 @@ public sealed class ResultExtensionsEmitterTests
         Assert.Contains(expectedDeclaration, GeneratedSource, StringComparison.Ordinal);
     }
 
-    // --- Source shape: every arity's success arm renders OkObjectResult/Results.Ok, table-driven ---
+    // --- Source shape: every arity's success arm delegates to the shared Classify helper, table-driven ---
 
     [Theory]
     [InlineData(2)]
@@ -164,15 +263,11 @@ public sealed class ResultExtensionsEmitterTests
     [InlineData(4)]
     [InlineData(5)]
     [InlineData(6)]
-    public void Emit_EachArity_EmitsSuccessArmRenderingOk_Test(int arity)
+    public void Emit_EachArity_EmitsSuccessArmDelegatingToClassifyHelper_Test(int arity)
     {
         _ = arity;
-        Assert.Contains(
-            "ok => new global::Microsoft.AspNetCore.Mvc.OkObjectResult(ok),",
-            GeneratedSource,
-            StringComparison.Ordinal
-        );
-        Assert.Contains("ok => global::Microsoft.AspNetCore.Http.Results.Ok(ok),", GeneratedSource, StringComparison.Ordinal);
+        Assert.Contains("ok => ClassifySuccessCaseForActionResult(ok, mapper),", GeneratedSource, StringComparison.Ordinal);
+        Assert.Contains("ok => ClassifySuccessCaseForMinimalApiResult(ok, mapper),", GeneratedSource, StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -204,11 +299,14 @@ public sealed class ResultExtensionsEmitterTests
     {
         Assert.Equal(
             expectedOccurrencesPerRenderMethod,
-            CountOccurrences(GeneratedSource, $"{caseName} => (mapper ?? DefaultMapper).Map({caseName}).ToActionResult()")
+            CountOccurrences(GeneratedSource, $"{caseName} => ClassifyFailureCaseForActionResult({caseName}, mapper, typeof(")
         );
         Assert.Equal(
             expectedOccurrencesPerRenderMethod,
-            CountOccurrences(GeneratedSource, $"{caseName} => (mapper ?? DefaultMapper).Map({caseName}).ToMinimalApiResult()")
+            CountOccurrences(
+                GeneratedSource,
+                $"{caseName} => ClassifyFailureCaseForMinimalApiResult({caseName}, mapper, typeof("
+            )
         );
     }
 
@@ -253,7 +351,7 @@ public sealed class ResultExtensionsEmitterTests
     [Fact]
     public void Emit_CompiledAndLoaded_ArityTwo_DispatchesSuccessAndFailure_Test()
     {
-        // Arrange - the minimum arity: one success case, one failure case.
+        // Arrange - the minimum arity: one success case, one recognized failure case (NotFound).
         var probe = LoadProbe("ResultExtensionsEmitter.Tests.ArityTwoRuntime");
 
         // Act
@@ -266,20 +364,35 @@ public sealed class ResultExtensionsEmitterTests
         var okResult = Assert.IsType<OkObjectResult>(success);
         Assert.Equal("ok", okResult.Value);
         var objectResult = Assert.IsType<ObjectResult>(failure);
-        Assert.Equal(StatusCodes.Status500InternalServerError, objectResult.StatusCode);
-        Assert.Equal(2, objectResult.Value);
+        Assert.Equal(StatusCodes.Status404NotFound, objectResult.StatusCode);
         Assert.Contains("Ok", successMinimal.GetType().Name, StringComparison.Ordinal);
         Assert.Equal(
-            StatusCodes.Status500InternalServerError,
+            StatusCodes.Status404NotFound,
             (int?)failureMinimal.GetType().GetProperty("StatusCode")?.GetValue(failureMinimal)
         );
     }
 
     [Fact]
+    public void Emit_CompiledAndLoaded_ArityTwo_UnrecognizedFailureSlotTypeWithNoMapper_ThrowsOutcomeCaseNotMappableException_Test()
+    {
+        // Arrange - a plain int occupying the failure slot, with no mapper supplied to take responsibility for
+        // it, matches none of the recognized failure shapes - the emitted Match arm must refuse to guess a
+        // status for it rather than silently falling through to a generic one.
+        var probe = LoadProbe("ResultExtensionsEmitter.Tests.ArityTwoUnrecognizedRuntime");
+
+        // Act & Assert
+        var targetInvocationException = Assert.Throws<TargetInvocationException>(() =>
+            probe.GetMethod("Arity2UnrecognizedFailureNoMapperAction")!.Invoke(null, null)
+        );
+        Assert.IsType<OutcomeCaseNotMappableException>(targetInvocationException.InnerException);
+    }
+
+    [Fact]
     public void Emit_CompiledAndLoaded_ArityMax_DispatchesSuccessAndBoundaryFailureCases_Test()
     {
-        // Arrange - the maximum arity (6): success plus the first (case2) and last (case6) failure arms, the
-        // positions a loop-bound bug in EmitFailureMatchArms is most likely to get wrong.
+        // Arrange - the maximum arity (6): success plus the first (case2, NotFound) and last (case6,
+        // RateLimited) failure arms, the positions a loop-bound bug in EmitFailureMatchArms is most likely to
+        // get wrong.
         var probe = LoadProbe("ResultExtensionsEmitter.Tests.ArityMaxRuntime");
 
         // Act
@@ -293,15 +406,13 @@ public sealed class ResultExtensionsEmitterTests
         Assert.Equal("ok", okResult.Value);
 
         var firstObjectResult = Assert.IsType<ObjectResult>(firstFailure);
-        Assert.Equal(StatusCodes.Status500InternalServerError, firstObjectResult.StatusCode);
-        Assert.Equal(2, firstObjectResult.Value);
+        Assert.Equal(StatusCodes.Status404NotFound, firstObjectResult.StatusCode);
 
         var lastObjectResult = Assert.IsType<ObjectResult>(lastFailure);
-        Assert.Equal(StatusCodes.Status500InternalServerError, lastObjectResult.StatusCode);
-        Assert.Equal(600L, lastObjectResult.Value);
+        Assert.Equal(StatusCodes.Status429TooManyRequests, lastObjectResult.StatusCode);
 
         Assert.Equal(
-            StatusCodes.Status500InternalServerError,
+            StatusCodes.Status429TooManyRequests,
             (int?)lastFailureMinimal.GetType().GetProperty("StatusCode")?.GetValue(lastFailureMinimal)
         );
     }
