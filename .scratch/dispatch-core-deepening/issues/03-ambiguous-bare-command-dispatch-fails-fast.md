@@ -6,9 +6,9 @@ After this ticket, untyped dispatch throws a named, descriptive exception identi
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `5db7b81`
 
-- [ ] `ResolveBareCommandResultType` throws a named exception (not a silent first-match return) when more than one `IBareCommandHandler<TCommand,_>` closing is found for the same command type
-- [ ] The exception message names the command type and lists every ambiguous result type found
-- [ ] A single registered closing continues to resolve exactly as it does today — no behavior change for the unambiguous case
-- [ ] A test proves the ambiguous case throws, reusing/extending `MediatorTests.cs`'s existing dual-closing test doubles
+- [x] `ResolveBareCommandResultType` throws a named exception (not a silent first-match return) when more than one `IBareCommandHandler<TCommand,_>` closing is found for the same command type
+- [x] The exception message names the command type and lists every ambiguous result type found
+- [x] A single registered closing continues to resolve exactly as it does today — no behavior change for the unambiguous case
+- [x] A test proves the ambiguous case throws, reusing/extending `MediatorTests.cs`'s existing dual-closing test doubles
