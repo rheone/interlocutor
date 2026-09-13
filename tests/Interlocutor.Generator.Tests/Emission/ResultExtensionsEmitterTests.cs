@@ -14,9 +14,10 @@ using Microsoft.CodeAnalysis.CSharp;
 /// Table-driven emission tests for <c>Interlocutor.Generator.Emission.ResultExtensionsEmitter</c> - the
 /// generator behind <see cref="Interlocutor.AspNetCore.ResultExtensions"/>'s per-arity <c>ToActionResult</c>/<c>ToMinimalApiResult</c>
 /// overloads (the non-generic void-success <c>Outcome</c> overload, plus every <c>Outcome&lt;T1, ...&gt;</c>
-/// arity from 2 through 6). Mirrors <see cref="OutcomeMemberGeneratorTests"/>'s two-pronged approach: assert on
-/// the emitted source text's shape, then compile and run it to prove the emitted overloads actually dispatch to
-/// the right case.
+/// arity from 2 through 16 - the shipped <c>Outcome</c> union family's own ceiling, matching the BCL's widest
+/// <c>Func&lt;T1..T16, TResult&gt;</c>/<c>Action&lt;T1..T16&gt;</c> overload). Mirrors
+/// <see cref="OutcomeMemberGeneratorTests"/>'s two-pronged approach: assert on the emitted source text's shape,
+/// then compile and run it to prove the emitted overloads actually dispatch to the right case.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -47,10 +48,41 @@ public sealed class ResultExtensionsEmitterTests
 
     /// <summary>
     /// The one emission this whole test class asserts against - built once, since <c>ResultExtensionsEmitter.Emit</c>
-    /// always emits every arity (2 through 6) plus the void overload for its one target in a single call; there
-    /// is no per-arity entry point to invoke separately.
+    /// always emits every arity (2 through 16) plus the void overload for its one target in a single call;
+    /// there is no per-arity entry point to invoke separately.
     /// </summary>
     private static readonly string GeneratedSource = Emit();
+
+    /// <summary>
+    /// A <c>using</c> alias for the shipped ceiling arity (16 cases), used by <see cref="Scaffold"/>'s arity-16
+    /// probes. Combined ahead of <see cref="GeneratedSource"/> (see <see cref="LoadProbe"/> and
+    /// <c>Emit_CompiledAgainstRealApi_HasNoErrorDiagnostics_Test</c>), since a <c>using</c> directive must
+    /// precede every type declaration in its compilation unit and <see cref="GeneratedSource"/> already opens
+    /// with one. Every type argument is distinct - required for the union's implicit-conversion-based
+    /// construction to stay unambiguous - with a recognized failure at the first (T2) and last (T16) slots and
+    /// a plain <see cref="int"/> at a middle slot (T9) for the unrecognized-type probe; every other slot is
+    /// inert filler.
+    /// </summary>
+    private const string ScaffoldUsings = """
+        using SixteenArityOutcome = global::Interlocutor.CommonKernel.Outcome<
+            string,
+            global::Interlocutor.CommonKernel.ResultTypes.NotFound,
+            bool,
+            double,
+            long,
+            short,
+            byte,
+            char,
+            int,
+            float,
+            decimal,
+            global::System.DateTime,
+            global::System.Guid,
+            global::System.TimeSpan,
+            uint,
+            global::Interlocutor.CommonKernel.ResultTypes.RateLimited
+        >;
+        """;
 
     /// <summary>
     /// The hand-written half a real <c>[GenerateResultExtensions]</c> target normally supplies: the
@@ -58,8 +90,8 @@ public sealed class ResultExtensionsEmitterTests
     /// <c>Match</c> arms call by name (mirroring <see cref="Interlocutor.AspNetCore.ResultExtensions"/>'s own
     /// hand-written partial - see its remarks), plus a probe factory that calls the emitted overloads with known
     /// case values and known case positions and hands the results back as ordinary typed return values. The
-    /// arity-2 and arity-6 probes use <c>NotFound</c>/<c>Forbidden</c> (recognized failure shapes)
-    /// for their failure cases, and a plain <see cref="int"/> for the one probe exercising the "unrecognized
+    /// arity-2 and arity-16 (the shipped ceiling) probes use recognized failure shapes (<c>NotFound</c>/<c>Forbidden</c>/<c>RateLimited</c>)
+    /// for their failure cases, and a plain <see cref="int"/> for the probes exercising the "unrecognized
     /// failure-slot type with no mapper" throw - the same "unrecognized failure type" scenario
     /// <c>ResultExtensionsTests.ToActionResult_WithUnrecognizedFailureSlotTypeAndNoMapper_ThrowsOutcomeCaseNotMappableException</c>
     /// exercises against the real, shipped <see cref="Interlocutor.AspNetCore.ResultExtensions"/>. The void
@@ -181,46 +213,28 @@ public sealed class ResultExtensionsEmitterTests
             public static global::Microsoft.AspNetCore.Mvc.IActionResult Arity2UnrecognizedFailureNoMapperAction() =>
                 new global::Interlocutor.CommonKernel.Outcome<string, int>(2).ToActionResult();
 
-            public static global::Microsoft.AspNetCore.Mvc.IActionResult Arity6SuccessAction() =>
-                new global::Interlocutor.CommonKernel.Outcome<
-                    string,
-                    global::Interlocutor.CommonKernel.ResultTypes.NotFound,
-                    global::Interlocutor.CommonKernel.ResultTypes.Forbidden,
-                    global::Interlocutor.CommonKernel.ResultTypes.Conflict,
-                    global::Interlocutor.CommonKernel.ResultTypes.Failure,
-                    global::Interlocutor.CommonKernel.ResultTypes.RateLimited
-                >("ok").ToActionResult();
+            // The shipped ceiling arity (16 cases, aliased to SixteenArityOutcome above): T1 success, T2 a
+            // recognized failure (first slot), T9 a plain int (unrecognized, middle slot), T16 a recognized
+            // failure (last slot) - every other slot is inert filler, distinct per the union's
+            // implicit-conversion construction requirement.
+            public static global::Microsoft.AspNetCore.Mvc.IActionResult Arity16SuccessAction() =>
+                new SixteenArityOutcome("ok").ToActionResult();
 
-            public static global::Microsoft.AspNetCore.Mvc.IActionResult Arity6FirstFailureAction() =>
-                new global::Interlocutor.CommonKernel.Outcome<
-                    string,
-                    global::Interlocutor.CommonKernel.ResultTypes.NotFound,
-                    global::Interlocutor.CommonKernel.ResultTypes.Forbidden,
-                    global::Interlocutor.CommonKernel.ResultTypes.Conflict,
-                    global::Interlocutor.CommonKernel.ResultTypes.Failure,
-                    global::Interlocutor.CommonKernel.ResultTypes.RateLimited
-                >(new global::Interlocutor.CommonKernel.ResultTypes.NotFound("missing")).ToActionResult();
+            public static global::Microsoft.AspNetCore.Mvc.IActionResult Arity16FirstFailureAction() =>
+                new SixteenArityOutcome(new global::Interlocutor.CommonKernel.ResultTypes.NotFound("missing")).ToActionResult();
 
-            public static global::Microsoft.AspNetCore.Mvc.IActionResult Arity6LastFailureAction() =>
-                new global::Interlocutor.CommonKernel.Outcome<
-                    string,
-                    global::Interlocutor.CommonKernel.ResultTypes.NotFound,
-                    global::Interlocutor.CommonKernel.ResultTypes.Forbidden,
-                    global::Interlocutor.CommonKernel.ResultTypes.Conflict,
-                    global::Interlocutor.CommonKernel.ResultTypes.Failure,
-                    global::Interlocutor.CommonKernel.ResultTypes.RateLimited
-                >(new global::Interlocutor.CommonKernel.ResultTypes.RateLimited("per-user", global::System.TimeSpan.FromSeconds(1), null)).ToActionResult();
+            public static global::Microsoft.AspNetCore.Mvc.IActionResult Arity16LastFailureAction() =>
+                new SixteenArityOutcome(
+                    new global::Interlocutor.CommonKernel.ResultTypes.RateLimited("per-user", global::System.TimeSpan.FromSeconds(1), null)
+                ).ToActionResult();
 
-            public static global::Microsoft.AspNetCore.Http.IResult Arity6LastFailureMinimal() =>
-                new global::Interlocutor.CommonKernel.Outcome<
-                    string,
-                    global::Interlocutor.CommonKernel.ResultTypes.NotFound,
-                    global::Interlocutor.CommonKernel.ResultTypes.Forbidden,
-                    global::Interlocutor.CommonKernel.ResultTypes.Conflict,
-                    global::Interlocutor.CommonKernel.ResultTypes.Failure,
-                    global::Interlocutor.CommonKernel.ResultTypes.RateLimited
-                >(new global::Interlocutor.CommonKernel.ResultTypes.RateLimited("per-user", global::System.TimeSpan.FromSeconds(1), null))
-                    .ToMinimalApiResult();
+            public static global::Microsoft.AspNetCore.Http.IResult Arity16LastFailureMinimal() =>
+                new SixteenArityOutcome(
+                    new global::Interlocutor.CommonKernel.ResultTypes.RateLimited("per-user", global::System.TimeSpan.FromSeconds(1), null)
+                ).ToMinimalApiResult();
+
+            public static global::Microsoft.AspNetCore.Mvc.IActionResult Arity16UnrecognizedFailureNoMapperAction() =>
+                new SixteenArityOutcome(9).ToActionResult();
         }
         """;
 
@@ -238,7 +252,7 @@ public sealed class ResultExtensionsEmitterTests
         Assert.Contains("global::Microsoft.AspNetCore.Http.Results.NoContent();", GeneratedSource, StringComparison.Ordinal);
     }
 
-    // --- Source shape: one extension<...> declaration per arity, table-driven over arities 2-6 ---
+    // --- Source shape: one extension<...> declaration per arity, table-driven over arities 2-16 ---
 
     [Theory]
     [InlineData(2, "extension<T1, T2>(global::Interlocutor.CommonKernel.Outcome<T1, T2> result)")]
@@ -248,6 +262,46 @@ public sealed class ResultExtensionsEmitterTests
     [InlineData(
         6,
         "extension<T1, T2, T3, T4, T5, T6>(global::Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6> result)"
+    )]
+    [InlineData(
+        7,
+        "extension<T1, T2, T3, T4, T5, T6, T7>(global::Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7> result)"
+    )]
+    [InlineData(
+        8,
+        "extension<T1, T2, T3, T4, T5, T6, T7, T8>(global::Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8> result)"
+    )]
+    [InlineData(
+        9,
+        "extension<T1, T2, T3, T4, T5, T6, T7, T8, T9>(global::Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9> result)"
+    )]
+    [InlineData(
+        10,
+        "extension<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(global::Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> result)"
+    )]
+    [InlineData(
+        11,
+        "extension<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>(global::Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> result)"
+    )]
+    [InlineData(
+        12,
+        "extension<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>(global::Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> result)"
+    )]
+    [InlineData(
+        13,
+        "extension<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>(global::Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13> result)"
+    )]
+    [InlineData(
+        14,
+        "extension<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>(global::Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14> result)"
+    )]
+    [InlineData(
+        15,
+        "extension<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>(global::Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15> result)"
+    )]
+    [InlineData(
+        16,
+        "extension<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>(global::Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16> result)"
     )]
     public void Emit_EachArity_EmitsExpectedExtensionDeclaration_Test(int arity, string expectedDeclaration)
     {
@@ -263,6 +317,16 @@ public sealed class ResultExtensionsEmitterTests
     [InlineData(4)]
     [InlineData(5)]
     [InlineData(6)]
+    [InlineData(7)]
+    [InlineData(8)]
+    [InlineData(9)]
+    [InlineData(10)]
+    [InlineData(11)]
+    [InlineData(12)]
+    [InlineData(13)]
+    [InlineData(14)]
+    [InlineData(15)]
+    [InlineData(16)]
     public void Emit_EachArity_EmitsSuccessArmDelegatingToClassifyHelper_Test(int arity)
     {
         _ = arity;
@@ -273,8 +337,10 @@ public sealed class ResultExtensionsEmitterTests
     /// <summary>
     /// A failure-arm rendering line for case index <c>K</c> (<c>"failure"</c> for arity 2, <c>"caseK"</c> above
     /// that) appears once per emitted arity that actually has a case at that index - i.e. once for every arity
-    /// from <c>K</c> through the emitter's own ceiling (6). The void overload has no failure arm at all (the
-    /// case-less <c>Outcome</c> acknowledgment always renders 204 unconditionally - see
+    /// from <c>K</c> through the emitter's own ceiling (16), except <c>K = 2</c> itself: arity 2 names its
+    /// second case <c>"failure"</c>, not <c>"case2"</c>, so <c>case2</c>'s count matches <c>case3</c>'s rather
+    /// than starting one arity earlier. The void overload has no failure arm at all (the case-less
+    /// <c>Outcome</c> acknowledgment always renders 204 unconditionally - see
     /// <see cref="Emit_Void_EmitsNonGenericOutcomeExtensionAlwaysRenderingNoContent_Test"/>), so it contributes
     /// nothing to any of these counts. This is the single check most likely to catch an off-by-one in
     /// <c>ResultExtensionsEmitter.EmitFailureMatchArms</c>'s loop bound: a dropped or duplicated arm at some
@@ -287,11 +353,21 @@ public sealed class ResultExtensionsEmitterTests
     /// </param>
     [Theory]
     [InlineData("failure", 1)]
-    [InlineData("case2", 4)]
-    [InlineData("case3", 4)]
-    [InlineData("case4", 3)]
-    [InlineData("case5", 2)]
-    [InlineData("case6", 1)]
+    [InlineData("case2", 14)]
+    [InlineData("case3", 14)]
+    [InlineData("case4", 13)]
+    [InlineData("case5", 12)]
+    [InlineData("case6", 11)]
+    [InlineData("case7", 10)]
+    [InlineData("case8", 9)]
+    [InlineData("case9", 8)]
+    [InlineData("case10", 7)]
+    [InlineData("case11", 6)]
+    [InlineData("case12", 5)]
+    [InlineData("case13", 4)]
+    [InlineData("case14", 3)]
+    [InlineData("case15", 2)]
+    [InlineData("case16", 1)]
     public void Emit_EachCaseIndex_EmitsExactlyOneFailureArmPerArityThatHasIt_Test(
         string caseName,
         int expectedOccurrencesPerRenderMethod
@@ -315,8 +391,10 @@ public sealed class ResultExtensionsEmitterTests
     [Fact]
     public void Emit_CompiledAgainstRealApi_HasNoErrorDiagnostics_Test()
     {
-        // Arrange
-        var combinedSource = GeneratedSource + Environment.NewLine + Scaffold;
+        // Arrange - ScaffoldUsings must precede GeneratedSource: a using directive has to come before every
+        // type declaration in its compilation unit, and GeneratedSource already opens with one (see
+        // ScaffoldUsings's own remarks).
+        var combinedSource = ScaffoldUsings + Environment.NewLine + GeneratedSource + Environment.NewLine + Scaffold;
 
         // Act
         var compilation = GeneratorTestHarness.CreateCompilation(
@@ -390,16 +468,16 @@ public sealed class ResultExtensionsEmitterTests
     [Fact]
     public void Emit_CompiledAndLoaded_ArityMax_DispatchesSuccessAndBoundaryFailureCases_Test()
     {
-        // Arrange - the maximum arity (6): success plus the first (case2, NotFound) and last (case6,
-        // RateLimited) failure arms, the positions a loop-bound bug in EmitFailureMatchArms is most likely to
-        // get wrong.
+        // Arrange - the maximum arity (16, the shipped Outcome family's own ceiling): success plus the first
+        // (case2, NotFound) and last (case16, RateLimited) failure arms, the positions a loop-bound bug in
+        // EmitFailureMatchArms is most likely to get wrong.
         var probe = LoadProbe("ResultExtensionsEmitter.Tests.ArityMaxRuntime");
 
         // Act
-        var success = (IActionResult)probe.GetMethod("Arity6SuccessAction")!.Invoke(null, null)!;
-        var firstFailure = (IActionResult)probe.GetMethod("Arity6FirstFailureAction")!.Invoke(null, null)!;
-        var lastFailure = (IActionResult)probe.GetMethod("Arity6LastFailureAction")!.Invoke(null, null)!;
-        var lastFailureMinimal = (IResult)probe.GetMethod("Arity6LastFailureMinimal")!.Invoke(null, null)!;
+        var success = (IActionResult)probe.GetMethod("Arity16SuccessAction")!.Invoke(null, null)!;
+        var firstFailure = (IActionResult)probe.GetMethod("Arity16FirstFailureAction")!.Invoke(null, null)!;
+        var lastFailure = (IActionResult)probe.GetMethod("Arity16LastFailureAction")!.Invoke(null, null)!;
+        var lastFailureMinimal = (IResult)probe.GetMethod("Arity16LastFailureMinimal")!.Invoke(null, null)!;
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(success);
@@ -415,6 +493,23 @@ public sealed class ResultExtensionsEmitterTests
             StatusCodes.Status429TooManyRequests,
             (int?)lastFailureMinimal.GetType().GetProperty("StatusCode")?.GetValue(lastFailureMinimal)
         );
+    }
+
+    [Fact]
+    public void Emit_CompiledAndLoaded_ArityMax_UnrecognizedFailureSlotTypeAtMiddleCaseWithNoMapper_ThrowsOutcomeCaseNotMappableException_Test()
+    {
+        // Arrange - a plain int occupying a middle failure slot (case9) at the shipped ceiling arity (16),
+        // with no mapper supplied to take responsibility for it: the emitted Match arm must refuse to guess a
+        // status for it, exactly like the arity-2 equivalent above - confirming the same refusal, resolved by
+        // the shared Classify* helpers rather than any position-based logic, holds at every arity the emitter
+        // generates, not only the smallest one.
+        var probe = LoadProbe("ResultExtensionsEmitter.Tests.ArityMaxUnrecognizedRuntime");
+
+        // Act & Assert
+        var targetInvocationException = Assert.Throws<TargetInvocationException>(() =>
+            probe.GetMethod("Arity16UnrecognizedFailureNoMapperAction")!.Invoke(null, null)
+        );
+        Assert.IsType<OutcomeCaseNotMappableException>(targetInvocationException.InnerException);
     }
 
     /// <summary>Invokes <c>ResultExtensionsEmitter.Emit</c> reflectively - see this class's own remarks.</summary>
@@ -454,7 +549,9 @@ public sealed class ResultExtensionsEmitterTests
     /// </param>
     private static Type LoadProbe(string assemblyName)
     {
-        var combinedSource = GeneratedSource + Environment.NewLine + Scaffold;
+        // ScaffoldUsings must precede GeneratedSource - see Emit_CompiledAgainstRealApi_HasNoErrorDiagnostics_Test's
+        // own remarks.
+        var combinedSource = ScaffoldUsings + Environment.NewLine + GeneratedSource + Environment.NewLine + Scaffold;
 
         // ResultExtensionsGenerator itself is passed as the driving generator purely as a harmless pass-through
         // - combinedSource declares no [GenerateResultExtensions]-attributed class (that attribute is internal

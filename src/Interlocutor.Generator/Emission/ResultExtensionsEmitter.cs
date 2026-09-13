@@ -9,22 +9,29 @@ using Interlocutor.Generator.Models;
 /// Emits the second partial declaration <see cref="ResultExtensionsGenerator"/> adds for the attributed
 /// <see cref="ResultExtensionsTargetModel"/>: the <c>ToActionResult</c>/<c>ToMinimalApiResult</c> extension
 /// members for the non-generic <c>Outcome</c> and every <c>Outcome&lt;T1, ...&gt;</c> case-arity from
-/// <see cref="MinCaseArity"/> through <see cref="MaxCaseArity"/> - the boilerplate that used to be six
-/// hand-written <c>extension</c> blocks. The reflective catch-all overload (constrained to <c>IOutcome</c>
-/// alone, for a hand-rolled response type) and the private <c>OutcomeHttpMapping</c> rendering helpers stay
-/// hand-written in the other partial declaration.
+/// <see cref="MinCaseArity"/> through <see cref="MaxCaseArity"/> - the boilerplate that used to be
+/// hand-written <c>extension</c> blocks, one per arity. The reflective catch-all overload (constrained to
+/// <c>IOutcome</c> alone, for a hand-rolled response type) and the private <c>OutcomeHttpMapping</c> rendering
+/// helpers stay hand-written in the other partial declaration.
 /// </summary>
 /// <remarks>
-/// Adding a 7th arity means raising <see cref="MaxCaseArity"/> here - nothing else in this file, and nothing
-/// in the hand-written partial, changes.
+/// Every emitted arity's <c>Match</c> arms resolve status codes through the same shared, hand-written
+/// <c>Classify*</c> helpers (see <see cref="EmitArityExtension"/>'s own remarks) - raising
+/// <see cref="MaxCaseArity"/> adds more calls into that same shared logic, never a new copy of it. Raising it
+/// further, past the shipped <c>Outcome</c> family's own ceiling, means raising that family's ceiling first -
+/// nothing else in this file, and nothing in the hand-written partial, changes either way.
 /// </remarks>
 internal static class ResultExtensionsEmitter
 {
     /// <summary>The lowest case arity emitted - a two-case <c>Outcome&lt;T1, T2&gt;</c>.</summary>
     private const int MinCaseArity = 2;
 
-    /// <summary>The highest case arity emitted, matching the shipped <c>Outcome</c> union family's own ceiling.</summary>
-    private const int MaxCaseArity = 6;
+    /// <summary>
+    /// The highest case arity emitted, matching the shipped <c>Outcome</c> union family's own ceiling - the
+    /// BCL's widest <c>System.Func&lt;T1..T16, TResult&gt;</c>/<c>System.Action&lt;T1..T16&gt;</c> overload
+    /// (see <c>Interlocutor.CommonKernel.Outcome{T1,...,T16}</c>'s own remarks).
+    /// </summary>
+    private const int MaxCaseArity = 16;
 
     /// <summary>Emits the generated partial declaration's full source text for <paramref name="model"/>.</summary>
     /// <param name="model">The attributed target class to emit the HTTP result overloads onto.</param>

@@ -193,9 +193,9 @@ public class MinimalApiResultExtensionsTests
     // Arity 3, 4, and 5 used to get their own hand-duplicated blocks here, mirroring ResultExtensionsTests'
     // former per-arity coverage to prove the two transport surfaces agree at every arity. That arity-shape
     // coverage now lives in Interlocutor.Generator.Tests.Emission.ResultExtensionsEmitterTests (table-driven
-    // over arities 2-6, both ToActionResult and ToMinimalApiResult); this file keeps the representative arity-2
-    // coverage and cross-transport-agreement test above, plus arity-6 coverage in ResultExtensionsTests.cs,
-    // which no per-arity duplication here could add to.
+    // over arities 2-16, both ToActionResult and ToMinimalApiResult); this file keeps the representative
+    // arity-2 coverage and cross-transport-agreement test above, plus arity-6 and arity-16 (the shipped
+    // ceiling) coverage in ResultExtensionsTests.cs, which no per-arity duplication here could add to.
 
     /// <summary>
     /// Reads the status code off a minimal API <see cref="IResult"/> via its <c>StatusCode</c> property,
