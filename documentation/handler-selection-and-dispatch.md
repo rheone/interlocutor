@@ -190,7 +190,7 @@ var result = await mediator.Send(new DeleteDocument(42, currentUserId));
 
 ## Contrast: Resource vs. Non-Resource Authorization
 
-- **Non-resource authorization** (policy-based, `IRequiresPolicy` marker) - evaluated by `AuthorizationBehavior` before the handler runs. Decides whether the caller can *attempt* a command, without needing to load anything first.
+- **Non-resource authorization** (policy-based, `IRequiresPolicyRequest` marker) - evaluated by `AuthorizationBehavior` before the handler runs. Decides whether the caller can *attempt* a command, without needing to load anything first.
 - **Resource authorization** (entity-based, `ResourceCommandHandler`) - decided after loading, based on the loaded entity's state or the caller's relationship to it.
 
 Both are useful and solve different problems:
@@ -199,7 +199,7 @@ Both are useful and solve different problems:
 // Non-resource: "Can this user DELETE (any) document?"
 public record DeleteDocument(int DocumentId, int RequestedByUserId)
     : ICommand<Outcome<Success, NotFound, Forbidden>>,
-      IRequiresPolicy  // Evaluated before loading
+      IRequiresPolicyRequest  // Evaluated before loading
 {
     public string PolicyName => "DeleteDocument";
 }

@@ -10,11 +10,13 @@ Add that callout: at the "Validation before transactions" rationale in the pipel
 
 **Blocked by:** None - can start immediately, independent of the rest of this PRD
 
+**Status:** done - implemented in `c528c1f`.
+
 **Acceptance criteria:**
-- [ ] The pipeline-ordering documentation's rationale for placing validation before the transaction now also states that this default leaves a DB-touching validation rule's read unprotected from the check-then-act race, and cross-references the existing mechanism (reordering the unit-of-work behavior outside the behavior whose read needs protecting) as the resolution
-- [ ] The worked example explaining why the sample app's uniqueness check lives in the handler rather than in a validator rule carries the same cross-reference, if it doesn't already
-- [ ] No new analyzer, diagnostic, or runtime guard is added - this ticket is documentation-only, per the finding above that the underlying mechanism already exists and is already general
-- [ ] Follows `documentation/`'s house style (no enumerated counts, glossary linking on first mention, no HTTP status codes outside `aspnetcore-integration.md`, no citation of `maintainer_docs/` to justify the rationale - state it as fact and link sideways to the sibling doc that already covers the reordering mechanism)
+- [x] The pipeline-ordering documentation's rationale for placing validation before the transaction now also states that this default leaves a DB-touching validation rule's read unprotected from the check-then-act race, and cross-references the existing mechanism (reordering the unit-of-work behavior outside the behavior whose read needs protecting) as the resolution
+- [x] The worked example explaining why the sample app's uniqueness check lives in the handler rather than in a validator rule carries the same cross-reference (it did not already - added)
+- [x] No new analyzer, diagnostic, or runtime guard is added - this ticket is documentation-only, per the finding above that the underlying mechanism already exists and is already general
+- [x] Follows `documentation/`'s house style (no enumerated counts, glossary linking on first mention, no HTTP status codes outside `aspnetcore-integration.md`, no citation of `maintainer_docs/` to justify the rationale - state it as fact and link sideways to the sibling doc that already covers the reordering mechanism)
 
 **Out of scope:**
 - Building a compile-time or analyzer-based guard against a validator resolving a DB-touching dependency (considered and rejected - see Comments)

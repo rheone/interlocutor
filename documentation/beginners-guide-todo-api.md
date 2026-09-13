@@ -8,7 +8,7 @@ This guide is deliberately hands-on rather than a reference - it builds one proj
 
 - A Minimal API-first ASP.NET Core API (an MVC controller equivalent is shown too) over one `TodoTask` resource: full CRUD, a bare `ICommand`, a raw-`DbContext` query, and a paged query.
 - A pipeline built up behavior by behavior: logging, auditing, policy-based authorization, FluentValidation, and EF Core-backed transactions - plus how to see exactly what order they run in, and how to add one of your own.
-- Two authorization styles: a coarse policy check (`IRequiresPolicy`) and a fine-grained, entity-based ownership check (`ResourceCommandHandler`).
+- Two authorization styles: a coarse policy check (`IRequiresPolicyRequest`) and a fine-grained, entity-based ownership check (`ResourceCommandHandler`).
 - A notification with two independent subscribers, and the subtlety in exactly when "after" a command actually means once it's published from inside the handler.
 - Registration wired through Microsoft.Extensions.DependencyInjection, with callouts showing the Autofac equivalent at each step.
 
@@ -35,7 +35,7 @@ Here's the shape of the finished project - a request's path from the wire down t
 ```mermaid
 flowchart TD
     Client(["HTTP request"]) --> Endpoint["Minimal API endpoint<br/>app.MapPost / MapGet / ..."]
-    Endpoint --> Sender["ISender.Send(command or query)"]
+    Endpoint --> Sender["ISender.SendAsync(command or query)"]
     Sender --> Logging
 
     subgraph Pipeline ["Pipeline - resolved per request scope"]
@@ -664,7 +664,7 @@ namespace TodoTasks.Api.Application.TodoTasks;
 public sealed class CreateTodoTaskHandler(IDomainRepository<TodoTask, int> repository, IUnitOfWork unitOfWork)
     : ICommandHandler<CreateTodoTaskCommand, Outcome<TodoTaskDto, ValidationErrors, Conflict>>
 {
-    public async Task<Outcome<TodoTaskDto, ValidationErrors, Conflict>> Handle(
+    public async Task<Outcome<TodoTaskDto, ValidationErrors, Conflict>> HandleAsync(
         CreateTodoTaskCommand command, CancellationToken ct)
     {
         // The read below and the insert that follows it need to share one transaction, or two
@@ -700,7 +700,7 @@ app.MapPost("/todo-tasks", async (
     var ownerId = contextAccessor.Context?.UserId
         ?? throw new InvalidOperationException("This endpoint requires an authenticated caller.");
 
-    var result = await sender.Send(new CreateTodoTaskCommand(request.Title, request.Notes, ownerId), ct);
+    var result = await sender.SendAsync(new CreateTodoTaskCommand(request.Title, request.Notes, ownerId), ct);
     return result.ToMinimalApiResult();
 });
 
@@ -725,7 +725,7 @@ Not part of the running example above - this is here for when the default mappin
 ```csharp
 app.MapGet("/todo-tasks/{id:int}/manual", async (int id, ISender sender, CancellationToken ct) =>
 {
-    var result = await sender.Send(new GetTodoTaskByIdQuery(id), ct);
+    var result = await sender.SendAsync(new GetTodoTaskByIdQuery(id), ct);
 
     // The compiler flags a missing case here exactly like any other union switch, but only as a
     // CS8509 build warning by default, not a hard stop - add a case to GetTodoTaskByIdQuery's
@@ -757,7 +757,7 @@ public sealed class TodoTasksController(ISender sender) : ControllerBase
     [HttpGet("{id:int}/manual")]
     public async Task<IActionResult> GetByIdManual(int id, CancellationToken ct)
     {
-        var result = await sender.Send(new GetTodoTaskByIdQuery(id), ct);
+        var result = await sender.SendAsync(new GetTodoTaskByIdQuery(id), ct);
 
         return result.Value switch
         {
@@ -820,7 +820,7 @@ public sealed record GetTodoTaskByIdQuery(int Id) : IQuery<Outcome<TodoTaskDto, 
 public sealed class GetTodoTaskByIdHandler(IDomainRepository<TodoTask, int> repository)
     : IQueryHandler<GetTodoTaskByIdQuery, Outcome<TodoTaskDto, NotFound>>
 {
-    public Task<Outcome<TodoTaskDto, NotFound>> Handle(GetTodoTaskByIdQuery query, CancellationToken ct) =>
+    public Task<Outcome<TodoTaskDto, NotFound>> HandleAsync(GetTodoTaskByIdQuery query, CancellationToken ct) =>
         Task.FromResult<Outcome<TodoTaskDto, NotFound>>(
             repository.GetById(query.Id) is { } task ? TodoTaskDto.FromEntity(task) : new NotFound($"TodoTask {query.Id}"));
 }
@@ -842,7 +842,7 @@ public sealed record ListTodoTasksQuery(bool OnlyIncomplete)
 public sealed class ListTodoTasksHandler(IDomainRepository<TodoTask, int> repository)
     : IQueryHandler<ListTodoTasksQuery, Outcome<IReadOnlyList<TodoTaskDto>, Failure>>
 {
-    public async Task<Outcome<IReadOnlyList<TodoTaskDto>, Failure>> Handle(ListTodoTasksQuery query, CancellationToken ct)
+    public async Task<Outcome<IReadOnlyList<TodoTaskDto>, Failure>> HandleAsync(ListTodoTasksQuery query, CancellationToken ct)
     {
         var tasks = await repository.GetManyAsync(
             filter: query.OnlyIncomplete ? t => !t.IsCompleted : null,
@@ -867,13 +867,13 @@ Endpoints:
 ```csharp
 app.MapGet("/todo-tasks/{id:int}", async (int id, ISender sender, CancellationToken ct) =>
 {
-    var result = await sender.Send(new GetTodoTaskByIdQuery(id), ct);
+    var result = await sender.SendAsync(new GetTodoTaskByIdQuery(id), ct);
     return result.ToMinimalApiResult();
 });
 
 app.MapGet("/todo-tasks", async (bool onlyIncomplete, ISender sender, CancellationToken ct) =>
 {
-    var result = await sender.Send(new ListTodoTasksQuery(onlyIncomplete), ct);
+    var result = await sender.SendAsync(new ListTodoTasksQuery(onlyIncomplete), ct);
     return result.ToMinimalApiResult();
 });
 ```
@@ -906,7 +906,7 @@ public sealed record SearchTodoTasksQuery(string OwnerId, string TitleContains)
 public sealed class SearchTodoTasksHandler(Lazy<TodoTasksDbContext> context)
     : IQueryHandler<SearchTodoTasksQuery, Outcome<IReadOnlyList<TodoTaskDto>, Failure>>
 {
-    public async Task<Outcome<IReadOnlyList<TodoTaskDto>, Failure>> Handle(
+    public async Task<Outcome<IReadOnlyList<TodoTaskDto>, Failure>> HandleAsync(
         SearchTodoTasksQuery query, CancellationToken ct)
     {
         var pattern = $"%{query.TitleContains}%";
@@ -929,7 +929,7 @@ app.MapGet("/todo-tasks/search", async (
 {
     var ownerId = contextAccessor.Context?.UserId
         ?? throw new InvalidOperationException("This endpoint requires an authenticated caller.");
-    var result = await sender.Send(new SearchTodoTasksQuery(ownerId, titleContains), ct);
+    var result = await sender.SendAsync(new SearchTodoTasksQuery(ownerId, titleContains), ct);
     return result.ToMinimalApiResult();
 });
 ```
@@ -952,7 +952,7 @@ namespace TodoTasks.Api.Application.TodoTasks;
 public sealed class SearchTodoTasksHandler(Lazy<ISession> session)
     : IQueryHandler<SearchTodoTasksQuery, Outcome<IReadOnlyList<TodoTaskDto>, Failure>>
 {
-    public async Task<Outcome<IReadOnlyList<TodoTaskDto>, Failure>> Handle(
+    public async Task<Outcome<IReadOnlyList<TodoTaskDto>, Failure>> HandleAsync(
         SearchTodoTasksQuery query, CancellationToken ct)
     {
         var tasks = await session.Value.QueryOver<TodoTask>()
@@ -1007,7 +1007,7 @@ public sealed record ListTodoTasksPagedQuery(string OwnerId, int Page, int PageS
 public sealed class ListTodoTasksPagedHandler(IDomainRepository<TodoTask, int> repository)
     : IQueryHandler<ListTodoTasksPagedQuery, Outcome<PagedTodoTasksDto, Failure>>
 {
-    public async Task<Outcome<PagedTodoTasksDto, Failure>> Handle(
+    public async Task<Outcome<PagedTodoTasksDto, Failure>> HandleAsync(
         ListTodoTasksPagedQuery query, CancellationToken ct)
     {
         // Ordered by Id, not CreatedAtUtc: unlike ListTodoTasksHandler's own client-side sort above
@@ -1036,7 +1036,7 @@ app.MapGet("/todo-tasks/paged", async (
 {
     var ownerId = contextAccessor.Context?.UserId
         ?? throw new InvalidOperationException("This endpoint requires an authenticated caller.");
-    var result = await sender.Send(new ListTodoTasksPagedQuery(ownerId, page, pageSize), ct);
+    var result = await sender.SendAsync(new ListTodoTasksPagedQuery(ownerId, page, pageSize), ct);
     return result.ToMinimalApiResult();
 });
 ```
@@ -1104,7 +1104,7 @@ public sealed class UpdateTodoTaskHandler(IDomainRepository<TodoTask, int> repos
 ```
 
 > [!IMPORTANT]
-> `ResourceCommandHandler<TCommand, TEntity, TSuccess>` does not itself implement `ICommandHandler<TCommand, TResponse>` - a plain subclass is invisible to handler discovery. The explicit interface declaration above is required, not decorative; the base class's own `Handle` method already satisfies it, so no override body is needed.
+> `ResourceCommandHandler<TCommand, TEntity, TSuccess>` does not itself implement `ICommandHandler<TCommand, TResponse>` - a plain subclass is invisible to handler discovery. The explicit interface declaration above is required, not decorative; the base class's own `HandleAsync` method already satisfies it, so no override body is needed.
 
 > [!IMPORTANT]
 > Don't stack FluentValidation on top of a `ResourceCommandHandler` command without checking the arity first. `ValidationBehavior` needs to construct a `ValidationError`/`ValidationErrors` case on a validation failure - but `ResourceCommandHandler`'s response shape is fixed to `Outcome<TSuccess, NotFound, Forbidden>`, which has no such case. This is no longer a runtime surprise: registering a validator for `UpdateTodoTaskCommand` in this shape is now a build-time `INTERLOC010` diagnostic naming the request, the validator, and the missing case, rather than a first-validation-failure exception. Fold input checks like this into `Authorize` (returning a `Forbidden`) or `HandleAsync` instead.
@@ -1122,7 +1122,7 @@ app.MapPut("/todo-tasks/{id:int}", async (
     var requestedBy = contextAccessor.Context?.UserId
         ?? throw new InvalidOperationException("This endpoint requires an authenticated caller.");
 
-    var result = await sender.Send(
+    var result = await sender.SendAsync(
         new UpdateTodoTaskCommand(id, request.Title, request.Notes, requestedBy), ct);
     return result.ToMinimalApiResult();
 });
@@ -1130,7 +1130,7 @@ app.MapPut("/todo-tasks/{id:int}", async (
 public sealed record UpdateTodoTaskRequest(string Title, string? Notes);
 ```
 
-Contrast this with Step 9's `DeleteTodoTaskCommand`, which uses the other authorization style - a policy check via `IRequiresPolicy`. See [Handler Selection & Dispatch § Contrast: Resource vs. Non-Resource Authorization](handler-selection-and-dispatch.md#contrast-resource-vs-non-resource-authorization) for when to reach for which.
+Contrast this with Step 9's `DeleteTodoTaskCommand`, which uses the other authorization style - a policy check via `IRequiresPolicyRequest`. See [Handler Selection & Dispatch § Contrast: Resource vs. Non-Resource Authorization](handler-selection-and-dispatch.md#contrast-resource-vs-non-resource-authorization) for when to reach for which.
 
 ## Step 8: State transitions and a notification
 
@@ -1168,7 +1168,7 @@ public sealed class CompleteTodoTaskHandler(
     IDomainRepository<TodoTask, int> repository, IUnitOfWork unitOfWork, IPublisher publisher)
     : ICommandHandler<CompleteTodoTaskCommand, Outcome<TodoTaskDto, NotFound, Conflict>>
 {
-    public async Task<Outcome<TodoTaskDto, NotFound, Conflict>> Handle(
+    public async Task<Outcome<TodoTaskDto, NotFound, Conflict>> HandleAsync(
         CompleteTodoTaskCommand command, CancellationToken ct)
     {
         if (repository.GetById(command.Id) is not { } task)
@@ -1189,7 +1189,7 @@ public sealed class CompleteTodoTaskHandler(
         // rolls the completion back too. See Transactions & Store Integration § Transactions with
         // Notifications for the full mechanism, including the pattern that publishes genuinely after
         // commit instead.
-        await publisher.Publish(new TodoTaskCompletedNotification(task.Id, task.OwnerId, task.Title), ct);
+        await publisher.PublishAsync(new TodoTaskCompletedNotification(task.Id, task.OwnerId, task.Title), ct);
 
         return TodoTaskDto.FromEntity(task);
     }
@@ -1208,7 +1208,7 @@ namespace TodoTasks.Api.Application.TodoTasks;
 public sealed class TodoTaskCompletionCounterHandler(ICompletionCounter counter)
     : INotificationHandler<TodoTaskCompletedNotification>
 {
-    public Task Handle(TodoTaskCompletedNotification notification, CancellationToken ct)
+    public Task HandleAsync(TodoTaskCompletedNotification notification, CancellationToken ct)
     {
         counter.Increment(notification.OwnerId);
         return Task.CompletedTask;
@@ -1226,7 +1226,7 @@ namespace TodoTasks.Api.Application.TodoTasks;
 public sealed class TodoTaskCompletionAuditLogHandler(ILogger<TodoTaskCompletionAuditLogHandler> logger)
     : INotificationHandler<TodoTaskCompletedNotification>
 {
-    public Task Handle(TodoTaskCompletedNotification notification, CancellationToken ct)
+    public Task HandleAsync(TodoTaskCompletedNotification notification, CancellationToken ct)
     {
         logger.LogInformation(
             "Task {TodoTaskId} ('{Title}') completed by {OwnerId}",
@@ -1238,7 +1238,7 @@ public sealed class TodoTaskCompletionAuditLogHandler(ILogger<TodoTaskCompletion
 
 ```mermaid
 flowchart TD
-    Complete["CompleteTodoTaskHandler<br/>marks the task complete, saves"] --> Publish["publisher.Publish(TodoTaskCompletedNotification)"]
+    Complete["CompleteTodoTaskHandler<br/>marks the task complete, saves"] --> Publish["publisher.PublishAsync(TodoTaskCompletedNotification)"]
     Publish --> Counter["TodoTaskCompletionCounterHandler<br/>increments an in-memory per-owner count"]
     Publish --> Audit["TodoTaskCompletionAuditLogHandler<br/>writes a log entry"]
 ```
@@ -1271,11 +1271,11 @@ Register it:
 builder.Services.AddSingleton<ICompletionCounter, InMemoryCompletionCounter>();
 ```
 
-Both handlers run **sequentially by default** - if one throws, the other doesn't run. Neither can change the outcome value the caller receives, since `TodoTaskDto.FromEntity(task)` above is already the value `Handle` returns regardless of what a subscriber does - but a subscriber that throws *does* still affect the command: `UnitOfWorkBehavior` hasn't committed yet at the point `Publish` is called here (it commits only once `Handle` itself returns), so an exception propagating out of a subscriber unwinds past that commit and the completion rolls back with it. See [Transactions & Store Integration § Transactions with Notifications](transactions-and-store-integration.md#transactions-with-notifications) for the full mechanism, and for the pattern that publishes only once the transaction has genuinely committed (publishing from the caller of `Send`, after it returns, rather than from inside the handler). See [Notifications & Fan-out](notifications-and-fan-out.md) for `Parallel` publishing and everything else about multi-subscriber dispatch - this guide only needed the default.
+Both handlers run **sequentially by default** - if one throws, the other doesn't run. Neither can change the outcome value the caller receives, since `TodoTaskDto.FromEntity(task)` above is already the value `HandleAsync` returns regardless of what a subscriber does - but a subscriber that throws *does* still affect the command: `UnitOfWorkBehavior` hasn't committed yet at the point `PublishAsync` is called here (it commits only once `HandleAsync` itself returns), so an exception propagating out of a subscriber unwinds past that commit and the completion rolls back with it. See [Transactions & Store Integration § Transactions with Notifications](transactions-and-store-integration.md#transactions-with-notifications) for the full mechanism, and for the pattern that publishes only once the transaction has genuinely committed (publishing from the caller of `SendAsync`, after it returns, rather than from inside the handler). See [Notifications & Fan-out](notifications-and-fan-out.md) for `Parallel` publishing and everything else about multi-subscriber dispatch - this guide only needed the default.
 
 ### Bonus: forcing a rollback without a failure outcome
 
-`CompleteTodoTaskHandler` above never needs to roll back on purpose - it returns `Conflict` before staging any write, so there's nothing to undo. But `IUnitOfWork` carries a second method beyond `SaveChangesAsync`: `Cancel`, a rare escape hatch for the opposite case - a handler that *has* already staged a write, then discovers mid-flight that it shouldn't commit, without that being a `Failure`-shaped outcome. `Cancel` rolls back immediately; `UnitOfWorkBehavior` then finds nothing pending at pipeline completion and does nothing further - it isn't a short-circuit primitive, so the handler still decides what outcome to return afterward.
+`CompleteTodoTaskHandler` above never needs to roll back on purpose - it returns `Conflict` before staging any write, so there's nothing to undo. But `IUnitOfWork` carries a second method beyond `SaveChangesAsync`: `CancelAsync`, a rare escape hatch for the opposite case - a handler that *has* already staged a write, then discovers mid-flight that it shouldn't commit, without that being a `Failure`-shaped outcome. `CancelAsync` rolls back immediately; `UnitOfWorkBehavior` then finds nothing pending at pipeline completion and does nothing further - it isn't a short-circuit primitive, so the handler still decides what outcome to return afterward.
 
 The case where this actually earns its keep: the desired end state is already true, for a reason unrelated to this request. Imagine `TodoTask` completion can also be driven by an external calendar integration that syncs independently of this API - illustrative only, not part of the running example above (it would replace, not join, `CompleteTodoTaskHandler`):
 
@@ -1293,7 +1293,7 @@ public sealed class SyncAwareCompleteTodoTaskHandler(
     ICalendarSyncClient calendarSync)  // Illustrative - not a package Interlocutor ships
     : ICommandHandler<CompleteTodoTaskCommand, Outcome<TodoTaskDto, NotFound, Conflict>>
 {
-    public async Task<Outcome<TodoTaskDto, NotFound, Conflict>> Handle(
+    public async Task<Outcome<TodoTaskDto, NotFound, Conflict>> HandleAsync(
         CompleteTodoTaskCommand command, CancellationToken ct)
     {
         if (repository.GetById(command.Id) is not { } task)
@@ -1308,7 +1308,7 @@ public sealed class SyncAwareCompleteTodoTaskHandler(
             // Someone else already completed this task through the calendar integration - abandon
             // our own staged write rather than double-apply it. This still isn't our failure: the
             // task ends up completed either way, so report success, not Conflict.
-            await unitOfWork.Cancel(ct);
+            await unitOfWork.CancelAsync(ct);
             return TodoTaskDto.FromEntity(task);
         }
 
@@ -1396,7 +1396,7 @@ public sealed class CompleteTodoTaskWithActivityLogHandler(
     IPublisher publisher)
     : ICommandHandler<CompleteTodoTaskCommand, Outcome<TodoTaskDto, NotFound, Conflict>>
 {
-    public async Task<Outcome<TodoTaskDto, NotFound, Conflict>> Handle(
+    public async Task<Outcome<TodoTaskDto, NotFound, Conflict>> HandleAsync(
         CompleteTodoTaskCommand command, CancellationToken ct)
     {
         if (tasks.GetById(command.Id) is not { } task)
@@ -1417,7 +1417,7 @@ public sealed class CompleteTodoTaskWithActivityLogHandler(
 
         await unitOfWork.SaveChangesAsync(ct);
 
-        await publisher.Publish(new TodoTaskCompletedNotification(task.Id, task.OwnerId, task.Title), ct);
+        await publisher.PublishAsync(new TodoTaskCompletedNotification(task.Id, task.OwnerId, task.Title), ct);
 
         return TodoTaskDto.FromEntity(task);
     }
@@ -1425,7 +1425,7 @@ public sealed class CompleteTodoTaskWithActivityLogHandler(
 ```
 
 > [!IMPORTANT]
-> This is the distinction that matters: the activity-log row above is written through a repository *inside* this handler, so it shares this dispatch's transaction *by construction* - it exists if and only if the task's completion itself was committed, because both are staged against the same context before the one `SaveChangesAsync` call. `TodoTaskCompletedNotification`'s subscribers (Step 8), called from inside the handler the same way, are not actually decoupled the same way: `UnitOfWorkBehavior` doesn't commit until `Handle` itself returns, so a subscriber failure here still unwinds past that commit and rolls the completion back too - see [Transactions & Store Integration § Transactions with Notifications](transactions-and-store-integration.md#transactions-with-notifications) for why, and for how to publish in a way that's genuinely independent of the command's own transaction. Reach for a second repository when a write must be atomic with the rest of the command; reach for a notification, published from outside the handler, when the downstream work should be allowed to fail independently.
+> This is the distinction that matters: the activity-log row above is written through a repository *inside* this handler, so it shares this dispatch's transaction *by construction* - it exists if and only if the task's completion itself was committed, because both are staged against the same context before the one `SaveChangesAsync` call. `TodoTaskCompletedNotification`'s subscribers (Step 8), called from inside the handler the same way, are not actually decoupled the same way: `UnitOfWorkBehavior` doesn't commit until `HandleAsync` itself returns, so a subscriber failure here still unwinds past that commit and rolls the completion back too - see [Transactions & Store Integration § Transactions with Notifications](transactions-and-store-integration.md#transactions-with-notifications) for why, and for how to publish in a way that's genuinely independent of the command's own transaction. Reach for a second repository when a write must be atomic with the rest of the command; reach for a notification, published from outside the handler, when the downstream work should be allowed to fail independently.
 
 </details>
 
@@ -1451,7 +1451,7 @@ public sealed record ReopenTodoTaskCommand(int Id)
 public sealed class ReopenTodoTaskHandler(IDomainRepository<TodoTask, int> repository, IUnitOfWork unitOfWork)
     : ICommandHandler<ReopenTodoTaskCommand, Outcome<TodoTaskDto, NotFound, Conflict>>
 {
-    public async Task<Outcome<TodoTaskDto, NotFound, Conflict>> Handle(
+    public async Task<Outcome<TodoTaskDto, NotFound, Conflict>> HandleAsync(
         ReopenTodoTaskCommand command, CancellationToken ct)
     {
         if (repository.GetById(command.Id) is not { } task)
@@ -1477,20 +1477,20 @@ Endpoints:
 ```csharp
 app.MapPost("/todo-tasks/{id:int}/complete", async (int id, ISender sender, CancellationToken ct) =>
 {
-    var result = await sender.Send(new CompleteTodoTaskCommand(id), ct);
+    var result = await sender.SendAsync(new CompleteTodoTaskCommand(id), ct);
     return result.ToMinimalApiResult();
 });
 
 app.MapPost("/todo-tasks/{id:int}/reopen", async (int id, ISender sender, CancellationToken ct) =>
 {
-    var result = await sender.Send(new ReopenTodoTaskCommand(id), ct);
+    var result = await sender.SendAsync(new ReopenTodoTaskCommand(id), ct);
     return result.ToMinimalApiResult();
 });
 ```
 
 ## Step 9: Coarse-grained authorization - deleting a task
 
-Delete uses the last of the five recommended-chain behaviors: `AuthorizationBehavior`, gated by `IRequiresPolicy`. This runs *before* the entity is loaded for the handler's own use - `AuthorizationBehavior` itself is invoked ahead of the handler regardless of what the policy checks, in contrast with Step 7's `ResourceCommandHandler`, whose ownership check can only run *inside* the handler's own load/authorize/handle template, after `LoadAsync` has already fetched the entity for the handler to use.
+Delete uses the last of the five recommended-chain behaviors: `AuthorizationBehavior`, gated by `IRequiresPolicyRequest`. This runs *before* the entity is loaded for the handler's own use - `AuthorizationBehavior` itself is invoked ahead of the handler regardless of what the policy checks, in contrast with Step 7's `ResourceCommandHandler`, whose ownership check can only run *inside* the handler's own load/authorize/handle template, after `LoadAsync` has already fetched the entity for the handler to use.
 
 **`Application/TodoTasks/DeleteTodoTaskCommand.cs`** and its handler:
 
@@ -1504,7 +1504,7 @@ using Interlocutor.Persistence.Abstractions;
 namespace TodoTasks.Api.Application.TodoTasks;
 
 public sealed record DeleteTodoTaskCommand(int Id)
-    : ICommand<Outcome<Success, NotFound, Forbidden>>, IRequiresPolicy, IAuditableRequest
+    : ICommand<Outcome<Success, NotFound, Forbidden>>, IRequiresPolicyRequest, IAuditableRequest
 {
     public string PolicyName => TodoTaskPolicyEvaluator.OwnsTaskPolicyName;
 
@@ -1518,7 +1518,7 @@ public sealed class DeleteTodoTaskHandler(IDomainRepository<TodoTask, int> repos
     // confirmed the caller owns the task (or the task didn't exist, in which case the policy lets the
     // request through so this handler - not the policy check - produces NotFound). This handler
     // therefore only needs to worry about whether the task still exists by the time it runs.
-    public async Task<Outcome<Success, NotFound, Forbidden>> Handle(
+    public async Task<Outcome<Success, NotFound, Forbidden>> HandleAsync(
         DeleteTodoTaskCommand command, CancellationToken ct)
     {
         if (repository.GetById(command.Id) is not { } task)
@@ -1534,7 +1534,7 @@ public sealed class DeleteTodoTaskHandler(IDomainRepository<TodoTask, int> repos
 }
 ```
 
-`AuthorizationBehavior` needs an `IPolicyEvaluator` to ask - there's no default. Nothing about `IRequiresPolicy` forbids the evaluator from loading an entity to decide - it's still a policy check running ahead of dispatch, just one that happens to be resource-aware, in contrast with Step 7's ownership check, which is resource-aware because it runs *inside* the handler's own template instead:
+`AuthorizationBehavior` needs an `IPolicyEvaluator` to ask - there's no default. Nothing about `IRequiresPolicyRequest` forbids the evaluator from loading an entity to decide - it's still a policy check running ahead of dispatch, just one that happens to be resource-aware, in contrast with Step 7's ownership check, which is resource-aware because it runs *inside* the handler's own template instead:
 
 **`Infrastructure/TodoTaskPolicyEvaluator.cs`**
 
@@ -1584,7 +1584,7 @@ Endpoint:
 ```csharp
 app.MapDelete("/todo-tasks/{id:int}", async (int id, ISender sender, CancellationToken ct) =>
 {
-    var result = await sender.Send(new DeleteTodoTaskCommand(id), ct);
+    var result = await sender.SendAsync(new DeleteTodoTaskCommand(id), ct);
     return result.ToMinimalApiResult();
 });
 ```
@@ -1593,7 +1593,7 @@ That's all five recommended-chain behaviors exercised: Logging and Auditing from
 
 ### One more command: no payload, caller-chosen outcome type
 
-Every command so far implements `ICommand<TResponse>` - a response type fixed in the command's own declaration. The bare `ICommand` marker (no type parameter) works differently: its handler contract is `IBareCommandHandler<TCommand, TResult>`, where `TResult` - any `IUnion`-implementing type - is chosen by the *caller*, via the type argument on `ISender.Send<TResult>(ICommand, CancellationToken)`, not fixed by the command or baked into the handler's registration.
+Every command so far implements `ICommand<TResponse>` - a response type fixed in the command's own declaration. The bare `ICommand` marker (no type parameter) works differently: its handler contract is `IBareCommandHandler<TCommand, TResult>`, where `TResult` - any `IUnion`-implementing type - is chosen by the *caller*, via the type argument on `ISender.SendAsync<TResult>(ICommand, CancellationToken)`, not fixed by the command or baked into the handler's registration.
 
 Clearing every completed task for a caller is a natural fit for this - there's no domain data to hand back, and no failure mode this operation can actually hit:
 
@@ -1654,7 +1654,7 @@ app.MapPost("/todo-tasks/clear-completed", async (
     var ownerId = contextAccessor.Context?.UserId
         ?? throw new InvalidOperationException("This endpoint requires an authenticated caller.");
 
-    var result = await sender.Send<Outcome>(new ClearCompletedTodoTasksCommand(ownerId), ct);
+    var result = await sender.SendAsync<Outcome>(new ClearCompletedTodoTasksCommand(ownerId), ct);
     return result.ToMinimalApiResult();
 });
 ```
@@ -1719,19 +1719,19 @@ app.MapPost("/todo-tasks", async (
 {
     var ownerId = contextAccessor.Context?.UserId
         ?? throw new InvalidOperationException("This endpoint requires an authenticated caller.");
-    var result = await sender.Send(new CreateTodoTaskCommand(request.Title, request.Notes, ownerId), ct);
+    var result = await sender.SendAsync(new CreateTodoTaskCommand(request.Title, request.Notes, ownerId), ct);
     return result.ToMinimalApiResult();
 });
 
 app.MapGet("/todo-tasks/{id:int}", async (int id, ISender sender, CancellationToken ct) =>
 {
-    var result = await sender.Send(new GetTodoTaskByIdQuery(id), ct);
+    var result = await sender.SendAsync(new GetTodoTaskByIdQuery(id), ct);
     return result.ToMinimalApiResult();
 });
 
 app.MapGet("/todo-tasks", async (bool onlyIncomplete, ISender sender, CancellationToken ct) =>
 {
-    var result = await sender.Send(new ListTodoTasksQuery(onlyIncomplete), ct);
+    var result = await sender.SendAsync(new ListTodoTasksQuery(onlyIncomplete), ct);
     return result.ToMinimalApiResult();
 });
 
@@ -1740,25 +1740,25 @@ app.MapPut("/todo-tasks/{id:int}", async (
 {
     var requestedBy = contextAccessor.Context?.UserId
         ?? throw new InvalidOperationException("This endpoint requires an authenticated caller.");
-    var result = await sender.Send(new UpdateTodoTaskCommand(id, request.Title, request.Notes, requestedBy), ct);
+    var result = await sender.SendAsync(new UpdateTodoTaskCommand(id, request.Title, request.Notes, requestedBy), ct);
     return result.ToMinimalApiResult();
 });
 
 app.MapPost("/todo-tasks/{id:int}/complete", async (int id, ISender sender, CancellationToken ct) =>
 {
-    var result = await sender.Send(new CompleteTodoTaskCommand(id), ct);
+    var result = await sender.SendAsync(new CompleteTodoTaskCommand(id), ct);
     return result.ToMinimalApiResult();
 });
 
 app.MapPost("/todo-tasks/{id:int}/reopen", async (int id, ISender sender, CancellationToken ct) =>
 {
-    var result = await sender.Send(new ReopenTodoTaskCommand(id), ct);
+    var result = await sender.SendAsync(new ReopenTodoTaskCommand(id), ct);
     return result.ToMinimalApiResult();
 });
 
 app.MapDelete("/todo-tasks/{id:int}", async (int id, ISender sender, CancellationToken ct) =>
 {
-    var result = await sender.Send(new DeleteTodoTaskCommand(id), ct);
+    var result = await sender.SendAsync(new DeleteTodoTaskCommand(id), ct);
     return result.ToMinimalApiResult();
 });
 
@@ -1767,7 +1767,7 @@ app.MapPost("/todo-tasks/clear-completed", async (
 {
     var ownerId = contextAccessor.Context?.UserId
         ?? throw new InvalidOperationException("This endpoint requires an authenticated caller.");
-    var result = await sender.Send<Outcome>(new ClearCompletedTodoTasksCommand(ownerId), ct);
+    var result = await sender.SendAsync<Outcome>(new ClearCompletedTodoTasksCommand(ownerId), ct);
     return result.ToMinimalApiResult();
 });
 
@@ -1793,7 +1793,7 @@ The whole request/response surface, for reference:
 | `UpdateTodoTaskCommand` | Command (`ResourceCommandHandler`) | `Outcome<TodoTaskDto, NotFound, Forbidden>` | `IAuditableRequest` |
 | `CompleteTodoTaskCommand` | Command | `Outcome<TodoTaskDto, NotFound, Conflict>` | `IAuditableRequest` |
 | `ReopenTodoTaskCommand` | Command | `Outcome<TodoTaskDto, NotFound, Conflict>` | `IAuditableRequest` |
-| `DeleteTodoTaskCommand` | Command | `Outcome<Success, NotFound, Forbidden>` | `IRequiresPolicy`, `IAuditableRequest` |
+| `DeleteTodoTaskCommand` | Command | `Outcome<Success, NotFound, Forbidden>` | `IRequiresPolicyRequest`, `IAuditableRequest` |
 | `ClearCompletedTodoTasksCommand` | Command (bare `ICommand`, via `IBareCommandHandler<,>`) | `Outcome` (chosen by the caller) | `IAuditableRequest` |
 
 Each row's arity is exactly what that operation can produce - no request routes an outcome it can't actually reach through a generic catch-all `Failure`, per [Choosing Arities](messages-and-result-types.md#choosing-arities). The "Bonus" sections throughout (manual response mapping, a raw-context/search example, a paged query, a custom pipeline behavior) are deliberately left out of this table and out of `Program.cs` above - they're optional deep-dives, not part of the finished project.
@@ -1819,11 +1819,11 @@ interlocutor.Pipeline
     .AddUnitOfWorkBehavior();      // 5. Registered last -> innermost, wraps only the handler
 ```
 
-"Outermost" and "innermost" describe **nesting**, not two separate passes over a list. Each behavior's `Handle(request, next, ct)` receives a `next` delegate that calls into whatever's nested inside it - the next behavior in the list, or the handler itself for the last one. Calling `Send` doesn't walk the list; it calls behavior 1, which calls `next()`, which *is* behavior 2, which calls `next()`, which *is* behavior 3, and so on down to the handler - one nested call stack, five levels deep, not five sequential steps.
+"Outermost" and "innermost" describe **nesting**, not two separate passes over a list. Each behavior's `HandleAsync(request, next, ct)` receives a `next` delegate that calls into whatever's nested inside it - the next behavior in the list, or the handler itself for the last one. Calling `SendAsync` doesn't walk the list; it calls behavior 1, which calls `next()`, which *is* behavior 2, which calls `next()`, which *is* behavior 3, and so on down to the handler - one nested call stack, five levels deep, not five sequential steps.
 
 ### Ingress and egress are one function, split by `await next()`
 
-Inside any `IPipelineBehavior<TRequest, TResponse>.Handle`, "ingress" is whatever runs *before* `await next()`; "egress" is whatever runs *after* it, once the value comes back. Because it's a single nested call stack, egress order is mechanically forced to be the exact reverse of ingress order: the first behavior's ingress is the first thing that runs overall, but its egress is the *last* thing that runs, because everything else has to unwind back through it first.
+Inside any `IPipelineBehavior<TRequest, TResponse>.HandleAsync`, "ingress" is whatever runs *before* `await next()`; "egress" is whatever runs *after* it, once the value comes back. Because it's a single nested call stack, egress order is mechanically forced to be the exact reverse of ingress order: the first behavior's ingress is the first thing that runs overall, but its egress is the *last* thing that runs, because everything else has to unwind back through it first.
 
 For `CreateTodoTaskCommand` (Step 5) through the five-behavior chain above:
 
@@ -1891,7 +1891,7 @@ public sealed class SlowHandlerWarningBehavior<TRequest, TResponse>(
 {
     private static readonly TimeSpan Threshold = TimeSpan.FromMilliseconds(250);
 
-    public async Task<TResponse> Handle(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
+    public async Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         var stopwatch = Stopwatch.StartNew(); // Ingress - runs before whatever's nested inside this one
         var response = await next();

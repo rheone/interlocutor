@@ -43,7 +43,7 @@ When a request dispatches:
 A behavior's scope (which requests it touches) is controlled by marker interfaces your request implements:
 
 - **`IAuditableRequest`** - opts in `AuditingBehavior` (carries `ActionName`)
-- **`IRequiresPolicy`** - opts in `AuthorizationBehavior` (carries `PolicyName`)
+- **`IRequiresPolicyRequest`** - opts in `AuthorizationBehavior` (carries `PolicyName`)
 - **`IExternalStoreRequest`** - opts a request *out* of `UnitOfWorkBehavior` entirely, even if it touches the scoped session
 - **`ITransactionalRequest`** - does not opt into `UnitOfWorkBehavior` (every request gets it once registered, no marker needed); narrows to "begin the transaction eagerly, at pipeline start" instead of the default lazy begin-on-first-write - see [Transactions & Store Integration](transactions-and-store-integration.md)
 
@@ -95,6 +95,9 @@ builder.Pipeline.AddUnitOfWorkBehavior();        // 5. Innermost
 - **Validation before transactions** - don't open a database transaction to discover the input was invalid. Catch input errors first.
 - **Transaction innermost** - it wraps only the handler's persistence work. It commits on success and rolls back on any `Failure` outcome, but not when an outer behavior short-circuits (e.g., when authorization denies the request - the caller shouldn't see a rolled-back transaction when they were never authorized to run the command).
 
+> [!NOTE]
+> "Validation before transactions" leaves a DB-touching validation rule's own read unprotected. FluentValidation supports a rule that resolves an injected dependency and queries it directly (`MustAsync`/`CustomAsync` against an injected `DbContext`, for instance) - under this default ordering, that read still runs before `UnitOfWorkBehavior` opens a transaction, leaving the same check-then-act race window open that `ITransactionalRequest` closes for a read performed inside the handler. The fix is the same one that protects any other earlier read: register `UnitOfWorkBehavior` outside `ValidationBehavior` instead of at the innermost recommended position, so the validator's read and the handler's write share one transaction; see [Transactions & Store Integration § Where to register the behavior, relative to pipeline stages](transactions-and-store-integration.md#where-to-register-the-behavior-relative-to-pipeline-stages).
+
 ## Per-Request-Type Pipeline Overrides
 
 The recommended chain - or whatever chain you compose in its place - is a general-purpose baseline: every request type draws from it unless you declare an override. `OverridePipelineFor` lets a specific request type, or a predicate matching a set of request types, run an independent, explicitly-ordered pipeline **instead of** the baseline entirely - a full, positively-declared replacement, never a merge with or modification of it.
@@ -142,7 +145,7 @@ builder.Pipeline.OverridePipelineFor(
 
 A request matched by a rule resolves *exactly* the declared list, in the declared order - the first entry runs first (inbound) and last (outbound), same as the baseline's own registration order. There is no "skip" or "exclude" primitive alongside it: declaring an override is the only action you take.
 
-A request that structurally satisfies an existing marker interface (`IAuditableRequest`, `IRequiresPolicy`, and so on) does not run that marker-constrained behavior once an override rule matches it, unless the override names the behavior explicitly - the override's declared list is exhaustive, not additive to whatever the marker would otherwise pull in. This is enforced once, centrally, at the point each dispatch path builds its behavior chain - not by asking every behavior to check whether it should yield to an override.
+A request that structurally satisfies an existing marker interface (`IAuditableRequest`, `IRequiresPolicyRequest`, and so on) does not run that marker-constrained behavior once an override rule matches it, unless the override names the behavior explicitly - the override's declared list is exhaustive, not additive to whatever the marker would otherwise pull in. This is enforced once, centrally, at the point each dispatch path builds its behavior chain - not by asking every behavior to check whether it should yield to an override.
 
 Two override rules whose predicates both match the same request type are a build-validation error, not a silent resolution - see [Startup Validation](builder-and-registration.md#startup-validation). There is no precedence-declaration escape hatch; resolve a conflict by narrowing one rule's match criteria.
 
@@ -211,11 +214,11 @@ Enforces policy-based, non-resource authorization. Short-circuits with `Forbidde
 > Resource-based authorization (needing the loaded entity) is *not* a behavior - it's handled by `ResourceCommandHandler`'s template method. See [handler-selection-and-dispatch.md](handler-selection-and-dispatch.md) for the full picture.
 
 - Requires: nothing beyond the try-added `IOutcomeCaseRegistry` default (`DefaultOutcomeCaseRegistry`) and `IPolicyEvaluator` default (see the warning below)
-- Marker: `IRequiresPolicy` (carries the `PolicyName` to evaluate)
+- Marker: `IRequiresPolicyRequest` (carries the `PolicyName` to evaluate)
 - Constraint: `TResponse : IOutcome` (must be able to construct a `Forbidden` case)
 
 ```csharp
-public record DeleteAllUsers() : ICommand<Outcome<Success, Forbidden>>, IRequiresPolicy
+public record DeleteAllUsers() : ICommand<Outcome<Success, Forbidden>>, IRequiresPolicyRequest
 {
     public string PolicyName => "AdminOnly";
 }
@@ -225,11 +228,11 @@ var result = await mediator.Send(new DeleteAllUsers());
 ```
 
 The response type must have a `Forbidden` case to short-circuit into - the case-less, non-generic
-`Outcome` has none, so pairing it with `IRequiresPolicy` throws the first time a policy check
+`Outcome` has none, so pairing it with `IRequiresPolicyRequest` throws the first time a policy check
 actually denies, rather than silently granting or swallowing the denial.
 
 > [!WARNING]
-> If no `IPolicyEvaluator` is registered, `AuthorizationBehavior` falls back to the try-added `DefaultPolicyEvaluator` - which **always returns `true`, granting every policy check unconditionally**. That default exists for development and testing, where authorization isn't implemented yet and shouldn't block work; it is not safe for production. Register your own `IPolicyEvaluator` (or `builder.Pipeline.OverridePolicyEvaluator<TEvaluator>()`) before deploying anything that uses `IRequiresPolicy`.
+> If no `IPolicyEvaluator` is registered, `AuthorizationBehavior` falls back to the try-added `DefaultPolicyEvaluator` - which **always returns `true`, granting every policy check unconditionally**. That default exists for development and testing, where authorization isn't implemented yet and shouldn't block work; it is not safe for production. Register your own `IPolicyEvaluator` (or `builder.Pipeline.OverridePolicyEvaluator<TEvaluator>()`) before deploying anything that uses `IRequiresPolicyRequest`.
 
 ### AuditingBehavior
 
@@ -297,6 +300,8 @@ services.AddInterlocutor(builder =>
 - **`RegisterPredicate(predicate, label)`** - for shapes that can't be keyed by exact type (e.g. an open generic family). Predicates are evaluated in registration order, after the type table misses, and the first match wins.
 - **`.Build()`** - produces the immutable `IOutcomeClassifier`.
 
+`IOutcomeClassifier` is a pure label registry rather than a success/failure judgment because no case type carries a universal success/failure meaning - a `ValidationErrors` result is a failure for one caller and a legitimate "persist and report" outcome for another, and `Conflict` might mean "nothing more to do here" rather than "roll this back." Only the specific consumer asking, at its own call site, can say what "success" means for its own purpose; that's why `UnitOfWorkBehavior`'s commit/rollback decision (see the note above) never asks a classifier to decide anything either.
+
 > [!IMPORTANT]
 > Labeling never throws: if neither the type table nor any predicate matches a response, `GetLabel()` falls back to the response's runtime type name (or `"None"` for a null/unset response). A custom outcome type you forget to register just logs under its raw type name instead of a friendlier label - it has no effect on commit/rollback, which no longer depends on classification at all.
 
@@ -341,12 +346,12 @@ These three behaviors are additive, opt-in cross-cutting concerns shipped alongs
 Converts cooperative cancellation of the ambient request into a `Cancelled` outcome instead of letting `OperationCanceledException` propagate as an unexpected fault.
 
 - Requires: nothing beyond the try-added `IOutcomeCaseRegistry` default (`DefaultOutcomeCaseRegistry`)
-- Marker: `ICancellable` (no members - opts the request in)
+- Marker: `ICancellableRequest` (no members - opts the request in)
 - Constraint: `TResponse : IOutcome` (must be able to construct a `Cancelled` case)
 
 ```csharp
 public record ExportReport(int ReportId)
-    : ICommand<Outcome<Success, Cancelled>>, ICancellable;
+    : ICommand<Outcome<Success, Cancelled>>, ICancellableRequest;
 
 // builder.Pipeline.AddCancellationBehavior();
 // CancellationBehavior only converts cancellation tied to the ambient CancellationToken passed to
@@ -359,12 +364,12 @@ var result = await mediator.Send(new ExportReport(42), cancellationToken);
 Races the rest of the pipeline against a time budget resolved via `ITimeoutPolicy`, short-circuiting with `Timeout` if the budget elapses first.
 
 - Requires: `ITimeoutPolicy` (you register your own, or accept the try-added `DefaultTimeoutPolicy`, which returns the request's own declared budget unchanged)
-- Marker: `IHasTimeout` (carries the request's declared `Budget`)
+- Marker: `ITimeoutRequest` (carries the request's declared `Budget`)
 - Constraint: `TResponse : IOutcome` (must be able to construct a `Timeout` case)
 
 ```csharp
 public record ExportReport(int ReportId)
-    : ICommand<Outcome<Success, Timeout>>, IHasTimeout
+    : ICommand<Outcome<Success, Timeout>>, ITimeoutRequest
 {
     public TimeSpan Budget => TimeSpan.FromSeconds(30);
 }
@@ -376,7 +381,7 @@ var result = await mediator.Send(new ExportReport(42));
 > [!WARNING]
 > `TimeoutBehavior` can only *report* a timeout, not enforce one. `IPipelineBehavior<TRequest, TResponse>.Handle`'s `next` parameter is a parameterless delegate - there is no way to hand it a shorter-lived token, so the abandoned work keeps running in the background, unobserved, after the `Timeout` response is returned to the caller. Genuinely aborting in-flight work requires the handler itself to observe the cancellation token.
 
-For simple budget logic that doesn't warrant a named class, `DelegateTimeoutPolicy` wraps a `Func<IHasTimeout, TimeSpan>` directly - register the instance before `AddInterlocutor()` runs so the behavior's own try-added default is skipped:
+For simple budget logic that doesn't warrant a named class, `DelegateTimeoutPolicy` wraps a `Func<ITimeoutRequest, TimeSpan>` directly - register the instance before `AddInterlocutor()` runs so the behavior's own try-added default is skipped:
 
 ```csharp
 services.AddSingleton<ITimeoutPolicy>(new DelegateTimeoutPolicy(request => request.Budget * 2));  // double every declared budget
@@ -392,12 +397,12 @@ services.AddInterlocutor(builder =>
 Checks a rate limit via `IRateLimiter`, short-circuiting with `RateLimited` if the check disallows the request.
 
 - Requires: `IRateLimiter` (you register your own, or accept the try-added `DefaultRateLimiter`)
-- Marker: `IRateLimited` (carries `LimitKey`, identifying which limiter/bucket applies)
+- Marker: `IRateLimitedRequest` (carries `LimitKey`, identifying which limiter/bucket applies)
 - Constraint: `TResponse : IOutcome` (must be able to construct a `RateLimited` case)
 
 ```csharp
 public record ExportReport(int ReportId)
-    : ICommand<Outcome<Success, RateLimited>>, IRateLimited
+    : ICommand<Outcome<Success, RateLimited>>, IRateLimitedRequest
 {
     public string LimitKey => "exports";
 }

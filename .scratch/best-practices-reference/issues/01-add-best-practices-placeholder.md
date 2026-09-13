@@ -4,8 +4,10 @@
 
 **Blocked by:** None - can start immediately
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `08a40c4`.
 
-- [ ] `documentation/best-practices.md` exists, follows the `documentation/` house style (no ADR citations, glossary-linking on first mention, no enumerated counts in prose), and every claim in it is verified against shipped `src/` code
-- [ ] It is linked from `documentation/index.md`
-- [ ] It reads as an intentional starting point, not a finished reference - explicit that it will grow
+- [x] `documentation/best-practices.md` exists, follows the `documentation/` house style (no ADR citations, glossary-linking on first mention, no enumerated counts in prose), and every claim in it is verified against shipped `src/` code
+- [x] It is linked from `documentation/index.md`
+- [x] It reads as an intentional starting point, not a finished reference - explicit that it will grow
+
+Note: the "Opt into pipeline behavior with marker interfaces" guideline names `IRequiresPolicy`, which was renamed to `IRequiresPolicyRequest` in `ef3ea61` (after this ticket shipped). That staleness is tracked and fixed as part of `.scratch/marker-interface-naming/issues/03-update-documentation.md`, which already lists this file among the docs it updates - not re-fixed here to avoid diverging from that ticket's own pass.

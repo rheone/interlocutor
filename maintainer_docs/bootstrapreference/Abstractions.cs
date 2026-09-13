@@ -88,7 +88,7 @@ public interface IAuditableRequest
 }
 
 /// <summary>Declares a named, non-resource authorization policy that must pass before the handler runs.</summary>
-public interface IRequiresPolicy
+public interface IRequiresPolicyRequest
 {
     string PolicyName { get; }
 }

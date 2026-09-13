@@ -197,7 +197,7 @@ public sealed class AppWidgetUnitOfWorkBehavior<TRequest, TResponse>(Lazy<AppDbC
  *      and returns 400 Bad Request with a ValidationProblemDetails body.
  *
  * With a fully valid Items list instead, step 4 calls next(): Authorization
- * is a no-op (command doesn't implement IRequiresPolicy), Transaction resolves
+ * is a no-op (command doesn't implement IRequiresPolicyRequest), Transaction resolves
  * db.Value (first time - this command IS ITransactionalRequest), begins a
  * transaction, calls the Handler, which adds N Widget entities and returns
  * Result<IReadOnlyList<WidgetDto>> with the created DTOs. Transaction sees a

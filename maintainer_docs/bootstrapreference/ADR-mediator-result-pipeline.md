@@ -85,7 +85,7 @@ and pipeline plumbing immutable/stateless.
 
 **Decision**
 Non-resource authorization is a generic `IPipelineBehavior`, no-op unless
-the request implements `IRequiresPolicy`. Resource-based authorization is
+the request implements `IRequiresPolicyRequest`. Resource-based authorization is
 implemented as a step inside `ResourceCommandHandler<TCommand,TEntity,
 TResponse>` (template method): `LoadAsync` → `Authorize` → `HandleAsync`,
 all sequential, all local to one method call, no shared context.
@@ -244,7 +244,7 @@ central configuration list that's easy to forget to update.
 **Decision**
 Use marker/capability interfaces declared on the request type itself:
 `ITransactionalRequest`, `IAuditableRequest` (carries `ActionName`),
-`IRequiresPolicy` (carries `PolicyName`). Each corresponding behavior
+`IRequiresPolicyRequest` (carries `PolicyName`). Each corresponding behavior
 checks `request is TMarker` and no-ops (calls `next()` directly) when
 absent.
 

@@ -9,11 +9,10 @@ Nothing to decide in this ticket beyond which of the two outcomes applies - the 
 
 **Blocked by:** 07
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `73387a6`. The commit-or-drop call had already been made directly (commit, per issue 07's own status note) outside this ticket's normal flow; this ADR records that decision and the actual partial-adoption state it shipped in. Numbered **ADR-0025**, not ADR-0022 as this ticket's text names - both ADR-0022 and ADR-0023 were already claimed by other tickets' ADRs by the time this ran.
 
-- [ ] Issue 07's write-up is read and its recommendation (commit or drop) is followed, not re-litigated in this ticket
-- [ ] If committing: new ADR added under `maintainer_docs/adr/`, cross-referencing ADR-0022 and ADR-0020, added to the ADR index
-- [ ] If dropping: ADR-0022 gains a short Alternatives Considered entry recording what was spiked and why it was dropped, citing issue 07's findings
-- [ ] `.scratch/pipeline-case-fidelity/PRD.md`'s Status line is updated to reflect the outcome
+- [x] Issue 07's write-up is read and its recommendation (commit) is followed, not re-litigated in this ticket
+- [x] New ADR added under `maintainer_docs/adr/` (`0025-eject-withcase-type-erased-variant.md`), cross-referencing ADR-0023 (correct current number for the fail-fast ADR the ticket calls "ADR-0022") and ADR-0020, added to the ADR index
+- [x] `.scratch/pipeline-case-fidelity/PRD.md`'s Status line is updated to reflect the outcome
 
 ## Comments

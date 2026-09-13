@@ -1,6 +1,6 @@
 # 05 - Documentation pass for the removed classifier surface and new commit model
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `70ec8a9`. Most of this ticket's scope had already landed in earlier commits by the time it ran (IsSuccess/IsFailure removal and the label-only classifier rewrite were already reflected in all six target files); the one confirmed gap - no doc stated ADR-0022's rationale anywhere - was fixed with two short prose additions.
 
 **What to build:** Update every `documentation/` page that describes the removed `IsSuccess`/`IsFailure` members or the classifier-driven commit decision:
 
@@ -15,7 +15,7 @@ Every code example must still compile against the shipped API, per house style t
 
 **Blocked by:** 01, 02, 03, 04 (documents the ADR's shipped conclusion, not a moving target)
 
-- [ ] Every `documentation/` reference to `IsSuccess`/`IsFailure` on `IOutcomeCase`/`IOutcomeClassifier` is either removed or rewritten to reflect the label-only surface
-- [ ] `transactions-and-store-integration.md`'s worked `UnitOfWorkBehavior` subclass example compiles against the new `CommitGateDriver`/`UnitOfWorkBehavior` constructor shape
-- [ ] New ADR from issue 04 is cross-referenced (state the rationale itself in `documentation/`, never cite `maintainer_docs/adr/` directly, per house style)
-- [ ] Glossary linking, no-enumerated-counts, and every other `documentation/` house-style rule in `CLAUDE.md` followed
+- [x] Every `documentation/` reference to `IsSuccess`/`IsFailure` on `IOutcomeCase`/`IOutcomeClassifier` is either removed or rewritten to reflect the label-only surface (already zero hits repo-wide before this run)
+- [x] `transactions-and-store-integration.md`'s worked `UnitOfWorkBehavior` subclass example compiles against the new `CommitGateDriver`/`UnitOfWorkBehavior` constructor shape (verified against `src/Interlocutor.Persistence.EntityFrameworkCore` and `.NHibernate` - already correct)
+- [x] New ADR from issue 04 is cross-referenced (state the rationale itself in `documentation/`, never cite `maintainer_docs/adr/` directly, per house style) - added to `pipeline-and-behaviors.md` and `extensibility.md`
+- [x] Glossary linking, no-enumerated-counts, and every other `documentation/` house-style rule in `CLAUDE.md` followed

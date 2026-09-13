@@ -267,7 +267,7 @@ public readonly record struct Timeout(TimeSpan Budget, TimeSpan Elapsed, string?
 public readonly record struct RateLimited(string LimitKey, TimeSpan? RetryAfter = null, string? Message = null);
 
 public record ExportReport(int ReportId)
-    : ICommand<Outcome<Success, Cancelled, Timeout, RateLimited>>, ICancellable, IHasTimeout, IRateLimited
+    : ICommand<Outcome<Success, Cancelled, Timeout, RateLimited>>, ICancellableRequest, ITimeoutRequest, IRateLimitedRequest
 {
     public TimeSpan Budget => TimeSpan.FromSeconds(30);
 
@@ -279,7 +279,7 @@ public record ExportReport(int ReportId)
 - `Timeout` - `TimeoutBehavior` raced the rest of the pipeline against a resolved time budget and the budget elapsed first; carries both the budget and the actual elapsed time for diagnostics.
 - `RateLimited` - `RateLimitedBehavior` rejected the request because an `IRateLimiter` check disallowed it; `LimitKey` identifies which limiter/bucket was hit.
 
-None of these three participate unless the request opts in via the matching marker interface (`ICancellable`, `IHasTimeout`, `IRateLimited`) and the corresponding behavior is registered - the same "nothing runs unless you ask for it" rule that governs every pipeline behavior.
+None of these three participate unless the request opts in via the matching marker interface (`ICancellableRequest`, `ITimeoutRequest`, `IRateLimitedRequest`) and the corresponding behavior is registered - the same "nothing runs unless you ask for it" rule that governs every pipeline behavior.
 
 ## Outcome Unions
 
@@ -300,7 +300,7 @@ public readonly union Outcome<T1, T2, T3>(
     T1, T2, T3);
 ```
 
-The non-generic `Outcome` is a small, hand-written type - not generator-emitted, since it declares no case types at all. Holding an instance of it is itself the acknowledgment that an operation ran; it has no `Match`, `Switch`, or `TryGetValue` members, since there is nothing to dispatch over. Reserve it for a request that is genuinely infallible and opts into none of `ICancellable`/`IHasTimeout`/`IRateLimited` - see [Choosing Arities](#choosing-arities) below.
+The non-generic `Outcome` is a small, hand-written type - not generator-emitted, since it declares no case types at all. Holding an instance of it is itself the acknowledgment that an operation ran; it has no `Match`, `Switch`, or `TryGetValue` members, since there is nothing to dispatch over. Reserve it for a request that is genuinely infallible and opts into none of `ICancellableRequest`/`ITimeoutRequest`/`IRateLimitedRequest` - see [Choosing Arities](#choosing-arities) below.
 
 `Outcome<T>` is a small, hand-written generic type sitting between arity 0 and the generic union family: unlike `Outcome`, it does carry a payload, but that payload is the only thing it can ever hold, so it's a "fake union" with nothing to distinguish - not generator-emitted either. It hand-declares the same `Match`/`Switch`/`TryGetValue`/`ToString`/equality member shape every generic arity carries (one-delegate `Match`/`Switch`, an always-succeeding `TryGetValue`), so a caller never has to special-case it: `Value` is a strongly-typed `T` rather than the boxed `object?` a real union exposes, with an explicit `IUnion.Value` implementation forwarding to it to satisfy the constraint. Reserve it for an operation that always succeeds but still needs to hand back exactly one value - an operation with a real failure mode should declare an explicit `Outcome<T, Failure>` (or whichever richer arity matches its real failure modes) instead.
 
@@ -440,10 +440,10 @@ Requests opt into cross-cutting pipeline behavior by implementing a [marker inte
 | `ITransactionalRequest` | `UnitOfWorkBehavior` (forces an eager transaction begin - every write already gets one automatically) | - |
 | `IExternalStoreRequest` | Declares "no SQL session" | - |
 | `IAuditableRequest` | `AuditingBehavior` | `ActionName` |
-| `IRequiresPolicy` | `AuthorizationBehavior` | `PolicyName` |
-| `ICancellable` | `CancellationBehavior` (see [Cancelled, Timeout & RateLimited](#cancelled-timeout--ratelimited) above) | - |
-| `IHasTimeout` | `TimeoutBehavior` | `Budget` |
-| `IRateLimited` | `RateLimitedBehavior` | `LimitKey` |
+| `IRequiresPolicyRequest` | `AuthorizationBehavior` | `PolicyName` |
+| `ICancellableRequest` | `CancellationBehavior` (see [Cancelled, Timeout & RateLimited](#cancelled-timeout--ratelimited) above) | - |
+| `ITimeoutRequest` | `TimeoutBehavior` | `Budget` |
+| `IRateLimitedRequest` | `RateLimitedBehavior` | `LimitKey` |
 
 A request can implement multiple markers:
 
@@ -452,7 +452,7 @@ public record TransferFunds(int FromAccountId, int ToAccountId, decimal Amount)
     : ICommand<Outcome<Success, ValidationError, InsufficientFunds>>,
       ITransactionalRequest,  // Opts into transaction wrapping
       IAuditableRequest,      // Opts into auditing
-      IRequiresPolicy         // Opts into authorization
+      IRequiresPolicyRequest         // Opts into authorization
 {
     public string ActionName => "transfer_funds";
     public string PolicyName => "TransferFunds";

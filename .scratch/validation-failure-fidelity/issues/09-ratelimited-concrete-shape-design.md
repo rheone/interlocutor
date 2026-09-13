@@ -50,11 +50,14 @@ ticket's candidate shape is a starting point for that conversation, not a pre-ap
 
 ## Prototype
 
-Captured as a primary source on the throwaway branch `prototype/failure-case-shapes`, commit `1dc9e50`:
+Captured as a primary source on the throwaway branch
+`prototype/failure-case-shapes-keep-pending-tickets-09-11`, commit `6dbc7b9` (also anchored by the annotated
+tag `adr-0020-failure-case-shapes-prototype`, so the commit survives even if the branch ref is ever lost):
 `.scratch/validation-failure-fidelity/PROTOTYPE-failure-case-shapes.html` (a single-file, double-click-to-run
 HTML demo - free-play buttons plus a guided walkthrough per domain, RateLimited/Timeout/Forbidden all in one
-file). Not present on this branch by design (throwaway, kept off the main line) - check out that branch or
-commit to view/run it.
+file). Not present on this branch by design (throwaway, kept off the main line) - check out that branch,
+tag, or commit to view/run it. Keep the branch until this ticket and its 09-11 siblings close - see the
+commit message for why.
 
 ## Related
 

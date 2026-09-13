@@ -227,7 +227,7 @@ Marks a request that should be audited upon execution.
 | --- | --- |
 | `string ActionName` | Gets the logical name of the action recorded in the audit log. |
 
-### `ICancellable` interface
+### `ICancellableRequest` interface
 
 Marks a request whose cooperative cancellation should be converted into a `Cancelled` outcome instead of letting `OperationCanceledException` propagate as an unexpected fault.
 
@@ -237,7 +237,7 @@ Marks a request whose cooperative cancellation should be converted into a `Cance
 Marks a request whose handler manages its own transaction scope against an external system, so the store-specific commit-gate behavior should not wrap it in a local one.
 
 
-### `IHasTimeout` interface
+### `ITimeoutRequest` interface
 
 Marks a request that declares a time budget it must complete within.
 
@@ -245,7 +245,7 @@ Marks a request that declares a time budget it must complete within.
 | --- | --- |
 | `TimeSpan Budget` | Gets the time budget this request should complete within. |
 
-### `IRateLimited` interface
+### `IRateLimitedRequest` interface
 
 Marks a request that is subject to rate limiting before execution.
 
@@ -253,7 +253,7 @@ Marks a request that is subject to rate limiting before execution.
 | --- | --- |
 | `string LimitKey` | Gets the key identifying which rate limiter/bucket applies to this request. |
 
-### `IRequiresPolicy` interface
+### `IRequiresPolicyRequest` interface
 
 Marks a request that must satisfy an authorization policy before execution.
 
@@ -384,7 +384,7 @@ Default `ITimeoutPolicy` implementation that leaves each request's declared budg
 | Member | Summary |
 | --- | --- |
 | `public DefaultTimeoutPolicy()` |  |
-| `public TimeSpan ResolveBudget(IHasTimeout request)` |  |
+| `public TimeSpan ResolveBudget(ITimeoutRequest request)` |  |
 | `public static readonly DefaultTimeoutPolicy Instance` | Gets the singleton instance. |
 
 ### `DelegatePipelineStage<TRequest, TResponse>` sealed class
@@ -412,8 +412,8 @@ An `IRateLimiter` implementation that wraps a caller-supplied delegate instead o
 
 | Member | Summary |
 | --- | --- |
-| `public DelegateTimeoutPolicy(Func<IHasTimeout, TimeSpan> resolveBudget)` |  |
-| `public TimeSpan ResolveBudget(IHasTimeout request)` |  |
+| `public DelegateTimeoutPolicy(Func<ITimeoutRequest, TimeSpan> resolveBudget)` |  |
+| `public TimeSpan ResolveBudget(ITimeoutRequest request)` |  |
 
 ### `Eject` class
 
@@ -482,11 +482,11 @@ Inspects a handler's response generically for cross-cutting concerns (logging, a
 
 ### `ITimeoutPolicy` interface
 
-Resolves the effective time budget for a request implementing `IHasTimeout`.
+Resolves the effective time budget for a request implementing `ITimeoutRequest`.
 
 | Member | Summary |
 | --- | --- |
-| `TimeSpan ResolveBudget(IHasTimeout request)` | Resolves the effective time budget for `request`. |
+| `TimeSpan ResolveBudget(ITimeoutRequest request)` | Resolves the effective time budget for `request`. |
 
 ### `LoggingAuditSink` sealed class
 
@@ -712,4 +712,3 @@ Defines a handler that processes a CQRS query of a specified type and returns a 
 | Member | Summary |
 | --- | --- |
 | `Task<TResponse> Handle(TQuery query, CancellationToken ct)` | Handles the specified query and returns a result that represents success or failure. |
-

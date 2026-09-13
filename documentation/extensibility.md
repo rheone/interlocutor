@@ -44,6 +44,36 @@ builder.Pipeline.AddBehavior(typeof(IdempotencyBehavior<,>));
 
 See [Pipeline & Behavior Composition](pipeline-and-behaviors.md) for the full behavior-composition model this plugs into, and [Registering Custom Behaviors](pipeline-and-behaviors.md#registering-custom-behaviors) for the general `IPipelineBehavior<TRequest, TResponse>` contract.
 
+### Fail-fast case construction: `ConstructOrThrow`
+
+`IdempotencyBehavior` above never needs to construct a case of its own - it returns either a cached `TResponse` it already has, or the one `next()` produced. A behavior that instead needs to *short-circuit* with a specific outcome case - the way the shipped marker-gated behaviors do - runs into a problem `IdempotencyBehavior` never faces: `TResponse` is constrained only to `IUnion`, so nothing at compile time says whether the concrete union a given handler chose for its response actually declares the case the behavior wants to return. Guessing at a fallback - a default/unset `Outcome`, or forcing the value into a case `TResponse` doesn't declare - would erode the exhaustiveness a caller's `Match`/`Switch` over the response's declared cases depends on. The required pattern instead is to construct the case through `IOutcomeCaseRegistry`'s `ConstructOrThrow` extension, and let a case `TResponse` can't hold surface as a loud, named exception instead of a silent or reshaped one:
+
+```csharp
+public static TResponse ConstructOrThrow<TResponse, TCase>(
+    this IOutcomeCaseRegistry caseRegistry,
+    TCase caseValue,
+    string behaviorName,
+    string eventPhrase,
+    string requirementClause)
+    where TResponse : IUnion
+```
+
+Pass the case value being short-circuited with, and three strings that build the exception message if `TResponse` turns out to have no matching case: the calling behavior's own closed generic name, a short phrase for what it just did, and a complete sentence stating what response shape would have worked instead. `CancellationBehavior<TRequest, TResponse>` is a real, shipped example - it converts cooperative cancellation of the ambient token into `Cancelled` this way:
+
+```csharp
+private TResponse ConstructCancelledResponse(Cancelled cancelled) =>
+    caseRegistry.ConstructOrThrow<TResponse, Cancelled>(
+        cancelled,
+        $"CancellationBehavior<{typeof(TRequest).Name}, {typeof(TResponse).Name}>",
+        "observed cancellation",
+        $"A request implementing {nameof(ICancellableRequest)} must use a response type with a {nameof(Cancelled)} case"
+    );
+```
+
+`TimeoutBehavior` and `RateLimitedBehavior` follow the identical shape for `Timeout` and `RateLimited`. This is a required convention for any custom behavior with the same shape, not merely a convenience `ConstructOrThrow` happens to offer: if `TResponse` has no case matching `TCase`, `ConstructOrThrow` catches the registry's own "unsupported case" signal and re-throws it as an `InvalidOperationException` naming the behavior, what it was trying to do, and what response shape would have worked - never a silent `null`/unset `Outcome`, and never a value forced or reshaped into a case `TResponse` doesn't declare. The exception fires the first time the behavior actually needs to short-circuit, which means it surfaces a configuration mistake - pairing your marker interface with a response shape that can't express the case - loudly, rather than leaving it undetected until that mismatch happens to occur in production traffic.
+
+`AuthorizationBehavior` is no longer a `ConstructOrThrow` call site itself: it now ejects its `Forbidden` value through a separate, newer mechanism and lets the pipeline's own dispatch machinery construct the concrete `TResponse` at the one place that already knows what it is, rather than taking an `IOutcomeCaseRegistry` dependency directly. That mechanism upholds the same fail-fast guarantee described above under the hood, but calling `ConstructOrThrow` directly - as `CancellationBehavior`, `TimeoutBehavior`, and `RateLimitedBehavior` all still do - remains the pattern to follow for a custom behavior that takes its own `IOutcomeCaseRegistry` dependency.
+
 ## Lightweight hooks: `IPipelineStage`
 
 When a behavior only needs a before/after hook - no need to own the `next()` delegate - `IPipelineStage<TRequest, TResponse>` (via `PipelineStageBase<TRequest, TResponse>`) is the lighter alternative, registered via `builder.Pipeline.AddStage(...)`/`.AddStageHost()`. See [Pipeline & Behavior Composition § Pipeline Stages](pipeline-and-behaviors.md#pipeline-stages-ipipelinestage) for the full contract, including short-circuiting.
@@ -353,3 +383,5 @@ For tracing the mechanism rather than copying an example:
 | `IOutcomeStatusMapper` | `Interlocutor.AspNetCore` (specializes `IOutcomeMapper<OutcomeHttpMapping>`) | `ResultExtensions.ToActionResult`/`ToMinimalApiResult` |
 | `InterlocutorBuilder.AddTypeMatch` / `RequireUniqueClosure` / `Eject` | `Interlocutor.DependencyInjection.Abstractions` | Resolved when `AddInterlocutor` translates the accumulated registration list; checked by `ValidateOnBuild()` |
 | `InterlocutorPipelineBuilder.OverridePipelineFor` | `Interlocutor.DependencyInjection.Abstractions` | `PipelineChainResolver`, at the point each dispatch path builds its behavior chain |
+
+`IOutcomeClassifier` only ever produces a display label for a log or audit line, never a success/failure judgment - no case type carries a universal success/failure meaning, since a result like `ValidationErrors` is a failure to one caller and a legitimate "persist and report" outcome to another. Both `UnitOfWorkBehavior` implementations reflect this directly: they commit whatever a dispatch left pending regardless of which case a handler returns, and roll back only on an explicit signal (`IUnitOfWork.CancelAsync`, `NoCommit.With`/`NoCommit.AndEject`, or an unhandled exception) - never by asking a classifier to decide. See [Transactions & Store Integration § Commit/Rollback Semantics](transactions-and-store-integration.md#commitrollback-semantics) for the full model.

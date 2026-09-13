@@ -1,6 +1,6 @@
 # 03 - Extension-point doc section: tie SendWelcomeEmail into the walkthrough
 
-Status: ready-for-agent
+Status: done - implemented in `089aac6`. Corrected the ticket's own stale terminology: cross-references `messages-and-result-types.md`'s actual "IUnion as an Extension Point" section (`#iunion-as-an-extension-point`), and describes `SendWelcomeEmailResult` as a hand-rolled `IUnion` implementer - `IUnion` is the current response-type constraint/extension point in this codebase; `IOutcome` is a separate, narrower, opt-in classification marker unrelated to this mechanism.
 
 ## Labels
 
@@ -16,12 +16,12 @@ Keep this example's writeup clearly separate from the query/command/unit-command
 
 ## Acceptance criteria
 
-- [ ] New subsection walks through `SendWelcomeEmail`'s actual shipped shape (handler, fake SDK client, custom `IOutcome` type, registry registration) - every code reference matches the code added in issue 02, not anticipated ahead of it
-- [ ] Cross-references `documentation/messages-and-result-types.md`'s existing extension-point section rather than duplicating its mechanism explanation
-- [ ] `documentation/messages-and-result-types.md` itself is unmodified by this ticket
-- [ ] Kept as a distinct subsection from the decision guide added in issue 01 - not merged into it
-- [ ] No citations to `maintainer_docs/` paths (house style)
-- [ ] No enumerated counts in prose beyond the closed-set exception (house style)
+- [x] New subsection walks through `SendWelcomeEmail`'s actual shipped shape (handler, fake SDK client, custom `IUnion` type, registry registration) - every code reference matches the code added in issue 02, not anticipated ahead of it
+- [x] Cross-references `documentation/messages-and-result-types.md`'s existing extension-point section rather than duplicating its mechanism explanation
+- [x] `documentation/messages-and-result-types.md` itself is unmodified by this ticket
+- [x] Kept as a distinct subsection from the decision guide added in issue 01 - not merged into it
+- [x] No citations to `maintainer_docs/` paths (house style)
+- [x] No enumerated counts in prose beyond the closed-set exception (house style)
 
 ## Blocked by
 
