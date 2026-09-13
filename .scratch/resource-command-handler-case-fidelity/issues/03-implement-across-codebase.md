@@ -17,7 +17,7 @@ If issue 02 chose the full redesign, this ticket also migrates every `TutorialPr
 
 **Blocked by:** 02
 
-**Status:** done - implemented in `<PENDING_SHA>`
+**Status:** done - implemented in `08444a0`
 
 - [x] `ResourceCommandHandler`'s declaration and every doc/prose call site listed above matches the shape issue 02 recorded - `rg -n "TSuccess"` in `src/`, `documentation/`, and `TutorialProject/` returns only `AuthorizationBehavior.cs`'s deliberate historical mentions
 - [x] If the full redesign was chosen: `NotFound`/`Forbidden` are ejected via `Eject.WithCase` rather than constructed directly, matching issue 01's proven mechanism
