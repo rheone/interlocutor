@@ -4,7 +4,7 @@
 
 **Blocked by:** aspnetcore-outcome-case-mapping-redesign/01 — Redesign Outcome-to-HTTP mapping to resolve by case type, never by position; aspnetcore-outcome-case-mapping-redesign/02 — Raise AspNetCore's shipped arity ceiling to match CommonKernel (the behavior being documented must be settled first).
 
-**Status:** done - implemented in `<PENDING_SHA>`
+**Status:** done - implemented in `be32d1a`
 
 - [x] Documentation describes the HTTP mapping mechanism accurately: type-identity-based, covering a known closed set of case types, throwing for anything outside it — no claim that any position or arity slot is inherently the success/200 case.
 - [x] Documentation makes clear that HTTP-status mapping is a convenience specific to API/web contexts, not a guaranteed or default feature of every `Outcome`.
