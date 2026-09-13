@@ -150,7 +150,7 @@ public class OutcomeOfSixteenCasesTests
 
         static string Observe(SixteenCaseOutcome outcome)
         {
-            string result = "unset";
+            var result = "unset";
             outcome.Switch(
                 v => result = "case1:" + v,
                 v => result = "case2:" + v,
