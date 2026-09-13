@@ -1,6 +1,6 @@
 # PRD: ResourceCommandHandler Case Fidelity
 
-Status: open - issues 01-03 not yet started.
+Status: open - issues 01-02 done (redesign adopted, recorded in [ADR-0027](../../maintainer_docs/adr/0027-resourcecommandhandler-eject-withcase.md)); issue 03 (doc/call-site sweep) not yet started.
 
 ## Problem
 
