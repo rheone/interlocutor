@@ -27,6 +27,13 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Interlocutor.Abstractions\Interlocutor.Abstractions.csproj" />
     <ProjectReference Include="..\..\src\Interlocutor.DependencyInjection.Microsoft\Interlocutor.DependencyInjection.Microsoft.csproj" />
+    <!-- Ticket 04 (Autofac container parity): the same command/handler/entity/DbContext types this project
+         already declares for the Microsoft DI variant are reused unchanged for the Autofac variant - only the
+         container wiring in AutofacCrossPackagePipelineTracerBulletTests.cs differs. Referencing both DI
+         packages from one test project is fine even though neither src/ package may depend on the other (see
+         CLAUDE.md) - that rule is about the shipped packages' own dependency graph, not a consumer (this test
+         project) choosing to exercise both against the same handlers. -->
+    <ProjectReference Include="..\..\src\Interlocutor.DependencyInjection.Autofac\Interlocutor.DependencyInjection.Autofac.csproj" />
     <!-- Full canonical order (documentation/pipeline-and-behaviors.md) needs ValidationBehavior too, even
          though this ticket's own package list didn't spell it out - AddValidationBehavior() no-ops unless
          Interlocutor.FluentValidation is referenced (see InterlocutorPipelineBuilder.AddValidationBehavior). -->
