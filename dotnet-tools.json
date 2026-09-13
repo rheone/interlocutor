@@ -17,9 +17,16 @@
       "rollForward": false
     },
     "dotnet-ef": {
-      "version": "11.0.0-preview.6.26359.118",
+      "version": "10.0.12",
       "commands": [
         "dotnet-ef"
+      ],
+      "rollForward": false
+    },
+    "csharp-ls": {
+      "version": "0.27.0",
+      "commands": [
+        "csharp-ls"
       ],
       "rollForward": false
     }
