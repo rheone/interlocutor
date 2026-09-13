@@ -35,8 +35,9 @@ public sealed class EntityFrameworkUnitOfWork<TContext>(Lazy<TContext> context) 
         var db = context.Value;
         if (db.Database.CurrentTransaction is null)
         {
-            // Not captured/disposed here - UnitOfWorkBehavior retrieves this same context-owned transaction via
-            // Database.CurrentTransaction and disposes it once, after commit or rollback, at pipeline completion.
+            // Not captured/disposed here - EntityFrameworkCommitGateSession's CommitAsync/RollbackAsync retrieve
+            // this same context-owned transaction via Database.CurrentTransaction and dispose it once, after
+            // commit or rollback, at pipeline completion.
 #pragma warning disable IDISP004
             await db.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
 #pragma warning restore IDISP004
