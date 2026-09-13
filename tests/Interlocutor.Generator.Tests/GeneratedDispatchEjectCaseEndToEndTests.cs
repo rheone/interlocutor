@@ -4,11 +4,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Pipeline.Cases;
+using Interlocutor.CommonKernel;
 using Interlocutor.CommonKernel.ResultTypes;
 using Interlocutor.DependencyInjection.Abstractions;
 using Interlocutor.DependencyInjection.Microsoft;
@@ -27,7 +29,9 @@ using Microsoft.Extensions.DependencyInjection;
 /// (as <see cref="AuthorizationBehavior{TRequest, TResponse}"/> does) propagated the exception unhandled
 /// instead of recovering. After the fix, the emitted wrapper calls the shared
 /// <c>Interlocutor.Abstractions.Pipeline.PipelineChainExecutor.ExecuteAsync</c> implementation instead of
-/// re-deriving the fold, so it recovers identically to the hand-written path.
+/// re-deriving the fold, so it recovers identically to the hand-written path. This class covers both eject
+/// signals the executor must recover: <see cref="Eject.WithCase{TCase}(TCase)"/> (below) and
+/// <see cref="Eject.With{TResponse}(TResponse)"/> (see <see cref="SendAsync_HandlerEjectsWithOutcome_ThroughGeneratedDispatch_RecoversOutcomeInsteadOfPropagatingEjectException"/>).
 /// </remarks>
 public sealed class GeneratedDispatchEjectCaseEndToEndTests
 {
@@ -51,6 +55,14 @@ public sealed class GeneratedDispatchEjectCaseEndToEndTests
             public Task<Outcome<string, Forbidden>> HandleAsync(ProtectedQuery query, CancellationToken ct) =>
                 throw new System.InvalidOperationException("Should not be called - authorization denies first.");
         }
+
+        public sealed record EjectingQuery : IQuery<Outcome<int, Failure>>;
+
+        public sealed class EjectingQueryHandler : IQueryHandler<EjectingQuery, Outcome<int, Failure>>
+        {
+            public Task<Outcome<int, Failure>> HandleAsync(EjectingQuery query, CancellationToken ct) =>
+                throw new System.InvalidOperationException("Should not be called - the ejecting behavior returns before next().");
+        }
         """;
 
     [Fact]
@@ -61,16 +73,7 @@ public sealed class GeneratedDispatchEjectCaseEndToEndTests
         // overload that consults IGeneratedRequestDispatcher - see Mediator.DispatchAsync's remarks), not the
         // hand-written QueryHandlerWrapper the generic SendAsync<TResponse> overloads always use.
         var (assembly, _) = GeneratorTestHarness.EmitAndLoadAssembly(LibrarySource, $"GeneratedEjectCase_{Guid.NewGuid():N}");
-
-        var moduleType = assembly
-            .GetTypes()
-            .Single(static t =>
-                t.Name == "InterlocutorGeneratedRegistrations"
-                && t.Namespace!.StartsWith("Interlocutor.Generated.", StringComparison.Ordinal)
-            );
-        var registrations =
-            (IReadOnlyList<InterlocutorRegistration>)
-                moduleType.GetProperty("Registrations", BindingFlags.Public | BindingFlags.Static)!.GetValue(null)!;
+        var registrations = GetGeneratedRegistrations(assembly);
 
         var request = Activator.CreateInstance(assembly.GetType("TestApp.ProtectedQuery")!)!;
 
@@ -95,9 +98,81 @@ public sealed class GeneratedDispatchEjectCaseEndToEndTests
         Assert.Equal(typeof(Forbidden), activeCaseType);
     }
 
+    [Fact]
+    public async Task SendAsync_HandlerEjectsWithOutcome_ThroughGeneratedDispatch_RecoversOutcomeInsteadOfPropagatingEjectException()
+    {
+        // Arrange - same emit-and-load setup as the Eject.WithCase test above, but this time the ejecting
+        // behavior calls Eject.With directly with an already-constructed outcome (mirroring
+        // Interlocutor.Abstractions.Tests.MediatorTests's EjectingBeforeNextBehavior scenario for the
+        // hand-written path), rather than deferring case construction to IOutcomeCaseRegistry.
+        var (assembly, _) = GeneratorTestHarness.EmitAndLoadAssembly(LibrarySource, $"GeneratedEjectWith_{Guid.NewGuid():N}");
+        var registrations = GetGeneratedRegistrations(assembly);
+
+        var requestType = assembly.GetType("TestApp.EjectingQuery")!;
+        var responseType = typeof(Outcome<int, Failure>);
+        var expectedOutcome = new Outcome<int, Failure>(new Failure("ejected before dispatch"));
+
+        var behaviorType = typeof(EjectingBeforeNextBehavior<,>).MakeGenericType(requestType, responseType);
+        var behavior = Activator.CreateInstance(behaviorType, expectedOutcome)!;
+
+        var request = Activator.CreateInstance(requestType)!;
+
+        var services = new ServiceCollection();
+        services.AddSingleton(typeof(IPipelineBehavior<,>).MakeGenericType(requestType, responseType), behavior);
+        services.AddInterlocutor(builder => builder.AddGeneratedRegistrations(registrations));
+
+        var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+        var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+
+        // Act - the registered behavior ejects via Eject.With before calling next(), so the handler (which
+        // throws if invoked) must never run; the generated dispatch wrapper must recover the ejected outcome
+        // the same way the hand-written PipelineChainExecutor-based wrappers do.
+        var outcome = await mediator.SendAsync(request, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(expectedOutcome, (Outcome<int, Failure>)outcome);
+    }
+
+    /// <summary>
+    /// Reads the generator-emitted <c>InterlocutorGeneratedRegistrations.Registrations</c> static property off
+    /// <paramref name="assembly"/> via reflection - shared by both tests above, since each emits and loads its
+    /// own assembly.
+    /// </summary>
+    /// <param name="assembly">The assembly <see cref="GeneratorTestHarness.EmitAndLoadAssembly(string, string, System.Collections.Generic.IEnumerable{Microsoft.CodeAnalysis.MetadataReference}?)"/> emitted and loaded.</param>
+    /// <returns>The generated <see cref="InterlocutorRegistration"/> list.</returns>
+    private static IReadOnlyList<InterlocutorRegistration> GetGeneratedRegistrations(Assembly assembly)
+    {
+        var moduleType = assembly
+            .GetTypes()
+            .Single(static t =>
+                t.Name == "InterlocutorGeneratedRegistrations"
+                && t.Namespace!.StartsWith("Interlocutor.Generated.", StringComparison.Ordinal)
+            );
+        return (IReadOnlyList<InterlocutorRegistration>)
+            moduleType.GetProperty("Registrations", BindingFlags.Public | BindingFlags.Static)!.GetValue(null)!;
+    }
+
     /// <summary>An <see cref="IPolicyEvaluator"/> that always denies, forcing <see cref="AuthorizationBehavior{TRequest, TResponse}"/> to eject.</summary>
     private sealed class DenyEverythingPolicyEvaluator : IPolicyEvaluator
     {
         public Task<bool> EvaluateAsync(string policyName, object request, CancellationToken ct) => Task.FromResult(false);
+    }
+
+    /// <summary>
+    /// A behavior that ejects <paramref name="response"/> via <see cref="Eject.With{TResponse}(TResponse)"/>
+    /// before calling <c>next()</c>, so the handler (and any behavior further in) never runs - the generated-
+    /// dispatch mirror of <c>Interlocutor.Abstractions.Tests.MediatorTests.EjectingBeforeNextBehavior</c>.
+    /// </summary>
+    /// <typeparam name="TRequest">The request type, unconstrained since this behavior never inspects it.</typeparam>
+    /// <typeparam name="TResponse">The response type, constrained to <see cref="IUnion"/> so
+    /// <paramref name="response"/> can be ejected via <see cref="Eject.With{TResponse}(TResponse)"/>.</typeparam>
+    /// <param name="response">The outcome the behavior ejects with.</param>
+    private sealed class EjectingBeforeNextBehavior<TRequest, TResponse>(TResponse response)
+        : IPipelineBehavior<TRequest, TResponse>
+        where TResponse : IUnion
+    {
+        public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
+            Task.FromResult(Eject.With(response));
     }
 }
