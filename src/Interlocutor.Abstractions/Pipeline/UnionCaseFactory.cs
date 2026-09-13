@@ -13,7 +13,7 @@ using System.Reflection;
 /// <see cref="AuthorizationBehavior{TRequest, TResponse}"/> and
 /// <c>Interlocutor.FluentValidation.ValidationBehavior&lt;TRequest, TResponse&gt;</c> both need this: neither
 /// can decompose its response type into a separate type parameter for one case with another case pinned at
-/// compile time (e.g. <c>Outcome&lt;TSuccess, Forbidden&gt;</c>) without breaking
+/// compile time (e.g. <c>Outcome&lt;_, Forbidden&gt;</c>) without breaking
 /// Microsoft.Extensions.DependencyInjection's open-generic resolution - see
 /// <see cref="AuthorizationBehavior{TRequest, TResponse}"/>'s remarks for the full explanation. Both are instead
 /// generic directly over <c>TResponse</c>, constrained only to <see cref="System.Runtime.CompilerServices.IUnion"/>,

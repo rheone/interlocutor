@@ -338,21 +338,21 @@ public static partial class ResultExtensions
     /// The only thing worth checking here is the opposite mistake: a value that is <em>recognized as failure-shaped</em>
     /// despite occupying the success slot, which this method still catches and reroutes.
     /// </remarks>
-    /// <typeparam name="TSuccess">The success case's static type for this arity.</typeparam>
+    /// <typeparam name="TValue">The static type occupying this arity's success slot.</typeparam>
     /// <param name="value">The success case's active value.</param>
     /// <param name="mapper">The mapper to use if <paramref name="value"/> turns out to be failure-shaped, or <see langword="null"/> for <see cref="DefaultMapper"/>.</param>
     /// <returns>An <see cref="OkObjectResult"/>, or the mapped error result if <paramref name="value"/> is failure-shaped.</returns>
-    private static IActionResult ClassifySuccessCaseForActionResult<TSuccess>(TSuccess value, IOutcomeStatusMapper? mapper) =>
+    private static IActionResult ClassifySuccessCaseForActionResult<TValue>(TValue value, IOutcomeStatusMapper? mapper) =>
         value is not null && IsRecognizedFailureCase(value)
             ? (mapper ?? DefaultMapper).Map(value).ToActionResult()
             : new OkObjectResult(value);
 
-    /// <summary>See <see cref="ClassifySuccessCaseForActionResult{TSuccess}"/> - the minimal-API-result twin.</summary>
-    /// <typeparam name="TSuccess">The success case's static type for this arity.</typeparam>
+    /// <summary>See <see cref="ClassifySuccessCaseForActionResult{TValue}"/> - the minimal-API-result twin.</summary>
+    /// <typeparam name="TValue">The static type occupying this arity's success slot.</typeparam>
     /// <param name="value">The success case's active value.</param>
     /// <param name="mapper">The mapper to use if <paramref name="value"/> turns out to be failure-shaped, or <see langword="null"/> for <see cref="DefaultMapper"/>.</param>
     /// <returns>An HTTP 200, or the mapped error result if <paramref name="value"/> is failure-shaped.</returns>
-    private static IResult ClassifySuccessCaseForMinimalApiResult<TSuccess>(TSuccess value, IOutcomeStatusMapper? mapper) =>
+    private static IResult ClassifySuccessCaseForMinimalApiResult<TValue>(TValue value, IOutcomeStatusMapper? mapper) =>
         value is not null && IsRecognizedFailureCase(value)
             ? (mapper ?? DefaultMapper).Map(value).ToMinimalApiResult()
             : Results.Ok(value);

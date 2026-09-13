@@ -24,8 +24,8 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </para>
 /// <para>
 /// <b>Generic over <typeparamref name="TResponse"/>, not fixed to a three-case shape.</b> An earlier revision of
-/// this class fixed its response to <c>Outcome&lt;TSuccess, NotFound, Forbidden&gt;</c> and constructed
-/// <see cref="NotFound"/>/<see cref="Forbidden"/> directly. Fixing <typeparamref name="TCommand"/>'s response to
+/// this class fixed its response to a three-case <c>Outcome&lt;_, NotFound, Forbidden&gt;</c> shape and
+/// constructed <see cref="NotFound"/>/<see cref="Forbidden"/> directly. Fixing <typeparamref name="TCommand"/>'s response to
 /// whatever arity a subclass's command actually declares - as long as it has a <see cref="NotFound"/> case for
 /// <see cref="LoadAsync"/>'s <c>null</c> result and a <see cref="Forbidden"/> case for a denied
 /// <see cref="Authorize"/> - lets a subclass add further cases (e.g. a domain-specific <see cref="Conflict"/>)

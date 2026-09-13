@@ -410,20 +410,23 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
     [Fact]
     public async Task CompleteTodoTaskHandler_TaskExistsButIsOwnedBySomeoneElse_ReturnsForbidden_AndDoesNotPersistTheCompletion_AgainstARealDatabase_Test()
     {
-        // Arrange - proves the owner-scoping in CompleteTodoTaskHandler holds against a real
-        // repository/database, and that a denied completion never reaches SaveChangesAsync at all.
+        // Arrange - proves the owner-scoping in CompleteTodoTaskHandler.Authorize holds against a real
+        // repository/database, and that a denied completion never reaches SaveChangesAsync at all. Dispatched
+        // through ISender rather than constructing CompleteTodoTaskHandler directly:
+        // ResourceCommandHandler{TCommand,TEntity,TResponse} now ejects NotFound/Forbidden via Eject.WithCase
+        // rather than constructing them itself, and only the mediator's own dispatch machinery (reached
+        // through a real ISender.SendAsync call) catches that eject and converts it back into an ordinary
+        // response - see ResourceCommandHandler's own remarks.
         using var writeScope = this.factory.Services.CreateScope();
         var writeContext = writeScope.ServiceProvider.GetRequiredService<TodoTasksDbContext>();
         var owner = $"owner-{Guid.NewGuid():N}";
         var task = new TodoTask("Buy milk", owner, null);
         await writeContext.Tasks.AddAsync(task, TestContext.Current.CancellationToken);
         await writeContext.SaveChangesAsync(TestContext.Current.CancellationToken);
-        var tasks = writeScope.ServiceProvider.GetRequiredService<IDomainRepository<TodoTask, int>>();
-        var unitOfWork = writeScope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        var handler = new CompleteTodoTaskHandler(tasks, unitOfWork, Substitute.For<IPublisher>());
+        var sender = writeScope.ServiceProvider.GetRequiredService<ISender>();
 
         // Act
-        var result = await handler.HandleAsync(
+        var result = await sender.SendAsync(
             new CompleteTodoTaskCommand(task.Id, $"someone-else-{Guid.NewGuid():N}"),
             TestContext.Current.CancellationToken
         );

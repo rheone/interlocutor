@@ -1,6 +1,7 @@
 namespace TodoTasks.Api.Tests.Unit.Features.Tasks.CompleteTodoTask;
 
 using Interlocutor.Abstractions.Core;
+using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.CommonKernel.ResultTypes;
 using Interlocutor.Persistence.Abstractions;
 using NSubstitute;
@@ -74,18 +75,23 @@ public sealed class CompleteTodoTaskHandlerTests
     }
 
     [Fact]
-    public async Task Handle_TaskExistsButIsOwnedBySomeoneElse_ReturnsForbidden_WithoutMutatingSavingOrPublishing_Test()
+    public async Task Handle_TaskExistsButIsOwnedBySomeoneElse_EjectsForbidden_WithoutMutatingSavingOrPublishing_Test()
     {
-        // Arrange
+        // Arrange - ResourceCommandHandler{TCommand,TEntity,TResponse} ejects Forbidden via Eject.WithCase
+        // rather than constructing it directly; only the mediator's own dispatch machinery converts that
+        // eject back into an ordinary response (see ResourceCommandHandler's own remarks), so a call directly
+        // against the handler - as this "in isolation" test does - observes the eject signal itself instead.
         var task = new TodoTask("Buy milk", "owner-1", null) { Id = 1 };
         this.tasks.GetById(1).Returns(task);
         var command = new CompleteTodoTaskCommand(1, "owner-2");
 
         // Act
-        var result = await this.handler.HandleAsync(command, CancellationToken.None);
+        var ex = await Assert.ThrowsAsync<PipelineEjectCaseException>(() =>
+            this.handler.HandleAsync(command, CancellationToken.None)
+        );
 
         // Assert
-        Assert.IsType<Forbidden>(result.Value);
+        Assert.IsType<Forbidden>(ex.CaseValue);
         Assert.False(task.IsCompleted);
         await this.unitOfWork.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
         await this
@@ -94,16 +100,19 @@ public sealed class CompleteTodoTaskHandlerTests
     }
 
     [Fact]
-    public async Task Handle_NoTaskWithThatId_ReturnsNotFound_Test()
+    public async Task Handle_NoTaskWithThatId_EjectsNotFound_Test()
     {
-        // Arrange
+        // Arrange - see the Forbidden test above for why this "in isolation" call observes the eject
+        // signal itself rather than a constructed NotFound return value.
         this.tasks.GetById(1).Returns((TodoTask?)null);
         var command = new CompleteTodoTaskCommand(1, "owner-1");
 
         // Act
-        var result = await this.handler.HandleAsync(command, CancellationToken.None);
+        var ex = await Assert.ThrowsAsync<PipelineEjectCaseException>(() =>
+            this.handler.HandleAsync(command, CancellationToken.None)
+        );
 
         // Assert
-        Assert.IsType<NotFound>(result.Value);
+        Assert.IsType<NotFound>(ex.CaseValue);
     }
 }

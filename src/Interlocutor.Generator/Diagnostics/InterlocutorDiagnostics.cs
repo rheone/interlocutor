@@ -284,8 +284,9 @@ internal static class InterlocutorDiagnostics
     /// exists for a request whose declared response arity has no validation-shaped case.
     /// </summary>
     /// <remarks>
-    /// <c>ResourceCommandHandler</c>'s response shape is fixed to <c>Outcome&lt;TSuccess, NotFound, Failure&gt;</c>,
-    /// which has no case an <c>Interlocutor.FluentValidation.ValidationBehavior</c> failure can occupy -
+    /// <c>ResourceCommandHandler</c> only requires its <c>TResponse</c> to carry <c>NotFound</c>/<c>Forbidden</c>
+    /// cases - a <c>TResponse</c> picked without validation in mind, such as <c>Outcome&lt;string, NotFound,
+    /// Failure&gt;</c>, has no case an <c>Interlocutor.FluentValidation.ValidationBehavior</c> failure can occupy -
     /// registering a validator for a command shaped like that doesn't fail at compile time today, it throws the
     /// first time a real validation failure happens at runtime, because the behavior has nowhere to put the
     /// result. Reported by <see cref="ValidationShapeMismatchAnalyzer"/> for any request/response pair shaped

@@ -1063,7 +1063,7 @@ app.MapGet("/todo-tasks/paged", async (
 
 ## Step 7: Fine-grained authorization - updating a task
 
-Update needs to check *who owns the specific task being edited* - a check that can only happen after the entity is loaded. That's not something `AuthorizationBehavior` can express (it runs before anything is loaded); it's what `ResourceCommandHandler<TCommand, TEntity, TSuccess>` exists for.
+Update needs to check *who owns the specific task being edited* - a check that can only happen after the entity is loaded. That's not something `AuthorizationBehavior` can express (it runs before anything is loaded); it's what `ResourceCommandHandler<TCommand, TEntity, TResponse>` exists for.
 
 **`Application/TodoTasks/UpdateTodoTaskCommand.cs`**
 
@@ -1084,7 +1084,7 @@ public sealed record UpdateTodoTaskCommand(int Id, string Title, string? Notes, 
 }
 ```
 
-`ResourceCommandHandler` fixes the response shape to `Outcome<TSuccess, NotFound, Forbidden>` - it's the load/authorize/handle template's own contract, not something you choose per command.
+`ResourceCommandHandler` requires the response shape to carry a `NotFound` and a `Forbidden` case - the load/authorize/handle template's own contract - but doesn't fix the rest of the arity: `TResponse` is otherwise whatever the command needs, chosen per command.
 
 **`Application/TodoTasks/UpdateTodoTaskHandler.cs`**
 
@@ -1122,10 +1122,10 @@ public sealed class UpdateTodoTaskHandler(IDomainRepository<TodoTask, int> repos
 ```
 
 > [!IMPORTANT]
-> `ResourceCommandHandler<TCommand, TEntity, TSuccess>` does not itself implement `ICommandHandler<TCommand, TResponse>` - a plain subclass is invisible to handler discovery. The explicit interface declaration above is required, not decorative; the base class's own `HandleAsync` method already satisfies it, so no override body is needed.
+> `ResourceCommandHandler<TCommand, TEntity, TResponse>` does not itself implement `ICommandHandler<TCommand, TResponse>` - a plain subclass is invisible to handler discovery. The explicit interface declaration above is required, not decorative; the base class's own `HandleAsync` method already satisfies it, so no override body is needed.
 
 > [!IMPORTANT]
-> Don't stack FluentValidation on top of a `ResourceCommandHandler` command without checking the arity first. `ValidationBehavior` needs to construct a `ValidationError`/`ValidationErrors` case on a validation failure - but `ResourceCommandHandler`'s response shape is fixed to `Outcome<TSuccess, NotFound, Forbidden>`, which has no such case. This is no longer a runtime surprise: registering a validator for `UpdateTodoTaskCommand` in this shape is now a build-time `INTERLOC010` diagnostic naming the request, the validator, and the missing case, rather than a first-validation-failure exception. Fold input checks like this into `Authorize` (returning a `Forbidden`) or `HandleAsync` instead.
+> Don't stack FluentValidation on top of a `ResourceCommandHandler` command without checking the arity first. `ValidationBehavior` needs to construct a `ValidationError`/`ValidationErrors` case on a validation failure - but `ResourceCommandHandler` only requires `TResponse` to carry `NotFound` and `Forbidden`, so a `TResponse` picked without validation in mind - like `UpdateTodoTaskCommand`'s `Outcome<TodoTaskDto, NotFound, Forbidden>` above - has no such case. This is no longer a runtime surprise: registering a validator for `UpdateTodoTaskCommand` in this shape is now a build-time `INTERLOC010` diagnostic naming the request, the validator, and the missing case, rather than a first-validation-failure exception. Fold input checks like this into `Authorize` (returning a `Forbidden`) or `HandleAsync` instead.
 
 Endpoint:
 

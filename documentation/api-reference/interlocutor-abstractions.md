@@ -55,13 +55,13 @@ Handles a command that produces no data payload - only an outcome.
 | --- | --- |
 | `Task<TResult> Handle(TCommand command, CancellationToken ct)` | Handles the specified command and returns the outcome. |
 
-### `ResourceCommandHandler<TCommand, TEntity, TSuccess>` abstract class
+### `ResourceCommandHandler<TCommand, TEntity, TResponse>` abstract class
 
-Provides a template method for command handlers that load, authorize, and then act on a domain entity.
+Provides a template method for command handlers that load, authorize, and then act on a domain entity. Generic over `TResponse` - any `IUnion` declaring `NotFound` and `Forbidden` cases among its own.
 
 | Member | Summary |
 | --- | --- |
-| `public Task<Outcome<TSuccess, NotFound, Forbidden>> Handle(TCommand command, CancellationToken ct)` | Executes the load-authorize-handle pipeline for the given command. |
+| `public Task<TResponse> HandleAsync(TCommand command, CancellationToken ct)` | Executes the load-authorize-handle pipeline for the given command. |
 
 ## Interlocutor.Abstractions.Core
 

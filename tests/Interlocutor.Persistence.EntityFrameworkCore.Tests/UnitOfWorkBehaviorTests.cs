@@ -104,9 +104,9 @@ public sealed class UnitOfWorkBehaviorTests : IClassFixture<EntityFrameworkTestF
     [Fact]
     public async Task HandleAsync_NullPayloadSuccessRoutedThroughResourceCommandHandler_CommitsNotRollsBack()
     {
-        // Arrange - the realistic trigger from finding 01: ResourceCommandHandler<TCommand, TEntity, TSuccess>
-        // (the library's own built-in resource-authorization template) lets a consumer pick a nullable
-        // TSuccess, not just a bare hand-constructed Outcome<...>.
+        // Arrange - the realistic trigger from finding 01: ResourceCommandHandler<TCommand, TEntity, TResponse>
+        // (the library's own built-in resource-authorization template) lets a consumer pick a TResponse whose
+        // success case is nullable, not just a bare hand-constructed Outcome<...>.
         var behavior = new UnitOfWorkBehavior<
             NullableSuccessResourceCommand,
             Outcome<string?, NotFound, Forbidden>,
