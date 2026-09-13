@@ -5,8 +5,8 @@ using System.Diagnostics;
 
 /// <summary>
 /// Shared storage for the plural aggregate result types (<see cref="Conflicts"/>, <see cref="Failures"/>,
-/// <see cref="ValidationErrors"/>, <see cref="ValidationErrors{TErrorCode}"/>), each of which composes an
-/// instance of this type instead of hand-rolling its own dedup/count/items logic.
+/// <see cref="Failures{TErrorCode}"/>, <see cref="ValidationErrors"/>, <see cref="ValidationErrors{TErrorCode}"/>),
+/// each of which composes an instance of this type instead of hand-rolling its own dedup/count/items logic.
 /// </summary>
 /// <typeparam name="TItem">The item type being collected. Must support equality comparison so that
 /// duplicates can be detected.</typeparam>

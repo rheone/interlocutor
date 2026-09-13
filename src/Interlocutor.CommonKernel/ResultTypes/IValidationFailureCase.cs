@@ -3,7 +3,8 @@ namespace Interlocutor.CommonKernel.ResultTypes;
 using System.Collections.Generic;
 
 /// <summary>
-/// Marks a type as a validation-shaped failure case usable in an <see cref="Outcome"/> union.
+/// Marks a type as a validation-shaped failure case usable as one case type in an <c>Outcome&lt;T1, ...&gt;</c>
+/// union.
 /// </summary>
 /// <remarks>
 /// <para>
