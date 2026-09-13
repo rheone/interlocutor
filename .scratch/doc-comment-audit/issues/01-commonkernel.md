@@ -4,7 +4,7 @@
 
 **Blocked by:** outcome-arity-and-factories/01 — Extend CommonKernel's shipped Outcome family to arity 16; outcome-arity-and-factories/02 — Add static factory methods for constructing Outcome instances of any shipped arity (the API surface being documented must be settled first).
 
-**Status:** done - implemented in `<pending-commit-sha>`
+**Status:** done - implemented in `e76b595`
 
 - [x] Every `<typeparam>` and `<remarks>` entry on `Outcome<T1,...,Tn>` describes each type parameter as an arbitrary, developer-chosen case value — no "by convention this position is success/failure" language, hedged or otherwise.
 - [x] `Outcome<T>`'s documentation no longer claims the type "always succeeds" — it describes its actual behavior: a union with exactly one case, whose meaning is up to the caller.
