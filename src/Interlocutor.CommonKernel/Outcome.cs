@@ -14,8 +14,8 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </summary>
 /// <typeparam name="T1">
 /// The first case type - an arbitrary, caller-chosen case type. No type-parameter position in
-/// this family carries an inherent success or failure meaning; that meaning, if any, comes from
-/// which types the caller chooses to put in each position, not from position itself.
+/// this family carries meaning on its own; meaning comes from which types the caller chooses to
+/// put in each position, not from position itself.
 /// </typeparam>
 /// <typeparam name="T2">The second case type, likewise arbitrary and caller-chosen.</typeparam>
 /// <remarks>
@@ -38,8 +38,8 @@ public readonly partial union Outcome<T1, T2>(T1, T2) : IOutcome;
 /// </summary>
 /// <typeparam name="T1">
 /// The first case type - an arbitrary, caller-chosen case type. No type-parameter position in
-/// this family carries an inherent success or failure meaning; that meaning, if any, comes from
-/// which types the caller chooses to put in each position, not from position itself.
+/// this family carries meaning on its own; meaning comes from which types the caller chooses to
+/// put in each position, not from position itself.
 /// </typeparam>
 /// <typeparam name="T2">The second case type, likewise arbitrary and caller-chosen.</typeparam>
 /// <typeparam name="T3">The third case type, likewise arbitrary and caller-chosen.</typeparam>
@@ -63,8 +63,8 @@ public readonly partial union Outcome<T1, T2, T3>(T1, T2, T3) : IOutcome;
 /// </summary>
 /// <typeparam name="T1">
 /// The first case type - an arbitrary, caller-chosen case type. No type-parameter position in
-/// this family carries an inherent success or failure meaning; that meaning, if any, comes from
-/// which types the caller chooses to put in each position, not from position itself.
+/// this family carries meaning on its own; meaning comes from which types the caller chooses to
+/// put in each position, not from position itself.
 /// </typeparam>
 /// <typeparam name="T2">The second case type, likewise arbitrary and caller-chosen.</typeparam>
 /// <typeparam name="T3">The third case type, likewise arbitrary and caller-chosen.</typeparam>
@@ -89,8 +89,8 @@ public readonly partial union Outcome<T1, T2, T3, T4>(T1, T2, T3, T4) : IOutcome
 /// </summary>
 /// <typeparam name="T1">
 /// The first case type - an arbitrary, caller-chosen case type. No type-parameter position in
-/// this family carries an inherent success or failure meaning; that meaning, if any, comes from
-/// which types the caller chooses to put in each position, not from position itself.
+/// this family carries meaning on its own; meaning comes from which types the caller chooses to
+/// put in each position, not from position itself.
 /// </typeparam>
 /// <typeparam name="T2">The second case type, likewise arbitrary and caller-chosen.</typeparam>
 /// <typeparam name="T3">The third case type, likewise arbitrary and caller-chosen.</typeparam>
@@ -116,8 +116,8 @@ public readonly partial union Outcome<T1, T2, T3, T4, T5>(T1, T2, T3, T4, T5) : 
 /// </summary>
 /// <typeparam name="T1">
 /// The first case type - an arbitrary, caller-chosen case type. No type-parameter position in
-/// this family carries an inherent success or failure meaning; that meaning, if any, comes from
-/// which types the caller chooses to put in each position, not from position itself.
+/// this family carries meaning on its own; meaning comes from which types the caller chooses to
+/// put in each position, not from position itself.
 /// </typeparam>
 /// <typeparam name="T2">The second case type, likewise arbitrary and caller-chosen.</typeparam>
 /// <typeparam name="T3">The third case type, likewise arbitrary and caller-chosen.</typeparam>
@@ -144,8 +144,8 @@ public readonly partial union Outcome<T1, T2, T3, T4, T5, T6>(T1, T2, T3, T4, T5
 /// </summary>
 /// <typeparam name="T1">
 /// The first case type - an arbitrary, caller-chosen case type. No type-parameter position in
-/// this family carries an inherent success or failure meaning; that meaning, if any, comes from
-/// which types the caller chooses to put in each position, not from position itself.
+/// this family carries meaning on its own; meaning comes from which types the caller chooses to
+/// put in each position, not from position itself.
 /// </typeparam>
 /// <typeparam name="T2">The second case type, likewise arbitrary and caller-chosen.</typeparam>
 /// <typeparam name="T3">The third case type, likewise arbitrary and caller-chosen.</typeparam>
@@ -173,8 +173,8 @@ public readonly partial union Outcome<T1, T2, T3, T4, T5, T6, T7>(T1, T2, T3, T4
 /// </summary>
 /// <typeparam name="T1">
 /// The first case type - an arbitrary, caller-chosen case type. No type-parameter position in
-/// this family carries an inherent success or failure meaning; that meaning, if any, comes from
-/// which types the caller chooses to put in each position, not from position itself.
+/// this family carries meaning on its own; meaning comes from which types the caller chooses to
+/// put in each position, not from position itself.
 /// </typeparam>
 /// <typeparam name="T2">The second case type, likewise arbitrary and caller-chosen.</typeparam>
 /// <typeparam name="T3">The third case type, likewise arbitrary and caller-chosen.</typeparam>
@@ -203,8 +203,8 @@ public readonly partial union Outcome<T1, T2, T3, T4, T5, T6, T7, T8>(T1, T2, T3
 /// </summary>
 /// <typeparam name="T1">
 /// The first case type - an arbitrary, caller-chosen case type. No type-parameter position in
-/// this family carries an inherent success or failure meaning; that meaning, if any, comes from
-/// which types the caller chooses to put in each position, not from position itself.
+/// this family carries meaning on its own; meaning comes from which types the caller chooses to
+/// put in each position, not from position itself.
 /// </typeparam>
 /// <typeparam name="T2">The second case type, likewise arbitrary and caller-chosen.</typeparam>
 /// <typeparam name="T3">The third case type, likewise arbitrary and caller-chosen.</typeparam>
@@ -234,8 +234,8 @@ public readonly partial union Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9>(T1, T2
 /// </summary>
 /// <typeparam name="T1">
 /// The first case type - an arbitrary, caller-chosen case type. No type-parameter position in
-/// this family carries an inherent success or failure meaning; that meaning, if any, comes from
-/// which types the caller chooses to put in each position, not from position itself.
+/// this family carries meaning on its own; meaning comes from which types the caller chooses to
+/// put in each position, not from position itself.
 /// </typeparam>
 /// <typeparam name="T2">The second case type, likewise arbitrary and caller-chosen.</typeparam>
 /// <typeparam name="T3">The third case type, likewise arbitrary and caller-chosen.</typeparam>
@@ -266,8 +266,8 @@ public readonly partial union Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>(T
 /// </summary>
 /// <typeparam name="T1">
 /// The first case type - an arbitrary, caller-chosen case type. No type-parameter position in
-/// this family carries an inherent success or failure meaning; that meaning, if any, comes from
-/// which types the caller chooses to put in each position, not from position itself.
+/// this family carries meaning on its own; meaning comes from which types the caller chooses to
+/// put in each position, not from position itself.
 /// </typeparam>
 /// <typeparam name="T2">The second case type, likewise arbitrary and caller-chosen.</typeparam>
 /// <typeparam name="T3">The third case type, likewise arbitrary and caller-chosen.</typeparam>
@@ -299,8 +299,8 @@ public readonly partial union Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T
 /// </summary>
 /// <typeparam name="T1">
 /// The first case type - an arbitrary, caller-chosen case type. No type-parameter position in
-/// this family carries an inherent success or failure meaning; that meaning, if any, comes from
-/// which types the caller chooses to put in each position, not from position itself.
+/// this family carries meaning on its own; meaning comes from which types the caller chooses to
+/// put in each position, not from position itself.
 /// </typeparam>
 /// <typeparam name="T2">The second case type, likewise arbitrary and caller-chosen.</typeparam>
 /// <typeparam name="T3">The third case type, likewise arbitrary and caller-chosen.</typeparam>
@@ -333,8 +333,8 @@ public readonly partial union Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T
 /// </summary>
 /// <typeparam name="T1">
 /// The first case type - an arbitrary, caller-chosen case type. No type-parameter position in
-/// this family carries an inherent success or failure meaning; that meaning, if any, comes from
-/// which types the caller chooses to put in each position, not from position itself.
+/// this family carries meaning on its own; meaning comes from which types the caller chooses to
+/// put in each position, not from position itself.
 /// </typeparam>
 /// <typeparam name="T2">The second case type, likewise arbitrary and caller-chosen.</typeparam>
 /// <typeparam name="T3">The third case type, likewise arbitrary and caller-chosen.</typeparam>
@@ -368,8 +368,8 @@ public readonly partial union Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T
 /// </summary>
 /// <typeparam name="T1">
 /// The first case type - an arbitrary, caller-chosen case type. No type-parameter position in
-/// this family carries an inherent success or failure meaning; that meaning, if any, comes from
-/// which types the caller chooses to put in each position, not from position itself.
+/// this family carries meaning on its own; meaning comes from which types the caller chooses to
+/// put in each position, not from position itself.
 /// </typeparam>
 /// <typeparam name="T2">The second case type, likewise arbitrary and caller-chosen.</typeparam>
 /// <typeparam name="T3">The third case type, likewise arbitrary and caller-chosen.</typeparam>
@@ -404,8 +404,8 @@ public readonly partial union Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T
 /// </summary>
 /// <typeparam name="T1">
 /// The first case type - an arbitrary, caller-chosen case type. No type-parameter position in
-/// this family carries an inherent success or failure meaning; that meaning, if any, comes from
-/// which types the caller chooses to put in each position, not from position itself.
+/// this family carries meaning on its own; meaning comes from which types the caller chooses to
+/// put in each position, not from position itself.
 /// </typeparam>
 /// <typeparam name="T2">The second case type, likewise arbitrary and caller-chosen.</typeparam>
 /// <typeparam name="T3">The third case type, likewise arbitrary and caller-chosen.</typeparam>
@@ -441,8 +441,8 @@ public readonly partial union Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T
 /// </summary>
 /// <typeparam name="T1">
 /// The first case type - an arbitrary, caller-chosen case type. No type-parameter position in
-/// this family carries an inherent success or failure meaning; that meaning, if any, comes from
-/// which types the caller chooses to put in each position, not from position itself.
+/// this family carries meaning on its own; meaning comes from which types the caller chooses to
+/// put in each position, not from position itself.
 /// </typeparam>
 /// <typeparam name="T2">The second case type, likewise arbitrary and caller-chosen.</typeparam>
 /// <typeparam name="T3">The third case type, likewise arbitrary and caller-chosen.</typeparam>
@@ -491,8 +491,8 @@ public readonly partial union Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T
 #pragma warning disable SA1402
 
 /// <summary>
-/// Represents a fire-and-forget acknowledgment that an operation ran to completion - no case types, no
-/// payload, and no success/failure judgment of any kind.
+/// Represents a fire-and-forget acknowledgment that an operation ran to completion - no case types and no
+/// payload.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -539,11 +539,10 @@ public readonly record struct Outcome : IUnion
 
 /// <summary>
 /// Represents the outcome of an operation as exactly one case, whose meaning is defined entirely by the
-/// caller - not a claim that the operation "succeeded".
+/// caller.
 /// </summary>
 /// <typeparam name="T">
-/// The single case type this outcome carries. Nothing about <see cref="Outcome{T}"/> implies this case
-/// represents success; it is simply the only case a single-case union can hold.
+/// The single case type this outcome carries - the only case a single-case union can hold.
 /// </typeparam>
 /// <param name="Value">The value this outcome carries.</param>
 /// <remarks>

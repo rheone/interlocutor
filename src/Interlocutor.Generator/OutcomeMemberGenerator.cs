@@ -16,8 +16,7 @@ using Microsoft.CodeAnalysis.Diagnostics;
 /// <c>GenerateOutcomeMembersAttribute</c> (ticket 05/06) - plus <c>IOutcomeCase</c>/<c>ActiveCaseType</c> when
 /// the declaration also lists <c>IOutcome</c> in its base list. Every case-indexed member is keyed by the case
 /// types' plain declaration order in the attributed union's own type parameter list; that ordinal position is
-/// bookkeeping only and never implies a success, failure, or "happy path" case - see
-/// <see cref="OutcomeUnionModel.CaseTypeDisplayStrings"/>'s remarks.
+/// bookkeeping only - see <see cref="OutcomeUnionModel.CaseTypeDisplayStrings"/>'s remarks.
 /// </summary>
 /// <remarks>
 /// <para>
