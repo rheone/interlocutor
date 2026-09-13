@@ -4,7 +4,7 @@
 
 **Blocked by:** None — can run independently.
 
-**Status:** done - implemented in `<pending-final-sha>`
+**Status:** done - implemented in `167a715`
 
 - [x] No doc comment or code comment names a generic parameter as inherently "the success" case (e.g. around handler-wrapping, authorization behavior, or resource-command-handler response shapes) — parameters are described by what the developer may put there, not by an assumed role.
 - [x] Every doc comment and code comment in the project is reviewed against the full set of established XML-documentation and code-comment rules and corrected where it falls short.
