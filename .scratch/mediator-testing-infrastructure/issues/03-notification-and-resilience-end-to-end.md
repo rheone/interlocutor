@@ -6,6 +6,6 @@
 
 **Status:** ready-for-agent
 
-- [ ] A real command implementing both `ITransactionalRequest` and `IRateLimitedRequest` (or `ITimeoutRequest`) proves the resilience behavior and the transaction behavior interact correctly — e.g. a rate-limited or timed-out request never reaches the transaction commit
-- [ ] A real notification published from within a command handler reaches multiple real `INotificationHandler` implementations, in the documented fan-out order, through the real `IPublisher`
-- [ ] Both scenarios run in the same host/DI container built in ticket 02, not a newly constructed one
+- [x] A real command implementing both `ITransactionalRequest` and `IRateLimitedRequest` (or `ITimeoutRequest`) proves the resilience behavior and the transaction behavior interact correctly — e.g. a rate-limited or timed-out request never reaches the transaction commit
+- [x] A real notification published from within a command handler reaches multiple real `INotificationHandler` implementations, in the documented fan-out order, through the real `IPublisher`
+- [x] Both scenarios run in the same host/DI container built in ticket 02, not a newly constructed one
