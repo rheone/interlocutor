@@ -11,8 +11,13 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 
 /// <summary>
-/// Emits <c>Match</c>, <c>Switch</c>, per-case <c>TryGetValue</c>, and <c>ToString</c> for
-/// every <c>partial union</c> declaration attributed with <c>GenerateOutcomeMembersAttribute</c> (ticket 05/06).
+/// Emits a per-case static <c>Create</c> factory, <c>Match</c>, <c>Switch</c>, per-case <c>TryGetValue</c>,
+/// <c>ToString</c>, and value-based equality for every <c>partial union</c> declaration attributed with
+/// <c>GenerateOutcomeMembersAttribute</c> (ticket 05/06) - plus <c>IOutcomeCase</c>/<c>ActiveCaseType</c> when
+/// the declaration also lists <c>IOutcome</c> in its base list. Every case-indexed member is keyed by the case
+/// types' plain declaration order in the attributed union's own type parameter list; that ordinal position is
+/// bookkeeping only and never implies a success, failure, or "happy path" case - see
+/// <see cref="OutcomeUnionModel.CaseTypeDisplayStrings"/>'s remarks.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -61,8 +66,9 @@ using Microsoft.CodeAnalysis.Diagnostics;
 /// <item><description>
 /// <see cref="OutcomeMemberEmitter"/> - once both checks pass, <see cref="Execute"/> hands the model to
 /// <see cref="OutcomeMemberEmitter.Emit"/>, which renders the generated partial declaration's full source text:
-/// <c>Match</c>, <c>Switch</c>, per-case <c>TryGetValue</c>, <c>ToString</c>, and equality unconditionally, plus
-/// <c>ActiveCaseType</c> when the union implements <c>IOutcome</c>.
+/// a per-case static <c>Create</c> factory, <c>Match</c>, <c>Switch</c>, per-case <c>TryGetValue</c>,
+/// <c>ToString</c>, and equality unconditionally, plus <c>IOutcomeCase</c> and <c>ActiveCaseType</c> when the
+/// union implements <c>IOutcome</c>.
 /// </description></item>
 /// <item><description>
 /// <see cref="OutcomeMemberGenerator"/> (this class) - the <c>[Generator]</c> entry point wiring the six
@@ -83,9 +89,16 @@ public sealed class OutcomeMemberGenerator : IIncrementalGenerator
 
     /// <summary>
     /// The most case types an attributed union can declare before <see cref="InterlocutorDiagnostics.RecommendedOutcomeArityExceeded"/>
-    /// fires, absent an <c>interlocutor_max_recommended_outcome_arity</c> <c>.editorconfig</c> override - matches
-    /// the shipped <c>Outcome</c>/<c>Outcome&lt;...&gt;</c> family's own ceiling (arities 0 through 6).
+    /// fires, absent an <c>interlocutor_max_recommended_outcome_arity</c> <c>.editorconfig</c> override.
     /// </summary>
+    /// <remarks>
+    /// A non-blocking style nudge, independent of - and well below - <see cref="MaxCaseTypes"/>'s hard,
+    /// build-breaking ceiling: a union already inside the structural limit can still be a code smell, since a
+    /// type or handler needing this many cases is usually a sign it's doing too much (see
+    /// <see cref="InterlocutorDiagnostics.RecommendedOutcomeArityExceeded"/>'s own description). Six is a
+    /// judgment call about readability, not derived from any property of the shipped <c>Outcome</c>/
+    /// <c>Outcome&lt;...&gt;</c> family, whose own ceiling matches <see cref="MaxCaseTypes"/> instead.
+    /// </remarks>
     private const int DefaultMaxRecommendedCaseTypes = 6;
 
     /// <summary>

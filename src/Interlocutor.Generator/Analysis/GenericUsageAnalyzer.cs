@@ -95,6 +95,8 @@ internal static class GenericUsageAnalyzer
     }
 
     /// <summary>Whether <paramref name="type"/> still refers to an open type parameter anywhere in its structure.</summary>
+    /// <param name="type">The type to inspect, recursing into generic type arguments and array element types.</param>
+    /// <returns><see langword="true"/> if <paramref name="type"/> is, or contains, an unresolved <see cref="ITypeParameterSymbol"/>.</returns>
     private static bool ContainsOpenTypeParameter(ITypeSymbol type) =>
         type switch
         {

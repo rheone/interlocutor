@@ -23,10 +23,14 @@ using Microsoft.CodeAnalysis;
 /// partial generic type's declarations to agree).
 /// </param>
 /// <param name="CaseTypeDisplayStrings">
-/// Every case type's fully-qualified display string, in declared order - the first is the success case, every
-/// remaining entry an independent failure case. For a generic case type parameter this is just its name (a
-/// type parameter is never qualified); for a concrete case type it is <c>global::</c>-prefixed, so the
-/// generated file never depends on the original declaration's own <c>using</c> directives.
+/// Every case type's fully-qualified display string, in declaration order. That order carries no positional
+/// meaning beyond bookkeeping - it only determines each generated member's per-case parameter/overload
+/// ordering (see <see cref="Emission.OutcomeMemberEmitter"/>'s <c>Match</c>/<c>Switch</c>/<c>Create</c>
+/// emission). No entry is "the success case" or "the happy-path case" by virtue of its position: this union
+/// has no inherent success/failure opinion at all (see <see cref="ImplementsIOutcome"/>'s remarks). For a
+/// generic case type parameter this is just its name (a type parameter is never qualified); for a concrete
+/// case type it is <c>global::</c>-prefixed, so the generated file never depends on the original declaration's
+/// own <c>using</c> directives.
 /// </param>
 /// <param name="DisplayName">The union's fully-qualified display name, for diagnostic messages.</param>
 /// <param name="HintName">The unique hint name <see cref="OutcomeMemberGenerator"/> passes to <c>AddSource</c>.</param>

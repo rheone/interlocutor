@@ -14,9 +14,11 @@ using System.Diagnostics;
 /// always does).
 /// </param>
 /// <remarks>
+/// <para>
 /// A plain <c>string</c>/<c>bool</c> record struct - no <see cref="System.Collections.Immutable.ImmutableArray{T}"/>
 /// field, so the compiler-generated equality this type gets is already correct element-wise, unlike
 /// <see cref="GenericConstraintSnapshot"/> itself.
+/// </para>
 /// </remarks>
 [DebuggerDisplay("{MetadataName} (IsValueType={IsValueType})")]
 internal readonly record struct ResolvedArgumentTypeFact(

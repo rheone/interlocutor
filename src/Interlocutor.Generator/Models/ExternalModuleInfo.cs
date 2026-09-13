@@ -26,11 +26,13 @@ using Interlocutor.Generator.Analysis;
 /// <c>InterlocutorGeneratedHandlerAttribute</c> metadata for the missing-handler diagnostic.
 /// </param>
 /// <remarks>
+/// <para>
 /// <see cref="ImmutableArray{T}"/>'s own <c>Equals</c> compares the underlying array by reference, not by
 /// element - so the compiler-generated positional-record equality this type would otherwise get from
 /// <paramref name="Handlers"/> is useless for incremental-pipeline caching (two separately-built arrays with
 /// identical contents never compare equal). <see cref="Equals(ExternalModuleInfo?)"/>/<see cref="GetHashCode"/>
 /// are overridden below to compare <see cref="Handlers"/> element-wise instead.
+/// </para>
 /// </remarks>
 [DebuggerDisplay("{AssemblyIdentity} ({Handlers.Length} handlers)")]
 internal sealed record ExternalModuleInfo(

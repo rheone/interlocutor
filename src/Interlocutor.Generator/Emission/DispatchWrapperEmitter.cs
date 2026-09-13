@@ -82,6 +82,8 @@ internal static class DispatchWrapperEmitter
         $"{IdentifierSanitizer.ToIdentifier(handler.HandlerTypeName)}_{handler.Kind}_Dispatch";
 
     /// <summary>Emits one wrapper class for a query, command, or bare-command handler.</summary>
+    /// <param name="builder">The source being built.</param>
+    /// <param name="handler">The handler to emit a dispatch wrapper for.</param>
     private static void EmitWrapper(StringBuilder builder, HandlerModel handler)
     {
         var className = GetWrapperClassName(handler);
@@ -147,5 +149,7 @@ internal static class DispatchWrapperEmitter
     }
 
     /// <summary>Escapes the characters that are illegal as raw content inside an XML doc-comment element.</summary>
+    /// <param name="value">The text to escape.</param>
+    /// <returns><paramref name="value"/> with <c>&amp;</c>, <c>&lt;</c>, and <c>&gt;</c> replaced by their XML entity equivalents.</returns>
     private static string XmlEscape(string value) => value.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
 }

@@ -15,12 +15,14 @@ using Microsoft.CodeAnalysis;
 /// current compilation's own syntax.
 /// </summary>
 /// <remarks>
+/// <para>
 /// <see cref="Compilation.References"/> already gives every assembly the compiling project transitively
 /// depends on as a direct entry - a project reference from the application to library A, which itself
 /// references library B, resolves at the MSBuild level to direct assembly references to both A.dll and
 /// B.dll for the application's own compilation. This is what makes three-level referencing (application to
 /// A to B) work without the application listing B anywhere: this method never has to walk from A's metadata
 /// to B's, it only ever inspects the reference list Roslyn already flattened for it.
+/// </para>
 /// </remarks>
 internal static class ReferencedModuleDiscovery
 {

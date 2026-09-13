@@ -6,10 +6,11 @@ using Interlocutor.Generator.Analysis;
 /// Discriminates which of the four mediator handler contracts a discovered handler implements.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Mirrors the four contracts <c>Interlocutor.DependencyInjection.Abstractions.HandlerDiscovery</c> checks
 /// at runtime - this generator replicates that same discovery semantic at compile time.
-/// </remarks>
-/// <remarks>
+/// </para>
+/// <para>
 /// This enum's underlying <see langword="int"/> values are encoded into assembly-level metadata
 /// (<c>InterlocutorGeneratedHandlerAttribute</c>) by one generator run and decoded by a later run reading a
 /// referenced assembly (see <see cref="ReferencedModuleDiscovery"/>) - potentially a different generator
@@ -17,6 +18,7 @@ using Interlocutor.Generator.Analysis;
 /// rather than assuming <see cref="Notification"/> is the highest value, so member order here is not
 /// load-bearing for that path - but removing or renumbering an existing case is still a breaking change for
 /// any already-compiled referenced assembly's encoded values.
+/// </para>
 /// </remarks>
 internal enum HandlerKind
 {

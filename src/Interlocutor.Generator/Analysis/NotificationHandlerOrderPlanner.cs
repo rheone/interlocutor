@@ -14,12 +14,14 @@ using Microsoft.CodeAnalysis;
 /// topologically sorting the dependency graph those attributes describe.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Only handler types that appear in at least one run-after/run-before relationship are assigned a rank -
 /// every other handler is left out of <see cref="Result.Ranks"/> entirely, which
 /// <see cref="NotificationHandlerOrderEmitter"/> and the runtime order table both treat as "unranked" (sorts
 /// after every ranked handler, otherwise unspecified). A cycle is reported as
 /// <see cref="InterlocutorDiagnostics.NotificationHandlerOrderingCycle"/> rather than producing a partial or
 /// arbitrary order.
+/// </para>
 /// </remarks>
 internal static class NotificationHandlerOrderPlanner
 {

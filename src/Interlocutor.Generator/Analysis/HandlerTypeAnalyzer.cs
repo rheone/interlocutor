@@ -12,10 +12,12 @@ using Microsoft.CodeAnalysis;
 /// marker interfaces the missing-handler diagnostic checks.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Every match here is decided by resolving <see cref="WellKnownTypeNames"/> to real symbols via
 /// <see cref="Compilation.GetTypeByMetadataName(string)"/> and comparing <see cref="INamedTypeSymbol.OriginalDefinition"/>
 /// with <see cref="SymbolEqualityComparer.Default"/> - never by matching interface names as text. This is what
 /// makes discovery correct for aliased usings, nested types, and types outside the generator's own syntax tree.
+/// </para>
 /// </remarks>
 internal static class HandlerTypeAnalyzer
 {

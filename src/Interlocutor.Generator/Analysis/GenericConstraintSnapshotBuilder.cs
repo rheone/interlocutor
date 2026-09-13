@@ -102,6 +102,8 @@ internal static class GenericConstraintSnapshotBuilder
     }
 
     /// <summary>Whether <paramref name="type"/> has a public, accessible, parameterless constructor - or is a value type, which always does.</summary>
+    /// <param name="type">The type to check.</param>
+    /// <returns><see langword="true"/> if <paramref name="type"/> is a value type or declares a public parameterless constructor.</returns>
     private static bool HasAccessibleParameterlessConstructor(ITypeSymbol type) =>
         type.IsValueType
         || (
