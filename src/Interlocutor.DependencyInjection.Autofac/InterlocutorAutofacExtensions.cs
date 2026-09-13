@@ -184,7 +184,7 @@ public static class InterlocutorAutofacExtensions
     /// service type via <c>RegisterGeneric(...).As(...)</c> - but the reverse, a <em>closed</em> implementation
     /// paired with an <em>open</em> service type via <c>RegisterType(...).As(...)</c>, throws
     /// <see cref="ArgumentException"/> at <c>ContainerBuilder.Build()</c> time, the same shape Microsoft
-    /// DI's own <c>ServiceCollectionExtensions.ResolveServiceType</c> exists to handle. Both containers need
+    /// DI's own <c>InterlocutorServiceCollectionExtensions.ResolveServiceType</c> exists to handle. Both containers need
     /// this translation for the identical reason: <see cref="InterlocutorPipelineBuilder.AddBehavior"/> always
     /// records the open <see cref="IPipelineBehavior{TRequest,TResponse}"/> as
     /// <see cref="InterlocutorRegistration.ServiceType"/> regardless of whether
