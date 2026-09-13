@@ -20,10 +20,11 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// aggregate. This behavior preserves every violation from every validator rather than stopping at the first failure.
 /// </para>
 /// <para>
-/// <typeparamref name="TResponse"/> is constrained only to <see cref="IUnion"/>, not decomposed
-/// into a success-type parameter with <see cref="ValidationErrors"/> pinned as the failure case - for exactly
-/// the reason <see cref="AuthorizationBehavior{TRequest, TResponse}"/>'s remarks describe in full: the
-/// decomposed shape broke Microsoft.Extensions.DependencyInjection's open-generic resolution outright.
+/// <typeparamref name="TResponse"/> is constrained only to <see cref="IUnion"/>, not split into a
+/// dedicated type parameter for whatever case the caller treats as successful plus
+/// <see cref="ValidationErrors"/> pinned as a fixed failure case - for exactly the reason
+/// <see cref="AuthorizationBehavior{TRequest, TResponse}"/>'s remarks describe in full: that decomposed
+/// shape broke Microsoft.Extensions.DependencyInjection's open-generic resolution outright.
 /// Constructing the <see cref="ValidationErrors"/> case of an unconstrained <typeparamref name="TResponse"/>
 /// is delegated to an injected <see cref="IOutcomeCaseRegistry"/> rather than performed reflectively inline,
 /// so a consumer with a hand-rolled, non-union <see cref="IUnion"/> implementation can register a
@@ -62,8 +63,9 @@ public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<
     /// <param name="request">The request to validate.</param>
     /// <param name="next">The next delegate in the pipeline, invoked if validation passes.</param>
     /// <param name="ct">A cancellation token to cancel validation or the inner handler.</param>
-    /// <returns>Either the success result from the inner handler, or a <see cref="ValidationErrors"/>
-    /// failure containing all validation error messages from all validators, de-duplicated.</returns>
+    /// <returns>Whatever <paramref name="next"/> produces, unless validation failed, in which case a
+    /// <see cref="ValidationErrors"/> failure containing every validation error message from every validator,
+    /// de-duplicated.</returns>
     /// <exception cref="InvalidOperationException">
     /// Validation failed, but <typeparamref name="TResponse"/> has no <see cref="ValidationErrors"/> case to
     /// construct - use a response type that has one.
@@ -76,8 +78,9 @@ public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<
             return await next().ConfigureAwait(false);
         }
 
-        // Aggregate all validation failures across every validator.
-        // Collect all error messages in order, preserving order of first occurrence.
+        // Aggregate every validation failure across every validator, collecting each error message
+        // in the order each validator produced it; duplicates are removed below when ValidationErrors
+        // is constructed, not here.
         var errorMessages = new List<string>();
         foreach (var validator in this.validators)
         {
