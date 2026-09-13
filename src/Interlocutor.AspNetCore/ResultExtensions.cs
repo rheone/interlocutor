@@ -18,6 +18,17 @@ using Microsoft.AspNetCore.Mvc;
 /// </summary>
 /// <remarks>
 /// <para>
+/// HTTP-status mapping is a convenience this ASP.NET Core-specific package adds on top of <c>Outcome</c>, not
+/// a property <c>Outcome</c>/<see cref="IUnion"/> carries on their own: <c>Interlocutor.CommonKernel</c> has no
+/// notion of HTTP statuses, and a consumer who never references this package never pays for or sees one. The
+/// mapping resolves purely by the active case's runtime type - never by which generic-parameter position or
+/// arity slot it happens to occupy - against the closed set of case types/interfaces
+/// <see cref="DefaultHttpOutcomeStatusMapper"/> (or a caller-supplied <see cref="IOutcomeStatusMapper"/>)
+/// recognizes; a case outside that set throws <see cref="OutcomeCaseNotMappableException"/> rather than
+/// guessing a status for it - see this type's own remarks below and that exception's remarks for the full
+/// classification rules.
+/// </para>
+/// <para>
 /// The dedicated, per-case-arity <c>ToActionResult</c>/<c>ToMinimalApiResult</c> overloads (the non-generic
 /// <c>Outcome</c> and every <c>Outcome&lt;T1, ...&gt;</c> arity) are source-generated into a second
 /// partial declaration by <c>Interlocutor.Generator</c>'s <c>ResultExtensionsGenerator</c>, marked via
@@ -75,8 +86,10 @@ public static partial class ResultExtensions
         /// there is no default HTTP status for "don't know if this is even a failure."
         /// </para>
         /// <para>
-        /// C# overload resolution always prefers a dedicated overload over this one for the six built-in union
-        /// arities: a constructed generic formal parameter (e.g. <c>Outcome&lt;T1, T2&gt;</c>)
+        /// C# overload resolution always prefers a dedicated overload over this one for every built-in union
+        /// arity the source generator emits - the non-generic <c>Outcome</c> and every <c>Outcome&lt;T1, ...&gt;</c>
+        /// arity (see <see cref="GenerateResultExtensionsAttribute"/>'s remarks) - a constructed generic formal
+        /// parameter (e.g. <c>Outcome&lt;T1, T2&gt;</c>)
         /// is more specific than this overload's bare type-parameter formal parameter (<typeparamref name="TResponse"/>),
         /// so callers get the faster, compile-time-checked path automatically and only pay for reflection when
         /// this overload is genuinely the only option.
@@ -89,8 +102,8 @@ public static partial class ResultExtensions
         /// trailing optional parameters is a strictly worse (higher-arity) match than a dedicated overload's
         /// single optional <c>mapper</c> parameter for a bare <c>result.ToActionResult()</c> call, so the compiler
         /// cannot get far enough to apply the specificity tie-break at all and reports the call ambiguous instead
-        /// - see the arity-2/arity-5/void overload-resolution regression tests for the failure this parameter
-        /// order avoids. Requiring <paramref name="caseRegistry"/> keeps every dedicated overload's zero- and
+        /// - see the arity-two/arity-max/void overload-resolution regression tests for the failure this
+        /// parameter order avoids. Requiring <paramref name="caseRegistry"/> keeps every dedicated overload's zero- and
         /// one-argument call shapes resolvable only against the dedicated overload, while this overload remains
         /// reachable by name (<c>caseRegistry: myRegistry</c>) for the hand-rolled types it exists for.
         /// </para>

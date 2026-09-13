@@ -39,6 +39,11 @@ public sealed class AspNetCoreRequestContextAccessor(IHttpContextAccessor httpCo
     private RequestContext? cached;
 
     /// <inheritdoc/>
+    /// <exception cref="NotSupportedException">
+    /// Always thrown by the setter: this accessor derives <see cref="RequestContext"/> from the current
+    /// <see cref="HttpContext"/> and has no notion of an externally assigned value, unlike
+    /// <see cref="IRequestContextAccessor.Context"/>'s general get/set contract.
+    /// </exception>
     public RequestContext? Context
     {
         get
