@@ -6,7 +6,7 @@ After this ticket, a generator test compiles the emitted dispatch source into a 
 
 **Blocked by:** 01 — Single pipeline-fold implementation shared by both dispatch paths
 
-**Status:** done - implemented in `PLACEHOLDER_SHA`
+**Status:** done - implemented in `7740d22`
 
 - [x] A generator test compiles emitted dispatch source into a real assembly/context and dispatches through the resulting `IGeneratedRequestDispatcher`
 - [x] The test covers a behavior ejecting via `Eject.With` and one ejecting via `Eject.WithCase`, asserting the final outcome matches what the hand-written path produces for the equivalent scenario
