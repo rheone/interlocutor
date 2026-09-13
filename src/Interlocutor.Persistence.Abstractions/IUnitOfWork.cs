@@ -12,9 +12,11 @@ namespace Interlocutor.Persistence.Abstractions;
 /// position. The store-specific commit-gate behavior (<c>Interlocutor.Persistence.EntityFrameworkCore</c>'s or
 /// <c>Interlocutor.Persistence.NHibernate</c>'s <c>UnitOfWorkBehavior</c>) opens a transaction lazily the first
 /// time anything - an <see cref="IDomainRepository{TEntity, TKey}"/>, this interface, or a directly-injected
-/// <c>Lazy&lt;TContext&gt;</c>/<c>Lazy&lt;ISession&gt;</c> - performs a write, and commits or rolls it back
-/// automatically at pipeline completion based on the outcome classifier's verdict. A dispatch that only ever
-/// reads never pays for an open transaction.
+/// <c>Lazy&lt;TContext&gt;</c>/<c>Lazy&lt;ISession&gt;</c> - performs a write, and commits it automatically at
+/// pipeline completion. No response case type decides that: commit is the default whenever anything is left
+/// pending, overridden only by an explicit no-commit signal (<see cref="CancelAsync"/>, or a call-site opt-out
+/// the handler itself makes) or by an unhandled exception. A dispatch that only ever reads never pays for an
+/// open transaction.
 /// </para>
 /// <para>
 /// Registered scoped and resolved via <c>Lazy&lt;IUnitOfWork&gt;</c> by consumers who want deferred
