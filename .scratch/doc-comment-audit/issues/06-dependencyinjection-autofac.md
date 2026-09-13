@@ -4,7 +4,7 @@
 
 **Blocked by:** None — can run independently.
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `cfbe04f`
 
 - [x] Every doc comment and code comment in the project is reviewed against the full set of established XML-documentation and code-comment rules and corrected where it falls short.
 - [x] Missing XML documentation on public members is added.
