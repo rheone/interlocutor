@@ -61,7 +61,8 @@ rule's third clause.
   blocks anyway (bundling the churn with other formatting-alignment work rather than a standalone
   reformat).
 
-**Decision:** _[blank — pending human input]_
+**Decision:** Option A. Flip `dotnet_separate_import_directive_groups` to `true`; the successor ticket
+runs `dotnet csharpier .` afterward to absorb the resulting reformat churn across the repo.
 
 ### 1b. System-directives-first and alphabetical ordering (StyleCop SA1208 / SA1210)
 
@@ -108,7 +109,10 @@ alphabetical — and the build already warns on it today, independent of anythin
   build rather than merely warn (this repo currently keeps `TreatWarningsAsErrors` commented out in
   `Directory.Build.props`, so today nothing here fails a build either way).
 
-**Decision:** _[blank — pending human input]_
+**Decision:** Option A. Add explicit `dotnet_diagnostic.SA1208.severity = Warning` and
+`dotnet_diagnostic.SA1210.severity = Warning` to `.editorconfig`, matching the SA1600-family pattern of
+recorded, self-documenting severities rather than relying on StyleCop's unstated shipped default. Not
+raised to `Error`.
 
 ### 1c. `src/`-vs-`tests/` split on using-directive placement relative to the namespace
 
@@ -160,7 +164,11 @@ everywhere, not `Warning` in `tests/` and `Error` in `src/`.
   decides `Warning` is the right steady-state severity for this rule independent of the original
   tests/-migration rationale.
 
-**Decision:** _[blank — pending human input]_
+**Decision:** Option A, with Option B's re-verification folded in as process rather than a separate
+decision. Restore `dotnet_diagnostic.SA1200.severity` to `Error` and delete the stale "until tests/ is
+migrated" comment. The successor ticket re-runs the same repo-wide using-vs-namespace-placement scan as
+its first step, immediately before flipping the severity, in case a file changed between this document
+and that ticket landing.
 
 ---
 
@@ -249,14 +257,53 @@ two settings aren't logically tied together by the config itself.
   typically `public` for the xUnit runner to discover them) and the relaxation was never actually
   desired long-term.
 
-**Decision:** _[blank — pending human input]_
+**Decision:** Option B — **no configuration change**. The glob stays exactly as it is today, matching
+only `*Tests.cs` files; fixtures/builders/support files elsewhere in `tests/` remain at the `src/`-level
+`Warning` bar they already carry.
+
+The intent behind this decision was explored more deeply than the three options above capture, and is
+worth recording so it isn't re-litigated:
+
+The initial ask was narrower and more precise than "leave as-is" — encourage documentation on
+`[Fact]`/`[Theory]`-attributed test methods specifically, without requiring it, while still *requiring*
+documentation on every other public member in `tests/` (fixtures, builders, constructors,
+`[MemberData]` sources, non-test public members inside `*Tests.cs` classes, etc.), regardless of which
+file they live in. That precision isn't achievable with this repo's current tooling: a
+`.editorconfig` severity override only operates at file-glob granularity, and StyleCop.Analyzers
+(pinned at `1.2.0-beta.556`) has no attribute-aware exemption for SA1600/SA1601/SA1602/CS1591 the way
+VSTHRD200 has a built-in exemption for `[Fact]`/`[Theory]` methods — there's no existing
+`DiagnosticSuppressor` or per-member `SuppressMessage` precedent anywhere in this codebase to build on
+either.
+
+A Roslyn `DiagnosticSuppressor` was considered as a way to get member-level precision (suppress only on
+`[Fact]`/`[Theory]` methods, leave every other public member at `Warning`), but a suppressor can only
+fully hide an already-reported diagnostic — it cannot downgrade severity to `Suggestion`. That would
+deliver "not required" but drop "encouraged" entirely (most IDEs show no squiggle/light-bulb at all for
+a suppressed diagnostic by default), which doesn't match the actual ask. A combined
+suppressor-plus-companion-analyzer approach (suppress SA1600/CS1591 on test methods, and have a new
+small analyzer separately emit its own `Suggestion`-severity "consider documenting this test method"
+diagnostic) would deliver both precision and visible encouragement, but was rejected as more
+infrastructure than the ask warrants — a new repo-tooling analyzer project, not a config change.
+
+Landing back on **no change** trades member-level precision for two things the alternatives couldn't
+all deliver together with existing tooling: a genuinely visible "encouraged, not required" experience
+(`Suggestion` severity, not silence), and zero new infrastructure. The imprecision this accepts — a
+non-test public member that happens to live in a `*Tests.cs` file gets the same relaxed treatment as
+the test methods around it — was judged acceptable, since such members are reused code and the original
+Option B rationale (fixtures/builders benefit from the same documentation discipline as `src/`) already
+covers the common case of reused test support code, which mostly lives outside `*Tests.cs` files
+entirely and was never touched by this relaxation to begin with.
+
+If precise member-level "encouraged, not required" for test methods becomes important enough to justify
+new infrastructure later, the suppressor-plus-companion-analyzer combination above is the documented
+fallback design — file a fresh ticket against it rather than re-deriving this analysis.
 
 ---
 
 ## Status of this document
 
-**This document has no implementation status of its own beyond "awaits a human decision."** Every
-"Decision:" field above is intentionally blank. No successor ticket that fixes any of these
-gaps/contradictions may be created with `Status: ready-for-agent` until a human has filled in each
-blank field. Until then, any successor ticket must be filed as `needs-info` (see
-`maintainer_docs/agents/triage-labels.md`) pointing back at this document.
+**All four decisions above are now made.** Findings 1a, 1b, and 1c resolve to a config-only successor
+ticket; Finding 2 resolves to no change at all (see that section's decision for why, and the documented
+fallback design if member-level precision is wanted later). See
+`.scratch/analyzer-formatting-alignment/issues/02-apply-using-directive-and-sa1200-config-decisions.md`
+for the successor ticket covering 1a/1b/1c.
