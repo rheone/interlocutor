@@ -4,7 +4,7 @@
 
 **Blocked by:** None — can start immediately.
 
-**Status:** done - implemented in `239b522`
+**Status:** done - implemented in `b237167`
 
 - [x] Every one of `Outcome<T1,T2>` through `Outcome<T1,...,T6>` carries both the `[GenerateOutcomeMembers]` attribute and the `[Union]` attribute consistently (finishing the in-progress work already present on disk).
 - [x] New `Outcome<T1,...,Tn>` declarations exist for every arity from 7 through 16, each carrying the same `[GenerateOutcomeMembers][Union]` pair and producing a working generated `Match`/`Switch`/equality surface via the existing generator — no generator changes are required, since it already supports arbitrary arity up to the BCL's 16-parameter ceiling.

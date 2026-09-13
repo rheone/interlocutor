@@ -6,7 +6,7 @@ After this ticket, both dispatch paths execute through the one `PipelineChainExe
 
 **Blocked by:** None — can start immediately
 
-**Status:** done - implemented in `bf40384`
+**Status:** done - implemented in `3d84a35` (pre-existing prior commit); status line corrected in `51181c5`
 
 - [x] `PipelineChainExecutor.ExecuteAsync` is a public, documented entry point usable by code emitted into a consuming assembly (it already takes only an `IServiceProvider` plus delegates — no other internal surface needs to widen)
 - [x] `DispatchWrapperEmitter` emits a call into `PipelineChainExecutor.ExecuteAsync` instead of re-deriving the fold/eject-catch logic as string-templated source
