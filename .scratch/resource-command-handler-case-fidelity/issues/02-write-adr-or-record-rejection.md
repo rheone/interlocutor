@@ -9,7 +9,7 @@ Nothing to decide in this ticket beyond which of the two outcomes applies - the 
 
 **Blocked by:** 01
 
-**Status:** done - implemented in `<pending-commit-sha>`. Issue 01 confirmed the redesign works cleanly (already shipped in `be5adbb`) and answered the open question (no new catch point needed). Numbered **ADR-0027**, not ADR-0025 as this ticket's text names - ADR-0025 was already claimed by the `eject-withcase-type-erased-variant` ADR, and ADR-0026 (`recommended-chain-minimal-default`) by another ticket, by the time this ran.
+**Status:** done - implemented in `8e0debb`. Issue 01 confirmed the redesign works cleanly (already shipped in `be5adbb`) and answered the open question (no new catch point needed). Numbered **ADR-0027**, not ADR-0025 as this ticket's text names - ADR-0025 was already claimed by the `eject-withcase-type-erased-variant` ADR, and ADR-0026 (`recommended-chain-minimal-default`) by another ticket, by the time this ran.
 
 - [x] Issue 01's write-up is read and its recommendation is followed, not re-litigated in this ticket
 - [x] New ADR added under `maintainer_docs/adr/` (`0027-resourcecommandhandler-eject-withcase.md`), cross-referencing ADR-0023 and ADR-0025, added to the ADR index
