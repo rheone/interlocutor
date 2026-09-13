@@ -190,6 +190,8 @@ internal static class RegistrationValidator
     /// on the request's runtime type alone, independent of any declared response type, so a bare command is
     /// just as eligible to be matched - and to conflict - as a query or value-returning command.
     /// </summary>
+    /// <param name="candidate">The candidate type found while scanning to test.</param>
+    /// <returns><see langword="true"/> if <paramref name="candidate"/> is a query, value-returning command, or bare command.</returns>
     [UnconditionalSuppressMessage(
         "Trimming",
         "IL2070:DynamicallyAccessedMembers",

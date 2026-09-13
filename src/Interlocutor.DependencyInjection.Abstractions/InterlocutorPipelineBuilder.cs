@@ -1043,6 +1043,8 @@ public sealed class InterlocutorPipelineBuilder
     /// exists yet - the mechanism behind every <c>Add*Behavior</c> convenience method's default
     /// registration, so it never clobbers a prior <c>Override*</c> call.
     /// </summary>
+    /// <param name="serviceType">The service type to set a default entry for, if none exists yet.</param>
+    /// <param name="implementationType">The implementation type to register as that default.</param>
     private void TryAddDefault(
         Type serviceType,
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type implementationType
@@ -1064,6 +1066,8 @@ public sealed class InterlocutorPipelineBuilder
     /// <see langword="null"/> if the type (or the assembly it lives in) is not loaded - the graceful-fallback
     /// lookup used for optional-package behaviors.
     /// </summary>
+    /// <param name="typeName">The assembly-qualified or partially-qualified type name to resolve.</param>
+    /// <returns>The resolved type, or <see langword="null"/> if it (or its assembly) could not be loaded.</returns>
     [UnconditionalSuppressMessage(
         "Trimming",
         "IL2057:UnrecognizedReflectionPattern",
