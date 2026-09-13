@@ -49,7 +49,7 @@ public class OutcomeOfSixteenCasesTests
     public void Construct_FromMiddleCase_TryGetValueSucceeds()
     {
         // Arrange & Act
-        SixteenCaseOutcome result = new SixteenCaseOutcome('x');
+        var result = new SixteenCaseOutcome('x');
 
         // Assert
         Assert.True(result.TryGetValue(out char hit));
@@ -243,5 +243,31 @@ public class OutcomeOfSixteenCasesTests
         // Act & Assert
         Assert.Equal("hello", first.ToString());
         Assert.Equal(((sbyte)13).ToString(), last.ToString());
+    }
+
+    [Fact]
+    public void Create_FromFirstCase_BehavesIdenticallyToImplicitConversion()
+    {
+        // Arrange & Act
+        var viaFactory = SixteenCaseOutcome.Create("hello");
+        SixteenCaseOutcome viaImplicitConversion = "hello";
+
+        // Assert
+        Assert.Equal(viaImplicitConversion, viaFactory);
+        Assert.True(viaFactory.TryGetValue(out string hit));
+        Assert.Equal("hello", hit);
+    }
+
+    [Fact]
+    public void Create_FromLastCase_BehavesIdenticallyToThePositionalConstructor()
+    {
+        // Arrange & Act
+        var viaFactory = SixteenCaseOutcome.Create((sbyte)13);
+        var viaConstructor = new SixteenCaseOutcome((sbyte)13);
+
+        // Assert
+        Assert.Equal(viaConstructor, viaFactory);
+        Assert.True(viaFactory.TryGetValue(out sbyte hit));
+        Assert.Equal((sbyte)13, hit);
     }
 }

@@ -736,3 +736,140 @@ static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8>.operato
 static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8>.operator ==(Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8> left, Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8> right) -> bool
 static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7>.operator !=(Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7> left, Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7> right) -> bool
 static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7>.operator ==(Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7> left, Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7> right) -> bool
+static Interlocutor.CommonKernel.Outcome.Create() -> Interlocutor.CommonKernel.Outcome
+static Interlocutor.CommonKernel.Outcome<T>.Create(T value) -> Interlocutor.CommonKernel.Outcome<T>
+static Interlocutor.CommonKernel.Outcome<T1, T2>.Create(T1 value) -> Interlocutor.CommonKernel.Outcome<T1, T2>
+static Interlocutor.CommonKernel.Outcome<T1, T2>.Create(T2 value) -> Interlocutor.CommonKernel.Outcome<T1, T2>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3>.Create(T1 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3>.Create(T2 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3>.Create(T3 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4>.Create(T1 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4>.Create(T2 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4>.Create(T3 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4>.Create(T4 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5>.Create(T1 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5>.Create(T2 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5>.Create(T3 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5>.Create(T4 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5>.Create(T5 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.Create(T1 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.Create(T2 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.Create(T3 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.Create(T4 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.Create(T5 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>.Create(T6 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7>.Create(T1 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7>.Create(T2 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7>.Create(T3 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7>.Create(T4 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7>.Create(T5 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7>.Create(T6 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7>.Create(T7 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8>.Create(T1 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8>.Create(T2 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8>.Create(T3 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8>.Create(T4 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8>.Create(T5 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8>.Create(T6 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8>.Create(T7 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8>.Create(T8 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9>.Create(T1 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9>.Create(T2 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9>.Create(T3 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9>.Create(T4 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9>.Create(T5 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9>.Create(T6 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9>.Create(T7 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9>.Create(T8 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9>.Create(T9 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>.Create(T1 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>.Create(T2 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>.Create(T3 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>.Create(T4 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>.Create(T5 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>.Create(T6 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>.Create(T7 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>.Create(T8 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>.Create(T9 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>.Create(T10 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>.Create(T1 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>.Create(T2 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>.Create(T3 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>.Create(T4 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>.Create(T5 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>.Create(T6 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>.Create(T7 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>.Create(T8 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>.Create(T9 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>.Create(T10 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>.Create(T11 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>.Create(T1 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>.Create(T2 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>.Create(T3 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>.Create(T4 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>.Create(T5 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>.Create(T6 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>.Create(T7 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>.Create(T8 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>.Create(T9 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>.Create(T10 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>.Create(T11 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>.Create(T12 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>.Create(T1 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>.Create(T2 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>.Create(T3 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>.Create(T4 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>.Create(T5 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>.Create(T6 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>.Create(T7 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>.Create(T8 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>.Create(T9 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>.Create(T10 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>.Create(T11 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>.Create(T12 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>.Create(T13 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>.Create(T1 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>.Create(T2 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>.Create(T3 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>.Create(T4 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>.Create(T5 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>.Create(T6 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>.Create(T7 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>.Create(T8 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>.Create(T9 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>.Create(T10 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>.Create(T11 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>.Create(T12 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>.Create(T13 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>.Create(T14 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>.Create(T1 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>.Create(T2 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>.Create(T3 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>.Create(T4 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>.Create(T5 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>.Create(T6 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>.Create(T7 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>.Create(T8 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>.Create(T9 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>.Create(T10 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>.Create(T11 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>.Create(T12 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>.Create(T13 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>.Create(T14 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>.Create(T15 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>.Create(T1 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>.Create(T2 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>.Create(T3 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>.Create(T4 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>.Create(T5 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>.Create(T6 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>.Create(T7 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>.Create(T8 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>.Create(T9 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>.Create(T10 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>.Create(T11 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>.Create(T12 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>.Create(T13 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>.Create(T14 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>.Create(T15 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>
+static Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>.Create(T16 value) -> Interlocutor.CommonKernel.Outcome<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>

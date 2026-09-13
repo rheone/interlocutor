@@ -8,12 +8,12 @@ using Interlocutor.Generator.Models;
 
 /// <summary>
 /// Emits the second partial declaration <see cref="OutcomeMemberGenerator"/> adds for one attributed
-/// <see cref="OutcomeUnionModel"/>: unconditionally, <c>Match</c>, <c>Switch</c>, per-case anonymous
-/// <c>TryGetValue</c> (plus a named <c>TryGet{TypeName}</c> counterpart for every concrete case type - see
-/// <see cref="OutcomeUnionModel.CaseAccessorNames"/>), <c>ToString</c>, and value-based equality (<c>Equals</c>,
-/// <c>GetHashCode</c>, <c>IEquatable&lt;TSelf&gt;</c>, <c>==</c>/<c>!=</c>); additionally, <c>IOutcomeCase</c>
-/// and <c>ActiveCaseType</c> when <see cref="OutcomeUnionModel.ImplementsIOutcome"/> is
-/// <see langword="true"/>.
+/// <see cref="OutcomeUnionModel"/>: unconditionally, a per-case static <c>Create</c> factory overload,
+/// <c>Match</c>, <c>Switch</c>, per-case anonymous <c>TryGetValue</c> (plus a named <c>TryGet{TypeName}</c>
+/// counterpart for every concrete case type - see <see cref="OutcomeUnionModel.CaseAccessorNames"/>),
+/// <c>ToString</c>, and value-based equality (<c>Equals</c>, <c>GetHashCode</c>, <c>IEquatable&lt;TSelf&gt;</c>,
+/// <c>==</c>/<c>!=</c>); additionally, <c>IOutcomeCase</c> and <c>ActiveCaseType</c> when
+/// <see cref="OutcomeUnionModel.ImplementsIOutcome"/> is <see langword="true"/>.
 /// </summary>
 internal static class OutcomeMemberEmitter
 {
@@ -27,10 +27,22 @@ internal static class OutcomeMemberEmitter
     /// identifier to give up. Also includes <c>Value</c>, the compiler-synthesized boxed field every
     /// <c>union</c> type carries (see <see cref="EmitGetActiveCaseIndex"/>'s remarks) - this emitter relies
     /// on it via <c>this.Value</c> but never declares it itself, so it would otherwise be invisible to a
-    /// set built purely from what <see cref="Emit"/> writes.
+    /// set built purely from what <see cref="Emit"/> writes. Includes <c>Create</c>, the discoverable static
+    /// factory <see cref="EmitFactories"/> overloads once per case type - the same "fixed name, overloaded
+    /// per case" shape <c>TryGetValue</c> already has, so it belongs in this set for the identical reason.
     /// </value>
     public static ImmutableArray<string> ReservedMemberNames { get; } =
-        ImmutableArray.Create("Value", "ActiveCaseType", "TryGetValue", "Match", "Switch", "ToString", "Equals", "GetHashCode");
+        ImmutableArray.Create(
+            "Value",
+            "ActiveCaseType",
+            "TryGetValue",
+            "Match",
+            "Switch",
+            "ToString",
+            "Equals",
+            "GetHashCode",
+            "Create"
+        );
 
     /// <summary>Emits the generated partial declaration's full source text for <paramref name="model"/>.</summary>
     /// <param name="model">The attributed union to emit members for. Must have at least two case types.</param>
@@ -75,6 +87,8 @@ internal static class OutcomeMemberEmitter
             builder.AppendLine();
         }
 
+        EmitFactories(builder, model, selfType);
+        builder.AppendLine();
         EmitTryGetValueOverloads(builder, model);
         builder.AppendLine();
         EmitMatch(builder, model);
@@ -152,6 +166,41 @@ internal static class OutcomeMemberEmitter
 
         builder.AppendLine("        _ => null,");
         builder.AppendLine("    };");
+    }
+
+    /// <summary>
+    /// Emits one static <c>Create</c> overload per case type - a discoverable alternative to the
+    /// compiler-generated positional constructor/implicit conversion the <c>union</c> language feature already
+    /// provides for the same case value. Overloaded on <paramref name="model"/>'s case types the same way the
+    /// compiler's own generated constructors already are, so it introduces no new signature shape; it only adds
+    /// a name a caller can find via member-list discovery (constructors don't appear there under the union's own
+    /// name the way a static factory does).
+    /// </summary>
+    private static void EmitFactories(StringBuilder builder, OutcomeUnionModel model, string selfType)
+    {
+        // Doc text below never interpolates model.CaseTypeDisplayStrings or selfType directly: either can be a
+        // closed generic display string (e.g. "T1, T2, ..." for the type parameter list, or a concrete type
+        // argument like "List<string>"), and embedding raw "<"/">"/"," in an XML doc comment's text produces
+        // malformed XML (CS1570) rather than the angle brackets a reader would expect.
+        for (var i = 0; i < model.CaseTypeDisplayStrings.Length; i++)
+        {
+            var caseType = model.CaseTypeDisplayStrings[i];
+
+            builder.AppendLine("    /// <summary>Creates a new instance whose active case is this value.</summary>");
+            builder.AppendLine("    /// <param name=\"value\">The case value the new instance carries.</param>");
+            builder.AppendLine("    /// <returns>A new instance whose active case is <paramref name=\"value\"/>.</returns>");
+            builder
+                .Append("    public static ")
+                .Append(selfType)
+                .Append(" Create(")
+                .Append(caseType)
+                .AppendLine(" value) => value;");
+
+            if (i < model.CaseTypeDisplayStrings.Length - 1)
+            {
+                builder.AppendLine();
+            }
+        }
     }
 
     private static void EmitTryGetValueOverloads(StringBuilder builder, OutcomeUnionModel model)

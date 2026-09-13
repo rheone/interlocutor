@@ -747,6 +747,14 @@ public readonly record struct Outcome : IUnion
     /// <value>Always <see langword="null"/>.</value>
     object? IUnion.Value => null;
 
+    /// <summary>
+    /// Creates a new <see cref="Outcome"/> acknowledgment. A discoverable alternative to
+    /// <see langword="default"/>/<c>new Outcome()</c> - every instance is interchangeable, so this exists purely
+    /// so a caller can find a way to obtain one via member-list discovery.
+    /// </summary>
+    /// <returns>A new <see cref="Outcome"/> instance.</returns>
+    public static Outcome Create() => default;
+
     /// <summary>Returns a fixed, human-readable representation of this outcome.</summary>
     /// <returns>The literal string <c>"Outcome"</c>.</returns>
     public override string ToString() => nameof(Outcome);
@@ -780,6 +788,14 @@ public readonly record struct Outcome<T>(T Value) : IUnion
     /// <summary>Gets <see cref="Value"/> boxed as an <see cref="object"/>, to satisfy <see cref="IUnion"/>.</summary>
     /// <value>The boxed <see cref="Value"/>.</value>
     object? IUnion.Value => this.Value;
+
+    /// <summary>
+    /// Creates a new <see cref="Outcome{T}"/> carrying <paramref name="value"/>. A discoverable alternative to
+    /// the positional constructor for the same value.
+    /// </summary>
+    /// <param name="value">The value the new instance carries.</param>
+    /// <returns>A new instance carrying <paramref name="value"/>.</returns>
+    public static Outcome<T> Create(T value) => new(value);
 
     /// <summary>Projects this outcome's value through <paramref name="onValue"/>.</summary>
     /// <typeparam name="TResult">The type <paramref name="onValue"/> projects <see cref="Value"/> to.</typeparam>

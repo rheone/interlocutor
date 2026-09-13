@@ -42,4 +42,18 @@ public class OutcomeTests
         // Act & Assert
         Assert.Equal("Outcome", result.ToString());
     }
+
+    [Fact]
+    public void Create_BehavesIdenticallyToDefaultConstruction()
+    {
+        // Arrange & Act
+        var viaFactory = Outcome.Create();
+        var viaDefault = default(Outcome);
+
+        // Assert - every instance is interchangeable (see Outcome's own remarks), so the factory-built
+        // instance is equal to, and behaves the same as, a default-constructed one.
+        Assert.Equal(viaDefault, viaFactory);
+        Assert.Equal(viaDefault.ToString(), viaFactory.ToString());
+        Assert.Null(((IUnion)viaFactory).Value);
+    }
 }

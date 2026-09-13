@@ -49,6 +49,16 @@ public sealed class OutcomeMemberGeneratorTests
                 .Select(static t => t.ToString())
         );
         Assert.Contains("public global::System.Type? ActiveCaseType", generatedText, StringComparison.Ordinal);
+        Assert.Contains(
+            "public static TestOutcome<TSuccess, TFailure> Create(TSuccess value)",
+            generatedText,
+            StringComparison.Ordinal
+        );
+        Assert.Contains(
+            "public static TestOutcome<TSuccess, TFailure> Create(TFailure value)",
+            generatedText,
+            StringComparison.Ordinal
+        );
         Assert.Contains("public bool TryGetValue(out", generatedText, StringComparison.Ordinal);
         Assert.Contains("public TResult Match<TResult>(", generatedText, StringComparison.Ordinal);
         Assert.Contains("public void Switch(", generatedText, StringComparison.Ordinal);
@@ -139,6 +149,7 @@ public sealed class OutcomeMemberGeneratorTests
         Assert.Contains("public TResult Match<TResult>(", generatedText, StringComparison.Ordinal);
         Assert.Contains("public void Switch(", generatedText, StringComparison.Ordinal);
         Assert.Equal(16, CountOccurrences(generatedText, "public bool TryGetValue(out"));
+        Assert.Equal(16, CountOccurrences(generatedText, "public static SixteenCaseOutcome<"));
     }
 
     [Fact]
@@ -197,6 +208,12 @@ public sealed class OutcomeMemberGeneratorTests
 
                 public static TestOutcome<string, int> FailureCase(int value) => value;
 
+                public static TestOutcome<string, int> SuccessCaseViaCreate(string value) =>
+                    TestOutcome<string, int>.Create(value);
+
+                public static TestOutcome<string, int> FailureCaseViaCreate(int value) =>
+                    TestOutcome<string, int>.Create(value);
+
                 public static System.Type? GetActiveCaseType(TestOutcome<string, int> outcome) =>
                     ((Interlocutor.CommonKernel.ResultTypes.IOutcomeCase)outcome).ActiveCaseType;
 
@@ -244,6 +261,12 @@ public sealed class OutcomeMemberGeneratorTests
         var factory = assembly.GetType("Test.TestOutcomeFactory", throwOnError: true)!;
         var success = factory.GetMethod("SuccessCase")!.Invoke(null, ["hello"]);
         var failure = factory.GetMethod("FailureCase")!.Invoke(null, [42]);
+
+        // Act & Assert - Create factory overloads behave identically to the implicit conversion above.
+        var successViaCreate = factory.GetMethod("SuccessCaseViaCreate")!.Invoke(null, ["hello"]);
+        var failureViaCreate = factory.GetMethod("FailureCaseViaCreate")!.Invoke(null, [42]);
+        Assert.True((bool)factory.GetMethod("TypedEquals")!.Invoke(null, [success, successViaCreate])!);
+        Assert.True((bool)factory.GetMethod("TypedEquals")!.Invoke(null, [failure, failureViaCreate])!);
 
         // Act & Assert - ActiveCaseType
         Assert.Equal(typeof(string), (Type?)factory.GetMethod("GetActiveCaseType")!.Invoke(null, [success]));
