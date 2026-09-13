@@ -20,9 +20,15 @@
   than silently working around it.
 - [ ] `dotnet_diagnostic.SA1200.severity` restored to `Error` in `.editorconfig`, and the stale "Warning,
   not error, until tests/ is migrated" comment immediately above it deleted (decision 1c).
-- [ ] `dotnet csharpier .` run afterward to absorb the reformat churn from flipping
-  `dotnet_separate_import_directive_groups` (every multi-group using block in the repo where `System.*`
-  usings sit next to non-`System.*` ones gets a blank line inserted between the groups).
+- [ ] Reformat churn from flipping `dotnet_separate_import_directive_groups` is applied by the
+  formatter, not by hand — do not manually insert blank lines into using blocks file by file. This
+  setting is a `dotnet_` IDE-style option; per this document's own Finding 1a, `csharpier` does not
+  manage using-directive blank lines (and is currently disabled in `.pre-commit-config.yaml` besides,
+  due to a C# 14 `union`-syntax parser limitation — do not re-enable it as part of this ticket). The
+  repo's active `dotnet-format-style` pre-commit hook (`dotnet format style --include <files>`) already
+  covers this class of IDE-style fix and runs automatically on every commit; run
+  `dotnet format style --include <changed files>` explicitly (or let the pre-commit hook apply it at
+  commit time) to produce the reformat, and diff the result rather than authoring it.
 - [ ] `dotnet build` succeeds solution-wide after all four changes — in particular, confirm SA1200's
   `Error` severity doesn't turn up an unexpected pre-existing violation the scan missed.
 - [ ] `dotnet test` passes with no new failures (pre-existing, unrelated failures in `TodoTasks.Api.Tests`
