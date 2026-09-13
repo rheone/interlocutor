@@ -130,7 +130,7 @@ public static class InterlocutorServiceCollectionExtensions
     /// closed (a legal shape - see that method's remarks), so a closed implementation type here is
     /// re-paired with the specific closed <see cref="IPipelineBehavior{TRequest,TResponse}"/> interface it
     /// actually implements. Autofac needs the identical translation for the identical reason - see
-    /// <c>ContainerBuilderExtensions.ResolveServiceType</c>: it too throws at build time for a closed
+    /// <c>InterlocutorAutofacExtensions.ResolveServiceType</c>: it too throws at build time for a closed
     /// implementation registered directly against an open service type.
     /// </summary>
     /// <param name="registration">The registration to resolve the effective service type for.</param>
