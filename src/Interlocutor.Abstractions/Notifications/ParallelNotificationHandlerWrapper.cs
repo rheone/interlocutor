@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 /// <summary>Dispatches a notification to all registered handlers concurrently using <see cref="Task.WhenAll(System.Collections.Generic.IEnumerable{System.Threading.Tasks.Task})"/>.</summary>
-/// <typeparam name="TNotification">The notification type. Must implement <see cref="INotification"/>.</typeparam>
+/// <typeparam name="TNotification">The concrete notification type being dispatched to its <see cref="INotificationHandler{TNotification}"/> subscribers.</typeparam>
 /// <remarks>
 /// <para>
 /// Launches all handlers concurrently via <see cref="Task.WhenAll(System.Collections.Generic.IEnumerable{System.Threading.Tasks.Task})"/>.
@@ -34,10 +34,8 @@ internal sealed class ParallelNotificationHandlerWrapper<
     {
         var (typedNotification, handlers) = ResolveHandlers<TNotification>(notification, services, activity);
 
-        // Launch all handlers concurrently via Task.WhenAll. This maximizes throughput when handlers are
-        // independent. If any handler throws, all tasks are awaited and exceptions are aggregated into
-        // an AggregateException (all-or-nothing failure semantics). Use this for performance-critical
-        // notifications where order doesn't matter.
+        // Deliberately not `async`/`await` here: this method has nothing left to do once the handlers are
+        // launched, so returning the WhenAll task directly avoids allocating a redundant state machine for it.
         var tasks = handlers.Select(h => h.HandleAsync(typedNotification, ct));
         return Task.WhenAll(tasks);
     }

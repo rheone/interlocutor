@@ -301,6 +301,16 @@ public sealed class Mediator(IServiceProvider services) : IMediator
         return this.PublishHandlersAsync(notification, strategy, ct);
     }
 
+    /// <summary>
+    /// Resolves (or lazily creates) the cached notification handler wrapper matching <paramref name="strategy"/>
+    /// for <paramref name="notification"/>'s runtime type, then dispatches through the same
+    /// activity-tracing scaffold (<see cref="TraceAsync{TResult}"/>) the type-safe <c>SendAsync</c> overloads use.
+    /// </summary>
+    /// <typeparam name="TNotification">The notification type being published.</typeparam>
+    /// <param name="notification">The notification instance to publish.</param>
+    /// <param name="strategy">Which notification dispatch strategy (sequential or parallel) to use.</param>
+    /// <param name="ct">A token that may be used to cancel the notification dispatch.</param>
+    /// <returns>A task that completes when all registered handlers have finished processing the notification.</returns>
     [UnconditionalSuppressMessage(
         "Trimming",
         "IL2026:RequiresUnreferencedCode",

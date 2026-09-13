@@ -1,8 +1,8 @@
 namespace Interlocutor.Abstractions.Core;
 
 /// <summary>
-/// Thrown when <see cref="IMediator"/>/<see cref="ISender"/>/<see cref="IPublisher"/> dispatch (<c>Send</c> or
-/// <c>Publish</c>) is attempted on an instance resolved directly from the root service provider/container,
+/// Thrown when <see cref="IMediator"/>/<see cref="ISender"/>/<see cref="IPublisher"/> dispatch (<c>SendAsync</c>
+/// or <c>PublishAsync</c>) is attempted on an instance resolved directly from the root service provider/container,
 /// rather than from a real scope (a per-request scope, or one explicitly created via
 /// <c>IServiceScopeFactory.CreateScope()</c>/Autofac's <c>BeginLifetimeScope()</c>).
 /// </summary>

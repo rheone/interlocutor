@@ -21,19 +21,20 @@ using System.Diagnostics.CodeAnalysis;
 /// Deliberately a plain, open-ended key-value bag rather than a closed set of named properties: a future
 /// ambient concern this library doesn't know about yet can be carried through an existing dispatch without
 /// ever requiring a breaking change to <see cref="RequestContext"/> - the same "stay open to what the library
-/// doesn't know about yet" goal <c>IOutcomeCaseRegistry</c>/<c>IOutcomeClassifier</c> pursue for outcome
-/// cases, applied here to per-request metadata instead.
+/// doesn't know about yet" goal
+/// <see cref="Interlocutor.Abstractions.Pipeline.Cases.IOutcomeCaseRegistry"/>/<see cref="Interlocutor.Abstractions.Pipeline.Classifiers.IOutcomeClassifier"/>
+/// pursue for outcome cases, applied here to per-request metadata instead.
 /// </para>
 /// <para>
 /// Thread-safe by construction (backed by <see cref="ConcurrentDictionary{TKey, TValue}"/>): nothing prevents
 /// a pipeline behavior from forking work internally within an ordinary dispatch, and at least one documented
 /// execution path in this library already runs handler-adjacent work concurrently
-/// (<c>ParallelNotificationHandlerWrapper</c>'s fan-out).
+/// (<see cref="Interlocutor.Abstractions.Notifications.ParallelNotificationHandlerWrapper{TNotification}"/>'s fan-out).
 /// </para>
 /// <para>
 /// <b>Granularity:</b> <see cref="IRequestContextAccessor"/> is scoped per DI scope (typically one HTTP
-/// request), not per mediator dispatch - if a single scope issues more than one <c>Send</c> call (for example
-/// a background service reusing a scope across a loop), this bag is shared across all of them, identically to
+/// request), not per mediator dispatch - if a single scope issues more than one <c>SendAsync</c> call (for
+/// example a background service reusing a scope across a loop), this bag is shared across all of them, identically to
 /// how <see cref="RequestContext.UserId"/>/<see cref="RequestContext.TenantId"/> already behave. Call
 /// <see cref="Clear"/> at the top of each iteration, or start a new scope per iteration, if that sharing is
 /// not wanted.

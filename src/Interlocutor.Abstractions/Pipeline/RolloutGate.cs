@@ -19,6 +19,7 @@ public static class RolloutGate
     /// </summary>
     /// <param name="options">The rollout configuration to draw against.</param>
     /// <returns><see langword="true"/> if this draw falls within the configured percentage.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="options"/> is <see langword="null"/>.</exception>
     public static bool ShouldRun(RolloutOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);

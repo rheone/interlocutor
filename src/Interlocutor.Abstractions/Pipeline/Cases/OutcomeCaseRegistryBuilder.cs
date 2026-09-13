@@ -29,6 +29,7 @@ public sealed class OutcomeCaseRegistryBuilder
     /// <typeparam name="TCase">The case type the factory accepts.</typeparam>
     /// <param name="factory">The factory to register.</param>
     /// <returns>This builder, for method chaining.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="factory"/> is <see langword="null"/>.</exception>
     public OutcomeCaseRegistryBuilder RegisterFactory<TResponse, TCase>(Func<TCase, TResponse> factory)
         where TResponse : IUnion
     {
@@ -44,6 +45,7 @@ public sealed class OutcomeCaseRegistryBuilder
     /// <typeparam name="TResponse">The <see cref="IUnion"/> type the extractor handles.</typeparam>
     /// <param name="extractor">The extractor to register.</param>
     /// <returns>This builder, for method chaining.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="extractor"/> is <see langword="null"/>.</exception>
     public OutcomeCaseRegistryBuilder RegisterExtractor<TResponse>(OutcomeCaseExtractor<TResponse> extractor)
         where TResponse : IUnion
     {
@@ -79,6 +81,14 @@ public sealed class OutcomeCaseRegistryBuilder
             this._extractors = extractors;
         }
 
+        /// <inheritdoc/>
+        /// <remarks>
+        /// <para>
+        /// Tries a registered factory for the exact <typeparamref name="TResponse"/>/<typeparamref name="TCase"/>
+        /// pair first; falls back to <see cref="DefaultOutcomeCaseRegistry"/>'s reflection-based construction
+        /// for anything not registered.
+        /// </para>
+        /// </remarks>
         public TResponse Construct<TResponse, TCase>(TCase caseValue)
             where TResponse : IUnion
         {
@@ -90,6 +100,13 @@ public sealed class OutcomeCaseRegistryBuilder
             return DefaultOutcomeCaseRegistry.Instance.Construct<TResponse, TCase>(caseValue);
         }
 
+        /// <inheritdoc/>
+        /// <remarks>
+        /// <para>
+        /// Tries a registered extractor for the exact <typeparamref name="TResponse"/> first; falls back to
+        /// <see cref="DefaultOutcomeCaseRegistry"/>'s reflection-based extraction for anything not registered.
+        /// </para>
+        /// </remarks>
         public bool TryGetActiveCase<TResponse>(TResponse response, out Type caseType, out object? caseValue)
             where TResponse : IUnion
         {

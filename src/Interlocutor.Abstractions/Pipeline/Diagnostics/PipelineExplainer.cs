@@ -21,6 +21,10 @@ public sealed class PipelineExplainer(PipelineExplainerOptions options) : IPipel
     private static readonly MethodInfo ResolveChainMethod = ResolveResolveChainMethod();
 
     /// <inheritdoc/>
+    /// <exception cref="ArgumentNullException">
+    /// <paramref name="requestType"/>, <paramref name="responseType"/>, or <paramref name="services"/> is
+    /// <see langword="null"/> - a guarantee this implementation makes but the interface contract does not.
+    /// </exception>
     [RequiresDynamicCode(
         "Closes PipelineChainResolver.ResolveChain<,> reflectively via MethodInfo.MakeGenericMethod for the "
             + "given requestType/responseType - the same JIT-closure requirement every dispatch path already "
@@ -47,6 +51,9 @@ public sealed class PipelineExplainer(PipelineExplainerOptions options) : IPipel
         ThrowIfOpenGeneric(requestType, nameof(requestType));
         ThrowIfOpenGeneric(responseType, nameof(responseType));
 
+        // ResolveChain is static, so the invocation target is null. It always returns a non-null
+        // IReadOnlyList<IPipelineBehavior<,>> (an empty list at worst), which is what the null-forgiving
+        // '!' below asserts - there is no instance-null case to guard against here.
         var closedResolveChain = ResolveChainMethod.MakeGenericMethod(requestType, responseType);
         var behaviors = (IEnumerable)closedResolveChain.Invoke(null, [services])!;
         var resolvedBehaviorTypes = behaviors.Cast<object>().Select(behavior => behavior.GetType()).ToList();

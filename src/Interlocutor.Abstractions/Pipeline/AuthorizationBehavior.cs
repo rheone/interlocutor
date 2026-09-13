@@ -36,16 +36,18 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// attempted rather than only a registration-list check.
 /// </para>
 /// <para>
-/// <b>PROTOTYPE (spike/eject-withcase-case-fidelity):</b> this behavior no longer constructs its own
-/// <see cref="Forbidden"/> response and takes no <see cref="IOutcomeCaseRegistry"/> dependency at all - it
-/// ejects the bare <see cref="Forbidden"/> case value via <see cref="Eject.WithCase{TCase}(TCase)"/> and lets
-/// the pipeline's dispatch machinery construct the concrete <typeparamref name="TResponse"/> at the one place
-/// that already knows what it is. A <typeparamref name="TResponse"/> with no <see cref="Forbidden"/> case
-/// still throws a clear, named exception the first time authorization is actually denied for it - a
-/// configuration mistake (pairing <see cref="IRequiresPolicyRequest"/> with a response shape that can't
-/// express denial), not a silent failure - but that exception is now thrown by the catch site that attempts
-/// the construction, not by this behavior. See <see cref="Eject.WithCase{TCase}(TCase)"/> and
-/// <see cref="PipelineEjectCaseException"/>'s remarks for the full mechanism this is the worked example for.
+/// <b>Type-erased case ejection (ADR-0025):</b> this behavior constructs no <see cref="Forbidden"/> response
+/// of its own and takes no <see cref="IOutcomeCaseRegistry"/> dependency at all - it ejects the bare
+/// <see cref="Forbidden"/> case value via <see cref="Eject.WithCase{TCase}(TCase)"/> and lets the pipeline's
+/// dispatch machinery construct the concrete <typeparamref name="TResponse"/> at the one place that already
+/// knows what it is. A <typeparamref name="TResponse"/> with no <see cref="Forbidden"/> case still throws a
+/// clear, named exception the first time authorization is actually denied for it - a configuration mistake
+/// (pairing <see cref="IRequiresPolicyRequest"/> with a response shape that can't express denial), not a
+/// silent failure - but that exception is now thrown by the catch site that attempts the construction, not by
+/// this behavior. <see cref="AuthorizationBehavior{TRequest, TResponse}"/> is, per ADR-0025, the only one of
+/// the library's case-constructing behaviors currently migrated to this mechanism; <see cref="Eject.WithCase{TCase}(TCase)"/>
+/// and <see cref="PipelineEjectCaseException"/>'s remarks describe the full mechanism this is the worked
+/// example for.
 /// </para>
 /// <para>
 /// Because <typeparamref name="TRequest"/> is constrained to <see cref="IRequiresPolicyRequest"/>, both Microsoft

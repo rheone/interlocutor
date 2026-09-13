@@ -11,6 +11,8 @@ using Interlocutor.Abstractions.Markers;
 /// every declared budget during a load test, or to clamp it to a tenant-wide ceiling. Useful for testing,
 /// prototyping, or one-off overrides that don't warrant a named type.
 /// </remarks>
+/// <param name="resolveBudget">The delegate invoked from <see cref="ResolveBudget"/> to resolve the effective budget.</param>
+/// <exception cref="ArgumentNullException"><paramref name="resolveBudget"/> is <see langword="null"/>.</exception>
 public sealed class DelegateTimeoutPolicy(Func<ITimeoutRequest, TimeSpan> resolveBudget) : ITimeoutPolicy
 {
     private readonly Func<ITimeoutRequest, TimeSpan> _resolveBudget =

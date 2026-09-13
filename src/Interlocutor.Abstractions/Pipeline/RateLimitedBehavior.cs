@@ -56,10 +56,20 @@ public class RateLimitedBehavior<TRequest, TResponse>(IRateLimiter rateLimiter, 
             return ConstructRateLimitedResponse(rateLimited);
         }
 
-        // Within the limit - proceed to the handler.
+        // Within the limit - hand off to the rest of the pipeline (any remaining behaviors, then the handler).
         return await next().ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Constructs the <see cref="RateLimited"/> case of the unconstrained <typeparamref name="TResponse"/>
+    /// via <see cref="IOutcomeCaseRegistry"/>, since this type has no compile-time way to build an arbitrary
+    /// <see cref="IUnion"/>-shaped response itself.
+    /// </summary>
+    /// <param name="rateLimited">The rate-limit details to carry in the constructed response.</param>
+    /// <returns>The constructed <typeparamref name="TResponse"/> wrapping <paramref name="rateLimited"/>.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// <typeparamref name="TResponse"/> has no <see cref="RateLimited"/> case to construct.
+    /// </exception>
     private TResponse ConstructRateLimitedResponse(RateLimited rateLimited) =>
         caseRegistry.ConstructOrThrow<TResponse, RateLimited>(
             rateLimited,

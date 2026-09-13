@@ -8,8 +8,8 @@ using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>Wraps a query handler, constructing the pipeline chain around it at invocation time.</summary>
-/// <typeparam name="TQuery">The query type.</typeparam>
-/// <typeparam name="TResponse">The expected response type.</typeparam>
+/// <typeparam name="TQuery">The concrete query type this wrapper dispatches, constrained to <see cref="IQuery{TResponse}"/> over <typeparamref name="TResponse"/>.</typeparam>
+/// <typeparam name="TResponse">The <see cref="IUnion"/>-shaped response type the query's handler produces, chosen by whoever declared <typeparamref name="TQuery"/> - not inherently a "success" shape.</typeparam>
 /// <remarks>
 /// <para>
 /// Resolves the query handler from DI and tags the dispatch activity; <see cref="PipelineChainExecutor"/>
@@ -29,7 +29,7 @@ internal sealed class QueryHandlerWrapper<TQuery, TResponse> : IHandlerWrapper<T
     /// <param name="services">The service provider for resolving the handler and behaviors.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <param name="activity">The activity to tag with the resolved handler type, or <see langword="null"/>.</param>
-    /// <returns>The response from the handler.</returns>
+    /// <returns>The <typeparamref name="TResponse"/> produced once the resolved handler and every pipeline behavior around it have run.</returns>
     public Task<TResponse> HandleAsync(
         object request,
         IServiceProvider services,

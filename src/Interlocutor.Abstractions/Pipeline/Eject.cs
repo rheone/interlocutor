@@ -11,7 +11,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// <para>
 /// Use this when a handler or behavior discovers, possibly several method calls deep in its own logic, that
 /// the operation has reached a dead end and there is nothing further to gain from continuing - rather than
-/// manually threading a chosen <c>IOutcome</c> value back up through every intermediate call frame,
+/// manually threading a chosen outcome value back up through every intermediate call frame,
 /// call <see cref="With{TResponse}(TResponse)"/> and let the pipeline's dispatch machinery recover it at the
 /// nearest enclosing <c>Handle</c> call. See <see cref="PipelineEjectException{TResponse}"/>'s remarks for the
 /// full unwind contract and why this is distinct from cooperative cancellation.
@@ -28,11 +28,12 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// When <c>TResponse</c> is an unconstrained generic type parameter (typical when authoring a reusable
 /// pipeline behavior), two options exist. Construct the chosen case value first via
 /// <c>IOutcomeCaseRegistry.ConstructOrThrow</c>, then pass the result here - this method performs no case
-/// construction of its own, it only converts an already-typed value into the throw. Or, PROTOTYPE ONLY (see
+/// construction of its own, it only converts an already-typed value into the throw. Or (see
 /// <see cref="WithCase{TCase}(TCase)"/>'s remarks): eject the case value itself via
 /// <see cref="WithCase{TCase}(TCase)"/> and let the one enclosing catch site that already knows
 /// <c>TResponse</c> concretely construct the response instead - the shape
-/// <see cref="AuthorizationBehavior{TRequest, TResponse}"/> is migrated to as this spike's worked example.
+/// <see cref="AuthorizationBehavior{TRequest, TResponse}"/> is migrated to, per ADR-0025, as the worked example
+/// for the other case-constructing behaviors that remain on this method instead.
 /// </para>
 /// <code>
 /// private Task&lt;Outcome&lt;Success, Conflict&gt;&gt; ApplyDiscount(Order order)
@@ -62,9 +63,8 @@ public static class Eject
         where TResponse : IUnion => throw new PipelineEjectException<TResponse>(response);
 
     /// <summary>
-    /// PROTOTYPE (spike/eject-withcase-case-fidelity): builds the exception that ejects the current pipeline
-    /// dispatch with <paramref name="caseValue"/>, without the caller knowing - or needing to know - what the
-    /// dispatch's concrete response type is.
+    /// Builds the exception that ejects the current pipeline dispatch with <paramref name="caseValue"/>,
+    /// without the caller knowing - or needing to know - what the dispatch's concrete response type is.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -82,9 +82,11 @@ public static class Eject
     /// case any behavior might eject.
     /// </para>
     /// <para>
-    /// This is a spike prototype, not a shipped API: today only
-    /// <see cref="AuthorizationBehavior{TRequest, TResponse}"/> uses it, as the worked example sizing the
-    /// blast radius of migrating every case-constructing behavior to this shape.
+    /// Shipped as of ADR-0025, though only partially adopted: today only
+    /// <see cref="AuthorizationBehavior{TRequest, TResponse}"/> is migrated to it, as the worked example that
+    /// measured the cost of migrating the library's other case-constructing behaviors to this shape. Those
+    /// behaviors still take an <c>IOutcomeCaseRegistry</c> dependency and construct their response
+    /// inline; migrating them is recorded as follow-on work in ADR-0025, not a gap left unnoticed.
     /// </para>
     /// </remarks>
     /// <typeparam name="TCase">The case type being ejected.</typeparam>

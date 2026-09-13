@@ -33,8 +33,8 @@ public sealed class OutcomeClassifierBuilder
     /// </summary>
     public OutcomeClassifierBuilder()
     {
-        // Seed with kernel types using open-generic matching where applicable.
-        // This ensures new union arities cannot silently regress.
+        // Seed each concrete kernel result/outcome case type directly, by exact type - this is what keeps a
+        // new arity or case type from silently falling through to the runtime-type-name fallback.
         this.RegisterType<Success>("Success");
         this.RegisterType<NotFound>("NotFound");
         this.RegisterType<Forbidden>("Forbidden");
@@ -97,6 +97,7 @@ public sealed class OutcomeClassifierBuilder
     /// <param name="type">The type to register.</param>
     /// <param name="label">The human-readable label for this type.</param>
     /// <returns>This builder for method chaining.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="type"/> is <see langword="null"/>.</exception>
     public OutcomeClassifierBuilder RegisterType(Type type, string label)
     {
         ArgumentNullException.ThrowIfNull(type);
@@ -115,6 +116,7 @@ public sealed class OutcomeClassifierBuilder
     /// <param name="predicate">A function that returns true if the response matches this label.</param>
     /// <param name="label">The human-readable label for matching outcomes.</param>
     /// <returns>This builder for method chaining.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="predicate"/> or <paramref name="label"/> is <see langword="null"/>.</exception>
     public OutcomeClassifierBuilder RegisterPredicate(Func<object?, bool> predicate, string label)
     {
         ArgumentNullException.ThrowIfNull(predicate);
@@ -147,18 +149,21 @@ public sealed class OutcomeClassifierBuilder
             this._predicates = predicates;
         }
 
+        /// <inheritdoc/>
         public string GetLabel(object? response)
         {
             var unwrapped = Unwrap(response);
             var type = unwrapped?.GetType();
 
-            // Check type registrations first.
+            // Exact-type registrations win over predicates and the runtime-type-name fallback below,
+            // regardless of registration order.
             if (type is not null && this._classifications.TryGetValue(type, out var classification))
             {
                 return classification.Label;
             }
 
-            // Check predicates in order.
+            // Only reached when no exact-type registration matched. Predicates run in registration order
+            // and the first match wins, so a more specific predicate must be registered before a broader one.
             foreach (var (predicate, label) in this._predicates)
             {
                 if (predicate(unwrapped))

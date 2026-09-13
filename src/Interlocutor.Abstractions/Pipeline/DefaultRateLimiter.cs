@@ -18,7 +18,7 @@ namespace Interlocutor.Abstractions.Pipeline;
 /// </remarks>
 public sealed class DefaultRateLimiter : IRateLimiter
 {
-    /// <summary>Gets the singleton instance.</summary>
+    /// <summary>Gets the shared instance, for registering this always-allow limiter as the <see cref="IRateLimiter"/> without allocating a new one per registration.</summary>
     public static readonly DefaultRateLimiter Instance = new();
 
     /// <inheritdoc/>

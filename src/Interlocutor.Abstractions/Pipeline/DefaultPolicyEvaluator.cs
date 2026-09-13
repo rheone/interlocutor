@@ -18,7 +18,7 @@ namespace Interlocutor.Abstractions.Pipeline;
 /// </remarks>
 public sealed class DefaultPolicyEvaluator : IPolicyEvaluator
 {
-    /// <summary>Gets the singleton instance.</summary>
+    /// <summary>Gets the shared instance, for registering this always-grant evaluator as the <see cref="IPolicyEvaluator"/> without allocating a new one per registration.</summary>
     public static readonly DefaultPolicyEvaluator Instance = new();
 
     /// <inheritdoc/>
