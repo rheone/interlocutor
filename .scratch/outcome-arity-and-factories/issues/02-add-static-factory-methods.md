@@ -4,7 +4,7 @@
 
 **Blocked by:** 01 — Extend CommonKernel's shipped Outcome family to arity 16 (the full 0–16 arity range must exist first).
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `5ebe2c7`
 
 - [x] Static factory methods exist for `Outcome` (arity 0) and `Outcome<T>` (arity 1), hand-written alongside their existing hand-written members.
 - [x] Static factory methods for arities 2 through 16 are emitted by the source generator alongside the existing `Match`/`Switch`/equality members, rather than hand-maintained per arity.
