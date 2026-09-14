@@ -4,11 +4,13 @@ using System.Diagnostics.CodeAnalysis;
 using global::Microsoft.Extensions.DependencyInjection;
 using global::Microsoft.Extensions.DependencyInjection.Extensions;
 using global::Microsoft.Extensions.Logging;
+using global::Microsoft.Extensions.Options;
 using Interlocutor.Abstractions;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Notifications;
 using Interlocutor.Abstractions.Pipeline;
+using Interlocutor.Abstractions.Pipeline.Diagnostics;
 using Interlocutor.Abstractions.Queries;
 using Interlocutor.DependencyInjection.Abstractions;
 
@@ -95,6 +97,12 @@ public static class InterlocutorServiceCollectionExtensions
         // simply never matches, which is exactly today's unaffected baseline behavior.
         services.AddSingleton<IPipelineOverrideRegistry>(new PipelineOverrideRegistry(builder.Pipeline.OverrideRules));
 
+        // Opt-in: only registered at all when AddPipelineExplainer was called (see that method's remarks).
+        if (builder.Pipeline.PipelineExplainerConfiguration is { } explainerOptions)
+        {
+            RegisterPipelineExplainer(services, explainerOptions);
+        }
+
         // The real dispatcher is registered under its concrete type, not under IMediator directly, so the
         // root-scope guard (RootScopeGuardedMediator) can wrap it - see ADR-0011. RootServiceProviderMarker
         // is a singleton (see its own remarks for why that makes it a stable root reference); the detector
@@ -122,7 +130,7 @@ public static class InterlocutorServiceCollectionExtensions
     /// closed (a legal shape - see that method's remarks), so a closed implementation type here is
     /// re-paired with the specific closed <see cref="IPipelineBehavior{TRequest,TResponse}"/> interface it
     /// actually implements. Autofac needs the identical translation for the identical reason - see
-    /// <c>ContainerBuilderExtensions.ResolveServiceType</c>: it too throws at build time for a closed
+    /// <c>InterlocutorAutofacExtensions.ResolveServiceType</c>: it too throws at build time for a closed
     /// implementation registered directly against an open service type.
     /// </summary>
     /// <param name="registration">The registration to resolve the effective service type for.</param>
@@ -183,6 +191,47 @@ public static class InterlocutorServiceCollectionExtensions
             .FirstOrDefault(candidate => candidate.IsGenericType && candidate.GetGenericTypeDefinition() == serviceType);
 
         return closedServiceInterface ?? serviceType;
+    }
+
+    /// <summary>
+    /// Registers <see cref="IPipelineExplainer"/> - called only when <see cref="InterlocutorPipelineBuilder.AddPipelineExplainer"/>
+    /// was used. Prefers an application's own <see cref="IOptions{TOptions}"/>/<see cref="IOptionsMonitor{TOptions}"/>
+    /// registration for <see cref="PipelineExplainerOptions"/> - detected the same way <see cref="TryLogRegistrationReport"/>
+    /// inspects <paramref name="services"/> directly rather than resolving eagerly - over <paramref name="builderOptions"/>,
+    /// the same "a consumer's own registration wins" precedence <see cref="InterlocutorPipelineBuilder.Defaults"/>
+    /// entries already carry. A closed <c>IOptions&lt;PipelineExplainerOptions&gt;</c>/<c>IOptionsMonitor&lt;PipelineExplainerOptions&gt;</c>
+    /// descriptor only exists once something specifically configures <see cref="PipelineExplainerOptions"/> -
+    /// typically <c>services.Configure&lt;PipelineExplainerOptions&gt;(...)</c> - unlike the open-generic
+    /// <c>IOptions&lt;&gt;</c>/<c>IOptionsMonitor&lt;&gt;</c> factories <c>AddOptions()</c> registers for every
+    /// options type at once, which is why this checks for the closed service types rather than resolving
+    /// <see cref="IOptions{TOptions}"/> and treating a non-null default instance as "configured".
+    /// </summary>
+    /// <param name="services">The <see cref="IServiceCollection"/> being configured.</param>
+    /// <param name="builderOptions">The options <see cref="InterlocutorPipelineBuilder.AddPipelineExplainer"/> was called with.</param>
+    private static void RegisterPipelineExplainer(IServiceCollection services, PipelineExplainerOptions builderOptions)
+    {
+        var consumerConfigured = services.Any(descriptor =>
+            descriptor.ServiceType == typeof(IConfigureOptions<PipelineExplainerOptions>)
+            || descriptor.ServiceType == typeof(IOptions<PipelineExplainerOptions>)
+            || descriptor.ServiceType == typeof(IOptionsMonitor<PipelineExplainerOptions>)
+        );
+
+        if (!consumerConfigured)
+        {
+            services.AddSingleton<IPipelineExplainer>(new PipelineExplainer(builderOptions));
+            return;
+        }
+
+        services.AddSingleton<IPipelineExplainer>(sp =>
+        {
+            var monitor = (IOptionsMonitor<PipelineExplainerOptions>?)
+                sp.GetService(typeof(IOptionsMonitor<PipelineExplainerOptions>));
+            var resolvedOptions =
+                monitor?.CurrentValue
+                ?? ((IOptions<PipelineExplainerOptions>?)sp.GetService(typeof(IOptions<PipelineExplainerOptions>)))?.Value
+                ?? builderOptions;
+            return new PipelineExplainer(resolvedOptions);
+        });
     }
 
     /// <summary>Translates a container-neutral <see cref="RegistrationLifetime"/> into a <see cref="ServiceLifetime"/>.</summary>

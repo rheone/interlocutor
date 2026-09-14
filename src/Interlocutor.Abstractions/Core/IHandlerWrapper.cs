@@ -3,7 +3,7 @@ namespace Interlocutor.Abstractions.Core;
 using System.Diagnostics;
 
 /// <summary>Defines the base contract for handlers that produce a typed response.</summary>
-/// <typeparam name="TResponse">The type of the success value produced by the handler.</typeparam>
+/// <typeparam name="TResponse">The response type produced by the wrapped handler, chosen by the caller/call site - not inherently a "success" shape.</typeparam>
 /// <remarks>
 /// <para>
 /// This is an internal abstraction used by the mediator to wrap both query and command handlers. Concrete

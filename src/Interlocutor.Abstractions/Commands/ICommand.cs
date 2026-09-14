@@ -32,8 +32,8 @@ public interface ICommand<TResponse>
 /// <para>
 /// Use the non-generic <see cref="ICommand"/> for fire-and-forget or side-effect-only
 /// operations. The handler produces no data payload - only an outcome, expressed as any
-/// <c>Interlocutor.CommonKernel.IOutcome</c>-implementing union (<c>Outcome</c>,
-/// <c>Outcome&lt;T1, T2&gt;</c>, etc.). The outcome type is chosen by the caller via
+/// <see cref="IUnion"/>-implementing union (<c>Outcome</c>, <c>Outcome&lt;T1, T2&gt;</c>, etc.).
+/// The outcome type is chosen by the caller via
 /// <see cref="Core.ISender.SendAsync{TResult}(ICommand, CancellationToken)"/>'s type argument, not
 /// declared on the command itself.
 /// </para>

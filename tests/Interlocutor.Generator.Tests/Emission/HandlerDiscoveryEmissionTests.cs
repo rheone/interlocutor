@@ -38,7 +38,7 @@ public sealed class HandlerDiscoveryEmissionTests
 
         public sealed class DeleteFooCommandHandler : IBareCommandHandler<DeleteFooCommand, Outcome>
         {
-            public Task<Outcome> Handle(DeleteFooCommand command, CancellationToken ct) => throw new System.NotImplementedException();
+            public Task<Outcome> HandleAsync(DeleteFooCommand command, CancellationToken ct) => throw new System.NotImplementedException();
         }
         """;
 
@@ -120,15 +120,19 @@ public sealed class HandlerDiscoveryEmissionTests
             dispatchSource,
             StringComparison.Ordinal
         );
+
+        // The behavior chain itself is no longer resolved by this emitted wrapper directly (ticket 01) - it
+        // hands the resolved handler's bound call to the shared PipelineChainExecutor.ExecuteAsync, which
+        // resolves PipelineChainResolver.ResolveChain internally on both dispatch paths.
         Assert.Contains(
-            "global::Interlocutor.Abstractions.Pipeline.PipelineChainResolver.ResolveChain<global::TestApp.GetFooQuery, global::Interlocutor.CommonKernel.Outcome>(services)",
+            "global::Interlocutor.Abstractions.Pipeline.PipelineChainExecutor.ExecuteAsync<global::TestApp.GetFooQuery, global::Interlocutor.CommonKernel.Outcome>(",
             dispatchSource,
             StringComparison.Ordinal
         );
     }
 
     [Fact]
-    public void DispatchWrapper_BareCommandHandler_ResolvesIBareCommandHandlerAndCallsHandle_Test()
+    public void DispatchWrapper_BareCommandHandler_ResolvesIBareCommandHandlerAndCallsHandleAsync_Test()
     {
         // Arrange
         // (no separate setup; uses class fixtures or direct act/assert)
@@ -138,10 +142,10 @@ public sealed class HandlerDiscoveryEmissionTests
         // Assert
         var dispatchSource = GetGeneratedSource(result, "InterlocutorGeneratedDispatch.g.cs");
 
-        // The generated wrapper class is named after HandlerKind.BareCommand (not the retired VoidCommand
-        // name), resolves the real, current IBareCommandHandler<,> service type from the container, and calls
-        // its synchronous Handle member - IBareCommandHandler<,> has no HandleAsync (see DispatchWrapperEmitter's
-        // own remarks).
+        // The generated wrapper class is named after HandlerKind.BareCommand, resolves the real, current
+        // IBareCommandHandler<,> service type from the container, and hands its HandleAsync member to
+        // PipelineChainExecutor.ExecuteAsync as the innermost pipeline delegate - the same uniform call every
+        // other handler kind's dispatch wrapper emits.
         Assert.Contains(
             "internal static class global__TestApp_DeleteFooCommandHandler_BareCommand_Dispatch",
             dispatchSource,
@@ -152,11 +156,7 @@ public sealed class HandlerDiscoveryEmissionTests
             dispatchSource,
             StringComparison.Ordinal
         );
-        Assert.Contains(
-            "return await handler.Handle(request, ct).ConfigureAwait(false);",
-            dispatchSource,
-            StringComparison.Ordinal
-        );
+        Assert.Contains("handler.HandleAsync,", dispatchSource, StringComparison.Ordinal);
         Assert.DoesNotContain("VoidCommand", dispatchSource, StringComparison.Ordinal);
     }
 

@@ -1,7 +1,5 @@
 # 06 - Document that a DB-touching validation rule needs `AddUnitOfWorkBehavior` registered outside `AddValidationBehavior`
 
-**Status:** ready-for-agent
-
 **What to build:** `AddValidationBehavior` runs before `AddUnitOfWorkBehavior` in the library's recommended chain - "Validation before transaction so malformed input never opens a transaction that would only be rolled back." FluentValidation natively supports a rule resolving an injected dependency and querying it (`MustAsync`/`CustomAsync` against an injected `DbContext`, say); under the recommended ordering, that rule's read runs before the transaction opens, leaving a window for the same check-then-act race `ITransactionalRequest` otherwise closes.
 
 This ticket started out asking whether that gap needed a documentation fix, an analyzer, or both. It doesn't need an analyzer: [ADR-0018](../../../maintainer_docs/adr/0018-unit-of-work-as-transaction-owner.md) already gives every pipeline behavior - `ValidationBehavior` included - a fully general way to share the transaction with an earlier read, by registering the unit-of-work behavior *outside* whichever behavior performs that read instead of at the innermost recommended position. That mechanism is already documented in the abstract (see the transactions/store-integration doc's coverage of where to register the unit-of-work behavior relative to pipeline stages); what's missing is calling it out specifically for `ValidationBehavior`, at the exact point a reader is told the recommended default puts validation *before* the transaction.

@@ -10,7 +10,10 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 /// Emits the <c>ToActionResult</c>/<c>ToMinimalApiResult</c> per-arity overloads for the class attributed with
 /// <c>GenerateResultExtensionsAttribute</c> - <c>Interlocutor.AspNetCore.ResultExtensions</c>, referencing this
 /// generator as a <c>PrivateAssets="all"</c> analyzer over its own compilation, the same self-generation
-/// pattern <c>Interlocutor.CommonKernel</c> already uses for <see cref="OutcomeMemberGenerator"/>.
+/// pattern <c>Interlocutor.CommonKernel</c> already uses for <see cref="OutcomeMemberGenerator"/>. The emitted
+/// overloads classify every <c>Outcome&lt;T1, ...&gt;</c> case by its runtime type, never by which type
+/// parameter position it was declared in - <c>T1</c> is not privileged as "the success case" by this generator
+/// or by the union it emits overloads for.
 /// </summary>
 /// <remarks>
 /// A standalone <see cref="IIncrementalGenerator"/>, separate from <see cref="InterlocutorSourceGenerator"/>

@@ -68,6 +68,14 @@ public sealed class ValidationShapeMismatchAnalyzer : DiagnosticAnalyzer
         });
     }
 
+    /// <summary>
+    /// Checks one candidate named type: if it derives from <c>AbstractValidator&lt;T&gt;</c> and its validated
+    /// type <c>T</c> declares a response via <c>ICommand&lt;TResponse&gt;</c>/<c>IQuery&lt;TResponse&gt;</c>,
+    /// reports <see cref="InterlocutorDiagnostics.ValidationShapeMismatch"/> once if none of that response's
+    /// case types is validation-shaped.
+    /// </summary>
+    /// <param name="context">The symbol analysis context, scoped to one candidate named type.</param>
+    /// <param name="wellKnown">The resolved well-known symbols.</param>
     private static void Analyze(SymbolAnalysisContext context, WellKnownSymbols wellKnown)
     {
         var validatorType = (INamedTypeSymbol)context.Symbol;
@@ -87,7 +95,7 @@ public sealed class ValidationShapeMismatchAnalyzer : DiagnosticAnalyzer
 
         if (!TryGetCaseTypes(responseType, wellKnown, out var caseTypes))
         {
-            // The response's case set can't be determined statically (a fully custom, non-generic IOutcome
+            // The response's case set can't be determined statically (a fully custom, non-generic IUnion
             // implementer) - skip rather than risk a false positive.
             return;
         }
@@ -170,8 +178,9 @@ public sealed class ValidationShapeMismatchAnalyzer : DiagnosticAnalyzer
     }
 
     /// <summary>
-    /// Determines the response type's case types - the type arguments of a closed generic <c>IOutcome</c>
-    /// union, or the empty set for the shipped, case-less non-generic <c>Outcome</c>.
+    /// Determines the response type's case types - the type arguments of a closed generic union (any closed
+    /// generic <paramref name="responseType"/>, no <c>IOutcome</c>/<c>IUnion</c> membership check is performed
+    /// here), or the empty set for the shipped, case-less non-generic <c>Outcome</c>.
     /// </summary>
     /// <param name="responseType">The request's declared response type.</param>
     /// <param name="wellKnown">The resolved well-known symbols.</param>

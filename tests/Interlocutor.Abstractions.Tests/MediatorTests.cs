@@ -43,11 +43,9 @@ public class GreetCommandHandler : ICommandHandler<GreetCommand, Outcome<string,
 
 public record TestBareCommand(string Value) : ICommand;
 
-// IBareCommandHandler<,> has no HandleAsync member (known gap - ticket 01 never added one), so this fake
-// stays on Handle as-is.
 public class TestBareHandler : IBareCommandHandler<TestBareCommand, Outcome>
 {
-    public Task<Outcome> Handle(TestBareCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
+    public Task<Outcome> HandleAsync(TestBareCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
 }
 
 /// <summary>A second <see cref="TestBareCommand"/> handler, registered against <see cref="Outcome{T1, T2}"/>
@@ -55,7 +53,7 @@ public class TestBareHandler : IBareCommandHandler<TestBareCommand, Outcome>
 /// a response shape an ejected value can be distinguished from.</summary>
 public class TestBareHandlerWithFailureCase : IBareCommandHandler<TestBareCommand, Outcome<Success, Failure>>
 {
-    public Task<Outcome<Success, Failure>> Handle(TestBareCommand command, CancellationToken ct) =>
+    public Task<Outcome<Success, Failure>> HandleAsync(TestBareCommand command, CancellationToken ct) =>
         Task.FromResult<Outcome<Success, Failure>>(default(Success));
 }
 
@@ -188,11 +186,10 @@ public class DroppedTrackingBehavior<TRequest, TResponse>(Action<string> track) 
 /// <c>Interlocutor.DependencyInjection.Abstractions</c>.</summary>
 public class FakeOverrideRegistry(Func<Type, IReadOnlyList<Type>?> lookup) : IPipelineOverrideRegistry
 {
-    public bool TryGetOverride(Type requestType, out IReadOnlyList<Type> behaviorTypes)
+    public PipelineOverrideMatch? TryGetOverride(Type requestType)
     {
         var found = lookup(requestType);
-        behaviorTypes = found ?? [];
-        return found is not null;
+        return found is null ? null : new PipelineOverrideMatch(found, "fake-rule");
     }
 }
 

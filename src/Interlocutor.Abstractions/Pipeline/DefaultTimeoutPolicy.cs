@@ -13,7 +13,7 @@ using Interlocutor.Abstractions.Markers;
 /// </remarks>
 public sealed class DefaultTimeoutPolicy : ITimeoutPolicy
 {
-    /// <summary>Gets the singleton instance.</summary>
+    /// <summary>Gets the shared instance, for registering this pass-through policy as the <see cref="ITimeoutPolicy"/> without allocating a new one per registration.</summary>
     public static readonly DefaultTimeoutPolicy Instance = new();
 
     /// <inheritdoc/>

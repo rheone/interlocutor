@@ -27,6 +27,7 @@ public sealed class DefaultResponseOutcomeDescriber : IResponseOutcomeDescriber
     /// Initializes a new instance of the <see cref="DefaultResponseOutcomeDescriber"/> class with the given outcome classifier.
     /// </summary>
     /// <param name="classifier">The classifier used to produce labels.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="classifier"/> is <see langword="null"/>.</exception>
     public DefaultResponseOutcomeDescriber(IOutcomeClassifier classifier)
     {
         this._classifier = classifier ?? throw new ArgumentNullException(nameof(classifier));

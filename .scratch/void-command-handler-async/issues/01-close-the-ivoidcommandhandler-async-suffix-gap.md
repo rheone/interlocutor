@@ -6,7 +6,7 @@ The blast radius is small - one production implementer (`TutorialProject`'s `Cle
 
 **Blocked by:** None - can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done - `IVoidCommandHandler` was renamed to `IBareCommandHandler` (see `IBareCommandHandler.cs`), which already declares `HandleAsync` with no `VSTHRD200` suppression; this ticket's goal was reached by that rename.
 
 - [ ] `IVoidCommandHandler<TCommand, TResult>` declares `HandleAsync` instead of `Handle`; the old member and its `VSTHRD200` suppression (`#pragma warning disable/restore VSTHRD200` around the declaration) are removed.
 - [ ] `TutorialProject`'s `ClearCompletedTodoTasksHandler` implements `HandleAsync` instead of `Handle`.

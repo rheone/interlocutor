@@ -330,19 +330,21 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
     {
         // Arrange - proves the owner-scoping in UpdateTodoTaskHandler.Authorize holds against a real
         // repository/database, and that a denied update never reaches SaveChangesAsync at all (the row
-        // reloaded below still has its original title).
+        // reloaded below still has its original title). Dispatched through ISender rather than constructing
+        // UpdateTodoTaskHandler directly: ResourceCommandHandler{TCommand,TEntity,TResponse} now ejects
+        // NotFound/Forbidden via Eject.WithCase rather than constructing them itself, and only the mediator's
+        // own dispatch machinery (reached through a real ISender.SendAsync call) catches that eject and
+        // converts it back into an ordinary response - see ResourceCommandHandler's own remarks.
         using var writeScope = this.factory.Services.CreateScope();
         var writeContext = writeScope.ServiceProvider.GetRequiredService<TodoTasksDbContext>();
         var owner = $"owner-{Guid.NewGuid():N}";
         var task = new TodoTask("Buy milk", owner, null);
         await writeContext.Tasks.AddAsync(task, TestContext.Current.CancellationToken);
         await writeContext.SaveChangesAsync(TestContext.Current.CancellationToken);
-        var tasks = writeScope.ServiceProvider.GetRequiredService<IDomainRepository<TodoTask, int>>();
-        var unitOfWork = writeScope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        var handler = new UpdateTodoTaskHandler(tasks, unitOfWork);
+        var sender = writeScope.ServiceProvider.GetRequiredService<ISender>();
 
         // Act
-        var result = await handler.HandleAsync(
+        var result = await sender.SendAsync(
             new UpdateTodoTaskCommand(task.Id, "Hijacked title", null, $"someone-else-{Guid.NewGuid():N}"),
             TestContext.Current.CancellationToken
         );
@@ -359,14 +361,13 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
     [Fact]
     public async Task UpdateTodoTaskHandler_NoTaskWithThatId_ReturnsNotFound_AgainstARealDatabase_Test()
     {
-        // Arrange
+        // Arrange - dispatched through ISender rather than constructing UpdateTodoTaskHandler directly; see
+        // the Forbidden test above for why.
         using var scope = this.factory.Services.CreateScope();
-        var tasks = scope.ServiceProvider.GetRequiredService<IDomainRepository<TodoTask, int>>();
-        var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        var handler = new UpdateTodoTaskHandler(tasks, unitOfWork);
+        var sender = scope.ServiceProvider.GetRequiredService<ISender>();
 
         // Act
-        var result = await handler.HandleAsync(
+        var result = await sender.SendAsync(
             new UpdateTodoTaskCommand(999_999, "Doesn't matter", null, $"owner-{Guid.NewGuid():N}"),
             TestContext.Current.CancellationToken
         );
@@ -409,20 +410,23 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
     [Fact]
     public async Task CompleteTodoTaskHandler_TaskExistsButIsOwnedBySomeoneElse_ReturnsForbidden_AndDoesNotPersistTheCompletion_AgainstARealDatabase_Test()
     {
-        // Arrange - proves the owner-scoping in CompleteTodoTaskHandler holds against a real
-        // repository/database, and that a denied completion never reaches SaveChangesAsync at all.
+        // Arrange - proves the owner-scoping in CompleteTodoTaskHandler.Authorize holds against a real
+        // repository/database, and that a denied completion never reaches SaveChangesAsync at all. Dispatched
+        // through ISender rather than constructing CompleteTodoTaskHandler directly:
+        // ResourceCommandHandler{TCommand,TEntity,TResponse} now ejects NotFound/Forbidden via Eject.WithCase
+        // rather than constructing them itself, and only the mediator's own dispatch machinery (reached
+        // through a real ISender.SendAsync call) catches that eject and converts it back into an ordinary
+        // response - see ResourceCommandHandler's own remarks.
         using var writeScope = this.factory.Services.CreateScope();
         var writeContext = writeScope.ServiceProvider.GetRequiredService<TodoTasksDbContext>();
         var owner = $"owner-{Guid.NewGuid():N}";
         var task = new TodoTask("Buy milk", owner, null);
         await writeContext.Tasks.AddAsync(task, TestContext.Current.CancellationToken);
         await writeContext.SaveChangesAsync(TestContext.Current.CancellationToken);
-        var tasks = writeScope.ServiceProvider.GetRequiredService<IDomainRepository<TodoTask, int>>();
-        var unitOfWork = writeScope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        var handler = new CompleteTodoTaskHandler(tasks, unitOfWork, Substitute.For<IPublisher>());
+        var sender = writeScope.ServiceProvider.GetRequiredService<ISender>();
 
         // Act
-        var result = await handler.HandleAsync(
+        var result = await sender.SendAsync(
             new CompleteTodoTaskCommand(task.Id, $"someone-else-{Guid.NewGuid():N}"),
             TestContext.Current.CancellationToken
         );
@@ -569,7 +573,10 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
         var handler = new ClearCompletedTodoTasksHandler(tasks, unitOfWork);
 
         // Act
-        var result = await handler.Handle(new ClearCompletedTodoTasksCommand(owner), TestContext.Current.CancellationToken);
+        var result = await handler.HandleAsync(
+            new ClearCompletedTodoTasksCommand(owner),
+            TestContext.Current.CancellationToken
+        );
 
         // Assert - Outcome is case-less; reaching this line without throwing already is the acknowledgment
         // (see Outcome's own remarks). What's worth proving is the database state below.
@@ -608,7 +615,10 @@ public sealed class TodoTaskPersistenceTests : IClassFixture<TodoTasksApiFactory
         var handler = new ClearCompletedTodoTasksHandler(tasks, unitOfWork);
 
         // Act
-        var result = await handler.Handle(new ClearCompletedTodoTasksCommand(owner), TestContext.Current.CancellationToken);
+        var result = await handler.HandleAsync(
+            new ClearCompletedTodoTasksCommand(owner),
+            TestContext.Current.CancellationToken
+        );
 
         // Assert - Outcome is case-less; reaching this line without throwing already is the acknowledgment
         // (see Outcome's own remarks). What's worth proving is the database state below.

@@ -1,6 +1,6 @@
 # 01 - Drop Auditing & Authorization from `UseRecommendedChain()`
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `0434aa9`.
 
 **What to build:** Change `InterlocutorPipelineBuilder.UseRecommendedChain()` (`src/Interlocutor.DependencyInjection.Abstractions/InterlocutorPipelineBuilder.cs`) from:
 

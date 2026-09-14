@@ -68,7 +68,7 @@ public record GetSetting(string Key)
 
 ## Recommended Chain (Opt-in Sugar)
 
-The library documents a recommended order with its rationale. Use it with `builder.Pipeline.UseRecommendedChain()`, or compose your own:
+The library documents a recommended chain, a deliberately minimal default. Use it with `builder.Pipeline.UseRecommendedChain()`, or compose your own:
 
 ```csharp
 builder.Pipeline.UseRecommendedChain();  // Sugar for the sequence below
@@ -78,22 +78,40 @@ Or explicitly:
 
 ```csharp
 builder.Pipeline.AddLoggingBehavior();           // 1. Outermost
-builder.Pipeline.AddAuditingBehavior();          // 2.
-builder.Pipeline.AddAuthorizationBehavior();     // 3.
-builder.Pipeline.AddValidationBehavior();        // 4.
-builder.Pipeline.AddUnitOfWorkBehavior();        // 5. Innermost
+builder.Pipeline.AddValidationBehavior();        // 2.
+builder.Pipeline.AddUnitOfWorkBehavior();        // 3. Innermost
 ```
+
+`AddAuditingBehavior()` and `AddAuthorizationBehavior()` are deliberately not part of this default - see "Adding Auditing and Authorization Back" below for when to reach for either, and where they fit in the order.
 
 ### Why This Order
 
 > [!IMPORTANT]
-> This is the documented recommendation, not a default. The reasoning below is why you might compose this order. If your application has different needs, compose what serves you.
+> This is the documented recommendation, not a default the library imposes. The reasoning below is why you might compose this order - including where Auditing/Authorization fit if you add them back. If your application has different needs, compose what serves you.
 
 - **Logging outermost** - times and logs the *entire* request lifecycle. If it sat closer to the handler, a request denied by authorization would be timed/logged as if it ran the handler (misleading).
-- **Auditing after logging** - an audit trail should record authorization denials and validation failures, not just successful handler runs. Placing it outside authorization captures the full story.
-- **Authorization before validation** - there's no reason to validate the shape of a request the caller isn't authorized to make. Failing fast on authorization saves the validator's work.
+- **Auditing (if added) after logging** - an audit trail should record authorization denials and validation failures, not just successful handler runs. Placing it outside authorization captures the full story.
+- **Authorization (if added) before validation** - there's no reason to validate the shape of a request the caller isn't authorized to make. Failing fast on authorization saves the validator's work.
 - **Validation before transactions** - don't open a database transaction to discover the input was invalid. Catch input errors first.
 - **Transaction innermost** - it wraps only the handler's persistence work. It commits on success and rolls back on any `Failure` outcome, but not when an outer behavior short-circuits (e.g., when authorization denies the request - the caller shouldn't see a rolled-back transaction when they were never authorized to run the command).
+
+### Adding Auditing and Authorization Back
+
+`UseRecommendedChain()`'s minimal default drops `AuditingBehavior` and `AuthorizationBehavior`, for different reasons:
+
+- **Authorization** - most consumers already enforce it earlier in the request path: ASP.NET Core's own authentication/authorization middleware, or an upstream policy engine, running before the mediator is ever invoked. A second in-pipeline pass is redundant there, or even conflicting. That reasoning doesn't hold for a host with nothing HTTP-shaped in front of it - a message-bus consumer, a background worker, a scheduled job - where the mediator itself is the first place authorization can be enforced. Reach for `AddAuthorizationBehavior()` in that case, or when you want defense-in-depth against a fine-grained, resource-level check the upstream layer can't see, even alongside upstream authorization.
+- **Auditing** - where an audit trail should go is an application-specific decision (a dedicated audit store, a compliance pipeline, a plain log), so the library doesn't presume every consumer wants one. Reach for `AddAuditingBehavior()` when your application needs that trail.
+
+To restore the full five-behavior chain in its documented order, compose every step individually rather than calling `UseRecommendedChain()` and appending `AddAuditingBehavior()`/`AddAuthorizationBehavior()` afterward - appending after the fact puts both innermost, past Validation and the transaction, not in their documented position:
+
+```csharp
+builder.Pipeline
+    .AddLoggingBehavior()           // 1. Outermost
+    .AddAuditingBehavior()          // 2.
+    .AddAuthorizationBehavior()     // 3.
+    .AddValidationBehavior()        // 4.
+    .AddUnitOfWorkBehavior();       // 5. Innermost
+```
 
 > [!NOTE]
 > "Validation before transactions" leaves a DB-touching validation rule's own read unprotected. FluentValidation supports a rule that resolves an injected dependency and queries it directly (`MustAsync`/`CustomAsync` against an injected `DbContext`, for instance) - under this default ordering, that read still runs before `UnitOfWorkBehavior` opens a transaction, leaving the same check-then-act race window open that `ITransactionalRequest` closes for a read performed inside the handler. The fix is the same one that protects any other earlier read: register `UnitOfWorkBehavior` outside `ValidationBehavior` instead of at the innermost recommended position, so the validator's read and the handler's write share one transaction; see [Transactions & Store Integration § Where to register the behavior, relative to pipeline stages](transactions-and-store-integration.md#where-to-register-the-behavior-relative-to-pipeline-stages).
@@ -129,7 +147,7 @@ builder.Pipeline
     .OverridePipelineFor<ArchiveOrder>("archive-order-pipeline", typeof(ArchivalAuditBehavior<,>));
 ```
 
-`ArchiveOrder` now resolves exactly `ArchivalAuditBehavior<,>` - never `LoggingBehavior`, `AuthorizationBehavior`, `ValidationBehavior`, or the unit-of-work behavior the recommended chain also registers, even though `UseRecommendedChain()` ran first. Every other request type keeps drawing from the recommended chain unaffected.
+`ArchiveOrder` now resolves exactly `ArchivalAuditBehavior<,>` - never `LoggingBehavior`, `ValidationBehavior`, or the unit-of-work behavior the recommended chain also registers, even though `UseRecommendedChain()` ran first. Every other request type keeps drawing from the recommended chain unaffected.
 
 The `IArchivalRequest` constraint on `ArchivalAuditBehavior<,>` matters beyond `ArchiveOrder`: because `OverridePipelineFor` registers each declared behavior type with the container exactly as an ordinary `AddBehavior` call would, an *unconstrained* override behavior would resolve for every other request type too, via the container's ordinary open-generic resolution - not only the request type(s) the override rule names. Scope an override-specific behavior with a marker interface or a `where TRequest : ...` constraint the same way any unconstrained `AddBehavior` registration already requires.
 
@@ -150,6 +168,118 @@ A request that structurally satisfies an existing marker interface (`IAuditableR
 Two override rules whose predicates both match the same request type are a build-validation error, not a silent resolution - see [Startup Validation](builder-and-registration.md#startup-validation). There is no precedence-declaration escape hatch; resolve a conflict by narrowing one rule's match criteria.
 
 Both dispatch paths - the ordinary typed `Send` API and the runtime-typed path used for scenarios like outbox replay - resolve an override identically; see [Runtime-Typed Dispatch](runtime-typed-dispatch.md).
+
+## Runtime Pipeline Explainer
+
+`InterlocutorBuilder.DescribeRegistrations()` (see [Inspecting What Was Registered](builder-and-registration.md#inspecting-what-was-registered)) reports the builder's own pre-container-build configuration - what was *asked for*. `IPipelineExplainer` answers a different, runtime question: against a live, already-built `IServiceProvider`, which pipeline behaviors actually resolve for a given request/response pair - the general-purpose baseline, or a matched Tier-1 override rule, and if so which one.
+
+It exists for a human who has a `Type` in hand rather than a compile-time generic argument - typically from a bug report or a configuration file - and wants a formatted answer without writing a throwaway console app that closes `PipelineChainResolver.ResolveChain` reflectively:
+
+```csharp
+public interface IPipelineExplainer
+{
+    PipelineExplanation Explain(Type requestType, Type responseType, IServiceProvider services);
+}
+
+public sealed record PipelineExplanation(
+    Type RequestType,
+    Type ResponseType,
+    IReadOnlyList<Type> ResolvedBehaviorTypes,
+    string? MatchedOverrideRuleName);
+```
+
+`MatchedOverrideRuleName` is `null` when the request drew from the general-purpose baseline; otherwise it names the `OverridePipelineFor` rule that matched.
+
+### Opt-In and Disabled by Default
+
+Resolving `IPipelineExplainer` requires an explicit registration call - `builder.Pipeline.AddPipelineExplainer(options)` - and even then it stays disabled until `PipelineExplainerOptions.Enabled` is `true`:
+
+```csharp
+builder.Pipeline.AddPipelineExplainer(new PipelineExplainerOptions { Enabled = true });
+```
+
+Calling `Explain` while disabled throws `InvalidOperationException` naming the option to set, rather than silently no-op-ing. This double gate - registered only when asked for, and disabled even then unless told otherwise - reflects that the explainer resolves live behavior instances from the container and reveals internal wiring, which isn't something to run unexamined against a production container.
+
+Under Microsoft DI, an application's own `IOptions<PipelineExplainerOptions>`/`IOptionsMonitor<PipelineExplainerOptions>` registration - typically `services.Configure<PipelineExplainerOptions>(configuration.GetSection("Interlocutor:PipelineExplainer"))` - wins over the value passed to `AddPipelineExplainer`, the same "a consumer's own registration wins" precedence [Dependency Defaults](builder-and-registration.md#dependency-defaults) already documents for other pipeline-behavior dependencies. This lets an operator flip the explainer on or off via configuration without a redeploy. Autofac has no such precedence layer - it always uses the `PipelineExplainerOptions` instance passed to `AddPipelineExplainer` directly.
+
+### Reflection, Trim & AOT
+
+`IPipelineExplainer`'s default implementation closes `PipelineChainResolver.ResolveChain<TRequest,TResponse>` reflectively via `MethodInfo.MakeGenericMethod`, since `requestType`/`responseType` are only known at run time. This is an explicitly opt-in diagnostic path, not the hot dispatch path, so the cost is acceptable there in a way it wouldn't be for ordinary dispatch - see [Trim & AOT Support](trim-and-aot-support.md) for the same JIT-closure requirement every dispatch path already has for a request/response pair the runtime hasn't seen before.
+
+## Conditional (Canary) Behaviors
+
+Every `Add*Behavior` call so far is all-or-nothing: once registered, a behavior runs for every dispatch. `ConditionalBehavior<TRequest,TResponse>` wraps an existing `IPipelineBehavior<TRequest,TResponse>` behind a runtime predicate instead, so a new or risky behavior - a stricter validation rule, a new authorization policy - can be turned on for a fraction of traffic and ramped up without a redeploy:
+
+```csharp
+public sealed class ConditionalBehavior<TRequest, TResponse>(
+    IPipelineBehavior<TRequest, TResponse> inner,
+    Func<TRequest, bool> shouldRun
+) : IPipelineBehavior<TRequest, TResponse>
+{
+    public Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct) =>
+        shouldRun(request) ? inner.HandleAsync(request, next, ct) : next();
+}
+```
+
+`shouldRun` is evaluated once per dispatch, against the request instance only - `false` skips `inner` entirely, as if it had never been registered. This is an on/off gate, not shadow/observe-only execution: a gated behavior either fully participates in a given dispatch or is entirely absent from it. Running `inner` but discarding its effect on the outcome has no generic semantics for a behavior that short-circuits or transforms the response, so it isn't offered.
+
+### AddConditionalBehavior
+
+`InterlocutorPipelineBuilder.AddConditionalBehavior<TBehavior,TRequest,TResponse>` builds the wrapper for you, resolving `TBehavior` from the container as a try-add default against its own concrete type:
+
+```csharp
+builder.Pipeline.AddConditionalBehavior<StricterOrderValidationBehavior, CreateOrderCommand, Outcome<OrderId, ValidationErrors>>(
+    (services, request) => FeatureFlags.IsEnabledFor(request));
+```
+
+Like the delegate-form `AddBehavior` overloads, this is a factory-backed registration - it lands in `BehaviorFactories`, which is applied as its own step immediately after every type-based `Behaviors` entry, regardless of interleaved call order. `TBehavior` itself is constructed whenever the wrapper is - once per resolution of the chain, the same as any other registered behavior - so `shouldRun` only gates whether its `HandleAsync` runs for a given dispatch, not whether it gets constructed at all.
+
+### The shipped percentage-rollout gate
+
+`RolloutOptions` is a plain, container-neutral POCO:
+
+```csharp
+public sealed class RolloutOptions
+{
+    public double PercentageEnabled { get; set; } // 0-100
+}
+```
+
+`RolloutGate.ShouldRun(RolloutOptions)` draws once per call - never at `0`, always at `100`, and approximately the configured fraction of the time in between. There is no sticky-by-key assignment (the same logical caller can draw differently from one dispatch to the next) - a fast-follow, not required for this first version.
+
+#### Worked example: ramping a new validation rule from 0% to 100%
+
+Under Microsoft DI, `AddRolloutBehavior` binds the gate to a *named* `IOptionsMonitor<RolloutOptions>` registration, so more than one canary can run concurrently and the percentage is adjustable via configuration reload, live, without a redeploy:
+
+```csharp
+services.Configure<RolloutOptions>(
+    "StricterOrderValidation",
+    configuration.GetSection("Rollouts:StricterOrderValidation"));
+
+services.AddInterlocutor(builder =>
+{
+    builder.Pipeline.AddRolloutBehavior<StricterOrderValidationBehavior, CreateOrderCommand, Outcome<OrderId, ValidationErrors>>(
+        "StricterOrderValidation");
+});
+```
+
+```json
+{ "Rollouts": { "StricterOrderValidation": { "PercentageEnabled": 0 } } }
+```
+
+Editing `PercentageEnabled` in configuration - 0, then 10, then 50, then 100 - ramps `StricterOrderValidationBehavior` up from off to fully on without restarting the application, as long as the configuration source itself supports reload (a JSON file provider watching for changes, for example). The name (`"StricterOrderValidation"` above) is what lets a second, unrelated canary run at the same time under its own independently-configured percentage.
+
+Autofac has no `IOptionsMonitor` equivalent, so its `AddRolloutBehavior` overload takes a `RolloutOptions` value instead, copied at configuration time rather than bound to a live source:
+
+```csharp
+containerBuilder.AddInterlocutor(interlocutorBuilder =>
+{
+    interlocutorBuilder.Pipeline.AddRolloutBehavior<StricterOrderValidationBehavior, CreateOrderCommand, Outcome<OrderId, ValidationErrors>>(
+        new RolloutOptions { PercentageEnabled = 0 });
+});
+```
+
+This is a genuine capability difference, not a silent degrade: ramping the percentage further under Autofac means rebuilding the container with a new value, not editing a configuration file live. Choose the container package accordingly when live reload matters to your rollout process.
 
 ## Validation, Authorization & Auditing Behaviors
 
@@ -211,6 +341,9 @@ var result = await mediator.Send(new CreateUser("", "bad-email"));
 Enforces policy-based, non-resource authorization. Short-circuits with `Forbidden` if the policy fails.
 
 > [!NOTE]
+> Not part of `UseRecommendedChain()`'s default composition. Reach for `AddAuthorizationBehavior()` when the mediator itself is the first place authorization can be enforced - a message-bus consumer, a background worker, a scheduled job, or any host with nothing HTTP-shaped in front of it - or for defense-in-depth via a fine-grained, resource-level check upstream middleware can't see, even alongside upstream authorization. See [Adding Auditing and Authorization Back](#adding-auditing-and-authorization-back) for the full rationale.
+
+> [!NOTE]
 > Resource-based authorization (needing the loaded entity) is *not* a behavior - it's handled by `ResourceCommandHandler`'s template method. See [handler-selection-and-dispatch.md](handler-selection-and-dispatch.md) for the full picture.
 
 - Requires: nothing beyond the try-added `IOutcomeCaseRegistry` default (`DefaultOutcomeCaseRegistry`) and `IPolicyEvaluator` default (see the warning below)
@@ -237,6 +370,9 @@ actually denies, rather than silently granting or swallowing the denial.
 ### AuditingBehavior
 
 Records an audit trail of what ran and its outcome.
+
+> [!NOTE]
+> Not part of `UseRecommendedChain()`'s default composition - where an audit trail should go is an application-specific decision, so the library doesn't presume every consumer wants one. Reach for `AddAuditingBehavior()` when your application needs that trail. See [Adding Auditing and Authorization Back](#adding-auditing-and-authorization-back).
 
 - Requires: nothing - falls back to the try-added `LoggingAuditSink` (records via `ILogger`) if you don't register your own `IAuditSink`
 - Marker: `IAuditableRequest` (carries the `ActionName` to record)
@@ -339,7 +475,7 @@ Then wire it in with `OverrideOutcomeDescriber<TDescriber>()` as shown above. `L
 These three behaviors are additive, opt-in cross-cutting concerns shipped alongside the recommended chain, but **not part of it**.
 
 > [!IMPORTANT]
-> `CancellationBehavior`, `TimeoutBehavior`, and `RateLimitedBehavior` have no prescribed position in the pipeline. They are ordinary `Add*Behavior()` calls - the consumer composes them wherever they choose in their own chain, exactly like any behavior outside `UseRecommendedChain()`. `UseRecommendedChain()` itself is unchanged: it still applies only the five behaviors documented above, in the same order.
+> `CancellationBehavior`, `TimeoutBehavior`, and `RateLimitedBehavior` have no prescribed position in the pipeline. They are ordinary `Add*Behavior()` calls - the consumer composes them wherever they choose in their own chain, exactly like any behavior outside `UseRecommendedChain()`. `UseRecommendedChain()` itself is unaffected by them: it still applies only its own documented chain, in the same order.
 
 ### CancellationBehavior
 

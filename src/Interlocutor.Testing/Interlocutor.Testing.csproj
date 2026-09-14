@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Description>Fake ISender and IPublisher implementations for unit-testing code built on Interlocutor, without wiring a real pipeline, container, or handlers.</Description>
+    <!-- Trim-compatible, deliberately NOT IsAotCompatible: Outcome<...> is a value type, so the
+         container cannot close IPipelineBehavior<TRequest,TResponse> over it without a JIT. Tracked at
+         .scratch/aot-support/map.md; see maintainer_docs/research/native-aot-and-trimming-options.md for the evidence. -->
+    <IsTrimmable>true</IsTrimmable>
+  </PropertyGroup>
+
+  <!-- No direct ProjectReference to Interlocutor.CommonKernel: FakeSender/FakePublisher constrain their
+       generic type parameters against System.Runtime.CompilerServices.IUnion (a framework type the "union"
+       preview feature ships, not a CommonKernel one) and Interlocutor.Abstractions's own request/notification
+       interfaces, so nothing here actually names a CommonKernel type - Roslyn prunes an unused reference from
+       the compiled assembly regardless of what's listed here. Interlocutor.Abstractions already depends on
+       CommonKernel, so a consumer still resolves it transitively. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Interlocutor.Abstractions\Interlocutor.Abstractions.csproj" />
+  </ItemGroup>
+
+  <!-- Public API surface tracking: fails the build if a public member changes without
+       being recorded in PublicAPI.Shipped.txt/PublicAPI.Unshipped.txt. -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

@@ -24,6 +24,7 @@ public class DependencyTests
         typeof(Interlocutor.Persistence.EntityFrameworkCore.EntityFrameworkUnitOfWork<>).Assembly;
     private static readonly Assembly PersistenceNHibernateAssembly =
         typeof(Interlocutor.Persistence.NHibernate.NHibernateUnitOfWork).Assembly;
+    private static readonly Assembly TestingAssembly = typeof(Interlocutor.Testing.FakeSender).Assembly;
 
     [Fact]
     public void CommonKernel_ReferencedAssembly_HasNoDependencyOnOtherInterlocutorPackages_Test()
@@ -44,7 +45,8 @@ public class DependencyTests
                 "Interlocutor.DependencyInjection.Abstractions",
                 "Interlocutor.DependencyInjection.Microsoft",
                 "Interlocutor.DependencyInjection.Autofac",
-                "Interlocutor.Persistence.Abstractions"
+                "Interlocutor.Persistence.Abstractions",
+                "Interlocutor.Testing"
             )
             .GetResult();
 
@@ -309,6 +311,44 @@ public class DependencyTests
             implementsPipelineBehavior,
             "Interlocutor.Persistence.NHibernate should contain an IPipelineBehavior<,> named UnitOfWorkBehavior"
         );
+    }
+
+    [Fact]
+    public void Testing_ReferencedAssembly_DependsOnlyOnCommonKernelAndAbstractions_Test()
+    {
+        // Arrange
+        // (static class-level assembly references serve as fixture)
+
+        // Act
+        var result = Types
+            .InAssembly(TestingAssembly)
+            .ShouldNot()
+            .HaveDependencyOnAny(
+                "Interlocutor.AspNetCore",
+                "Interlocutor.DependencyInjection.Abstractions",
+                "Interlocutor.DependencyInjection.Microsoft",
+                "Interlocutor.DependencyInjection.Autofac",
+                "Interlocutor.Generator",
+                "Interlocutor.FluentValidation",
+                "Interlocutor.Persistence.Abstractions",
+                "Interlocutor.Persistence.EntityFrameworkCore",
+                "Interlocutor.Persistence.NHibernate"
+            )
+            .GetResult();
+
+        // Assert
+        Assert.True(result.IsSuccessful, string.Join(", ", result.FailingTypeNames ?? []));
+
+        // Act (second check) - confirms the assembly actually depends on Abstractions, not merely that it
+        // avoids the forbidden packages above. No corresponding CommonKernel assertion: FakeSender/FakePublisher
+        // constrain their generics against IUnion (a framework type, not a CommonKernel one) and Abstractions's
+        // own interfaces, so nothing here names a CommonKernel type for Roslyn to keep a reference to - see
+        // Interlocutor.Testing.csproj's own comment. A consumer still resolves CommonKernel transitively
+        // through Abstractions, which does depend on it.
+        var referencedAssemblyNames = TestingAssembly.GetReferencedAssemblies().Select(a => a.Name);
+
+        // Assert (second check)
+        Assert.Contains(AbstractionsAssembly.GetName().Name, referencedAssemblyNames);
     }
 
     [Fact]

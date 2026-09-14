@@ -142,7 +142,7 @@ Without the attribute, this would be a build error naming both handlers. `Handle
 
 ## Resource-Based Authorization
 
-Some commands need to authorize based on the loaded entity (ownership, entity state, etc.), not just a policy name. Use `ResourceCommandHandler<TCommand, TEntity, TSuccess>` - a template method implementing the load → authorize → handle pattern:
+Some commands need to authorize based on the loaded entity (ownership, entity state, etc.), not just a policy name. Use `ResourceCommandHandler<TCommand, TEntity, TResponse>` - a template method implementing the load → authorize → handle pattern:
 
 ```csharp
 public record DeleteDocument(int DocumentId, int RequestedByUserId)
@@ -186,7 +186,7 @@ var result = await mediator.Send(new DeleteDocument(42, currentUserId));
 **Why is this not a pipeline behavior?** A behavior cannot express "if this specific part fails, produce this specific outcome" for a reason that depends on data loaded mid-pipeline. Resource authorization needs the entity that was just loaded, and passing it forward would require shared mutable state - exactly the architectural pattern Interlocutor avoids. The template method encapsulates the load, authorize, handle sequence as a single cohesive unit, rather than splitting it across multiple layers.
 
 > [!NOTE]
-> `ResourceCommandHandler` always returns `Outcome<TSuccess, NotFound, Forbidden>` - it can produce `NotFound` (when `LoadAsync` returns null) and `Forbidden` (when `Authorize` returns a denial), and any other outcome depends on what `HandleAsync` produces. The shape is fixed and enforced by the handler's own contract, and matches `AuthorizationBehavior`'s own `Forbidden` case for its equivalent denial (see CLAUDE.md's result-type convention: a denied authorization check is a classified case, not generic `Failure`).
+> `ResourceCommandHandler<TCommand, TEntity, TResponse>` is generic over `TResponse` - any `IUnion` that declares a `NotFound` case (for `LoadAsync` returning `null`) and a `Forbidden` case (for a denied `Authorize`) among its cases. It ejects those two cases via `Eject.WithCase` rather than constructing them itself, and any other outcome depends on what `HandleAsync` produces. `TResponse` isn't fixed to exactly those three cases - a subclass may add further cases (e.g. a domain-specific `Conflict`) as long as `NotFound` and `Forbidden` remain among them - and the required `Forbidden` case matches `AuthorizationBehavior`'s own `Forbidden` case for its equivalent denial (see CLAUDE.md's result-type convention: a denied authorization check is a classified case, not generic `Failure`).
 
 ## Contrast: Resource vs. Non-Resource Authorization
 

@@ -219,4 +219,24 @@ public class GenericCatchAllResultExtensionsTests
         Assert.Equal(typeof(CustomOutcome), exception.ResponseType);
         Assert.Equal(typeof(int), exception.CaseType);
     }
+
+    [Fact]
+    public void ToActionResult_CatchAll_HandRolledOutcome_WithUnrecognizedTypeAndExplicitMapper_StillThrowsOutcomeCaseNotMappableException()
+    {
+        // Arrange - unlike the dedicated arity overloads' ClassifyFailureCaseForActionResult (which trusts an
+        // explicitly supplied mapper for a declared-failure-slot value regardless of whether its type is
+        // recognized), the catch-all's ambiguity here is whether the case is success or failure in the first
+        // place - not merely which status a known failure deserves - and a mapper's
+        // IOutcomeStatusMapper.Map<TFailure> has no way to answer that (it only renders a value already known
+        // to be a failure). So an explicit mapper never bypasses this throw, however permissive it is; this
+        // pins down that intentional asymmetry between the two paths against a regression.
+        var response = CustomOutcome.FromFailure("just a string, not a recognized case type");
+
+        // Act & Assert
+        var exception = Assert.Throws<OutcomeCaseNotMappableException>(() =>
+            response.ToActionResult(caseRegistry: null, new TeapotOutcomeStatusMapper())
+        );
+        Assert.Equal(typeof(CustomOutcome), exception.ResponseType);
+        Assert.Equal(typeof(string), exception.CaseType);
+    }
 }

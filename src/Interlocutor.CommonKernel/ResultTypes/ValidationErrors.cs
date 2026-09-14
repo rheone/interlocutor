@@ -93,12 +93,12 @@ public readonly record struct ValidationErrors : IValidationFailureCase
     public IReadOnlyList<ValidationError> Items => this._errors.Items;
 
     /// <summary>
-    /// Gets the distinct set of validation errors, in the order they were first encountered.
-    /// Semantic projection of <see cref="Items"/>.
+    /// Gets the same validation errors as <see cref="Items"/>, exposed under a name that matches this type's
+    /// own name.
     /// </summary>
     /// <value>
-    /// An unmodifiable collection of the distinct <see cref="ValidationError"/> values provided at creation,
-    /// or an empty collection if this instance is the default value.
+    /// Identical to <see cref="Items"/> - see that property for what the collection contains and how it
+    /// behaves at this type's default value.
     /// </value>
     public IReadOnlyList<ValidationError> Errors => this.Items;
 
@@ -250,13 +250,12 @@ public readonly record struct ValidationErrors<TErrorCode>
     public IReadOnlyList<ValidationError<TErrorCode>> Items => this._errors.Items;
 
     /// <summary>
-    /// Gets the distinct set of validation errors, each with its message and error code, in the order
-    /// they were first encountered.
-    /// Semantic projection of <see cref="Items"/>.
+    /// Gets the same validation errors as <see cref="Items"/>, exposed under a name that matches this type's
+    /// own name.
     /// </summary>
     /// <value>
-    /// An unmodifiable collection of the distinct <see cref="ValidationError{TErrorCode}"/> values provided at creation,
-    /// or an empty collection if this instance is the default value.
+    /// Identical to <see cref="Items"/> - see that property for what the collection contains and how it
+    /// behaves at this type's default value.
     /// </value>
     public IReadOnlyList<ValidationError<TErrorCode>> Errors => this.Items;
 

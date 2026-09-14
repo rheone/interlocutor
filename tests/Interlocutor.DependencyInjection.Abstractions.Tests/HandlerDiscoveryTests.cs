@@ -177,11 +177,9 @@ public class HandlerDiscoveryTests
         public Task<Outcome> HandleAsync(SampleQuery query, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 
-    // IBareCommandHandler<,> has no HandleAsync member (deliberately unsuffixed - see that interface's own
-    // remarks), so this fake stays on Handle as-is.
     private sealed class SampleBareCommandHandler : IBareCommandHandler<SampleCommand, Outcome>
     {
-        public Task<Outcome> Handle(SampleCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
+        public Task<Outcome> HandleAsync(SampleCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
     }
 
     private sealed class SampleCommandHandler : ICommandHandler<SampleCommandWithResponse, Outcome>

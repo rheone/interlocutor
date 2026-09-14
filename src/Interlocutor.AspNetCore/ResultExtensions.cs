@@ -18,6 +18,17 @@ using Microsoft.AspNetCore.Mvc;
 /// </summary>
 /// <remarks>
 /// <para>
+/// HTTP-status mapping is a convenience this ASP.NET Core-specific package adds on top of <c>Outcome</c>, not
+/// a property <c>Outcome</c>/<see cref="IUnion"/> carries on their own: <c>Interlocutor.CommonKernel</c> has no
+/// notion of HTTP statuses, and a consumer who never references this package never pays for or sees one. The
+/// mapping resolves purely by the active case's runtime type - never by which generic-parameter position or
+/// arity slot it happens to occupy - against the closed set of case types/interfaces
+/// <see cref="DefaultHttpOutcomeStatusMapper"/> (or a caller-supplied <see cref="IOutcomeStatusMapper"/>)
+/// recognizes; a case outside that set throws <see cref="OutcomeCaseNotMappableException"/> rather than
+/// guessing a status for it - see this type's own remarks below and that exception's remarks for the full
+/// classification rules.
+/// </para>
+/// <para>
 /// The dedicated, per-case-arity <c>ToActionResult</c>/<c>ToMinimalApiResult</c> overloads (the non-generic
 /// <c>Outcome</c> and every <c>Outcome&lt;T1, ...&gt;</c> arity) are source-generated into a second
 /// partial declaration by <c>Interlocutor.Generator</c>'s <c>ResultExtensionsGenerator</c>, marked via
@@ -57,9 +68,14 @@ public static partial class ResultExtensions
         /// dedicated overloads above dispatch to the same mapper via a compile-time <c>switch</c> instead.
         /// </para>
         /// <para>
-        /// The dedicated overloads distinguish success from failure at compile time, via a <c>switch</c> against
-        /// the statically known <c>T1..TN</c> type parameters. This overload has no such static
-        /// information, so it classifies the extracted case against a small set of recognized shapes instead:
+        /// The dedicated overloads know at compile time, via <c>Match</c>, which case (the success case or one
+        /// of the failure cases) is active - unlike this overload, which has no such static information. What
+        /// the dedicated overloads do <em>not</em> get for free is a trustworthy HTTP status for that case's
+        /// runtime type: a value that turns out to be failure-shaped despite occupying the success slot, or a
+        /// failure-slot value that matches none of the recognized failure shapes, both need the exact same
+        /// runtime type check this overload performs - see <see cref="IsRecognizedFailureCase"/> and the
+        /// <c>Classify*</c> helpers below, which the source-generated dedicated overloads call directly. This
+        /// overload classifies the extracted case against a small set of recognized shapes instead:
         /// the bare <see cref="Success"/> marker (success), a resolved case whose payload is legitimately
         /// <see langword="null"/> (success - see <see cref="ExtractCase{TResponse}"/>'s remarks), or one of the
         /// built-in failure case types/interfaces <see cref="DefaultHttpOutcomeStatusMapper"/> recognizes
@@ -70,8 +86,10 @@ public static partial class ResultExtensions
         /// there is no default HTTP status for "don't know if this is even a failure."
         /// </para>
         /// <para>
-        /// C# overload resolution always prefers a dedicated overload over this one for the six built-in union
-        /// arities: a constructed generic formal parameter (e.g. <c>Outcome&lt;T1, T2&gt;</c>)
+        /// C# overload resolution always prefers a dedicated overload over this one for every built-in union
+        /// arity the source generator emits - the non-generic <c>Outcome</c> and every <c>Outcome&lt;T1, ...&gt;</c>
+        /// arity (see <see cref="GenerateResultExtensionsAttribute"/>'s remarks) - a constructed generic formal
+        /// parameter (e.g. <c>Outcome&lt;T1, T2&gt;</c>)
         /// is more specific than this overload's bare type-parameter formal parameter (<typeparamref name="TResponse"/>),
         /// so callers get the faster, compile-time-checked path automatically and only pay for reflection when
         /// this overload is genuinely the only option.
@@ -84,8 +102,8 @@ public static partial class ResultExtensions
         /// trailing optional parameters is a strictly worse (higher-arity) match than a dedicated overload's
         /// single optional <c>mapper</c> parameter for a bare <c>result.ToActionResult()</c> call, so the compiler
         /// cannot get far enough to apply the specificity tie-break at all and reports the call ambiguous instead
-        /// - see the arity-2/arity-5/void overload-resolution regression tests for the failure this parameter
-        /// order avoids. Requiring <paramref name="caseRegistry"/> keeps every dedicated overload's zero- and
+        /// - see the arity-two/arity-max/void overload-resolution regression tests for the failure this
+        /// parameter order avoids. Requiring <paramref name="caseRegistry"/> keeps every dedicated overload's zero- and
         /// one-argument call shapes resolvable only against the dedicated overload, while this overload remains
         /// reachable by name (<c>caseRegistry: myRegistry</c>) for the hand-rolled types it exists for.
         /// </para>
@@ -192,6 +210,15 @@ public static partial class ResultExtensions
     /// Extracts <paramref name="response"/>'s active case via <paramref name="caseRegistry"/> (or the default
     /// registry) and determines whether it should be mapped as a failure.
     /// </summary>
+    /// <remarks>
+    /// Deliberately takes no <see cref="IOutcomeStatusMapper"/> parameter, unlike
+    /// <see cref="ClassifyFailureCaseForActionResult{TFailure}"/>'s equivalent "unrecognized" gate on the
+    /// dedicated arity path: an explicitly supplied mapper there can be trusted to bypass the throw because the
+    /// only open question is which status a value <em>already known</em> to be a failure deserves. Here, the
+    /// open question is whether the active case is success or failure in the first place - a mapper's
+    /// <see cref="IOutcomeMapper{TResult}.Map{TFailure}"/> has no way to answer that (it only renders a value
+    /// already known to be a failure) - so no mapper, however permissive, ever bypasses this method's throw.
+    /// </remarks>
     /// <typeparam name="TResponse">The <see cref="IUnion"/> type to extract from.</typeparam>
     /// <param name="response">The response to extract the active case from.</param>
     /// <param name="caseRegistry">The registry to use, or <see langword="null"/> to use the default registry.</param>
@@ -250,10 +277,11 @@ public static partial class ResultExtensions
                 + $"whether {caseType.Name} represents success or failure - unlike a *recognized* failure type this "
                 + $"mapper wasn't taught, {nameof(IOutcomeStatusMapper)} is never even consulted here, since that "
                 + $"question is settled before any mapper (default or custom) is selected. Call the dedicated "
-                + $"Outcome<...> overload against the concrete type instead: it resolves success-versus-failure at "
-                + $"compile time, so {caseType.Name} reaches {nameof(IOutcomeStatusMapper)}.Map directly whenever "
-                + $"it is the failure case - customizable there via a custom mapper's MapUnrecognized override, "
-                + $"with no classification ambiguity to hit in the first place."
+                + $"Outcome<...> overload against the concrete type instead: its own <c>Match</c> still tells it "
+                + $"definitively whether {caseType.Name} occupies the success case or a failure case, so it can "
+                + $"resolve this exact scenario without the success-or-failure guess this overload refuses to make - "
+                + $"though a failure-slot value that still matches no recognized failure shape throws there too "
+                + $"unless a custom mapper is supplied (see that overload's own remarks)."
         );
     }
 
@@ -290,6 +318,120 @@ public static partial class ResultExtensions
             _ => caseValue.GetType() is { IsGenericType: true } caseType
                 && caseType.GetGenericTypeDefinition() == typeof(NotFound<>),
         };
+
+    /// <summary>
+    /// Classifies a success-slot (<c>T1</c>) case value by its runtime type and renders it as an
+    /// <see cref="IActionResult"/>: a value that turns out to be failure-shaped despite occupying the success
+    /// slot maps through <paramref name="mapper"/> like any other failure - the fix for the "first
+    /// generic-parameter position always means 200" bug - and everything else, including a legitimate
+    /// application-defined success payload that matches none of the recognized failure shapes, renders as an
+    /// HTTP 200 with that value as the body. Called only from the source-generated dedicated arity overloads.
+    /// </summary>
+    /// <remarks>
+    /// This never throws <see cref="OutcomeCaseNotMappableException"/> for an unrecognized <paramref name="value"/>,
+    /// unlike its <see cref="ClassifyFailureCaseForActionResult{TFailure}"/> counterpart for a declared-failure
+    /// slot. That asymmetry is deliberate, not an oversight: a declared-failure slot's "known mapping set" is the
+    /// closed set of recognized failure shapes, so a type outside it is genuinely unrecognized. The success slot
+    /// has no equivalent closed set to be outside of - <em>any</em> type is a legitimate success payload
+    /// (`Outcome&lt;string, Failure&gt;`'s plain <see langword="string"/> success value is the ordinary case, not
+    /// an edge case), so "unrecognized type" is not a coherent concept for it the way it is for a failure slot.
+    /// The only thing worth checking here is the opposite mistake: a value that is <em>recognized as failure-shaped</em>
+    /// despite occupying the success slot, which this method still catches and reroutes.
+    /// </remarks>
+    /// <typeparam name="TValue">The static type occupying this arity's success slot.</typeparam>
+    /// <param name="value">The success case's active value.</param>
+    /// <param name="mapper">The mapper to use if <paramref name="value"/> turns out to be failure-shaped, or <see langword="null"/> for <see cref="DefaultMapper"/>.</param>
+    /// <returns>An <see cref="OkObjectResult"/>, or the mapped error result if <paramref name="value"/> is failure-shaped.</returns>
+    private static IActionResult ClassifySuccessCaseForActionResult<TValue>(TValue value, IOutcomeStatusMapper? mapper) =>
+        value is not null && IsRecognizedFailureCase(value)
+            ? (mapper ?? DefaultMapper).Map(value).ToActionResult()
+            : new OkObjectResult(value);
+
+    /// <summary>See <see cref="ClassifySuccessCaseForActionResult{TValue}"/> - the minimal-API-result twin.</summary>
+    /// <typeparam name="TValue">The static type occupying this arity's success slot.</typeparam>
+    /// <param name="value">The success case's active value.</param>
+    /// <param name="mapper">The mapper to use if <paramref name="value"/> turns out to be failure-shaped, or <see langword="null"/> for <see cref="DefaultMapper"/>.</param>
+    /// <returns>An HTTP 200, or the mapped error result if <paramref name="value"/> is failure-shaped.</returns>
+    private static IResult ClassifySuccessCaseForMinimalApiResult<TValue>(TValue value, IOutcomeStatusMapper? mapper) =>
+        value is not null && IsRecognizedFailureCase(value)
+            ? (mapper ?? DefaultMapper).Map(value).ToMinimalApiResult()
+            : Results.Ok(value);
+
+    /// <summary>
+    /// Classifies a declared-failure-slot (<c>T2..Tn</c>) case value by its runtime type and renders it as an
+    /// <see cref="IActionResult"/>: a recognized failure shape maps through <paramref name="mapper"/> exactly as
+    /// before. Anything else has no principled HTTP status to fall back to <em>when no mapper was explicitly
+    /// supplied</em> - silently defaulting to <see cref="DefaultHttpOutcomeStatusMapper.MapUnrecognized{TFailure}"/>'s
+    /// generic 500 there would be exactly the kind of guess <see cref="OutcomeCaseNotMappableException"/> exists
+    /// to refuse (mirroring <see cref="ExtractCase{TResponse}"/>'s identical refusal for the reflective
+    /// catch-all), so this throws instead. An explicitly supplied <paramref name="mapper"/> is always trusted for
+    /// whatever type it is handed - <see cref="IOutcomeMapper{TResult}.Map{TFailure}"/> has no "I don't know this
+    /// type" signal of its own, so a caller who supplies their own mapper has already taken responsibility for
+    /// every type that can reach it, recognized or not. Called only from the source-generated dedicated arity
+    /// overloads.
+    /// </summary>
+    /// <typeparam name="TFailure">The failure case's static type for this arity slot.</typeparam>
+    /// <param name="value">The failure case's active value.</param>
+    /// <param name="mapper">The caller-supplied mapper, or <see langword="null"/> to use <see cref="DefaultMapper"/>'s built-in recognition rules.</param>
+    /// <param name="responseType">The closed <c>Outcome&lt;...&gt;</c> type <paramref name="value"/>'s case belongs to, for the exception message.</param>
+    /// <returns>The mapped error result.</returns>
+    /// <exception cref="OutcomeCaseNotMappableException">
+    /// <paramref name="mapper"/> is <see langword="null"/> and <paramref name="value"/> matches none of the
+    /// recognized failure shapes <see cref="IsRecognizedFailureCase"/> knows.
+    /// </exception>
+    private static IActionResult ClassifyFailureCaseForActionResult<TFailure>(
+        TFailure value,
+        IOutcomeStatusMapper? mapper,
+        Type responseType
+    ) =>
+        mapper is not null || (value is not null && IsRecognizedFailureCase(value))
+            ? (mapper ?? DefaultMapper).Map(value).ToActionResult()
+            : throw BuildNotMappableException(responseType, value);
+
+    /// <summary>See <see cref="ClassifyFailureCaseForActionResult{TFailure}"/> - the minimal-API-result twin.</summary>
+    /// <typeparam name="TFailure">The failure case's static type for this arity slot.</typeparam>
+    /// <param name="value">The failure case's active value.</param>
+    /// <param name="mapper">The caller-supplied mapper, or <see langword="null"/> to use <see cref="DefaultMapper"/>'s built-in recognition rules.</param>
+    /// <param name="responseType">The closed <c>Outcome&lt;...&gt;</c> type <paramref name="value"/>'s case belongs to, for the exception message.</param>
+    /// <returns>The mapped error result.</returns>
+    /// <exception cref="OutcomeCaseNotMappableException">
+    /// <paramref name="mapper"/> is <see langword="null"/> and <paramref name="value"/> matches none of the
+    /// recognized failure shapes <see cref="IsRecognizedFailureCase"/> knows.
+    /// </exception>
+    private static IResult ClassifyFailureCaseForMinimalApiResult<TFailure>(
+        TFailure value,
+        IOutcomeStatusMapper? mapper,
+        Type responseType
+    ) =>
+        mapper is not null || (value is not null && IsRecognizedFailureCase(value))
+            ? (mapper ?? DefaultMapper).Map(value).ToMinimalApiResult()
+            : throw BuildNotMappableException(responseType, value);
+
+    /// <summary>
+    /// Builds the exception <see cref="ClassifyFailureCaseForActionResult{TFailure}"/> and
+    /// <see cref="ClassifyFailureCaseForMinimalApiResult{TFailure}"/> throw for a declared-failure-slot value
+    /// that is neither recognized nor covered by an explicitly supplied mapper.
+    /// </summary>
+    /// <typeparam name="TFailure">The failure case's static type for this arity slot.</typeparam>
+    /// <param name="responseType">The closed <c>Outcome&lt;...&gt;</c> type the case belongs to.</param>
+    /// <param name="value">The unmappable failure value - its runtime type is used when non-<see langword="null"/>, since it may be more specific than <typeparamref name="TFailure"/>.</param>
+    /// <returns>The exception to throw.</returns>
+    private static OutcomeCaseNotMappableException BuildNotMappableException<TFailure>(Type responseType, TFailure value)
+    {
+        var caseType = value?.GetType() ?? typeof(TFailure);
+        return new OutcomeCaseNotMappableException(
+            responseType,
+            caseType,
+            $"Cannot determine an HTTP status for {responseType.Name}'s active case: {caseType.Name} is not one "
+                + $"of the built-in failure case types/interfaces {nameof(DefaultHttpOutcomeStatusMapper)} "
+                + $"recognizes, and no {nameof(IOutcomeStatusMapper)} was supplied to take responsibility for it - "
+                + $"falling back to a generic status here would be exactly the guess this exception exists to "
+                + $"refuse. Either have {caseType.Name} implement one of the recognized <c>I*FailureCase</c> "
+                + $"marker interfaces, or pass a custom {nameof(IOutcomeStatusMapper)} explicitly - its "
+                + $"{nameof(IOutcomeMapper<OutcomeHttpMapping>.Map)} is always trusted for whatever type it is "
+                + $"handed, unlike {nameof(DefaultHttpOutcomeStatusMapper)}'s own built-in recognition rules."
+        );
+    }
 
     /// <summary>
     /// Invokes <see cref="IOutcomeMapper{TResult}.Map{TFailure}"/> reflectively for a failure value whose static

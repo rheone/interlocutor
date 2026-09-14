@@ -213,4 +213,30 @@ public class OutcomeOfTwoCasesTests
         // Act & Assert - NotFound's own ToString() override, not a default struct dump.
         Assert.Equal(new NotFound("missing").ToString(), result.ToString());
     }
+
+    [Fact]
+    public void Create_FromSuccessValue_BehavesIdenticallyToImplicitConversion()
+    {
+        // Arrange & Act
+        var viaFactory = Outcome<string, NotFound>.Create("hello");
+        Outcome<string, NotFound> viaImplicitConversion = "hello";
+
+        // Assert
+        Assert.Equal(viaImplicitConversion, viaFactory);
+        Assert.True(viaFactory.TryGetValue(out string value));
+        Assert.Equal("hello", value);
+    }
+
+    [Fact]
+    public void Create_FromFailureValue_BehavesIdenticallyToThePositionalConstructor()
+    {
+        // Arrange & Act
+        var viaFactory = Outcome<string, NotFound>.Create(new NotFound("missing"));
+        var viaConstructor = new Outcome<string, NotFound>(new NotFound("missing"));
+
+        // Assert
+        Assert.Equal(viaConstructor, viaFactory);
+        Assert.True(viaFactory.TryGetValue(out NotFound notFound));
+        Assert.Equal("missing", notFound.Message);
+    }
 }

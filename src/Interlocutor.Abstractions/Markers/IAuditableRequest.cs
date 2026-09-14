@@ -6,8 +6,8 @@ namespace Interlocutor.Abstractions.Markers;
 /// <remarks>
 /// <para>
 /// Implement this marker interface on commands/queries when you want to record an audit trail of who did what and when.
-/// Pipeline behaviors detect this marker and record the action, outcome, and request type to the audit store after
-/// the handler completes (via <see cref="Pipeline.AuditingBehavior{TRequest, TResponse}"/>).
+/// The <see cref="Pipeline.AuditingBehavior{TRequest, TResponse}"/> pipeline behavior detects this marker and
+/// records the action, outcome, and request type to the audit store after the handler completes.
 /// </para>
 /// <para>
 /// Provide a human-readable <see cref="ActionName"/> like <c>"User.Create"</c> or <c>"Order.Cancel"</c>. Audit logs

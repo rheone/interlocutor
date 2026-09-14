@@ -20,12 +20,14 @@ using Microsoft.CodeAnalysis;
 /// request type itself rather than at the compilation as a whole.
 /// </param>
 /// <remarks>
+/// <para>
 /// <see cref="Equals(RequestModel?)"/>/<see cref="GetHashCode"/> deliberately exclude <see cref="Location"/>
 /// from equality (ticket 53) - see <see cref="HandlerModel.Equals(HandlerModel?)"/>'s remarks for the full
 /// rationale: <see cref="Microsoft.CodeAnalysis.Location"/> compares the declaring
 /// <see cref="Microsoft.CodeAnalysis.SyntaxTree"/> by reference, which changes on every re-parse regardless of
 /// whether this request declaration itself changed, which would otherwise defeat incremental-pipeline caching
 /// for reasons unrelated to this request's own content.
+/// </para>
 /// </remarks>
 [DebuggerDisplay("{Kind} {RequestTypeName}")]
 internal sealed record RequestModel(RequestKind Kind, string RequestTypeName, string? ResponseTypeName, Location Location)

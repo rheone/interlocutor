@@ -4,9 +4,9 @@
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `00bbdcd`
 
-- [ ] New `tests/Interlocutor.IntegrationTests` project (its own `.csproj`, sharing this ticket's `.scratch` feature directory with ticket 01) references the real `Interlocutor.Abstractions`, `Interlocutor.DependencyInjection.Microsoft`, `Interlocutor.Generator` (as an analyzer), and `Interlocutor.Persistence.EntityFrameworkCore` packages — no fakes or mocks standing in for any Interlocutor package
-- [ ] At least one real command handler, registered via generated (compile-time) dispatch, exercises the full canonical behavior order and a real transactional commit
-- [ ] A failing case (e.g. a validation failure) proves the pipeline short-circuits before the transaction commits, observed through the real `Outcome` returned to the caller
-- [ ] The new project runs under `dotnet test` the same way every other `tests/*` project does
+- [x] New `tests/Interlocutor.IntegrationTests` project (its own `.csproj`, sharing this ticket's `.scratch` feature directory with ticket 01) references the real `Interlocutor.Abstractions`, `Interlocutor.DependencyInjection.Microsoft`, `Interlocutor.Generator` (as an analyzer), and `Interlocutor.Persistence.EntityFrameworkCore` packages — no fakes or mocks standing in for any Interlocutor package
+- [x] At least one real command handler, registered via generated (compile-time) dispatch, exercises the full canonical behavior order and a real transactional commit
+- [x] A failing case (e.g. a validation failure) proves the pipeline short-circuits before the transaction commits, observed through the real `Outcome` returned to the caller
+- [x] The new project runs under `dotnet test` the same way every other `tests/*` project does

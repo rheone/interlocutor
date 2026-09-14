@@ -148,11 +148,9 @@ public sealed class GeneratedDispatchSwitchIntegrationTests
 
     public sealed record GeneratedSwitchBareCommand : ICommand;
 
-    // IBareCommandHandler<,> has no HandleAsync member (deliberately unsuffixed - see that interface's own
-    // remarks), so this fake stays on Handle as-is.
     public sealed class GeneratedSwitchBareCommandHandler : IBareCommandHandler<GeneratedSwitchBareCommand, Outcome>
     {
-        public Task<Outcome> Handle(GeneratedSwitchBareCommand command, CancellationToken ct) =>
+        public Task<Outcome> HandleAsync(GeneratedSwitchBareCommand command, CancellationToken ct) =>
             Task.FromResult(default(Outcome));
     }
 

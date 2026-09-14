@@ -49,13 +49,13 @@ using Microsoft.Extensions.Logging.Abstractions;
 /// (the narrowed "needs an eager transaction for read-then-write atomicity" meaning - see that marker's
 /// remarks); otherwise the transaction begins the moment <see cref="NHibernateUnitOfWork.SaveChangesAsync"/>
 /// is called mid-handler (that call begins one itself before flushing), or - for a write staged directly on
-/// the session with no such call in between - is detected retroactively via <see cref="ISession.IsDirty()"/>
-/// when <see cref="CommitGateDriver"/>'s own post-<c>next()</c> check runs. Either way, nothing reaches the
-/// database before that begin, because the flush-mode default above blocks every flush attempt until then. At
-/// pipeline completion, the driver checks <see cref="SessionExtensions.GetCurrentTransaction(ISession)"/> and
-/// <see cref="ISession.IsDirty()"/> -
-/// if neither indicates pending work, the dispatch never wrote anything (or an explicit
-/// <see cref="Interlocutor.Persistence.Abstractions.IUnitOfWork.CancelAsync"/> already cleaned up) and nothing
+/// the session with no such call in between - is detected retroactively via
+/// <see cref="ISession.IsDirtyAsync(CancellationToken)"/> when <see cref="CommitGateDriver"/>'s own
+/// post-<c>next()</c> check runs. Either way, nothing reaches the database before that begin, because the
+/// flush-mode default above blocks every flush attempt until then. At pipeline completion, the driver checks
+/// <see cref="SessionExtensions.GetCurrentTransaction(ISession)"/> and
+/// <see cref="ISession.IsDirtyAsync(CancellationToken)"/> - if neither indicates pending work, the dispatch
+/// never wrote anything (or an explicit <see cref="IUnitOfWork.CancelAsync"/> already cleaned up) and nothing
 /// further happens, so a pure-read dispatch never pays for an open transaction.
 /// </para>
 /// <para>

@@ -15,7 +15,7 @@ public sealed class ClearCompletedTodoTasksHandler(IDomainRepository<TodoTask, i
     : IBareCommandHandler<ClearCompletedTodoTasksCommand, Outcome>
 {
     /// <inheritdoc/>
-    public async Task<Outcome> Handle(ClearCompletedTodoTasksCommand command, CancellationToken ct)
+    public async Task<Outcome> HandleAsync(ClearCompletedTodoTasksCommand command, CancellationToken ct)
     {
         var completed = await tasks
             .GetManyAsync(t => t.OwnerId == command.OwnerId && t.IsCompleted, cancellationToken: ct)

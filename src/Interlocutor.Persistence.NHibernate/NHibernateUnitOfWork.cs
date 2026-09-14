@@ -49,10 +49,10 @@ public sealed class NHibernateUnitOfWork(Lazy<ISession> session) : IUnitOfWork
     /// Rolls back and disposes the current transaction if one is active - mirroring
     /// <c>EntityFrameworkUnitOfWork{TContext}.CancelAsync</c>'s explicit, deterministic disposal rather than
     /// leaving it to the owning <see cref="ISession"/>'s own eventual disposal - then calls
-    /// <see cref="ISession.Clear"/> to evict every entity from the session - discarding tracked state left
-    /// inconsistent by the rollback - so <see cref="ISession.IsDirty()"/> reports <see langword="false"/>
-    /// afterward and the commit-gate behavior's end-of-pipeline check finds nothing pending. A no-op if no
-    /// transaction is active.
+    /// <see cref="ISession.Clear()"/> to evict every entity from the session - discarding tracked state left
+    /// inconsistent by the rollback - so <see cref="ISession.IsDirtyAsync(CancellationToken)"/> reports
+    /// <see langword="false"/> afterward and the commit-gate behavior's end-of-pipeline check finds nothing
+    /// pending. A no-op if no transaction is active.
     /// </remarks>
     public async Task CancelAsync(CancellationToken cancellationToken = default)
     {

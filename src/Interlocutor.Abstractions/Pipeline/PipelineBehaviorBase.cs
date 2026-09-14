@@ -6,7 +6,13 @@ namespace Interlocutor.Abstractions.Pipeline;
 /// replace the response.
 /// </summary>
 /// <typeparam name="TRequest">The request type.</typeparam>
-/// <typeparam name="TResponse">The response type.</typeparam>
+/// <typeparam name="TResponse">
+/// The response type produced for <typeparamref name="TRequest"/>, threaded unchanged through
+/// <see cref="OnEnterAsync"/> and <see cref="OnExitAsync"/>. Like <see cref="IPipelineBehavior{TRequest, TResponse}"/>
+/// itself, this base class places no constraint on it - it is whatever type the request's handler returns; a
+/// derived class that needs to construct a specific outcome case adds its own constraint (typically
+/// <c>where TResponse : IUnion</c>) rather than relying on one declared here.
+/// </typeparam>
 /// <remarks>
 /// <para>
 /// <see cref="HandleAsync"/> is implemented once, as a fixed template, and is not itself an extension

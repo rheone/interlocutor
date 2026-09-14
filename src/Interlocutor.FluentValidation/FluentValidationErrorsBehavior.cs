@@ -68,8 +68,9 @@ public sealed class FluentValidationErrorsBehavior<TRequest, TResponse> : IPipel
     /// <param name="request">The request to validate.</param>
     /// <param name="next">The next delegate in the pipeline, invoked if validation passes.</param>
     /// <param name="ct">A cancellation token to cancel validation or the inner handler.</param>
-    /// <returns>Either the success result from the inner handler, or a <see cref="FluentValidationErrors"/>
-    /// failure carrying every <see cref="ValidationFailure"/> from every validator, verbatim.</returns>
+    /// <returns>Whatever <paramref name="next"/> produces, unless validation failed, in which case a
+    /// <see cref="FluentValidationErrors"/> failure carrying every <see cref="ValidationFailure"/> from every
+    /// validator, verbatim.</returns>
     /// <exception cref="InvalidOperationException">
     /// Validation failed, but <typeparamref name="TResponse"/> has no <see cref="FluentValidationErrors"/>
     /// case to construct - use a response type that has one.

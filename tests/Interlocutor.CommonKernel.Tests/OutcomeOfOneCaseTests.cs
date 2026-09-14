@@ -19,7 +19,7 @@ public class OutcomeOfOneCaseTests
         var result = new Outcome<string>("hello");
 
         // Assert
-        Assert.True(result.TryGetValue(out string _));
+        Assert.True(result.TryGetValue(out var _));
     }
 
     [Fact]
@@ -56,7 +56,7 @@ public class OutcomeOfOneCaseTests
         var result = new Outcome<string>("hello");
 
         // Act
-        var found = result.TryGetValue(out string value);
+        var found = result.TryGetValue(out var value);
 
         // Assert
         Assert.True(found);
@@ -152,5 +152,19 @@ public class OutcomeOfOneCaseTests
         object? nothing = null;
         Assert.False(outcome.Equals(unrelated));
         Assert.False(outcome.Equals(nothing));
+    }
+
+    [Fact]
+    public void Create_BehavesIdenticallyToThePositionalConstructor()
+    {
+        // Arrange & Act
+        var viaFactory = Outcome<string>.Create("hello");
+        var viaConstructor = new Outcome<string>("hello");
+
+        // Assert
+        Assert.Equal(viaConstructor, viaFactory);
+        Assert.True(viaFactory.TryGetValue(out var value));
+        Assert.Equal("hello", value);
+        Assert.Equal(viaConstructor.ToString(), viaFactory.ToString());
     }
 }

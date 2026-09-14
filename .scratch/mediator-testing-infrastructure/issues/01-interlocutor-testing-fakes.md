@@ -4,10 +4,10 @@
 
 **Blocked by:** None — can start immediately
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `29ae6c0` (review fixes in `4ef7899`)
 
-- [ ] `Interlocutor.Testing` package exists under `src/`, packaged the same way as the other shipped packages, with its own `tests/Interlocutor.Testing.Tests` project covering both fakes
-- [ ] `FakeSender` implements `ISender`, lets a test stub a response per request type, and exposes the requests it received for assertion
-- [ ] `FakePublisher` implements `IPublisher`, exposes the notifications it received for assertion, and supports assigning fake handlers so handler invocation can be asserted too
-- [ ] `Interlocutor.Architecture.Tests` gains the dependency rule for the new package: depends only on CommonKernel + Abstractions
-- [ ] `documentation/testing.md` documents both fakes with a compiling example
+- [x] `Interlocutor.Testing` package exists under `src/`, packaged the same way as the other shipped packages, with its own `tests/Interlocutor.Testing.Tests` project covering both fakes
+- [x] `FakeSender` implements `ISender`, lets a test stub a response per request type, and exposes the requests it received for assertion
+- [x] `FakePublisher` implements `IPublisher`, exposes the notifications it received for assertion, and supports assigning fake handlers so handler invocation can be asserted too
+- [x] `Interlocutor.Architecture.Tests` gains the dependency rule for the new package: depends only on CommonKernel + Abstractions
+- [x] `documentation/testing.md` documents both fakes with a compiling example

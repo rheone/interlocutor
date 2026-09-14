@@ -18,7 +18,7 @@
   </ItemGroup>
   <!-- SonarAnalyzer -->
   <ItemGroup>
-    <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.33.0.1635" />
+    <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.34.0.3385" />
   </ItemGroup>
   <!-- Async/await usage analyzers -->
   <ItemGroup>
@@ -33,7 +33,7 @@
        Interlocutor.Generator (tracked separately via its own AnalyzerReleases.*.md), tests, or
        TutorialProject. -->
   <ItemGroup>
-    <PackageVersion Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="5.6.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="5.11.0-1.26425.128" />
   </ItemGroup>
   <!-- Microsoft extensions (ship with .NET 11) -->
   <ItemGroup>
@@ -41,6 +41,9 @@
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="11.0.0-preview.6.26359.118" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="11.0.0-preview.7.26381.103" />
     <PackageVersion Include="Microsoft.Extensions.Logging" Version="11.0.0-preview.7.26381.103" />
+    <!-- IPipelineExplainer's Microsoft-DI-specific "an application's own IOptions/IOptionsMonitor
+         registration wins over the builder-supplied PipelineExplainerOptions" precedence. -->
+    <PackageVersion Include="Microsoft.Extensions.Options" Version="11.0.0-preview.7.26381.103" />
     <!-- Test-only: in-memory ASP.NET Core test host for AspNetCore.Tests' manual sanity-check host. -->
     <PackageVersion Include="Microsoft.AspNetCore.TestHost" Version="11.0.0-preview.7.26381.103" />
   </ItemGroup>
@@ -99,7 +102,7 @@
     <PackageVersion Include="xunit.v3" Version="4.0.0" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0" />
     <PackageVersion Include="Microsoft.Testing.Platform" Version="2.4.0" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.0" />
     <PackageVersion Include="coverlet.collector" Version="10.0.1" />
   </ItemGroup>
   <!-- NSubstitute -->
@@ -118,6 +121,6 @@
   </ItemGroup>
   <!-- Source Link -->
   <ItemGroup>
-    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.400" />
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="11.0.100-rc.1.26425.128" />
   </ItemGroup>
 </Project>

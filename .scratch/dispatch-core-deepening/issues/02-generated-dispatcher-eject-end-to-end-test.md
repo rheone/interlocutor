@@ -6,8 +6,8 @@ After this ticket, a generator test compiles the emitted dispatch source into a 
 
 **Blocked by:** 01 — Single pipeline-fold implementation shared by both dispatch paths
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `7740d22`
 
-- [ ] A generator test compiles emitted dispatch source into a real assembly/context and dispatches through the resulting `IGeneratedRequestDispatcher`
-- [ ] The test covers a behavior ejecting via `Eject.With` and one ejecting via `Eject.WithCase`, asserting the final outcome matches what the hand-written path produces for the equivalent scenario
-- [ ] Substring-only assertions in `EjectEmissionTests` that this new test makes redundant are removed, leaving only what still needs to prove the emitted call site is correctly shaped
+- [x] A generator test compiles emitted dispatch source into a real assembly/context and dispatches through the resulting `IGeneratedRequestDispatcher`
+- [x] The test covers a behavior ejecting via `Eject.With` and one ejecting via `Eject.WithCase`, asserting the final outcome matches what the hand-written path produces for the equivalent scenario
+- [x] Substring-only assertions in `EjectEmissionTests` that this new test makes redundant are removed, leaving only what still needs to prove the emitted call site is correctly shaped

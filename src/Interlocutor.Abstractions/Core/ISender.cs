@@ -5,12 +5,12 @@ using System.Runtime.CompilerServices;
 using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Queries;
 
-/// <summary>Send-only interface for request/response operations. Exposes SendAsync overloads for queries and commands.</summary>
+/// <summary>Send-only interface for request/response operations. Exposes <c>SendAsync</c> overloads for queries and commands.</summary>
 /// <remarks>
 /// <para>
-/// Use <see cref="ISender"/> for synchronous request/response workflows (queries reading data, commands writing data
-/// and returning a result). Every SendAsync call runs through the full pipeline behavior chain
-/// before returning a typed response to the caller.
+/// Use <see cref="ISender"/> for request/response workflows (queries reading data, commands writing data and
+/// returning a result) where the caller awaits a typed response. Every <c>SendAsync</c> call runs through the
+/// full pipeline behavior chain before returning a typed response to the caller.
 /// </para>
 /// <para>
 /// Three generic overloads handle different response patterns: queries returning typed data, commands returning
@@ -23,10 +23,13 @@ public interface ISender
     /// <summary>
     /// Dispatches a query to its registered handler, returning the result through all pipeline behaviors.
     /// </summary>
-    /// <typeparam name="TResponse">The query response type.</typeparam>
+    /// <typeparam name="TResponse">
+    /// The <see cref="IUnion"/>-shaped response type the query declares; the query's handler determines which
+    /// cases it models.
+    /// </typeparam>
     /// <param name="query">The query to dispatch.</param>
     /// <param name="ct">The cancellation token.</param>
-    /// <returns>A <see cref="Task{TResult}"/> representing the asynchronous operation.</returns>
+    /// <returns>A <see cref="Task{TResponse}"/> representing the asynchronous operation.</returns>
     Task<TResponse> SendAsync<TResponse>(IQuery<TResponse> query, CancellationToken ct = default)
         where TResponse : IUnion;
 
@@ -34,10 +37,13 @@ public interface ISender
     /// Dispatches a value-returning command to its registered handler, returning the result through all
     /// pipeline behaviors.
     /// </summary>
-    /// <typeparam name="TResponse">The command response type.</typeparam>
+    /// <typeparam name="TResponse">
+    /// The <see cref="IUnion"/>-shaped response type the command declares; the command's handler determines
+    /// which cases it models.
+    /// </typeparam>
     /// <param name="command">The command to dispatch.</param>
     /// <param name="ct">The cancellation token.</param>
-    /// <returns>A <see cref="Task{TResult}"/> representing the asynchronous operation.</returns>
+    /// <returns>A <see cref="Task{TResponse}"/> representing the asynchronous operation.</returns>
     Task<TResponse> SendAsync<TResponse>(ICommand<TResponse> command, CancellationToken ct = default)
         where TResponse : IUnion;
 

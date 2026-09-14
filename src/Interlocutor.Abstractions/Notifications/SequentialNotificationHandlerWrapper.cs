@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 /// <summary>Dispatches a notification to all applicable handlers sequentially, stopping on the first failure.</summary>
-/// <typeparam name="TNotification">The notification type. Must implement <see cref="INotification"/>.</typeparam>
+/// <typeparam name="TNotification">The concrete notification type being dispatched to its <see cref="INotificationHandler{TNotification}"/> subscribers.</typeparam>
 /// <remarks>
 /// <para>
 /// Resolves every handler contravariantly applicable to <typeparamref name="TNotification"/> via
@@ -37,8 +37,9 @@ internal sealed class SequentialNotificationHandlerWrapper<
     {
         var (typedNotification, handlers) = ResolveHandlers<TNotification>(notification, services, activity);
 
-        // Execute handlers sequentially in the resolved (contravariant, order-table-sorted) order. If a
-        // handler throws, the exception propagates immediately and subsequent handlers are not invoked.
+        // Handlers arrive already in the order they should run (contravariant resolution, then the
+        // order-table sort - see NotificationHandlerResolver); awaiting each in turn here is what makes
+        // that order an actual execution order rather than just a resolution order.
         foreach (var handler in handlers)
         {
             await handler.HandleAsync(typedNotification, ct).ConfigureAwait(false);

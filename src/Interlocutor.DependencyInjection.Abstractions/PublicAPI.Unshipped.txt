@@ -14,9 +14,9 @@ Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.BehaviorFactor
 Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.Behaviors.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration>!
 Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.Defaults.get -> System.Collections.Generic.IReadOnlyCollection<Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration>!
 Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.DescribeRegistrations() -> Interlocutor.DependencyInjection.Abstractions.RegistrationReport!
-Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.Eject(params System.Type![]! implementationTypes) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder!
-Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.Eject<TImplementation>() -> Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder!
-Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.EjectedImplementationTypes.get -> System.Collections.Generic.IReadOnlyList<System.Type!>!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.Exclude(params System.Type![]! implementationTypes) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.Exclude<TImplementation>() -> Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.ExcludedImplementationTypes.get -> System.Collections.Generic.IReadOnlyList<System.Type!>!
 Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.GeneratedRegistrations.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration>!
 Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.Handlers.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration>!
 Interlocutor.DependencyInjection.Abstractions.InterlocutorBuilder.InterlocutorBuilder() -> void
@@ -85,6 +85,8 @@ Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.Overri
 Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.OverrideRateLimiter<TLimiter>(Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime lifetime = Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Scoped) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder!
 Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.OverrideRules.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule!>!
 Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.OverrideTimeoutPolicy<TPolicy>(Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime lifetime = Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Scoped) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.AddPipelineExplainer(Interlocutor.Abstractions.Pipeline.Diagnostics.PipelineExplainerOptions? options = null) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder!
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.PipelineExplainerConfiguration.get -> Interlocutor.Abstractions.Pipeline.Diagnostics.PipelineExplainerOptions?
 Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.Skipped.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.SkippedRegistration>!
 Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.StageFactories.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.InterlocutorFactoryRegistration>!
 Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.Stages.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.InterlocutorRegistration>!
@@ -113,7 +115,7 @@ Interlocutor.DependencyInjection.Abstractions.IRootScopeDetector
 Interlocutor.DependencyInjection.Abstractions.IRootScopeDetector.IsRootScope.get -> bool
 Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRegistry
 Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRegistry.PipelineOverrideRegistry(System.Collections.Generic.IReadOnlyList<Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule!>! rules) -> void
-Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRegistry.TryGetOverride(System.Type! requestType, out System.Collections.Generic.IReadOnlyList<System.Type!>! behaviorTypes) -> bool
+Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRegistry.TryGetOverride(System.Type! requestType) -> Interlocutor.Abstractions.Pipeline.PipelineOverrideMatch?
 Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule
 Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule.<Clone>$() -> Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule!
 Interlocutor.DependencyInjection.Abstractions.PipelineOverrideRule.BehaviorTypes.get -> System.Collections.Generic.IReadOnlyList<System.Type!>!
@@ -249,3 +251,4 @@ static Interlocutor.DependencyInjection.Abstractions.TypeMatchRule.operator ==(I
 ~override Interlocutor.DependencyInjection.Abstractions.SkippedRegistration.ToString() -> string
 ~override Interlocutor.DependencyInjection.Abstractions.TypeLoadFailure.Equals(object obj) -> bool
 ~override Interlocutor.DependencyInjection.Abstractions.TypeLoadFailure.ToString() -> string
+Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder.AddConditionalBehavior<TBehavior, TRequest, TResponse>(System.Func<System.IServiceProvider!, TRequest, bool>! shouldRun, Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime lifetime = Interlocutor.DependencyInjection.Abstractions.RegistrationLifetime.Scoped) -> Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder!

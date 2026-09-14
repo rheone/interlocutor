@@ -40,10 +40,12 @@ internal sealed record GenericParameterConstraintModel(
 {
     /// <inheritdoc/>
     /// <remarks>
+    /// <para>
     /// Overridden for the same reason as <see cref="CompilationInfo.Equals(CompilationInfo?)"/>:
     /// <see cref="ImmutableArray{T}"/>'s own <c>Equals</c> compares its backing array by reference, not by
     /// element, so the compiler-generated positional-record equality this type would otherwise get from
     /// <see cref="ConstraintTypeMetadataNames"/> is useless for incremental-pipeline caching (ticket 53).
+    /// </para>
     /// </remarks>
     public bool Equals(GenericParameterConstraintModel? other) =>
         other is not null

@@ -7,10 +7,11 @@ using System;
 /// <see cref="IOutcomeCase"/> and returning one of its members, or <see langword="null"/> if it doesn't.
 /// </summary>
 /// <remarks>
-/// Every reflection-based consumer that needs to fall back to <see cref="IOutcomeCase"/> (the outcome
-/// classifier, the outcome case registry, AspNetCore's HTTP mapping) was independently repeating the same
-/// <c>response is IOutcomeCase ...</c> pattern match - this centralizes it in one place, so a future change
-/// to how that fallback is resolved only needs to land here.
+/// The outcome classifier and the outcome case registry each independently repeated the same
+/// <c>response is IOutcomeCase ...</c> pattern match to fall back to <see cref="IOutcomeCase"/> - this
+/// centralizes it in one place, so a future change to how that fallback is resolved only needs to land here.
+/// AspNetCore's HTTP mapping never repeated the pattern itself, but benefits the same way: it resolves every
+/// response's active case through the outcome case registry, which uses this member internally.
 /// </remarks>
 public static class OutcomeCaseExtensions
 {

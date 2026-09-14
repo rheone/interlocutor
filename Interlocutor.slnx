@@ -11,6 +11,7 @@
     <Project Path="src/Interlocutor.Persistence.Abstractions/Interlocutor.Persistence.Abstractions.csproj" />
     <Project Path="src/Interlocutor.Persistence.EntityFrameworkCore/Interlocutor.Persistence.EntityFrameworkCore.csproj" />
     <Project Path="src/Interlocutor.Persistence.NHibernate/Interlocutor.Persistence.NHibernate.csproj" />
+    <Project Path="src/Interlocutor.Testing/Interlocutor.Testing.csproj" />
   </Folder>
   <Folder Name="/TutorialProject/">
     <Project Path="TutorialProject/TodoTasks.Api/TodoTasks.Api.csproj" />
@@ -32,5 +33,7 @@
     <Project Path="tests/Interlocutor.Persistence.Abstractions.Tests/Interlocutor.Persistence.Abstractions.Tests.csproj" />
     <Project Path="tests/Interlocutor.Persistence.EntityFrameworkCore.Tests/Interlocutor.Persistence.EntityFrameworkCore.Tests.csproj" />
     <Project Path="tests/Interlocutor.Persistence.NHibernate.Tests/Interlocutor.Persistence.NHibernate.Tests.csproj" />
+    <Project Path="tests/Interlocutor.Testing.Tests/Interlocutor.Testing.Tests.csproj" />
+    <Project Path="tests/Interlocutor.IntegrationTests/Interlocutor.IntegrationTests.csproj" />
   </Folder>
 </Solution>

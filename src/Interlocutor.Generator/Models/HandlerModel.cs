@@ -11,18 +11,21 @@ using Microsoft.CodeAnalysis;
 /// query/command/bare-command handlers, response) type.
 /// </summary>
 /// <remarks>
+/// <para>
 /// One handler type implementing more than one handler contract (or the same contract closed over more than
 /// one request) produces one <see cref="HandlerModel"/> per closed interface - mirroring
 /// <c>Interlocutor.DependencyInjection.Abstractions.HandlerDiscovery</c>'s "one registration per matching
 /// handler interface" rule, replicated here at compile time.
+/// </para>
 /// </remarks>
 /// <param name="Kind">Which of the four handler contracts <see cref="HandlerTypeName"/> implements here.</param>
 /// <param name="HandlerTypeName">The handler's fully-qualified (<c>global::</c>-prefixed) type name.</param>
 /// <param name="RequestTypeName">The request type's fully-qualified (<c>global::</c>-prefixed) type name.</param>
 /// <param name="ResponseTypeName">
-/// The response type's fully-qualified (<c>global::</c>-prefixed) type name - the handler's own <c>TResponse</c>/
-/// <c>TResult</c> type argument. Never <see langword="null"/>: even <see cref="HandlerKind.Notification"/> handlers
-/// have no response type in the pipeline sense, but this field is only read for the three kinds that do.
+/// The response (or, for a bare-command handler, result) type's fully-qualified (<c>global::</c>-prefixed) type
+/// name - the handler's own <c>TResponse</c>/<c>TResult</c> type argument. Populated for the query, command, and
+/// bare-command kinds, which all declare one; <see langword="null"/> for <see cref="HandlerKind.Notification"/>,
+/// which has no response type to carry.
 /// </param>
 /// <param name="ServiceInterfaceName">
 /// The fully-qualified closed handler-contract interface name (for example
@@ -63,6 +66,7 @@ internal sealed record HandlerModel(
 
     /// <inheritdoc/>
     /// <remarks>
+    /// <para>
     /// Overridden for two reasons (ticket 53). First, the same reason as
     /// <see cref="CompilationInfo.Equals(CompilationInfo?)"/>: <see cref="ImmutableArray{T}"/>'s own
     /// <c>Equals</c> compares its backing array by reference, not by element, so the compiler-generated
@@ -77,6 +81,7 @@ internal sealed record HandlerModel(
     /// instance produced them, so comparing <see cref="Location"/> would defeat downstream caching for reasons
     /// that have nothing to do with what actually changed. <see cref="Location"/> remains available as data for
     /// anchoring diagnostics within a single run; it is simply not part of this type's notion of equality.
+    /// </para>
     /// </remarks>
     public bool Equals(HandlerModel? other) =>
         other is not null

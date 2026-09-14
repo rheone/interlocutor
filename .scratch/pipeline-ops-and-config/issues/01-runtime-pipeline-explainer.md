@@ -1,6 +1,6 @@
 # 01 - Runtime pipeline explainer
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `a7a5582`.
 
 **What to build:** A diagnostic service that answers, against a live, already-built `IServiceProvider`, which pipeline behaviors resolve for a given request/response type pair - the runtime counterpart to `InterlocutorBuilder.DescribeRegistrations()`, which only reports the builder's own pre-container-build configuration.
 

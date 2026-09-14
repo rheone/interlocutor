@@ -1,6 +1,6 @@
 # 03 - Conditional (canary/percentage-rollout) behavior wrapper
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `4262e1b`
 
 **What to build:** A way to gate an existing `IPipelineBehavior<TRequest,TResponse>` behind a runtime predicate, so a new or risky behavior (a stricter validation rule, a new authorization policy) can be turned on for a fraction of traffic and ramped up without a redeploy, instead of the current all-or-nothing "it's in the chain or it isn't" choice every `Add*Behavior` call makes today.
 
@@ -46,12 +46,12 @@ public sealed class RolloutOptions
 A default gate implementation evaluates `PercentageEnabled` via a simple random draw per dispatch (no sticky-by-key assignment for v1 - note that as a fast-follow, not required now, to keep this scoped). Under Microsoft DI, the gate resolves `IOptionsMonitor<RolloutOptions>` (keyed by name, so more than one canary can run concurrently - use the standard named-options pattern, e.g. `services.Configure<RolloutOptions>("MyNewValidationRollout", configuration.GetSection(...))`) so `PercentageEnabled` can be adjusted live via config reload without a redeploy.
 
 **Acceptance criteria:**
-- [ ] `ConditionalBehavior<TRequest,TResponse>` runs `inner` only when `shouldRun(request)` is true, otherwise passes straight to `next()`
-- [ ] `AddConditionalBehavior` registers the wrapped behavior resolvably at the correct position in the chain, consistent with how an ordinary `AddBehavior` call would
-- [ ] The shipped percentage-rollout gate, at 0%, never runs `inner`; at 100%, always runs it; at an intermediate value, runs it approximately that fraction of the time (statistical test with a tolerance, not an exact count)
-- [ ] Under Microsoft DI, `RolloutOptions.PercentageEnabled` is adjustable via `IOptionsMonitor<RolloutOptions>` reload without restarting the application
-- [ ] Autofac gets the identical POCO-configured gate with no `IOptions` dependency (a plain `Func<TRequest, bool>` or an injected non-reloading `RolloutOptions` snapshot is an acceptable Autofac-side substitute - document the difference in capability rather than silently degrading)
-- [ ] `documentation/pipeline-and-behaviors.md` documents this with a worked example (e.g., ramping a new validation rule from 0% to 100%)
-- [ ] New tests cover: gate on/off, percentage distribution, live reload under Microsoft DI
+- [x] `ConditionalBehavior<TRequest,TResponse>` runs `inner` only when `shouldRun(request)` is true, otherwise passes straight to `next()`
+- [x] `AddConditionalBehavior` registers the wrapped behavior resolvably at the correct position in the chain, consistent with how an ordinary `AddBehavior` call would
+- [x] The shipped percentage-rollout gate, at 0%, never runs `inner`; at 100%, always runs it; at an intermediate value, runs it approximately that fraction of the time (statistical test with a tolerance, not an exact count)
+- [x] Under Microsoft DI, `RolloutOptions.PercentageEnabled` is adjustable via `IOptionsMonitor<RolloutOptions>` reload without restarting the application
+- [x] Autofac gets the identical POCO-configured gate with no `IOptions` dependency (a plain `Func<TRequest, bool>` or an injected non-reloading `RolloutOptions` snapshot is an acceptable Autofac-side substitute - document the difference in capability rather than silently degrading)
+- [x] `documentation/pipeline-and-behaviors.md` documents this with a worked example (e.g., ramping a new validation rule from 0% to 100%)
+- [x] New tests cover: gate on/off, percentage distribution, live reload under Microsoft DI
 
 **Blocked by:** None - can start immediately.

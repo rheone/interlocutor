@@ -19,7 +19,7 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </para>
 /// <para>
 /// <b>This is an internal signal, never an expected-outcome exception.</b> Per this library's own convention
-/// (handlers return <see cref="IOutcome"/> unions for expected failures; exceptions are reserved for
+/// (handlers return <see cref="IUnion"/> outcomes for expected failures; exceptions are reserved for
 /// bugs or infrastructure faults), this type must never be observed by a caller of
 /// <c>Interlocutor.Abstractions.Core.IMediator</c>. Every place that composes a pipeline behavior chain around
 /// a handler call (<c>CommandHandlerWrapper</c>, <c>BareCommandHandlerWrapper</c>, <c>QueryHandlerWrapper</c>,

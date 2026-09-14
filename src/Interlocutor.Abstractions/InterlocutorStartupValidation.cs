@@ -247,6 +247,10 @@ public static class InterlocutorStartupValidation
     /// actually registered in <paramref name="sp"/> - a DI-registration fact, not something derivable from
     /// <paramref name="requestType"/>'s own declared shape.
     /// </summary>
+    /// <param name="sp">The service provider to check for a registered validator.</param>
+    /// <param name="validatorInterface">The open generic <c>FluentValidation.IValidator&lt;&gt;</c> type, resolved by name.</param>
+    /// <param name="requestType">The concrete request type to close <paramref name="validatorInterface"/> over.</param>
+    /// <returns><see langword="true"/> if at least one matching validator is registered; otherwise, <see langword="false"/>.</returns>
     [UnconditionalSuppressMessage(
         "Trimming",
         "IL2055:MakeGenericType",
@@ -275,6 +279,10 @@ public static class InterlocutorStartupValidation
     /// primary constructor (e.g. <see cref="RateLimited"/>) or a reference type with no parameterless
     /// constructor at all, without needing to discover or satisfy either shape's constructor arguments.
     /// </remarks>
+    /// <param name="caseRegistry">The registry to probe for support of the (<paramref name="responseType"/>, <paramref name="caseType"/>) pairing.</param>
+    /// <param name="responseType">The <see cref="IUnion"/>-constrained response type construction is attempted for.</param>
+    /// <param name="caseType">The case type construction is attempted from.</param>
+    /// <returns><see langword="true"/> if <paramref name="caseRegistry"/> could construct the pairing; otherwise, <see langword="false"/>.</returns>
     [UnconditionalSuppressMessage(
         "Trimming",
         "IL2067:DynamicallyAccessedMembers",
@@ -315,6 +323,8 @@ public static class InterlocutorStartupValidation
     /// <c>Interlocutor.DependencyInjection.Abstractions.InterlocutorPipelineBuilder</c> uses to detect an
     /// optional peer package by name without taking a compile-time reference to it.
     /// </summary>
+    /// <param name="typeName">The assembly-qualified type name to resolve.</param>
+    /// <returns>The resolved <see cref="Type"/>, or <see langword="null"/> if it (or its assembly) is not loaded.</returns>
     [UnconditionalSuppressMessage(
         "Trimming",
         "IL2057:UnrecognizedReflectionPattern",

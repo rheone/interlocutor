@@ -3,13 +3,15 @@ namespace Interlocutor.CommonKernel.ResultTypes;
 using System;
 
 /// <summary>
-/// Implemented by every compiler-generated <c>union</c> <see cref="GenerateOutcomeMembersAttribute"/> emits
-/// members for. Exposes the active case's identity directly, so a reflection-based consumer (the outcome
-/// classifier, the outcome case registry, AspNetCore's HTTP mapping) doesn't have to infer it from
-/// <see cref="System.Runtime.CompilerServices.IUnion.Value"/>'s runtime type - which is <see langword="null"/>
-/// both when a case legitimately holds a <see langword="null"/> payload (a nullable reference type, or a
-/// <see cref="Nullable{T}"/> with no value) and when the union was never assigned a case at all, and so can't
-/// tell the two apart on its own.
+/// Implemented by every compiler-generated <c>union</c> that both is attributed with
+/// <see cref="GenerateOutcomeMembersAttribute"/> and declares <see cref="IOutcome"/> in its own base list - the
+/// attribute emits this member only for such unions, leaving one declared without <see cref="IOutcome"/> a
+/// plain tagged union with no case-identity surface. Exposes the active case's identity directly, so a
+/// reflection-based consumer (the outcome classifier, the outcome case registry, AspNetCore's HTTP mapping)
+/// doesn't have to infer it from <see cref="System.Runtime.CompilerServices.IUnion.Value"/>'s runtime type -
+/// which is <see langword="null"/> both when a case legitimately holds a <see langword="null"/> payload (a
+/// nullable reference type, or a <see cref="Nullable{T}"/> with no value) and when the union was never assigned
+/// a case at all, and so can't tell the two apart on its own.
 /// </summary>
 public interface IOutcomeCase
 {

@@ -44,18 +44,10 @@ public class ServiceCollectionExtensionsTests
             .ToList();
 
         // Assert
-        // Registration order must match UseRecommendedChain's documented canonical order (logging, auditing,
-        // authorization, validation, transaction) - not merely contain each behavior.
-        Assert.Equal(
-            [
-                "LoggingBehavior`2",
-                "AuditingBehavior`2",
-                "AuthorizationBehavior`2",
-                "ValidationBehavior`2",
-                "UnitOfWorkBehavior`2",
-            ],
-            behaviorImplementationTypes
-        );
+        // Registration order must match UseRecommendedChain's documented canonical order (logging,
+        // validation, transaction) - not merely contain each behavior. Auditing/Authorization are opt-in,
+        // added via AddAuditingBehavior()/AddAuthorizationBehavior(), not part of this minimal default.
+        Assert.Equal(["LoggingBehavior`2", "ValidationBehavior`2", "UnitOfWorkBehavior`2"], behaviorImplementationTypes);
     }
 
     [Fact]

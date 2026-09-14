@@ -21,8 +21,8 @@ public sealed class ValidationShapeMismatchAnalyzerTests
     [Fact]
     public async Task ValidationShapeMismatch_ResourceCommandHandlerShape_WithValidator_Reports_Test()
     {
-        // Arrange - ResourceCommandHandler's fixed Outcome<TSuccess, NotFound, Failure> shape has no case a
-        // real validation failure can occupy.
+        // Arrange - a ResourceCommandHandler TResponse picked without validation in mind, e.g.
+        // Outcome<string, NotFound, Failure>, has no case a real validation failure can occupy.
         var source =
             CommonUsings
             + """

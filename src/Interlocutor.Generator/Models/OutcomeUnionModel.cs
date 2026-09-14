@@ -23,10 +23,13 @@ using Microsoft.CodeAnalysis;
 /// partial generic type's declarations to agree).
 /// </param>
 /// <param name="CaseTypeDisplayStrings">
-/// Every case type's fully-qualified display string, in declared order - the first is the success case, every
-/// remaining entry an independent failure case. For a generic case type parameter this is just its name (a
-/// type parameter is never qualified); for a concrete case type it is <c>global::</c>-prefixed, so the
-/// generated file never depends on the original declaration's own <c>using</c> directives.
+/// Every case type's fully-qualified display string, in declaration order. That order carries no positional
+/// meaning beyond bookkeeping - it only determines each generated member's per-case parameter/overload
+/// ordering (see <see cref="Emission.OutcomeMemberEmitter"/>'s <c>Match</c>/<c>Switch</c>/<c>Create</c>
+/// emission; see also <see cref="ImplementsIOutcome"/>'s remarks). For a
+/// generic case type parameter this is just its name (a type parameter is never qualified); for a concrete
+/// case type it is <c>global::</c>-prefixed, so the generated file never depends on the original declaration's
+/// own <c>using</c> directives.
 /// </param>
 /// <param name="DisplayName">The union's fully-qualified display name, for diagnostic messages.</param>
 /// <param name="HintName">The unique hint name <see cref="OutcomeMemberGenerator"/> passes to <c>AddSource</c>.</param>
@@ -37,8 +40,7 @@ using Microsoft.CodeAnalysis;
 /// identity surface - <c>IOutcomeCase</c>, <c>ActiveCaseType</c> - which
 /// <see cref="OutcomeMemberEmitter"/> only emits when this is <see langword="true"/>. The sum-type members
 /// (<c>Match</c>, <c>Switch</c>, per-case <c>TryGetValue</c>, <c>ToString</c>, equality) are unconditional -
-/// a union declared without <c>: IOutcome</c> is a plain tagged union with no success/failure opinion, not a
-/// lesser outcome.
+/// a union declared without <c>: IOutcome</c> is simply a plain tagged union, not a lesser one.
 /// </param>
 /// <param name="CaseAccessorNames">
 /// Parallel to <see cref="CaseTypeDisplayStrings"/>: each concrete case type's simple name (e.g.

@@ -99,6 +99,8 @@ internal static class RequestDispatchSwitchEmitter
     }
 
     /// <summary>Emits a case dispatching a matched request type into its handler's wrapper.</summary>
+    /// <param name="builder">The source being built.</param>
+    /// <param name="handler">The handler whose request type to switch on and whose wrapper to dispatch into.</param>
     private static void EmitDispatchCase(StringBuilder builder, HandlerModel handler)
     {
         var wrapperType = $"global::{GeneratedNamespace}.{DispatchWrapperEmitter.GetWrapperClassName(handler)}";
@@ -113,6 +115,8 @@ internal static class RequestDispatchSwitchEmitter
     /// generated-dispatch equivalent of the reflection path's explicit registration check, thrown as the same
     /// named <c>HandlerNotRegisteredException</c> rather than falling to the switch's <c>default</c> branch.
     /// </summary>
+    /// <param name="builder">The source being built.</param>
+    /// <param name="request">The unmatched request type to switch on.</param>
     private static void EmitUnregisteredCase(StringBuilder builder, RequestModel request)
     {
         var expectedHandlerType = request.Kind switch

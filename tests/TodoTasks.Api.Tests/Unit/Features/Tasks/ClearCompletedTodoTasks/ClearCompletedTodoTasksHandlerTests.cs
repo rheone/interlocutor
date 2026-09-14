@@ -41,7 +41,7 @@ public sealed class ClearCompletedTodoTasksHandlerTests
         var command = new ClearCompletedTodoTasksCommand("owner-1");
 
         // Act
-        var result = await this.handler.Handle(command, CancellationToken.None);
+        var result = await this.handler.HandleAsync(command, CancellationToken.None);
 
         // Assert - Outcome is case-less; reaching this line without throwing already is the acknowledgment
         // (see Outcome's own remarks). What's worth proving is the delete/save behavior below.
@@ -72,7 +72,7 @@ public sealed class ClearCompletedTodoTasksHandlerTests
         var command = new ClearCompletedTodoTasksCommand("owner-1");
 
         // Act
-        await this.handler.Handle(command, CancellationToken.None);
+        await this.handler.HandleAsync(command, CancellationToken.None);
 
         // Assert
         var incomplete = new TodoTask("Buy milk", "owner-1", null);
@@ -98,7 +98,7 @@ public sealed class ClearCompletedTodoTasksHandlerTests
         var command = new ClearCompletedTodoTasksCommand("owner-1");
 
         // Act
-        await this.handler.Handle(command, CancellationToken.None);
+        await this.handler.HandleAsync(command, CancellationToken.None);
 
         // Assert
         var otherOwnersTask = new TodoTask("Buy milk", "owner-2", null) { IsCompleted = true };
@@ -124,7 +124,7 @@ public sealed class ClearCompletedTodoTasksHandlerTests
         var command = new ClearCompletedTodoTasksCommand("owner-1");
 
         // Act
-        var result = await this.handler.Handle(command, CancellationToken.None);
+        var result = await this.handler.HandleAsync(command, CancellationToken.None);
 
         // Assert - still saves (a no-op SaveChangesAsync is harmless) and acknowledges even when there
         // was nothing to clear - Outcome is case-less, so there's no distinct "nothing to do" case to report.

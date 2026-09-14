@@ -26,10 +26,16 @@ public sealed class DelegatePipelineBehavior<TRequest, TResponse>(
 ) : PipelineBehaviorBase<TRequest, TResponse>
 {
     /// <inheritdoc />
+    /// <remarks>
+    /// <para>Forwards to the <c>onEnter</c> delegate supplied at construction when one was given; otherwise defers to the base no-op.</para>
+    /// </remarks>
     protected override Task<StageResult<TResponse>> OnEnterAsync(TRequest request, CancellationToken ct) =>
         onEnter is null ? base.OnEnterAsync(request, ct) : onEnter(request, ct);
 
     /// <inheritdoc />
+    /// <remarks>
+    /// <para>Forwards to the <c>onExit</c> delegate supplied at construction when one was given; otherwise defers to the base pass-through.</para>
+    /// </remarks>
     protected override Task<TResponse> OnExitAsync(TRequest request, TResponse result, CancellationToken ct) =>
         onExit is null ? base.OnExitAsync(request, result, ct) : onExit(request, result, ct);
 }

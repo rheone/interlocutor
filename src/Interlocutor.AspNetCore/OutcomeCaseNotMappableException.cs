@@ -1,10 +1,12 @@
 namespace Interlocutor.AspNetCore;
 
 /// <summary>
-/// Thrown by the reflective, runtime-typed <c>ToActionResult</c>/<c>ToMinimalApiResult</c> overloads when a
-/// response's active case can be neither classified as success nor recognized as one of the built-in failure
-/// case types/interfaces <see cref="DefaultHttpOutcomeStatusMapper"/> knows - so there is no principled way to
-/// pick an HTTP status code for it.
+/// Thrown by <see cref="ResultExtensions"/>'s <c>ToActionResult</c>/<c>ToMinimalApiResult</c> overloads - both
+/// the reflective, runtime-typed catch-all and (for a declared-failure-slot case with no explicit mapper
+/// supplied) the source-generated dedicated per-arity overloads - when a case's runtime type cannot be
+/// classified into a principled HTTP status: it is neither the bare <see cref="Interlocutor.CommonKernel.ResultTypes.Success"/>
+/// marker nor one of the built-in failure case types/interfaces <see cref="DefaultHttpOutcomeStatusMapper"/>
+/// knows, and no caller-supplied mapper took responsibility for it either.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -18,13 +20,22 @@ namespace Interlocutor.AspNetCore;
 /// not yet known whether the active case is a failure at all.
 /// </para>
 /// <para>
-/// Only the reflective catch-all overloads can throw this - the dedicated, per-arity overloads (source-generated
-/// for the six built-in <c>Outcome</c>/<c>Outcome&lt;...&gt;</c> arities) resolve success-versus-failure with an
-/// ordinary compile-time <c>switch</c> over the statically known case types, so the ambiguity this exception
-/// represents cannot arise there. A caller who hits this exception for a real union with a custom success
-/// payload type should prefer the dedicated overload (calling it against the concrete <c>Outcome&lt;...&gt;</c>
-/// type rather than through a bare <see cref="Interlocutor.CommonKernel.ResultTypes.IOutcome"/>-constrained
-/// generic) instead of working around the reflective path.
+/// Both the reflective catch-all overloads and the dedicated, per-arity overloads (source-generated for the
+/// built-in <c>Outcome</c>/<c>Outcome&lt;...&gt;</c> arities) can throw this, though the exact trigger differs,
+/// and is narrower for the dedicated overloads. The catch-all has no compile-time case-position information at
+/// all, so it cannot even tell whether the active case represents success or failure once it is neither the
+/// bare <see cref="Interlocutor.CommonKernel.ResultTypes.Success"/> marker nor a recognized failure shape - an
+/// explicitly supplied mapper cannot resolve that ambiguity either, since
+/// <see cref="Interlocutor.Abstractions.Pipeline.Mapping.IOutcomeMapper{TResult}.Map{TFailure}"/> only knows how
+/// to render a value <em>already known</em> to be a failure, so the catch-all throws regardless
+/// of whether a mapper was supplied. The dedicated overloads always know, via their own <c>Match</c>, which case
+/// is active, so this exception is narrower there: it fires only for a declared-failure-slot (<c>T2..Tn</c>)
+/// value that matches none of the recognized failure shapes <em>and</em> no explicit
+/// <see cref="Interlocutor.AspNetCore.IOutcomeStatusMapper"/> was supplied to take responsibility for it - such
+/// a mapper is always trusted for whatever type it is handed, since only the *status* (not the success/failure
+/// classification) is in question there. A case value in the success slot never throws this, recognized-failure-
+/// shaped or not - see <see cref="ResultExtensions"/>'s own remarks for why the success slot has no comparable
+/// "unrecognized type" concept to guess about.
 /// </para>
 /// </remarks>
 // RCS1194 wants the standard parameterless/message/message+innerException/serialization constructor set. This

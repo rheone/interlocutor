@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Pipeline.Cases;
+using Interlocutor.Abstractions.Pipeline.Diagnostics;
 
 /// <summary>
 /// Container-neutral fluent builder for pipeline composition alone - behaviors, stages, the
@@ -131,6 +132,17 @@ public sealed class InterlocutorPipelineBuilder
     /// </summary>
     /// <value>Every pipeline override rule added so far.</value>
     public IReadOnlyList<PipelineOverrideRule> OverrideRules => this._overrideRules;
+
+    /// <summary>
+    /// Gets the configuration <see cref="AddPipelineExplainer"/> was called with, or <see langword="null"/>
+    /// if it was never called - the signal both <c>Interlocutor.DependencyInjection.Microsoft</c> and
+    /// <c>Interlocutor.DependencyInjection.Autofac</c> use to decide whether to register
+    /// <c>IPipelineExplainer</c> at all. <c>IPipelineExplainer</c> is opt-in at the registration level (this
+    /// property stays <see langword="null"/> unless <see cref="AddPipelineExplainer"/> is called) as well as
+    /// at the <see cref="Interlocutor.Abstractions.Pipeline.Diagnostics.PipelineExplainerOptions.Enabled"/> level.
+    /// </summary>
+    /// <value>The configuration <see cref="AddPipelineExplainer"/> was called with, or <see langword="null"/>.</value>
+    public PipelineExplainerOptions? PipelineExplainerConfiguration { get; private set; }
 
     /// <summary>
     /// Gets the try-add-able default registrations this builder has set, one per service type. When
@@ -275,6 +287,92 @@ public sealed class InterlocutorPipelineBuilder
     }
 
     /// <summary>
+    /// Adds <typeparamref name="TBehavior"/> to the chain wrapped in
+    /// <see cref="ConditionalBehavior{TRequest,TResponse}"/>, so it only runs when <paramref name="shouldRun"/>
+    /// returns <see langword="true"/> for the dispatched request - otherwise the chain proceeds straight to
+    /// <c>next()</c>, as if <typeparamref name="TBehavior"/> had never been registered. Lets a new or risky
+    /// behavior (a stricter validation rule, a new authorization policy) be turned on for a fraction of
+    /// traffic and ramped up without a redeploy, instead of the all-or-nothing choice every other
+    /// <c>Add*Behavior</c> call makes.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Built from the same primitives as the service-resolving
+    /// <see cref="AddBehavior{TRequest,TResponse}(Func{IServiceProvider,TRequest,CancellationToken,Task{StageResult{TResponse}}},Func{IServiceProvider,TRequest,TResponse,CancellationToken,Task{TResponse}},RegistrationLifetime)"/>
+    /// overload: this method is a factory-form registration under the hood, so it lands in
+    /// <see cref="BehaviorFactories"/> rather than <see cref="Behaviors"/> and, per that property's own
+    /// remarks, resolves after every type-based <see cref="Behaviors"/> entry regardless of interleaved call
+    /// order.
+    /// </para>
+    /// <para>
+    /// <typeparamref name="TBehavior"/> is resolved from the container as the wrapper's inner behavior via a
+    /// try-add default registration of <typeparamref name="TBehavior"/> against its own concrete type - the
+    /// same "a consumer's own registration wins" precedent every other pipeline-behavior dependency default
+    /// in <see cref="Defaults"/> already carries. <typeparamref name="TBehavior"/> is registered scoped by
+    /// default, the same as <see cref="AddBehavior(Type, RegistrationLifetime)"/>; <paramref name="lifetime"/>
+    /// governs the <see cref="ConditionalBehavior{TRequest,TResponse}"/> wrapper itself, not
+    /// <typeparamref name="TBehavior"/>'s own registration. Because <see cref="ConditionalBehavior{TRequest,TResponse}"/>
+    /// wraps an already-constructed inner instance rather than a per-request factory, <typeparamref name="TBehavior"/>
+    /// is constructed whenever the wrapper itself is - once per resolution of the chain, the same as every
+    /// other registered behavior - not lazily deferred until <paramref name="shouldRun"/> is evaluated against
+    /// a specific request. <paramref name="shouldRun"/> only gates whether the already-constructed
+    /// <typeparamref name="TBehavior"/> instance's <c>HandleAsync</c> runs for a given dispatch, not whether it
+    /// gets constructed at all.
+    /// </para>
+    /// <para>
+    /// Ships one built-in gate, a percentage rollout - see <see cref="RolloutOptions"/> and the
+    /// Microsoft-DI/Autofac-specific <c>AddRolloutBehavior</c> sugar each container package builds on top of
+    /// this method - but <paramref name="shouldRun"/> accepts any predicate, so a consumer can gate on a
+    /// feature flag, a tenant allowlist, or anything else a runtime decision can be made from.
+    /// </para>
+    /// </remarks>
+    /// <typeparam name="TBehavior">The concrete <see cref="IPipelineBehavior{TRequest,TResponse}"/> implementation to gate.</typeparam>
+    /// <typeparam name="TRequest">The request type the behavior participates in.</typeparam>
+    /// <typeparam name="TResponse">The response type the behavior participates in.</typeparam>
+    /// <param name="shouldRun">
+    /// Evaluated once per dispatch, given the resolving <see cref="IServiceProvider"/> and the request
+    /// instance - <see langword="true"/> runs <typeparamref name="TBehavior"/>, <see langword="false"/> skips
+    /// straight to <c>next()</c>.
+    /// </param>
+    /// <param name="lifetime">
+    /// The service lifetime to register the <see cref="ConditionalBehavior{TRequest,TResponse}"/> wrapper
+    /// with. Defaults to scoped.
+    /// </param>
+    /// <returns>This builder, for chaining.</returns>
+    public InterlocutorPipelineBuilder AddConditionalBehavior<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TBehavior,
+        TRequest,
+        TResponse
+    >(Func<IServiceProvider, TRequest, bool> shouldRun, RegistrationLifetime lifetime = RegistrationLifetime.Scoped)
+        where TBehavior : class, IPipelineBehavior<TRequest, TResponse>
+    {
+        ArgumentNullException.ThrowIfNull(shouldRun);
+
+        this.TryAddDefault(typeof(TBehavior), typeof(TBehavior));
+        this._behaviorFactories.Add(
+            new InterlocutorFactoryRegistration(
+                typeof(IPipelineBehavior<TRequest, TResponse>),
+                sp => new ConditionalBehavior<TRequest, TResponse>(
+                    (IPipelineBehavior<TRequest, TResponse>)(
+                        sp.GetService(typeof(TBehavior))
+                        ?? throw new InvalidOperationException(
+                            $"'{typeof(TBehavior)}' could not be resolved from the container. "
+                                + $"AddConditionalBehavior<{typeof(TBehavior).Name},...> registers it as a "
+                                + "try-add default against its own concrete type - check that its constructor "
+                                + "dependencies are themselves resolvable."
+                        )
+                    ),
+                    request => shouldRun(sp, request)
+                ),
+                lifetime,
+                RegistrationKind.Behavior
+            )
+        );
+
+        return this;
+    }
+
+    /// <summary>
     /// Declares a Tier-1 pipeline override: a request type <paramref name="predicate"/> matches gets exactly
     /// <paramref name="behaviors"/>, in the given order, in place of the general-purpose baseline (Tier 2)
     /// entirely - a full, positively-declared replacement, never a merge with or modification of it. An
@@ -383,6 +481,10 @@ public sealed class InterlocutorPipelineBuilder
     /// a default has already been set. See <see cref="AddLoggingBehavior"/> for why no
     /// <see cref="IResponseOutcomeDescriber"/> default is registered here either.
     /// </summary>
+    /// <remarks>
+    /// Not part of <see cref="UseRecommendedChain"/>'s default composition - where an audit trail should
+    /// go is an application-specific decision, so add this explicitly when your application wants one.
+    /// </remarks>
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorPipelineBuilder AddAuditingBehavior() => this.AddFromDescriptor(AuditingBehaviorDescriptor);
 
@@ -392,6 +494,16 @@ public sealed class InterlocutorPipelineBuilder
     /// and <see cref="IOutcomeCaseRegistry"/> (<see cref="DefaultOutcomeCaseRegistry"/>), unless a default
     /// has already been set for either.
     /// </summary>
+    /// <remarks>
+    /// Not part of <see cref="UseRecommendedChain"/>'s default composition - most consumers already
+    /// enforce authorization earlier in the request path (ASP.NET Core's own authentication/authorization
+    /// middleware, or an upstream policy engine, running before the mediator is ever invoked), which makes
+    /// a second in-pipeline pass redundant. Add this explicitly when the mediator itself is the first
+    /// place authorization can be enforced - a message-bus consumer, a background worker, a scheduled
+    /// job, or anything else dispatching a request with nothing HTTP-shaped in front of it - or when you
+    /// want defense-in-depth via a fine-grained, resource-level check that upstream middleware can't see,
+    /// even alongside upstream authorization.
+    /// </remarks>
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorPipelineBuilder AddAuthorizationBehavior() => this.AddFromDescriptor(AuthorizationBehaviorDescriptor);
 
@@ -527,7 +639,7 @@ public sealed class InterlocutorPipelineBuilder
     /// (<see cref="DefaultOutcomeCaseRegistry"/>), unless a default has already been set.
     /// </summary>
     /// <remarks>
-    /// This behavior has no prescribed position in the pipeline - unlike the five behaviors composed by
+    /// This behavior has no prescribed position in the pipeline - unlike the behaviors composed by
     /// <see cref="UseRecommendedChain"/>, it is not part of that documented ordering. The caller chooses
     /// where it lands in their own chain by where they call this method relative to their other
     /// <c>Add*Behavior</c> calls.
@@ -542,7 +654,7 @@ public sealed class InterlocutorPipelineBuilder
     /// has already been set for either.
     /// </summary>
     /// <remarks>
-    /// This behavior has no prescribed position in the pipeline - unlike the five behaviors composed by
+    /// This behavior has no prescribed position in the pipeline - unlike the behaviors composed by
     /// <see cref="UseRecommendedChain"/>, it is not part of that documented ordering. The caller chooses
     /// where it lands in their own chain by where they call this method relative to their other
     /// <c>Add*Behavior</c> calls.
@@ -557,7 +669,7 @@ public sealed class InterlocutorPipelineBuilder
     /// has already been set for either.
     /// </summary>
     /// <remarks>
-    /// This behavior has no prescribed position in the pipeline - unlike the five behaviors composed by
+    /// This behavior has no prescribed position in the pipeline - unlike the behaviors composed by
     /// <see cref="UseRecommendedChain"/>, it is not part of that documented ordering. The caller chooses
     /// where it lands in their own chain by where they call this method relative to their other
     /// <c>Add*Behavior</c> calls.
@@ -566,30 +678,82 @@ public sealed class InterlocutorPipelineBuilder
     public InterlocutorPipelineBuilder AddRateLimitedBehavior() => this.AddFromDescriptor(RateLimitedBehaviorDescriptor);
 
     /// <summary>
-    /// Applies the library's documented recommended pipeline chain - logging, then auditing, then
-    /// authorization, then validation, then transaction - in that order, as sugar over the individual
-    /// <c>Add*Behavior</c> calls. Never applied automatically; a consumer opts in explicitly.
+    /// Registers the diagnostic <see cref="IPipelineExplainer"/> - the runtime counterpart to
+    /// <see cref="InterlocutorBuilder.DescribeRegistrations"/> that answers which pipeline behaviors resolve
+    /// for a request/response type pair known only at run time (typically from a bug report or a
+    /// configuration file, not a compile-time generic argument).
     /// </summary>
     /// <remarks>
     /// <para>
-    /// The order protects specific concerns, documented here because a developer composing their own
-    /// chain instead of using this method needs the reasoning, not just the sequence:
+    /// <see cref="IPipelineExplainer"/> is opt-in at two independent levels: it is registered at all only
+    /// when this method is called (<see cref="PipelineExplainerConfiguration"/> stays <see langword="null"/>
+    /// otherwise, and neither container translator registers it), and even then it stays disabled - calling
+    /// <see cref="IPipelineExplainer.Explain"/> throws - until <see cref="PipelineExplainerOptions.Enabled"/>
+    /// is <see langword="true"/>. This double gate reflects that the explainer resolves live instances from
+    /// the container and reveals internal wiring, which is not something to run unexamined against a
+    /// production container.
+    /// </para>
+    /// <para>
+    /// Under Microsoft DI, an application registration of <c>IOptions&lt;PipelineExplainerOptions&gt;</c> or
+    /// <c>IOptionsMonitor&lt;PipelineExplainerOptions&gt;</c> - typically via
+    /// <c>services.Configure&lt;PipelineExplainerOptions&gt;(configuration.GetSection(...))</c> - wins over
+    /// <paramref name="options"/>, consistent with how <see cref="Defaults"/> entries already let a
+    /// consumer's own registration win. Autofac has no such precedence layer: it always registers
+    /// <paramref name="options"/> (or a fresh, disabled instance when <paramref name="options"/> is
+    /// <see langword="null"/>) directly, with no <c>IOptions</c> dependency at all.
+    /// </para>
+    /// </remarks>
+    /// <param name="options">
+    /// The explainer's configuration, or <see langword="null"/> to register it with a fresh, disabled
+    /// <see cref="PipelineExplainerOptions"/> (<see cref="PipelineExplainerOptions.Enabled"/> defaults to
+    /// <see langword="false"/>) until a consumer enables it - by passing an instance with
+    /// <see langword="true"/> here, or, under Microsoft DI, via an <c>IOptions</c>/<c>IOptionsMonitor</c>
+    /// registration that wins over this value.
+    /// </param>
+    /// <returns>This builder, for chaining.</returns>
+    public InterlocutorPipelineBuilder AddPipelineExplainer(PipelineExplainerOptions? options = null)
+    {
+        this.PipelineExplainerConfiguration = options ?? new PipelineExplainerOptions();
+        return this;
+    }
+
+    /// <summary>
+    /// Applies the library's documented recommended pipeline chain - logging, then validation, then
+    /// transaction - in that order, as sugar over the individual <c>Add*Behavior</c> calls. Never applied
+    /// automatically; a consumer opts in explicitly.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This is a deliberately minimal default: <see cref="AddAuditingBehavior"/> and
+    /// <see cref="AddAuthorizationBehavior"/> are not part of it. Most consumers don't want an audit trail
+    /// at all, and most who need authorization already enforce it earlier in the request path - ASP.NET
+    /// Core's own authentication/authorization middleware, or an upstream policy engine, running before
+    /// the mediator is ever invoked - which makes a second in-pipeline pass redundant, or even
+    /// conflicting. See <see cref="AddAuditingBehavior"/>'s and <see cref="AddAuthorizationBehavior"/>'s
+    /// own remarks for when it's still worth adding either back explicitly.
+    /// </para>
+    /// <para>
+    /// The order below still applies to whichever of them you add back, documented here because a
+    /// developer composing their own chain needs the reasoning, not just the sequence:
     /// </para>
     /// <list type="bullet">
     /// <item><description>Logging outermost so every request's timing and outcome is captured regardless of what happens inside.</description></item>
-    /// <item><description>Auditing outside authorization so a request that gets denied is still recorded - a rejected attempt is itself an auditable event.</description></item>
-    /// <item><description>Authorization before validation so an unauthorized caller never learns validation details about a request they cannot perform.</description></item>
+    /// <item><description>Auditing, if added, outside authorization so a request that gets denied is still recorded - a rejected attempt is itself an auditable event.</description></item>
+    /// <item><description>Authorization, if added, before validation so an unauthorized caller never learns validation details about a request they cannot perform.</description></item>
     /// <item><description>Validation before transaction so malformed input never opens a transaction that would only be rolled back.</description></item>
     /// <item><description>Transaction innermost so only the handler's own work - not cross-cutting concerns - participates in the unit of work.</description></item>
     /// </list>
+    /// <para>
+    /// To restore the full chain this method composed before auditing/authorization were dropped from the
+    /// default, compose every step individually rather than calling this method and appending
+    /// <see cref="AddAuditingBehavior"/>/<see cref="AddAuthorizationBehavior"/> afterward - appending after
+    /// the fact puts both innermost, past validation and the transaction, not in their documented position:
+    /// <c>.AddLoggingBehavior().AddAuditingBehavior().AddAuthorizationBehavior().AddValidationBehavior().AddUnitOfWorkBehavior()</c>.
+    /// </para>
     /// </remarks>
     /// <returns>This builder, for chaining.</returns>
     public InterlocutorPipelineBuilder UseRecommendedChain() =>
-        this.AddLoggingBehavior()
-            .AddAuditingBehavior()
-            .AddAuthorizationBehavior()
-            .AddValidationBehavior()
-            .AddUnitOfWorkBehavior();
+        this.AddLoggingBehavior().AddValidationBehavior().AddUnitOfWorkBehavior();
 
     /// <summary>
     /// Replaces the default <see cref="IAuditSink"/> implementation <see cref="AuditingBehavior{TRequest,TResponse}"/>
@@ -879,6 +1043,8 @@ public sealed class InterlocutorPipelineBuilder
     /// exists yet - the mechanism behind every <c>Add*Behavior</c> convenience method's default
     /// registration, so it never clobbers a prior <c>Override*</c> call.
     /// </summary>
+    /// <param name="serviceType">The service type to set a default entry for, if none exists yet.</param>
+    /// <param name="implementationType">The implementation type to register as that default.</param>
     private void TryAddDefault(
         Type serviceType,
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type implementationType
@@ -900,6 +1066,8 @@ public sealed class InterlocutorPipelineBuilder
     /// <see langword="null"/> if the type (or the assembly it lives in) is not loaded - the graceful-fallback
     /// lookup used for optional-package behaviors.
     /// </summary>
+    /// <param name="typeName">The assembly-qualified or partially-qualified type name to resolve.</param>
+    /// <returns>The resolved type, or <see langword="null"/> if it (or its assembly) could not be loaded.</returns>
     [UnconditionalSuppressMessage(
         "Trimming",
         "IL2057:UnrecognizedReflectionPattern",

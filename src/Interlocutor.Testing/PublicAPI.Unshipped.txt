@@ -1,0 +1,15 @@
+#nullable enable
+Interlocutor.Testing.FakePublisher
+Interlocutor.Testing.FakePublisher.AddHandler<TNotification>(Interlocutor.Abstractions.Notifications.INotificationHandler<TNotification>! handler) -> Interlocutor.Testing.FakePublisher!
+Interlocutor.Testing.FakePublisher.FakePublisher() -> void
+Interlocutor.Testing.FakePublisher.PublishAsync<TNotification>(TNotification notification, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Interlocutor.Testing.FakePublisher.PublishAsync<TNotification>(TNotification notification, Interlocutor.Abstractions.Core.PublishStrategy strategy, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Interlocutor.Testing.FakePublisher.PublishedNotifications.get -> System.Collections.Generic.IReadOnlyList<Interlocutor.Abstractions.Notifications.INotification!>!
+Interlocutor.Testing.FakeSender
+Interlocutor.Testing.FakeSender.FakeSender() -> void
+Interlocutor.Testing.FakeSender.ReceivedRequests.get -> System.Collections.Generic.IReadOnlyList<object!>!
+Interlocutor.Testing.FakeSender.SendAsync(object! request, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Runtime.CompilerServices.IUnion!>!
+Interlocutor.Testing.FakeSender.SendAsync<TResponse>(Interlocutor.Abstractions.Queries.IQuery<TResponse>! query, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResponse>!
+Interlocutor.Testing.FakeSender.SendAsync<TResponse>(Interlocutor.Abstractions.Commands.ICommand<TResponse>! command, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResponse>!
+Interlocutor.Testing.FakeSender.SendAsync<TResult>(Interlocutor.Abstractions.Commands.ICommand! command, System.Threading.CancellationToken ct = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResult>!
+Interlocutor.Testing.FakeSender.SetResponse<TRequest, TResponse>(TResponse response) -> Interlocutor.Testing.FakeSender!

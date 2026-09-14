@@ -18,8 +18,10 @@ public interface IResponseOutcomeDescriber
 {
     /// <summary>Produces a short, human-readable label describing the response's outcome.</summary>
     /// <remarks>
+    /// <para>
     /// Used by logging and auditing behaviors to record outcome strings like <c>"Success"</c>, <c>"NotFound"</c>,
     /// <c>"ValidationError"</c>, etc. Should be concise and suitable for logs/audit trails.
+    /// </para>
     /// </remarks>
     /// <param name="response">The response object to describe.</param>
     /// <returns>A short label describing the response outcome.</returns>

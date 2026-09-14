@@ -27,6 +27,7 @@ public sealed class CustomFailureCaseRegistryBuilder<TResult>
     /// <remarks>
     /// A second call for a <typeparamref name="TFailure"/> already registered overrides the first.
     /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="mapping"/> is <see langword="null"/>.</exception>
     public CustomFailureCaseRegistryBuilder<TResult> RegisterType<TFailure>(Func<TFailure, TResult> mapping)
     {
         ArgumentNullException.ThrowIfNull(mapping);
@@ -46,6 +47,7 @@ public sealed class CustomFailureCaseRegistryBuilder<TResult>
     /// <remarks>
     /// A second call for a <paramref name="type"/> already registered overrides the first.
     /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="type"/> or <paramref name="mapping"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">
     /// <paramref name="mapping"/> is not a <see cref="Func{T, TResult}"/> closed over <paramref name="type"/>
     /// and <typeparamref name="TResult"/>.
@@ -91,6 +93,7 @@ public sealed class CustomFailureCaseRegistryBuilder<TResult>
             this._mappings = mappings;
         }
 
+        /// <inheritdoc/>
         public bool TryMap<TFailure>(TFailure failure, out TResult result)
         {
             if (this._mappings.TryGetValue(typeof(TFailure), out var mapping))

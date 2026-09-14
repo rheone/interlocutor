@@ -6,7 +6,16 @@ using Microsoft.Extensions.Logging;
 
 /// <summary>Pipeline behavior that logs every mediator request passing through the pipeline.</summary>
 /// <typeparam name="TRequest">The request type.</typeparam>
-/// <typeparam name="TResponse">The response type.</typeparam>
+/// <typeparam name="TResponse">
+/// The response type produced for <typeparamref name="TRequest"/>. Unconstrained here, unlike behaviors
+/// that construct a specific outcome case: <see cref="IResponseOutcomeDescriber.Describe(object?)"/> takes
+/// the response as a plain <see cref="object"/>, so this behavior never needs to know its concrete shape.
+/// </typeparam>
+/// <param name="logger">The logger this behavior writes request-completion and failure entries to.</param>
+/// <param name="describer">
+/// Produces the outcome label recorded on successful completion. When omitted, falls back to a
+/// <see cref="DefaultResponseOutcomeDescriber"/> built from <see cref="Classifiers.OutcomeClassifierBuilder.DefaultClassifier"/>.
+/// </param>
 public class LoggingBehavior<TRequest, TResponse>(
     ILogger<LoggingBehavior<TRequest, TResponse>> logger,
     IResponseOutcomeDescriber? describer = null
@@ -21,7 +30,7 @@ public class LoggingBehavior<TRequest, TResponse>(
     /// <param name="request">The request to process.</param>
     /// <param name="next">The next behavior in the pipeline.</param>
     /// <param name="ct">The cancellation token.</param>
-    /// <returns>The result from the next behavior or handler.</returns>
+    /// <returns>The result from the next behavior or handler, returned unchanged after being logged.</returns>
     public async Task<TResponse> HandleAsync(TRequest request, Func<Task<TResponse>> next, CancellationToken ct)
     {
         // Capture the start time using Stopwatch for high-resolution timing. This is more accurate than

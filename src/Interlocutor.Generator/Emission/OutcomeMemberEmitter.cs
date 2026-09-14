@@ -8,12 +8,12 @@ using Interlocutor.Generator.Models;
 
 /// <summary>
 /// Emits the second partial declaration <see cref="OutcomeMemberGenerator"/> adds for one attributed
-/// <see cref="OutcomeUnionModel"/>: unconditionally, <c>Match</c>, <c>Switch</c>, per-case anonymous
-/// <c>TryGetValue</c> (plus a named <c>TryGet{TypeName}</c> counterpart for every concrete case type - see
-/// <see cref="OutcomeUnionModel.CaseAccessorNames"/>), <c>ToString</c>, and value-based equality (<c>Equals</c>,
-/// <c>GetHashCode</c>, <c>IEquatable&lt;TSelf&gt;</c>, <c>==</c>/<c>!=</c>); additionally, <c>IOutcomeCase</c>
-/// and <c>ActiveCaseType</c> when <see cref="OutcomeUnionModel.ImplementsIOutcome"/> is
-/// <see langword="true"/>.
+/// <see cref="OutcomeUnionModel"/>: unconditionally, a per-case static <c>Create</c> factory overload,
+/// <c>Match</c>, <c>Switch</c>, per-case anonymous <c>TryGetValue</c> (plus a named <c>TryGet{TypeName}</c>
+/// counterpart for every concrete case type - see <see cref="OutcomeUnionModel.CaseAccessorNames"/>),
+/// <c>ToString</c>, and value-based equality (<c>Equals</c>, <c>GetHashCode</c>, <c>IEquatable&lt;TSelf&gt;</c>,
+/// <c>==</c>/<c>!=</c>); additionally, <c>IOutcomeCase</c> and <c>ActiveCaseType</c> when
+/// <see cref="OutcomeUnionModel.ImplementsIOutcome"/> is <see langword="true"/>.
 /// </summary>
 internal static class OutcomeMemberEmitter
 {
@@ -27,10 +27,22 @@ internal static class OutcomeMemberEmitter
     /// identifier to give up. Also includes <c>Value</c>, the compiler-synthesized boxed field every
     /// <c>union</c> type carries (see <see cref="EmitGetActiveCaseIndex"/>'s remarks) - this emitter relies
     /// on it via <c>this.Value</c> but never declares it itself, so it would otherwise be invisible to a
-    /// set built purely from what <see cref="Emit"/> writes.
+    /// set built purely from what <see cref="Emit"/> writes. Includes <c>Create</c>, the discoverable static
+    /// factory <see cref="EmitFactories"/> overloads once per case type - the same "fixed name, overloaded
+    /// per case" shape <c>TryGetValue</c> already has, so it belongs in this set for the identical reason.
     /// </value>
     public static ImmutableArray<string> ReservedMemberNames { get; } =
-        ImmutableArray.Create("Value", "ActiveCaseType", "TryGetValue", "Match", "Switch", "ToString", "Equals", "GetHashCode");
+        ImmutableArray.Create(
+            "Value",
+            "ActiveCaseType",
+            "TryGetValue",
+            "Match",
+            "Switch",
+            "ToString",
+            "Equals",
+            "GetHashCode",
+            "Create"
+        );
 
     /// <summary>Emits the generated partial declaration's full source text for <paramref name="model"/>.</summary>
     /// <param name="model">The attributed union to emit members for. Must have at least two case types.</param>
@@ -75,6 +87,8 @@ internal static class OutcomeMemberEmitter
             builder.AppendLine();
         }
 
+        EmitFactories(builder, model, selfType);
+        builder.AppendLine();
         EmitTryGetValueOverloads(builder, model);
         builder.AppendLine();
         EmitMatch(builder, model);
@@ -102,6 +116,8 @@ internal static class OutcomeMemberEmitter
     /// legitimately have come from. Only when no declared case type accepts null does a null <c>Value</c> mean
     /// what it always meant: the union was never assigned a case.
     /// </summary>
+    /// <param name="builder">The source being built.</param>
+    /// <param name="model">The union whose case types to emit one type-pattern arm per.</param>
     private static void EmitGetActiveCaseIndex(StringBuilder builder, OutcomeUnionModel model)
     {
         builder.AppendLine(
@@ -138,6 +154,13 @@ internal static class OutcomeMemberEmitter
         builder.AppendLine("    }");
     }
 
+    /// <summary>
+    /// Emits the generated <c>ActiveCaseType</c> property that satisfies <c>IOutcomeCase</c> - one switch arm per
+    /// case type, keyed to the same 1-based index <see cref="EmitGetActiveCaseIndex"/> computes, so the two stay
+    /// in lockstep without either duplicating the other's indexing.
+    /// </summary>
+    /// <param name="builder">The source being built.</param>
+    /// <param name="model">The union whose case types to emit one <c>typeof(...)</c> arm per.</param>
     private static void EmitActiveCaseType(StringBuilder builder, OutcomeUnionModel model)
     {
         builder.AppendLine(
@@ -154,6 +177,51 @@ internal static class OutcomeMemberEmitter
         builder.AppendLine("    };");
     }
 
+    /// <summary>
+    /// Emits one static <c>Create</c> overload per case type - a discoverable alternative to the
+    /// compiler-generated positional constructor/implicit conversion the <c>union</c> language feature already
+    /// provides for the same case value. Overloaded on <paramref name="model"/>'s case types the same way the
+    /// compiler's own generated constructors already are, so it introduces no new signature shape; it only adds
+    /// a name a caller can find via member-list discovery (constructors don't appear there under the union's own
+    /// name the way a static factory does).
+    /// </summary>
+    /// <param name="builder">The source being built.</param>
+    /// <param name="model">The union whose case types to emit one <c>Create</c> overload per, in declaration order.</param>
+    /// <param name="selfType">The union's own closed type name (with type arguments, if generic), as emitted C# text.</param>
+    private static void EmitFactories(StringBuilder builder, OutcomeUnionModel model, string selfType)
+    {
+        // Doc text below never interpolates model.CaseTypeDisplayStrings or selfType directly: either can be a
+        // closed generic display string (e.g. "T1, T2, ..." for the type parameter list, or a concrete type
+        // argument like "List<string>"), and embedding raw "<"/">"/"," in an XML doc comment's text produces
+        // malformed XML (CS1570) rather than the angle brackets a reader would expect.
+        for (var i = 0; i < model.CaseTypeDisplayStrings.Length; i++)
+        {
+            var caseType = model.CaseTypeDisplayStrings[i];
+
+            builder.AppendLine("    /// <summary>Creates a new instance whose active case is this value.</summary>");
+            builder.AppendLine("    /// <param name=\"value\">The case value the new instance carries.</param>");
+            builder.AppendLine("    /// <returns>A new instance whose active case is <paramref name=\"value\"/>.</returns>");
+            builder
+                .Append("    public static ")
+                .Append(selfType)
+                .Append(" Create(")
+                .Append(caseType)
+                .AppendLine(" value) => value;");
+
+            if (i < model.CaseTypeDisplayStrings.Length - 1)
+            {
+                builder.AppendLine();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Emits every case type's anonymous <c>TryGetValue</c> overload and, for a concrete case type, its named
+    /// <c>TryGet{TypeName}</c> counterpart - see <see cref="EmitTryGetAccessorBody"/> for the shared body both
+    /// accessors share.
+    /// </summary>
+    /// <param name="builder">The source being built.</param>
+    /// <param name="model">The union whose case types to emit accessors for.</param>
     private static void EmitTryGetValueOverloads(StringBuilder builder, OutcomeUnionModel model)
     {
         for (var i = 0; i < model.CaseTypeDisplayStrings.Length; i++)
@@ -193,6 +261,10 @@ internal static class OutcomeMemberEmitter
     /// <see langword="false"/> and <c>default</c> otherwise. Shared by <see cref="EmitTryGetValueOverloads"/>'s
     /// anonymous and named accessor for the same case, which differ only in method name.
     /// </summary>
+    /// <param name="builder">The source being built.</param>
+    /// <param name="methodName">The accessor method's name - <c>TryGetValue</c> or <c>TryGet{TypeName}</c>.</param>
+    /// <param name="caseType">The case type this accessor reads, as emitted C# text.</param>
+    /// <param name="caseIndex">The case type's 1-based index, matching <see cref="EmitGetActiveCaseIndex"/>'s numbering.</param>
     private static void EmitTryGetAccessorBody(StringBuilder builder, string methodName, string caseType, int caseIndex)
     {
         builder.Append("    public bool ").Append(methodName).Append("(out ").Append(caseType).AppendLine(" value)");
@@ -208,6 +280,14 @@ internal static class OutcomeMemberEmitter
         builder.AppendLine("    }");
     }
 
+    /// <summary>
+    /// Emits the generated <c>Match&lt;TResult&gt;</c> method: one <c>Func&lt;TCase, TResult&gt;</c> parameter per
+    /// declared case type, in declaration order, dispatched by <see cref="EmitGetActiveCaseIndex"/>'s active-case
+    /// index - the delegate positionally paired with the active case's declared type runs, regardless of where
+    /// that case type sits in the case list.
+    /// </summary>
+    /// <param name="builder">The source being built.</param>
+    /// <param name="model">The union whose case types to emit one <c>onCaseN</c> parameter per.</param>
     private static void EmitMatch(StringBuilder builder, OutcomeUnionModel model)
     {
         builder.AppendLine(
@@ -241,6 +321,12 @@ internal static class OutcomeMemberEmitter
         builder.AppendLine("    }");
     }
 
+    /// <summary>
+    /// Emits the generated <c>Switch</c> method - <see cref="EmitMatch"/>'s <see langword="void"/>-returning
+    /// twin: one <c>Action&lt;TCase&gt;</c> parameter per declared case type, dispatched the same way.
+    /// </summary>
+    /// <param name="builder">The source being built.</param>
+    /// <param name="model">The union whose case types to emit one <c>onCaseN</c> parameter per.</param>
     private static void EmitSwitch(StringBuilder builder, OutcomeUnionModel model)
     {
         builder.AppendLine("    /// <summary>Dispatches to the action matching this result's active case.</summary>");
@@ -269,6 +355,8 @@ internal static class OutcomeMemberEmitter
         builder.AppendLine("    }");
     }
 
+    /// <summary>Emits the generated <c>ToString</c> override.</summary>
+    /// <param name="builder">The source being built.</param>
     private static void EmitToString(StringBuilder builder)
     {
         builder.AppendLine(
@@ -285,6 +373,8 @@ internal static class OutcomeMemberEmitter
     /// "same" value boxed into a different arity (a different runtime type entirely) - the same way record
     /// equality already behaves.
     /// </summary>
+    /// <param name="builder">The source being built.</param>
+    /// <param name="selfType">The union's own closed type name (with type arguments, if generic), as emitted C# text.</param>
     private static void EmitEquality(StringBuilder builder, string selfType)
     {
         builder.AppendLine(

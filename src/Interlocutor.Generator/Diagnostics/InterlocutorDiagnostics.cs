@@ -6,8 +6,21 @@ using Interlocutor.Generator.Models;
 using Microsoft.CodeAnalysis;
 
 /// <summary>
-/// The diagnostic descriptors <see cref="InterlocutorSourceGenerator"/> reports.
+/// The diagnostic descriptors this project's generators and analyzers report.
 /// </summary>
+/// <remarks>
+/// <para>
+/// Not all of these are reported by <see cref="InterlocutorSourceGenerator"/> itself - where a descriptor is
+/// reported by some other type instead, that descriptor's own remarks say so. The other reporting type may be a
+/// standalone <c>DiagnosticAnalyzer</c> (e.g. <see cref="ValidationShapeMismatchAnalyzer"/>,
+/// <see cref="PipelineBehaviorCaseFidelityAnalyzer"/>, <see cref="DuplicateOutcomeCaseTypeAnalyzer"/>), the
+/// separate <see cref="OutcomeMemberGenerator"/> <see cref="IIncrementalGenerator"/>, or a plain reporting
+/// helper driven by an already-built model rather than a <c>DiagnosticAnalyzer</c> in its own right (e.g.
+/// <see cref="OutcomeAccessorCollisionAnalyzer"/>, called from <see cref="OutcomeMemberGenerator.Execute"/>).
+/// Centralizing every descriptor here regardless of which type reports it keeps diagnostic IDs, categories, and
+/// escalation guidance in one place.
+/// </para>
+/// </remarks>
 internal static class InterlocutorDiagnostics
 {
     /// <summary>
@@ -60,15 +73,20 @@ internal static class InterlocutorDiagnostics
     /// same closed request/response pair.
     /// </summary>
     /// <remarks>
-    /// Unlike a notification (see <see cref="RequestKind"/>'s remarks), a query or command must resolve to
-    /// exactly one handler - <c>Mediator.SendAsync</c> and the generated dispatch wrapper both resolve the handler's
-    /// service interface as a single service, so a second registration silently shadows the first rather than
-    /// being an error at resolution time. This diagnostic catches that ambiguity at build time instead. Default
-    /// severity is <see cref="DiagnosticSeverity.Warning"/>, escalated the same way as
+    /// <para>
+    /// Unlike a notification - where <c>INotificationHandler&lt;TNotification&gt;</c> explicitly permits any
+    /// number of subscribers for the same notification type - a query or command must resolve to exactly one
+    /// handler: <c>Mediator.SendAsync</c> and the generated dispatch wrapper both resolve the handler's service
+    /// interface as a single service, so a second registration silently shadows the first rather than being an
+    /// error at resolution time. This diagnostic catches that ambiguity at build time instead.
+    /// </para>
+    /// <para>
+    /// Default severity is <see cref="DiagnosticSeverity.Warning"/>, escalated the same way as
     /// <see cref="MissingHandler"/>:
     /// <code>
     /// dotnet_diagnostic.INTERLOC002.severity = error
     /// </code>
+    /// </para>
     /// </remarks>
     public static readonly DiagnosticDescriptor DuplicateHandler = new(
         id: "INTERLOC002",
@@ -89,9 +107,11 @@ internal static class InterlocutorDiagnostics
     /// anywhere in the process.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Legal by design (ADR-0007) - this is the entire point of contravariant fan-out - but a process-wide
     /// subscriber is easy to write by accident (e.g. a typo'd generic constraint). Default severity is
     /// <see cref="DiagnosticSeverity.Info"/>: this is a deliberate-choice confirmation, not a problem.
+    /// </para>
     /// </remarks>
     public static readonly DiagnosticDescriptor CatchAllNotificationHandler = new(
         id: "INTERLOC003",
@@ -112,10 +132,12 @@ internal static class InterlocutorDiagnostics
     /// cycle - no topological order exists.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Default severity is <see cref="DiagnosticSeverity.Error"/>, not warning: an ordering cycle has no
     /// meaningful fallback behavior to run with, unlike <see cref="MissingHandler"/> or
     /// <see cref="DuplicateHandler"/>, which still produce a program that runs (just not the one the developer
     /// intended). It is not escalated via <c>.editorconfig</c> like those two - it is always an error.
+    /// </para>
     /// </remarks>
     public static readonly DiagnosticDescriptor NotificationHandlerOrderingCycle = new(
         id: "INTERLOC004",
@@ -136,10 +158,12 @@ internal static class InterlocutorDiagnostics
     /// implementation in this compilation.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Default severity is <see cref="DiagnosticSeverity.Error"/>: the named type can never actually run, so
     /// the declared relationship can never be honored - there is no meaningful partial behavior to fall back
     /// to, the same reasoning behind <see cref="NotificationHandlerOrderingCycle"/> being an always-on error
     /// rather than a <c>.editorconfig</c>-escalated warning.
+    /// </para>
     /// </remarks>
     public static readonly DiagnosticDescriptor NotificationHandlerOrderingReferenceIsNotAHandler = new(
         id: "INTERLOC005",
@@ -161,12 +185,14 @@ internal static class InterlocutorDiagnostics
     /// constraints, and neither is resolved as the winner by a <c>HandlerOverrideAttribute</c>.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// There is exactly one selection rule between two open generic handlers: an explicit
     /// <c>HandlerOverrideAttribute</c> naming the other. No ranking by inheritance distance, namespace, or
     /// assembly location is ever considered, so moving either handler's declaring file never changes which
     /// handler runs - an unresolved ambiguity is always a build error naming both handlers, never an arbitrary
     /// runtime choice. Default severity is <see cref="DiagnosticSeverity.Error"/>: like
     /// <see cref="NotificationHandlerOrderingCycle"/>, there is no meaningful partial behavior to fall back to.
+    /// </para>
     /// </remarks>
     public static readonly DiagnosticDescriptor OpenGenericHandlerAmbiguity = new(
         id: "INTERLOC006",
@@ -187,9 +213,11 @@ internal static class InterlocutorDiagnostics
     /// handler (open generic or closed) in this compilation.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Default severity is <see cref="DiagnosticSeverity.Error"/>, for the same reason as
     /// <see cref="NotificationHandlerOrderingReferenceIsNotAHandler"/>: the named type can never actually run,
     /// so the declared override can never be honored.
+    /// </para>
     /// </remarks>
     public static readonly DiagnosticDescriptor HandlerOverrideInvalidTarget = new(
         id: "INTERLOC007",
@@ -253,6 +281,7 @@ internal static class InterlocutorDiagnostics
     /// type-argument position - e.g. <c>Outcome&lt;Success, Failure, Failure&gt;</c>.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// C# has no generic constraint expressing "these type arguments must all be distinct," so nothing at the
     /// language level stops a caller from closing an outcome union this way, silently collapsing two
     /// supposedly-independent case positions into one. Reported by <see cref="DuplicateOutcomeCaseTypeAnalyzer"/>
@@ -263,6 +292,7 @@ internal static class InterlocutorDiagnostics
     /// <code>
     /// dotnet_diagnostic.INTERLOC009.severity = error
     /// </code>
+    /// </para>
     /// </remarks>
     public static readonly DiagnosticDescriptor DuplicateOutcomeCaseType = new(
         id: "INTERLOC009",
@@ -284,8 +314,10 @@ internal static class InterlocutorDiagnostics
     /// exists for a request whose declared response arity has no validation-shaped case.
     /// </summary>
     /// <remarks>
-    /// <c>ResourceCommandHandler</c>'s response shape is fixed to <c>Outcome&lt;TSuccess, NotFound, Failure&gt;</c>,
-    /// which has no case an <c>Interlocutor.FluentValidation.ValidationBehavior</c> failure can occupy -
+    /// <para>
+    /// <c>ResourceCommandHandler</c> only requires its <c>TResponse</c> to carry <c>NotFound</c>/<c>Forbidden</c>
+    /// cases - a <c>TResponse</c> picked without validation in mind, such as <c>Outcome&lt;string, NotFound,
+    /// Failure&gt;</c>, has no case an <c>Interlocutor.FluentValidation.ValidationBehavior</c> failure can occupy -
     /// registering a validator for a command shaped like that doesn't fail at compile time today, it throws the
     /// first time a real validation failure happens at runtime, because the behavior has nowhere to put the
     /// result. Reported by <see cref="ValidationShapeMismatchAnalyzer"/> for any request/response pair shaped
@@ -294,6 +326,7 @@ internal static class InterlocutorDiagnostics
     /// <code>
     /// dotnet_diagnostic.INTERLOC010.severity = error
     /// </code>
+    /// </para>
     /// </remarks>
     public static readonly DiagnosticDescriptor ValidationShapeMismatch = new(
         id: "INTERLOC010",
@@ -316,11 +349,13 @@ internal static class InterlocutorDiagnostics
     /// fewer than two case types.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// A single-case union has no alternative for a <c>switch</c> to be exhaustive over, so it isn't a
     /// meaningful outcome - <see cref="OutcomeMemberGenerator"/> refuses to emit <c>Match</c>/<c>Switch</c>
     /// members for it rather than silently emitting a no-op or a member set that can never do anything useful.
     /// Always <see cref="DiagnosticSeverity.Error"/> - unlike <see cref="MissingHandler"/> or
     /// <see cref="DuplicateHandler"/>, there is no meaningful partial member set to fall back to.
+    /// </para>
     /// </remarks>
     public static readonly DiagnosticDescriptor TooFewOutcomeCaseTypes = new(
         id: "INTERLOC011",
@@ -388,6 +423,7 @@ internal static class InterlocutorDiagnostics
     /// more than sixteen case types.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// <see cref="OutcomeMemberEmitter"/>'s generated <c>Match&lt;TResult&gt;</c>/<c>Switch</c> signatures bind
     /// one delegate parameter per case type to the BCL's <c>System.Func&lt;T1..T16, TResult&gt;</c>/
     /// <c>System.Action&lt;T1..T16&gt;</c> families, which stop at sixteen input type parameters - there is no
@@ -397,6 +433,7 @@ internal static class InterlocutorDiagnostics
     /// ceiling there instead. Always <see cref="DiagnosticSeverity.Error"/>, the same posture as
     /// <see cref="TooFewOutcomeCaseTypes"/>: past sixteen cases, there is no meaningful partial member set to
     /// fall back to - <c>Match</c>/<c>Switch</c> themselves cannot be emitted at all.
+    /// </para>
     /// </remarks>
     public static readonly DiagnosticDescriptor TooManyOutcomeCaseTypes = new(
         id: "INTERLOC013",

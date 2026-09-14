@@ -9,22 +9,29 @@ using Interlocutor.Generator.Models;
 /// Emits the second partial declaration <see cref="ResultExtensionsGenerator"/> adds for the attributed
 /// <see cref="ResultExtensionsTargetModel"/>: the <c>ToActionResult</c>/<c>ToMinimalApiResult</c> extension
 /// members for the non-generic <c>Outcome</c> and every <c>Outcome&lt;T1, ...&gt;</c> case-arity from
-/// <see cref="MinCaseArity"/> through <see cref="MaxCaseArity"/> - the boilerplate that used to be six
-/// hand-written <c>extension</c> blocks. The reflective catch-all overload (constrained to <c>IOutcome</c>
-/// alone, for a hand-rolled response type) and the private <c>OutcomeHttpMapping</c> rendering helpers stay
-/// hand-written in the other partial declaration.
+/// <see cref="MinCaseArity"/> through <see cref="MaxCaseArity"/> - the boilerplate that used to be
+/// hand-written <c>extension</c> blocks, one per arity. The reflective catch-all overload (constrained to
+/// <c>IOutcome</c> alone, for a hand-rolled response type) and the private <c>OutcomeHttpMapping</c> rendering
+/// helpers stay hand-written in the other partial declaration.
 /// </summary>
 /// <remarks>
-/// Adding a 7th arity means raising <see cref="MaxCaseArity"/> here - nothing else in this file, and nothing
-/// in the hand-written partial, changes.
+/// Every emitted arity's <c>Match</c> arms resolve status codes through the same shared, hand-written
+/// <c>Classify*</c> helpers (see <see cref="EmitArityExtension"/>'s own remarks) - raising
+/// <see cref="MaxCaseArity"/> adds more calls into that same shared logic, never a new copy of it. Raising it
+/// further, past the shipped <c>Outcome</c> family's own ceiling, means raising that family's ceiling first -
+/// nothing else in this file, and nothing in the hand-written partial, changes either way.
 /// </remarks>
 internal static class ResultExtensionsEmitter
 {
     /// <summary>The lowest case arity emitted - a two-case <c>Outcome&lt;T1, T2&gt;</c>.</summary>
     private const int MinCaseArity = 2;
 
-    /// <summary>The highest case arity emitted, matching the shipped <c>Outcome</c> union family's own ceiling.</summary>
-    private const int MaxCaseArity = 6;
+    /// <summary>
+    /// The highest case arity emitted, matching the shipped <c>Outcome</c> union family's own ceiling - the
+    /// BCL's widest <c>System.Func&lt;T1..T16, TResult&gt;</c>/<c>System.Action&lt;T1..T16&gt;</c> overload
+    /// (see <c>Interlocutor.CommonKernel.Outcome{T1,...,T16}</c>'s own remarks).
+    /// </summary>
+    private const int MaxCaseArity = 16;
 
     /// <summary>Emits the generated partial declaration's full source text for <paramref name="model"/>.</summary>
     /// <param name="model">The attributed target class to emit the HTTP result overloads onto.</param>
@@ -38,11 +45,11 @@ internal static class ResultExtensionsEmitter
 
         // RS0026 ("do not add multiple overloads with optional parameters") flags every ToActionResult/
         // ToMinimalApiResult pair below against its siblings once they move into their own partial declaration
-        // - Microsoft.CodeAnalysis.PublicApiAnalyzers 5.6.0 (this repo's pinned version) evidently tracks a C#
-        // 14 extension block's members per declaring partial rather than merging by simple name across the
-        // whole type, since the identical overload set never triggered it while hand-written in one file
-        // alongside the TResponse-constrained catch-all overload. Suppressed here rather than left to trip CI:
-        // the arity overloads were already an intentional, pre-existing multiple-overloads-with-optional-
+        // - Microsoft.CodeAnalysis.PublicApiAnalyzers (see this repo's pinned version in Directory.Packages.props)
+        // evidently tracks a C# 14 extension block's members per declaring partial rather than merging by simple
+        // name across the whole type, since the identical overload set never triggered it while hand-written in
+        // one file alongside the TResponse-constrained catch-all overload. Suppressed here rather than left to
+        // trip CI: the arity overloads were already an intentional, pre-existing multiple-overloads-with-optional-
         // parameters shape (see ResultExtensions's own remarks), not a new API design the analyzer's real
         // backcompat concern applies to.
         builder.AppendLine("#pragma warning disable RS0026");
@@ -76,6 +83,7 @@ internal static class ResultExtensionsEmitter
     /// unconditionally, and neither takes an <c>IOutcomeStatusMapper</c> parameter: there is nothing for one to
     /// map.
     /// </summary>
+    /// <param name="builder">The source being built.</param>
     private static void EmitVoidOutcomeExtension(StringBuilder builder)
     {
         builder.AppendLine("    extension(global::Interlocutor.CommonKernel.Outcome result)");
@@ -90,10 +98,14 @@ internal static class ResultExtensionsEmitter
 
     /// <summary>
     /// Emits the <c>extension&lt;T1, ...&gt;(Outcome&lt;T1, ...&gt; result)</c> block for one
-    /// case-arity.
+    /// case-arity. Both members delegate every case's classification to the shared, hand-written
+    /// <c>Classify*</c> helpers on <c>ResultExtensions</c>'s other partial declaration - the active case's
+    /// runtime type decides its HTTP status there, not which arm of this <c>Match</c> call happened to fire (see
+    /// that partial's own remarks for why the success-slot arm still needs its own type check rather than being
+    /// an unconditional 200).
     /// </summary>
     /// <param name="builder">The source being built.</param>
-    /// <param name="arity">The union's case count (success case plus every alternative case).</param>
+    /// <param name="arity">The union's total case-type count for this <c>Outcome&lt;T1, ...&gt;</c> arity.</param>
     private static void EmitArityExtension(StringBuilder builder, int arity)
     {
         var typeParameterNames = CaseTypeParameterNames(arity);
@@ -111,10 +123,10 @@ internal static class ResultExtensionsEmitter
         builder
             .Append("                ")
             .Append(valueParameterNames[0])
-            .Append(" => new global::Microsoft.AspNetCore.Mvc.OkObjectResult(")
+            .Append(" => ClassifySuccessCaseForActionResult(")
             .Append(valueParameterNames[0])
-            .AppendLine("),");
-        EmitFailureMatchArms(builder, valueParameterNames, "ToActionResult");
+            .AppendLine(", mapper),");
+        EmitFailureMatchArms(builder, valueParameterNames, outcomeType, "ClassifyFailureCaseForActionResult");
         builder.AppendLine("            );");
         builder.AppendLine();
 
@@ -125,24 +137,33 @@ internal static class ResultExtensionsEmitter
         builder
             .Append("                ")
             .Append(valueParameterNames[0])
-            .Append(" => global::Microsoft.AspNetCore.Http.Results.Ok(")
+            .Append(" => ClassifySuccessCaseForMinimalApiResult(")
             .Append(valueParameterNames[0])
-            .AppendLine("),");
-        EmitFailureMatchArms(builder, valueParameterNames, "ToMinimalApiResult");
+            .AppendLine(", mapper),");
+        EmitFailureMatchArms(builder, valueParameterNames, outcomeType, "ClassifyFailureCaseForMinimalApiResult");
         builder.AppendLine("            );");
 
         builder.AppendLine("    }");
     }
 
     /// <summary>
-    /// Emits one <c>caseN => (mapper ?? DefaultMapper).Map(caseN).&lt;renderMethod&gt;()</c> match arm per
-    /// failure case (every entry in <paramref name="valueParameterNames"/> after the success case), the last
-    /// with no trailing comma.
+    /// Emits one <c>caseN => &lt;classifyMethod&gt;(caseN, mapper, typeof(&lt;outcomeType&gt;))</c> match arm per
+    /// declared-failure-slot entry in <paramref name="valueParameterNames"/> - every entry but index 0, which
+    /// <see cref="EmitArityExtension"/> already emitted its own arm for via <c>ClassifySuccessCaseForActionResult</c>/
+    /// <c>ClassifySuccessCaseForMinimalApiResult</c> - with the last arm carrying no trailing comma. Which slot is
+    /// "the success slot" is this emitted extension's own convention, not a property <c>Outcome&lt;T1, ...&gt;</c>
+    /// itself carries: every arm, this one included, still classifies its value by runtime type before rendering
+    /// it (see <see cref="EmitArityExtension"/>'s remarks and <c>ResultExtensions</c>'s <c>Classify*</c> helpers).
     /// </summary>
+    /// <param name="builder">The source being built.</param>
+    /// <param name="valueParameterNames">This arity's full <c>Match</c> lambda parameter list, index 0 included.</param>
+    /// <param name="outcomeType">The closed <c>Outcome&lt;...&gt;</c> type name, as emitted C# text, passed through to each classify call.</param>
+    /// <param name="classifyMethod">The shared <c>ResultExtensions</c> classify method to call - the <c>IActionResult</c> or minimal-API variant.</param>
     private static void EmitFailureMatchArms(
         StringBuilder builder,
         IReadOnlyList<string> valueParameterNames,
-        string renderMethod
+        string outcomeType,
+        string classifyMethod
     )
     {
         for (var i = 1; i < valueParameterNames.Count; i++)
@@ -151,11 +172,13 @@ internal static class ResultExtensionsEmitter
             builder
                 .Append("                ")
                 .Append(valueParameterNames[i])
-                .Append(" => (mapper ?? DefaultMapper).Map(")
+                .Append(" => ")
+                .Append(classifyMethod)
+                .Append('(')
                 .Append(valueParameterNames[i])
-                .Append(").")
-                .Append(renderMethod)
-                .Append("()")
+                .Append(", mapper, typeof(")
+                .Append(outcomeType)
+                .Append("))")
                 .AppendLine(isLast ? string.Empty : ",");
         }
     }
@@ -164,12 +187,20 @@ internal static class ResultExtensionsEmitter
     /// The type parameter names for one arity, matching the shipped <c>Outcome&lt;T1, ..., TN&gt;</c> family's
     /// own fully symmetric naming: <c>T1, T2, ..., TN</c> - no case position implies a privileged role.
     /// </summary>
+    /// <param name="arity">The union's total case-type count.</param>
+    /// <returns>The generic type parameter names, in declaration order.</returns>
     private static string[] CaseTypeParameterNames(int arity) => [.. Enumerable.Range(1, arity).Select(static i => $"T{i}")];
 
     /// <summary>
-    /// The <c>Match</c> lambda parameter names for one arity: <c>ok, failure</c> for arity 2, <c>ok, case2,
-    /// case3, ...</c> above that - mirroring <see cref="CaseTypeParameterNames"/>.
+    /// The readable local names given to each <c>Match</c> lambda parameter, positionally paired with
+    /// <see cref="CaseTypeParameterNames"/>'s entries (index 0 with index 0, and so on): <c>ok, failure</c> for
+    /// arity 2, <c>ok, case2, case3, ...</c> above that. Unlike <see cref="CaseTypeParameterNames"/>'s
+    /// deliberately symmetric <c>T1, T2, ..., TN</c>, these names lean on index 0's emitted-extension
+    /// convention (see <see cref="EmitArityExtension"/>'s remarks) purely for readability of the generated
+    /// source - they carry no meaning back onto <c>Outcome&lt;T1, ...&gt;</c> itself.
     /// </summary>
+    /// <param name="arity">The union's total case-type count.</param>
+    /// <returns>The <c>Match</c> lambda parameter names, positionally paired with <see cref="CaseTypeParameterNames"/>.</returns>
     private static string[] CaseValueParameterNames(int arity) =>
         arity == 2 ? ["ok", "failure"] : ["ok", .. Enumerable.Range(2, arity - 1).Select(static i => $"case{i}")];
 }

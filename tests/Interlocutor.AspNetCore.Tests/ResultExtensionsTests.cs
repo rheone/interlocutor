@@ -9,6 +9,29 @@ using Interlocutor.CommonKernel.ResultTypes;
 using Interlocutor.FluentValidation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+// The shipped ceiling arity (16 cases), used only by the arity-16 boundary tests in ResultExtensionsTests.
+// Every type argument is distinct - required for the union's implicit-conversion-based construction to stay
+// unambiguous - with RateLimited at the last slot (T16) standing in for a recognized failure case and a plain
+// int at a middle slot (T9) standing in for an unrecognized one; every other slot is inert filler never
+// activated by these tests.
+using SixteenArityOutcome = Interlocutor.CommonKernel.Outcome<
+    string,
+    bool,
+    double,
+    long,
+    short,
+    byte,
+    char,
+    float,
+    int,
+    decimal,
+    System.DateTime,
+    System.Guid,
+    System.TimeSpan,
+    uint,
+    ulong,
+    Interlocutor.CommonKernel.ResultTypes.RateLimited
+>;
 
 /// <summary>Tests for controller-based <see cref="IActionResult"/> mapping via <see cref="ResultExtensions"/>.</summary>
 public class ResultExtensionsTests
@@ -188,18 +211,55 @@ public class ResultExtensionsTests
     }
 
     [Fact]
-    public void ToActionResult_WithUnknownFailureType_Returns500()
+    public void ToActionResult_WithUnrecognizedFailureSlotTypeAndNoMapper_ThrowsOutcomeCaseNotMappableException()
     {
-        // Arrange
+        // Arrange - int occupies the failure slot (T2), but is neither the bare Success marker nor one of the
+        // built-in failure case types/interfaces DefaultHttpOutcomeStatusMapper recognizes. Under the old,
+        // position-based dispatch this silently fell to DefaultHttpOutcomeStatusMapper.MapUnrecognized (500) by
+        // virtue of occupying a non-first slot alone; now that classification is by runtime type instead, and
+        // no explicit mapper was supplied to take responsibility for it, this throws exactly as the reflective
+        // catch-all already does for the equivalent unrecognized-type scenario (see
+        // GenericCatchAllResultExtensionsTests) rather than guessing a status.
         var result = new Outcome<string, int>(42);
+
+        // Act & Assert
+        var exception = Assert.Throws<OutcomeCaseNotMappableException>(() => result.ToActionResult());
+        Assert.Equal(typeof(Outcome<string, int>), exception.ResponseType);
+        Assert.Equal(typeof(int), exception.CaseType);
+    }
+
+    [Fact]
+    public void ToActionResult_WithUnrecognizedFailureSlotTypeAndExplicitMapper_UsesThatMapper()
+    {
+        // Arrange - an explicitly supplied mapper is always trusted for whatever type it is handed (its Map has
+        // no "I don't know this type" signal of its own), so supplying one - even for a type the library's own
+        // default recognition rules don't know - avoids the throw the previous test exercises.
+        var result = new Outcome<string, int>(42);
+
+        // Act
+        var actionResult = result.ToActionResult(new TeapotOutcomeStatusMapper());
+
+        // Assert
+        var statusCodeResult = Assert.IsType<StatusCodeResult>(actionResult);
+        Assert.Equal(StatusCodes.Status418ImATeapot, statusCodeResult.StatusCode);
+    }
+
+    [Fact]
+    public void ToActionResult_WithFailureShapedValueInSuccessSlot_MapsAsFailureNotAsOk()
+    {
+        // Arrange - NotFound occupies the success slot (T1), an unusual but legal instantiation. The fix for
+        // the "first generic-parameter position always means 200" bug: the success arm now checks the active
+        // value's runtime type too, so a failure-shaped value there is still mapped as a failure instead of
+        // being wrapped in an OkObjectResult just because it happened to be T1.
+        Outcome<NotFound, string> result = new(new NotFound("Widget not found"));
 
         // Act
         var actionResult = result.ToActionResult();
 
         // Assert
         var objectResult = Assert.IsType<ObjectResult>(actionResult);
-        Assert.Equal(StatusCodes.Status500InternalServerError, objectResult.StatusCode);
-        Assert.Equal(42, objectResult.Value);
+        Assert.Equal(StatusCodes.Status404NotFound, objectResult.StatusCode);
+        Assert.Equal("Widget not found", objectResult.Value);
     }
 
     [Fact]
@@ -236,12 +296,12 @@ public class ResultExtensionsTests
     // distinct failure cases (CLAUDE.md's result-type convention pushes handlers toward exactly this shape
     // rather than a single generic Failure). That arity-shape coverage now lives in
     // Interlocutor.Generator.Tests.Emission.ResultExtensionsEmitterTests, which is table-driven over every
-    // arity 2-6 rather than re-testing the same generated switch shape by hand per arity; this file keeps the
-    // arity-2/arity-6 boundary below as its own representative sample.
+    // arity 2-16 rather than re-testing the same generated switch shape by hand per arity; this file keeps the
+    // arity-2/arity-6/arity-16 boundaries below as its own representative sample.
 
-    // The tests below exercise the 6-arity overload (one success + five failure cases) - the maximum arity, and
-    // the boundary an off-by-one in the generated switch is most likely to get wrong. WithRateLimited also
-    // covers the most recently added of the three case types (Cancelled, Timeout, RateLimited) that
+    // The tests below exercise the 6-arity overload (one success + five failure cases) - a representative
+    // mid-range arity, distinct from the shipped ceiling exercised further below. WithRateLimited also covers
+    // the most recently added of the three case types (Cancelled, Timeout, RateLimited) that
     // DefaultHttpOutcomeStatusMapper learned to map.
 
     [Fact]
@@ -274,6 +334,88 @@ public class ResultExtensionsTests
         Assert.Equal(StatusCodes.Status429TooManyRequests, objectResult.StatusCode);
         var problemDetails = Assert.IsType<ProblemDetails>(objectResult.Value);
         Assert.Equal("slow down", problemDetails.Detail);
+    }
+
+    // The tests below exercise the shipped ceiling arity (16 cases, see SixteenArityOutcome above) - the
+    // boundary ticket aspnetcore-outcome-case-mapping-redesign/02 raised the emitter's arity ceiling to, and
+    // the position an off-by-one in ResultExtensionsEmitter's loop bound is most likely to get wrong. Both
+    // cases below sit away from the success slot (T1) and from each other, proving classification resolves by
+    // the active case's runtime type rather than by which numbered slot happens to hold it - a recognized
+    // failure (RateLimited) at the very last slot (T16) still maps to its real status, and an unrecognized
+    // type (a plain int) at a middle slot (T9) still fails loudly instead of silently falling back to a
+    // generic status.
+
+    [Fact]
+    public void ToActionResult_SixteenArity_WithSuccess_ReturnsOkObjectResult()
+    {
+        // Arrange
+        SixteenArityOutcome result = "hello";
+
+        // Act
+        var actionResult = result.ToActionResult();
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(actionResult);
+        Assert.Equal("hello", okResult.Value);
+    }
+
+    [Fact]
+    public void ToActionResult_SixteenArity_WithRecognizedFailureAtLastCase_Returns429()
+    {
+        // Arrange
+        SixteenArityOutcome result = new RateLimited("per-user", TimeSpan.FromSeconds(30), "slow down");
+
+        // Act
+        var actionResult = result.ToActionResult();
+
+        // Assert
+        var objectResult = Assert.IsType<ObjectResult>(actionResult);
+        Assert.Equal(StatusCodes.Status429TooManyRequests, objectResult.StatusCode);
+        var problemDetails = Assert.IsType<ProblemDetails>(objectResult.Value);
+        Assert.Equal("slow down", problemDetails.Detail);
+    }
+
+    [Fact]
+    public void ToActionResult_SixteenArity_WithUnrecognizedFailureSlotTypeAtMiddleCaseAndNoMapper_ThrowsOutcomeCaseNotMappableException()
+    {
+        // Arrange - a plain int occupying a middle failure slot (T9), matching none of the recognized failure
+        // shapes, with no mapper supplied to take responsibility for it: must fail loudly rather than silently
+        // mapping to a status, exactly like the arity-2 equivalent above - this proves the same refusal holds
+        // at the shipped ceiling, not just at the smallest arity.
+        SixteenArityOutcome result = 42;
+
+        // Act & Assert
+        var exception = Assert.Throws<OutcomeCaseNotMappableException>(() => result.ToActionResult());
+        Assert.Equal(typeof(SixteenArityOutcome), exception.ResponseType);
+        Assert.Equal(typeof(int), exception.CaseType);
+    }
+
+    [Fact]
+    public void ToMinimalApiResult_SixteenArity_WithRecognizedFailureAtLastCase_Returns429()
+    {
+        // Arrange
+        SixteenArityOutcome result = new RateLimited("per-user", TimeSpan.FromSeconds(30), "slow down");
+
+        // Act
+        var minimalResult = result.ToMinimalApiResult();
+
+        // Assert
+        Assert.Equal(
+            StatusCodes.Status429TooManyRequests,
+            (int?)minimalResult.GetType().GetProperty("StatusCode")?.GetValue(minimalResult)
+        );
+    }
+
+    [Fact]
+    public void ToMinimalApiResult_SixteenArity_WithUnrecognizedFailureSlotTypeAtMiddleCaseAndNoMapper_ThrowsOutcomeCaseNotMappableException()
+    {
+        // Arrange - the minimal-API twin of the ToActionResult test above.
+        SixteenArityOutcome result = 42;
+
+        // Act & Assert
+        var exception = Assert.Throws<OutcomeCaseNotMappableException>(() => result.ToMinimalApiResult());
+        Assert.Equal(typeof(SixteenArityOutcome), exception.ResponseType);
+        Assert.Equal(typeof(int), exception.CaseType);
     }
 
     [Fact]

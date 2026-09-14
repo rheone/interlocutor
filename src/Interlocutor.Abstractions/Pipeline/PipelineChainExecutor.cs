@@ -27,19 +27,31 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// layer actually ejected. A dispatch that returns normally never sets the tag at all.
 /// </para>
 /// <para>
-/// <b>PROTOTYPE (spike/eject-withcase-case-fidelity):</b> every guard also catches
-/// <see cref="PipelineEjectCaseException"/> - the type-erased eject signal a behavior with no
-/// <see cref="IOutcomeCaseRegistry"/> dependency of its own throws via <see cref="Eject.WithCase{TCase}(TCase)"/>
-/// (today, only <see cref="AuthorizationBehavior{TRequest, TResponse}"/>) - resolving
-/// <see cref="IOutcomeCaseRegistry"/> from the ambient <see cref="IServiceProvider"/> and performing the
-/// single construct-and-return call this exists to centralize, once per eject, at the layer that actually
+/// <b>Type-erased case ejection (ADR-0025).</b> Every guard also catches
+/// <see cref="PipelineEjectCaseException"/> - the type-erased eject signal a behavior
+/// with no <see cref="IOutcomeCaseRegistry"/> dependency of its own throws via
+/// <see cref="Eject.WithCase{TCase}(TCase)"/> (today, only <see cref="AuthorizationBehavior{TRequest, TResponse}"/>
+/// is migrated to it; the other case-constructing behaviors still take an <see cref="IOutcomeCaseRegistry"/>
+/// dependency of their own and construct their response inline, per ADR-0025's "Current shipped scope") -
+/// resolving <see cref="IOutcomeCaseRegistry"/> from the ambient <see cref="IServiceProvider"/> and performing
+/// the single construct-and-return call this exists to centralize, once per eject, at the layer that actually
 /// caught it.
-/// This is the only file this spike needed to touch to give <c>QueryHandlerWrapper</c>,
-/// <c>CommandHandlerWrapper</c>, and <c>BareCommandHandlerWrapper</c> the new catch logic all at once - none of
-/// the three wrappers guards for either exception type itself; they all delegate to this shared executor.
+/// This is the only file that needed to change to give <c>QueryHandlerWrapper</c>, <c>CommandHandlerWrapper</c>,
+/// and <c>BareCommandHandlerWrapper</c> the catch logic all at once - none of the three wrappers guards for
+/// either exception type itself; they all delegate to this shared executor.
+/// </para>
+/// <para>
+/// <b>Public, and called from a consuming assembly's own generated code.</b>
+/// <c>Interlocutor.Generator</c>'s <c>DispatchWrapperEmitter</c> emits a call into
+/// <see cref="ExecuteAsync{TRequest,TResponse}"/> from every compile-time dispatch wrapper it produces,
+/// rather than re-deriving this same fold/eject-catch logic as string-templated source - the two dispatch
+/// paths (hand-written wrappers here, generator-emitted wrappers in an arbitrary consuming assembly) share
+/// this one implementation, so a fix or behavior change to the fold/eject-catch algorithm only needs to be
+/// made here to take effect on both. This type's static surface is otherwise unremarkable to widen: it
+/// already took only an <see cref="IServiceProvider"/> plus delegates, nothing internal-only.
 /// </para>
 /// </remarks>
-internal static class PipelineChainExecutor
+public static class PipelineChainExecutor
 {
     /// <summary>
     /// Composes <paramref name="handle"/> with every behavior
@@ -70,11 +82,11 @@ internal static class PipelineChainExecutor
         // for PipelineEjectException so a handler that calls Eject.With deep in its own call graph returns an
         // ordinary response here - nothing further out in the chain ever observes a thrown exception.
         //
-        // PROTOTYPE (spike/eject-withcase-case-fidelity): also catches PipelineEjectCaseException, the
-        // type-erased eject signal Eject.WithCase throws. Unlike PipelineEjectException<TResponse>, that
-        // signal carries only a boxed case value - constructing the actual TResponse from it is deferred to
-        // here, the one place that already knows TResponse concretely, via IOutcomeCaseRegistry resolved
-        // lazily from services (only ejects that actually take this path ever need it resolved).
+        // Also catches PipelineEjectCaseException, the type-erased eject signal Eject.WithCase throws (ADR-0025).
+        // Unlike PipelineEjectException<TResponse>, that signal carries only a boxed case value - constructing
+        // the actual TResponse from it is deferred to here, the one place that already knows TResponse
+        // concretely, via IOutcomeCaseRegistry resolved lazily from services (only ejects that actually take
+        // this path ever need it resolved).
         Func<Task<TResponse>> pipeline = async () =>
         {
             try

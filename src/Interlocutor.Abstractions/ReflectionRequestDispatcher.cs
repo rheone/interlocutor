@@ -48,6 +48,18 @@ internal static class ReflectionRequestDispatcher
     /// <param name="request">The request to dispatch, by its runtime type.</param>
     /// <param name="ct">A token that may be used to cancel the operation.</param>
     /// <returns>The dispatched request's outcome.</returns>
+    /// <exception cref="HandlerNotRegisteredException">
+    /// No handler closing over <paramref name="request"/>'s runtime type (and, for a bare command, its resolved
+    /// result type) is registered in <paramref name="services"/>.
+    /// </exception>
+    /// <exception cref="UnsupportedRequestTypeException">
+    /// <paramref name="request"/>'s runtime type implements none of <see cref="IQuery{TResponse}"/>,
+    /// <see cref="ICommand{TResponse}"/>, or <see cref="ICommand"/>.
+    /// </exception>
+    /// <exception cref="AmbiguousBareCommandResultTypeException">
+    /// <paramref name="request"/> is a bare <see cref="ICommand"/> and more than one distinct result type was
+    /// found across loaded assemblies for an <c>IBareCommandHandler&lt;TCommand, TResult&gt;</c> closing over it.
+    /// </exception>
     [RequiresUnreferencedCode(
         "The runtime-typed dispatch fallback reflects over runtime types and is only reached when no IGeneratedRequestDispatcher "
             + "is registered (Interlocutor.Generator did not run, or its output was never passed to "
@@ -117,6 +129,7 @@ internal static class ReflectionRequestDispatcher
     /// The open generic interface (e.g. <c>typeof(IQuery&lt;&gt;)</c>) or, for the unit-command overload, the
     /// non-generic <see cref="ICommand"/> type, identifying which overload's first parameter to match.
     /// </param>
+    /// <returns>The matching generic <c>SendAsync</c> method, as an open <see cref="MethodInfo"/>.</returns>
     [UnconditionalSuppressMessage(
         "Trimming",
         "IL2026:RequiresUnreferencedCode",
@@ -152,9 +165,15 @@ internal static class ReflectionRequestDispatcher
 
     /// <summary>
     /// Invokes a resolved generic <c>SendAsync&lt;TResponse&gt;</c> overload reflectively, awaits it, and returns
-    /// its result as the base outcome interface - the reflection stand-in for the compile-time generic type
-    /// argument a static caller would normally supply.
+    /// its result as <see cref="IUnion"/> - the reflection stand-in for the compile-time generic type argument a
+    /// static caller would normally supply.
     /// </summary>
+    /// <param name="openGenericSendMethod">The open generic <c>SendAsync</c> method, resolved by <see cref="ResolveSendMethod"/>.</param>
+    /// <param name="mediator">The mediator instance to invoke the closed method on.</param>
+    /// <param name="responseType">The request's response type, used to close <paramref name="openGenericSendMethod"/>.</param>
+    /// <param name="request">The request instance to pass as the closed method's argument.</param>
+    /// <param name="ct">A token that may be used to cancel the operation.</param>
+    /// <returns>The dispatched request's outcome.</returns>
     [RequiresUnreferencedCode(
         "The runtime-typed dispatch fallback reflects over runtime types and is only reached when no IGeneratedRequestDispatcher "
             + "is registered (Interlocutor.Generator did not run, or its output was never passed to "
@@ -187,6 +206,12 @@ internal static class ReflectionRequestDispatcher
     /// Finds the closed generic interface matching <paramref name="openGenericInterface"/> that
     /// <paramref name="requestType"/> implements, or <see langword="null"/> if it implements none.
     /// </summary>
+    /// <param name="requestType">The request type to inspect for an implemented closed interface.</param>
+    /// <param name="openGenericInterface">The open generic interface to match against, e.g. <c>typeof(IQuery&lt;&gt;)</c>.</param>
+    /// <returns>
+    /// The closed generic interface <paramref name="requestType"/> implements, or <see langword="null"/> if it
+    /// implements no closed form of <paramref name="openGenericInterface"/>.
+    /// </returns>
     [RequiresUnreferencedCode(
         "The runtime-typed dispatch fallback reflects over runtime types and is only reached when no IGeneratedRequestDispatcher "
             + "is registered (Interlocutor.Generator did not run, or its output was never passed to "
@@ -207,6 +232,10 @@ internal static class ReflectionRequestDispatcher
     /// in <paramref name="services"/>. Runtime-typed dispatch checks this explicitly, rather than letting a
     /// missing handler surface as the DI container's own generic exception from deep inside a handler wrapper.
     /// </summary>
+    /// <param name="services">The service provider to check for a registration.</param>
+    /// <param name="requestType">The request type <paramref name="handlerType"/> was closed over, for the exception message.</param>
+    /// <param name="handlerType">The closed handler interface expected to be registered.</param>
+    /// <exception cref="HandlerNotRegisteredException"><paramref name="handlerType"/> has no registration in <paramref name="services"/>.</exception>
     private static void EnsureHandlerRegistered(IServiceProvider services, Type requestType, Type handlerType)
     {
         if (services.GetService(handlerType) is null)
@@ -216,8 +245,8 @@ internal static class ReflectionRequestDispatcher
     }
 
     /// <summary>
-    /// Scans loaded assemblies for a concrete type implementing <c>IBareCommandHandler&lt;TCommand, TResult&gt;</c>
-    /// closed over <paramref name="commandType"/>, returning the <c>TResult</c> it was implemented against, or
+    /// Scans loaded assemblies for concrete types implementing <c>IBareCommandHandler&lt;TCommand, TResult&gt;</c>
+    /// closed over <paramref name="commandType"/>, returning the single <c>TResult</c> found, or
     /// <see langword="null"/> if no such implementation is loaded.
     /// </summary>
     /// <remarks>
@@ -225,6 +254,16 @@ internal static class ReflectionRequestDispatcher
     /// field doc) - a future generator-backed implementation replaces it with a compiled lookup, without
     /// changing <see cref="Mediator.SendAsync(object, CancellationToken)"/>'s contract.
     /// </remarks>
+    /// <param name="commandType">The bare command type to find a registered <c>IBareCommandHandler&lt;TCommand, TResult&gt;</c> for.</param>
+    /// <returns>
+    /// The single <c>TResult</c> closing over <paramref name="commandType"/> found across loaded assemblies, or
+    /// <see langword="null"/> if none is loaded.
+    /// </returns>
+    /// <exception cref="AmbiguousBareCommandResultTypeException">
+    /// More than one distinct <c>TResult</c> was found closing over <paramref name="commandType"/>. There is no
+    /// principled way to pick a winner among them, so this throws rather than silently returning whichever
+    /// closing assembly-enumeration order happened to find first.
+    /// </exception>
     [RequiresUnreferencedCode(
         "The runtime-typed dispatch fallback reflects over runtime types and is only reached when no IGeneratedRequestDispatcher "
             + "is registered (Interlocutor.Generator did not run, or its output was never passed to "
@@ -235,6 +274,8 @@ internal static class ReflectionRequestDispatcher
     )]
     private static Type? ResolveBareCommandResultType(Type commandType)
     {
+        List<Type>? foundResultTypes = null;
+
         foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
         {
             Type[] types;
@@ -265,14 +306,26 @@ internal static class ReflectionRequestDispatcher
                     }
 
                     var genericArguments = candidateInterface.GetGenericArguments();
-                    if (genericArguments[0] == commandType)
+                    if (genericArguments[0] != commandType)
                     {
-                        return genericArguments[1];
+                        continue;
+                    }
+
+                    var resultType = genericArguments[1];
+                    foundResultTypes ??= [];
+                    if (!foundResultTypes.Contains(resultType))
+                    {
+                        foundResultTypes.Add(resultType);
                     }
                 }
             }
         }
 
-        return null;
+        return foundResultTypes switch
+        {
+            null => null,
+            [var singleResultType] => singleResultType,
+            _ => throw new AmbiguousBareCommandResultTypeException(commandType, foundResultTypes),
+        };
     }
 }

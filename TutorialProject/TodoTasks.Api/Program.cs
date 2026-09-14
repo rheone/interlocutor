@@ -123,9 +123,10 @@ builder.Services.AddInterlocutor(interlocutor =>
 
     // Logging -> Auditing -> Authorization -> Validation -> Transaction, in that order - see
     // documentation/beginners-guide-todo-api.md Step 2 and documentation/pipeline-and-behaviors.md for
-    // the reasoning behind this specific order. This is spelled out as the individual Add*Behavior
-    // calls UseRecommendedChain() is sugar for, rather than calling UseRecommendedChain() itself:
-    // under Microsoft.Extensions.DependencyInjection specifically, its last step
+    // the reasoning behind this specific order. This is spelled out as individual Add*Behavior calls
+    // rather than calling UseRecommendedChain() itself, both because that sugar method's own minimal
+    // default no longer includes AddAuditingBehavior()/AddAuthorizationBehavior() (this project wants
+    // both), and because, under Microsoft.Extensions.DependencyInjection specifically, its last step
     // (AddUnitOfWorkBehavior()) throws at registration time once Interlocutor.Persistence.EntityFrameworkCore
     // is referenced, because EF Core's UnitOfWorkBehavior<TRequest,TResponse,TContext> has one more open
     // type parameter than Microsoft DI allows an open-generic registration to carry. See

@@ -9,11 +9,12 @@ Nothing to decide in this ticket beyond which of the two outcomes applies - the 
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `8e0debb`. Issue 01 confirmed the redesign works cleanly (already shipped in `be5adbb`) and answered the open question (no new catch point needed). Numbered **ADR-0027**, not ADR-0025 as this ticket's text names - ADR-0025 was already claimed by the `eject-withcase-type-erased-variant` ADR, and ADR-0026 (`recommended-chain-minimal-default`) by another ticket, by the time this ran.
 
-- [ ] Issue 01's write-up is read and its recommendation is followed, not re-litigated in this ticket
-- [ ] If committing to the redesign: new ADR added under `maintainer_docs/adr/`, cross-referencing ADR-0023, added to the ADR index
-- [ ] If falling back to a rename: a short Alternatives Considered note added to the relevant existing ADR, citing issue 01's findings, and this ticket records "plain rename" as the shape issue 03 must implement
-- [ ] `.scratch/resource-command-handler-case-fidelity/PRD.md`'s Status line is updated to reflect the outcome
+- [x] Issue 01's write-up is read and its recommendation is followed, not re-litigated in this ticket
+- [x] New ADR added under `maintainer_docs/adr/` (`0027-resourcecommandhandler-eject-withcase.md`), cross-referencing ADR-0023 and ADR-0025, added to the ADR index
+- [x] `.scratch/resource-command-handler-case-fidelity/PRD.md`'s Status line is updated to reflect the outcome
 
 ## Comments
+
+Issue 01's spike (commit `be5adbb`) had already implemented and proved the redesign before this ticket ran; this ticket's job was solely to record that outcome as an ADR. Wrote `maintainer_docs/adr/0027-resourcecommandhandler-eject-withcase.md`, recording: `ResourceCommandHandler<TCommand, TEntity, TResponse>` generic over `TResponse : IUnion`, ejecting `NotFound`/`Forbidden` via `Eject.WithCase` instead of constructing them; the answered open question (existing wrapper-side `PipelineChainExecutor` catch already covers this template-method consumer, proved via `ResourceCommandHandlerEjectCaseEndToEndTests` dispatching with zero pipeline behaviors registered); the real behavioral consequence (a direct `HandleAsync` call bypassing the mediator now throws `PipelineEjectCaseException` instead of returning a constructed case); and that this closes out `.scratch/outcome-naming-and-arity-refactor/issue 08`'s `TSuccess` naming carve-out for this type (`AuthorizationBehavior`'s half of that carve-out had already closed earlier). Cross-referenced ADR-0023 (fail-fast contract, inherited for free from the shared catch site) and ADR-0025 (same `Eject.WithCase` mechanism, now reaching a second, non-behavior consumer). Added an index entry to `maintainer_docs/README.md`'s "Pipeline & behaviors" theme section, right after ADR-0025. No source code changed - `dotnet build` confirms a clean build with no new warnings. `.scratch/resource-command-handler-case-fidelity/PRD.md`'s Status line updated to record issues 01-02 done, issue 03 open.

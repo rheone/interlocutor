@@ -72,12 +72,14 @@ containerBuilder.AddInterlocutor(builder =>
     builder.ScanAssembly(typeof(Program).Assembly);
 
     builder.Pipeline.AddLoggingBehavior();
-    builder.Pipeline.AddAuditingBehavior();
     builder.Pipeline.AddValidationBehavior();  // no-op if Interlocutor.FluentValidation isn't referenced
     builder.Pipeline.AddUnitOfWorkBehavior(); // no-op if neither store package is referenced
 
-    // Or the sugar form - calls exactly the five above, in this order:
+    // Or the sugar form - calls exactly the three above, in this order:
     // builder.Pipeline.UseRecommendedChain();
+    // Auditing/Authorization are opt-in, not part of this default - add them explicitly if you want them:
+    // builder.Pipeline.AddAuditingBehavior();
+    // builder.Pipeline.AddAuthorizationBehavior();
 });
 ```
 

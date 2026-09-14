@@ -5,10 +5,12 @@ namespace Interlocutor.Persistence.Abstractions;
 /// algorithm against a store's scoped session, without the driver itself depending on any particular ORM.
 /// </summary>
 /// <remarks>
-/// Each store package's <c>UnitOfWorkBehavior</c> - EF Core's and NHibernate's - implements this interface,
-/// typically via a small internal adapter wrapping its own <c>DbContext</c>/<c>ISession</c>, translating the
-/// driver's calls into that store's own transaction API. The driver never inspects a concrete transaction
-/// object itself; every decision is made through the members below.
+/// Each store package ships its own small internal adapter implementing this interface - EF Core's
+/// <c>EntityFrameworkCommitGateSession</c> wrapping a <c>DbContext</c>, NHibernate's
+/// <c>NHibernateCommitGateSession</c> wrapping an <c>ISession</c> - translating the driver's calls into that
+/// store's own transaction API. That store's <c>UnitOfWorkBehavior</c> constructs the adapter and hands it to
+/// <see cref="CommitGateDriver.HandleAsync{TRequest, TResponse}"/> as a <c>sessionFactory</c>; the driver never
+/// inspects a concrete transaction object itself, and every decision is made through the members below.
 /// </remarks>
 public interface ICommitGateSession
 {

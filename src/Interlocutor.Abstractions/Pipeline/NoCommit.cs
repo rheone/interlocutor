@@ -64,7 +64,7 @@ public static class NoCommit
     /// in the chain would otherwise take, then returns <paramref name="response"/> unchanged - for an ordinary
     /// <see langword="return"/> that still wants to signal no-commit.
     /// </summary>
-    /// <typeparam name="TResponse">The <see cref="IOutcome"/> type being returned.</typeparam>
+    /// <typeparam name="TResponse">The <see cref="IUnion"/> type being returned.</typeparam>
     /// <param name="response">The response to return, untouched by this call.</param>
     /// <returns><paramref name="response"/>, unchanged.</returns>
     /// <remarks>
@@ -89,7 +89,7 @@ public static class NoCommit
     /// path, several calls deep in a handler's own logic. See <see cref="Eject.With{TResponse}(TResponse)"/>
     /// for the unwind contract this defers to.
     /// </summary>
-    /// <typeparam name="TResponse">The <see cref="IOutcome"/> type the ejecting dispatch returns.</typeparam>
+    /// <typeparam name="TResponse">The <see cref="IUnion"/> type the ejecting dispatch returns.</typeparam>
     /// <param name="response">The outcome the dispatch should end with.</param>
     /// <returns>Never returns - always throws, exactly like <see cref="Eject.With{TResponse}(TResponse)"/>.</returns>
     /// <exception cref="PipelineEjectException{TResponse}">Always thrown - see <see cref="Eject.With{TResponse}(TResponse)"/>.</exception>

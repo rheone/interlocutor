@@ -4,8 +4,8 @@
 
 **Blocked by:** 02
 
-**Status:** ready-for-agent
+**Status:** done - implemented in `1edf284`
 
-- [ ] The same command/handler/pipeline scenario from ticket 02 passes when resolved from an Autofac container
-- [ ] Any container-specific setup differences are isolated to test fixture code, not to the handlers or behaviors under test
-- [ ] Both the Microsoft DI and Autofac variants of the scenario run in CI
+- [x] The same command/handler/pipeline scenario from ticket 02 passes when resolved from an Autofac container
+- [x] Any container-specific setup differences are isolated to test fixture code, not to the handlers or behaviors under test
+- [x] Both the Microsoft DI and Autofac variants of the scenario run in CI

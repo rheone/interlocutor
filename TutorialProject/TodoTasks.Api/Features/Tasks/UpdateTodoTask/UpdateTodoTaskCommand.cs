@@ -17,9 +17,8 @@ using TodoTasks.Api.Domain;
 /// Only the task's owner may update it - see <see cref="UpdateTodoTaskHandler.Authorize"/>.
 /// </param>
 /// <remarks>
-/// No FluentValidation here, deliberately: <see cref="UpdateTodoTaskHandler"/>'s base class,
-/// <c>ResourceCommandHandler{TCommand,TEntity,TSuccess}</c>, fixes the response shape to
-/// <c>Outcome{TSuccess,NotFound,Forbidden}</c>, which has no <see cref="ValidationErrors"/> case for
+/// No FluentValidation here, deliberately: this command's own response shape,
+/// <c>Outcome{TodoTaskDto,NotFound,Forbidden}</c>, has no <see cref="ValidationErrors"/> case for
 /// <c>ValidationBehavior</c> to construct on a validation failure - registering a validator for this
 /// shape is a build-time <c>INTERLOC010</c> diagnostic, not a runtime surprise. Input checks belong in
 /// <see cref="UpdateTodoTaskHandler.Authorize"/> or its <c>HandleAsync</c> instead.

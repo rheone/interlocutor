@@ -10,6 +10,7 @@ using Interlocutor.Abstractions.Commands;
 using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Notifications;
 using Interlocutor.Abstractions.Pipeline;
+using Interlocutor.Abstractions.Pipeline.Diagnostics;
 using Interlocutor.Abstractions.Queries;
 using Interlocutor.DependencyInjection.Abstractions;
 
@@ -96,6 +97,15 @@ public static class InterlocutorAutofacExtensions
             .RegisterInstance(new PipelineOverrideRegistry(interlocutorBuilder.Pipeline.OverrideRules))
             .As<IPipelineOverrideRegistry>();
 
+        // Opt-in: only registered at all when AddPipelineExplainer was called (see that method's remarks).
+        // Autofac has no IOptions-precedence layer the way Microsoft DI does - the POCO passed to
+        // AddPipelineExplainer (or a fresh, disabled instance if none was passed) is the only source of
+        // configuration.
+        if (interlocutorBuilder.Pipeline.PipelineExplainerConfiguration is { } explainerOptions)
+        {
+            builder.RegisterInstance(new PipelineExplainer(explainerOptions)).As<IPipelineExplainer>();
+        }
+
         // Deferred to a build callback (rather than resolved eagerly here) since only the fully-built
         // container can answer whether the application actually registered an ILoggerFactory - Autofac's
         // registration order is unordered relative to this call, unlike Microsoft DI's IServiceCollection,
@@ -174,7 +184,7 @@ public static class InterlocutorAutofacExtensions
     /// service type via <c>RegisterGeneric(...).As(...)</c> - but the reverse, a <em>closed</em> implementation
     /// paired with an <em>open</em> service type via <c>RegisterType(...).As(...)</c>, throws
     /// <see cref="ArgumentException"/> at <c>ContainerBuilder.Build()</c> time, the same shape Microsoft
-    /// DI's own <c>ServiceCollectionExtensions.ResolveServiceType</c> exists to handle. Both containers need
+    /// DI's own <c>InterlocutorServiceCollectionExtensions.ResolveServiceType</c> exists to handle. Both containers need
     /// this translation for the identical reason: <see cref="InterlocutorPipelineBuilder.AddBehavior"/> always
     /// records the open <see cref="IPipelineBehavior{TRequest,TResponse}"/> as
     /// <see cref="InterlocutorRegistration.ServiceType"/> regardless of whether

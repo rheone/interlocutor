@@ -6,9 +6,11 @@ namespace Interlocutor.Abstractions.Core;
 /// <c>IQuery&lt;TResponse&gt;</c> nor <c>ICommand&lt;TResponse&gt;</c>, and does not implement <c>ICommand</c>.
 /// </summary>
 /// <remarks>
+/// <para>
 /// This is distinct from <see cref="HandlerNotRegisteredException"/>, which is thrown when the object is a
 /// recognized request shape but simply has no handler registered. This exception means the object was never
 /// a request to begin with - a deserialization or caller bug, not a missing DI registration.
+/// </para>
 /// </remarks>
 // RCS1194 wants the standard parameterless/message/message+innerException/serialization constructor set. This
 // exception's RequestType is load-bearing - see HandlerNotRegisteredException's identical suppression note.

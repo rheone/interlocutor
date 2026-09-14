@@ -97,6 +97,16 @@ public class TimeoutBehavior<TRequest, TResponse>(ITimeoutPolicy timeoutPolicy, 
         return this.ConstructTimeoutResponse(new Timeout(budget, stopwatch.Elapsed));
     }
 
+    /// <summary>
+    /// Constructs the <see cref="Timeout"/> case of the unconstrained <typeparamref name="TResponse"/> via
+    /// <see cref="IOutcomeCaseRegistry"/>, since this type has no compile-time way to build an arbitrary
+    /// <see cref="IUnion"/>-shaped response itself.
+    /// </summary>
+    /// <param name="timeout">The elapsed-budget details to carry in the constructed response.</param>
+    /// <returns>The constructed <typeparamref name="TResponse"/> wrapping <paramref name="timeout"/>.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// <typeparamref name="TResponse"/> has no <see cref="Timeout"/> case to construct.
+    /// </exception>
     private TResponse ConstructTimeoutResponse(Timeout timeout) =>
         caseRegistry.ConstructOrThrow<TResponse, Timeout>(
             timeout,

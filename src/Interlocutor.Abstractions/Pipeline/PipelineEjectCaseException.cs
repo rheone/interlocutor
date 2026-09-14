@@ -3,10 +3,10 @@ namespace Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Pipeline.Cases;
 
 /// <summary>
-/// PROTOTYPE (spike/eject-withcase-case-fidelity, <c>.scratch/pipeline-case-fidelity/issues/07-spike-eject-withcase-type-erased.md</c>):
-/// internal control-flow signal thrown by <see cref="Eject.WithCase{TCase}(TCase)"/> to force a pipeline
-/// dispatch to end immediately with a specific outcome case, from anywhere inside a handler's or pipeline
-/// behavior's own call graph, without the throwing code ever knowing the dispatch's concrete response type.
+/// Internal control-flow signal (ADR-0025) thrown by <see cref="Eject.WithCase{TCase}(TCase)"/> to force a
+/// pipeline dispatch to end immediately with a specific outcome case, from anywhere inside a handler's or
+/// pipeline behavior's own call graph, without the throwing code ever knowing the dispatch's concrete response
+/// type.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -30,8 +30,9 @@ using Interlocutor.Abstractions.Pipeline.Cases;
 /// </para>
 /// <para>
 /// <b>Construction is deferred to the one place that already knows <c>TResponse</c> concretely.</b> Per this
-/// library's own convention (handlers return <c>IOutcome</c> unions for expected failures; exceptions are
-/// reserved for bugs or infrastructure faults), this type must never be observed by a caller of
+/// library's own convention (handlers return <see cref="System.Runtime.CompilerServices.IUnion"/> outcomes for
+/// expected failures; exceptions are reserved for bugs or infrastructure faults), this type must never be
+/// observed by a caller of
 /// <c>Interlocutor.Abstractions.Core.IMediator</c>. <c>PipelineChainExecutor</c> catches it at every layer it
 /// already guards for <see cref="PipelineEjectException{TResponse}"/>, resolves
 /// <see cref="IOutcomeCaseRegistry"/> from the ambient <see cref="IServiceProvider"/>, and performs the single

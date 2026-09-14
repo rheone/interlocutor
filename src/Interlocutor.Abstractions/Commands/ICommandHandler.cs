@@ -11,8 +11,8 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// <remarks>
 /// <para>
 /// Use this handler for commands that mutate state and return domain data (e.g., <c>CreateUserCommand → UserDto</c>).
-/// For commands that produce only success/failure outcomes (not domain data), use <see cref="IBareCommandHandler{TCommand, TResult}"/>
-/// instead, which returns an <see cref="CommonKernel.ResultTypes.IOutcome"/> union.
+/// For commands that produce only an outcome (not domain data), use <see cref="IBareCommandHandler{TCommand, TResult}"/>
+/// instead, which returns whatever <see cref="IUnion"/>-shaped outcome type the caller chooses.
 /// </para>
 /// <para>
 /// Handlers are registered and discovered by the mediator via DI assembly scanning. Register each handler in

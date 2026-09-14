@@ -402,11 +402,9 @@ public class TracingInnerQueryHandler : IQueryHandler<TracingInnerQuery, Outcome
 
 public record TracingSuccessCommand : ICommand;
 
-// IBareCommandHandler<,> has no HandleAsync member (known gap - ticket 01 never added one), so this fake
-// stays on Handle as-is.
 public class TracingSuccessCommandHandler : IBareCommandHandler<TracingSuccessCommand, Outcome>
 {
-    public Task<Outcome> Handle(TracingSuccessCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
+    public Task<Outcome> HandleAsync(TracingSuccessCommand command, CancellationToken ct) => Task.FromResult(default(Outcome));
 }
 
 /// <summary>A query whose handler ejects deep in its own call graph - covers <c>QueryHandlerWrapper</c>'s
@@ -457,7 +455,7 @@ public record TracingEjectingBareCommand : ICommand;
 
 public class TracingEjectingBareCommandHandler : IBareCommandHandler<TracingEjectingBareCommand, Outcome<Success, Failure>>
 {
-    public Task<Outcome<Success, Failure>> Handle(TracingEjectingBareCommand command, CancellationToken ct) =>
+    public Task<Outcome<Success, Failure>> HandleAsync(TracingEjectingBareCommand command, CancellationToken ct) =>
         Task.FromResult(Eject.With<Outcome<Success, Failure>>(new Failure("ejected")));
 }
 

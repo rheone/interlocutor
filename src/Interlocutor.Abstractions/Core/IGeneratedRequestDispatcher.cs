@@ -12,7 +12,7 @@ using System.Runtime.CompilerServices;
 /// A single generated implementation, <c>Interlocutor.Generated.Dispatch.GeneratedRequestDispatcher</c>, is
 /// registered as a singleton alongside the rest of a compilation's generated registrations (see
 /// <c>InterlocutorBuilder.AddGeneratedRegistrations</c>) - never constructed directly.
-/// <see cref="Interlocutor.Abstractions.Mediator"/> resolves it once per <see cref="DispatchAsync"/> call via
+/// <see cref="Interlocutor.Abstractions.Mediator"/> resolves it once per <c>Mediator.DispatchAsync</c> call via
 /// <see cref="IServiceProvider.GetService(Type)"/> and, when present, dispatches through it exclusively - no
 /// <see cref="System.Reflection.Assembly.GetTypes"/>/<see cref="Type.MakeGenericType"/>/
 /// <see cref="Activator.CreateInstance(Type)"/> call runs on that path. When absent (the generator never ran
@@ -32,8 +32,8 @@ public interface IGeneratedRequestDispatcher
 {
     /// <summary>
     /// Dispatches <paramref name="request"/> - whose runtime type is only known via a compile-time-generated
-    /// type switch, not reflection - to its registered handler, returning the result as the library's base
-    /// outcome interface.
+    /// type switch, not reflection - to its registered handler, returning the handler's response as an
+    /// <see cref="IUnion"/>-shaped outcome.
     /// </summary>
     /// <param name="request">The request to dispatch.</param>
     /// <param name="services">The service provider to resolve the handler and behaviors from.</param>

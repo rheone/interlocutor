@@ -38,7 +38,7 @@ public sealed class NHibernateRepository<TEntity, TKey>(Lazy<ISession> session, 
     where TEntity : class
 {
     /// <inheritdoc/>
-    /// <remarks>Backed by NHibernate's LINQ provider via <c>ISession.Query&lt;TEntity&gt;()</c>.</remarks>
+    /// <remarks>Backed by NHibernate's LINQ provider via <see cref="ISession.Query{T}()"/>.</remarks>
     public override IQueryable<TEntity> Query => session.Value.Query<TEntity>();
 
     /// <inheritdoc/>
@@ -72,14 +72,18 @@ public sealed class NHibernateRepository<TEntity, TKey>(Lazy<ISession> session, 
         session.Value.DeleteAsync(entity, cancellationToken);
 
     /// <inheritdoc/>
-    /// <remarks>Delegates to NHibernate's own <c>IQueryable{TEntity}.ToListAsync</c> LINQ provider extension.</remarks>
+    /// <remarks>
+    /// Delegates to NHibernate's own <see cref="LinqExtensionMethods.ToListAsync{TSource}(IQueryable{TSource}, CancellationToken)"/>.
+    /// </remarks>
     protected override async Task<IReadOnlyList<TEntity>> ToListAsync(
         IQueryable<TEntity> query,
         CancellationToken cancellationToken
     ) => await query.ToListAsync(cancellationToken).ConfigureAwait(false);
 
     /// <inheritdoc/>
-    /// <remarks>Delegates to NHibernate's own <c>IQueryable{TEntity}.CountAsync</c> LINQ provider extension.</remarks>
+    /// <remarks>
+    /// Delegates to NHibernate's own <see cref="LinqExtensionMethods.CountAsync{TSource}(IQueryable{TSource}, CancellationToken)"/>.
+    /// </remarks>
     protected override Task<int> CountAsync(IQueryable<TEntity> query, CancellationToken cancellationToken) =>
         query.CountAsync(cancellationToken);
 }

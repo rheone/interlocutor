@@ -20,17 +20,9 @@ using Interlocutor.Abstractions.Pipeline;
 public sealed class PipelineOverrideRegistry(IReadOnlyList<PipelineOverrideRule> rules) : IPipelineOverrideRegistry
 {
     /// <inheritdoc/>
-    public bool TryGetOverride(Type requestType, out IReadOnlyList<Type> behaviorTypes)
+    public PipelineOverrideMatch? TryGetOverride(Type requestType)
     {
         var match = rules.FirstOrDefault(rule => rule.Predicate(requestType));
-
-        if (match is not null)
-        {
-            behaviorTypes = match.BehaviorTypes;
-            return true;
-        }
-
-        behaviorTypes = [];
-        return false;
+        return match is null ? null : new PipelineOverrideMatch(match.BehaviorTypes, match.Name);
     }
 }

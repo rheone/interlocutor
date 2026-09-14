@@ -9,8 +9,10 @@ namespace Interlocutor.CommonKernel.ResultTypes;
 /// </param>
 /// <param name="Message">The human-readable validation failure message.</param>
 /// <remarks>
+/// <para>
 /// The entry type behind <see cref="IFieldValidationFailureCase.FieldMessages"/> - kept as its own record
 /// struct rather than a bare value tuple so the two fields carry names and XML documentation a consumer can
 /// discover, and so a future field (an error code, for example) can be added without breaking every call site.
+/// </para>
 /// </remarks>
 public readonly record struct FieldValidationMessage(string? PropertyName, string Message);

@@ -102,7 +102,7 @@ public sealed class InterlocutorBuilder
 
     private readonly List<(Assembly Assembly, RegistrationLifetime Lifetime)> _assembliesToScan = [];
     private readonly Dictionary<Type, InterlocutorRegistration> _defaults;
-    private readonly List<Type> _ejectedImplementationTypes = [];
+    private readonly List<Type> _excludedImplementationTypes = [];
     private readonly Dictionary<(Type ServiceType, Type ImplementationType), InterlocutorRegistration> _explicitHandlers = [];
     private readonly List<InterlocutorRegistration> _generatedRegistrations = [];
     private readonly List<TypeMatchRule> _matchRules = [];
@@ -169,11 +169,11 @@ public sealed class InterlocutorBuilder
     public IReadOnlyCollection<InterlocutorRegistration> Defaults => this._defaults.Values;
 
     /// <summary>
-    /// Gets every implementation type added via <see cref="Eject(Type[])"/>/<see cref="Eject{TImplementation}"/>,
+    /// Gets every implementation type added via <see cref="Exclude(Type[])"/>/<see cref="Exclude{TImplementation}"/>,
     /// in call order across every call - each call is additive, never a replacement of the accumulated list.
     /// </summary>
-    /// <value>Every implementation type ejected so far.</value>
-    public IReadOnlyList<Type> EjectedImplementationTypes => this._ejectedImplementationTypes;
+    /// <value>Every implementation type excluded so far.</value>
+    public IReadOnlyList<Type> ExcludedImplementationTypes => this._excludedImplementationTypes;
 
     /// <summary>
     /// Gets the pipeline stage registrations added via <see cref="InterlocutorPipelineBuilder.AddStage(Type, RegistrationLifetime)"/>,
@@ -207,7 +207,7 @@ public sealed class InterlocutorBuilder
     /// precedence over a duplicate of that same pair discovered by scanning in the same configuration -
     /// the explicit registration is the one this property yields, not an additional copy alongside it.
     /// Recomputed on every access, so it always reflects the builder's current configuration. Every
-    /// implementation type added via <see cref="Eject(Type[])"/> is excluded entirely - both this property
+    /// implementation type added via <see cref="Exclude(Type[])"/> is excluded entirely - both this property
     /// and everything that reads it, never merely suppressed from a validation message.
     /// </remarks>
     /// <value>The merged handler registrations, with explicit entries winning over scanned duplicates.</value>
@@ -291,7 +291,7 @@ public sealed class InterlocutorBuilder
     /// instantiation" expectation the three built-in mediator handler contracts (<c>IQueryHandler&lt;,&gt;</c>,
     /// <c>ICommandHandler&lt;,&gt;</c>, <c>IBareCommandHandler&lt;,&gt;</c>) already carry - both
     /// <see cref="ValidateOnBuild"/>'s <see cref="RegistrationProblemKind.AmbiguousClosure"/> check and
-    /// <see cref="Eject(Type[])"/>'s conflict-clearing escape hatch cover it from then on.
+    /// <see cref="Exclude(Type[])"/>'s conflict-clearing escape hatch cover it from then on.
     /// </summary>
     /// <remarks>
     /// Every closed implementation of <paramref name="openGenericContract"/> found while scanning is
@@ -369,10 +369,10 @@ public sealed class InterlocutorBuilder
             merged[key] = registration;
         }
 
-        if (this._ejectedImplementationTypes.Count > 0)
+        if (this._excludedImplementationTypes.Count > 0)
         {
             foreach (
-                var key in merged.Keys.Where(k => this._ejectedImplementationTypes.Contains(k.ImplementationType)).ToList()
+                var key in merged.Keys.Where(k => this._excludedImplementationTypes.Contains(k.ImplementationType)).ToList()
             )
             {
                 merged.Remove(key);
@@ -717,24 +717,24 @@ public sealed class InterlocutorBuilder
     /// </summary>
     /// <remarks>
     /// Callable zero or more times, additive - each call adds to one shared list, never replaces it. An
-    /// ejected implementation type is removed from <see cref="Handlers"/> for every uniqueness-checked
+    /// excluded implementation type is removed from <see cref="Handlers"/> for every uniqueness-checked
     /// contract, built-in or consumer-supplied via <see cref="RequireUniqueClosure"/> - not merely
     /// suppressed from the validation message. An <see cref="AddHandler"/> call for one of several
     /// conflicting candidates does not, by itself, clear the conflict for the others still found by
-    /// scanning - <see cref="Eject(Type[])"/> is the only way to do that.
+    /// scanning - <see cref="Exclude(Type[])"/> is the only way to do that.
     /// </remarks>
     /// <param name="implementationTypes">The implementation types to remove from <see cref="Handlers"/>.</param>
     /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder Eject(params Type[] implementationTypes)
+    public InterlocutorBuilder Exclude(params Type[] implementationTypes)
     {
         ArgumentNullException.ThrowIfNull(implementationTypes);
-        this._ejectedImplementationTypes.AddRange(implementationTypes);
+        this._excludedImplementationTypes.AddRange(implementationTypes);
         return this;
     }
 
-    /// <summary>Removes <typeparamref name="TImplementation"/> from <see cref="Handlers"/> entirely. See <see cref="Eject(Type[])"/>.</summary>
+    /// <summary>Removes <typeparamref name="TImplementation"/> from <see cref="Handlers"/> entirely. See <see cref="Exclude(Type[])"/>.</summary>
     /// <typeparam name="TImplementation">The implementation type to remove from <see cref="Handlers"/>.</typeparam>
     /// <returns>This builder, for chaining.</returns>
-    public InterlocutorBuilder Eject<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TImplementation>() =>
-        this.Eject(typeof(TImplementation));
+    public InterlocutorBuilder Exclude<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TImplementation>() =>
+        this.Exclude(typeof(TImplementation));
 }

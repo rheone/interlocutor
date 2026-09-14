@@ -5,7 +5,7 @@ using Interlocutor.Abstractions.Notifications;
 using Interlocutor.CommonKernel;
 
 /// <summary>
-/// Covers <see cref="RegistrationProblemKind.AmbiguousClosure"/> detection, <see cref="InterlocutorBuilder.Eject(Type[])"/>'s
+/// Covers <see cref="RegistrationProblemKind.AmbiguousClosure"/> detection, <see cref="InterlocutorBuilder.Exclude(Type[])"/>'s
 /// conflict-clearing escape hatch, and <see cref="InterlocutorBuilder.RequireUniqueClosure"/>'s consumer-contract
 /// opt-in - split off from <see cref="RegistrationValidatorTests"/> the same way that file itself was split off
 /// from <see cref="InterlocutorBuilderTests"/> under ADR-0015, since this is its own self-contained behavioral
@@ -60,7 +60,7 @@ public class AmbiguousClosureTests
     {
         // ConflictedCommandHandlerA is found once by scanning and once by AddHandler for the identical
         // (service type, implementation type) pair - InterlocutorBuilder.Handlers collapses that to one
-        // registration, so with the other candidate ejected, zero conflicting implementations remain.
+        // registration, so with the other candidate excluded, zero conflicting implementations remain.
         // Arrange
         var builder = new InterlocutorBuilder();
 
@@ -68,7 +68,7 @@ public class AmbiguousClosureTests
         builder
             .ScanAssembly(typeof(AmbiguousClosureTests).Assembly)
             .AddHandler(typeof(ConflictedCommandHandlerA))
-            .Eject(typeof(ConflictedCommandHandlerB))
+            .Exclude(typeof(ConflictedCommandHandlerB))
             .ValidateOnBuild();
 
         // Assert
@@ -100,13 +100,13 @@ public class AmbiguousClosureTests
     }
 
     [Fact]
-    public void Eject_RemovesImplementationFromHandlers()
+    public void Exclude_RemovesImplementationFromHandlers()
     {
         // Arrange
         var builder = new InterlocutorBuilder();
 
         // Act
-        builder.ScanAssembly(typeof(AmbiguousClosureTests).Assembly).Eject(typeof(ConflictedCommandHandlerB));
+        builder.ScanAssembly(typeof(AmbiguousClosureTests).Assembly).Exclude(typeof(ConflictedCommandHandlerB));
 
         // Assert
         Assert.DoesNotContain(builder.Handlers, r => r.ImplementationType == typeof(ConflictedCommandHandlerB));
@@ -114,7 +114,7 @@ public class AmbiguousClosureTests
     }
 
     [Fact]
-    public void Eject_ClearsTheAmbiguousClosureProblem_LeavingTheOtherCandidateRegistered()
+    public void Exclude_ClearsTheAmbiguousClosureProblem_LeavingTheOtherCandidateRegistered()
     {
         // Arrange
         var builder = new InterlocutorBuilder();
@@ -122,7 +122,7 @@ public class AmbiguousClosureTests
         // Act
         builder
             .ScanAssembly(typeof(AmbiguousClosureTests).Assembly)
-            .Eject(typeof(ConflictedCommandHandlerB))
+            .Exclude(typeof(ConflictedCommandHandlerB))
             .ValidateOnBuild();
 
         // Assert
@@ -134,31 +134,31 @@ public class AmbiguousClosureTests
     }
 
     [Fact]
-    public void Eject_Generic_BehavesIdenticallyToTheTypeOverload()
+    public void Exclude_Generic_BehavesIdenticallyToTheTypeOverload()
     {
         // Arrange
         var builder = new InterlocutorBuilder();
 
         // Act
-        builder.ScanAssembly(typeof(AmbiguousClosureTests).Assembly).Eject<ConflictedCommandHandlerB>();
+        builder.ScanAssembly(typeof(AmbiguousClosureTests).Assembly).Exclude<ConflictedCommandHandlerB>();
 
         // Assert
         Assert.DoesNotContain(builder.Handlers, r => r.ImplementationType == typeof(ConflictedCommandHandlerB));
     }
 
     [Fact]
-    public void Eject_CalledMoreThanOnce_AccumulatesRatherThanReplacing()
+    public void Exclude_CalledMoreThanOnce_AccumulatesRatherThanReplacing()
     {
         // Arrange
         var builder = new InterlocutorBuilder();
 
         // Act
-        builder.Eject(typeof(ConflictedCommandHandlerA)).Eject(typeof(ConflictedCommandHandlerB));
+        builder.Exclude(typeof(ConflictedCommandHandlerA)).Exclude(typeof(ConflictedCommandHandlerB));
 
         // Assert
         Assert.Equal(
             [typeof(ConflictedCommandHandlerA), typeof(ConflictedCommandHandlerB)],
-            builder.EjectedImplementationTypes
+            builder.ExcludedImplementationTypes
         );
     }
 
@@ -251,7 +251,7 @@ public class AmbiguousClosureTests
     }
 
     [Fact]
-    public void Eject_ClearsTheAmbiguousClosureProblem_ForAConsumerSuppliedContractTheSameWayAsABuiltInOne()
+    public void Exclude_ClearsTheAmbiguousClosureProblem_ForAConsumerSuppliedContractTheSameWayAsABuiltInOne()
     {
         // Arrange
         var builder = new InterlocutorBuilder();
@@ -260,7 +260,7 @@ public class AmbiguousClosureTests
         builder
             .ScanAssembly(typeof(AmbiguousClosureTests).Assembly)
             .RequireUniqueClosure(typeof(IClosureTestExportStrategy<>))
-            .Eject(typeof(SecondConflictingExportStrategy))
+            .Exclude(typeof(SecondConflictingExportStrategy))
             .ValidateOnBuild();
 
         // Assert

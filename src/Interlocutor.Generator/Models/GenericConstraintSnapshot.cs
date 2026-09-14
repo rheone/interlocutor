@@ -28,17 +28,21 @@ using Interlocutor.Generator.Models;
 /// again mirroring the original "unresolvable - treat as satisfied" fallback.
 /// </param>
 /// <remarks>
+/// <para>
 /// Built once per compilation by <see cref="GenericConstraintSnapshotBuilder.Build"/> from
 /// <see cref="Microsoft.CodeAnalysis.IncrementalGeneratorInitializationContext.CompilationProvider"/> combined
 /// with the already-collected open generic handler and generic usage arrays (see
-/// <see cref="InterlocutorSourceGenerator.Initialize"/>'s remarks) -
-/// that producing step still re-runs on every rebuild, since <see cref="Microsoft.CodeAnalysis.Compilation"/>
-/// is never equal to itself across runs, but this record's own structural equality is what lets everything
-/// downstream in the incremental pipeline skip recomputing when the *facts* it captured did not change.
+/// <see cref="InterlocutorSourceGenerator.Initialize"/>'s remarks) - that producing step still re-runs on every
+/// rebuild, since <see cref="Microsoft.CodeAnalysis.Compilation"/> is never equal to itself across runs, but
+/// this record's own structural equality is what lets everything downstream in the incremental pipeline skip
+/// recomputing when the *facts* it captured did not change.
+/// </para>
+/// <para>
 /// <see cref="ImmutableArray{T}"/>'s own <c>Equals</c> compares its backing array by reference, not by
 /// element, so - exactly as <see cref="CompilationInfo"/> and <see cref="ExternalModuleInfo"/> already do for
 /// ticket 12 - <see cref="Equals(GenericConstraintSnapshot?)"/>/<see cref="GetHashCode"/> are overridden below
 /// to compare both arrays element-wise instead.
+/// </para>
 /// </remarks>
 [DebuggerDisplay("{ArgumentTypeFacts.Length} argument facts, {ConversionFacts.Length} conversion facts")]
 internal sealed record GenericConstraintSnapshot(

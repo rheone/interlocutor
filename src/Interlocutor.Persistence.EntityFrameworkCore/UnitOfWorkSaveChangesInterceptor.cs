@@ -57,8 +57,9 @@ public sealed class UnitOfWorkSaveChangesInterceptor : SaveChangesInterceptor
     {
         if (!IsSuppressed.Value && eventData.Context is { } context && context.Database.CurrentTransaction is null)
         {
-            // Not captured/disposed here - UnitOfWorkBehavior retrieves this same context-owned transaction via
-            // Database.CurrentTransaction and disposes it once, after commit or rollback, at pipeline completion.
+            // Not captured/disposed here - EntityFrameworkCommitGateSession's CommitAsync/RollbackAsync retrieve
+            // this same context-owned transaction via Database.CurrentTransaction and dispose it once, after
+            // commit or rollback, at pipeline completion.
 #pragma warning disable IDISP004
             await context.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
 #pragma warning restore IDISP004
@@ -73,8 +74,9 @@ public sealed class UnitOfWorkSaveChangesInterceptor : SaveChangesInterceptor
     {
         if (!IsSuppressed.Value && eventData.Context is { } context && context.Database.CurrentTransaction is null)
         {
-            // Not captured/disposed here - UnitOfWorkBehavior retrieves this same context-owned transaction via
-            // Database.CurrentTransaction and disposes it once, after commit or rollback, at pipeline completion.
+            // Not captured/disposed here - EntityFrameworkCommitGateSession's CommitAsync/RollbackAsync retrieve
+            // this same context-owned transaction via Database.CurrentTransaction and dispose it once, after
+            // commit or rollback, at pipeline completion.
 #pragma warning disable IDISP004
             context.Database.BeginTransaction();
 #pragma warning restore IDISP004

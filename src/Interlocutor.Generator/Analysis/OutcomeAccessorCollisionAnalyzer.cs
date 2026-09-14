@@ -13,10 +13,12 @@ using Microsoft.CodeAnalysis;
 /// <c>TryGet{TypeName}</c> accessor, or a case type whose own name collides with a reserved generated member name.
 /// </summary>
 /// <remarks>
+/// <para>
 /// Called from <see cref="OutcomeMemberGenerator.Execute"/> once per attributed union, after the arity check
 /// (<see cref="InterlocutorDiagnostics.TooFewOutcomeCaseTypes"/>) has already ruled out fewer than two case
 /// types - mirroring how <see cref="HandlerDiagnosticAnalyzer"/> is a plain reporting helper driven by an
 /// already-built model, not a standalone <see cref="Microsoft.CodeAnalysis.Diagnostics.DiagnosticAnalyzer"/>.
+/// </para>
 /// </remarks>
 internal static class OutcomeAccessorCollisionAnalyzer
 {

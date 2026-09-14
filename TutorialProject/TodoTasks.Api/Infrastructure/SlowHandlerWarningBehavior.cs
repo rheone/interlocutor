@@ -12,11 +12,11 @@ using Interlocutor.Abstractions.Pipeline;
 /// <param name="logger">The logger this behavior warns through.</param>
 /// <remarks>
 /// <c>documentation/beginners-guide-todo-api.md</c>'s own worked example of a custom behavior beyond
-/// the recommended chain (Logging → Auditing → Authorization → Validation → Transaction). What this
-/// measures is decided entirely by registration position, not by anything inside this type: it's
-/// registered <em>innermost</em> in <c>Program.cs</c> - the last <c>AddBehavior</c> call, after the
-/// recommended chain's five behaviors and <c>TodoTasksUnitOfWorkBehavior</c> - so it wraps nothing but
-/// the handler itself. Its stopwatch starts after logging, auditing, authorization, validation, and the
+/// this project's own five-behavior pipeline (Logging → Auditing → Authorization → Validation →
+/// Transaction). What this measures is decided entirely by registration position, not by anything
+/// inside this type: it's registered <em>innermost</em> in <c>Program.cs</c> - the last
+/// <c>AddBehavior</c> call, after those five behaviors and <c>TodoTasksUnitOfWorkBehavior</c> - so it
+/// wraps nothing but the handler itself. Its stopwatch starts after logging, auditing, authorization, validation, and the
 /// transaction's own begin have already run, and stops before any of their egress work (commit/rollback,
 /// audit recording, the outer logging timer) - isolating the handler's own cost from that surrounding
 /// overhead. Registered anywhere else in the chain, it would measure that surrounding cost too - see

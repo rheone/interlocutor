@@ -8,8 +8,8 @@ namespace Interlocutor.Abstractions.Pipeline.Cases;
 /// <see cref="OutcomeCaseRegistryBuilder"/>.
 /// </summary>
 /// <remarks>
-/// This is a configuration mistake (an <see cref="CommonKernel.ResultTypes.IOutcome"/> shape paired
-/// with a case it can't express, or a hand-rolled outcome type used before its factory/extractor was
+/// This is a configuration mistake (a response type paired with a case it can't express, or a hand-rolled
+/// <see cref="System.Runtime.CompilerServices.IUnion"/> implementation used before its factory/extractor was
 /// registered), not a normal runtime outcome - so it is thrown rather than silently swallowed or reported as
 /// an ordinary "not found" result, mirroring how <see cref="AuthorizationBehavior{TRequest, TResponse}"/>
 /// already reports the equivalent problem for its own <c>Forbidden</c> short-circuit.
@@ -23,7 +23,7 @@ namespace Interlocutor.Abstractions.Pipeline.Cases;
 public sealed class OutcomeCaseNotSupportedException : Exception
 {
     /// <summary>Initializes a new instance of the <see cref="OutcomeCaseNotSupportedException"/> class.</summary>
-    /// <param name="responseType">The <see cref="CommonKernel.ResultTypes.IOutcome"/> type that could not be constructed or decomposed.</param>
+    /// <param name="responseType">The response type that could not be constructed or decomposed.</param>
     /// <param name="caseType">
     /// The case type that could not be constructed or extracted, or <see langword="null"/> when the failure
     /// is extraction of an unknown active case rather than construction of a specific one.
@@ -36,8 +36,8 @@ public sealed class OutcomeCaseNotSupportedException : Exception
         this.CaseType = caseType;
     }
 
-    /// <summary>Gets the <see cref="CommonKernel.ResultTypes.IOutcome"/> type that could not be constructed or decomposed.</summary>
-    /// <value>The <see cref="CommonKernel.ResultTypes.IOutcome"/> type that could not be constructed or decomposed.</value>
+    /// <summary>Gets the response type that could not be constructed or decomposed.</summary>
+    /// <value>The response type that could not be constructed or decomposed.</value>
     public Type ResponseType { get; }
 
     /// <summary>

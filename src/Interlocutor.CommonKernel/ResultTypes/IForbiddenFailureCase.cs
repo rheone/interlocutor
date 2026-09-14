@@ -1,7 +1,8 @@
 namespace Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
-/// Marks a type as a forbidden-shaped failure case usable in an <see cref="Outcome"/> union.
+/// Marks a type as a forbidden-shaped failure case usable as one case type in an <c>Outcome&lt;T1, ...&gt;</c>
+/// union.
 /// </summary>
 /// <remarks>
 /// Mirrors <see cref="IValidationFailureCase"/>'s role for validation: a minimal, zero-dependency contract

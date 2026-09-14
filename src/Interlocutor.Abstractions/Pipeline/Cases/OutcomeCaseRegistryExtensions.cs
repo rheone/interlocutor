@@ -4,7 +4,6 @@ using System.Collections.Concurrent;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Interlocutor.Abstractions.Pipeline;
-using Interlocutor.CommonKernel.ResultTypes;
 
 /// <summary>
 /// Convenience extensions over <see cref="IOutcomeCaseRegistry"/> for pipeline behaviors that short-circuit a
@@ -13,8 +12,8 @@ using Interlocutor.CommonKernel.ResultTypes;
 /// </summary>
 public static class OutcomeCaseRegistryExtensions
 {
-    // PROTOTYPE (spike/eject-withcase-case-fidelity): ConstructOrThrow<TResponse>(PipelineEjectCaseException)
-    // below needs to close IOutcomeCaseRegistry.Construct<TResponse, TCase> over a TCase known only at run
+    // ConstructOrThrow<TResponse>(PipelineEjectCaseException) below (ADR-0025) needs to close
+    // IOutcomeCaseRegistry.Construct<TResponse, TCase> over a TCase known only at run
     // time (Eject.WithCase erases it from the throw site on purpose - see that type's remarks). Reflection is
     // the only way to close a generic method over a type discovered at run time; cached per (TResponse, TCase)
     // pair, mirroring DefaultOutcomeCaseRegistry's own ConstructorCache so a given (TResponse, TCase) pair
@@ -83,10 +82,9 @@ public static class OutcomeCaseRegistryExtensions
     }
 
     /// <summary>
-    /// PROTOTYPE (spike/eject-withcase-case-fidelity): constructs a <typeparamref name="TResponse"/> from a
-    /// case ejected via <c>Eject.WithCase</c>, or throws an <see cref="InvalidOperationException"/> if
-    /// <typeparamref name="TResponse"/> has no case matching <see cref="PipelineEjectCaseException.CaseType"/>
-    /// to construct.
+    /// Constructs a <typeparamref name="TResponse"/> from a case ejected via <c>Eject.WithCase</c> (ADR-0025),
+    /// or throws an <see cref="InvalidOperationException"/> if <typeparamref name="TResponse"/> has no case
+    /// matching <see cref="PipelineEjectCaseException.CaseType"/> to construct.
     /// </summary>
     /// <remarks>
     /// This is the wrapper-side counterpart to the generic <see cref="ConstructOrThrow{TResponse, TCase}"/>

@@ -24,10 +24,16 @@ public sealed class DelegatePipelineStage<TRequest, TResponse>(
 ) : PipelineStageBase<TRequest, TResponse>
 {
     /// <inheritdoc />
+    /// <remarks>
+    /// <para>Forwards to the <c>onBefore</c> delegate supplied at construction when one was given; otherwise defers to the base no-op.</para>
+    /// </remarks>
     public override Task<StageResult<TResponse>> OnBeforeAsync(TRequest request, CancellationToken ct) =>
         onBefore is null ? base.OnBeforeAsync(request, ct) : onBefore(request, ct);
 
     /// <inheritdoc />
+    /// <remarks>
+    /// <para>Forwards to the <c>onAfter</c> delegate supplied at construction when one was given; otherwise defers to the base no-op.</para>
+    /// </remarks>
     public override Task OnAfterAsync(TRequest request, TResponse result, CancellationToken ct) =>
         onAfter is null ? base.OnAfterAsync(request, result, ct) : onAfter(request, result, ct);
 }

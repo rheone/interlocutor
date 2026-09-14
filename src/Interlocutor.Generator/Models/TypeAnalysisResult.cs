@@ -11,9 +11,11 @@ using Interlocutor.Generator.Analysis;
 /// the request marker it implements, if any.
 /// </summary>
 /// <remarks>
+/// <para>
 /// A single type is never both a handler and a request in practice, but the two facts are computed and
 /// carried independently so the generator's two concerns (registration/dispatch emission and the
 /// missing-handler diagnostic) stay decoupled from how discovery happens to be batched.
+/// </para>
 /// </remarks>
 /// <param name="Handlers">The closed handler-contract matches this type declaration produced, if any.</param>
 /// <param name="OpenGenericHandlers">The open generic handler-contract matches this type declaration produced, if any (see <see cref="OpenGenericHandlerModel"/>).</param>
@@ -30,6 +32,7 @@ internal sealed record TypeAnalysisResult(
 
     /// <inheritdoc/>
     /// <remarks>
+    /// <para>
     /// Overridden for the same reason as <see cref="CompilationInfo.Equals(CompilationInfo?)"/>:
     /// <see cref="ImmutableArray{T}"/>'s own <c>Equals</c> compares its backing array by reference, not by
     /// element, so the compiler-generated positional-record equality this type would otherwise get from
@@ -37,6 +40,7 @@ internal sealed record TypeAnalysisResult(
     /// (ticket 53) - a syntax-provider re-run whose per-candidate result is content-identical to the previous
     /// run's would otherwise never compare equal, defeating <c>Collect()</c>'s own caching for the whole
     /// candidate list.
+    /// </para>
     /// </remarks>
     public bool Equals(TypeAnalysisResult? other) =>
         other is not null

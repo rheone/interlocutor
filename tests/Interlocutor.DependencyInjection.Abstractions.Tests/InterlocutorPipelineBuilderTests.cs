@@ -5,6 +5,7 @@ using Interlocutor.Abstractions.Core;
 using Interlocutor.Abstractions.Markers;
 using Interlocutor.Abstractions.Pipeline;
 using Interlocutor.Abstractions.Pipeline.Cases;
+using Interlocutor.Abstractions.Pipeline.Diagnostics;
 using Interlocutor.CommonKernel.ResultTypes;
 using NSubstitute;
 
@@ -278,12 +279,10 @@ public class InterlocutorPipelineBuilderTests
         // Act
         builder.UseRecommendedChain();
 
-        // Assert
+        // Assert - the minimal default: Auditing/Authorization are opt-in, not automatic.
         Assert.Equal(
             [
                 typeof(LoggingBehavior<,>),
-                typeof(AuditingBehavior<,>),
-                typeof(AuthorizationBehavior<,>),
                 typeof(Interlocutor.FluentValidation.ValidationBehavior<,>),
                 typeof(Interlocutor.Persistence.NHibernate.UnitOfWorkBehavior<,>),
             ],
@@ -299,6 +298,34 @@ public class InterlocutorPipelineBuilderTests
 
         // Assert
         Assert.Empty(bare.Behaviors);
+    }
+
+    [Fact]
+    public void PriorFiveBehaviorChain_StillFullyReconstructableByExplicitChaining()
+    {
+        // Arrange
+        var builder = new InterlocutorPipelineBuilder();
+
+        // Act - the chain UseRecommendedChain() composed before Auditing/Authorization were dropped
+        // from its default, restored explicitly in the same relative order.
+        builder
+            .AddLoggingBehavior()
+            .AddAuditingBehavior()
+            .AddAuthorizationBehavior()
+            .AddValidationBehavior()
+            .AddUnitOfWorkBehavior();
+
+        // Assert
+        Assert.Equal(
+            [
+                typeof(LoggingBehavior<,>),
+                typeof(AuditingBehavior<,>),
+                typeof(AuthorizationBehavior<,>),
+                typeof(Interlocutor.FluentValidation.ValidationBehavior<,>),
+                typeof(Interlocutor.Persistence.NHibernate.UnitOfWorkBehavior<,>),
+            ],
+            builder.Behaviors.Select(r => r.ImplementationType)
+        );
     }
 
     [Fact]
@@ -355,6 +382,44 @@ public class InterlocutorPipelineBuilderTests
         // Assert
         var registration = Assert.Single(builder.Defaults, r => r.ServiceType == typeof(IOutcomeCaseRegistry));
         Assert.Equal(typeof(CustomOutcomeCaseRegistry), registration.ImplementationType);
+    }
+
+    [Fact]
+    public void AddPipelineExplainer_NotCalled_ConfigurationStaysNull()
+    {
+        // Arrange & Act
+        var builder = new InterlocutorPipelineBuilder();
+
+        // Assert
+        Assert.Null(builder.PipelineExplainerConfiguration);
+    }
+
+    [Fact]
+    public void AddPipelineExplainer_NoArgument_RecordsFreshDisabledOptions()
+    {
+        // Arrange
+        var builder = new InterlocutorPipelineBuilder();
+
+        // Act
+        builder.AddPipelineExplainer();
+
+        // Assert
+        var configuration = Assert.IsType<PipelineExplainerOptions>(builder.PipelineExplainerConfiguration);
+        Assert.False(configuration.Enabled);
+    }
+
+    [Fact]
+    public void AddPipelineExplainer_WithOptions_RecordsThoseOptions()
+    {
+        // Arrange
+        var builder = new InterlocutorPipelineBuilder();
+        var options = new PipelineExplainerOptions { Enabled = true };
+
+        // Act
+        builder.AddPipelineExplainer(options);
+
+        // Assert
+        Assert.Same(options, builder.PipelineExplainerConfiguration);
     }
 
     [Fact]
@@ -580,6 +645,173 @@ public class InterlocutorPipelineBuilderTests
     }
 
     [Fact]
+    public void AddConditionalBehavior_RegistersFactoryForClosedPipelineBehaviorInterface()
+    {
+        // Arrange
+        var builder = new InterlocutorPipelineBuilder();
+
+        // Act
+        builder.AddConditionalBehavior<SampleConditionalBehavior, SampleRequest, SampleResponse>((_, _) => true);
+
+        // Assert
+        var registration = Assert.Single(builder.BehaviorFactories);
+        Assert.Equal(typeof(IPipelineBehavior<SampleRequest, SampleResponse>), registration.ServiceType);
+        Assert.Equal(RegistrationKind.Behavior, registration.Kind);
+    }
+
+    [Fact]
+    public void AddConditionalBehavior_TryAddsTheInnerBehaviorAgainstItsOwnConcreteType()
+    {
+        // Arrange
+        var builder = new InterlocutorPipelineBuilder();
+
+        // Act
+        builder.AddConditionalBehavior<SampleConditionalBehavior, SampleRequest, SampleResponse>((_, _) => true);
+
+        // Assert - so the factory below can resolve a container-constructed instance of it as `inner`.
+        var defaultEntry = Assert.Single(builder.Defaults, d => d.ServiceType == typeof(SampleConditionalBehavior));
+        Assert.Equal(typeof(SampleConditionalBehavior), defaultEntry.ImplementationType);
+    }
+
+    [Fact]
+    public void AddConditionalBehavior_DoesNotClobberAnExistingDefaultForTheSameBehaviorType()
+    {
+        // Arrange - proves the try-add semantics: a consumer's own prior registration of the inner behavior
+        // type is left untouched by AddConditionalBehavior.
+        var builder = new InterlocutorPipelineBuilder();
+        builder.OverrideOutcomeCaseRegistry<CustomOutcomeCaseRegistry>();
+        var before = builder.Defaults.Single(d => d.ServiceType == typeof(IOutcomeCaseRegistry));
+
+        // Act
+        builder.AddConditionalBehavior<SampleConditionalBehavior, SampleRequest, SampleResponse>((_, _) => true);
+
+        // Assert
+        var after = builder.Defaults.Single(d => d.ServiceType == typeof(IOutcomeCaseRegistry));
+        Assert.Equal(before, after);
+    }
+
+    [Fact]
+    public async Task AddConditionalBehavior_PredicateReceivesTheResolvingProviderAndTheRequest()
+    {
+        // Arrange
+        var builder = new InterlocutorPipelineBuilder();
+        var sp = Substitute.For<IServiceProvider>();
+        sp.GetService(typeof(SampleConditionalBehavior)).Returns(new SampleConditionalBehavior());
+        IServiceProvider? observedProvider = null;
+        SampleRequest? observedRequest = null;
+
+        builder.AddConditionalBehavior<SampleConditionalBehavior, SampleRequest, SampleResponse>(
+            (provider, request) =>
+            {
+                observedProvider = provider;
+                observedRequest = request;
+                return true;
+            }
+        );
+        var behavior =
+            (IPipelineBehavior<SampleRequest, SampleResponse>)
+                Assert.IsType<ConditionalBehavior<SampleRequest, SampleResponse>>(
+                    Assert.Single(builder.BehaviorFactories).Factory(sp)
+                );
+        var request = new SampleRequest();
+
+        // Act
+        await behavior.HandleAsync(request, () => Task.FromResult(new SampleResponse()), CancellationToken.None);
+
+        // Assert
+        Assert.Same(sp, observedProvider);
+        Assert.Same(request, observedRequest);
+    }
+
+    [Fact]
+    public async Task AddConditionalBehavior_PredicateTrue_RunsTheResolvedInnerBehavior()
+    {
+        // Arrange
+        var builder = new InterlocutorPipelineBuilder();
+        var inner = new SampleConditionalBehavior();
+        var sp = Substitute.For<IServiceProvider>();
+        sp.GetService(typeof(SampleConditionalBehavior)).Returns(inner);
+
+        builder.AddConditionalBehavior<SampleConditionalBehavior, SampleRequest, SampleResponse>((_, _) => true);
+        var behavior = (IPipelineBehavior<SampleRequest, SampleResponse>)Assert.Single(builder.BehaviorFactories).Factory(sp);
+
+        // Act
+        var nextCalled = false;
+        await behavior.HandleAsync(
+            new SampleRequest(),
+            () =>
+            {
+                nextCalled = true;
+                return Task.FromResult(new SampleResponse());
+            },
+            CancellationToken.None
+        );
+
+        // Assert
+        Assert.True(inner.WasInvoked);
+        Assert.False(nextCalled);
+    }
+
+    [Fact]
+    public async Task AddConditionalBehavior_PredicateFalse_SkipsTheResolvedInnerBehaviorAndCallsNext()
+    {
+        // Arrange
+        var builder = new InterlocutorPipelineBuilder();
+        var inner = new SampleConditionalBehavior();
+        var sp = Substitute.For<IServiceProvider>();
+        sp.GetService(typeof(SampleConditionalBehavior)).Returns(inner);
+
+        builder.AddConditionalBehavior<SampleConditionalBehavior, SampleRequest, SampleResponse>((_, _) => false);
+        var behavior = (IPipelineBehavior<SampleRequest, SampleResponse>)Assert.Single(builder.BehaviorFactories).Factory(sp);
+
+        // Act
+        var nextCalled = false;
+        await behavior.HandleAsync(
+            new SampleRequest(),
+            () =>
+            {
+                nextCalled = true;
+                return Task.FromResult(new SampleResponse());
+            },
+            CancellationToken.None
+        );
+
+        // Assert
+        Assert.False(inner.WasInvoked);
+        Assert.True(nextCalled);
+    }
+
+    [Fact]
+    public void AddConditionalBehavior_InnerNotResolvable_HandleAsyncThrowsWithAnActionableMessage()
+    {
+        // Arrange - the container has no registration satisfying SampleConditionalBehavior (simulated here
+        // by a provider that resolves nothing), so building the wrapper must fail loudly rather than pass a
+        // null inner through.
+        var builder = new InterlocutorPipelineBuilder();
+        var sp = Substitute.For<IServiceProvider>();
+        sp.GetService(typeof(SampleConditionalBehavior)).Returns((object?)null);
+
+        builder.AddConditionalBehavior<SampleConditionalBehavior, SampleRequest, SampleResponse>((_, _) => true);
+        var factory = Assert.Single(builder.BehaviorFactories).Factory;
+
+        // Act & Assert
+        var ex = Assert.Throws<InvalidOperationException>(() => factory(sp));
+        Assert.Contains(nameof(SampleConditionalBehavior), ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AddConditionalBehavior_NullShouldRun_Throws()
+    {
+        // Arrange
+        var builder = new InterlocutorPipelineBuilder();
+
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() =>
+            builder.AddConditionalBehavior<SampleConditionalBehavior, SampleRequest, SampleResponse>(null!)
+        );
+    }
+
+    [Fact]
     public void AddStageHost_AddsPipelineStageBehaviorAtCallPosition()
     {
         // Arrange
@@ -679,6 +911,18 @@ public class InterlocutorPipelineBuilderTests
     {
         public Task<RateLimitResult> CheckAsync(string limitKey, object request, CancellationToken ct) =>
             Task.FromResult(new RateLimitResult(true));
+    }
+
+    /// <summary>A constructible <see cref="IPipelineBehavior{TRequest,TResponse}"/> that records whether it ran, for <c>AddConditionalBehavior</c> tests.</summary>
+    private sealed class SampleConditionalBehavior : IPipelineBehavior<SampleRequest, SampleResponse>
+    {
+        public bool WasInvoked { get; private set; }
+
+        public Task<SampleResponse> HandleAsync(SampleRequest request, Func<Task<SampleResponse>> next, CancellationToken ct)
+        {
+            this.WasInvoked = true;
+            return Task.FromResult(new SampleResponse());
+        }
     }
 
     private sealed class CustomOutcomeCaseRegistry : IOutcomeCaseRegistry

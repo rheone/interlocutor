@@ -72,7 +72,7 @@ public sealed class BareIOutcomeResponseConstraintRegressionTests
 
         public sealed class BareIOutcomeBareCommandHandler : IBareCommandHandler<BareIOutcomeBareCommand, BareIOutcomeResponse>
         {
-            public Task<BareIOutcomeResponse> Handle(BareIOutcomeBareCommand command, CancellationToken ct) =>
+            public Task<BareIOutcomeResponse> HandleAsync(BareIOutcomeBareCommand command, CancellationToken ct) =>
                 throw new System.NotImplementedException();
         }
 

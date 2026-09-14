@@ -29,14 +29,19 @@ using System.Linq;
 /// purely so <c>ResultExtensionsGenerator</c> runs over it).
 /// </param>
 /// <remarks>
+/// <para>
 /// Structural equality on <see cref="ExternalModules"/> is what lets this pipeline step itself be cached when a
 /// rebuild's reference graph is unchanged (a re-run whose <see cref="CompilationInfo"/> compares equal to the
 /// last one is reused rather than re-computed) - see <see cref="ExternalModuleInfo"/>'s own remarks for why the
 /// compiler-generated positional-record equality this type would otherwise get is not enough on its own:
 /// <see cref="ImmutableArray{T}"/> compares its backing array by reference, not by element, so
 /// <see cref="Equals(CompilationInfo?)"/>/<see cref="GetHashCode"/> are overridden below to compare
-/// <see cref="ExternalModules"/> element-wise instead. See <see cref="InterlocutorSourceGenerator.Initialize"/>'s
-/// remarks for why this step being cached does not, on its own, make the whole generator skip re-emission.
+/// <see cref="ExternalModules"/> element-wise instead.
+/// </para>
+/// <para>
+/// See <see cref="InterlocutorSourceGenerator.Initialize"/>'s remarks for why this step being cached does not,
+/// on its own, make the whole generator skip re-emission.
+/// </para>
 /// </remarks>
 [DebuggerDisplay("{AssemblyNamespaceSegment} ({ExternalModules.Length} external modules)")]
 internal sealed record CompilationInfo(

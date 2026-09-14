@@ -1,6 +1,6 @@
 # PRD: PipelineBehaviorBase — a template-method convenience base class for IPipelineBehavior
 
-**Status:** ready-for-agent
+**Status:** done - both child issues shipped (`issues/01` in `e195f77`, `issues/02` in `89fb634`).
 
 ## Problem Statement
 

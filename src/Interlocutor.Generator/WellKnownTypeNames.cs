@@ -75,7 +75,7 @@ internal static class WellKnownTypeNames
 
     /// <summary>
     /// The reason-only, single validation failure case type, <c>ValidationError</c>. Unlike
-    /// <see cref="ValidationErrors"/>, this type does not itself implement <see cref="ValidationFailureCase"/> -
+    /// <c>ValidationErrors</c>, this type does not itself implement <see cref="ValidationFailureCase"/> -
     /// see <c>documentation/messages-and-result-types.md</c>'s naming convention callout.
     /// </summary>
     public const string ValidationError = "Interlocutor.CommonKernel.ResultTypes.ValidationError";

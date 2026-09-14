@@ -12,6 +12,7 @@ using Microsoft.CodeAnalysis;
 /// than one concrete request (see <see cref="HandlerModel"/>).
 /// </summary>
 /// <remarks>
+/// <para>
 /// Every string here is a source-safe, <c>global::</c>-prefixed template that still names the handler's own
 /// type parameters verbatim (e.g. <c>"global::MyApp.GenericQueryHandler&lt;T&gt;"</c>) - closing this handler
 /// over a concrete type argument set is a whole-word substitution of each name in
@@ -19,6 +20,7 @@ using Microsoft.CodeAnalysis;
 /// <see cref="OpenGenericHandlerResolver"/> once every discovered <see cref="ClosedGenericRequestUsageModel"/>
 /// is known. Substituting by name instead of tracking symbol/position pairs keeps this model - like
 /// <see cref="HandlerModel"/> - built entirely from primitive, cache-friendly types.
+/// </para>
 /// </remarks>
 /// <param name="Kind">Whether this is a query or command handler.</param>
 /// <param name="HandlerDefinitionKey">
@@ -62,11 +64,13 @@ internal sealed record OpenGenericHandlerModel(
 {
     /// <inheritdoc/>
     /// <remarks>
+    /// <para>
     /// Overridden for two reasons (ticket 53) - see <see cref="HandlerModel.Equals(HandlerModel?)"/>'s remarks
     /// for the full rationale, which applies here identically: <see cref="ImmutableArray{T}"/>'s own
     /// <c>Equals</c> compares its backing array by reference rather than by element, and <see cref="Location"/>
     /// is deliberately excluded since it compares the declaring <see cref="Microsoft.CodeAnalysis.SyntaxTree"/>
     /// by reference, which changes on every re-parse regardless of whether this declaration itself changed.
+    /// </para>
     /// </remarks>
     public bool Equals(OpenGenericHandlerModel? other) =>
         other is not null
